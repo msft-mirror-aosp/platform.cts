@@ -24,6 +24,7 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.SystemUserOnly;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
+import com.android.compatibility.common.util.UserUtil;
 import com.android.ddmlib.testrunner.RemoteAndroidTestRunner;
 import com.android.ddmlib.testrunner.TestResult.TestStatus;
 import com.android.tradefed.build.IBuildInfo;
@@ -66,7 +67,6 @@ public class AccountManagerXUserTest extends BaseMultiUserTest implements IBuild
 
     private int mParentUserId;
     private int mProfileUserId;
-    private int mMainUserId;
     private final Map<String, String> mTestArgs = new HashMap<>();
 
     @Before
@@ -75,22 +75,28 @@ public class AccountManagerXUserTest extends BaseMultiUserTest implements IBuild
 
         assumeTrue(mSupportsMultiUser && mSupportsManagedUsers);
 
+        var device = getDevice();
+
         mOldVerifierValue =
-                getDevice().executeShellCommand("settings get global package_verifier_enable");
-        getDevice().executeShellCommand("settings put global package_verifier_enable 0");
+                device.executeShellCommand("settings get global package_verifier_enable");
+        device.executeShellCommand("settings put global package_verifier_enable 0");
 
-        mParentUserId = getDevice().getCurrentUser();
-        mMainUserId = getDevice().getMainUserId();
-
-        assertThat(mParentUserId).isEqualTo(mMainUserId);
+        mParentUserId = device.getCurrentUser();
+        Integer mainUserId = device.getMainUserId();
+        if (mainUserId != null) {
+            assertThat(mParentUserId).isEqualTo(mainUserId);
+        } else {
+            boolean supportsMainlessUser = new UserUtil(device).isProfilesOnNonMainUserSupported();
+            assumeTrue("device doesn't have main user", supportsMainlessUser);
+        }
 
         CompatibilityBuildHelper buildHelper = new CompatibilityBuildHelper(mCtsBuild);
         File apkFile = buildHelper.getTestFile(TEST_WITH_PERMISSION_APK);
-        getDevice().installPackageForUser(apkFile, true, true, mParentUserId, "-t");
+        device.installPackageForUser(apkFile, true, true, mParentUserId, "-t");
 
         mProfileUserId = createProfile(mParentUserId);
-        getDevice().startUser(mProfileUserId, true);
-        getDevice().installPackageForUser(apkFile, true, true, mProfileUserId, "-t");
+        device.startUser(mProfileUserId, true);
+        device.installPackageForUser(apkFile, true, true, mProfileUserId, "-t");
 
         waitForBroadcastIdle();
 

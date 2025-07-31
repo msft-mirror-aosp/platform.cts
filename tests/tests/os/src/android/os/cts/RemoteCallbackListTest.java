@@ -29,6 +29,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.os.Build;
 import android.os.ConditionVariable;
 import android.os.Flags;
 import android.os.IBinder;
@@ -43,7 +44,10 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
+import com.android.compatibility.common.util.ApiLevelUtil;
+
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -73,6 +77,12 @@ public class RemoteCallbackListTest {
 
     @Before
     public void setUp() throws Exception {
+        // Devices that shipped before UDC are not required to support app freezer.
+        // On such devices, this test will fail if it runs, so we intentionally skip.
+        Assume.assumeTrue(
+                "App freezer is not required to be supported on this device, skipping test.",
+                ApiLevelUtil.isFirstApiAtLeast(Build.VERSION_CODES.UPSIDE_DOWN_CAKE));
+
         mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         mSecondaryConnection = new ServiceConnection() {
             public void onServiceConnected(ComponentName className, IBinder service) {

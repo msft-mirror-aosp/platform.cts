@@ -54,6 +54,7 @@ import static android.server.wm.app.Components.TopActivity.ACTION_CONVERT_FROM_T
 import static android.server.wm.app.Components.TopActivity.ACTION_CONVERT_TO_TRANSLUCENT;
 import static android.view.Display.DEFAULT_DISPLAY;
 import static android.window.DisplayAreaOrganizer.FEATURE_UNDEFINED;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
@@ -65,15 +66,20 @@ import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.CommandSession.ActivitySession;
 import android.server.wm.CommandSession.ActivitySessionClient;
 import android.server.wm.LockScreenSession;
+import android.server.wm.SystemLockTaskModeSession;
 import android.server.wm.WaitForValidActivityState;
 import android.server.wm.WindowManagerState.Task;
 import android.server.wm.app.Components;
+
 import androidx.test.filters.FlakyTest;
+
 import com.android.compatibility.common.util.ApiTest;
-import java.util.function.Consumer;
+
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.function.Consumer;
 
 /**
  * Build/Install/Run:
@@ -421,8 +427,7 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
         final Task task = mWmState.getTaskByActivity(BROADCAST_RECEIVER_ACTIVITY);
         final int taskId = task.getTaskId();
 
-        try {
-            runWithShellPermission(() -> mAtm.startSystemLockTaskMode(taskId));
+        try (SystemLockTaskModeSession ignored = new SystemLockTaskModeSession(taskId)) {
             getLaunchActivityBuilder()
                     .setUseInstrumentation()
                     .setTargetActivity(BROADCAST_RECEIVER_ACTIVITY)
@@ -430,8 +435,6 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
                     .setLaunchTaskDisplayAreaFeatureId(homeTaskDisplayAreaFeatureId)
                     .setIntentFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_TASK_ON_HOME).execute();
             mWmState.waitForActivityState(BROADCAST_RECEIVER_ACTIVITY, STATE_RESUMED);
-        } finally {
-            runWithShellPermission(() -> mAtm.stopSystemLockTaskMode());
         }
 
         mBroadcastActionTrigger.finishBroadcastReceiverActivity();

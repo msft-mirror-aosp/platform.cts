@@ -40,11 +40,7 @@ import android.icu.util.ULocale;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Printer;
-import android.view.inputmethod.Flags;
 import android.view.inputmethod.InputMethod;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -59,7 +55,6 @@ import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.PropertyUtil;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.xmlpull.v1.XmlPullParserException;
 
@@ -73,11 +68,6 @@ public final class InputMethodInfoTest {
     private static final String MOCK_IME_ID = "com.android.cts.mockime/.MockIme";
     private static final String HIDDEN_FROM_PICKER_IME_ID =
             "com.android.cts.hiddenfrompickerime/.HiddenFromPickerIme";
-
-    private final DeviceFlagsValueProvider mFlagsValueProvider = new DeviceFlagsValueProvider();
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = new CheckFlagsRule(mFlagsValueProvider);
 
     private Context mContext;
     private InputMethodManager mImManager;
@@ -185,10 +175,9 @@ public final class InputMethodInfoTest {
     private void assertInfo(InputMethodInfo info) {
         assertEquals(mPackageName, info.getPackageName());
         assertEquals(mSettingsActivity, info.getSettingsActivity());
-        if (mFlagsValueProvider.getBoolean(Flags.FLAG_IME_SWITCHER_REVAMP_API)) {
-            assertEquals(mLanguageSettingsActivity,
-                    info.createImeLanguageSettingsActivityIntent().getComponent().getClassName());
-        }
+        assertEquals(
+                mLanguageSettingsActivity,
+                info.createImeLanguageSettingsActivityIntent().getComponent().getClassName());
         ComponentName component = info.getComponent();
         assertEquals(mClassName, component.getClassName());
         String expectedId = component.flattenToShortString();
@@ -236,7 +225,6 @@ public final class InputMethodInfoTest {
             "android.view.inputmethod.InputMethodInfo#ACTION_IME_LANGUAGE_SETTINGS",
             "android.view.inputmethod.InputMethodInfo#createImeLanguageSettingsActivityIntent"
     })
-    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP_API)
     @Test
     public void testLanguageSettingsInfo() {
         final List<InputMethodInfo> imis = mImManager.getInputMethodList();
@@ -264,11 +252,12 @@ public final class InputMethodInfoTest {
         assertEquals(mInputMethodInfo.getPackageName(), imi.getPackageName());
         assertEquals(mInputMethodInfo.getServiceName(), imi.getServiceName());
         assertEquals(mInputMethodInfo.getSettingsActivity(), imi.getSettingsActivity());
-        if (mFlagsValueProvider.getBoolean(Flags.FLAG_IME_SWITCHER_REVAMP_API)) {
-            assertEquals(mInputMethodInfo.createImeLanguageSettingsActivityIntent().getComponent()
-                            .getClassName(),
-                    imi.createImeLanguageSettingsActivityIntent().getComponent().getClassName());
-        }
+        assertEquals(
+                mInputMethodInfo
+                        .createImeLanguageSettingsActivityIntent()
+                        .getComponent()
+                        .getClassName(),
+                imi.createImeLanguageSettingsActivityIntent().getComponent().getClassName());
         assertEquals(mInputMethodInfo.getId(), imi.getId());
         assertEquals(mInputMethodInfo.getIsDefaultResourceId(), imi.getIsDefaultResourceId());
         assertEquals(mInputMethodInfo.supportsStylusHandwriting(), imi.supportsStylusHandwriting());
@@ -295,10 +284,8 @@ public final class InputMethodInfoTest {
         assertEquals(mInputMethodSubtype.getLocale(), subtype.getLocale());
         assertEquals(mInputMethodSubtype.getMode(), subtype.getMode());
         assertEquals(mInputMethodSubtype.getNameResId(), subtype.getNameResId());
-        if (mFlagsValueProvider.getBoolean(Flags.FLAG_IME_SWITCHER_REVAMP_API)) {
-            assertEquals(mInputMethodSubtype.getLayoutLabelResource(),
-                    subtype.getLayoutLabelResource());
-        }
+        assertEquals(
+                mInputMethodSubtype.getLayoutLabelResource(), subtype.getLayoutLabelResource());
         assertEquals(mInputMethodSubtype.hashCode(), subtype.hashCode());
         assertEquals(mInputMethodSubtype.isAuxiliary(), subtype.isAuxiliary());
         assertEquals(mInputMethodSubtype.overridesImplicitlyEnabledSubtype(),

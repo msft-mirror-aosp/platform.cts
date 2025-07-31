@@ -15,9 +15,12 @@
  */
 package com.android.compatibility.common.util;
 
+import static android.multiuser.Flags.FLAG_PROFILES_FOR_ALL;
+
+import android.platform.test.flag.junit.host.DeviceFlags;
+
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
-import com.android.tradefed.invoker.TestInformation;
 import com.android.tradefed.log.LogUtil.CLog;
 
 /**
@@ -25,38 +28,33 @@ import com.android.tradefed.log.LogUtil.CLog;
  */
 public final class UserUtil {
 
-    // TODO(b/271153404): static import from tradefed instead
-    private static final String RUN_TESTS_AS_USER_KEY = "RUN_TESTS_AS_USER";
+    public static final String CONFIG_SUPPORT_PROFILES_ON_NON_MAIN_USER =
+            "config_supportProfilesOnNonMainUser";
 
-    private final TestInformation mTestInfo;
+    private final ITestDevice mTestDevice;
 
-    public UserUtil(TestInformation testInfo) {
-        mTestInfo = testInfo;
+    public UserUtil(ITestDevice testDevice) {
+        mTestDevice = testDevice;
     }
 
-    /**
-    * Gets the id of the user running the test.
-    *
-    * <p>Typically, the user running the test is the {@link ITestDevice#getCurrentUser()
-    * current user}, but it could be different if set by a target preparer.
-    */
-    public int getTestUserId() throws DeviceNotAvailableException {
-        String propValue = mTestInfo.properties().get(RUN_TESTS_AS_USER_KEY);
-        if (propValue != null && !propValue.isEmpty()) {
-            CLog.d("getTestUserId(): returning '%s'", propValue);
-            try {
-                return Integer.parseInt(propValue);
-            } catch (Exception e) {
-                String errorMessage = "error parsing property " + RUN_TESTS_AS_USER_KEY
-                        + " (value=" + propValue + ")";
-                CLog.e("getTestUserId(): %s, e=%s", errorMessage, e);
-                throw new IllegalStateException(errorMessage, e);
-            }
+    /** Checks whether the device supports profile on non-main user. */
+    public boolean isProfilesOnNonMainUserSupported() throws DeviceNotAvailableException {
+        var flags = DeviceFlags.createDeviceFlags(mTestDevice);
+        String flagValue = flags.getFlagValue(FLAG_PROFILES_FOR_ALL);
+        CLog.v(
+                "isProfilesOnNonMainUserSupported(): flag %s is %s",
+                FLAG_PROFILES_FOR_ALL, flagValue);
+        if (!Boolean.valueOf(flagValue)) {
+            return false;
         }
-        ITestDevice device = mTestInfo.getDevice();
-        int currentUserId = device.getCurrentUser();
-        CLog.d("getTestUserId(): property %s not set, returning current user (%d)",
-                RUN_TESTS_AS_USER_KEY, currentUserId);
-        return currentUserId;
+
+        boolean configValue =
+                new OverlayUtil(mTestDevice)
+                        .getBooleanFrameworkConfig(CONFIG_SUPPORT_PROFILES_ON_NON_MAIN_USER);
+        CLog.v(
+                "isProfilesOnNonMainUserSupported(): config %s is %b",
+                CONFIG_SUPPORT_PROFILES_ON_NON_MAIN_USER, configValue);
+        return configValue;
     }
+
 }

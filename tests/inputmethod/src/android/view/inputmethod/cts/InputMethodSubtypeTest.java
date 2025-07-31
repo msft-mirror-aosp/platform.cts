@@ -27,13 +27,9 @@ import android.graphics.Color;
 import android.icu.util.ULocale;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
-import android.view.inputmethod.Flags;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
 
@@ -43,7 +39,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Objects;
@@ -59,9 +54,6 @@ public final class InputMethodSubtypeTest {
     private static final String NONEXISTENCE_PACKAGE = "com.android.cts.ime.nonexistentpackage";
 
     private static final String NONEXISTENCE_RELATIVE_NAME = ".NonexistentIme";
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @NonNull
     private final InputMethodManager mImm = Objects.requireNonNull(
@@ -236,7 +228,6 @@ public final class InputMethodSubtypeTest {
             "android.view.inputmethod.InputMethodSubtype.InputMethodSubtypeBuilder#"
                     + "setLayoutLabelNonLocalized",
     })
-    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP_API)
     @Test
     public void testLayoutLabelNonLocalizedParcel() {
         final SpannableStringBuilder expectedLayoutLabel =
@@ -272,7 +263,6 @@ public final class InputMethodSubtypeTest {
     @ApiTest(apis = {
             "android.view.inputmethod.InputMethodSubtype#getLayoutLabelNonLocalized",
     })
-    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP_API)
     @Test
     public void testNoLayoutLabelNonLocalizedParcel() {
         final InputMethodSubtype newSubtype =
@@ -300,7 +290,6 @@ public final class InputMethodSubtypeTest {
             "android.view.inputmethod.InputMethodSubtype.InputMethodSubtypeBuilder#"
                     + "setLayoutLabelNonLocalized",
     })
-    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP_API)
     @Test
     public void testSetLayoutLabelNonLocalized() {
         final CharSequence expectedLayoutLabel = LAYOUT_LABEL_NON_LOCALIZED;
@@ -332,7 +321,6 @@ public final class InputMethodSubtypeTest {
             "android.view.inputmethod.InputMethodSubtype.InputMethodSubtypeBuilder#"
                     + "setLayoutLabelResource",
     })
-    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP_API)
     @Test
     public void testSetLayoutLabelNonLocalizedWithLayoutLabelResource() {
         final CharSequence expectedLayoutLabel = LAYOUT_LABEL_NON_LOCALIZED;

@@ -57,6 +57,7 @@ import android.media.MediaRecorder;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.SystemClock;
+import android.platform.test.annotations.DesktopTest;
 import android.util.Log;
 import android.util.Range;
 import android.util.Size;
@@ -87,6 +88,7 @@ import java.util.Set;
  * CameraDevice video recording use case tests by using MediaRecorder and
  * MediaCodec.
  */
+@DesktopTest(cujs = {"b/420441751"})
 @LargeTest
 @RunWith(Parameterized.class)
 public class RecordingTest extends Camera2SurfaceViewTestCase {

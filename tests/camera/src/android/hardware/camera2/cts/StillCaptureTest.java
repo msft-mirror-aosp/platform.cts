@@ -41,6 +41,7 @@ import android.location.LocationManager;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.ConditionVariable;
+import android.platform.test.annotations.DesktopTest;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 import android.util.Pair;
@@ -65,6 +66,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
+@DesktopTest(cujs = {"b/420441751"})
 @RunWith(Parameterized.class)
 public class StillCaptureTest extends Camera2SurfaceViewTestCase {
     private static final String TAG = "StillCaptureTest";

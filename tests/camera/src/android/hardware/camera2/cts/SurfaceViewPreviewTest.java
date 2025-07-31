@@ -36,6 +36,7 @@ import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
 import android.media.Image;
 import android.media.ImageReader;
+import android.platform.test.annotations.DesktopTest;
 import android.util.Log;
 import android.util.Pair;
 import android.util.Range;
@@ -60,7 +61,7 @@ import java.util.List;
 /**
  * CameraDevice preview test by using SurfaceView.
  */
-
+@DesktopTest(cujs = {"b/420441751"})
 @RunWith(Parameterized.class)
 public class SurfaceViewPreviewTest extends Camera2SurfaceViewTestCase {
     private static final String TAG = "SurfaceViewPreviewTest";

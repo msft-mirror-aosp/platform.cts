@@ -1254,7 +1254,6 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
      * Verifies that the custom IME Switcher button is requested visible in gesture navigation mode,
      * when the IME navigation bar is hidden.
      */
-    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP_API)
     @Test
     public void testOnCustomImeSwitcherButtonRequestedVisible_gestureNav() throws Exception {
         assumeTrue("Device must support the navigation bar",
@@ -1327,7 +1326,6 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
      * Verifies that the custom IME Switcher button is never requested visible in three button
      * navigation mode.
      */
-    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP_API)
     @Test
     public void testOnCustomImeSwitcherButtonRequestedVisible_threeButtonNav() throws Exception {
         assumeTrue("Device must support the navigation bar",
@@ -1369,7 +1367,6 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
      * navigation mode if {@code config_hideNavBarForKeyboard} is set, but not requested visible
      * in gesture navigation mode.
      */
-    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP_API)
     @Test
     public void testOnCustomImeSwitcherButtonRequestedVisible_hideNavBarForKeyboard()
             throws Exception {

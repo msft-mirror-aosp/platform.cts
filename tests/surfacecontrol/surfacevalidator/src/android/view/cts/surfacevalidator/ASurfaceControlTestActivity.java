@@ -16,6 +16,7 @@
 
 package android.view.cts.surfacevalidator;
 
+import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 import static android.view.cts.surfacevalidator.CapturedActivity.STORAGE_DIR;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
@@ -67,7 +68,7 @@ public class ASurfaceControlTestActivity extends Activity {
     private static final int DEFAULT_LAYOUT_HEIGHT = 100;
     private static final int OFFSET_X = 100;
     private static final int OFFSET_Y = 100;
-    public static final long WAIT_TIMEOUT_S = 5;
+    public static final long WAIT_TIMEOUT_S = HW_TIMEOUT_MULTIPLIER * 5;
 
     private final Handler mHandler = new Handler(Looper.getMainLooper());
 

@@ -16,7 +16,6 @@
 
 package android.server.wm.window;
 
-import static android.app.ActivityManager.LOCK_TASK_MODE_NONE;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_STANDARD;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
@@ -40,16 +39,19 @@ import static android.server.wm.app27.Components.SDK_27_TEST_ACTIVITY;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
+import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.res.Resources;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.CommandSession.ActivityCallback;
 import android.server.wm.LaunchActivityBuilder;
+import android.server.wm.SystemLockTaskModeSession;
 import android.server.wm.WaitForValidActivityState;
 import android.server.wm.WindowManagerState;
 import android.view.WindowManager;
@@ -252,12 +254,11 @@ public class MultiWindowTests extends ActivityManagerTestBase {
         // TestTaskOrganizer sets windowing modes of tasks to unspecific when putting them to split
         // screens so we need to explicitly set their windowing modes back to fullscreen to avoid
         // inheriting freeform windowing mode from the display on freeform first devices.
-        int noRelaunchTaskId = mWmState.getTaskByActivity(NO_RELAUNCH_ACTIVITY).getTaskId();
-        WindowContainerToken noRelaunchTaskToken =
-                mTaskOrganizer.getTaskInfo(noRelaunchTaskId).getToken();
-        WindowContainerTransaction t = new WindowContainerTransaction()
-                .setWindowingMode(noRelaunchTaskToken, WINDOWING_MODE_FULLSCREEN);
-        mTaskOrganizer.dismissSplitScreen(t, true /* primaryOnTop */);
+        final int noRelaunchTaskId = mWmState.getTaskByActivity(NO_RELAUNCH_ACTIVITY).getTaskId();
+        final WindowContainerToken noRelaunchTaskToken = getTaskInfo(noRelaunchTaskId).getToken();
+        final WindowContainerTransaction wct = new WindowContainerTransaction();
+        wct.setWindowingMode(noRelaunchTaskToken, WINDOWING_MODE_FULLSCREEN);
+        mTaskOrganizer.dismissSplitScreen(wct, true /* primaryOnTop */);
 
         lifecycleCounts = waitForOnMultiWindowModeChanged(NO_RELAUNCH_ACTIVITY);
         assertEquals("mMultiWindowModeChangedCount",
@@ -458,31 +459,20 @@ public class MultiWindowTests extends ActivityManagerTestBase {
     @Test
     public void testDisallowUpdateWindowingModeWhenInLockedTask() {
         launchActivity(TEST_ACTIVITY, WINDOWING_MODE_FULLSCREEN);
-        final WindowManagerState.Task task =
-                mWmState.getStandardRootTaskByWindowingMode(
-                        WINDOWING_MODE_FULLSCREEN).getTopTask();
+        final int taskId = getTopFullscreenTaskId();
 
-        try {
-            // Lock the task
-            runWithShellPermission(() -> mAtm.startSystemLockTaskMode(task.getTaskId()));
-            waitForOrFail("Fail to enter locked task mode", () ->
-                    mAm.getLockTaskModeState() != LOCK_TASK_MODE_NONE);
+        // Lock the task
+        try (SystemLockTaskModeSession ignored = new SystemLockTaskModeSession(taskId)) {
+            final WindowContainerToken token = getTaskInfo(taskId).getToken();
+
+            final WindowContainerTransaction wct = new WindowContainerTransaction();
+            wct.setWindowingMode(token, WINDOWING_MODE_MULTI_WINDOW);
+            runWithShellPermission(() -> mTaskOrganizer.applyTransaction(wct));
 
             // Verify specifying non-fullscreen windowing mode will fail.
-            runWithShellPermission(() -> {
-                final WindowContainerTransaction wct = new WindowContainerTransaction()
-                        .setWindowingMode(
-                                mTaskOrganizer.getTaskInfo(task.getTaskId()).getToken(),
-                                WINDOWING_MODE_MULTI_WINDOW);
-                mTaskOrganizer.applyTransaction(wct);
-            });
             mWmState.computeState(TEST_ACTIVITY);
             assertEquals(WINDOWING_MODE_FULLSCREEN,
                     mWmState.getWindowState(TEST_ACTIVITY).getWindowingMode());
-        } finally {
-            runWithShellPermission(() -> {
-                mAtm.stopSystemLockTaskMode();
-            });
         }
     }
 
@@ -490,52 +480,32 @@ public class MultiWindowTests extends ActivityManagerTestBase {
     public void testDisallowReparentOperationWhenInLockedTask() {
         launchActivity(TEST_ACTIVITY, WINDOWING_MODE_FULLSCREEN);
         launchActivity(LAUNCHING_ACTIVITY, WINDOWING_MODE_MULTI_WINDOW);
-        final WindowManagerState.Task task = mWmState
-                .getStandardRootTaskByWindowingMode(WINDOWING_MODE_FULLSCREEN).getTopTask();
-        final WindowManagerState.Task root = mWmState
-                .getStandardRootTaskByWindowingMode(WINDOWING_MODE_MULTI_WINDOW).getTopTask();
+        final int fullscreenTaskId = getTopFullscreenTaskId();
+        final int rootTaskId =
+                mWmState.getStandardRootTaskByWindowingMode(WINDOWING_MODE_MULTI_WINDOW)
+                        .getTopTask()
+                        .getTaskId();
 
-        try {
-            // Lock the task
-            runWithShellPermission(
-                    () -> {
-                        mAtm.startSystemLockTaskMode(task.getTaskId());
-                    });
-            waitForOrFail("Fail to enter locked task mode", () ->
-                    mAm.getLockTaskModeState() != LOCK_TASK_MODE_NONE);
+        // Lock the task
+        try (SystemLockTaskModeSession ignored = new SystemLockTaskModeSession(fullscreenTaskId)) {
+            // Fetch tokens of testing task and multi-window root.
+            final WindowContainerToken multiWindowRoot = getTaskInfo(rootTaskId).getToken();
+            final WindowContainerToken testChild = getTaskInfo(fullscreenTaskId).getToken();
 
-            boolean gotAssertionError = false;
-            try {
-                runWithShellPermission(
-                        () -> {
-                            // Fetch tokens of testing task and multi-window root.
-                            final WindowContainerToken multiWindowRoot =
-                                    mTaskOrganizer.getTaskInfo(root.getTaskId()).getToken();
-                            final WindowContainerToken testChild =
-                                    mTaskOrganizer.getTaskInfo(task.getTaskId()).getToken();
+            final WindowContainerTransaction wct = new WindowContainerTransaction();
+            wct.reparent(testChild, multiWindowRoot, true /* onTop */);
+            runWithShellPermission(() -> mTaskOrganizer.applyTransaction(wct));
 
-                            // Verify performing reparent operation is no operation.
-                            final WindowContainerTransaction wct =
-                                    new WindowContainerTransaction()
-                                            .reparent(testChild, multiWindowRoot, true /* onTop */);
-                            mTaskOrganizer.applyTransaction(wct);
+            // Verify performing reparent operation is no operation.
+            assertThrows(
+                    "Not allowed to perform hierarchy operation while in locked task mode.",
+                    AssertionError.class,
+                    () ->
                             waitForOrFail(
                                     "Fail to reparent",
                                     () ->
-                                            mTaskOrganizer
-                                                            .getTaskInfo(task.getTaskId())
-                                                            .getParentTaskId()
-                                                    == root.getTaskId());
-                        });
-            } catch (AssertionError e) {
-                gotAssertionError = true;
-            }
-            assertTrue("Not allowed to perform hierarchy operation while in locked task mode.",
-                    gotAssertionError);
-        } finally {
-            runWithShellPermission(() -> {
-                mAtm.stopSystemLockTaskMode();
-            });
+                                            getTaskInfo(fullscreenTaskId).getParentTaskId()
+                                                    == rootTaskId));
         }
     }
 
@@ -597,38 +567,32 @@ public class MultiWindowTests extends ActivityManagerTestBase {
         // Make sure the launching activity and the test activity are not in the same task.
         assertNotEquals("Activity must be in different task.", taskId, taskId2);
 
-        try {
-            runWithShellPermission(() -> {
-                mAtm.startSystemLockTaskMode(taskId);
-            });
-            waitForOrFail("Fail to enter locked task mode", () ->
-                    mAm.getLockTaskModeState() != LOCK_TASK_MODE_NONE);
+        try (SystemLockTaskModeSession ignored = new SystemLockTaskModeSession(taskId)) {
+            final WindowContainerToken token = getTaskInfo(taskId2).getToken();
 
-            boolean gotAssertionError = false;
-            try {
-                runWithShellPermission(() -> {
-                    final WindowContainerToken token =
-                            mTaskOrganizer.getTaskInfo(taskId2).getToken();
+            final WindowContainerTransaction wct = new WindowContainerTransaction();
+            wct.reorder(token, true /* onTop */);
+            runWithShellPermission(() -> mTaskOrganizer.applyTransaction(wct));
 
-                    // Verify performing reorder operation is no operation.
-                    final WindowContainerTransaction wct = new WindowContainerTransaction()
-                            .reorder(token, true /* onTop */);
-                    mTaskOrganizer.applyTransaction(wct);
-
-                    final WindowManagerState.Task topTask = mWmState
-                            .getStandardRootTaskByWindowingMode(WINDOWING_MODE_FULLSCREEN)
-                            .getTopTask();
-                    waitForOrFail("Fail to reorder", () -> (topTask.getTaskId() == taskId2));
-                });
-            } catch (AssertionError e) {
-                gotAssertionError = true;
-            }
-            assertTrue("Not allowed to perform reorder operation while in locked task mode.",
-                    gotAssertionError);
-        } finally {
-            runWithShellPermission(() -> {
-                mAtm.stopSystemLockTaskMode();
-            });
+            // Verify performing reorder operation is no operation.
+            assertThrows(
+                    "Not allowed to perform reorder operation while in locked task mode.",
+                    AssertionError.class,
+                    () ->
+                            waitForOrFail(
+                                    "Fail to reorder", () -> getTopFullscreenTaskId() == taskId2));
         }
+    }
+
+    private ActivityManager.RunningTaskInfo getTaskInfo(int taskId) {
+        final ActivityManager.RunningTaskInfo[] info = new ActivityManager.RunningTaskInfo[1];
+        runWithShellPermission(() -> info[0] = mTaskOrganizer.getTaskInfo(taskId));
+        return info[0];
+    }
+
+    private int getTopFullscreenTaskId() {
+        final WindowManagerState.Task task =
+                mWmState.getStandardRootTaskByWindowingMode(WINDOWING_MODE_FULLSCREEN);
+        return task.getTopTask().getTaskId();
     }
 }
