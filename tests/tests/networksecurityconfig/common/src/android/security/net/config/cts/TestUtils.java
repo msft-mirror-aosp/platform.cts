@@ -272,6 +272,33 @@ public final class TestUtils {
         }
     }
 
+    private static String downloadManagerStatusToString(int status) {
+        switch (status) {
+            case DownloadManager.STATUS_PENDING:
+                return "STATUS_PENDING";
+            case DownloadManager.STATUS_RUNNING:
+                return "STATUS_RUNNING";
+            case DownloadManager.STATUS_PAUSED:
+                return "STATUS_PAUSED";
+            case DownloadManager.STATUS_SUCCESSFUL:
+                return "STATUS_SUCCESSFUL";
+            case DownloadManager.STATUS_FAILED:
+                return "STATUS_FAILED";
+            default:
+                return "STATUS_UNKNOWN";
+        }
+    }
+
+    private static void assertStatusEquals(int expected, int actual) throws Exception {
+        assertEquals(
+                "DownloadManager returned a different status: expected:"
+                        + downloadManagerStatusToString(expected)
+                        + " but was:"
+                        + downloadManagerStatusToString(actual),
+                expected,
+                actual);
+    }
+
     private static final long DOWNLOAD_MANAGER_TIMEOUT = 3 * DateUtils.SECOND_IN_MILLIS;
 
     /** Asserts that the DownloadManager is able to retrieve the root of a webserver. */
@@ -279,7 +306,7 @@ public final class TestUtils {
             Context ctx, String host, int port, boolean https) throws Exception {
         Uri destination = Uri.parse((https ? "https://" : "http://") + host + ":" + port);
         int result = startDownloadManager(ctx, destination);
-        assertEquals(DownloadManager.STATUS_SUCCESSFUL, result);
+        assertStatusEquals(DownloadManager.STATUS_SUCCESSFUL, result);
     }
 
     /**
@@ -294,7 +321,7 @@ public final class TestUtils {
             throws Exception {
         Uri destination = Uri.parse((https ? "https://" : "http://") + host + ":" + port);
         int result = startDownloadManager(ctx, destination);
-        assertEquals(DownloadManager.STATUS_FAILED, result);
+        assertStatusEquals(DownloadManager.STATUS_FAILED, result);
     }
 
     /**
@@ -309,7 +336,7 @@ public final class TestUtils {
             Context ctx, String host, int port, boolean https) throws Exception {
         Uri destination = Uri.parse((https ? "https://" : "http://") + host + ":" + port);
         int result = startDownloadManager(ctx, destination);
-        assertEquals(DownloadManager.STATUS_PAUSED, result);
+        assertStatusEquals(DownloadManager.STATUS_PAUSED, result);
     }
 
     private static int startDownloadManager(Context ctx, Uri destination) throws Exception {
