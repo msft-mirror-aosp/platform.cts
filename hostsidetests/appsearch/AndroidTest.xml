@@ -31,6 +31,8 @@
         <option name="cleanup-apks" value="true" />
     </target_preparer>
 
+    <target_preparer class="com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer" />
+
     <object type="module_controller"
             class="com.android.tradefed.testtype.suite.module.MainlineTestModuleController">
         <option name="mainline-module-package-name" value="com.google.android.appsearch" />

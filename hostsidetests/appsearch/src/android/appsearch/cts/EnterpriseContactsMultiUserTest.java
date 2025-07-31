@@ -20,7 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeTrue;
 
-import com.android.compatibility.common.util.UserUtil;
+import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.device.UserInfo;
@@ -65,16 +65,7 @@ public final class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase
         ITestDevice device = testInfo.getDevice();
         assumeTrue("Multi-user is not supported on this device", device.isMultiUserSupported());
 
-        Integer mainUserId = device.getMainUserId();
-        if (mainUserId == null) {
-            // Check if enterprise profile can be created on any user
-            boolean supportsMainlessUser = new UserUtil(device).isProfilesOnNonMainUserSupported();
-            assumeTrue("device doesn't have main user and doesn't support profiles on other users",
-                    supportsMainlessUser);
-            sParentUserId = device.getCurrentUser();
-        } else {
-            sParentUserId = mainUserId;
-        }
+        sParentUserId = DevicePolicyUsersPreparer.getProfileParentUserIds()[0];
 
         sSecondaryUserId = createSecondaryUser(device);
         assumeTrue("Could not find or create an enterprise profile on this device",
