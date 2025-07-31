@@ -65,6 +65,8 @@ import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
+import android.graphics.Point;
+import android.hardware.display.DisplayManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -83,10 +85,12 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.BySelector;
 import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.UiObject2;
 
 import com.android.compatibility.common.util.AmMonitor;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.UserHelper;
+import com.android.cts.input.UinputTouchScreen;
 
 import org.junit.After;
 import org.junit.Before;
@@ -170,6 +174,8 @@ public class ActivityManagerProcessStateTest {
     private int mAppCount;
     private ApplicationInfo[] mAppInfo;
     private WatchUidRunner[] mWatchers;
+    private DisplayManager mDm;
+    private UinputTouchScreen mTouchScreen;
 
     private static final int PROCESS_CAPABILITY_ALL = PROCESS_CAPABILITY_FOREGROUND_LOCATION
             | PROCESS_CAPABILITY_FOREGROUND_CAMERA
@@ -218,6 +224,9 @@ public class ActivityManagerProcessStateTest {
                 am.forceStopPackage(pkgName);
             });
         }
+        mDm = mContext.getSystemService(DisplayManager.class);
+        mTouchScreen = new UinputTouchScreen(mInstrumentation,
+                mDm.getDisplay(mUserHelper.getMainDisplayId()));
 
         // Override the memory pressure level, force it staying at normal.
         runShellCommand(mInstrumentation, "am memory-factor set NORMAL");
@@ -240,6 +249,7 @@ public class ActivityManagerProcessStateTest {
 
         // Reset the memory pressure override
         runShellCommand(mInstrumentation, "am memory-factor reset");
+        mTouchScreen.close();
     }
 
     /**
@@ -334,8 +344,17 @@ public class ActivityManagerProcessStateTest {
     private void maybeClick(UiDevice device, BySelector sel) {
         try {
             BySelector selByDisplay = sel.displayId(mUserHelper.getMainDisplayId());
-            device.findObject(selByDisplay).click();
+            UiObject2 obj = device.findObject(selByDisplay);
+            if (obj == null) {
+                Log.i(TAG, "Could not find object for selector " + sel.toString());
+                return;
+            }
+            Point center = obj.getVisibleCenter();
+            // Not using UiObject2.click as it uses deprecated injectInputEvent Api.
+            var pointer = mTouchScreen.touchDown(center.x, center.y);
+            pointer.lift();
         } catch (Throwable ignored) {
+            Log.w(TAG, "Error when clicking", ignored);
         }
     }
 
