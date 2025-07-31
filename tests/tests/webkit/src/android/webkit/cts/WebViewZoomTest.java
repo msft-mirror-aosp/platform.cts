@@ -144,22 +144,6 @@ public class WebViewZoomTest extends SharedWebViewTest{
     }
 
     @Test
-    public void testGetZoomControls() {
-        WebSettings settings = mOnUiThread.getSettings();
-        assertTrue(settings.supportZoom());
-        assertNotNull(
-                "Should be able to get zoom controls when zoom is enabled",
-                WebkitUtils.onMainThreadSync(() -> { return mWebView.getZoomControls(); }));
-
-        // disable zoom support
-        settings.setSupportZoom(false);
-        assertFalse(settings.supportZoom());
-        assertNull(
-                "Should not be able to get zoom controls when zoom is disabled",
-                WebkitUtils.onMainThreadSync(() -> { return mWebView.getZoomControls(); }));
-    }
-
-    @Test
     @Ignore("b/413079290")
     public void testInvokeZoomPicker() throws Exception {
         WebSettings settings = mOnUiThread.getSettings();

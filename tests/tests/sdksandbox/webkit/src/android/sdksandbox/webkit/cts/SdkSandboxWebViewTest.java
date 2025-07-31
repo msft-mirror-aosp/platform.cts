@@ -111,11 +111,6 @@ public class SdkSandboxWebViewTest {
     }
 
     @Test
-    public void testGetVisibleTitleHeight() throws Throwable {
-        sSdkTestSuiteSetup.assertSdkTestRunPasses("testGetVisibleTitleHeight");
-    }
-
-    @Test
     public void testGetOriginalUrl() throws Throwable {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testGetOriginalUrl");
     }
@@ -229,23 +224,8 @@ public class SdkSandboxWebViewTest {
     }
 
     @Test
-    public void testPlatformNotifications() throws Throwable {
-        sSdkTestSuiteSetup.assertSdkTestRunPasses("testPlatformNotifications");
-    }
-
-    @Test
-    public void testAccessPluginList() throws Throwable {
-        sSdkTestSuiteSetup.assertSdkTestRunPasses("testAccessPluginList");
-    }
-
-    @Test
     public void testDestroy() throws Throwable {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testDestroy");
-    }
-
-    @Test
-    public void testDebugDump() throws Throwable {
-        sSdkTestSuiteSetup.assertSdkTestRunPasses("testDebugDump");
     }
 
     @Test
@@ -276,16 +256,6 @@ public class SdkSandboxWebViewTest {
     @Test
     public void testEvaluateJavascript() throws Throwable {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testEvaluateJavascript");
-    }
-
-    @Test
-    public void testPrinting() throws Throwable {
-        sSdkTestSuiteSetup.assertSdkTestRunPasses("testPrinting");
-    }
-
-    @Test
-    public void testPrintingPagesCount() throws Throwable {
-        sSdkTestSuiteSetup.assertSdkTestRunPasses("testPrintingPagesCount");
     }
 
     @Test

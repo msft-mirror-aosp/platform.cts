@@ -26,6 +26,7 @@ android_library {
         "org.apache.http.legacy.stubs",
     ],
     static_libs: [
+        "android.webkit.flags-aconfig-java",
         "androidx.annotation_annotation",
         "androidx.test.core",
         "compatibility-device-util-axt",
@@ -42,8 +43,24 @@ android_library {
     lint: {
         disabled_checks: ["SetJavaScriptEnabled"],
     },
-    // uncomment when dalvik.annotation.Test* are removed or part of SDK
-    //sdk_version: "current"
+    sdk_version: "test_current",
+}
+
+// A few existing webkit test cases depend on platform APIs; build them
+// separately to ensure that the rest of the tests use the correct SDK.
+java_library {
+    name: "CtsWebkitTestCasesPlatformApis",
+    defaults: ["cts_defaults"],
+    libs: [
+        "CtsWebkitTestCasesSharedWithSdk",
+    ],
+    srcs: [
+        "platform/src/**/*.java",
+    ],
+    // Some CTS tests legitimately need to use setJavaScriptEnabled().
+    lint: {
+        disabled_checks: ["SetJavaScriptEnabled"],
+    },
     platform_apis: true,
 }
 
@@ -53,6 +70,7 @@ android_test {
     resource_dirs: ["res"],
     static_libs: [
         "CtsWebkitTestCasesSharedWithSdk",
+        "CtsWebkitTestCasesPlatformApis",
     ],
     host_required: [
         "compatibility-host-webview-preconditions",
@@ -70,8 +88,6 @@ android_test {
     lint: {
         disabled_checks: ["SetJavaScriptEnabled"],
     },
-    // uncomment when dalvik.annotation.Test* are removed or part of SDK
-    //sdk_version: "current"
     platform_apis: true,
     sdk_version: "test_current",
 }
