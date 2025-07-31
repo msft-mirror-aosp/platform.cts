@@ -301,6 +301,12 @@
             </intent-filter>
         </activity>
 
+        <!-- CVE_2025_32311 -->
+        <activity android:name=".CVE_2025_32331.PocActivity"
+            android:exported="true" />
+        <activity android:name=".CVE_2025_32331.HelperActivity"
+            android:exported="true" />
+
         <activity android:name="android.security.cts.CVE_2023_20916.PocActivity"
             android:exported="true">
             <intent-filter>
