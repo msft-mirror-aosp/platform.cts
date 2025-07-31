@@ -16,7 +16,6 @@
 
 package android.server.wm.pip;
 
-import static android.app.ActivityManager.LOCK_TASK_MODE_NONE;
 import static android.app.Flags.FLAG_ENABLE_PIP_UI_STATE_CALLBACK_ON_ENTERING;
 import static android.app.Flags.FLAG_ENABLE_TV_IMPLICIT_ENTER_PIP_RESTRICTION;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_HOME;
@@ -143,6 +142,7 @@ import android.server.wm.CommandSession.ActivityCallback;
 import android.server.wm.CommandSession.SizeInfo;
 import android.server.wm.IgnoreOrientationRequestSession;
 import android.server.wm.RotationSession;
+import android.server.wm.SystemLockTaskModeSession;
 import android.server.wm.TestJournalProvider.TestJournalContainer;
 import android.server.wm.WaitForValidActivityState;
 import android.server.wm.WindowManagerState;
@@ -159,7 +159,6 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.compatibility.common.util.CddTest;
-import com.android.compatibility.common.util.SystemUtil;
 import com.android.wm.shell.Flags;
 
 import com.google.common.truth.Truth;
@@ -1358,28 +1357,18 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     @Test
     public void testDisallowEnterPipActivityLocked() {
         launchActivity(PIP_ACTIVITY, extraString(EXTRA_ENTER_PIP_ON_PAUSE, "true"));
-        Task task = mWmState.getRootTaskByActivity(PIP_ACTIVITY);
+        final int taskId = mWmState.getRootTaskByActivity(PIP_ACTIVITY).getTaskId();
 
         // Lock the task and ensure that we can't enter picture-in-picture both explicitly and
         // when paused
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> {
-                    try {
-                        mAtm.startSystemLockTaskMode(task.getTaskId());
-                        waitForOrFail(
-                                "Task in lock mode",
-                                () -> {
-                                    return mAm.getLockTaskModeState() != LOCK_TASK_MODE_NONE;
-                                });
-                        mBroadcastActionTrigger.enterPipAndWait();
-                        assertPinnedStackDoesNotExist();
-                        launchHomeActivityNoWaitExpectFailure();
-                        mWmState.computeState();
-                        assertPinnedStackDoesNotExist();
-                    } finally {
-                        mAtm.stopSystemLockTaskMode();
-                    }
-                });
+        try (SystemLockTaskModeSession ignored = new SystemLockTaskModeSession(taskId)) {
+            mBroadcastActionTrigger.enterPipAndWait();
+            assertPinnedStackDoesNotExist();
+
+            launchHomeActivityNoWaitExpectFailure();
+            mWmState.computeState();
+            assertPinnedStackDoesNotExist();
+        }
     }
 
     @Test

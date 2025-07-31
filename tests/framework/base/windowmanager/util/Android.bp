@@ -39,6 +39,7 @@ java_test_helper_library {
 
     srcs: [
         "src/**/*.java",
+        "src/**/*.kt",
         "src/**/*.aidl",
     ],
     exclude_srcs: [":cts-wm-components-util"],
@@ -47,6 +48,7 @@ java_test_helper_library {
         "CtsMockInputMethodLib",
         "android.app.flags-aconfig-java",
         "android.tracing.flags-aconfig-java",
+        "androidx.core_core-ktx",
         "androidx.test.rules",
         "com.android.window.flags.window-aconfig-java",
         "compatibility-device-util-axt",

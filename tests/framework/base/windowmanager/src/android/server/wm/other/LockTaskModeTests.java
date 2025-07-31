@@ -26,10 +26,11 @@ import static com.google.common.truth.Truth.assertThat;
 
 import android.app.Activity;
 import android.app.ActivityOptions;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityManagerTestBase;
-import android.server.wm.WindowManagerState.Task;
+import android.server.wm.SystemLockTaskModeSession;
 import android.server.wm.app.Components;
 
 import com.android.compatibility.common.util.ApiTest;
@@ -52,44 +53,46 @@ public class LockTaskModeTests extends ActivityManagerTestBase {
             "android.app.ActivityTaskManager#startSystemLockTaskMode"})
     public void
             startAllowedPackageIntoLockTaskMode_anotherAppPinned_exitsPinningEntersLockTaskMode() {
-        // clear lock task
-        runWithShellPermission(() -> mAtm.updateLockTaskPackages(mContext,
-                new String[0]));
+        clearLockTaskPackages();
         assertThat(mAm.getLockTaskModeState()).isEqualTo(LOCK_TASK_MODE_NONE);
 
         try (TestActivitySession<TestActivity> session = createManagedTestActivitySession()) {
             // pin app
             session.setFinishAfterClose(true);
             session.launchTestActivityOnDisplaySync(TestActivity.class, getMainDisplayId());
-            Task task = mWmState.getRootTaskByActivity(session.getActivity().getComponentName());
-            runWithShellPermission(() -> mAtm.startSystemLockTaskMode(task.getTaskId()));
-            waitForOrFail("Task in app pinning mode", () -> {
-                return mAm.getLockTaskModeState() == LOCK_TASK_MODE_PINNED;
-            });
+            final ComponentName activityComponent = session.getActivity().getComponentName();
+            final int taskId = mWmState.getRootTaskByActivity(activityComponent).getTaskId();
 
-            // setup lock task mode allowlist
-            runWithShellPermission(() -> mAtm.updateLockTaskPackages(mContext,
-                    LOCK_TASK_PACKAGES_ALLOWLIST));
+            try (SystemLockTaskModeSession ignored = new SystemLockTaskModeSession(taskId)) {
+                waitForOrFail(
+                        "Task should in app pinning mode",
+                        () -> mAm.getLockTaskModeState() == LOCK_TASK_MODE_PINNED);
 
-            // start allowed package into lock task mode
-            mContext.startActivity(new Intent()
-                            .addFlags(FLAG_ACTIVITY_NEW_TASK)
-                            .setComponent(TEST_ACTIVITY),
-                    ActivityOptions.makeBasic().setLockTaskEnabled(true).toBundle());
-            waitAndAssertResumedActivity(TEST_ACTIVITY, "Activity must be started and resumed");
-            waitForOrFail("Task in lock task mode", () -> {
-                return mAm.getLockTaskModeState() == LOCK_TASK_MODE_LOCKED;
-            });
+                // setup lock task mode allowlist
+                runWithShellPermission(
+                        () -> mAtm.updateLockTaskPackages(mContext, LOCK_TASK_PACKAGES_ALLOWLIST));
+
+                // start allowed package into lock task mode
+                mContext.startActivity(
+                        new Intent().addFlags(FLAG_ACTIVITY_NEW_TASK).setComponent(TEST_ACTIVITY),
+                        ActivityOptions.makeBasic().setLockTaskEnabled(true).toBundle());
+                waitAndAssertResumedActivity(TEST_ACTIVITY, "Activity must be started and resumed");
+                waitForOrFail(
+                        "Task should in lock task mode",
+                        () -> mAm.getLockTaskModeState() == LOCK_TASK_MODE_LOCKED);
+            }
         } finally {
             // cleanup
-            runWithShellPermission(() -> {
-                mAtm.stopSystemLockTaskMode();
-                mAtm.updateLockTaskPackages(mContext, new String[0]);
-            });
-            waitForOrFail("Task should not in app pinning mode", () -> {
-                return mAm.getLockTaskModeState() == LOCK_TASK_MODE_NONE;
-            });
+            clearLockTaskPackages();
+            waitForOrFail(
+                    "Task should not in app pinning mode",
+                    () -> mAm.getLockTaskModeState() == LOCK_TASK_MODE_NONE);
         }
+    }
+
+    private void clearLockTaskPackages() {
+        // clear lock task
+        runWithShellPermission(() -> mAtm.updateLockTaskPackages(mContext, new String[0]));
     }
 
     /* An empty Activity which will be used in app pinning. */
