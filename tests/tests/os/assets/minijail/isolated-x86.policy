@@ -71,6 +71,7 @@ sigprocmask: 1
 sigreturn: 1
 
 # socketcall: call=={SYS_CONNECT,SYS_SOCKET,SYS_GETSOCKOPT}
+# TODO: delete this when bionic/libc/SYSCALLS.TXT no longer mentions 'socketcall'.
 socketcall: arg0 == 1 || arg0 == 3 || arg0 == 15; return EPERM
 
 stat64: return EPERM

@@ -2,6 +2,8 @@
 # This architecture-agnostic policy is appended to every architecture-specific
 # policy.
 
+accept4: return EPERM
+bind: return EPERM
 brk: 1
 capget: 1
 capset: return EPERM
@@ -14,6 +16,7 @@ clock_gettime: arg0 == 0 || arg0 == 1 || arg0 == 2 || arg0 == 3 || arg0 == 5 || 
 
 clone: 1
 close: 1
+connect: 1
 dup: 1
 dup3: 1
 epoll_create1: 1
@@ -60,6 +63,7 @@ getrandom: arg2 == 0 || arg2 & 1
 getresgid: 1
 getresuid: 1
 getsid: 1
+getsockopt: 1
 gettid: 1
 gettimeofday: 1
 getuid: 1
@@ -69,6 +73,7 @@ ioctl: 1
 kill: arg0 == $
 
 linkat: return EPERM
+listen: return EPERM
 lookup_dcookie: return EPERM
 lseek: 1
 
@@ -103,6 +108,8 @@ pwrite64: 1
 read: 1
 readlinkat: return EPERM
 readv: 1
+recvfrom: 1
+recvmsg: 1
 renameat: return EPERM
 renameat2: return EPERM
 restart_syscall: 1
@@ -119,6 +126,8 @@ sched_getscheduler: 1
 sched_setscheduler: 1
 sched_yield: 1
 seccomp: return EPERM
+sendmsg: 1
+sendto: 1
 setfsgid: return EPERM
 setfsuid: return EPERM
 setgid: return EPERM
@@ -129,9 +138,20 @@ setresgid: return EPERM
 setresuid: return EPERM
 setreuid: return EPERM
 set_robust_list: return EPERM
+
+# setsockopt: level==SOL_SOCKET && optname==SO_PEEK_OFF
+setsockopt: arg1 == 1 && arg2 == 42
+
 set_tid_address: 1
 setuid: return EPERM
+shutdown: 1
 sigaltstack: 1
+
+# socket: domain==AF_UNIX && protocol == 0
+socket: arg0 == 1 && arg2 == 0
+# socketpair: domain==AF_UNIX
+socketpair: arg0 == 1
+
 statfs: return EPERM
 symlinkat: return EPERM
 
