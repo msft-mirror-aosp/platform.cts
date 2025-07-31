@@ -16,6 +16,11 @@
 
 package android.cts.statsdatom.display;
 
+import static android.cts.statsdatom.display.DisplayTestUtils.getCurrentBrightnessLevel;
+import static android.cts.statsdatom.display.DisplayTestUtils.getCurrentBrightnessMode;
+import static android.cts.statsdatom.display.DisplayTestUtils.setAutoBrightnessMode;
+import static android.cts.statsdatom.display.DisplayTestUtils.setScreenBrightnessLevel;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import android.cts.statsdatom.lib.AtomTestUtils;
@@ -76,16 +81,16 @@ public class DisplayBrightnessChangedStatsTests extends DeviceTestCase implement
                 AtomsProto.Atom.DISPLAY_BRIGHTNESS_CHANGED_FIELD_NUMBER);
 
         // Generate slider event.
-        int brightnessLevelBeforeTest = getCurrentBrightnessLevel();
-        int brightnessModeBeforeTest = getCurrentBrightnessMode();
+        int brightnessLevelBeforeTest = getCurrentBrightnessLevel(getDevice());
+        int brightnessModeBeforeTest = getCurrentBrightnessMode(getDevice());
 
         // Make sure we don't go out of the [0 - 255] range
         int newBrightness = (brightnessLevelBeforeTest < 100
                 ? brightnessLevelBeforeTest + 10 : brightnessLevelBeforeTest - 10);
         // Enable autobrightness.
-        setAutoBrightnessMode(1);
+        setAutoBrightnessMode(getDevice(), 1);
         // Set brightness to new value.
-        setScreenBrightnessLevel(newBrightness);
+        setScreenBrightnessLevel(getDevice(), newBrightness);
 
         // Assert one DisplayBrightnessChanged event has been collected.
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
@@ -96,33 +101,8 @@ public class DisplayBrightnessChangedStatsTests extends DeviceTestCase implement
             .isEqualTo(AtomsProto.DisplayBrightnessChanged.Reason.REASON_MANUAL);
 
         // Reset brightness to initial level and mode
-        setScreenBrightnessLevel(brightnessLevelBeforeTest);
-        setAutoBrightnessMode(brightnessModeBeforeTest);
+        setScreenBrightnessLevel(getDevice(), brightnessLevelBeforeTest);
+        setAutoBrightnessMode(getDevice(), brightnessModeBeforeTest);
     }
 
-    private int getCurrentBrightnessLevel() throws Exception {
-        getDevice().executeShellCommand("input keyevent 82");
-        return Integer.parseInt(
-                getDevice()
-                    .executeShellCommand("settings get system screen_brightness")
-                    .replaceAll("\\s", ""));
-    }
-
-    private int getCurrentBrightnessMode() throws Exception {
-        return Integer.parseInt(
-            getDevice()
-                .executeShellCommand("settings get system screen_brightness_mode")
-                .replaceAll("\\s", ""));
-    }
-
-    private void setScreenBrightnessLevel(int newBrightness) throws Exception {
-        String command = "settings put system screen_brightness " + String.valueOf(newBrightness);
-        getDevice().executeShellCommand(command);
-    }
-
-    private void setAutoBrightnessMode(int mode) throws Exception {
-        // Ensure adaptive brightness is enabled.
-        getDevice().executeShellCommand("settings set system screen_brightness_mode "
-                + String.valueOf(mode));
-    }
 }
