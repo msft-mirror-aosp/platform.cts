@@ -190,6 +190,110 @@ public class MultiProviderCoexistSatelliteTest extends CarrierRoamingSatelliteTe
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_CARRIER_IDS_IN_GEOFENCE)
+    public void testSelectBindingSatelliteSubscription_useCarrierIdInGeofence() throws Exception {
+        logd(TAG, "testSelectBindingSatelliteSubscription_useCarrierIdInGeofence");
+        assumeTrue(shouldTestSatelliteWithMockService());
+        assertEquals(getNumberOfActiveSubscriptions(), 0L);
+
+        grantSatellitePermission();
+        // Check if the device has a binding satellite subscription
+        Pair<Integer, Integer> selectedSatelliteSubIdPairResult =
+                requestSelectedNbIotSatelliteSubscriptionId();
+        boolean isSatelliteSubIdSelected = false;
+        int ntnOnlySubId = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
+        if (selectedSatelliteSubIdPairResult.first != null
+                && selectedSatelliteSubIdPairResult.first
+                != SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+            isSatelliteSubIdSelected = true;
+            ntnOnlySubId = selectedSatelliteSubIdPairResult.first;
+            assertTrue(isNtnOnlySubscription(ntnOnlySubId));
+        }
+
+        // Register callback for satellite subscription id changed event
+        SelectedNbIotSatelliteSubscriptionCallbackTest
+            selectedNbIotSatelliteSubscriptionCallbackTest =
+                new SelectedNbIotSatelliteSubscriptionCallbackTest();
+        long registerResult =
+            sSatelliteManager.registerForSelectedNbIotSatelliteSubscriptionChanged(
+                getContext().getMainExecutor(),
+                selectedNbIotSatelliteSubscriptionCallbackTest);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
+        selectedNbIotSatelliteSubscriptionCallbackTest.drainPermits();
+
+        try {
+            // Insert manul-connect SIM and set up eSOS support for the subscription
+            logd(TAG, "testSelectBindingSatelliteSubscription_useCarrierIdInGeofence: "
+                + "insert manual-connect SIM and set up eSOS support for the subscription");
+            setUpManualConnectTestEnvironment(
+                SLOT_ID_0, ESOS_SIM_PROFILE_ID, ESOS_PHONE_NUMBER, false, false, true);
+
+            // The manual-connect subscription should be selected as the binding satellite
+            // subscription.
+            waitForSelectedSatelliteSubscriptionChanged(
+                    selectedNbIotSatelliteSubscriptionCallbackTest, sEsosSubId);
+            selectedNbIotSatelliteSubscriptionCallbackTest.drainPermits();
+
+            // Move the device to out of the geofence region of the manual-connect subscription
+            logd(TAG, "testSelectBindingSatelliteSubscription_useCarrierIdInGeofence: "
+                + "move the device to out of the geofence region of the manual-connect subscription");
+            assertTrue(sMockSatelliteServiceManager.setSatelliteAccessAllowedForSubscriptions(
+                false, null));
+
+            if (isSatelliteSubIdSelected) {
+                // The NTN-only subscription should be selected as the binding
+                // satellite subscription.
+                waitForSelectedSatelliteSubscriptionChanged(
+                        selectedNbIotSatelliteSubscriptionCallbackTest, ntnOnlySubId);
+            } else {
+                // No subscription should be selected as the binding satellite subscription.
+                waitForSelectedSatelliteSubscriptionChanged(
+                        selectedNbIotSatelliteSubscriptionCallbackTest,
+                        SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+            }
+            selectedNbIotSatelliteSubscriptionCallbackTest.drainPermits();
+
+            logd(TAG, "testSelectBindingSatelliteSubscription_useCarrierIdInGeofence: "
+                + "reset the satellite access allowed for subscriptions");
+            assertTrue(sMockSatelliteServiceManager.setSatelliteAccessAllowedForSubscriptions(
+                true, null));
+
+            logd(TAG, "testSelectBindingSatelliteSubscription_useCarrierIdInGeofence: "
+                + "override satellite access control config with carrier id");
+            assertTrue(sMockSatelliteServiceManager.setSatelliteAccessControlOverlayConfigs(false, true,
+                SATELLITE_S2_FILE_WITH_CONFIG_ID, TimeUnit.MINUTES.toNanos(10), "US",
+                SATELLITE_ACCESS_CONFIGURATION_FILE));
+
+            logd("testSelectBindingSatelliteSubscription_useCarrierIdInGeofence: Set current location "
+                    + "to Google Bangalore office where not support Satellite to clean up "
+                    + "SatelliteController's mCurrentLocationCarrierIds cache");
+            setTestProviderLocation(12.994021769576554, 12.994021769576554);
+            verifyIsSatelliteAllowed(false);
+
+            logd("testSelectBindingSatelliteSubscription_useCarrierIdInGeofence: Set current location to"
+                     + " Google San Diego office");
+            setTestProviderLocation(32.909808231041644, -117.18185788819781);
+            verifyIsSatelliteAllowed(true);
+
+            /*
+             * The carrier ID of MOCK_SIM_PROFILE_ID_TWN_CHT is 1884, which is included in the list
+             * of supported carrier IDs in San Diego office. Thus, the manual-connect subscription
+             * should be selected as the binding satellite subscription.
+            */
+            waitForSelectedSatelliteSubscriptionChanged(
+                    selectedNbIotSatelliteSubscriptionCallbackTest, sEsosSubId);
+            selectedNbIotSatelliteSubscriptionCallbackTest.drainPermits();
+        } finally {
+            logd(TAG, "testSelectBindingSatelliteSubscription_useCarrierIdInGeofence: "
+                + "clean up test environments");
+            grantSatellitePermission();
+            sSatelliteManager.unregisterForSelectedNbIotSatelliteSubscriptionChanged(
+                selectedNbIotSatelliteSubscriptionCallbackTest);
+            cleanUpManualConnectTestEnvironment(SLOT_ID_0, ESOS_SIM_PROFILE_ID);
+        }
+    }
+
     private static void setUpNtnOnlyTestEnvironment() throws Exception {
         logd(TAG, "setUpNtnOnlyTestEnvironment");
         assertTrue(sMockModemManager.insertSimCard(NTN_ONLY_SLOT_ID, NTN_ONLY_SIM_PROFILE_ID));

@@ -102,6 +102,7 @@ import com.android.compatibility.common.util.LocationUtils;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.internal.annotations.GuardedBy;
 import com.android.internal.telephony.SmsApplication;
+import com.android.internal.telephony.flags.Flags;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -2223,8 +2224,15 @@ public class SatelliteManagerTestBase {
         SatelliteInfo satelliteInfo1 = new SatelliteInfo(uuid1, satellitePosition1, bandList1,
                 new ArrayList<>(List.of(earfcnRange1)));
 
-        SatelliteAccessConfiguration configuration1 = new SatelliteAccessConfiguration(
+        SatelliteAccessConfiguration configuration1;
+        if (Flags.supportCarrierIdsInGeofence()) {
+            List<Integer> carrierIdList1 = new ArrayList<>(List.of(1, 2, 1884));
+            configuration1 = new SatelliteAccessConfiguration(
+                new ArrayList<>(List.of(satelliteInfo1)), tagIdList1, carrierIdList1);
+        } else {
+            configuration1 = new SatelliteAccessConfiguration(
                 new ArrayList<>(List.of(satelliteInfo1)), tagIdList1);
+        }
 
         UUID uuid2 = UUID.fromString("1dec24f8-9223-4196-ad7a-a03002db7af7");
         SatellitePosition satellitePosition2 = new SatellitePosition(15.5, 35786000);
@@ -2237,6 +2245,14 @@ public class SatelliteManagerTestBase {
 
         SatelliteAccessConfiguration configuration2 = new SatelliteAccessConfiguration(
                 new ArrayList<>(List.of(satelliteInfo2)), tagIdList2);
+        if (Flags.supportCarrierIdsInGeofence()) {
+            List<Integer> carrierIdList2 = new ArrayList<>(List.of(3, 4, 5));
+            configuration2 = new SatelliteAccessConfiguration(
+                new ArrayList<>(List.of(satelliteInfo2)), tagIdList2, carrierIdList2);
+        } else {
+            configuration2 = new SatelliteAccessConfiguration(
+                new ArrayList<>(List.of(satelliteInfo2)), tagIdList2);
+        }
 
         UUID uuid3 = UUID.fromString("f60cb479-d85b-4f4e-b050-cc428f5eb4a4");
         SatellitePosition satellitePosition3 = new SatellitePosition(-150, 35786000);
