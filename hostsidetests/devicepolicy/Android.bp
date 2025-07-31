@@ -40,6 +40,9 @@ java_test_host {
         "flag-junit-host",
         "device_policy_aconfig_flags_lib_host",
         "android.permission.flags-aconfig-java-host",
+        // NOTE: dependencies below are needed by device-policy-users-preparer
+        // (which is a stand-alone library but also compiled here)
+        "compatibility-host-util-axt",
     ],
     java_resource_dirs: ["res"],
     device_common_data: [
