@@ -563,34 +563,27 @@ def generate_emit_methods():
                 if flag:
                     flag = False
                     obj_name = prefix_str + struct_class_name
-                    emit_method.append(INDENT + "private static void "+ method_name + "(DeviceInfoStore store, JSONObject parent)")
-                    emit_method.append(INDENT*4 + "throws Exception {")
-                    emit_method.append(INDENT*2 + "try {")
-                    emit_method.append(INDENT*3 + "JSONObject " + obj_name + " = parent.getJSONObject(KEY_"+ extension_name.upper()+");")
-                    emit_method.append(INDENT*3 + "try {")
-                    emit_method.append(INDENT*4 + "store.startGroup(getConvertedName(KEY_"+extension_name.upper()+"));\n                {")
+                    emit_method.append(INDENT + "private static void "+ method_name + "(DeviceInfoStore store, JSONObject parent)\n")
+                    emit_method.append(INDENT*4 + "throws IOException, JSONException {")
+                    emit_method.append(INDENT*2 + "JSONObject " + obj_name + " = parent.optJSONObject(KEY_"+ extension_name.upper()+");")
+                    emit_method.append(INDENT*2 + "if (" + obj_name + " != null) {")
+                    emit_method.append(INDENT*3 + "store.startGroup(getConvertedName(KEY_"+extension_name.upper()+"));")
+                    emit_method.append(INDENT*3 + "{")
 
                 constant_name = "KEY_" +  convert_camel_to_snake(key_val).upper()
                 if key_val in special_cases_constant_names:
                     constant_name = special_cases_constant_names[key_val]
 
                 inner_object_name = get_json_object_name_from_key(constant_name)
-                emit_method.append(INDENT*5 + "JSONObject "+inner_object_name + " = " + obj_name + ".getJSONObject(" + constant_name +");")
-                emit_method.append(INDENT*5 + "store.startGroup(getConvertedName(" + constant_name + "));\n                    {" )
-
+                emit_method.append(INDENT*4 + "JSONObject "+inner_object_name + " = " + obj_name + ".getJSONObject(" + constant_name +");")
+                emit_method.append(INDENT*4 + "store.startGroup(getConvertedName(" + constant_name + "));" )
+                emit_method.append(INDENT*4 + "{")
                 method_members = emit_members(inner_object_name, key)
                 for member in method_members:
-                    emit_method.append(INDENT * 6 + member)
-                emit_method.append("                    }\n                    store.endGroup();")
-        emit_method.append("""
-                }
-                store.endGroup();
-            } catch (JSONException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-        } catch (JSONException ok) {
-            // The tag is not present in vkjson; that's fine, just continue
+                    emit_method.append(INDENT * 5 + member)
+                emit_method.append("                }\n                store.endGroup();")
+        emit_method.append("""            }
+            store.endGroup();
         }
     }
 """)
@@ -605,7 +598,7 @@ def generate_emit_extensions():
     emit_extension = [""]
     emit_extension.append("""
     private static void emitExtension(String key, DeviceInfoStore store, JSONObject parent)
-            throws Exception {
+            throws IOException, JSONException {
         switch (key) {
 """)
     for extension_name, structs in VK.VULKAN_EXTENSIONS_AND_STRUCTS_MAPPING["extensions"].items():

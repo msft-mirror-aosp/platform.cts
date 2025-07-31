@@ -115,6 +115,7 @@ import com.android.compatibility.common.deviceinfo.DeviceInfo;
 import com.android.compatibility.common.util.DeviceInfoStore;
 import static com.android.compatibility.common.deviceinfo.VulkanDeviceInfoUtils.*;
 
+import java.io.IOException;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -175,7 +176,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     @Override
-    protected void collectDeviceInfo(DeviceInfoStore store) throws Exception {
+    protected void collectDeviceInfo(DeviceInfoStore store) throws IOException, JSONException {
         try {
             JSONObject instance = new JSONObject(nativeGetVkJSON());
             emitDeviceGroups(store, instance);
@@ -194,7 +195,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitDeviceGroups(DeviceInfoStore store, JSONObject parent)
-            throws Exception {
+            throws IOException, JSONException {
         JSONArray deviceGroups = parent.getJSONArray(KEY_DEVICE_GROUPS);
         store.startArray(getConvertedName(KEY_DEVICE_GROUPS));
         for (int deviceGroupIdx = 0; deviceGroupIdx < deviceGroups.length(); deviceGroupIdx++) {
@@ -210,7 +211,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitDevices(DeviceInfoStore store, JSONObject parent)
-            throws Exception {
+            throws IOException, JSONException {
         JSONArray devices = parent.getJSONArray(KEY_DEVICES);
         store.startArray(getConvertedName(KEY_DEVICES));
         for (int deviceIdx = 0; deviceIdx < devices.length(); deviceIdx++) {
@@ -371,7 +372,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitLayers(DeviceInfoStore store, JSONObject parent)
-            throws Exception {
+            throws IOException, JSONException {
         JSONArray layers = parent.getJSONArray(KEY_LAYERS);
         store.startArray(getConvertedName(KEY_LAYERS));
         for (int i = 0; i < layers.length(); i++) {
@@ -395,7 +396,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitInstanceApiVersion(DeviceInfoStore store, JSONObject parent)
-            throws Exception {
+            throws IOException, JSONException {
         store.addResult(getConvertedName(KEY_INSTANCE_API_VERSION), parent.getLong(KEY_API_VERSION));
     }
 
@@ -409,7 +410,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         f.write("""\
 
     private static void emitExtensions(DeviceInfoStore store, JSONObject parent)
-            throws Exception {
+            throws IOException, JSONException {
         JSONArray extensions = parent.getJSONArray(KEY_EXTENSIONS);
         store.startArray(getConvertedName(KEY_EXTENSIONS));
         for (int i = 0; i < extensions.length(); i++) {
@@ -431,27 +432,27 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitBoolean(DeviceInfoStore store, JSONObject parent, String name)
-            throws Exception {
+            throws IOException, JSONException {
         store.addResult(getConvertedName(name), parent.getInt(name) != 0 ? true : false);
     }
 
     private static void emitLong(DeviceInfoStore store, JSONObject parent, String name)
-            throws Exception {
+            throws IOException, JSONException {
         store.addResult(getConvertedName(name), parent.getLong(name));
     }
 
     private static void emitDouble(DeviceInfoStore store, JSONObject parent, String name)
-            throws Exception {
+            throws IOException, JSONException {
         store.addResult(getConvertedName(name), parent.getDouble(name));
     }
 
     private static void emitString(DeviceInfoStore store, JSONObject parent, String name)
-            throws Exception {
+            throws IOException, JSONException {
         store.addResult(getConvertedName(name), parent.getString(name));
     }
 
     private static void emitLongArray(DeviceInfoStore store, JSONObject parent, String name)
-            throws Exception {
+            throws IOException, JSONException {
         JSONArray jsonArray = parent.getJSONArray(name);
         long[] array = new long[jsonArray.length()];
         for (int i = 0; i < jsonArray.length(); i++) {
@@ -461,7 +462,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitDoubleArray(DeviceInfoStore store, JSONObject parent, String name)
-            throws Exception {
+            throws IOException, JSONException {
         JSONArray jsonArray = parent.getJSONArray(name);
         double[] array = new double[jsonArray.length()];
         for (int i = 0; i < jsonArray.length(); i++) {
