@@ -46,17 +46,24 @@ public class BitmapPixelChecker {
     private static final String TAG = "BitmapPixelChecker";
     private final PixelColor mPixelColor;
     private final Rect mBoundToLog;
+    // The enlarged tolerance allows for an error of up to +/- 2 (approximately 6.5%) for a 5-bit
+    // color depth (32 values).
+    private static final short ENLARGE_TOLERANCE = 17;
 
     public BitmapPixelChecker(int color) {
         this(color, null);
     }
 
     public BitmapPixelChecker(int color, Rect boundsToLog) {
-        this(color, boundsToLog, false /* enlargeTolerance */);
+        this(color, boundsToLog, Bitmap.Config.ARGB_8888);
     }
 
-    public BitmapPixelChecker(int color, Rect boundsToLog, boolean enlargeTolerance) {
-        mPixelColor = new PixelColor(color, enlargeTolerance);
+    public BitmapPixelChecker(int color, Rect boundsToLog, Bitmap.Config sourceConfig) {
+        if (sourceConfig == Bitmap.Config.RGB_565) {
+            mPixelColor = new PixelColor(color, ENLARGE_TOLERANCE);
+        } else {
+            mPixelColor = new PixelColor(color);
+        }
         mBoundToLog = boundsToLog;
     }
 
