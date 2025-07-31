@@ -23,6 +23,7 @@ java_test_host {
     name: "CtsSecurityHostTestCases",
     defaults: ["cts_defaults"],
     srcs: [
+        "common/**/*.java",
         "src/**/*.java",
     ],
     // tag this module as a cts test artifact
@@ -60,6 +61,24 @@ java_test_host {
         "libc++",
     ],
     target_required: ["CtsDeviceInfo"],
+}
+
+// Unit tests for the SELinux neverallow parser. This parser is used in CTS,
+// but unit tests for the parser are not.
+java_test_host {
+    name: "SELinuxNeverallowRuleUnitTest",
+    srcs: [
+        "common/**/*.java",
+        "test/**/*.java",
+    ],
+    auto_gen_config: true,
+    test_suites: [
+        "general-tests",
+    ],
+    libs: [
+        "tradefed",
+        "compatibility-host-util",
+    ],
 }
 
 java_genrule_host {
