@@ -17,6 +17,7 @@
 package android.companion.cts.common
 
 import android.Manifest
+import android.Manifest.permission.REQUEST_COMPANION_SELF_MANAGED
 import android.annotation.CallSuper
 import android.annotation.UserIdInt
 import android.app.Instrumentation
@@ -26,6 +27,7 @@ import android.companion.AssociationInfo
 import android.companion.AssociationRequest
 import android.companion.CompanionDeviceManager
 import android.companion.DeviceId
+import android.companion.DevicePresenceEvent
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.LocationManager
@@ -165,6 +167,19 @@ abstract class TestBase {
         assertIs<RecordingCallback.OnAssociationCreated>(callbackInvocation)
         return callbackInvocation.associationInfo.id
     }
+    fun notifyPresence(
+        cdm: CompanionDeviceManager,
+        associationId: Int,
+        eventType: Int
+    ) {
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDevicePresence(
+                associationId,
+                DevicePresenceEvent.Builder().setAssociationId(associationId)
+                    .setEvent(eventType).build()
+            )
+        }
+    }
 
     protected fun runShellCommand(cmd: String) = instrumentation.runShellCommand(cmd)
 
@@ -201,6 +216,17 @@ abstract class TestBase {
             runShellCommand(
                     "cmd companiondevice simulate-device-uuid-event " +
                             "$uuid $targetPackageName $userId $event"
+            )
+
+    fun simulateRequestAction(
+        action: Int,
+        operation: Int,
+        serviceName: String,
+        associationId: Int
+    ) =
+            runShellCommand(
+                "cmd companiondevice simulate-request-action " +
+                        "$action $operation $serviceName $associationId"
             )
 
     fun simulateDeviceEventDeviceLocked(associationId: Int, userId: Int, event: Int, uuid: String) {

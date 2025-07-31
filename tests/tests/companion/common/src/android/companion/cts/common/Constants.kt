@@ -64,6 +64,10 @@ val MAC_ADDRESS_A = MacAddress.fromString("00:00:00:00:00:AA")
 val MAC_ADDRESS_B = MacAddress.fromString("00:00:00:00:00:BB")
 val MAC_ADDRESS_C = MacAddress.fromString("00:00:00:00:00:CC")
 
+const val SERVICE_NAME_A = "test_service_A"
+
+const val SERVICE_NAME_B = "test_service_B"
+
 val UUID_A: ParcelUuid = ParcelUuid.fromString("bc4990b9-698c-473d-8498-2a5c4119f73d")
 val UUID_B: ParcelUuid = ParcelUuid.fromString("ba6d2f1e-9adc-11ee-b9d1-0242ac120002")
 
