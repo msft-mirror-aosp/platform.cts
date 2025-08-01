@@ -213,6 +213,13 @@ public class JvmtiHostTest extends DeviceTestCase implements IBuildReceiver, IAb
                     throw new RuntimeException("pwd failed");
                 }
 
+                // Check that the return value was actually a path and not an error message. A
+                // simple check for starting with a "/" should be sufficient. The error messages
+                // don't start with a "/".
+                if (!pwd.startsWith("/")) {
+                    throw new RuntimeException("pwd failed " + pwd);
+                }
+
                 mAgentInDataData = installLibToDataData(pwd, "libctsjvmtiagent.so");
             } catch (Exception e) {
                 throw new RuntimeException("Failed installing", e);
