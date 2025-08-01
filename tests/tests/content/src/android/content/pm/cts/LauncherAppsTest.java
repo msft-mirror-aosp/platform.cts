@@ -18,7 +18,6 @@ package android.content.pm.cts;
 
 import static android.content.pm.Flags.FLAG_ARCHIVING;
 import static android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE;
-import static android.app.Flags.FLAG_OPTIMIZE_GET_APPS_AND_SHORTCUTS;
 
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.getDefaultLauncher;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.setDefaultLauncher;
@@ -61,7 +60,6 @@ import android.os.RemoteException;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -328,7 +326,6 @@ public class LauncherAppsTest {
 
     @Test
     @AppModeFull(reason = "Need special permission")
-    @RequiresFlagsEnabled(FLAG_OPTIMIZE_GET_APPS_AND_SHORTCUTS)
     public void testGetAvailableShortcuts() {
         try {
             // Install a test package that provides shortcuts
@@ -361,26 +358,6 @@ public class LauncherAppsTest {
 
     @Test
     @AppModeFull(reason = "Need special permission")
-    @RequiresFlagsDisabled(FLAG_OPTIMIZE_GET_APPS_AND_SHORTCUTS)
-    public void testGetAvailableShortcuts_FlagDisabled() {
-        try {
-            // Install a test package that provides shortcuts
-            installPackage(SHORTCUT_APK_PATH);
-
-            // Retrieve available shortcuts for the test package
-            List<ShortcutInfo> shortcuts = mLauncherApps.getAvailableShortcuts(USER_HANDLE);
-
-            // Verify that the shortcuts list is not empty
-            assertThat(shortcuts).isEmpty();
-
-        } finally {
-            // Uninstall the test package
-            uninstallPackage(SHORTCUT_PACKAGE_NAME);
-        }
-    }
-
-    @Test
-    @AppModeFull(reason = "Need special permission")
     public void testGetActivityListAndGetLabel_emptyActivityLabel_ApplicationLabel() {
         try {
             installPackage(APPLICATION_LABEL_APK_PATH);
@@ -398,7 +375,6 @@ public class LauncherAppsTest {
 
     @Test
     @AppModeFull(reason = "Need special permission")
-    @RequiresFlagsEnabled(FLAG_OPTIMIZE_GET_APPS_AND_SHORTCUTS)
     public void testGetActivityLaunchIntentForAllApps() {
         try (PermissionContext ignored = TestApis.permissions().withPermission(
                 android.Manifest.permission.START_TASKS_FROM_RECENTS,
@@ -417,24 +393,6 @@ public class LauncherAppsTest {
             assertThat(launchIntents).containsKey(expectedComponent);
             // Optionally, validate that the Intent itself is not null
             assertThat(launchIntents.get(expectedComponent)).isNotNull();
-        } finally {
-            // Uninstall the test package
-            uninstallPackage(SHORTCUT_PACKAGE_NAME);
-        }
-    }
-
-    @Test
-    @AppModeFull(reason = "Need special permission")
-    @RequiresFlagsDisabled(FLAG_OPTIMIZE_GET_APPS_AND_SHORTCUTS)
-    public void testGetActivityLaunchIntentForAllApps_FlagDisabled() {
-        try {
-            // Install a test package with an activity that should be available
-            installPackage(SHORTCUT_APK_PATH);
-
-            Map<ComponentName, Intent> launchIntents =
-                    mLauncherApps.getActivityLaunchIntentForAllApps(USER_HANDLE);
-            assertThat(launchIntents).isEmpty();
-
         } finally {
             // Uninstall the test package
             uninstallPackage(SHORTCUT_PACKAGE_NAME);
