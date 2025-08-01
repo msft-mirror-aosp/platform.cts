@@ -27,6 +27,7 @@ import android.app.AppOpsManager;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.os.PackageTagsList;
 import android.os.Process;
@@ -48,11 +49,14 @@ public class LocationDisabledAppOpsTest {
     private final Context mContext = InstrumentationRegistry.getContext();
     private LocationManager mLm;
     private AppOpsManager mAom;
+    private boolean mIsAutomotive;
 
     @Before
     public void setUp() {
         mLm = mContext.getSystemService(LocationManager.class);
         mAom = mContext.getSystemService(AppOpsManager.class);
+        mIsAutomotive =
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 
     @Test
@@ -63,6 +67,7 @@ public class LocationDisabledAppOpsTest {
     })
     public void testLocationAppOpIsIgnoredForAppsWhenLocationIsDisabled() {
         PackageTagsList ignoreList = mLm.getIgnoreSettingsAllowlist();
+        PackageTagsList adasAllowlist = mLm.getAdasAllowlist();
 
         UserHandle[] userArr = {UserHandle.SYSTEM};
         runWithShellPermissionIdentity(() -> {
@@ -97,7 +102,13 @@ public class LocationDisabledAppOpsTest {
                         });
                         if (mode[0] == MODE_ALLOWED && !ignoreList.containsAll(pi.packageName)
                                 && !isProvider[0]) {
-                            bypassedNoteOps.add(pi.packageName);
+                            if (mIsAutomotive) {
+                                if (!adasAllowlist.containsAll(pi.packageName)) {
+                                    bypassedNoteOps.add(pi.packageName);
+                                }
+                            } else {
+                                bypassedNoteOps.add(pi.packageName);
+                            }
                         }
 
 
@@ -108,7 +119,13 @@ public class LocationDisabledAppOpsTest {
                         });
                         if (mode[0] == MODE_ALLOWED && !ignoreList.includes(pi.packageName)
                                 && !isProvider[0]) {
-                            bypassedCheckOps.add(pi.packageName);
+                            if (mIsAutomotive) {
+                                if (!adasAllowlist.includes(pi.packageName)) {
+                                    bypassedCheckOps.add(pi.packageName);
+                                }
+                            } else {
+                                bypassedCheckOps.add(pi.packageName);
+                            }
                         }
                     }
                 }
