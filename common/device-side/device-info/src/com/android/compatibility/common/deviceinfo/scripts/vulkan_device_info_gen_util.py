@@ -308,7 +308,10 @@ def get_constants_map():
         "KEY_EXTERNAL_SEMAPHORE_PROPERTIES": "externalSemaphoreProperties",
         "KEY_INSTANCE_API_VERSION": "instanceApiVersion",
         "KEY_COMPATIBLE_HANDLE_TYPES": "compatibleHandleTypes",
-        "KEY_EXPORT_FROM_IMPORTED_HANDLE_TYPES": "exportFromImportedHandleTypes"
+        "KEY_EXPORT_FROM_IMPORTED_HANDLE_TYPES": "exportFromImportedHandleTypes",
+        "KEY_SUPPORTED_FORMATS": "supported_formats",
+        "KEY_HANDLE_TYPE": "handle_type",
+        "KEY_FORMAT": "format",
     }
 
     for struct in VK.ALL_STRUCTS_EXTENDING_FEATURES_OR_PROPERTIES:

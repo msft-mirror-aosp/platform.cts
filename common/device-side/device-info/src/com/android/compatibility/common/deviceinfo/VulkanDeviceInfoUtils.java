@@ -366,6 +366,7 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_FLOAT_CONTROLS_PROPERTIES_KHR = "floatControlsPropertiesKHR";
     public static final String KEY_FLOAT_REPRESENTATION = "floatRepresentation";
     public static final String KEY_FMA_RATE = "fmaRate";
+    public static final String KEY_FORMAT = "format";
     public static final String KEY_FORMATS = "formats";
     public static final String KEY_FORMATS_4444_FEATURES_EXT = "formats4444FeaturesEXT";
     public static final String KEY_FORMAT_A_4_B_4_G_4_R_4 = "formatA4B4G4R4";
@@ -431,6 +432,7 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_GRAPHICS_PIPELINE_LIBRARY_FEATURES_EXT = "graphicsPipelineLibraryFeaturesEXT";
     public static final String KEY_GRAPHICS_PIPELINE_LIBRARY_INDEPENDENT_INTERPOLATION_DECORATION = "graphicsPipelineLibraryIndependentInterpolationDecoration";
     public static final String KEY_GRAPHICS_PIPELINE_LIBRARY_PROPERTIES_EXT = "graphicsPipelineLibraryPropertiesEXT";
+    public static final String KEY_HANDLE_TYPE = "handle_type";
     public static final String KEY_HAS_PRIMARY = "hasPrimary";
     public static final String KEY_HAS_RENDER = "hasRender";
     public static final String KEY_HDR_VIVID = "hdrVivid";
@@ -1379,6 +1381,7 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_SUB_TEXEL_PRECISION_BITS = "subTexelPrecisionBits";
     public static final String KEY_SUPERSAMPLE_FRAGMENT_SHADING_RATES = "supersampleFragmentShadingRates";
     public static final String KEY_SUPPORTED_DEPTH_RESOLVE_MODES = "supportedDepthResolveModes";
+    public static final String KEY_SUPPORTED_FORMATS = "supported_formats";
     public static final String KEY_SUPPORTED_HINT_GRID_SIZES = "supportedHintGridSizes";
     public static final String KEY_SUPPORTED_IMAGE_ALIGNMENT_MASK = "supportedImageAlignmentMask";
     public static final String KEY_SUPPORTED_INDIRECT_COMMANDS_INPUT_MODES = "supportedIndirectCommandsInputModes";
