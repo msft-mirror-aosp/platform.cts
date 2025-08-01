@@ -80,7 +80,7 @@ public class ScreeningServiceWithContactsPermissionTest
 
             addIncomingAndVerifyBlocked(false /* addContact */);
         } finally {
-            resetAndRestoreCallScreening();
+            restoreCallScreeningState();
         }
     }
 
@@ -108,7 +108,7 @@ public class ScreeningServiceWithContactsPermissionTest
 
             addIncomingAndVerifyBlocked(false /* addContact */);
         } finally {
-            resetAndRestoreCallScreening();
+            restoreCallScreeningState();
         }
     }
 
@@ -132,7 +132,7 @@ public class ScreeningServiceWithContactsPermissionTest
 
             addIncomingAndVerifyCallExtraForSilence(true);
         } finally {
-            resetAndRestoreCallScreening();
+            restoreCallScreeningState();
         }
     }
 
@@ -157,7 +157,7 @@ public class ScreeningServiceWithContactsPermissionTest
 
             addIncomingAndVerifyCallExtraForSilence(false);
         } finally {
-            resetAndRestoreCallScreening();
+            restoreCallScreeningState();
         }
     }
 
@@ -178,7 +178,7 @@ public class ScreeningServiceWithContactsPermissionTest
                     true /* shouldSkipNotification */);
             addIncomingAndVerifyBlocked(false /* addContact */);
         } finally {
-            resetAndRestoreCallScreening();
+            restoreCallScreeningState();
         }
     }
 
@@ -198,7 +198,7 @@ public class ScreeningServiceWithContactsPermissionTest
                     true /* shouldSkipNotification */);
             addIncomingAndVerifyBlocked(true /* addContact */);
         } finally {
-            resetAndRestoreCallScreening();
+            restoreCallScreeningState();
         }
     }
 
@@ -213,7 +213,7 @@ public class ScreeningServiceWithContactsPermissionTest
             placeOutgoingCall(false /* addContact */);
             assertTrue(mCallScreeningControl.waitForBind());
         } finally {
-            resetAndRestoreCallScreening();
+            restoreCallScreeningState();
         }
     }
 
@@ -228,7 +228,7 @@ public class ScreeningServiceWithContactsPermissionTest
             placeOutgoingCall(true /* addContact */);
             assertTrue(mCallScreeningControl.waitForBind());
         } finally {
-            resetAndRestoreCallScreening();
+            restoreCallScreeningState();
         }
     }
 
@@ -244,7 +244,7 @@ public class ScreeningServiceWithContactsPermissionTest
             addIncomingAndVerifyAllowed(false);
             assertFalse(mCallScreeningControl.waitForActivity());
         } finally {
-            resetAndRestoreCallScreening();
+            restoreCallScreeningState();
         }
     }
 
@@ -264,7 +264,7 @@ public class ScreeningServiceWithContactsPermissionTest
             addIncomingAndVerifyAllowed(false /* addContact */);
             assertTrue(mCallScreeningControl.waitForActivity());
         } finally {
-            resetAndRestoreCallScreening();
+            restoreCallScreeningState();
         }
     }
 
@@ -284,7 +284,7 @@ public class ScreeningServiceWithContactsPermissionTest
             addIncomingAndVerifyBlocked(false /* addContact */);
             assertFalse(mCallScreeningControl.waitForActivity());
         } finally {
-            resetAndRestoreCallScreening();
+            restoreCallScreeningState();
         }
     }
 
@@ -317,7 +317,7 @@ public class ScreeningServiceWithContactsPermissionTest
             mInCallCallbacks.getService().disconnectAllCalls();
             assertFalse(mCallScreeningControl.waitForActivity());
         } finally {
-            resetAndRestoreCallScreening();
+            restoreCallScreeningState();
         }
     }
 
@@ -338,7 +338,7 @@ public class ScreeningServiceWithContactsPermissionTest
             mInCallCallbacks.getService().disconnectAllCalls();
             assertFalse(mCallScreeningControl.waitForActivity());
         } finally {
-            resetAndRestoreCallScreening();
+            restoreCallScreeningState();
         }
     }
 
@@ -367,7 +367,7 @@ public class ScreeningServiceWithContactsPermissionTest
 
             assertFalse(mCallScreeningControl.waitForActivity());
         } finally {
-            resetAndRestoreCallScreening();
+            restoreCallScreeningState();
         }
     }
 }
