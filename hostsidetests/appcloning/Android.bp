@@ -32,6 +32,7 @@ java_test_host {
         "tradefed",
         "testng",
         "compatibility-host-util",
+        "flag-junit-host",
     ],
     static_libs: ["modules-utils-build-testing"],
     // tag this module as a cts test artifact
@@ -63,7 +64,7 @@ java_test_host {
         "tradefed",
         "testng",
         "compatibility-host-util",
-
+        "flag-junit-host",
     ],
     static_libs: ["modules-utils-build-testing"],
     // tag this module as a cts test artifact
@@ -91,6 +92,7 @@ java_test_host {
         "tradefed",
         "testng",
         "compatibility-host-util",
+        "flag-junit-host",
     ],
     static_libs: ["modules-utils-build-testing"],
     // tag this module as a cts test artifact

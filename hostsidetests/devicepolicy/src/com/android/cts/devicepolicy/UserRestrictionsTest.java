@@ -148,7 +148,7 @@ public final class UserRestrictionsTest extends BaseDeviceOwnerTest {
     // Checks restrictions for managed user (NOT managed profile).
     @Test
     public void testUserRestrictions_secondaryProfileOwnerOnly() throws Exception {
-        assumeSupportsMultiUser();
+        assumeSupportsSecondaryUsers();
 
         final int secondaryUserId = createUser();
         setPoAsUser(secondaryUserId);
@@ -198,7 +198,7 @@ public final class UserRestrictionsTest extends BaseDeviceOwnerTest {
      */
     @Test
     public void testUserRestrictions_layering() throws Exception {
-        assumeSupportsMultiUser();
+        assumeSupportsSecondaryUsers();
         setDo();
 
         final int secondaryUserId = createUserAndWaitStart();
@@ -251,7 +251,7 @@ public final class UserRestrictionsTest extends BaseDeviceOwnerTest {
      */
     @Test
     public void testUserRestrictions_layering_profileOwnerNoLeaking() throws Exception {
-        assumeSupportsMultiUser();
+        assumeSupportsSecondaryUsers();
         assumeInitialUserIsTheMainUser();
 
         // Set PO on the initial user.
@@ -289,7 +289,7 @@ public final class UserRestrictionsTest extends BaseDeviceOwnerTest {
      */
     @Test
     public void testUserRestrictions_profileGlobalRestrictionsAsDo() throws Exception {
-        assumeSupportsMultiUser();
+        assumeSupportsSecondaryUsers();
         setDo();
         final int secondaryUserId;
         if (!isHeadlessSystemUserMode()) {

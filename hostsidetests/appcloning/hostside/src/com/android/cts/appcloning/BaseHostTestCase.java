@@ -36,7 +36,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 
-
 abstract class BaseHostTestCase extends BaseHostJUnit4Test {
     private int mCurrentUserId = NativeDevice.INVALID_USER_ID;
     private static final String ERROR_MESSAGE_TAG = "[ERROR]";
@@ -66,8 +65,11 @@ abstract class BaseHostTestCase extends BaseHostJUnit4Test {
         return "true".equalsIgnoreCase(result);
     }
 
-    protected static boolean supportsMultipleUsers() throws DeviceNotAvailableException {
-        return sDevice.getMaxNumberOfUsersSupported() > 1;
+    protected static boolean supportsCloneProfiles() throws DeviceNotAvailableException {
+        if (sDevice.getApiLevel() < 36) {
+            return sDevice.getMaxNumberOfUsersSupported() > 1;
+        }
+        return sDevice.getMaxNumberOfUsersSupported("android.os.usertype.profile.CLONE") > 0;
     }
 
     protected static boolean isAtLeastS() throws DeviceNotAvailableException {

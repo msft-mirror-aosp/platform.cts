@@ -72,7 +72,7 @@ public final class AccountManagerXUserTest extends BaseMultiUserTest implements 
     public void setUp() throws Exception {
         super.setUp();
 
-        assumeTrue(mSupportsMultiUser && mSupportsManagedUsers);
+        assumeTrue(mSupportsManagedProfiles && mSupportsManagedUsers);
 
         var device = getDevice();
 

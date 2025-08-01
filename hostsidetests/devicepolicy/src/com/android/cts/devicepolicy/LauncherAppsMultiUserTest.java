@@ -36,7 +36,7 @@ public final class LauncherAppsMultiUserTest extends BaseLauncherAppsTest {
     protected void assumeTestEnabled() throws Exception {
         // We need multi user to be supported in order to create a secondary user
         // and api level 21 to support LauncherApps
-        assumeSupportsMultiUser();
+        assumeSupportsSecondaryUsers();
         assumeApiLevel(21);
     }
 

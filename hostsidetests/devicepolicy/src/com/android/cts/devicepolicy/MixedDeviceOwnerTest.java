@@ -80,7 +80,7 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
     @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
             + "user mode")
     public void testLockTask_unaffiliatedUser() throws Exception {
-        assumeCanCreateAdditionalUsers(1);
+        assumeCanCreateAdditionalSecondaryUsers(1);
 
         final int userId = createSecondaryUserAsProfileOwner();
         runDeviceTestsAsUser(
@@ -203,7 +203,7 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
 
     @Test
     public void testSecurityLoggingWithTwoUsers() throws Exception {
-        assumeCanCreateAdditionalUsers(1);
+        assumeCanCreateAdditionalSecondaryUsers(1);
 
         final int userId = createUser();
         try {

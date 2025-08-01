@@ -142,7 +142,7 @@ public class MediaSessionManagerHostTest extends BaseMultiUserTest {
     }
 
     private void testGetActiveSessions_additionalUser(boolean instant) throws Exception {
-        if (!canCreateAdditionalUsers(1)) {
+        if (!canCreateAdditionalSecondaryUsers(1)) {
             CLog.logAndDisplay(LogLevel.INFO,
                     "Cannot create a new user. Skipping multi-user test cases.");
             return;
@@ -176,9 +176,10 @@ public class MediaSessionManagerHostTest extends BaseMultiUserTest {
 
     private void testGetActiveSessions_restrictedProfiles(boolean instant)
             throws Exception {
-        if (!canCreateAdditionalUsers(1)) {
-            CLog.logAndDisplay(LogLevel.INFO,
-                    "Cannot create a new user. Skipping multi-user test cases.");
+        if (!canCreateAdditionalUsers("android.os.usertype.full.RESTRICTED", 1)) {
+            CLog.logAndDisplay(
+                    LogLevel.INFO,
+                    "Cannot create a new restricted user. Skipping multi-user test cases.");
             return;
         }
 
@@ -307,7 +308,7 @@ public class MediaSessionManagerHostTest extends BaseMultiUserTest {
     @AppModeFull
     @RequiresDevice
     public void testIsTrusted_withEnabledNotificationListener_returnsTrue() throws Exception {
-        if (!canCreateAdditionalUsers(1)) {
+        if (!canCreateAdditionalSecondaryUsers(1)) {
             CLog.logAndDisplay(LogLevel.INFO,
                     "Cannot create a new user. Skipping multi-user test cases.");
             return;
@@ -323,7 +324,7 @@ public class MediaSessionManagerHostTest extends BaseMultiUserTest {
     @RequiresDevice
     public void testIsTrusted_withoutEnabledNotificationListener_returnsFalse()
             throws Exception {
-        if (!canCreateAdditionalUsers(1)) {
+        if (!canCreateAdditionalSecondaryUsers(1)) {
             CLog.logAndDisplay(LogLevel.INFO,
                     "Cannot create a new user. Skipping multi-user test cases.");
             return;

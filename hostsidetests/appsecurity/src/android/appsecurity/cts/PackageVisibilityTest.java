@@ -86,7 +86,7 @@ public final class PackageVisibilityTest extends BaseAppSecurityTest {
     }
 
     private void testUninstalledPackageVisibility(boolean instant) throws Exception {
-        if (!mSupportsMultiUser) {
+        if (!mSupportsSecondaryUsers) {
             return;
         }
 
