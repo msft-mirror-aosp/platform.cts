@@ -30,6 +30,7 @@ import android.graphics.Bitmap;
 import android.media.Image;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
+import android.media.metrics.LogSessionId;
 import android.opengl.EGLContext;
 import android.opengl.EGLDisplay;
 import android.util.Pair;
@@ -662,13 +663,15 @@ public final class AndroidTestUtil {
     }
 
     @Override
-    public Codec createForAudioEncoding(Format format) throws ExportException {
-      return encoderFactory.createForAudioEncoding(format);
+    public Codec createForAudioEncoding(Format format, @Nullable LogSessionId logSessionId)
+        throws ExportException {
+      return encoderFactory.createForAudioEncoding(format, logSessionId);
     }
 
     @Override
-    public Codec createForVideoEncoding(Format format) throws ExportException {
-      return encoderFactory.createForVideoEncoding(format);
+    public Codec createForVideoEncoding(Format format, @Nullable LogSessionId logSessionId)
+        throws ExportException {
+      return encoderFactory.createForVideoEncoding(format, logSessionId);
     }
 
     @Override
