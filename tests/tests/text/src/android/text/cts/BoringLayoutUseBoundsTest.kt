@@ -20,7 +20,6 @@ import android.graphics.Typeface
 import android.text.BoringLayout
 import android.text.Layout
 import android.text.TextPaint
-import android.text.cts.LayoutUseBoundsUtil.getDrawingHorizontalOffset
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry
@@ -66,8 +65,6 @@ class BoringLayoutUseBoundsTest {
 
         // Width constraint: 1000px
         // |aaaa bbbb cccc dddd     : width: 205, max: 205
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, true))).isEqualTo(0)
         var layout = buildLayout(text, 1000)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(0f, 0f, 205f, 10f))
         assertThat(layout.lineCount).isEqualTo(1)
@@ -82,8 +79,6 @@ class BoringLayoutUseBoundsTest {
 
         // Width constraint: 1000px
         // |gggg ffff eeee aaaa     : width: 205, max: 205
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, true))).isEqualTo(15)
         var layout = buildLayout(text, 1000)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(-15f, 0f, 190f, 10f))
         assertThat(layout.lineCount).isEqualTo(1)
@@ -98,8 +93,6 @@ class BoringLayoutUseBoundsTest {
 
         // Width constraint: 1000px
         // |hhhh dddd      : width: 90, max: 90, left: 5, right: 105
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, true))).isEqualTo(0)
         var layout = buildLayout(text, 1000)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(5f, 0f, 105f, 10f))
         assertThat(layout.lineCount).isEqualTo(1)

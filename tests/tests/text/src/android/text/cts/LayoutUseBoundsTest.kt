@@ -18,13 +18,14 @@ package android.text.cts
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.text.LineBreaker
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.text.DynamicLayout
 import android.text.StaticLayout
 import android.text.TextPaint
-import android.text.cts.LayoutUseBoundsUtil.getDrawingHorizontalOffset
 import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.google.common.truth.Truth.assertThat
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -32,6 +33,9 @@ import org.junit.runners.Parameterized
 @SmallTest
 @RunWith(Parameterized::class)
 class LayoutUseBoundsTest(val p: Param) {
+    @Rule
+    @JvmField
+    val mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     // In this test case, the SIMPLE and HIGH_QUALITY line breaker produces the same line break
     // output.
@@ -119,11 +123,8 @@ class LayoutUseBoundsTest(val p: Param) {
 
         // Width constraint: 1000px
         // |aaaa bbbb cccc dddd     : width: 205, max: 205
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, true))).isEqualTo(0)
         var layout = buildLayout(text, 1000)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(0f, 0f, 205f, 10f))
-        assertThat(getDrawingHorizontalOffset(layout)).isEqualTo(0)
         assertThat(layout.lineCount).isEqualTo(1)
         assertThat(layout.getLineEnd(0)).isEqualTo(19)
         assertThat(layout.getLineWidth(0)).isEqualTo(205)
@@ -132,8 +133,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // Width constraint: 150px
         // |aaaa bbbb cccc     |: width: 150, max 150
         // |dddd               |: width: 55, max 55
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 150, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 150, true))).isEqualTo(0)
         layout = buildLayout(text, 150)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(0f, 0f, 150f, 20f))
         assertThat(layout.lineCount).isEqualTo(2)
@@ -151,8 +150,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // Width constraint: 105px
         // |aaaa bbbb    |: width: 100, max: 95
         // |cccc dddd    |: width: 105, max 105
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 105, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 105, true))).isEqualTo(0)
         layout = buildLayout(text, 105)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(0f, 0f, 105f, 20f))
         assertThat(layout.lineCount).isEqualTo(2)
@@ -171,8 +168,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // |aaaa bbbb|: width: 100, max: 95
         // |cccc     |: width: 50, max: 50
         // |dddd     |: width: 55, max: 55
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 95, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 95, true))).isEqualTo(0)
         layout = buildLayout(text, 95)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(0f, 0f, 95f, 30f))
         assertThat(layout.lineCount).isEqualTo(3)
@@ -197,8 +192,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // |bbbb|: width: 50, max: 45
         // |cccc|: width: 50, max: 50
         // |dddd|: width: 55, max: 55
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 55, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 55, true))).isEqualTo(0)
         layout = buildLayout(text, 55)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(0f, 0f, 55f, 40f))
         assertThat(layout.lineCount).isEqualTo(4)
@@ -231,11 +224,8 @@ class LayoutUseBoundsTest(val p: Param) {
 
         // Width constraint: 1000px
         // DDDD CCCC BBBB AAAA|: width: 190, max: 190
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, true))).isEqualTo(0)
         var layout = buildLayout(text, 1000)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(810f, 0f, 1000f, 10f))
-        assertThat(getDrawingHorizontalOffset(layout)).isEqualTo(0)
         assertThat(layout.lineCount).isEqualTo(1)
         assertThat(layout.getLineEnd(0)).isEqualTo(19)
         assertThat(layout.getLineWidth(0)).isEqualTo(190)
@@ -244,8 +234,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // Width constraint: 150px
         // |CCCC BBBB AAAA|: width: 150, max: 140
         // |          DDDD|: width: 55, max: 55
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 150, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 150, true))).isEqualTo(0)
         layout = buildLayout(text, 150)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(10f, 0f, 165f, 20f))
         assertThat(layout.lineCount).isEqualTo(2)
@@ -263,8 +251,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // Width constraint: 105px
         // |BBBB AAAA|: width: 100, max: 90
         // |DDDD CCCC|: width: 100, max 100
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 105, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 105, true))).isEqualTo(0)
         layout = buildLayout(text, 105)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(15f, 0f, 115f, 20f))
         assertThat(layout.lineCount).isEqualTo(2)
@@ -283,8 +269,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // |BBBB AAAA|: width: 100, max: 90
         // |     CCCC|: width: 60, max: 50
         // |     DDDD|: width: 55, max: 55
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 95, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 95, true))).isEqualTo(0)
         layout = buildLayout(text, 95)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(5f, 0f, 110f, 30f))
         assertThat(layout.lineCount).isEqualTo(3)
@@ -309,8 +293,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // |BBBB|: width: 55, max: 45
         // |CCCC|: width: 60, max: 50
         // |DDDD|: width: 55, max: 55
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 55, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 55, true))).isEqualTo(0)
         layout = buildLayout(text, 55)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(15f, 0f, 70f, 40f))
         assertThat(layout.lineCount).isEqualTo(4)
@@ -342,11 +324,8 @@ class LayoutUseBoundsTest(val p: Param) {
 
         // Width constraint: 1000px
         // |aAAa bBBb cCCc dDDd     : width: 205, max: 205
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, true))).isEqualTo(0)
         var layout = buildLayout(text, 1000)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(0f, 0f, 205f, 10f))
-        assertThat(getDrawingHorizontalOffset(layout)).isEqualTo(0)
         assertThat(layout.lineCount).isEqualTo(1)
         assertThat(layout.getLineEnd(0)).isEqualTo(19)
         assertThat(layout.getLineWidth(0)).isEqualTo(205)
@@ -355,8 +334,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // Width constraint: 150px
         // |aAAa bBBb cCCc     |: width: 150, max 150
         // |dDDd               |: width: 55, max 150
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 150, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 150, true))).isEqualTo(0)
         layout = buildLayout(text, 150)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(0f, 0f, 150f, 20f))
         assertThat(layout.lineCount).isEqualTo(2)
@@ -374,8 +351,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // Width constraint: 105px
         // |aAAa bBBb    |: width: 100, max: 95
         // |cCCc dDDd    |: width: 105, max 105
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 105, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 105, true))).isEqualTo(0)
         layout = buildLayout(text, 105)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(0f, 0f, 105f, 20f))
         assertThat(layout.lineCount).isEqualTo(2)
@@ -394,8 +369,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // |aAAa bBBb|: width: 100, max: 95
         // |cCCc     |: width: 50, max: 50
         // |dDDd     |: width: 55, max: 55
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 95, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 95, true))).isEqualTo(0)
         layout = buildLayout(text, 95)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(0f, 0f, 95f, 30f))
         assertThat(layout.lineCount).isEqualTo(3)
@@ -420,8 +393,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // |bBBb|: width: 50, max: 45
         // |cCCc|: width: 50, max: 50
         // |dDDd|: width: 55, max: 55
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 55, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 55, true))).isEqualTo(0)
         layout = buildLayout(text, 55)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(0f, 0f, 55f, 40f))
         assertThat(layout.lineCount).isEqualTo(4)
@@ -453,11 +424,8 @@ class LayoutUseBoundsTest(val p: Param) {
 
         // Width constraint: 1000px
         // DddD CccC BbbB AaaA|: width: 190, max: 190
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, true))).isEqualTo(0)
         var layout = buildLayout(text, 1000)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(810f, 0f, 1000f, 10f))
-        assertThat(getDrawingHorizontalOffset(layout)).isEqualTo(0)
         assertThat(layout.lineCount).isEqualTo(1)
         assertThat(layout.getLineEnd(0)).isEqualTo(19)
         assertThat(layout.getLineWidth(0)).isEqualTo(190)
@@ -466,8 +434,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // Width constraint: 150px
         // |CccC BbbB AaaA|: width: 150, max: 140
         // |          DddD|: width: 55, max: 55
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 150, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 150, true))).isEqualTo(0)
         layout = buildLayout(text, 150)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(10f, 0f, 165f, 20f))
         assertThat(layout.lineCount).isEqualTo(2)
@@ -485,8 +451,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // Width constraint: 105px
         // |BbbB AaaA|: width: 100, max: 90
         // |DddD CccC|: width: 100, max 100
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 105, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 105, true))).isEqualTo(0)
         layout = buildLayout(text, 105)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(15f, 0f, 115f, 20f))
         assertThat(layout.lineCount).isEqualTo(2)
@@ -505,8 +469,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // |BbbB AaaA|: width: 100, max: 90
         // |     CccC|: width: 60, max: 50
         // |     DddD|: width: 55, max: 55
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 95, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 95, true))).isEqualTo(0)
         layout = buildLayout(text, 95)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(5f, 0f, 110f, 30f))
         assertThat(layout.lineCount).isEqualTo(3)
@@ -531,8 +493,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // |BbbB|: width: 55, max: 45
         // |CccC|: width: 60, max: 50
         // |DddD|: width: 55, max: 55
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 55, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 55, true))).isEqualTo(0)
         layout = buildLayout(text, 55)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(15f, 0f, 70f, 40f))
         assertThat(layout.lineCount).isEqualTo(4)
@@ -564,8 +524,6 @@ class LayoutUseBoundsTest(val p: Param) {
 
         // Width constraint: 1000px
         // |aaaa eeee ffff gggg     : width: 190, max: 190
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, true))).isEqualTo(0)
         var layout = buildLayout(text, 1000)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(0f, 0f, 190f, 10f))
         assertThat(layout.lineCount).isEqualTo(1)
@@ -576,8 +534,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // Width constraint: 150px
         // |aaaa eeee ffff     |: width: 150, max 140
         // |gggg               |: width: 55, max 55
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 150, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 150, true))).isEqualTo(15)
         layout = buildLayout(text, 150)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(-15f, 0f, 140f, 20f))
         assertThat(layout.lineCount).isEqualTo(2)
@@ -595,8 +551,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // Width constraint: 105px
         // |aaaa eeee    |: width: 100, max: 90
         // |ffff gggg    |: width: 100, max 100
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 105, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 105, true))).isEqualTo(10)
         layout = buildLayout(text, 105)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(-10f, 0f, 90f, 20f))
         assertThat(layout.lineCount).isEqualTo(2)
@@ -615,8 +569,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // |aaaa eeee|: width: 100, max: 90
         // |ffff     |: width: 60, max: 50
         // |gggg     |: width: 55, max: 55
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 95, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 95, true))).isEqualTo(15)
         layout = buildLayout(text, 95)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(-15f, 0f, 90f, 30f))
         assertThat(layout.lineCount).isEqualTo(3)
@@ -641,8 +593,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // |bbbb|: width: 55, max: 45
         // |cccc|: width: 60, max: 50
         // |dddd|: width: 55, max: 55
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 55, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 55, true))).isEqualTo(15)
         layout = buildLayout(text, 55)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(-15f, 0f, 40f, 40f))
         assertThat(layout.lineCount).isEqualTo(4)
@@ -675,8 +625,6 @@ class LayoutUseBoundsTest(val p: Param) {
 
         // Width constraint: 1000px
         // GGGG FFFF EEEE AAAA|: width: 205, max: 205
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, true))).isEqualTo(0)
         var layout = buildLayout(text, 1000)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(795f, 0f, 1000f, 10f))
         assertThat(layout.lineCount).isEqualTo(1)
@@ -687,8 +635,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // Width constraint: 150px
         // |FFFF EEEE AAAA|: width: 150, max: 150
         // |          GGGG|: width: 55, max: 55
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 150, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 150, true))).isEqualTo(0)
         layout = buildLayout(text, 150)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(0f, 0f, 150f, 20f))
         assertThat(layout.lineCount).isEqualTo(2)
@@ -706,8 +652,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // Width constraint: 105px
         // |EEEE AAAA|: width: 100, max: 95
         // |GGGG FFFF|: width: 105, max 105
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 105, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 105, true))).isEqualTo(0)
         layout = buildLayout(text, 105)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(0f, 0f, 105f, 20f))
         assertThat(layout.lineCount).isEqualTo(2)
@@ -726,8 +670,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // |EEEE AAAA|: width: 100, max: 95
         // |     FFFF|: width: 50, max: 50
         // |     GGGG|: width: 55, max: 55
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 95, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 95, true))).isEqualTo(0)
         layout = buildLayout(text, 95)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(0f, 0f, 95f, 30f))
         assertThat(layout.lineCount).isEqualTo(3)
@@ -752,8 +694,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // |EEEE|: width: 50, max: 45
         // |FFFF|: width: 50, max: 50
         // |GGGG|: width: 55, max: 55
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 55, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 55, true))).isEqualTo(0)
         layout = buildLayout(text, 55)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(0f, 0f, 55f, 40f))
         assertThat(layout.lineCount).isEqualTo(4)
@@ -786,8 +726,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // Width constraint: 1000px
         // |aAAa eEEe fFFf gGGg     : width: 190, max: 190
         var layout = buildLayout(text, 1000)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, true))).isEqualTo(0)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(0f, 0f, 190f, 10f))
         assertThat(layout.lineCount).isEqualTo(1)
         assertThat(layout.getLineEnd(0)).isEqualTo(19)
@@ -797,8 +735,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // Width constraint: 150px
         // |aAAa eEEe fFFf     |: width: 150, max 140
         // |gGGg               |: width: 55, max 55
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 150, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 150, true))).isEqualTo(15)
         layout = buildLayout(text, 150)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(-15f, 0f, 140f, 20f))
         assertThat(layout.lineCount).isEqualTo(2)
@@ -816,8 +752,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // Width constraint: 105px
         // |aAAa eEEe    |: width: 100, max: 90
         // |fFFf gGGg    |: width: 100, max 100
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 105, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 105, true))).isEqualTo(10)
         layout = buildLayout(text, 105)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(-10f, 0f, 90f, 20f))
         assertThat(layout.lineCount).isEqualTo(2)
@@ -836,8 +770,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // |aAAa eEEe|: width: 100, max: 90
         // |fFFf     |: width: 60, max: 50
         // |gGGg     |: width: 55, max: 55
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 95, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 95, true))).isEqualTo(15)
         layout = buildLayout(text, 95)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(-15f, 0f, 90f, 30f))
         assertThat(layout.lineCount).isEqualTo(3)
@@ -863,8 +795,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // |cCCc|: width: 60, max: 50
         // |dDDd|: width: 55, max: 55
         layout = buildLayout(text, 55)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 55, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 55, true))).isEqualTo(15)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(-15f, 0f, 40f, 40f))
         assertThat(layout.lineCount).isEqualTo(4)
         // Line 0
@@ -895,8 +825,6 @@ class LayoutUseBoundsTest(val p: Param) {
 
         // Width constraint: 1000px
         // DddD CccC BbbB AaaA|: width: 205, max: 205
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, true))).isEqualTo(0)
         var layout = buildLayout(text, 1000)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(795f, 0f, 1000f, 10f))
         assertThat(layout.lineCount).isEqualTo(1)
@@ -907,8 +835,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // Width constraint: 150px
         // |CccC BbbB AaaA|: width: 150, max: 150
         // |          DddD|: width: 55, max: 55
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 150, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 150, true))).isEqualTo(0)
         layout = buildLayout(text, 150)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(0f, 0f, 150f, 20f))
         assertThat(layout.lineCount).isEqualTo(2)
@@ -926,8 +852,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // Width constraint: 105px
         // |BbbB AaaA|: width: 100, max: 95
         // |DddD CccC|: width: 105, max 105
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 105, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 105, true))).isEqualTo(0)
         layout = buildLayout(text, 105)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(0f, 0f, 105f, 20f))
         assertThat(layout.lineCount).isEqualTo(2)
@@ -946,8 +870,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // |BbbB AaaA|: width: 100, max: 95
         // |     CccC|: width: 50, max: 50
         // |     DddD|: width: 55, max: 55
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 95, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 95, true))).isEqualTo(0)
         layout = buildLayout(text, 95)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(0f, 0f, 95f, 30f))
         assertThat(layout.lineCount).isEqualTo(3)
@@ -972,8 +894,6 @@ class LayoutUseBoundsTest(val p: Param) {
         // |BbbB|: width: 50, max: 45
         // |CccC|: width: 50, max: 50
         // |DddD|: width: 55, max: 55
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 55, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 55, true))).isEqualTo(0)
         layout = buildLayout(text, 55, false)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(0f, 0f, 55f, 40f))
         assertThat(layout.lineCount).isEqualTo(4)
@@ -1005,8 +925,6 @@ class LayoutUseBoundsTest(val p: Param) {
 
         // Width constraint: 1000px
         // |hhhh dddd      : width: 90, max: 90, left: 5, right: 105
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, true))).isEqualTo(0)
         var layout = buildLayout(text, 1000)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(5f, 0f, 105f, 10f))
         assertThat(layout.lineCount).isEqualTo(1)
@@ -1021,8 +939,6 @@ class LayoutUseBoundsTest(val p: Param) {
 
         // Width constraint: 1000px
         // EEEE IIII| : width: 90, max: 90, left: 895, right: 1000
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, false))).isEqualTo(0)
-        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, true))).isEqualTo(0)
         var layout = buildLayout(text, 1000)
         assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(895f, 0f, 1000f, 10f))
         assertThat(layout.lineCount).isEqualTo(1)
