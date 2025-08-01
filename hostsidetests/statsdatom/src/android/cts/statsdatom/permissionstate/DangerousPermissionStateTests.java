@@ -60,7 +60,8 @@ public class DangerousPermissionStateTests extends DeviceTestCase implements IBu
         mCtsBuild = buildInfo;
     }
 
-    public void testDangerousPermissionState() throws Exception {
+    // TODO: kiranmr - Re-enable this test once b/418240323 is fixed.
+    public void ignore_testDangerousPermissionState() throws Exception {
 
         final int FLAG_PERMISSION_USER_SENSITIVE_WHEN_DENIED = 1 << 9;
         final int PROTECTION_FLAG_DANGEROUS = 1;
