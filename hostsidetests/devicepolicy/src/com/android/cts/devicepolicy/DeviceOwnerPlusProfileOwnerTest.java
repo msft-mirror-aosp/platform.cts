@@ -67,6 +67,11 @@ public final class DeviceOwnerPlusProfileOwnerTest extends BaseDeviceOwnerTest {
             COMP_DPC_PKG2 + "/com.android.cts.comp.AdminReceiver";
 
     @Override
+    protected boolean refactoredToNotRelyOnMainUser() {
+        return true;
+    }
+
+    @Override
     public void setUp() throws Exception {
         super.setUp();
 

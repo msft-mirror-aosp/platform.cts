@@ -890,9 +890,11 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
             throws DeviceNotAvailableException {
         CLog.d("setDeviceOwner(componentName=%s, userId=%d, expectFailure=%b", componentName,
                 userId, expectFailure);
-        if (isHeadlessSystemUserMode()) {
-            assumeNotNull("Devices in headles system user mode require a main user to set a device "
-                    + "owner.", getDevice().getMainUserId());
+        if (!refactoredToNotRelyOnMainUser()) {
+            if (isHeadlessSystemUserMode()) {
+                assumeNotNull("Devices in headless system user mode require a main user to set a "
+                        + "device owner.", getDevice().getMainUserId());
+            }
         }
         String command = "dpm set-device-owner --user " + userId + " '" + componentName + "'";
         String commandOutput = getDevice().executeShellCommand(command);
@@ -900,9 +902,9 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         // If we succeeded always log, if we are expecting failure don't log failures
         // as call stacks for passing tests confuse the logs.
         if (success || !expectFailure) {
-            CLog.d("Output for command " + command + ": " + commandOutput);
+            CLog.d("Output for command %s: %s", command, commandOutput);
         } else {
-            CLog.d("Command Failed " + command);
+            CLog.d("Command Failed %s", command);
         }
         return success;
     }
