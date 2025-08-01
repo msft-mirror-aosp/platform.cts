@@ -147,13 +147,13 @@ special_cases_constant_names ={
 
 # Modified vkjson fields
 modified_vkjson_field = {
-    "iDProperties": "idProperties",
-    "formatProperties": "formats",
-    "queueFamilyProperties": "queues",
-    "layerProperties": "layers",
-    "memoryProperties": "memory",
-    "extensionProperties": "extensions",
-    "textureCompressionASTCHDRFeatures": "textureCompressionAstchdrFeatures"
+    "IDProperties": "idProperties",
+    "FormatProperties": "formats",
+    "QueueFamilyProperties": "queues",
+    "LayerProperties": "layers",
+    "MemoryProperties": "memory",
+    "ExtensionProperties": "extensions",
+    "TextureCompressionASTCHDRFeatures": "textureCompressionAstchdrFeatures"
 }
 
 # What datatype in vk.py will be mapped to which emit method in VulkanDeviceInfo
@@ -256,18 +256,32 @@ def convert_vkpy_name_to_vkjson(field_name):
     Modifies the field_name by removing some prefixes, handling leading digits,
     converting the first char to lowercase and finally handling special cases
     """
-    field_name = field_name.removeprefix("VkPhysicalDevice").removeprefix("Vk")
+    json_field_name = field_name.removeprefix("VkPhysicalDevice").removeprefix("Vk")
 
-    # Move the leading digits after the first capitalized word
-    field_name = re.sub(r"^(\d+)([A-Z][a-z]*)", r"\2\1", field_name)
+    if json_field_name in modified_vkjson_field:
+        return modified_vkjson_field[json_field_name]
 
-    # Lowercase the first character
-    field_name = lowercase_first_letter(field_name)
-
-    if field_name in modified_vkjson_field:
-        field_name = modified_vkjson_field[field_name]
-
-    return field_name
+    if json_field_name[0].isdigit():
+        # This regex splits the name into three parts:
+        # 1. The leading number (e.g., "16")
+        # 2. The first "word" (e.g., "BIT" or "Bit")
+        # 3. The rest of the string (e.g., "Format")
+        pattern = re.compile(r"^(\d+)([A-Z]+(?=[A-Z]|$)|[A-Z][a-z]*)(.*)$")
+        match = pattern.match(json_field_name)
+        if not match:
+            return json_field_name # Failsafe
+        number, first_word, rest = match.groups()
+        result = f"{first_word}{number}{rest}"
+        is_acronym = len(first_word) > 1 and first_word.isupper()
+        if is_acronym:
+            return result
+        else:
+            return result[0].lower() + result[1:]
+    else:
+        if re.match(r"^[A-Z]{2,}", json_field_name):
+            return json_field_name
+        else:
+            return json_field_name[0].lower() + json_field_name[1:]
 
 def get_json_object_name_from_key(constant_name):
     """
@@ -293,6 +307,17 @@ def get_json_object_name_from_key(constant_name):
         camel_case_name = camel_case_name + suffix_str
 
     return camel_case_name
+
+def get_emit_method_name(extension):
+    """
+    Generates the method name for an extension's emit method.
+
+    Examples:
+    - "VK_AMD_anti_lag" becomes "emitVkAMDAntiLag"
+    - "VK_EXT_4444_formats" becomes "emitVkEXT4444Formats"
+    """
+    parts = extension.split('_')
+    return "emit" + parts[0].capitalize() + parts[1] + "".join(word.capitalize() for word in parts[2:])
 
 def get_constants_map():
     """
@@ -542,12 +567,11 @@ def generate_emit_methods():
     It takes the method name from the first struct of an extension.
     """
     emit_method = []
+
     for extension_name, structs in VK.VULKAN_EXTENSIONS_AND_STRUCTS_MAPPING["extensions"].items():
         flag = True  #To handle multiple structs in a single extension
         obj_name = ""
         for struct_dict in structs:
-            if len(struct_dict) > 1:
-                continue
             for key in struct_dict.keys():
                 key_val = convert_vkpy_name_to_vkjson(key)
                 prefix_str = None
@@ -562,7 +586,7 @@ def generate_emit_methods():
                 struct_class_name = struct_class.__name__.removeprefix("VkPhysicalDevice").removeprefix("Vk")
                 for ext_type in extension_types:
                     struct_class_name = struct_class_name.removesuffix(ext_type)
-                method_name = "emit" + struct_class_name +suffix_str
+                method_name = get_emit_method_name(extension_name)
                 if flag:
                     flag = False
                     obj_name = prefix_str + struct_class_name
@@ -605,21 +629,10 @@ def generate_emit_extensions():
         switch (key) {
 """)
     for extension_name, structs in VK.VULKAN_EXTENSIONS_AND_STRUCTS_MAPPING["extensions"].items():
-        flag = True  #To handle multiple structs in a single extension
-        for struct_dict in structs:
-            for key in struct_dict.keys():
-                suffix_str = None
-                for ext in extension_types:
-                    if ext in key:
-                        suffix_str = ext
-                struct_class = get_struct_obj(key)
-                struct_class_name = struct_class.__name__.removeprefix("VkPhysicalDevice").removeprefix("Vk")
-                for ext_type in extension_types:
-                    struct_class_name = struct_class_name.removesuffix(ext_type)
-                emit_extension.append(INDENT*3 + "case KEY_" + extension_name.upper() + ":\n                emit" + struct_class_name + suffix_str + "(store, parent);")
-                emit_extension.append(INDENT*4 + "break;")
-                break
-            break
+        method_name = get_emit_method_name(extension_name)
+        emit_extension.append(INDENT*3 + "case KEY_" + extension_name.upper() + ":")
+        emit_extension.append(INDENT*4 + method_name + "(store, parent);")
+        emit_extension.append(INDENT*4 + "break;")
     emit_extension.append("""
         }
     }
