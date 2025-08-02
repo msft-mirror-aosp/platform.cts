@@ -27,6 +27,7 @@ import android.car.FuelType;
 import android.car.PortLocationType;
 import android.car.VehicleAreaSeat;
 import android.car.VehicleAreaType;
+import android.car.VehicleGear;
 import android.car.VehiclePropertyIds;
 import android.car.VehicleSeatOccupancyState;
 import android.car.VehicleUnit;
@@ -173,6 +174,25 @@ public class VehiclePropertyVerifiers {
                             WindshieldWipersState.SERVICE)
                     .build();
 
+    private static final ImmutableSet<Integer> VEHICLE_GEARS =
+            ImmutableSet.<Integer>builder()
+                    .add(
+                            VehicleGear.GEAR_UNKNOWN,
+                            VehicleGear.GEAR_NEUTRAL,
+                            VehicleGear.GEAR_REVERSE,
+                            VehicleGear.GEAR_PARK,
+                            VehicleGear.GEAR_DRIVE,
+                            VehicleGear.GEAR_FIRST,
+                            VehicleGear.GEAR_SECOND,
+                            VehicleGear.GEAR_THIRD,
+                            VehicleGear.GEAR_FOURTH,
+                            VehicleGear.GEAR_FIFTH,
+                            VehicleGear.GEAR_SIXTH,
+                            VehicleGear.GEAR_SEVENTH,
+                            VehicleGear.GEAR_EIGHTH,
+                            VehicleGear.GEAR_NINTH)
+                    .build();
+
     /** Gets the verifier builder for {@link VehiclePropertyIds#VEHICLE_CURB_WEIGHT}. */
     public static VehiclePropertyVerifier.Builder<Integer> getVehicleCurbWeightVerifierBuilder() {
         VehiclePropertyVerifier.Builder<Integer> verifierBuilder =
@@ -275,6 +295,61 @@ public class VehiclePropertyVerifiers {
             verifierBuilder.addReadPermission(Car.PERMISSION_READ_WINDSHIELD_WIPERS_3P);
         }
         return verifierBuilder;
+    }
+
+    /** Gets the verifier builder for {@link VehiclePropertyIds#GEAR_SELECTION}. */
+    public static VehiclePropertyVerifier.Builder<Integer> getGearSelectionVerifierBuilder() {
+        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(VehiclePropertyIds.GEAR_SELECTION)
+                .requireProperty()
+                .setAllPossibleEnumValues(VEHICLE_GEARS)
+                .setPossibleConfigArrayValues(VEHICLE_GEARS)
+                .requirePropertyValueTobeInConfigArray()
+                .setConfigArrayVerifier(
+                        (verifierContext, configArray) -> {
+                            assertWithMessage(
+                                            "GEAR_SELECTION must list GEAR_REVERSE and GEAR_NEUTRAL"
+                                                    + " in the config array.")
+                                    .that(configArray)
+                                    .containsAtLeast(
+                                            VehicleGear.GEAR_REVERSE, VehicleGear.GEAR_NEUTRAL);
+                            assertWithMessage(
+                                            "GEAR_SELECTION must list GEAR_FIRST or both GEAR_DRIVE"
+                                                    + " and GEAR_PARK in the config array.")
+                                    .that(
+                                            configArray.containsAll(
+                                                            ImmutableList.of(
+                                                                    VehicleGear.GEAR_DRIVE,
+                                                                    VehicleGear.GEAR_PARK))
+                                                    || configArray.contains(VehicleGear.GEAR_FIRST))
+                                    .isTrue();
+                        });
+    }
+
+    /** Gets the verifier builder for {@link VehiclePropertyIds#CURRENT_GEAR}. */
+    public static VehiclePropertyVerifier.Builder<Integer> getCurrentGearVerifierBuilder() {
+        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(VehiclePropertyIds.CURRENT_GEAR)
+                .setAllPossibleEnumValues(VEHICLE_GEARS)
+                .setPossibleConfigArrayValues(VEHICLE_GEARS)
+                .requirePropertyValueTobeInConfigArray()
+                .setConfigArrayVerifier(
+                        (verifierContext, configArray) -> {
+                            assertWithMessage(
+                                            "CURRENT_GEAR must list GEAR_REVERSE and GEAR_NEUTRAL"
+                                                    + " in the config array.")
+                                    .that(configArray)
+                                    .containsAtLeast(
+                                            VehicleGear.GEAR_REVERSE, VehicleGear.GEAR_NEUTRAL);
+                            assertWithMessage(
+                                            "CURRENT_GEAR must list GEAR_FIRST or both GEAR_DRIVE"
+                                                    + " and GEAR_PARK in the config array.")
+                                    .that(
+                                            configArray.containsAll(
+                                                            ImmutableList.of(
+                                                                    VehicleGear.GEAR_DRIVE,
+                                                                    VehicleGear.GEAR_PARK))
+                                                    || configArray.contains(VehicleGear.GEAR_FIRST))
+                                    .isTrue();
+                        });
     }
 
     /** Gets the verifier builder for {@link VehiclePropertyIds#PERF_ODOMETER}. */
