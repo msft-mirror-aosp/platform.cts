@@ -61,17 +61,27 @@ public final class CarPropertyValueTest extends AbstractCarTestCase {
             Arrays.asList(
                     CarPropertyValue.STATUS_AVAILABLE,
                     CarPropertyValue.STATUS_ERROR,
-                    CarPropertyValue.STATUS_UNAVAILABLE);
+                    CarPropertyValue.STATUS_NOT_AVAILABLE_GENERAL,
+                    CarPropertyValue.STATUS_NOT_AVAILABLE_DISABLED,
+                    CarPropertyValue.STATUS_NOT_AVAILABLE_SPEED_LOW,
+                    CarPropertyValue.STATUS_NOT_AVAILABLE_SPEED_HIGH,
+                    CarPropertyValue.STATUS_NOT_AVAILABLE_POOR_VISIBILITY,
+                    CarPropertyValue.STATUS_NOT_AVAILABLE_SAFETY,
+                    CarPropertyValue.STATUS_NOT_AVAILABLE_SUBSYSTEM_NOT_CONNECTED);
 
     private static final String TAG = CarPropertyValueTest.class.getSimpleName();
+    private static final int PROPERTY_VENDOR_STATUS_MINIMUM_VALUE = 0x0;
+    private static final int PROPERTY_VENDOR_STATUS_MAXIMUM_VALUE = 0xffff;
 
     private final List<CarPropertyValue> mCarPropertyValues = new ArrayList<>();
     private final SparseArray<CarPropertyConfig> mPropIdToConfig = new SparseArray<>();
 
     @Before
-    public void setUp() throws Exception {
-        CarPropertyManager carPropertyManager =
-                (CarPropertyManager) getCar().getCarManager(Car.PROPERTY_SERVICE);
+    public void setUp() {
+        setUp(getCar().getCarManager(CarPropertyManager.class));
+    }
+
+    private void setUp(CarPropertyManager carPropertyManager) {
         ShellPermissionUtils.runWithShellPermissionIdentity(
                 () -> {
                     List<CarPropertyConfig> configs = carPropertyManager.getPropertyList();
@@ -159,6 +169,36 @@ public final class CarPropertyValueTest extends AbstractCarTestCase {
         for (CarPropertyValue propertyValue : mCarPropertyValues) {
             assertThat(propertyValue.getPropertyStatus()).isIn(SUPPORTED_PROPERTY_STATUSES);
             assertThat(propertyValue.getPropertyStatus()).isEqualTo(propertyValue.getStatus());
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_STATUS_DETAILED_NOT_AVAILABLE)
+    public void testGetPropertyVendorStatus_withoutPermission() {
+        for (CarPropertyValue propertyValue : mCarPropertyValues) {
+            assertThrows(SecurityException.class, () -> propertyValue.getPropertyVendorStatus());
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_STATUS_DETAILED_NOT_AVAILABLE)
+    public void testGetPropertyVendorStatus_withPermission() {
+        mCarPropertyValues.clear();
+        mPropIdToConfig.clear();
+        ShellPermissionUtils.runWithShellPermissionIdentity(
+                () -> {
+                    // Permissions are checked at the first subscription, so we must get a new
+                    // CarPropertyManager here.
+                    Car car = Car.createCar(mContext);
+                    setUp(car.getCarManager(CarPropertyManager.class));
+                },
+                ShellPermissionUtils.CHECK_MODE_ASSERT,
+                Car.PERMISSION_READ_PROPERTY_VENDOR_STATUS);
+        for (CarPropertyValue propertyValue : mCarPropertyValues) {
+            assertThat(propertyValue.getPropertyVendorStatus())
+                    .isAtLeast(PROPERTY_VENDOR_STATUS_MINIMUM_VALUE);
+            assertThat(propertyValue.getPropertyVendorStatus())
+                    .isAtMost(PROPERTY_VENDOR_STATUS_MAXIMUM_VALUE);
         }
     }
 
