@@ -29,7 +29,7 @@ public final class MixedDeviceOwnerTestApi25 extends DeviceAndProfileOwnerTestAp
     public void setUp() throws Exception {
         super.setUp();
 
-        mUserId = mMainUserId;
+        mUserId = mDeviceOwnerUserId;
 
         installDeviceOwnerApp(DEVICE_ADMIN_APK);
 

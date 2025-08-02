@@ -27,10 +27,22 @@ public abstract class DeviceAndProfileOwnerHostSideTransferTest extends BaseDevi
             "com.android.cts.transferowner"
                     + ".DeviceAndProfileOwnerTransferIncomingTest$BasicAdminService";
 
+    /**
+     * @deprecated TODO(b/435528858): should use proper method from DevicePolicyUsersPreparer
+     */
+    @Deprecated private int mMainUserId;
 
     protected int mUserId;
     protected String mOutgoingTestClassName;
     protected String mIncomingTestClassName;
+
+    // TODO(b/435528858): remove once mMainUserId is gone
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+
+        mMainUserId = getMainUser();
+    }
 
     @Test
     public void testTransferSameAdmin() throws Exception {

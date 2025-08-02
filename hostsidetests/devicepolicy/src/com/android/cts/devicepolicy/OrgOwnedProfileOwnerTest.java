@@ -62,7 +62,12 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
     private static final String USER_IS_NOT_STARTED = "User is not started";
     private static final long USER_STOP_TIMEOUT_SEC = 60;
 
-    private int mUserId;
+    protected int mUserId;
+
+    /**
+     * @deprecated TODO(b/435528858): should use proper method from DevicePolicyUsersPreparer
+     */
+    @Deprecated private int mMainUserId;
 
     @Rule
     public DeviceJUnit4ClassRunner.TestLogData mLogger = new DeviceJUnit4ClassRunner.TestLogData();
@@ -70,6 +75,8 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
     @Override
     public void setUp() throws Exception {
         super.setUp();
+
+        mMainUserId = getMainUser();
 
         removeTestUsers();
         createManagedProfile();

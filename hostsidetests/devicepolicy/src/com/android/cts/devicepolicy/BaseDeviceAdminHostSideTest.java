@@ -55,7 +55,7 @@ public abstract class BaseDeviceAdminHostSideTest extends BaseDevicePolicyTest {
     public void setUp() throws Exception {
         super.setUp();
 
-        mUserId = mMainUserId;
+        mUserId = getMainUser();
 
         installAppAsUser(getDeviceAdminApkFileName(), mUserId);
         setDeviceAdmin(getAdminReceiverComponent(), mUserId);

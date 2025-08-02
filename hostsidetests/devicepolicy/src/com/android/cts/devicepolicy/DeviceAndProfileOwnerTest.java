@@ -161,9 +161,23 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
     // profile owner it is the user id of the created profile.
     protected int mUserId;
 
+    /**
+     * @deprecated TODO(b/435528858): most likely should use {@code
+     *     DevicePolicyUsersPreparer#getInitialCurrentUserId()}.
+     */
+    @Deprecated protected int mMainUserId;
+
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
             HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+
+    // TODO(b/435528858): remove once mMainUSerId is gone
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+
+        mMainUserId = getMainUser();
+    }
 
     @Override
     public void tearDown() throws Exception {

@@ -23,12 +23,13 @@ import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresAddit
 import org.junit.Test;
 
 /**
- * Set of tests for managed profile owner use cases that may also apply to device owner.
- * Tests that should be run identically in both cases are added in DeviceAndProfileOwnerTestApi30.
+ * Set of tests for managed profile owner use cases that may also apply to device owner. Tests that
+ * should be run identically in both cases are added in DeviceAndProfileOwnerTestApi30.
  */
 // We need managed users to be supported in order to create a profile of the user owner.
 @RequiresAdditionalFeatures({FEATURE_MANAGED_USERS})
-public class MixedManagedProfileOwnerTestApi30 extends DeviceAndProfileOwnerTestApi30 {
+public final class MixedManagedProfileOwnerTestApi30 extends DeviceAndProfileOwnerTestApi30 {
+
     private int mParentUserId = -1;
 
     @Override
@@ -36,7 +37,7 @@ public class MixedManagedProfileOwnerTestApi30 extends DeviceAndProfileOwnerTest
         super.setUp();
 
         removeTestUsers();
-        mParentUserId = mMainUserId;
+        mParentUserId = getMainUser();
         createManagedProfile();
     }
 
