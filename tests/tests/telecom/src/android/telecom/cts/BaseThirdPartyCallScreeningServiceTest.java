@@ -111,7 +111,7 @@ public abstract class BaseThirdPartyCallScreeningServiceTest
     @Override
     protected void tearDown() throws Exception {
         if (mShouldTestTelecom) {
-            resetAndRestoreCallScreening();
+            restoreCallScreeningState();
         }
         super.tearDown();
     }
@@ -157,6 +157,9 @@ public abstract class BaseThirdPartyCallScreeningServiceTest
         boolean completedBeforeTimeout = bindLatch.await(ASYNC_TIMEOUT, TimeUnit.MILLISECONDS);
         assertTrue(completedBeforeTimeout);
         waitForScreeningControl();
+
+        mCallScreeningControl.reset();
+
         return serviceConnection;
     }
 
@@ -197,10 +200,7 @@ public abstract class BaseThirdPartyCallScreeningServiceTest
         Log.i(TAG, "waitForAppUnbinding: done");
     }
 
-    protected void resetAndRestoreCallScreening() throws Exception {
-        if (mCallScreeningControl != null) {
-            mCallScreeningControl.reset();
-        }
+    protected void restoreCallScreeningState() throws Exception {
         // Remove the test app from the screening role.
         removeRoleHolder(ROLE_CALL_SCREENING, CtsCallScreeningService.class.getPackage().getName());
 

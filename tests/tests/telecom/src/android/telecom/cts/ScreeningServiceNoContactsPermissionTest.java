@@ -73,7 +73,7 @@ public class ScreeningServiceNoContactsPermissionTest
                     true /* shouldSkipNotification */);
             addIncomingAndVerifyBlocked(false /* addContact */);
         } finally {
-            resetAndRestoreCallScreening();
+            restoreCallScreeningState();
         }
     }
 
@@ -98,7 +98,7 @@ public class ScreeningServiceNoContactsPermissionTest
                     true /* shouldSkipNotification */);
             addIncomingAndVerifyAllowed(true /* addContact */);
         } finally {
-            resetAndRestoreCallScreening();
+            restoreCallScreeningState();
         }
     }
 
@@ -117,7 +117,7 @@ public class ScreeningServiceNoContactsPermissionTest
             placeOutgoingCall(false /* addContact */);
             assertTrue(mCallScreeningControl.waitForBind());
         } finally {
-            resetAndRestoreCallScreening();
+            restoreCallScreeningState();
         }
     }
 
@@ -138,7 +138,7 @@ public class ScreeningServiceNoContactsPermissionTest
             placeOutgoingCall(true /* addContact */);
             assertFalse(mCallScreeningControl.waitForBind());
         } finally {
-            resetAndRestoreCallScreening();
+            restoreCallScreeningState();
         }
     }
 }

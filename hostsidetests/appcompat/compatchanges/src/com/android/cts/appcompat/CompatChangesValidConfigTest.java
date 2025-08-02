@@ -103,6 +103,7 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
                     "OVERRIDE_LANDSCAPE_ORIENTATION_TO_REVERSE_LANDSCAPE",
                     "OVERRIDE_ANY_ORIENTATION",
                     "OVERRIDE_ANY_ORIENTATION_TO_USER",
+                    "OVERRIDE_AUTO_RESTART_ON_DISPLAY_MOVE",
                     "OVERRIDE_USE_DISPLAY_LANDSCAPE_NATURAL_ORIENTATION",
                     "OVERRIDE_LAYOUT_IN_DISPLAY_CUTOUT_MODE",
                     "OVERRIDE_ORIENTATION_ONLY_FOR_CAMERA",
