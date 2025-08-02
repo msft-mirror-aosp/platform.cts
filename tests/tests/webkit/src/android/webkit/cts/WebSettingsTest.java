@@ -679,15 +679,6 @@ public class WebSettingsTest extends SharedWebViewTest {
     }
 
     @Test
-    public void testAccessPluginsPath() {
-        assertNotNull(mSettings.getPluginsPath());
-
-        String pluginPath = "pluginPath";
-        mSettings.setPluginsPath(pluginPath);
-        assertEquals("Plugin path always empty", "", mSettings.getPluginsPath());
-    }
-
-    @Test
     public void testAccessTextSize() {
         mSettings.setTextSize(TextSize.NORMAL);
         assertEquals(TextSize.NORMAL, mSettings.getTextSize());
@@ -703,14 +694,6 @@ public class WebSettingsTest extends SharedWebViewTest {
 
         mSettings.setTextSize(TextSize.SMALLEST);
         assertEquals(TextSize.SMALLEST, mSettings.getTextSize());
-    }
-
-    @Test
-    public void testAccessUseDoubleTree() {
-        assertFalse(mSettings.getUseDoubleTree());
-
-        mSettings.setUseDoubleTree(true);
-        assertFalse("setUseDoubleTree should be a no-op", mSettings.getUseDoubleTree());
     }
 
     @Test
@@ -779,37 +762,6 @@ public class WebSettingsTest extends SharedWebViewTest {
         // callbacks occur.
         Thread.sleep(1000);
         assertEquals("Loaded", mOnUiThread.getTitle());
-    }
-
-    @Test
-    public void testAppCacheEnabled() throws Throwable {
-        // Note that the AppCache path can only be set once. This limits the
-        // amount of testing we can do, and means that we must test all aspects
-        // of setting the AppCache path in a single test to guarantee ordering.
-
-        // Test that when AppCache is enabled but no valid path is provided,
-        // we don't get any AppCache callbacks.
-        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
-        final String url = mWebServer.getAppCacheUrl();
-        mSettings.setAppCacheEnabled(true);
-        mSettings.setJavaScriptEnabled(true);
-
-        mOnUiThread.loadUrlAndWaitForCompletion(url);
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return "Loaded".equals(mOnUiThread.getTitle());
-            }
-        }.run();
-        // The page is now loaded. Wait for a further 1s to check no AppCache
-        // callbacks occur.
-        Thread.sleep(1000);
-        assertEquals("Loaded", mOnUiThread.getTitle());
-
-        // We used to test that when AppCache is enabled and a valid path is
-        // provided, we got an AppCache callback of some kind, but AppCache is
-        // deprecated on the web and will be removed from Chromium in the
-        // future, so this test has been removed.
     }
 
     // Ideally, we need a test case for the enabled case. However, it seems that

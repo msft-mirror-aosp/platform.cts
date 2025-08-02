@@ -28,7 +28,6 @@ import static com.android.compatibility.common.util.SystemUtil.runShellCommandOr
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
 
 import android.app.Activity;
 import android.app.ActivityTaskManager;
@@ -39,10 +38,8 @@ import android.graphics.Rect;
 import android.hardware.display.DisplayManager;
 import android.os.PowerManager;
 import android.os.SystemClock;
-import android.server.wm.CtsWindowInfoUtils;
 import android.view.Display;
 import android.view.InputDevice;
-import android.view.InputEvent;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
@@ -60,7 +57,6 @@ import com.android.cts.input.UinputStylus;
 import com.android.cts.input.UinputTouchDevice;
 import com.android.cts.input.UinputTouchScreen;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -260,24 +256,6 @@ public final class TestUtils {
         instrumentation.getUiAutomation().injectInputEvent(
                 new KeyEvent(timestamp, timestamp, KeyEvent.ACTION_UP, keyCode, 0)
                         , true /* sync */);
-    }
-
-    /**
-     * Waits until the given activity is ready for input, this is only needed when directly
-     * injecting input on screen via
-     * {@link android.hardware.input.InputManager#injectInputEvent(InputEvent, int)}.
-     */
-    public static void waitUntilActivityReadyForInputInjection(Activity activity,
-            String tag, String windowDumpErrMsg) throws InterruptedException {
-        // If we requested an orientation change, just waiting for the window to be visible is not
-        // sufficient. We should first wait for the transitions to stop, and the for app's UI thread
-        // to process them before making sure the window is visible.
-        CtsWindowInfoUtils.waitForStableWindowGeometry(Duration.ofSeconds(5));
-        if (activity.getWindow() != null
-                && !CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow())) {
-            CtsWindowInfoUtils.dumpWindowsOnScreen(tag, windowDumpErrMsg);
-            fail("Activity window did not become visible: " + activity);
-        }
     }
 
     /**

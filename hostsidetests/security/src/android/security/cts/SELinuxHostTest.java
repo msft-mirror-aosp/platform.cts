@@ -579,15 +579,6 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     }
 
     /**
-     * Returns {@code true} if this device is required to enforce compatible property.
-     */
-    public static boolean isCompatiblePropertyEnforcedDevice(ITestDevice device)
-            throws DeviceNotAvailableException {
-        return PropertyUtil.propertyEquals(
-                device, "ro.actionable_compatible_property.enabled", "true");
-    }
-
-    /**
      * Returns {@code true} if this device has sepolicy split across different paritions.
      * This is possible even for devices launched at api level higher than 26.
      */

@@ -31,24 +31,15 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Picture;
 import android.graphics.Rect;
-import android.graphics.pdf.PdfRenderer;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.CancellationSignal;
 import android.os.Handler;
 import android.os.LocaleList;
 import android.os.Looper;
 import android.os.Message;
-import android.os.ParcelFileDescriptor;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
-import android.print.PageRange;
-import android.print.PrintAttributes;
-import android.print.PrintDocumentAdapter;
-import android.print.PrintDocumentAdapter.LayoutResultCallback;
-import android.print.PrintDocumentAdapter.WriteResultCallback;
-import android.print.PrintDocumentInfo;
 import android.util.DisplayMetrics;
 import android.view.KeyEvent;
 import android.view.ViewGroup;
@@ -119,8 +110,6 @@ import java.util.concurrent.atomic.AtomicReference;
 public class WebViewTest extends SharedWebViewTest {
     private static final int INITIAL_PROGRESS = 100;
     private static final String X_REQUESTED_WITH = "X-Requested-With";
-    private static final String PRINTER_TEST_FILE = "print.pdf";
-    private static final String PDF_PREAMBLE = "%PDF-1";
     // Snippet of HTML that will prevent favicon requests to the test server.
     private static final String HTML_HEADER =
             "<html><head><link rel=\"shortcut icon\" href=\"%23\" /></head>";
@@ -449,19 +438,6 @@ public class WebViewTest extends SharedWebViewTest {
                     value.getValue(),
                     matchingHeaders[0]);
         }
-    }
-
-    @Test
-    @SuppressWarnings("deprecation")
-    public void testGetVisibleTitleHeight() throws Exception {
-        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
-
-        WebkitUtils.onMainThreadSync(
-                () -> {
-                    String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
-                    mOnUiThread.loadUrlAndWaitForCompletion(url);
-                    assertEquals(0, mWebView.getVisibleTitleHeight());
-                });
     }
 
     @Test
@@ -1639,26 +1615,6 @@ public class WebViewTest extends SharedWebViewTest {
     }
 
     @Test
-    public void testPlatformNotifications() {
-        WebkitUtils.onMainThreadSync(
-                () -> {
-                    WebView.enablePlatformNotifications();
-                    WebView.disablePlatformNotifications();
-                });
-    }
-
-    @Test
-    public void testAccessPluginList() {
-        WebkitUtils.onMainThreadSync(
-                () -> {
-                    assertNotNull(WebView.getPluginList());
-
-                    // can not find a way to install plugins
-                    mWebView.refreshPlugins(false);
-                });
-    }
-
-    @Test
     public void testDestroy() {
         WebkitUtils.onMainThreadSync(
                 () -> {
@@ -1846,14 +1802,6 @@ public class WebViewTest extends SharedWebViewTest {
             }
         }.run();
         assertEquals(imgUrl, handler.mResultUrl);
-    }
-
-    @Test
-    public void testDebugDump() {
-        WebkitUtils.onMainThreadSync(
-                () -> {
-                    mWebView.debugDump();
-                });
     }
 
     @Test
@@ -2331,97 +2279,6 @@ public class WebViewTest extends SharedWebViewTest {
         }.run();
     }
 
-    // Verify Print feature can create a PDF file with a correct preamble.
-    @Test
-    public void testPrinting() throws Throwable {
-        mOnUiThread.loadDataAndWaitForCompletion(
-                "<html><head></head>" + "<body>foo</body></html>", "text/html", null);
-        final PrintDocumentAdapter adapter = mOnUiThread.createPrintDocumentAdapter();
-        printDocumentStart(adapter);
-        PrintAttributes attributes =
-                new PrintAttributes.Builder()
-                        .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
-                        .setResolution(new PrintAttributes.Resolution("foo", "bar", 300, 300))
-                        .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
-                        .build();
-        final File file = mContext.getFileStreamPath(PRINTER_TEST_FILE);
-        final ParcelFileDescriptor descriptor =
-                ParcelFileDescriptor.open(file, ParcelFileDescriptor.parseMode("w"));
-        final SettableFuture<Void> result = SettableFuture.create();
-        printDocumentLayout(
-                adapter,
-                null,
-                attributes,
-                new LayoutResultCallback() {
-                    // Called on UI thread
-                    @Override
-                    public void onLayoutFinished(PrintDocumentInfo info, boolean changed) {
-                        PageRange[] pageRanges = new PageRange[] {PageRange.ALL_PAGES};
-                        savePrintedPage(adapter, descriptor, pageRanges, result);
-                    }
-                });
-        try {
-            WebkitUtils.waitForFuture(result);
-            assertThat(file.length(), greaterThan(0L));
-            FileInputStream in = new FileInputStream(file);
-            byte[] b = new byte[PDF_PREAMBLE.length()];
-            in.read(b);
-            String preamble = new String(b);
-            assertEquals(PDF_PREAMBLE, preamble);
-        } finally {
-            // close the descriptor, if not closed already.
-            descriptor.close();
-            file.delete();
-        }
-    }
-
-    // Verify Print feature can create a PDF file with correct number of pages.
-    @Test
-    public void testPrintingPagesCount() throws Throwable {
-        String content = "<html><head></head><body>";
-        for (int i = 0; i < 500; ++i) {
-            content += "<br />abcdefghijk<br />";
-        }
-        content += "</body></html>";
-        mOnUiThread.loadDataAndWaitForCompletion(content, "text/html", null);
-        final PrintDocumentAdapter adapter = mOnUiThread.createPrintDocumentAdapter();
-        printDocumentStart(adapter);
-        PrintAttributes attributes =
-                new PrintAttributes.Builder()
-                        .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
-                        .setResolution(new PrintAttributes.Resolution("foo", "bar", 300, 300))
-                        .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
-                        .build();
-        final File file = mContext.getFileStreamPath(PRINTER_TEST_FILE);
-        final ParcelFileDescriptor descriptor =
-                ParcelFileDescriptor.open(file, ParcelFileDescriptor.parseMode("w"));
-        final SettableFuture<Void> result = SettableFuture.create();
-        printDocumentLayout(
-                adapter,
-                null,
-                attributes,
-                new LayoutResultCallback() {
-                    // Called on UI thread
-                    @Override
-                    public void onLayoutFinished(PrintDocumentInfo info, boolean changed) {
-                        PageRange[] pageRanges =
-                                new PageRange[] {new PageRange(1, 1), new PageRange(4, 7)};
-                        savePrintedPage(adapter, descriptor, pageRanges, result);
-                    }
-                });
-        try {
-            WebkitUtils.waitForFuture(result);
-            assertThat(file.length(), greaterThan(0L));
-            PdfRenderer renderer =
-                    new PdfRenderer(
-                            ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY));
-            assertEquals(5, renderer.getPageCount());
-        } finally {
-            descriptor.close();
-            file.delete();
-        }
-    }
-
     /**
      * This should remain functionally equivalent to
      * androidx.webkit.WebViewCompatTest#testVisualStateCallbackCalled. Modifications to this test
@@ -2656,51 +2513,6 @@ public class WebViewTest extends SharedWebViewTest {
                     }
                 });
         assertTrue(WebkitUtils.waitForFuture(startSafeBrowsingFuture));
-    }
-
-    private void savePrintedPage(
-            final PrintDocumentAdapter adapter,
-            final ParcelFileDescriptor descriptor,
-            final PageRange[] pageRanges,
-            final SettableFuture<Void> result) {
-        adapter.onWrite(
-                pageRanges,
-                descriptor,
-                new CancellationSignal(),
-                new WriteResultCallback() {
-                    @Override
-                    public void onWriteFinished(PageRange[] pages) {
-                        try {
-                            descriptor.close();
-                            result.set(null);
-                        } catch (IOException ex) {
-                            result.setException(ex);
-                        }
-                    }
-                });
-    }
-
-    private void printDocumentStart(final PrintDocumentAdapter adapter) {
-        WebkitUtils.onMainThreadSync(
-                () -> {
-                    adapter.onStart();
-                });
-    }
-
-    private void printDocumentLayout(
-            final PrintDocumentAdapter adapter,
-            final PrintAttributes oldAttributes,
-            final PrintAttributes newAttributes,
-            final LayoutResultCallback layoutResultCallback) {
-        WebkitUtils.onMainThreadSync(
-                () -> {
-                    adapter.onLayout(
-                            oldAttributes,
-                            newAttributes,
-                            new CancellationSignal(),
-                            layoutResultCallback,
-                            null);
-                });
     }
 
     private static class HrefCheckHandler extends Handler {

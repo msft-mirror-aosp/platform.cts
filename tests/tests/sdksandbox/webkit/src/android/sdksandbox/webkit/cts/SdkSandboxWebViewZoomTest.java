@@ -37,11 +37,6 @@ public class SdkSandboxWebViewZoomTest {
     }
 
     @Test
-    public void testGetZoomControls() throws Throwable {
-        sSdkTestSuiteSetup.assertSdkTestRunPasses("testGetZoomControls");
-    }
-
-    @Test
     @Ignore("b/413079290")
     public void testInvokeZoomPicker() throws Throwable {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testInvokeZoomPicker");

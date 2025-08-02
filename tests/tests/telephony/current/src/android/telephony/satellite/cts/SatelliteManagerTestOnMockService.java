@@ -217,6 +217,19 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     private static final String TEST_V23_CONFIG_DATA_METADATA_LOCAL_URI =
             "file:///cts_test_v23_telephony_config-metadata.txt";
 
+    // v25 : [US - allowed] [KR - not allowed] [TW - not allowed]
+    private static final String TEST_V25_CONFIG_DATA_CONTENT_LOCAL_URI =
+            "file:///cts_test_v25_telephony_config.pb";
+    private static final String TEST_V25_CONFIG_DATA_METADATA_LOCAL_URI =
+            "file:///cts_test_v25_telephony_config-metadata.txt";
+    // v26 : [US - allowed] [KR - not allowed] [TW - not allowed] with carrier_ids supports
+    private static final String TEST_V26_CONFIG_DATA_CONTENT_LOCAL_URI =
+            "file:///cts_test_v26_telephony_config.pb";
+    private static final String TEST_V26_CONFIG_DATA_METADATA_LOCAL_URI =
+            "file:///cts_test_v26_telephony_config-metadata.txt";
+
+    private static final int VZW_CARRIER_ID = 1839;
+
     private static final String PACKAGE_CONFIGUPDATER = "com.google.android.configupdater";
 
     private static final int SUB_ID = SubscriptionManager.DEFAULT_SUBSCRIPTION_ID;
@@ -4504,6 +4517,13 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     // /telephony_config_update/cts_test_01212025-test-v15-telephony_config.pb.
     // Refer to b/390075624#comment22 for more details.
     private SatelliteAccessConfiguration getV15TestConfigForUs() {
+        logd("getV15TestConfigForUs()");
+        return getV15TestConfigForUs(new ArrayList<>());
+    }
+
+    private SatelliteAccessConfiguration getV15TestConfigForUs(List<Integer> carrierIds) {
+        logd("getV15TestConfigForUs() with carrierIds: + " + carrierIds);
+
         // SatellitePosition
         SatellitePosition position = new SatellitePosition(-101.3, 35786.0);
 
@@ -4532,8 +4552,14 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         List<Integer> tagIds = List.of(11, 1001);
 
         // create SatelliteAccessConfiguration
-        SatelliteAccessConfiguration verificationConfigForUs =
-                new SatelliteAccessConfiguration(satelliteInfoList, tagIds);
+        SatelliteAccessConfiguration verificationConfigForUs;
+        if (carrierIds.isEmpty() || !Flags.supportCarrierIdsInGeofence()) {
+            verificationConfigForUs = new SatelliteAccessConfiguration(satelliteInfoList, tagIds);
+        } else {
+            verificationConfigForUs =
+                    new SatelliteAccessConfiguration(satelliteInfoList, tagIds, carrierIds);
+        }
+
         logd("getV15TestConfigForUs: " + verificationConfigForUs);
         return verificationConfigForUs;
     }
@@ -4655,6 +4681,68 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertNotNull(queriedSatelliteAccessConfiguration);
         assertEquals(getV15TestConfigForUs(), notifiedSatelliteAccessConfiguration);
         assertNull(resultReceiver.second);
+
+        logd("testSatelliteAccessControllerLoadSatelliteAccessData: restore the original data");
+        assertTrue(sMockSatelliteServiceManager.overrideConfigDataVersion(true, 0));
+
+        if (Flags.supportCarrierIdsInGeofence()) {
+            logd(
+                    "testSatelliteAccessControllerLoadSatelliteAccessData: override the config "
+                            + "data version so the new config data can be accepted by Telephony");
+            assertTrue(sMockSatelliteServiceManager.overrideConfigDataVersion(false, 0));
+
+            logd(
+                    "testSatelliteAccessControllerLoadSatelliteAccessData: set KR for setting "
+                            + "the satellite access configuration as null");
+            assertTrue(sMockSatelliteServiceManager.setCountryCodes(false, "KR", null, null, 0));
+
+            logd(
+                    "testSatelliteAccessControllerLoadSatelliteAccessData:"
+                            + "request Telephony to download config data v26 support US");
+            allowStateCallback.drainPermits();
+            assertTrue(
+                    sMockSatelliteServiceManager.updateTelephonyConfig(
+                            TEST_V26_CONFIG_DATA_CONTENT_LOCAL_URI,
+                            TEST_V26_CONFIG_DATA_METADATA_LOCAL_URI));
+
+            logd("wait for callback for V26");
+            assertTrue(
+                    allowStateCallback.waitUntilSatelliteAccessConfigurationChangedEvent(
+                            1, timeOut));
+            verifyIsSatelliteAllowed(false);
+
+            allowStateCallback.drainPermits();
+            logd("testSatelliteAccessControllerLoadSatelliteAccessData: set US");
+            assertTrue(sMockSatelliteServiceManager.setCountryCodes(false, "US", null, null, 0));
+            verifySatelliteAllowedAndEnabledForLocation(latUs, lngUs, countryCodeUs);
+            assertTrue(
+                    allowStateCallback.waitUntilSatelliteAccessConfigurationChangedEvent(
+                            1, timeOut));
+            notifiedSatelliteAccessConfiguration =
+                    allowStateCallback.getSatelliteAccessConfiguration();
+            logd(
+                    "notifiedSatelliteAccessConfiguration of V26="
+                            + notifiedSatelliteAccessConfiguration);
+            assertNotNull(notifiedSatelliteAccessConfiguration);
+            assertEquals(
+                    getV15TestConfigForUs(List.of(VZW_CARRIER_ID)),
+                    notifiedSatelliteAccessConfiguration);
+
+            resultReceiver = requestSatelliteAccessConfigurationForCurrentLocation();
+            queriedSatelliteAccessConfiguration = resultReceiver.first;
+            logd(
+                    "testSatelliteAccessControllerLoadSatelliteAccessData:"
+                            + " queriedSatelliteAccessConfiguration= "
+                            + queriedSatelliteAccessConfiguration);
+
+            assertNotNull(queriedSatelliteAccessConfiguration);
+            assertEquals(
+                    getV15TestConfigForUs(List.of(VZW_CARRIER_ID)),
+                    queriedSatelliteAccessConfiguration);
+            assertNull(resultReceiver.second);
+            logd("testSatelliteAccessControllerLoadSatelliteAccessData: restore the original data");
+            assertTrue(sMockSatelliteServiceManager.overrideConfigDataVersion(true, 0));
+        }
     }
 
     @Test

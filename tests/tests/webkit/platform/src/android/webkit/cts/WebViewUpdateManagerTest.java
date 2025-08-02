@@ -93,8 +93,11 @@ public class WebViewUpdateManagerTest {
     }
 
     @Test
-    @ApiTest(apis = {"android.webkit.WebViewUpdateManager#getCurrentWebViewPackage",
-            "android.webkit.WebViewUpdateManager#getCurrentWebViewPackageName"})
+    @ApiTest(
+            apis = {
+                "android.webkit.WebViewUpdateManager#getCurrentWebViewPackage",
+                "android.webkit.WebViewUpdateManager#getCurrentWebViewPackageName"
+            })
     public void testGetCurrentWebViewPackage() {
         PackageInfo pi = mUpdateManager.getCurrentWebViewPackage();
         String name = mUpdateManager.getCurrentWebViewPackageName();
@@ -103,8 +106,11 @@ public class WebViewUpdateManagerTest {
     }
 
     @Test
-    @ApiTest(apis = {"android.webkit.WebViewUpdateManager#getAllWebViewPackages",
-            "android.webkit.WebViewUpdateManager#getValidWebViewPackages"})
+    @ApiTest(
+            apis = {
+                "android.webkit.WebViewUpdateManager#getAllWebViewPackages",
+                "android.webkit.WebViewUpdateManager#getValidWebViewPackages"
+            })
     public void testGetWebViewPackages() {
         WebViewProviderInfo[] valid;
 

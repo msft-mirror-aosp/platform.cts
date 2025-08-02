@@ -92,7 +92,8 @@ record SELinuxNeverallowRule(
     }
 
     private boolean isCompatiblePropertyEnforcedDevice(ITestDevice device) throws Exception {
-        return SELinuxHostTest.isCompatiblePropertyEnforcedDevice(device);
+        return PropertyUtil.propertyEquals(
+                device, "ro.actionable_compatible_property.enabled", "true");
     }
 
     private boolean isVirtualDevice(ITestDevice device) throws DeviceNotAvailableException {

@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeTrue;
 
+import com.android.compatibility.common.util.UserUtil;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.device.UserInfo;
@@ -51,8 +52,8 @@ import java.util.List;
  * <p>Unlock your device when testing locally.
  */
 @RunWith(DeviceJUnit4ClassRunner.class)
-public class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase {
-    private static int sMainUserId;
+public final class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase {
+    private static int sParentUserId;
     private static int sSecondaryUserId;
     private static int sEnterpriseUserId;
     private static boolean sIsTemporaryEnterpriseUser;
@@ -63,15 +64,23 @@ public class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase {
     public static void setUpClass(TestInformation testInfo) throws Exception {
         ITestDevice device = testInfo.getDevice();
         assumeTrue("Multi-user is not supported on this device", device.isMultiUserSupported());
-        assumeTrue("No main user on this device so cannot create enterprise profile",
-                device.getMainUserId() != null);
-        // Enterprise profile can only be created from the main user (initial human user)
-        sMainUserId = device.getMainUserId();
+
+        Integer mainUserId = device.getMainUserId();
+        if (mainUserId == null) {
+            // Check if enterprise profile can be created on any user
+            boolean supportsMainlessUser = new UserUtil(device).isProfilesOnNonMainUserSupported();
+            assumeTrue("device doesn't have main user and doesn't support profiles on other users",
+                    supportsMainlessUser);
+            sParentUserId = device.getCurrentUser();
+        } else {
+            sParentUserId = mainUserId;
+        }
+
         sSecondaryUserId = createSecondaryUser(device);
         assumeTrue("Could not find or create an enterprise profile on this device",
                 setUpEnterpriseProfile(testInfo.getDevice()));
         sDevice = device;
-        installPackageAsUser(testInfo, sMainUserId);
+        installPackageAsUser(testInfo, sParentUserId);
         installPackageAsUser(testInfo, sSecondaryUserId);
         installPackageAsUser(testInfo, sEnterpriseUserId);
     }
@@ -113,7 +122,7 @@ public class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase {
         try {
             // Create a managed profile "work" under the main user
             String createUserOutput = device.executeShellCommand(
-                    "pm create-user --profileOf " + sMainUserId + " --managed work");
+                    "pm create-user --profileOf " + sParentUserId + " --managed work");
             sEnterpriseUserId = Integer.parseInt(createUserOutput.split(" id ")[1].trim());
             assertThat(device.startUser(sEnterpriseUserId, /*waitFlag=*/ true)).isTrue();
             sIsTemporaryEnterpriseUser = true;
@@ -162,7 +171,7 @@ public class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase {
     public void testMainUser_hasEnterpriseAccess() throws Exception {
         setUpEnterpriseContacts();
         runEnterpriseContactsDeviceTestAsUserInPkgA("testHasEnterpriseAccess",
-                sMainUserId,
+                sParentUserId,
                 Collections.emptyMap());
     }
 
@@ -175,7 +184,7 @@ public class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase {
         assumeTrue(sIsTemporaryEnterpriseUser);
         setUpEnterpriseContactsWithManagedPermission();
         runEnterpriseContactsDeviceTestAsUserInPkgA("testHasEnterpriseAccess",
-                sMainUserId,
+                sParentUserId,
                 Collections.emptyMap());
     }
 
@@ -189,7 +198,7 @@ public class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase {
         assumeTrue(sIsTemporaryEnterpriseUser);
         setUpEnterpriseContactsWithManagedPermission();
         runEnterpriseContactsDeviceTestAsUserInPkgA("testDoesNotHaveEnterpriseAccess",
-                sMainUserId,
+                sParentUserId,
                 Collections.emptyMap());
     }
 
@@ -201,7 +210,7 @@ public class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase {
             assertThat(sDevice.stopUser(sEnterpriseUserId, /*waitFlag=*/ true, /*forceFlag=*/
                     true)).isTrue();
             runEnterpriseContactsDeviceTestAsUserInPkgA("testDoesNotHaveEnterpriseAccess",
-                    sMainUserId,
+                    sParentUserId,
                     Collections.emptyMap());
         } finally {
             sDevice.startUser(sEnterpriseUserId, /*waitFlag=*/ true);
@@ -212,7 +221,7 @@ public class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase {
     public void testMainUser_doesNotHaveEnterpriseAccessToNonEnterpriseSchema() throws Exception {
         setUpEnterpriseContactsWithoutEnterprisePermissions();
         runEnterpriseContactsDeviceTestAsUserInPkgA("testDoesNotHaveEnterpriseAccess",
-                sMainUserId,
+                sParentUserId,
                 Collections.emptyMap());
     }
 
@@ -237,7 +246,7 @@ public class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase {
         setUpEnterpriseContacts();
         runEnterpriseContactsDeviceTestAsUserInPkgA(
                 "testGetEnterpriseContact",
-                sMainUserId,
+                sParentUserId,
                 Collections.emptyMap());
     }
 
@@ -246,7 +255,7 @@ public class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase {
         setUpEnterpriseContacts();
         runEnterpriseContactsDeviceTestAsUserInPkgA(
                 "testGetEnterpriseContact_withProjection",
-                sMainUserId,
+                sParentUserId,
                 Collections.emptyMap());
     }
 
@@ -255,7 +264,7 @@ public class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase {
         setUpEnterpriseContacts();
         runEnterpriseContactsDeviceTestAsUserInPkgA(
                 "testSearchEnterpriseContacts",
-                sMainUserId,
+                sParentUserId,
                 Collections.emptyMap());
     }
 
@@ -264,7 +273,7 @@ public class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase {
         setUpEnterpriseContacts();
         runEnterpriseContactsDeviceTestAsUserInPkgA(
                 "testSearchEnterpriseContacts_withProjection",
-                sMainUserId,
+                sParentUserId,
                 Collections.emptyMap());
     }
 
@@ -273,7 +282,7 @@ public class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase {
         setUpEnterpriseContacts();
         runEnterpriseContactsDeviceTestAsUserInPkgA(
                 "testSearchEnterpriseContacts_withFilter",
-                sMainUserId,
+                sParentUserId,
                 Collections.emptyMap());
     }
 }

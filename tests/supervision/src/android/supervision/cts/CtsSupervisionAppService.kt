@@ -28,7 +28,7 @@ import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 
 /** SupervisionAppService used for CTS tests */
 class CtsSupervisionAppService : SupervisionAppService() {
@@ -48,9 +48,7 @@ class ServiceReporter {
     private val channel = Channel<String>()
 
     fun reportMethodCalled(methodName: String) {
-        runBlocking {
-            channel.send(methodName)
-        }
+        runBlocking { channel.send(methodName) }
     }
 
     fun wasOnSupervisionEnabledCalled(): Boolean =
@@ -61,10 +59,9 @@ class ServiceReporter {
 
     private fun wasMethodCalled(expectedMethodName: String): Boolean {
         val actualMethodName = runBlocking {
-            withTimeout(METHOD_CALLED_TIMEOUT) {
-                channel.receive()
-            }
+            withTimeoutOrNull(METHOD_CALLED_TIMEOUT) { channel.receive() }
         }
+        assertThat(actualMethodName).isNotNull()
         return expectedMethodName == actualMethodName
     }
 
@@ -78,11 +75,12 @@ private val serviceReporter = ServiceReporter()
 
 fun bindSupervisionAppService(action: (reporter: ServiceReporter) -> Unit) {
     val context = TestApis.context().instrumentedContext()
-    val (connection, binder) = runBlocking {
-        withTimeout(ServiceReporter.BINDING_TIMEOUT) {
-            bindService(context)
+    val (connection, binder) =
+        runBlocking {
+            val result = withTimeoutOrNull(ServiceReporter.BINDING_TIMEOUT) { bindService(context) }
+            assertThat(result).isNotNull()
+            return@runBlocking result!!
         }
-    }
     assertThat(binder).isNotNull()
     action(serviceReporter)
     context.unbindService(connection)
@@ -90,18 +88,20 @@ fun bindSupervisionAppService(action: (reporter: ServiceReporter) -> Unit) {
 
 private suspend fun bindService(context: Context): Pair<ServiceConnection, IBinder?> =
     suspendCancellableCoroutine { continuation ->
-        val intent = Intent().apply {
-            setPackage(context.packageName)
-            setClassName(context.packageName, CtsSupervisionAppService::class.java.name)
-        }
-
-        val connection = object : ServiceConnection {
-            override fun onServiceConnected(name: ComponentName, service: IBinder) {
-                continuation.resume(Pair(this, service)) { _, _, _, -> }
+        val intent =
+            Intent().apply {
+                setPackage(context.packageName)
+                setClassName(context.packageName, CtsSupervisionAppService::class.java.name)
             }
 
-            override fun onServiceDisconnected(name: ComponentName) {}
-        }
+        val connection =
+            object : ServiceConnection {
+                override fun onServiceConnected(name: ComponentName, service: IBinder) {
+                    continuation.resume(Pair(this, service)) { _, _, _ -> }
+                }
+
+                override fun onServiceDisconnected(name: ComponentName) {}
+            }
 
         context.bindService(intent, connection, Context.BIND_AUTO_CREATE)
     }

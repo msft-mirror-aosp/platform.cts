@@ -107,7 +107,7 @@ class AuthenticationPolicyManagerTest {
         authenticationPolicyManager =
             context.getSystemService(AuthenticationPolicyManager::class.java)
         assumeNotNull(
-            "setup | AuthenticationPolicyManager service should be " + "available",
+            "setup | AuthenticationPolicyManager service should be available",
             authenticationPolicyManager,
         )
 
@@ -282,13 +282,18 @@ class AuthenticationPolicyManagerTest {
     )
     @Test
     @EnsureHasPermission(MANAGE_SECURE_LOCK_DEVICE)
-    fun testEnableSecureLockDevice_onlyNonStrongBiometricsEnrolled_returnsInsufficientBiometrics() {
+    fun testEnableSecureLockDevice_noStrongBiometricSensor_returnsInsufficientBiometrics() {
         assumeNotNull("test requires non-null BiometricManager", biometricManager)
         assumeNotNull("test requires non-null SensorProperties", sensorProperties)
-        val nonStrongBiometricSensor = sensorProperties.findFirstNonStrongBiometricSensor()
+        val strongBiometricSensor = sensorProperties.findFirstStrongBiometricSensor()
         assumeTrue(
+            "Device must not have a strong biometric sensor to run this test",
+            strongBiometricSensor == null,
+        )
+        val nonStrongBiometricSensor = sensorProperties.findFirstNonStrongBiometricSensor()
+        assumeNotNull(
             "Device must have at least one non-strong biometric sensor to run this test",
-            nonStrongBiometricSensor != null,
+            nonStrongBiometricSensor
         )
 
         biometricManager.createTestSession(nonStrongBiometricSensor!!.sensorId).use { session ->
