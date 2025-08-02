@@ -28,6 +28,7 @@
             <meta-data android:name="android.appwidget.provider"
                 android:resource="@xml/appwidget_info"/>
         </receiver>
+        <activity android:name=".EmptyActivity" />
     </application>
 
   <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
