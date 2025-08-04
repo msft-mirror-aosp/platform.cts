@@ -16,6 +16,8 @@
 
 package android.media.router.cts.required_permissions_app;
 
+import static android.content.Intent.ACTION_CLOSE_SYSTEM_DIALOGS;
+import static android.content.Intent.FLAG_RECEIVER_FOREGROUND;
 import static android.content.pm.PackageManager.PERMISSION_DENIED;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import static android.media.cts.MediaRouterTestConstants.FEATURE_SAMPLE;
@@ -30,9 +32,12 @@ import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_1_ROUTE_1;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_REQUIRES_ANY_PERMISSION_SET;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_REQUIRES_LOCAL_NETWORK;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_REQUIRES_ONE_PERMISSION;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_RESTRICTED_OTHER_PACKAGE;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_REQUIRES_ANY_PERMISSION_SET;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_REQUIRES_LOCAL_NETWORK;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_REQUIRES_ONE_PERMISSION;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_RESTRICTED_OTHER_PACKAGE;
+import static android.media.cts.app.common.MediaRouter2TestUtils.getOriginalIds;
 import static android.media.cts.app.common.MediaRouter2TestUtils.launchScreenOnActivity;
 import static android.media.cts.app.common.MediaRouter2TestUtils.waitForAndGetRoutes;
 
@@ -42,11 +47,17 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.compat.CompatChanges;
 import android.content.Context;
+import android.content.Intent;
 import android.media.MediaRoute2Info;
 import android.media.MediaRouter2;
 import android.media.RouteDiscoveryPreference;
+import android.os.ConditionVariable;
 
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.UiObject2;
+
+import com.android.compatibility.common.util.UiAutomatorUtils2;
 
 import org.junit.After;
 import org.junit.Before;
@@ -58,15 +69,21 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Device-side test for {@link MediaRouter2} routes that have visibility restricted by permissions
  * held by the app requesting them.
  */
 public class MediaRouter2DeviceTestRequiredPermissions {
+    private static final String SYSTEM_UI_PACKAGE = "com.android.systemui";
+    private static final long TIMEOUT_MS = 5_000;
+
     private ExecutorService mExecutor;
     private Context mContext;
     private MediaRouter2 mRouter;
+    private MediaRouter2.RouteCallback mRouteCallback;
+    private MediaRouter2.TransferCallback mTransferCallback;
     private Activity mScreenOnActivity;
     private RouteDiscoveryPreference mDiscoveryPreference;
 
@@ -86,6 +103,13 @@ public class MediaRouter2DeviceTestRequiredPermissions {
         if (mScreenOnActivity != null) {
             mScreenOnActivity.finish();
         }
+        if (mRouteCallback != null) {
+            mRouter.unregisterRouteCallback(mRouteCallback);
+        }
+        if (mTransferCallback != null) {
+            mRouter.unregisterTransferCallback(mTransferCallback);
+        }
+        dismissSystemDialogs();
     }
 
     @Test
@@ -234,6 +258,100 @@ public class MediaRouter2DeviceTestRequiredPermissions {
                         mExecutor);
         assertThat(routes.get(ROUTE_ID_REQUIRES_LOCAL_NETWORK).getName())
                 .isEqualTo(ROUTE_NAME_REQUIRES_LOCAL_NETWORK);
+    }
+
+    @Test
+    public void permissionHiddenRoute_routeSelectedInOsw_routeBecomesVisibleBeforeTransfer()
+            throws Exception {
+        mScreenOnActivity = launchScreenOnActivity(mContext);
+        AtomicBoolean routeWasAdvertisedToApp = new AtomicBoolean(false);
+        mRouteCallback =
+                new MediaRouter2.RouteCallback() {
+                    @Override
+                    public void onRoutesUpdated(List<MediaRoute2Info> routes) {
+                        if (getOriginalIds(routes).contains(ROUTE_ID_REQUIRES_ONE_PERMISSION)) {
+                            routeWasAdvertisedToApp.set(true);
+                        }
+                    }
+                };
+        mRouter.registerRouteCallback(mExecutor, mRouteCallback, mDiscoveryPreference);
+        ConditionVariable sawTransferAfterRouteAdvertised = new ConditionVariable();
+        mTransferCallback =
+                new MediaRouter2.TransferCallback() {
+                    @Override
+                    public void onTransfer(
+                            MediaRouter2.RoutingController oldController,
+                            MediaRouter2.RoutingController newController) {
+                        if (getOriginalIds(newController.getSelectedRoutes())
+                                        .equals(Set.of(ROUTE_ID_REQUIRES_ONE_PERMISSION))
+                                && routeWasAdvertisedToApp.get()) {
+                            sawTransferAfterRouteAdvertised.open();
+                        }
+                    }
+                };
+        mRouter.registerTransferCallback(mExecutor, mTransferCallback);
+
+        mRouter.showSystemOutputSwitcher();
+        UiObject2 route =
+                UiAutomatorUtils2.waitFindObject(
+                        By.text(ROUTE_NAME_REQUIRES_ONE_PERMISSION).pkg(SYSTEM_UI_PACKAGE),
+                        TIMEOUT_MS);
+        assertThat(routeWasAdvertisedToApp.get()).isFalse();
+        route.click();
+
+        assertThat(sawTransferAfterRouteAdvertised.block(TIMEOUT_MS)).isTrue();
+        assertThat(getOriginalIds(mRouter.getRoutes())).contains(ROUTE_ID_REQUIRES_ONE_PERMISSION);
+    }
+
+    @Test
+    public void visibilityRestrictedRoute_routeSelectedInOsw_routeBecomesVisibleBeforeTransfer()
+            throws Exception {
+        mScreenOnActivity = launchScreenOnActivity(mContext);
+        AtomicBoolean routeWasAdvertisedToApp = new AtomicBoolean(false);
+        mRouteCallback =
+                new MediaRouter2.RouteCallback() {
+                    @Override
+                    public void onRoutesUpdated(List<MediaRoute2Info> routes) {
+                        if (getOriginalIds(routes).contains(ROUTE_ID_RESTRICTED_OTHER_PACKAGE)) {
+                            routeWasAdvertisedToApp.set(true);
+                        }
+                    }
+                };
+        mRouter.registerRouteCallback(mExecutor, mRouteCallback, mDiscoveryPreference);
+        ConditionVariable sawTransferAfterRouteAdvertised = new ConditionVariable();
+        mTransferCallback =
+                new MediaRouter2.TransferCallback() {
+                    @Override
+                    public void onTransfer(
+                            MediaRouter2.RoutingController oldController,
+                            MediaRouter2.RoutingController newController) {
+                        if (getOriginalIds(newController.getSelectedRoutes())
+                                        .equals(Set.of(ROUTE_ID_RESTRICTED_OTHER_PACKAGE))
+                                && routeWasAdvertisedToApp.get()) {
+                            sawTransferAfterRouteAdvertised.open();
+                        }
+                    }
+                };
+        mRouter.registerTransferCallback(mExecutor, mTransferCallback);
+
+        mRouter.showSystemOutputSwitcher();
+        UiObject2 route =
+                UiAutomatorUtils2.waitFindObject(
+                        By.text(ROUTE_NAME_RESTRICTED_OTHER_PACKAGE).pkg(SYSTEM_UI_PACKAGE),
+                        TIMEOUT_MS);
+        assertThat(routeWasAdvertisedToApp.get()).isFalse();
+        route.click();
+
+        assertThat(sawTransferAfterRouteAdvertised.block(TIMEOUT_MS)).isTrue();
+        assertThat(getOriginalIds(mRouter.getRoutes())).contains(ROUTE_ID_RESTRICTED_OTHER_PACKAGE);
+    }
+
+    private static void dismissSystemDialogs() {
+        InstrumentationRegistry.getInstrumentation()
+                .getContext()
+                .sendBroadcast(
+                        new Intent(ACTION_CLOSE_SYSTEM_DIALOGS).setFlags(FLAG_RECEIVER_FOREGROUND));
+        UiAutomatorUtils2.waitUntilObjectGone(By.pkg(SYSTEM_UI_PACKAGE).focused(true));
     }
 
     protected void assertPermissionState(int state, String... permissions) {
