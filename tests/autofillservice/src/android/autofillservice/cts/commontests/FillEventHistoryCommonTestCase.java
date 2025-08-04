@@ -79,6 +79,8 @@ import android.view.autofill.AutofillId;
 
 import androidx.test.filters.FlakyTest;
 
+import com.android.compatibility.common.util.PollingCheck;
+
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -273,7 +275,7 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
 
         // // Finally, make sure history is right for activity A
         {
-            assertThat(sReplier.getSessionDestroyedCount()).isEqualTo(1);
+            PollingCheck.waitFor(() -> sReplier.getSessionDestroyedCount() == 1);
 
             // Verify events for Activity A
             final FillEventHistory historyA = sReplier.getLastFillEventHistory();
@@ -346,7 +348,7 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
         mUiBot.waitForIdleSync();
 
         {
-            assertThat(sReplier.getSessionDestroyedCount()).isEqualTo(2);
+            PollingCheck.waitFor(() -> sReplier.getSessionDestroyedCount() == 2);
 
             // Verify events for Activity B
             final FillEventHistory historyB = sReplier.getLastFillEventHistory();
@@ -436,7 +438,7 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
         // Verify fill shown for Activity B
         int presentationType = isInlineMode() ? UI_TYPE_INLINE : UI_TYPE_MENU;
         {
-            assertThat(sReplier.getSessionDestroyedCount()).isEqualTo(1);
+            PollingCheck.waitFor(() -> sReplier.getSessionDestroyedCount() == 1);
 
             // Verify fill shown for Activity B
             final FillEventHistory historyB = sReplier.getLastFillEventHistory();
@@ -481,7 +483,7 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
 
         // // Finally, make sure history is right for activity A
         {
-            assertThat(sReplier.getSessionDestroyedCount()).isEqualTo(2);
+            PollingCheck.waitFor(() -> sReplier.getSessionDestroyedCount() == 2);
 
             // Verify events for Activity A
             final FillEventHistory historyA = sReplier.getLastFillEventHistory();
@@ -542,7 +544,7 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
         mUiBot.pressHome();
 
         {
-            assertThat(sReplier.getSessionDestroyedCount()).isEqualTo(1);
+            PollingCheck.waitFor(() -> sReplier.getSessionDestroyedCount() == 1);
             assertThat(sReplier.getLastFillEventHistory()).isNotNull();
 
             // Verify fill selection
@@ -587,7 +589,7 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
         // Commit the Session
         mUiBot.pressHome();
 
-        assertThat(sReplier.getSessionDestroyedCount()).isEqualTo(1);
+        PollingCheck.waitFor(() -> sReplier.getSessionDestroyedCount() == 1);
         assertThat(sReplier.getLastFillEventHistory()).isNull();
     }
 
@@ -1250,7 +1252,7 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
 
         // // Finally, make sure history is right for activity A
         {
-            assertThat(sReplier.getSessionDestroyedCount()).isEqualTo(1);
+            PollingCheck.waitFor(() -> sReplier.getSessionDestroyedCount() == 1);
 
             // Verify events for Activity A
             final FillEventHistory historyA = sReplier.getLastFillEventHistory();
