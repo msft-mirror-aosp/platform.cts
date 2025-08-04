@@ -17,6 +17,7 @@ package com.android.bedstead.settings
 
 import android.content.Intent
 import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.service.settings.preferences.SettingsPreferenceMetadata
 import android.util.Log
 import com.android.bedstead.harrier.AnnotationExecutorUtil
@@ -25,11 +26,15 @@ import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.nene.TestApis
 import com.android.settingslib.flags.Flags.FLAG_SETTINGS_CATALYST
 import com.google.common.truth.Truth
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
 class PreferenceWithDeeplinkTest {
+
+    @get:Rule
+    val checkFlagRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @RequiresFlagsEnabled(FLAG_SETTINGS_CATALYST)
     @Test
