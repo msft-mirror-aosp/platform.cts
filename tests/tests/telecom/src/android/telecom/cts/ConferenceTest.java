@@ -25,6 +25,7 @@ import android.os.Bundle;
 import android.telecom.Call;
 import android.telecom.CallEndpoint;
 import android.telecom.Conference;
+import android.telecom.Conferenceable;
 import android.telecom.Connection;
 import android.telecom.ConnectionRequest;
 import android.telecom.DisconnectCause;
@@ -35,6 +36,9 @@ import android.telecom.TelecomManager;
 import android.telecom.VideoProfile;
 
 import androidx.test.InstrumentationRegistry;
+
+import com.android.compatibility.common.util.ApiTest;
+import com.android.server.telecom.flags.Flags;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -64,6 +68,8 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
     MockInCallService mInCallService;
     Conference mConferenceObject;
     MockConference mConferenceVerificationObject;
+
+    private final LinkedBlockingQueue<Call> mAddedCalls = new LinkedBlockingQueue<>();
 
     @Override
     protected void setUp() throws Exception {
@@ -189,6 +195,87 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
         assertConnectionCallDisplayName(mConferenceObject.getConnections().get(1),
                 TestUtils.SWAP_CALLER_NAME);
 
+    }
+
+    /**
+     * Verifies the ability to merge two conference calls together and the utility methods that
+     * surround that process.
+     */
+    @ApiTest(
+            apis = {
+                "android.telecom.Conference#setConferenceables",
+                "android.telecom.Conference#onMerge",
+                "android.telecom.Conference#getConferenceables"
+            })
+    public void testSetConferenceables() {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        if (!Flags.multiPartyAnchorConf()) {
+            // We have a dependency on this 26Q2 flag.
+            return;
+        }
+
+        // The existing method of telling a call was added to the ICS is not nice.  It is easier if
+        // we just track onCallAdded here.
+        final MockInCallService.InCallServiceCallbacks callbacks = createCallbacks();
+        MockInCallService.addCallbacks(callbacks);
+
+        // We already have a base conference ready to go from the setup method
+        final Call originalConf = mInCallService.getLastConferenceCall();
+        assertCallState(originalConf, Call.STATE_ACTIVE);
+        Call secondConf = null;
+        MockConference newConference = null;
+        try {
+            // Don't care about the `onCallAdded` for all the previous calls.
+            mAddedCalls.clear();
+
+            // Make a new second conference.
+            newConference = new MockConference(originalConf.getDetails().getAccountHandle());
+            CtsConnectionService.addConferenceToTelecom(newConference);
+
+            // Get the in-call version of that conference by waiting for onCallAdded
+            try {
+                secondConf =
+                        mAddedCalls.poll(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                assertNotNull("Expected second conference to be added", secondConf);
+            } catch (InterruptedException e) {
+                fail("Expected second conference to be added");
+            }
+
+            // Tell Telecom that the original conference and this new conference are conferenceable.
+            ArrayList<Conferenceable> conferenceables = new ArrayList<>();
+            conferenceables.add(newConference);
+            mConferenceObject.setConferenceables(conferenceables);
+            assertEquals(conferenceables, mConferenceObject.getConferenceables());
+
+            // Verify this propagated up to the InCallService as expected.
+            ArrayList<Call> expectedCalls = new ArrayList();
+            expectedCalls.add(secondConf);
+            assertCallConferenceableList(originalConf, expectedCalls);
+
+            // Setup a linked blocking queue that will have the requested merge pushed onto it.
+            LinkedBlockingQueue<Conference> onMergeQueue = new LinkedBlockingQueue<>();
+            newConference.setOnMergeQueue(onMergeQueue);
+
+            // Now merge the two conferences together.
+            secondConf.conference(originalConf);
+
+            // Ensure merge propagates all the way down to the Conference instance.
+            Conference onMergeRequest = null;
+            try {
+                onMergeRequest =
+                        onMergeQueue.poll(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                assertNotNull("Expected conferences to be merged together.", onMergeRequest);
+            } catch (InterruptedException e) {
+                fail("Expected conferences to be merged together.");
+            }
+        } finally {
+            if (secondConf != null) {
+                newConference.destroy();
+                assertCallState(secondConf, Call.STATE_DISCONNECTED);
+            }
+        }
     }
 
     public void testConferenceSetters() {
@@ -538,23 +625,27 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
         assertNull(mConferenceObject.getVideoProvider());
     }
 
+    public MockConnectionService mConnectionService;
+
     private void addOutgoingCalls() {
         try {
-            PhoneAccount account = setupConnectionService(
+            mConnectionService =
                     new MockConnectionService() {
                         @Override
                         public Connection onCreateOutgoingConnection(
                                 PhoneAccountHandle connectionManagerPhoneAccount,
                                 ConnectionRequest request) {
-                            Connection connection = super.onCreateOutgoingConnection(
-                                    connectionManagerPhoneAccount,
-                                    request);
+                            Connection connection =
+                                    super.onCreateOutgoingConnection(
+                                            connectionManagerPhoneAccount, request);
                             // Modify the connection object created with local values.
                             int capabilities = connection.getConnectionCapabilities();
                             connection.setConnectionCapabilities(capabilities | CONF_CAPABILITIES);
                             return connection;
                         }
-                    }, FLAG_REGISTER | FLAG_ENABLE);
+                    };
+            PhoneAccount account =
+                    setupConnectionService(mConnectionService, FLAG_REGISTER | FLAG_ENABLE);
         } catch(Exception e) {
             fail("Error in setting up the connection services");
         }
@@ -669,6 +760,17 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
                 expected == true ? "Call should have child call " + childrenCall :
                         "Call should not have child call " + childrenCall
         );
+    }
+
+    private MockInCallService.InCallServiceCallbacks createCallbacks() {
+        final MockInCallService.InCallServiceCallbacks callbacks =
+                new MockInCallService.InCallServiceCallbacks() {
+                    @Override
+                    public void onCallAdded(Call call, int numCalls) {
+                        mAddedCalls.offer(call);
+                    }
+                };
+        return callbacks;
     }
 }
 
