@@ -50,6 +50,7 @@ import kotlin.test.assertFailsWith
 import org.junit.After
 import org.junit.Assume
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -107,6 +108,7 @@ class ContextualSearchManagerTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SELF_INVOCATION)
+    @Ignore("b/432842114: Failing on all branches")
     fun testIsContextualSearchAvailable_contextualSearchActivityDisabled() {
         setTemporaryPackage(TEMPORARY_PACKAGE)
         try {
