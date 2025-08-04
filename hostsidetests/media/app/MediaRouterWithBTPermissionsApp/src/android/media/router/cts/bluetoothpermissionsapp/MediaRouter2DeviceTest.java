@@ -71,6 +71,8 @@ import android.os.PowerManager;
 import android.os.SystemClock;
 import android.platform.test.annotations.LargeTest;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -82,6 +84,7 @@ import com.google.common.truth.Truth;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
@@ -102,6 +105,9 @@ import java.util.concurrent.TimeoutException;
  */
 @LargeTest
 public class MediaRouter2DeviceTest {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     /** {@link RouteDiscoveryPreference} for system routes only. */
     private static final RouteDiscoveryPreference SYSTEM_ROUTE_DISCOVERY_PREFERENCE =

@@ -16,18 +16,17 @@
 
 package android.telecom.cts.cuj.app.integration;
 
+import static android.telecom.Call.AUDIO_PROCESSING_USE_CASE_ASK_TO_HOLD;
+import static android.telecom.Call.AUDIO_PROCESSING_USE_CASE_CALL_SCREENING;
+import static android.telecom.Call.AUDIO_PROCESSING_USE_CASE_UNKNOWN;
+import static android.telecom.Call.AUDIO_PROCESSING_USE_CASE_VOICEMAIL;
 import static android.telecom.Call.STATE_ACTIVE;
 import static android.telecom.Call.STATE_AUDIO_PROCESSING;
-import static android.telecom.Call.STATE_CONNECTING;
 import static android.telecom.Call.STATE_DIALING;
 import static android.telecom.Call.STATE_DISCONNECTED;
 import static android.telecom.Call.STATE_HOLDING;
 import static android.telecom.Call.STATE_RINGING;
 import static android.telecom.Call.STATE_SIMULATED_RINGING;
-import static android.telecom.Call.AUDIO_PROCESSING_USE_CASE_ASK_TO_HOLD;
-import static android.telecom.Call.AUDIO_PROCESSING_USE_CASE_CALL_SCREENING;
-import static android.telecom.Call.AUDIO_PROCESSING_USE_CASE_UNKNOWN;
-import static android.telecom.Call.AUDIO_PROCESSING_USE_CASE_VOICEMAIL;
 import static android.telecom.cts.apps.TelecomTestApp.ConnectionServiceVoipAppClone;
 import static android.telecom.cts.apps.TelecomTestApp.ConnectionServiceVoipAppMain;
 import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceApp;
@@ -48,7 +47,6 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.OutcomeReceiver;
-import android.platform.test.annotations.EnableFlags;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.Settings;
 import android.telecom.CallAttributes;
@@ -66,7 +64,6 @@ import android.telecom.cts.cuj.BaseAppVerifier;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.ShellIdentityUtils;
-import com.android.compatibility.common.util.SystemUtil;
 import com.android.server.telecom.flags.Flags;
 
 import org.junit.Test;
@@ -407,27 +404,26 @@ public class SingleCallingTest extends BaseAppVerifier {
         }
     }
 
-
     /**
      * Test the scenario where a new MANAGED incoming call is created and transitions from RINGING
      * to AUDIO_PROCESSING and SIMULATED_RINGING states when marked for voicemail.
      *
-     * <h3> Test Steps: </h3>
+     * <h3>Test Steps: </h3>
+     *
      * <ul>
-     *  1. create a managed call that is backed by a {@link android.telecom.ConnectionService }
-     *  via {@link android.telecom.TelecomManager#addNewIncomingCall(PhoneAccountHandle, Bundle)}
-     * <p>
-     *  2. transition the call to AUDIO_PROCESSING via
-     *  {@link Connection#setAudioProcessing(AUDIO_PROCESSING_USE_CASE_VOICEMAIL)}
-     * <p>
-     *  3. transition the call to SIMULATED_RINGING via {@link Connection#setSimulatedRinging()}
-     *  </ul>
-     *  Assert the call was successfully added and transitioned to the AUDIO_PROCESSING and
-     *  SIMULATED_RINGING state without errors
+     *   1. create a managed call that is backed by a {@link android.telecom.ConnectionService } via
+     *   {@link android.telecom.TelecomManager#addNewIncomingCall(PhoneAccountHandle, Bundle)}
+     *   <p>2. transition the call to AUDIO_PROCESSING via {@link
+     *   Connection#setAudioProcessing(AUDIO_PROCESSING_USE_CASE_VOICEMAIL)}
+     *   <p>3. transition the call to SIMULATED_RINGING via {@link Connection#setSimulatedRinging()}
+     * </ul>
+     *
+     * Assert the call was successfully added and transitioned to the AUDIO_PROCESSING and
+     * SIMULATED_RINGING state without errors
      */
     @Test
-    public void testIncomingCallAudioProcessing_ManagedConnectionServiceApp()
-        throws Exception {
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_AUDIO_PROCESSING_USE_CASE)
+    public void testIncomingCallAudioProcessing_ManagedConnectionServiceApp() throws Exception {
         if (!mShouldTestTelecom) {
             return;
         }

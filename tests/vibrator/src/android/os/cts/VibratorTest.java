@@ -183,6 +183,8 @@ public class VibratorTest {
     public void setUp() throws InterruptedException {
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
         Settings.System.putInt(context.getContentResolver(), Settings.System.VIBRATE_ON, 1);
+        Settings.System.putInt(
+                context.getContentResolver(), Settings.System.HAPTIC_FEEDBACK_ENABLED, 1);
         VibratorStateHelper.addListenerAndAssertInitialStateIdle(
                 mVibrator, mStateListener, CALLBACK_TIMEOUT_MILLIS);
     }

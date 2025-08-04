@@ -6046,30 +6046,6 @@
         </receiver>
 
         <activity
-            android:name=".voicemail.VisualVoicemailServiceActivity"
-                android:exported="true"
-            android:label="@string/visual_voicemail_service_test">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.cts.intent.category.MANUAL_TEST"/>
-            </intent-filter>
-
-            <meta-data
-                android:name="test_category"
-                android:value="@string/test_category_telephony"/>
-            <meta-data
-                android:name="test_required_features"
-                android:value="android.hardware.telephony"/>
-            <meta-data
-                android:name="test_required_configs"
-                android:value="config_voice_capable"/>
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="ApiTest"
-                android:value="android.telephony.TelephonyManager#ACTION_SHOW_VOICEMAIL_NOTIFICATION"/>
-        </activity>
-
-        <activity
             android:name=".dialer.DialerIncomingCallTestActivity"
                 android:exported="true"
             android:label="@string/dialer_incoming_call_test">

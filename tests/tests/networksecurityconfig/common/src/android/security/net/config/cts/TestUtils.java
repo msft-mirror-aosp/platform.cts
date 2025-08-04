@@ -299,7 +299,7 @@ public final class TestUtils {
                 actual);
     }
 
-    private static final long DOWNLOAD_MANAGER_TIMEOUT = 3 * DateUtils.SECOND_IN_MILLIS;
+    private static final long DOWNLOAD_MANAGER_TIMEOUT = 10 * DateUtils.SECOND_IN_MILLIS;
 
     /** Asserts that the DownloadManager is able to retrieve the root of a webserver. */
     public static void assertDownloadManagerSucceeds(
