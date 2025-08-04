@@ -195,6 +195,8 @@ public class AssistantStackTests extends ActivityManagerTestBase {
 
         // Now, tell it to finish itself and ensure that the assistant stack is brought back forward
         mBroadcastActionTrigger.doAction(TEST_ACTIVITY_ACTION_FINISH_SELF);
+        // Wait for tasks to be removed before asserting task order.
+        mWmState.waitAndAssertActivityRemoved(TEST_ACTIVITY);
         mWmState.waitForFocusedStack(WINDOWING_MODE_UNDEFINED, ACTIVITY_TYPE_ASSISTANT);
         mWmState.assertFrontStackActivityType(
                 "Assistant stack should be on top.", ACTIVITY_TYPE_ASSISTANT);
