@@ -686,6 +686,8 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
 
     @Test
     public void testAppCannotStartBgActivityAfterHomeButton() throws Exception {
+        PackageManager pm = mContext.getPackageManager();
+        Assume.assumeFalse(pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
         Intent intent = new Intent();
         intent.setComponent(APP_A.RELAUNCHING_ACTIVITY);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -707,7 +709,8 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     // Check picture-in-picture(PIP) won't allow to start BAL after pressing home.
     @Test
     public void testPipCannotStartAfterHomeButton() throws Exception {
-
+        PackageManager pm = mContext.getPackageManager();
+        Assume.assumeFalse(pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
         Intent intent = new Intent();
         intent.setComponent(APP_A.PIP_ACTIVITY);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -752,6 +755,8 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     // Check that a presentation on a virtual display won't allow BAL after pressing home.
     @Test
     public void testVirtualDisplayCannotStartAfterHomeButton() throws Exception {
+        PackageManager pm = mContext.getPackageManager();
+        Assume.assumeFalse(pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
         Intent intent = new Intent();
         intent.setComponent(APP_A.VIRTUAL_DISPLAY_ACTIVITY);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
