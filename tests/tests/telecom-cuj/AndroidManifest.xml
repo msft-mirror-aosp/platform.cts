@@ -66,6 +66,13 @@
             <meta-data android:name="android.telecom.INCLUDE_SELF_MANAGED_CALLS"
                        android:value="true" />
         </service>
+        <service android:name="android.telecom.cts.cuj.CujLocalVoicemailService"
+            android:exported="true"
+            android:permission="android.permission.BIND_LOCAL_VOICEMAIL_SERVICE">
+            <intent-filter>
+                <action android:name="android.telecom.LocalVoicemailService"/>
+            </intent-filter>
+        </service>
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
