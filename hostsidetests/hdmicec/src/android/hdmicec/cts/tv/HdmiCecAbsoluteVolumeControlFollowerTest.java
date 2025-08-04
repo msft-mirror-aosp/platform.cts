@@ -101,7 +101,7 @@ public class HdmiCecAbsoluteVolumeControlFollowerTest extends BaseHdmiCecCtsTest
         // Wait for CEC adapter to enable System Audio Mode before turning it off
         getDevice().executeShellCommand("cmd hdmi_control setsam on");
         hdmiCecClient.checkExpectedMessageFromClient(LogicalAddress.AUDIO_SYSTEM,
-                LogicalAddress.TV, CecOperand.SYSTEM_AUDIO_MODE_STATUS);
+                LogicalAddress.TV, CecOperand.SET_SYSTEM_AUDIO_MODE);
 
         getDevice().executeShellCommand("cmd hdmi_control setsam off");
 
