@@ -93,8 +93,10 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
         val userHelper = UserHelper(mContext)
         // TODO(b/380297485): Remove this assumption check once NotificationListeners
         // support visible background users.
-        assumeFalse("NotificationListeners do not support visible background users",
-                userHelper.isVisibleBackgroundUser())
+        assumeFalse(
+            "NotificationListeners do not support visible background users",
+                userHelper.isVisibleBackgroundUser()
+        )
         PermissionUtils.grantPermission(STUB_PACKAGE_NAME, POST_NOTIFICATIONS)
 
         setUpNotifListener()
@@ -464,12 +466,6 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
             Telephony.Sms.getDefaultSmsPackage(mContext)
         }
         assumeNotNull(existingSmsApp)
-        setSmsApp(mContext.packageName)
-        mNotificationHelper.enableOtherPkgAssistantIfNeeded(mPreviousEnabledAssistant)
-        // We just re-enabled the NAS. send one notification in order to start its process
-        sendNotification(text = "staring NAS process", title = "", subtext = "", tag = "start")
-        waitForNotification(tag = "start")
-
         val shouldRedact = mutableListOf(
             "your code is 123G5",
             "your code is 123456F8",
@@ -489,6 +485,11 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
         var notifNum = 0
         val notRedactedFailures = StringBuilder("")
         try {
+            setSmsApp(mContext.packageName)
+            mNotificationHelper.enableOtherPkgAssistantIfNeeded(mPreviousEnabledAssistant)
+            // We just re-enabled the NAS. send one notification in order to start its process
+            sendNotification(text = "staring NAS process", title = "", subtext = "", tag = "start")
+            waitForNotification(tag = "start")
             // Newly enabled NAS can sometimes take a short while to start properly responding
             for (i in 0..20) {
                 val basicOtp = "your one time code is 3434"
