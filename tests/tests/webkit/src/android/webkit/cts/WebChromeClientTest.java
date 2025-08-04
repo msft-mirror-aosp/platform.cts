@@ -30,6 +30,7 @@ import android.util.Base64;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.webkit.ConsoleMessage;
+import android.webkit.Flags;
 import android.webkit.JsPromptResult;
 import android.webkit.JsResult;
 import android.webkit.ValueCallback;
@@ -443,7 +444,9 @@ public class WebChromeClientTest extends SharedWebViewTest{
         }.run();
         FileChooserParams params = webChromeClient.getFileChooserParams();
         assertEquals(params.getMode(), FileChooserParams.MODE_OPEN);
-        assertEquals(params.getPermissionMode(), FileChooserParams.PERMISSION_MODE_READ);
+        if (Flags.fileSystemAccess()) {
+            assertEquals(params.getPermissionMode(), FileChooserParams.PERMISSION_MODE_READ);
+        }
     }
 
     @Test
@@ -472,7 +475,9 @@ public class WebChromeClientTest extends SharedWebViewTest{
         }.run();
         FileChooserParams params = webChromeClient.getFileChooserParams();
         assertEquals(params.getMode(), FileChooserParams.MODE_OPEN_MULTIPLE);
-        assertEquals(params.getPermissionMode(), FileChooserParams.PERMISSION_MODE_READ);
+        if (Flags.fileSystemAccess()) {
+            assertEquals(params.getPermissionMode(), FileChooserParams.PERMISSION_MODE_READ);
+        }
     }
 
     /**
