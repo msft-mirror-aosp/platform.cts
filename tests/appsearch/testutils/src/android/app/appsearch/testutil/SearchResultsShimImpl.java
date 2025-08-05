@@ -22,6 +22,7 @@ import android.app.appsearch.SearchResult;
 import android.app.appsearch.SearchResults;
 import android.app.appsearch.SearchResultsShim;
 import android.app.appsearch.exceptions.AppSearchException;
+import android.util.Log;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -32,11 +33,15 @@ import java.util.Objects;
 import java.util.concurrent.Executor;
 
 /**
- * This test class adapts the AppSearch Framework API to ListenableFuture, so it can be tested via
- * a consistent interface.
+ * This test class adapts the AppSearch Framework API to ListenableFuture, so it can be tested via a
+ * consistent interface.
+ *
  * @hide
  */
-public class SearchResultsShimImpl implements SearchResultsShim {
+public final class SearchResultsShimImpl implements SearchResultsShim {
+
+    private static final String TAG = SearchResultsShimImpl.class.getSimpleName();
+
     private final Executor mExecutor;
     private final SearchResults mSearchResults;
 
@@ -62,6 +67,7 @@ public class SearchResultsShimImpl implements SearchResultsShim {
 
     private <T> ListenableFuture<T> transformResult(
             @NonNull AppSearchResult<T> result) throws AppSearchException {
+        Log.d(TAG, "transformResult(): " + result);
         if (!result.isSuccess()) {
             throw new AppSearchException(result.getResultCode(), result.getErrorMessage());
         }
