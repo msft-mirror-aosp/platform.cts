@@ -24,7 +24,6 @@ import static android.view.WindowInsets.Type.systemBars;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
 import android.app.Instrumentation;
@@ -65,6 +64,7 @@ import com.android.server.display.feature.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -93,6 +93,10 @@ public class DisplayManagerTest {
     public final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule();
 
+    @Rule
+    public DeviceStateManagerTestRule mDeviceStateManagerTestRule =
+            new DeviceStateManagerTestRule();
+
     private TestActivity mActivity;
     private Instrumentation mInstrumentation;
 
@@ -119,10 +123,8 @@ public class DisplayManagerTest {
     }
 
     @Test
+    @Ignore("b/317812433") // Disable test until test can be fixed for specific devices
     public void testCreateVirtualDisplayFromShell() throws InterruptedException {
-        // b/317812433: Disable test until test can be fixed for specific devices
-        assumeTrue(false);
-
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity();
         mActivity.waitForReady();
         mInstrumentation.waitForIdleSync();
@@ -225,6 +227,33 @@ public class DisplayManagerTest {
                                 displayManager.getDisplays(DISPLAY_CATEGORY_BUILT_IN_DISPLAYS)));
 
         assertEquals(expectedDisplays, builtInDisplays);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DISPLAY_CATEGORY_BUILT_IN)
+    public void testDisplayCategoryBuiltIn_allDisplays() throws Throwable {
+        final DisplayManager displayManager =
+                Objects.requireNonNull(mActivity.getSystemService(DisplayManager.class));
+
+        final Set<String> uniqueDisplayIds = new HashSet<>();
+        for (Display display : displayManager.getDisplays(DISPLAY_CATEGORY_BUILT_IN_DISPLAYS)) {
+            uniqueDisplayIds.add(display.getUniqueId());
+        }
+
+        mDeviceStateManagerTestRule.cycleThroughHardwareStates(
+                () -> {
+                    Display[] displays = displayManager.getDisplays();
+                    for (Display display : displays) {
+                        if (display.getType() == Display.TYPE_INTERNAL) {
+                            assertTrue(
+                                    "Built in display not in built in displays. Expected: "
+                                            + display.getUniqueId()
+                                            + ", Set: "
+                                            + uniqueDisplayIds,
+                                    uniqueDisplayIds.contains(display.getUniqueId()));
+                        }
+                    }
+                });
     }
 
     @Test
