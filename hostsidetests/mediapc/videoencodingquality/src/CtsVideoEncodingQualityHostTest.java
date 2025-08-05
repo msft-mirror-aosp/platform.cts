@@ -98,6 +98,9 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
     private static final Lock sLock = new ReentrantLock();
     private static final Condition sCondition = sLock.newCondition();
     private static boolean sIsTestSetUpDone = false;
+    private static boolean sSkipAll = false;
+    private static int sResult = 0;
+    private static String sReason = "";
             // install apk, push necessary resources to device to run the test. lock/condition
             // pair is to keep setupTestEnv() thread safe
     private static File sHostWorkDir;
@@ -285,23 +288,33 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
      */
     public void setupTestEnv() throws Exception {
         String sdkAsString = getDevice().getProperty("ro.build.version.sdk");
-        int sdk = Integer.parseInt(sdkAsString);
-        Assume.assumeTrue("Test requires sdk >= " + MINIMUM_VALID_SDK
-                + " test device has sdk = " + sdk, sdk >= MINIMUM_VALID_SDK);
-
-        String pcAsString = getDevice().getProperty("ro.odm.build.media_performance_class");
-        try {
-            sMpc = Integer.parseInt("0" + pcAsString);
-        } catch (Exception e) {
-            LogUtil.CLog.i("Invalid pcAsString: " + pcAsString + ", exception: " + e);
+        int sdk = sdkAsString == null ? 0 : Integer.parseInt(sdkAsString);
+        if (sdk < MINIMUM_VALID_SDK) {
+            sSkipAll = true;
+            sReason = "Test requires sdk >= " + MINIMUM_VALID_SDK + " test device has sdk = " + sdk;
+            sIsTestSetUpDone = true;
+            return;
         }
 
-        Assume.assumeTrue("Performance class advertised by the test device is less than "
-                + MEDIA_PERFORMANCE_CLASS_14, mForceToRun || sMpc >= MEDIA_PERFORMANCE_CLASS_14
-                || (sMpc == 0 && sdk >= 34 /* Build.VERSION_CODES.UPSIDE_DOWN_CAKE */));
+        String pcAsString = getDevice().getProperty("ro.odm.build.media_performance_class");
+        sMpc = pcAsString == null ? 0 : Integer.parseInt(pcAsString);
+        if (!(mForceToRun
+                || sMpc >= MEDIA_PERFORMANCE_CLASS_14
+                || (sMpc == 0 && sdk >= 34 /* Build.VERSION_CODES.UPSIDE_DOWN_CAKE */))) {
+            sSkipAll = true;
+            sReason =
+                    "Performance class advertised by the test device is less than "
+                            + MEDIA_PERFORMANCE_CLASS_14;
+            sIsTestSetUpDone = true;
+            return;
+        }
 
-        Assert.assertTrue("Failed to install package on device : " + DEVICE_SIDE_TEST_PACKAGE,
-                getDevice().isPackageInstalled(DEVICE_SIDE_TEST_PACKAGE));
+        if (!getDevice().isPackageInstalled(DEVICE_SIDE_TEST_PACKAGE)) {
+            sResult = 1;
+            sReason = "Failed to install package on device : " + DEVICE_SIDE_TEST_PACKAGE;
+            sIsTestSetUpDone = true;
+            return;
+        }
 
         // set up host-side working directory
         String tmpBase = System.getProperty("java.io.tmpdir");
@@ -309,29 +322,41 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
         String tmpDir = tmpBase + "/" + dirName;
         LogUtil.CLog.i("tmpBase= " + tmpBase + " tmpDir =" + tmpDir);
         sHostWorkDir = new File(tmpDir);
-        if (mReset || sHostWorkDir.isFile()) {
+        if (mReset || !sHostWorkDir.isDirectory()) {
             File cwd = new File(".");
-            runCommand("rm -rf " + tmpDir, cwd);
-        }
-        try {
-            if (!sHostWorkDir.isDirectory()) {
-                Assert.assertTrue("Failed to create directory : " + sHostWorkDir.getAbsolutePath(),
-                        sHostWorkDir.mkdirs());
+            sResult = runCommand("rm -rf " + tmpDir, cwd);
+            if (0 != sResult) {
+                sReason = "Failed to remove file / dir " + tmpDir;
+                sIsTestSetUpDone = true;
+                return;
             }
-        } catch (SecurityException e) {
-            LogUtil.CLog.e("Unable to establish temp directory " + sHostWorkDir.getPath());
+        }
+        if (!sHostWorkDir.exists() && !sHostWorkDir.mkdirs()) {
+            sResult = 1;
+            sReason = "Failed to create directory : " + sHostWorkDir.getAbsolutePath();
+            sIsTestSetUpDone = true;
+            return;
         }
 
         // Clean up output folders before starting the test
-        runCommand("rm -rf " + "output_*", sHostWorkDir);
+        sResult = runCommand("rm -rf " + "output_*", sHostWorkDir);
+        if (0 != sResult) {
+            sReason = "Failed to remove output_* dirs from " + tmpDir;
+            sIsTestSetUpDone = true;
+            return;
+        }
 
         // Download the test suite tar file.
         downloadFile(RES_URL, sHostWorkDir);
 
         // Unpack the test suite tar file.
         String fileName = RES_URL.substring(RES_URL.lastIndexOf('/') + 1);
-        int result = runCommand("tar xvzf " + fileName, sHostWorkDir);
-        Assert.assertEquals("Failed to untar " + fileName, 0, result);
+        sResult = runCommand("tar xvzf " + fileName, sHostWorkDir);
+        if (0 != sResult) {
+            sReason = "Failed to untar " + fileName;
+            sIsTestSetUpDone = true;
+            return;
+        }
 
         sIsTestSetUpDone = true;
     }
@@ -374,6 +399,8 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
         } finally {
             sLock.unlock();
         }
+        Assume.assumeFalse(sReason, sSkipAll);
+        Assert.assertEquals(sReason, 0, sResult);
 
         // Push input files to device
         String mntPoint = getDevice().getMountPoint(IDevice.MNT_EXTERNAL_STORAGE);
@@ -426,13 +453,10 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
         // copy the encoded output from the device to the host.
         String outDir = "output_" + mJsonName.substring(0, mJsonName.indexOf('.'));
         File outHostPath = new File(sHostWorkDir, outDir);
-        try {
-            if (!outHostPath.isDirectory()) {
-                Assert.assertTrue("Failed to create directory : " + outHostPath.getAbsolutePath(),
-                        outHostPath.mkdirs());
-            }
-        } catch (SecurityException e) {
-            LogUtil.CLog.e("Unable to establish output host directory : " + outHostPath.getPath());
+        if (!outHostPath.isDirectory()) {
+            Assert.assertTrue(
+                    "Failed to create directory : " + outHostPath.getAbsolutePath(),
+                    outHostPath.mkdirs());
         }
         String outDevPath = mntPoint + "/veq/output/" + outDir;
         Assert.assertTrue("Failed to pull mp4 files from " + outDevPath
@@ -616,7 +640,7 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
                     errorBuilder.append(resultEntry.getKey().toString());
                     errorBuilder.append(":\n");
                     errorBuilder.append(resultEntry.getValue().getStackTrace());
-                    Assume.assumeTrue(errorBuilder.toString(), false);
+                    throw new AssertionError(errorBuilder.toString());
                 }
             }
         }
