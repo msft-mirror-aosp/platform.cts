@@ -1833,6 +1833,7 @@
     <string name="camera_webcam_results_fail_frames_pass_text">Script results failed but frames were normal. Test failed. Click Done to complete.</string>
     <string name="camera_webcam_results_fail_frames_fail_text">Script results failed and frames contained errors. Test failed. Click Done to complete.</string>
     <string name="camera_webcam_not_supported_text">Webcam feature not supported. Test skipped. Click Done to complete.</string>
+    <string name="camera_webcam_no_usbmanager_text">Could not connect to UsbManager Service to determine webcam support. Test failed. Click Done to complete.</string>
 
     <!-- Strings for the Camera Flashlight test activity -->
     <string name="camera_flashlight_test">Camera Flashlight</string>
