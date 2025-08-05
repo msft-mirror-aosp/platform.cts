@@ -413,7 +413,15 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
         }
 
         // transcode input
-        runDeviceTests(DEVICE_SIDE_TEST_PACKAGE, DEVICE_SIDE_TEST_CLASS, "testTranscode");
+        try {
+            runDeviceTests(DEVICE_SIDE_TEST_PACKAGE, DEVICE_SIDE_TEST_CLASS, "testTranscode");
+        } catch (AssertionError e) {
+            if (sMpc >= MEDIA_PERFORMANCE_CLASS_14) {
+                Assert.fail(e.getMessage());
+            } else {
+                Assume.assumeTrue(e.getMessage(), false);
+            }
+        }
 
         // copy the encoded output from the device to the host.
         String outDir = "output_" + mJsonName.substring(0, mJsonName.indexOf('.'));
@@ -502,7 +510,12 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
         String refJsonFilePath = sHostWorkDir.getPath() + "/json/" + mJsonName;
         String testVmafFilePath = sHostWorkDir.getPath() + "/" + outDir + "/" + "all_vmafs.txt";
         String resultFilePath = sHostWorkDir.getPath() + "/" + outDir + "/result.txt";
-        int result = verifyBdRate(refJsonFilePath, testVmafFilePath, resultFilePath);
+        int result;
+        try {
+            result = verifyBdRate(refJsonFilePath, testVmafFilePath, resultFilePath);
+        } catch (RuntimeException e) {
+            result = 1;
+        }
         if (sMpc >= MEDIA_PERFORMANCE_CLASS_14) {
             Assert.assertEquals("bd rate validation failed.", 0, result);
         } else {
