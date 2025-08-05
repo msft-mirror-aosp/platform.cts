@@ -102,7 +102,7 @@ class SettingsParameterizedTestWithArgumentGenerator(
         return if (skipUnsupportedPreferences) {
             filter {
                 clientComponent
-                    .getBlockingClient(SETTINGS_PACKAGE_NAME)
+                    .getRepository(SETTINGS_PACKAGE_NAME)
                     .getValueResult(it).resultCode != GetValueResult.RESULT_UNSUPPORTED
             }
         } else {
