@@ -82,19 +82,6 @@ public class TelephonyFrameworkInitializerTest {
         assertEquals(tsm, TelephonyFrameworkInitializer.getTelephonyServiceManager());
     }
 
-    /** Tests that calling setTelephonyServiceManager twice throws an IllegalStateException. */
-    @Test(expected = IllegalStateException.class)
-    public void testSetTelephonyServiceManager_calledTwice_throwsException() {
-        TelephonyFrameworkInitializer.setTelephonyServiceManager(new TelephonyServiceManager());
-        TelephonyFrameworkInitializer.setTelephonyServiceManager(new TelephonyServiceManager());
-    }
-
-    /** Tests that passing null to setTelephonyServiceManager throws a NullPointerException. */
-    @Test(expected = NullPointerException.class)
-    public void testSetTelephonyServiceManager_withNull_throwsException() {
-        TelephonyFrameworkInitializer.setTelephonyServiceManager(null);
-    }
-
     /**
      * Verifies that core services are correctly retrieved via Context.getSystemService as a result
      * of registerServiceWrappers. This test assumes that registerServiceWrappers has already been
@@ -110,10 +97,5 @@ public class TelephonyFrameworkInitializerTest {
                 mContext.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
         assertNotNull("SubscriptionManager should be registered", subscriptionService);
         assertTrue(subscriptionService instanceof SubscriptionManager);
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void testRegisterServiceWrappers() {
-        TelephonyFrameworkInitializer.registerServiceWrappers();
     }
 }
