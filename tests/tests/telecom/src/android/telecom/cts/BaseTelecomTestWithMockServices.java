@@ -1774,9 +1774,12 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
                     }
                 },
                 WAIT_FOR_STATE_CHANGE_TIMEOUT_MS,
-                "Expected state: " + state + ", callState=" + call.getState() + ", detailState="
-                    + call.getDetails().getState()
-        );
+                "Expected state: "
+                        + state
+                        + ", callState="
+                        + call.getState()
+                        + ", detailState="
+                        + call.getDetails().getState());
     }
 
     void assertCallConferenceableList(final Call call, final List<Call> conferenceableList) {

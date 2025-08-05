@@ -18,4 +18,8 @@ package android.telecom.cts.streamingtestapp;
 
 interface ICtsCallStreamingServiceControl {
     Bundle waitForCallAdded();
+    void requestCallStreamingState(int state);
+    void waitForCallStreamingStopped();
+    int waitForCallStreamingStateChanged();
+    void resetCallbackLatches();
 }
