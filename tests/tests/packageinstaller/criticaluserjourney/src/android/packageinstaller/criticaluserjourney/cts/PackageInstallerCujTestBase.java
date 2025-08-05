@@ -103,7 +103,9 @@ public class PackageInstallerCujTestBase {
     public static final String APP_UPDATED_LABEL = "App updated";
     public static final String APP_INSTALL_CONFIRM_LABEL = "Install this app";
     public static final String APP_UPDATE_CONFIRM_LABEL = "Update this app";
+    public static final String APP_NOT_INSTALLED_LABEL = "App not installed";
     public static final String BUTTON_CANCEL_LABEL = "Cancel";
+    public static final String BUTTON_CLOSE_LABEL = "Close";
     public static final String BUTTON_DELETE_LABEL = "Delete";
     public static final String BUTTON_DONE_LABEL = "Done";
     public static final String BUTTON_MORE_DETAILS_LABEL = "More details";
@@ -116,6 +118,10 @@ public class PackageInstallerCujTestBase {
     public static final String BUTTON_UNINSTALL_LABEL = "Uninstall";
     public static final String BUTTON_UPDATE_LABEL = "Update";
     public static final String BUTTON_UPDATE_ANYWAY_LABEL = "Update anyway";
+    public static final String BUTTON_MORE_DETAILS = "More details";
+    public static final String BUTTON_INSTALL_WITHOUT_VERIFYING_LABEL = "Install without verifying";
+    public static final String BUTTON_UPDATE_WITHOUT_VERIFYING_LABEL = "Update without verifying";
+
     public static final String CLONE_LABEL = "Clone";
     public static final String DELETE_LABEL = "delete";
     public static final String INSTALLING_LABEL = "Installing";
@@ -290,6 +296,11 @@ public class PackageInstallerCujTestBase {
      */
     public static void assertTitleIsTestAppLabel() throws Exception {
         findPackageInstallerObject(TEST_APP_LABEL);
+    }
+
+    /** Assert the title of the install dialog is {@link #APP_NOT_INSTALLED_LABEL}. */
+    public static void assertTitleIsAppNotInstalled() throws Exception {
+        findPackageInstallerObject(APP_NOT_INSTALLED_LABEL);
     }
 
     /**
