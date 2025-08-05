@@ -24,8 +24,8 @@ import static android.telephony.DomainSelectionService.SCAN_TYPE_NO_PREFERENCE;
 import static android.telephony.DomainSelectionService.SELECTOR_TYPE_CALLING;
 import static android.telephony.NetworkRegistrationInfo.DOMAIN_CS;
 import static android.telephony.NetworkRegistrationInfo.REGISTRATION_STATE_UNKNOWN;
-import static android.telephony.PreciseDisconnectCause.NO_DISCONNECT_CAUSE_AVAILABLE;
 import static android.telephony.PreciseDisconnectCause.NOT_VALID;
+import static android.telephony.PreciseDisconnectCause.NO_DISCONNECT_CAUSE_AVAILABLE;
 import static android.telephony.cts.TestDomainSelectionService.LATCH_ON_BARRING_INFO_UPDATED;
 import static android.telephony.cts.TestDomainSelectionService.LATCH_ON_DOMAIN_SELECTION;
 import static android.telephony.cts.TestDomainSelectionService.LATCH_ON_EMERGENCY_REG_RESULT;
@@ -119,7 +119,7 @@ public class DomainSelectionServiceTestOnMockModem extends DomainSelectionCallin
     public static void beforeAllTests() throws Exception {
         if (VDBG) Log.d(LOG_TAG, "beforeAllTests");
 
-        if (!hasFeature(PackageManager.FEATURE_TELEPHONY)) {
+        if (!hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING)) {
             return;
         }
 
