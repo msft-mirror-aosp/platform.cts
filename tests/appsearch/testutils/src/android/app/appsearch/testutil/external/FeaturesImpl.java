@@ -30,80 +30,82 @@ public class FeaturesImpl implements Features {
     @Override
     public boolean isFeatureSupported(@NonNull String feature) {
         switch (feature) {
-                // Aliases for other features
+            // Aliases for other features
             case Features.SEARCH_AND_CLICK_ACCUMULATOR:
                 // Requires JoinSpec to create the Click schema. TakenAction API is optional as we
                 // can index search and click as regular documents if TakenActions aren't available.
                 return isFeatureSupported(Features.JOIN_SPEC_AND_QUALIFIED_ID);
 
             case Features.ADD_PERMISSIONS_AND_GET_VISIBILITY:
-                // fall through
+            // fall through
             case Features.GLOBAL_SEARCH_SESSION_GET_SCHEMA:
-                // fall through
+            // fall through
             case Features.GLOBAL_SEARCH_SESSION_GET_BY_ID:
-                // fall through
+            // fall through
             case Features.GLOBAL_SEARCH_SESSION_REGISTER_OBSERVER_CALLBACK:
-                // fall through
+            // fall through
             case Features.JOIN_SPEC_AND_QUALIFIED_ID:
-                // fall through
+            // fall through
             case Features.NUMERIC_SEARCH:
-                // fall through
+            // fall through
             case Features.VERBATIM_SEARCH:
-                // fall through
+            // fall through
             case Features.LIST_FILTER_QUERY_LANGUAGE:
-                // fall through
+            // fall through
             case Features.LIST_FILTER_HAS_PROPERTY_FUNCTION:
-                // fall through
+            // fall through
             case Features.LIST_FILTER_MATCH_SCORE_EXPRESSION_FUNCTION:
-                // fall through
+            // fall through
             case Features.SEARCH_SPEC_SEARCH_STRING_PARAMETERS:
-                // fall through
+            // fall through
             case Features.SCHEMA_EMBEDDING_PROPERTY_CONFIG:
-                // fall through
+            // fall through
             case Features.SCHEMA_EMBEDDING_QUANTIZATION:
-                // fall through
+            // fall through
             case Features.SEARCH_SPEC_GROUPING_TYPE_PER_SCHEMA:
-                // fall through
+            // fall through
             case Features.SEARCH_RESULT_MATCH_INFO_SUBMATCH:
-                // fall through
+            // fall through
             case Features.SEARCH_SPEC_PROPERTY_WEIGHTS:
-                // fall through
+            // fall through
             case Features.TOKENIZER_TYPE_RFC822:
-                // fall through
+            // fall through
             case Features.SEARCH_SPEC_ADVANCED_RANKING_EXPRESSION:
-                // fall through
+            // fall through
             case Features.SEARCH_SUGGESTION:
-                // fall through
+            // fall through
             case Features.SET_SCHEMA_CIRCULAR_REFERENCES:
-                // fall through
+            // fall through
             case Features.SCHEMA_ADD_PARENT_TYPE:
-                // fall through
+            // fall through
             case Features.SCHEMA_SET_DESCRIPTION:
-                // fall through
+            // fall through
             case Features.SCHEMA_ADD_INDEXABLE_NESTED_PROPERTIES:
-                // fall through
+            // fall through
+            case Features.SCHEMA_GET_INDEXABLE_NESTED_PROPERTIES:
+            // fall through
             case Features.SEARCH_SPEC_ADD_FILTER_PROPERTIES:
-                // fall through
+            // fall through
             case Features.SEARCH_SPEC_SET_SEARCH_SOURCE_LOG_TAG:
-                // fall through
+            // fall through
             case Features.SET_SCHEMA_REQUEST_SET_PUBLICLY_VISIBLE:
-                // fall through
+            // fall through
             case Features.SET_SCHEMA_REQUEST_ADD_SCHEMA_TYPE_VISIBLE_TO_CONFIG:
-                // fall through
+            // fall through
             case Features.SEARCH_SPEC_ADD_INFORMATIONAL_RANKING_EXPRESSIONS:
-                // fall through
+            // fall through
             case Features.BLOB_STORAGE:
-                // fall through
+            // fall through
             case Features.SEARCH_SPEC_ADD_FILTER_DOCUMENT_IDS:
-                // fall through
+            // fall through
             case Features.SCHEMA_SCORABLE_PROPERTY_CONFIG:
-                // fall through
+            // fall through
             case Features.SEARCH_RESULT_PARENT_TYPES:
-                // fall through
+            // fall through
             case Features.SEARCH_SPEC_RANKING_FUNCTION_MAX_MIN_OR_DEFAULT:
-                // fall through
+            // fall through
             case Features.SEARCH_SPEC_RANKING_FUNCTION_FILTER_BY_RANGE:
-                // fall through
+            // fall through
             case Features.SEARCH_EMBEDDING_MATCH_INFO:
                 return true;
             case Features.INDEXER_MOBILE_APPLICATIONS:
