@@ -34,7 +34,10 @@ public class MainlineFeaturesImpl implements Features {
     @Override
     public boolean isFeatureSupported(@NonNull String feature) {
         switch (feature) {
-            // Features supported on all devices to which we ship.
+            // Features supported on all devices to which we ship. Note that this isn't a list of
+            // what device versions the features were first added on -- it's a list of what device
+            // versions the feature is supported and functional on if that device has a fully
+            // updated AppSearch mainline module version.
             case Features.ADD_PERMISSIONS_AND_GET_VISIBILITY:
                 // fall through
             case Features.GLOBAL_SEARCH_SESSION_GET_SCHEMA:
@@ -64,7 +67,9 @@ public class MainlineFeaturesImpl implements Features {
             case Features.SEARCH_SPEC_GROUPING_TYPE_PER_SCHEMA:
                 // fall through
             case Features.SCHEMA_ADD_INDEXABLE_NESTED_PROPERTIES:
-                // fall through
+            // fall through
+            case Features.SCHEMA_GET_INDEXABLE_NESTED_PROPERTIES:
+            // fall through
             case Features.SCHEMA_SET_DESCRIPTION:
                 // fall through
             case Features.SEARCH_SPEC_ADD_FILTER_PROPERTIES:
