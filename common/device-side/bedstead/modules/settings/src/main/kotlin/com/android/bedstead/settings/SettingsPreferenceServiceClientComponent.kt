@@ -17,6 +17,7 @@ package com.android.bedstead.settings
 
 import android.service.settings.preferences.SettingsPreferenceMetadata
 import android.service.settings.preferences.SettingsPreferenceServiceClient
+import android.service.settings.preferences.SettingsPreferenceValue
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
 
@@ -25,45 +26,54 @@ import com.android.bedstead.harrier.DeviceStateComponent
  */
 class SettingsPreferenceServiceClientComponent : DeviceStateComponent {
 
-    private val clients: MutableMap<String, BlockingSettingsPreferenceServiceClient> =
-        mutableMapOf()
+    private val repositories: MutableMap<String, SettingsPreferenceRepository> = mutableMapOf()
 
-    internal fun getBlockingClient(packageName: String): BlockingSettingsPreferenceServiceClient {
-        return clients[packageName] ?: BlockingSettingsPreferenceServiceClient(packageName).also {
-            clients[packageName] = it
+    internal fun getRepository(packageName: String): SettingsPreferenceRepository {
+        return repositories[packageName] ?: SettingsPreferenceRepository(packageName).also {
+            repositories[packageName] = it
         }
     }
 
     internal fun allMetadata(packageName: String): List<SettingsPreferenceMetadata> {
-        return getBlockingClient(packageName).allMetadata
+        return getRepository(packageName).allMetadata
     }
 
     override fun teardownShareableState() {
-        clients.values.forEach {
-            it.client.close()
+        repositories.values.forEach {
+            it.closeClient()
         }
-        clients.clear()
+        repositories.clear()
+    }
+
+    override fun teardownNonShareableState() {
+        repositories.values.forEach { repository ->
+            repository.restorePreferencesToOldValuesAndClear()
+        }
     }
 }
 
 /**
- * Get a BlockingSettingsPreferenceServiceClient for the [packageName]
+ * Get a SettingsPreferenceRepository for the [packageName]
  */
-fun DeviceState.getBlockingSettingsPreferenceServiceClient(
+fun DeviceState.getSettingsPreferenceRepository(
     packageName: String = SETTINGS_PACKAGE_NAME
-): BlockingSettingsPreferenceServiceClient {
+): SettingsPreferenceRepository {
     return getDependency(
         SettingsPreferenceServiceClientComponent::class.java
-    ).getBlockingClient(packageName)
+    ).getRepository(packageName)
 }
 
 /**
- * Get a SettingsPreferenceServiceClient for the [packageName].
+ * Get currently set value of the preference described by [screenKey] and [preferenceKey]; taken
+ * from the state of the repository linked with specific [packageName].
  */
-fun DeviceState.settingsPreferenceServiceClient(
-    packageName: String = SETTINGS_PACKAGE_NAME
-): SettingsPreferenceServiceClient {
-    return getBlockingSettingsPreferenceServiceClient(packageName).client
+fun DeviceState.getCurrentlySetPreferenceValue(
+    packageName: String = SETTINGS_PACKAGE_NAME,
+    screenKey: String,
+    preferenceKey: String
+): SettingsPreferenceValue? {
+    return getSettingsPreferenceRepository(packageName)
+        .filterPreferenceStateThroughAllChangedPreferences(screenKey, preferenceKey).currentPreferenceValue
 }
 
 const val SETTINGS_PACKAGE_NAME = "com.android.settings"

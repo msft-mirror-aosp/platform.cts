@@ -36,6 +36,8 @@ import com.android.bedstead.nene.TestApis
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertFailsWith
+import org.junit.Assume
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -46,6 +48,11 @@ class PhotoPickerApiSurfaceTest {
     @get:Rule
     val photoPickerRule =
         PhotoPickerTestRule(InstrumentationRegistry.getInstrumentation().targetContext)
+
+    @Before
+    fun setup() {
+        Assume.assumeTrue(PhotoPickerTestRule.isHardwareSupported())
+    }
 
     // ACTION_PICK_IMAGES
 

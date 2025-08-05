@@ -403,6 +403,8 @@ public class WindowManagerJetpackTestBase extends ActivityManagerTestBase {
                 TestActivity.resetResumeCounter();
                 // Change the orientation
                 changeOrientation(activity, orientation, activity.isInMultiWindowMode());
+                // Wait for the transition completed.
+                getInstrumentation().getUiAutomation().syncInputTransactions();
                 // The activity will relaunch because it does not handle the orientation change
                 assertTrue(TestActivity.waitForOnResume());
                 assertTrue(activity.isDestroyed());

@@ -564,22 +564,33 @@ public class OutputSwitcherTest {
 
     private static void clickNearestElementWithDescription(
             UiObject2 startNode, String description) {
+        UiObject2[] foundElement = {null};
+        UiAutomatorUtils2.assertWithUiDump(
+                () ->
+                        PollingCheck.waitFor(
+                                TIMEOUT_MS,
+                                () -> {
+                                    foundElement[0] =
+                                            findNearestElementWithDescription(
+                                                    startNode, description);
+                                    return foundElement[0] != null;
+                                },
+                                "Unable to find element with description: " + description));
+        foundElement[0].click();
+    }
+
+    private static UiObject2 findNearestElementWithDescription(
+            UiObject2 startNode, String description) {
         while (startNode != null) {
             UiObject2 element = startNode.findObject(By.descContains(description));
             if (element != null) {
-                element.click();
-                return;
+                return element;
             }
             // Keep moving search start point farther up in the tree as long as we haven't found the
             // target.
             startNode = startNode.getParent();
         }
-
-        UiAutomatorUtils2.assertWithUiDump(
-                () -> {
-                    throw new RuntimeException(
-                            "Unable to find element with description: " + description);
-                });
+        return null;
     }
 
     private static void assertDialogShowsConnectionTo(String routeName) throws Exception {

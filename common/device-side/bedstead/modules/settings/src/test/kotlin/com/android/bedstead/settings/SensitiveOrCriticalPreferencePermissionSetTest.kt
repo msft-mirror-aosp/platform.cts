@@ -41,13 +41,13 @@ class SensitiveOrCriticalPreferencePermissionSetTest {
         )
         argument: SettingsPreferenceMetadata,
     ) {
-        val valueResult = deviceState.getBlockingSettingsPreferenceServiceClient().getValueResult(
+        val valueResult = deviceState.getSettingsPreferenceRepository().getValueResult(
             argument,
             grantRequiredPermissions = true
         )
 
         val setValueResult =
-            deviceState.getBlockingSettingsPreferenceServiceClient().setValueResult(
+            deviceState.getSettingsPreferenceRepository().setValueResult(
                 argument,
                 valueResult.value!!,
                 grantRequiredPermissions = true

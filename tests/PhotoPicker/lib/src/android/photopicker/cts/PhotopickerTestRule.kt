@@ -200,6 +200,22 @@ class PhotoPickerTestRule(private val context: Context) : TestRule {
          * "Add (1)").
          */
         private const val REGEX_LEGACY_CONFIRM_BUTTON = "^(Add|Allow).*"
+
+        /**
+         * Checks if the hardware is supported for these UI tests.
+         *
+         * These UI tests are not optimised for Watches, TVs, Auto; IoT devices do not have a UI
+         * to run these UI tests.
+         *
+         * @return `true` if the device is not a watch, TV, automotive, or embedded device.
+         */
+        fun isHardwareSupported(): Boolean {
+            val pm = InstrumentationRegistry.getInstrumentation().targetContext.packageManager
+            return !pm.hasSystemFeature(PackageManager.FEATURE_EMBEDDED) &&
+                !pm.hasSystemFeature(PackageManager.FEATURE_WATCH) &&
+                !pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK) &&
+                !pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+        }
     }
 
     /** This rule launches and manages the lifecycle of FutureResultActivity for each test. */

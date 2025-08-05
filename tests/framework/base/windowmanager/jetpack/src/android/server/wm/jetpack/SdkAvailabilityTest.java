@@ -77,7 +77,9 @@ public class SdkAvailabilityTest extends WindowManagerJetpackTestBase {
     public void setUp() throws Exception {
         super.setUp();
         assumeFalse("Skip Watch for WM Jetpack/Extensions availability",
-                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH));
+                hasDeviceFeature(PackageManager.FEATURE_WATCH));
+        assumeFalse("Skip TV for WM Jetpack/Extensions availability",
+                hasDeviceFeature(PackageManager.FEATURE_LEANBACK));
         assumeTrue("Device's default display doesn't support multi window",
                 ActivityTaskManager.supportsMultiWindow(mContext));
     }
