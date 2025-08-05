@@ -69,7 +69,6 @@ public class WifiMigrationTest {
 
     @After
     public void tearDown() throws Exception {
-        assumeTrue(WifiFeature.isWifiSupported(mContext));
     }
 
     /**
