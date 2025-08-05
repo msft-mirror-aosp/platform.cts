@@ -18,6 +18,7 @@ package android.companion.cts.core
 
 import android.Manifest.permission.MANAGE_COMPANION_DEVICES
 import android.companion.AssociationInfo
+import android.companion.AssociationRequest.DEVICE_PROFILE_WATCH
 import android.companion.CompanionDeviceManager
 import android.companion.cts.common.MAC_ADDRESS_A
 import android.companion.cts.common.MAC_ADDRESS_B
@@ -28,7 +29,10 @@ import android.companion.cts.common.getAssociationForPackage
 import android.net.MacAddress
 import android.platform.test.annotations.AppModeFull
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import kotlin.test.fail
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -59,6 +63,13 @@ class DisassociateTest : CoreTestBase() {
 
     @Test
     fun test_disassociate_sameApp_multipleAssociations() = with(targetApp) {
+        runWithShellPermissionIdentity {
+            nm.setNotificationListenerAccessGranted(
+                TestNotificationListener.componentName,
+                true,
+                false
+            )
+        }
         associate(MAC_ADDRESS_A)
         associate(MAC_ADDRESS_B)
         associate(MAC_ADDRESS_C)
@@ -88,6 +99,46 @@ class DisassociateTest : CoreTestBase() {
 
         cdm.disassociate(cdm.getMyAssociationLinkedTo(MAC_ADDRESS_C).id)
         assertEmpty(cdm.myAssociations)
+
+        runWithShellPermissionIdentity {
+            assertTrue(
+                nm.isNotificationListenerAccessGranted(
+                    TestNotificationListener.componentName
+                )
+            )
+        }
+    }
+
+    @Test
+    fun test_disassociate_withNlsRole() = with(targetApp) {
+        runWithShellPermissionIdentity {
+            nm.setNotificationListenerAccessGranted(
+                TestNotificationListener.componentName,
+                false,
+                false
+            )
+        }
+        associate(MAC_ADDRESS_A, DEVICE_PROFILE_WATCH)
+        associate(MAC_ADDRESS_B, DEVICE_PROFILE_WATCH)
+        assertTrue(
+            nm.isNotificationListenerAccessGranted(
+                TestNotificationListener.componentName
+            )
+        )
+
+        cdm.disassociate(cdm.getMyAssociationLinkedTo(MAC_ADDRESS_A).id)
+        assertTrue(
+            nm.isNotificationListenerAccessGranted(
+                TestNotificationListener.componentName
+            )
+        )
+
+        cdm.disassociate(cdm.getMyAssociationLinkedTo(MAC_ADDRESS_B).id)
+        assertFalse(
+            nm.isNotificationListenerAccessGranted(
+                TestNotificationListener.componentName
+            )
+        )
     }
 
     @Test
