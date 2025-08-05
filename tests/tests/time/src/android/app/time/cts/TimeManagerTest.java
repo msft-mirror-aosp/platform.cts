@@ -58,6 +58,7 @@ import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -236,6 +237,7 @@ public class TimeManagerTest {
         }
     }
 
+    @Ignore("b/436253548 Tests needs to be improved to not fail due to external sources.")
     @Test
     public void testExternalTimeSuggestions() throws Exception {
         int setManualTimeCapability = mTimeManager.getTimeCapabilitiesAndConfig()
