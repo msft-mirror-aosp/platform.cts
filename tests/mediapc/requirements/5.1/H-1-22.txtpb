@@ -46,3 +46,16 @@ specs {
     }
   }
 }
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_17
+    specification: "MUST support encoding, decoding, GPU-editing and displaying video content in portrait aspect ratio regardless of the rotation metadata for the largest Camera supported resolution or 4K whichever is less. Note: this includes HDR profiles if codec supports HDR. AV1 codecs are only required to support 1080p resolution. This requirement is only for hardware codecs, GPU and the DPU."
+    required_values: {
+      key: "portrait_resolution"
+      value {
+        bool_value: true
+      }
+    }
+  }
+}

@@ -275,3 +275,58 @@ specs {
     }
   }
 }
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_17
+    specification: "MUST have a primary rear facing camera with a resolution of at least 12 megapixels supporting video capture at 4k@30fps, 1080p@60fps, and 720p@60fps. The primary rear-facing camera is the rear-facing camera with the lowest camera ID."
+    required_values {
+      key: "primary_camera_available"
+      value {
+        bool_value: true
+      }
+    }
+    required_values {
+      key: "primary_camera_resolution"
+      value {
+        long_value: 12000000
+      }
+    }
+    required_values {
+      key: "primary_camera_video_size_req_satisfied"
+      value {
+        bool_value: true
+      }
+    }
+    required_values {
+      key: "primary_camera_1080p_video_size_req_satisfied"
+      value {
+        bool_value: true
+      }
+    }
+    required_values {
+      key: "primary_camera_720p_video_size_req_satisfied"
+      value {
+        bool_value: true
+      }
+    }
+    required_values {
+      key: "primary_camera_video_fps"
+      value {
+        double_value: 29.9
+      }
+    }
+    required_values {
+      key: "primary_camera_1080p_video_fps"
+      value {
+        double_value: 59.9
+      }
+    }
+    required_values {
+      key: "primary_camera_720p_video_fps"
+      value {
+        double_value: 59.9
+      }
+    }
+  }
+}

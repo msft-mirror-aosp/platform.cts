@@ -195,3 +195,29 @@ specs {
     }
   }
 }
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_17
+    specification: "same"
+    test_config_id: "4k_60fps"
+    required_values {
+      key: "frame_drops_per_30sec"
+      value {
+        int_value: 3
+      }
+    }
+    required_values {
+      key: "frame_rate"
+      value {
+        double_value: 60.0
+      }
+    }
+    required_values {
+      key: "resolution"
+      value {
+        int_value: 2160
+      }
+    }
+  }
+}

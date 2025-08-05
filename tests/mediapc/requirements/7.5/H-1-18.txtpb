@@ -61,3 +61,22 @@ specs {
     }
   }
 }
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_17
+    specification: "MUST support JPEG_R for the primary rear and primary front cameras."
+    required_values {
+      key: "primary_rear_camera_jpeg_r_supported"
+      value {
+        bool_value: true
+      }
+    }
+    required_values {
+      key: "primary_front_camera_jpeg_r_supported"
+      value {
+        bool_value: true
+      }
+    }
+  }
+}

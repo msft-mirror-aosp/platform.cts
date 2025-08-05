@@ -82,3 +82,22 @@ specs {
     }
   }
 }
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_INVALID
+    specification: "MUST have a HDR display supporting at least 1000 nits"
+    required_values: {
+      key: "display_luminance_nits"
+      value: {
+        double_value: 1000
+      }
+    }
+    required_values: {
+      key: "is_hdr"
+      value: {
+        bool_value: true
+      }
+    }
+  }
+}

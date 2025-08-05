@@ -224,3 +224,23 @@ specs {
     }
   }
 }
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_17
+    specification: "same"
+    test_config_id: "4k"
+    required_values: {
+      key: "concurrent_sessions"
+      value {
+        int_value: 6
+      }
+    }
+    required_values: {
+      key: "resolution"
+      value {
+        int_value: 2160
+      }
+    }
+  }
+}
