@@ -426,6 +426,12 @@ class PermissionsTest {
         }
     }
 
+    @Test
+    @RequireSdkVersion(min = Build.VERSION_CODES.S)
+    fun noPermissionGrantedByDefault() {
+        assertThat(Permissions.getAdoptedShellPermissions()).isEmpty()
+    }
+
     companion object {
         @ClassRule
         @Rule
