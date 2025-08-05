@@ -82,18 +82,19 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
   def _setup_gen2rig(self):
     logging.debug('Setting up gen2 rig')
     # Configure and setup gen2 rig
-    motor_channel = int(self.rotator_ch)
+    self.motor_channel = int(self.rotator_ch)
     lights_channel = int(self.lighting_ch)
     lights_port = gen2_rig_controller_utils.find_serial_port(self.lighting_cntl)
     if lights_port:
       sensor_fusion_utils.establish_serial_comm(lights_port)
       gen2_rig_controller_utils.set_lighting_state(
           lights_port, lights_channel, 'ON')
-    motor_port = gen2_rig_controller_utils.find_serial_port(
+    self.motor_port = gen2_rig_controller_utils.find_serial_port(
         self.rotator_cntl)
-    if motor_port:
-      gen2_rig_controller_utils.configure_rotator(motor_port, motor_channel)
-      gen2_rig_controller_utils.rotate(motor_port, motor_channel)
+    if self.motor_port:
+      gen2_rig_controller_utils.configure_rotator(
+          self.motor_port, self.motor_channel)
+      gen2_rig_controller_utils.rotate(self.motor_port, self.motor_channel)
 
   def setup_class(self):
     super().setup_class()
@@ -171,8 +172,6 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
           is_primary_camera and
           first_api_level >= its_session_utils.ANDROID16_API_LEVEL
       )
-      # close camera after props have been retrieved
-      cam.close_camera()
       device_id = self.dut.serial
 
       # Set up gen2 rig controllers
@@ -201,6 +200,11 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
           timeout=ui_interaction_utils.WAIT_INTERVAL_FIVE_SECONDS
       ):
         self.dut.ui(text='OK').click.wait()
+
+      # Ensure that the device is orthogonal and then close camera
+      gen2_rig_controller_utils.rotate_to_orthogonal_position(
+          cam, self.log_path, self.motor_port, self.motor_channel)
+      cam.close_camera()
 
       # Take capture with default camera app
       device_img_path = ui_interaction_utils.launch_and_take_capture(
