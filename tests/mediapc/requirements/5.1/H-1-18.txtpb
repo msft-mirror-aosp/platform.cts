@@ -1,0 +1,103 @@
+# Copyright (C) 2025 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# proto-file: third_party/android/mediapc_requirements/requirements.proto
+# proto-message: Requirement
+id: "5.1/H-1-18"
+name: "AV1 Encoder"
+description: "AV1 encoder"
+test_configs: {
+  key: ""
+  value: {
+    description: "Default test config"
+    proto_field_number: 32
+  }
+}
+measurements: {
+  key: "av1_encoder_resolution"
+  value: {
+    description: "Resolution of the test."
+    measurement_type: MEASUREMENT_TYPE_INT
+    comparison: COMPARISON_CONFIG
+    proto_field_number: 3
+  }
+}
+measurements: {
+  key: "av1_encoder_fps"
+  value: {
+    description: "Achieved FPS."
+    measurement_type: MEASUREMENT_TYPE_DOUBLE
+    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    proto_field_number: 4
+  }
+}
+measurements: {
+  key: "av1_encoder_bitrate"
+  value: {
+    description: "Bitrate of the test."
+    measurement_type: MEASUREMENT_TYPE_INT
+    comparison: COMPARISON_CONFIG
+    proto_field_number: 5
+  }
+}
+specs {
+  key: 34
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_14
+    specification: "MUST support AV1 encoder which can encode up to 480p resolution at 30fps and 1Mbps."
+    required_values: {
+      key: "av1_encoder_resolution"
+      value {
+        int_value: 480
+      }
+    }
+    required_values: {
+      key: "av1_encoder_fps"
+      value {
+        double_value: 30.0
+      }
+    }
+    required_values: {
+      key: "av1_encoder_bitrate"
+      value {
+        int_value: 1
+      }
+    }
+  }
+}
+specs {
+  key: 35
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_15
+    specification: "same"
+    required_values: {
+      key: "av1_encoder_resolution"
+      value {
+        int_value: 480
+      }
+    }
+    required_values: {
+      key: "av1_encoder_fps"
+      value {
+        double_value: 30.0
+      }
+    }
+    required_values: {
+      key: "av1_encoder_bitrate"
+      value {
+        int_value: 1
+      }
+    }
+  }
+}

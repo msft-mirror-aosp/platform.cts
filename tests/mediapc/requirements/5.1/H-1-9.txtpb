@@ -1,0 +1,137 @@
+# Copyright (C) 2025 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# proto-file: third_party/android/mediapc_requirements/requirements.proto
+# proto-message: Requirement
+id: "5.1/H-1-9"
+name: "Secure Video Decoder Sessions"
+description: "Secure hardware decoders"
+test_configs: {
+  key: ""
+  value: {
+    description: "Default test config"
+    proto_field_number: 21
+  }
+}
+test_configs: {
+  key: "HDR"
+  value: {
+    description: "Test config for hdr tests"
+    proto_field_number: 22
+  }
+}
+measurements: {
+  key: "concurrent_fps"
+  value: {
+    description: "Achieved FPS"
+    measurement_type: MEASUREMENT_TYPE_DOUBLE
+    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    proto_field_number: 3
+  }
+}
+measurements: {
+  key: "frame_drops_per_sec"
+  value: {
+    description: "Number of frame drops per second"
+    measurement_type: MEASUREMENT_TYPE_DOUBLE
+    comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    proto_field_number: 4
+  }
+}
+measurements: {
+  key: "is_hdr"
+  value: {
+    description: "Whether the test is HDR or not"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_CONFIG
+    proto_field_number: 5
+  }
+}
+specs {
+  key: 33
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_13
+    specification:
+      "MUST support 2 instances of secure hardware video decoder sessions "
+      "(AVC, HEVC, VP9, AV1 or later) in any codec combination running "
+      "concurrently at 1080p resolution@30 fps."
+    required_values: {
+      key: "concurrent_fps"
+      value {
+        double_value: 57  # 2 decoders * 30 fps * 0.95 tolerance factor
+      }
+    }
+    required_values: {
+      key: "is_hdr"
+      value {
+        bool_value: false
+      }
+    }
+  }
+}
+specs {
+  key: 34
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_14
+    specification:
+      "MUST support 2 instances of secure hardware video decoder sessions "
+      "(AVC, HEVC, VP9, AV1 or later) in any codec combination running "
+      "concurrently at 1080p resolution@30 fps for both 8-bit "
+      "(SDR) and 10-bit HDR content."
+    test_config_id: "HDR"
+    required_values: {
+      key: "concurrent_fps"
+      value {
+        double_value: 57  # 2 decoders * 30 fps * 0.95 tolerance factor
+      }
+    }
+    required_values: {
+      key: "is_hdr"
+      value {
+        bool_value: true
+      }
+    }
+  }
+}
+specs {
+  key: 35
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_15
+    specification:
+      "MUST support 2 instances of secure hardware video decoder sessions "
+      "(AVC, HEVC, VP9, AV1, or later) in any codec combination running "
+      "concurrently at 1080p resolution@30 fps for both 8-bit "
+      "(SDR) and 10-bit HDR content. For all sessions, there MUST NOT be "
+      "more than 1 frame dropped per second."
+    test_config_id: "HDR"
+    required_values: {
+      key: "concurrent_fps"
+      value {
+        double_value: 57  # 2 decoders * 30 fps * 0.95 tolerance factor
+      }
+    }
+    required_values: {
+      key: "frame_drops_per_sec"
+      value {
+        double_value: 1
+      }
+    }
+    required_values: {
+      key: "is_hdr"
+      value {
+        bool_value: true
+      }
+    }
+  }
+}

@@ -13,6 +13,8 @@
 // limitations under the License.
 syntax = "proto2";
 
+// LINT: LEGACY_NAMES
+
 package android.media.performanceclass;
 
 option java_multiple_files = true;
@@ -43,4 +45,9 @@ enum MediaPerformanceClass {
   // As specified in
   // https://source.android.com/docs/compatibility/15/android-15-cdd#227_handheld_media_performance_class
   MEDIA_PERFORMANCE_CLASS_15 = 35;
+  // There is no MPC 16.
+  reserved 36;
+  // As specified in
+  // https://source.android.com/docs/compatibility/17/android-17-cdd#227_handheld_media_performance_class
+  MEDIA_PERFORMANCE_CLASS_17 = 37;
 }

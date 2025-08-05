@@ -1,0 +1,140 @@
+# Copyright (C) 2025 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# proto-file: third_party/android/mediapc_requirements/requirements.proto
+# proto-message: Requirement
+id: "5.6/H-1-1"
+name: "Tap to Tone Latency"
+description: "Tap to tone latency"
+is_non_cts_test: true
+test_configs: {
+  key: ""
+  value: {
+    description: "Default test config"
+    proto_field_number: 46
+  }
+}
+measurements: {
+  key: "native_latency_ms"
+  value: {
+    description: "Native latency in milliseconds"
+    measurement_type: MEASUREMENT_TYPE_DOUBLE
+    comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    proto_field_number: 3
+  }
+}
+measurements: {
+  key: "java_latency_ms"
+  value: {
+    description: "Java latency in milliseconds"
+    measurement_type: MEASUREMENT_TYPE_DOUBLE
+    comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    proto_field_number: 4
+  }
+}
+specs {
+  key: 30
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_11
+    specification: "MUST have a tap-to-tone latency of less than 100 milliseconds using the OboeTester tap-to-tone test or CTS Verifier tap-to-tone test."
+    required_values {
+      key: "native_latency_ms"
+      value {
+        double_value: 100.0
+      }
+    }
+    required_values {
+      key: "java_latency_ms"
+      value {
+        double_value: 100.0
+      }
+    }
+  }
+}
+specs {
+  key: 31
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_12
+    specification: "same"
+    required_values {
+      key: "native_latency_ms"
+      value {
+        double_value: 100.0
+      }
+    }
+    required_values {
+      key: "java_latency_ms"
+      value {
+        double_value: 100.0
+      }
+    }
+  }
+}
+specs {
+  key: 33
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_13
+    specification: "MUST have a tap-to-tone latency of 80 milliseconds or less using the OboeTester tap-to-tone test or CTS Verifier tap-to-tone test."
+    required_values {
+      key: "native_latency_ms"
+      value {
+        double_value: 80.0
+      }
+    }
+    required_values {
+      key: "java_latency_ms"
+      value {
+        double_value: 80.0
+      }
+    }
+  }
+}
+specs {
+  key: 34
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_14
+    specification: "MUST have a tap-to-tone latency of 80 milliseconds or less using the CTS Verifier tap-to-tone test."
+    required_values {
+      key: "native_latency_ms"
+      value {
+        double_value: 80.0
+      }
+    }
+    required_values {
+      key: "java_latency_ms"
+      value {
+        double_value: 80.0
+      }
+    }
+  }
+}
+specs {
+  key: 35
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_15
+    specification: "same"
+    required_values {
+      key: "native_latency_ms"
+      value {
+        double_value: 80.0
+      }
+    }
+    required_values {
+      key: "java_latency_ms"
+      value {
+        double_value: 80.0
+      }
+    }
+  }
+}

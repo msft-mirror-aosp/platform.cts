@@ -20,19 +20,39 @@ java_library {
 }
 
 genrule {
+    name: "mpc_requirements_textproto",
+    // List all_mpcs.txtpb first, as it contains top-level fields for the
+    // RequirementList proto. Then, glob for the rest of the .txtpb files
+    // which contain the individual requirements.
+    srcs: ["all_mpcs.txtpb"] + ["*/**/*.txtpb"],
+    out: ["requirements.txtpb"],
+    // Concatenate all_mpcs.txtpb directly. For each of the other input
+    // files, wrap its content in "requirements { ... }" and concatenate
+    // the results into the output file.
+    cmd: "first=true; (for f in $(in); do " +
+        "if $$first; then " +
+        "cat $$f; " +
+        "first=false; " +
+        "else " +
+        "echo 'requirements {'; cat $$f; echo '}'; " +
+        "fi; " +
+        "done) > $(out)",
+}
+
+genrule {
     name: "mpc_requirements_binarypb",
     tools: ["aprotoc"],
     srcs: [
         "mpc.proto",
         "requirements.proto",
-        "requirements.txtpb",
+        ":mpc_requirements_textproto",
     ],
     out: ["requirements.binpb"],
     cmd: "$(location aprotoc)  " +
         " --encode=android.media.performanceclass.requirements.RequirementList" +
         "  $(location mpc.proto)" +
         "  $(location requirements.proto)" +
-        " < $(location requirements.txtpb)" +
+        " < $(location :mpc_requirements_textproto)" +
         " > $(location requirements.binpb)",
 }
 

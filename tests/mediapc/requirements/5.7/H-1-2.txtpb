@@ -1,0 +1,88 @@
+# Copyright (C) 2025 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# proto-file: third_party/android/mediapc_requirements/requirements.proto
+# proto-message: Requirement
+id: "5.7/H-1-2"
+name: "Media Drm Security Level Hardware Secure All"
+description: "Hardware-backed trusted execution environment"
+test_configs: {
+  key: ""
+  value: {
+    description: "Default test config"
+    proto_field_number: 49
+  }
+}
+measurements: {
+  key: "number_crypto_hw_secure_all_support"
+  value: {
+    description: "Number of crypto hw secure all supported."
+    measurement_type: MEASUREMENT_TYPE_INT
+    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    proto_field_number: 3
+  }
+}
+specs {
+  key: 33
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_13
+    specification:
+      "MUST support MediaDrm.SECURITY_LEVEL_HW_SECURE_ALL with the below "
+      "content decryption capabilities.\n"
+      "Minimum Sample size        4 MiB\n"
+      "Minimum Number of Subsamples - H264 or HEVC        32\n"
+      "Minimum Number of Subsamples - VP9        9\n"
+      "Minimum Number of Subsamples - AV1        288\n"
+      "Minimum subsample buffer size        1 MiB\n"
+      "Minimum Generic crypto buffer size        500 KiB\n"
+      "Minimum Number of concurrent sessions        30\n"
+      "Minimum Number of keys per session        20\n"
+      "Minimum Total Number of Keys (all sessions)        80\n"
+      "Minimum Total Number of DRM Keys (all sessions)        6\n"
+      "Message Size        16 KiB\n"
+      "Decrypted Frames per Second        60 fps"
+    required_values {
+      key: "number_crypto_hw_secure_all_support"
+      value {
+        int_value: 1
+      }
+    }
+  }
+}
+specs {
+  key: 34
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_14
+    specification: "same"
+    required_values {
+      key: "number_crypto_hw_secure_all_support"
+      value {
+        int_value: 1
+      }
+    }
+  }
+}
+specs {
+  key: 35
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_15
+    specification: "same"
+    required_values {
+      key: "number_crypto_hw_secure_all_support"
+      value {
+        int_value: 1
+      }
+    }
+  }
+}
