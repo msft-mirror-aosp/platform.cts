@@ -37,6 +37,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.android.providers.media.flags.Flags
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.TimeUnit
+import org.junit.Assume
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -59,6 +61,11 @@ class PhotoPickerFileAccessTest {
     @get:Rule
     val photoPickerRule =
         PhotoPickerTestRule(InstrumentationRegistry.getInstrumentation().targetContext)
+
+    @Before
+    fun setup() {
+        Assume.assumeTrue(PhotoPickerTestRule.isHardwareSupported())
+    }
 
     @Test
     @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
