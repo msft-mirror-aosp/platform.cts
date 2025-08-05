@@ -18,6 +18,7 @@ package android.view.surfacecontrol.cts;
 import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
 import static android.content.res.Configuration.ORIENTATION_PORTRAIT;
 import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
+import static android.server.wm.CtsWindowInfoUtils.assertAndDumpWindowState;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowOnTop;
 import static android.view.SurfaceControl.JankData.JANK_APPLICATION;
 import static android.view.cts.surfacevalidator.BitmapPixelChecker.validateScreenshot;
@@ -212,9 +213,18 @@ public class AttachedSurfaceControlTest {
             activity.getWindow().getRootSurfaceControl()
                     .addOnBufferTransformHintChangedListener(secondListener);
             setRequestedOrientation(activity, requestedOrientation);
+
+            boolean receivedCallback = secondCallback[0].await(10, TimeUnit.SECONDS);
+            int actualOrientation = activity.getResources().getConfiguration().orientation;
+
+            // Scope the test to only run if the orientation is as expected.
+            Assume.assumeTrue("Timed out waiting for orientation change or orientation"
+                    + " is incorrect requested=" + requestedOrientation + " actual="
+                    + actualOrientation, actualOrientation == requestedOrientation);
+
             // Check we get a callback since the orientation has changed and we expect transform
             // hint to change.
-            Assert.assertTrue(secondCallback[0].await(10, TimeUnit.SECONDS));
+            Assert.assertTrue(receivedCallback);
 
             // If the app orientation was changed, we should get a different transform hint
             Assert.assertNotEquals(transformHintResult[0], transformHintResult[1]);
@@ -590,7 +600,9 @@ public class AttachedSurfaceControlTest {
                 .that(activityReady.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS))
                 .isTrue();
 
-        waitForWindowOnTop(activity[0].getWindow());
+        boolean success = waitForWindowOnTop(activity[0].getWindow());
+        assertAndDumpWindowState(TAG, "Failed to find window="
+                + activity[0].getWindow() + " on top", success);
 
         if (action != null) {
             scenario.onActivity(action);
