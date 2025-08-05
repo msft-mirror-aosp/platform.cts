@@ -58,7 +58,11 @@ public class AdoptableHostTest extends BaseHostJUnit4Test {
     @Before
     public void setUp() throws Exception {
         // Start all possible users to make sure their storage is unlocked
-        Utils.prepareMultipleUsers(getDevice(), Integer.MAX_VALUE);
+        if (!getDevice().isMultiUserSupported()) {
+            Utils.prepareSingleUser(getDevice());
+        } else {
+            Utils.prepareMultipleUsers(getDevice(), Integer.MAX_VALUE);
+        }
 
         // Users are starting, wait for all volumes are ready
         waitForVolumeReady();

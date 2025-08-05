@@ -40,7 +40,7 @@ public abstract class BaseAppSecurityTest extends BaseHostJUnit4Test {
     public void setUpBaseAppSecurityTest() throws Exception {
         Assert.assertNotNull(getBuild()); // ensure build has been set before test is run.
 
-        mSupportsMultiUser = getDevice().getMaxNumberOfUsersSupported() > 1;
+        mSupportsMultiUser = getDevice().isMultiUserSupported();
         mPrimaryUserId = getDevice().getPrimaryUserId();
         mFixedUsers = new ArrayList<>();
         mFixedUsers.add(mPrimaryUserId);

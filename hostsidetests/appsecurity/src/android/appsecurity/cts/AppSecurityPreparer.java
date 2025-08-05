@@ -44,7 +44,7 @@ public class AppSecurityPreparer implements ITargetPreparer, ITargetCleaner, ITe
         // best shot at creating the users we need below.
         removeSecondaryUsers(device);
 
-        final int maxUsers = device.getMaxNumberOfUsersSupported();
+        final int maxUsers = device.isMultiUserSupported() ? device.getMaxNumberOfUsersSupported() : 1;
         try {
             if (maxUsers > 1) {
                 CLog.logAndDisplay(LogLevel.INFO,
