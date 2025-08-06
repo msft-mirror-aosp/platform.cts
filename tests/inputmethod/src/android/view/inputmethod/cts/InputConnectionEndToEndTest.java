@@ -159,6 +159,8 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
                 mWaitUntilMethodCalled.countDown();
                 mWaitUntilTestFinished.await();
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
             }
         }
 
@@ -172,6 +174,7 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             try {
                 assertTrue(message, mWaitUntilMethodCalled.await(timeout, TimeUnit.MILLISECONDS));
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 fail(message + e);
             }
         }

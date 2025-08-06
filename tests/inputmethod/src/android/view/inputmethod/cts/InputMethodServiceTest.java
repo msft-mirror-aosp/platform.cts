@@ -1105,6 +1105,8 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
                 fail("Timeout before receiving the result.");
             }
         } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
+            fail("interrupted thread");
         } finally {
             SystemUtil.runCommandAndPrintOnLogcat(TAG, "am compat reset "
                     + DISALLOW_INPUT_METHOD_INTERFACE_OVERRIDE + " " + DISAPPROVE_IME_PACKAGE_NAME);

@@ -190,6 +190,7 @@ public final class InputMethodStatsTest extends EndToEndImeTestBase {
                 fail("IME insets controls not available");
             }
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             fail("Waiting for IMe insets controls to be available failed");
         } finally {
             TestUtils.runOnMainSync(() -> activity.getWindow()
