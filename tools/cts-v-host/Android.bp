@@ -49,4 +49,5 @@ compatibility_test_suite_package {
         "ats_console_deploy",
         "ats_olc_server_local_mode_deploy",
     ],
+    build_test_list: true,
 }
