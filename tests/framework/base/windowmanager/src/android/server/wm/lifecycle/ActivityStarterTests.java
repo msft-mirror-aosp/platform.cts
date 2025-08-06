@@ -153,6 +153,8 @@ public class ActivityStarterTests extends ActivityLifecycleClientTestBase {
      */
     @Test
     public void testLaunchNoHistoryActivityShowWhenLocked() {
+        // Allow auto devices to skip this test.
+        assumeFalse(isCar());
         // Allow TV devices to skip this test.
         assumeFalse(isLeanBack());
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
