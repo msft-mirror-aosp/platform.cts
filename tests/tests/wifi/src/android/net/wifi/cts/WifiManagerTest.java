@@ -8092,15 +8092,24 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             long now, deadline, tryCount;
             Mutable<List<String>> interfaceNames = new Mutable<List<String>>(null);
             uiAutomation.adoptShellPermissionIdentity();
-            sWifiManager.getSupportedInterfaceNames(mExecutor, new Consumer<List<String>>() {
-                @Override
-                public void accept(List value) {
-                    synchronized (mLock) {
-                        interfaceNames.value = value;
-                        mLock.notify();
-                    }
-                }
-            });
+            sWifiManager.getSupportedInterfaceNames(
+                    mExecutor,
+                    new OutcomeReceiver<List<String>, Exception>() {
+                        @Override
+                        public void onResult(List value) {
+                            synchronized (mLock) {
+                                interfaceNames.value = value;
+                                mLock.notify();
+                            }
+                        }
+
+                        @Override
+                        public void onError(Exception ex) {
+                            synchronized (mLock) {
+                                mLock.notify();
+                            }
+                        }
+                    });
             synchronized (mLock) {
                 now = System.currentTimeMillis();
                 deadline = now + TEST_WAIT_DURATION_MS;
