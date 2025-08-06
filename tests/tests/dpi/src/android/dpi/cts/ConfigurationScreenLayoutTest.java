@@ -23,23 +23,17 @@ import static android.content.res.Configuration.SCREENLAYOUT_SIZE_LARGE;
 import static android.content.res.Configuration.SCREENLAYOUT_SIZE_MASK;
 import static android.content.res.Configuration.SCREENLAYOUT_SIZE_NORMAL;
 import static android.content.res.Configuration.SCREENLAYOUT_SIZE_XLARGE;
-import static android.view.WindowInsets.Type.displayCutout;
-import static android.view.WindowInsets.Type.systemBars;
 
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
-import android.graphics.Insets;
 import android.graphics.Rect;
 import android.server.wm.IgnoreOrientationRequestSession;
 import android.server.wm.WindowManagerStateHelper;
 import android.test.ActivityInstrumentationTestCase2;
-import android.view.WindowInsets;
 import android.view.WindowMetrics;
-
-import com.android.window.flags.Flags;
 
 public class ConfigurationScreenLayoutTest
         extends ActivityInstrumentationTestCase2<OrientationActivity> {
@@ -125,24 +119,15 @@ public class ConfigurationScreenLayoutTest
      *         {@link Configuration#SCREENLAYOUT_SIZE_MASK} defined
      */
     private int computeScreenLayout(Activity activity) {
-        final Insets insets;
-        if (!Flags.insetsDecoupledConfiguration()) {
-            final WindowInsets windowInsets = activity.getWindowManager().getCurrentWindowMetrics()
-                    .getWindowInsets();
-            insets = windowInsets.getInsets(systemBars() | displayCutout());
-        } else {
-            insets = Insets.NONE;
-        }
-        return reduceScreenLayout(activity, insets, BIGGEST_LAYOUT);
+        return reduceScreenLayout(activity, BIGGEST_LAYOUT);
     }
 
-    private int reduceScreenLayout(Activity activity, Insets excludeInsets, int screenLayout) {
+    private int reduceScreenLayout(Activity activity, int screenLayout) {
         int screenLayoutSize;
         boolean screenLayoutLong;
 
         final WindowMetrics windowMetrics = activity.getWindowManager().getCurrentWindowMetrics();
         final Rect bounds = new Rect(windowMetrics.getBounds());
-        bounds.inset(excludeInsets);
 
         final float density = activity.getResources().getDisplayMetrics().density;
         final int widthDp = (int) (bounds.width() / density);
