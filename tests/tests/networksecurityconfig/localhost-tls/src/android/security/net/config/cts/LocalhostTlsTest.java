@@ -60,23 +60,23 @@ public class LocalhostTlsTest extends BaseTestCase {
     }
 
     @Test
-    public void testIpV4LocalhostAllowed() throws Exception {
+    public void connectWithTlsOnIpV4Localhost_connectionSucceeds() throws Exception {
         TestUtils.assertTlsConnectionSucceeds("localhost", mTlsServerSocket.getLocalPort());
     }
 
     @Test
-    public void testIpV6LocalhostAllowed() throws Exception {
+    public void connectWithTlsOnIpV6Localhost_connectionSucceeds() throws Exception {
         TestUtils.assertTlsConnectionSucceeds("ip6-localhost", mTlsServerSocket.getLocalPort());
     }
 
     @Test
-    public void testIpV4CleartextDenied() throws Exception {
+    public void connectInCleartextOnIpV4Localhost_connectionFails() throws Exception {
         TestUtils.assertCleartextConnectionFails(
                 "localhost", mCleartextServerSocket.getLocalPort());
     }
 
     @Test
-    public void testIpV6CleartextDenied() throws Exception {
+    public void connectInCleartextOnIpV6Localhost_connectionFails() throws Exception {
         TestUtils.assertCleartextConnectionFails(
                 "ip6-localhost", mCleartextServerSocket.getLocalPort());
     }
