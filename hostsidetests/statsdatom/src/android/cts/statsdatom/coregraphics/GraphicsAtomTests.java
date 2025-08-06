@@ -32,6 +32,7 @@ import android.cts.statsdatom.lib.ReportUtils;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.os.StatsLog;
 import com.android.os.coregraphics.BitmapFormat;
 import com.android.os.coregraphics.ColorSpaceTransfer;
@@ -165,6 +166,7 @@ public class GraphicsAtomTests extends BaseHostJUnit4Test implements IBuildRecei
     }
 
     @Test
+    @ApiTest(apis = {"android.view.SurfaceControl.Transaction#setDesiredHdrHeadroom"})
     public void surfaceControlRequestedHdrHeadroomEvents() throws Exception {
         ExtensionRegistry registry = ExtensionRegistry.newInstance();
         CoregraphicsExtensionAtoms.registerAllExtensions(registry);
@@ -202,6 +204,7 @@ public class GraphicsAtomTests extends BaseHostJUnit4Test implements IBuildRecei
     }
 
     @Test
+    @ApiTest(apis = {"android.view.SurfaceControl.Transaction#setLuts"})
     public void surfaceControlLutsEvents() throws Exception {
         ExtensionRegistry registry = ExtensionRegistry.newInstance();
         CoregraphicsExtensionAtoms.registerAllExtensions(registry);
