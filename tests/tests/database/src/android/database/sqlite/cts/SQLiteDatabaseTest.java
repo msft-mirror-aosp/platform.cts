@@ -2283,7 +2283,7 @@ public class SQLiteDatabaseTest {
         }
     }
 
-    // The three fields of a sqlite version number.
+    /** Represents a SQLite version number, split into its major, minor, and patch components. */
     private record Version(int major, int minor, int patch) {}
 
     // Return true if the actual version matches the expected version.  The actual must be on the
@@ -2316,10 +2316,7 @@ public class SQLiteDatabaseTest {
 
         // Compare the actual version to the permitted SQLite release.  The test can compare to
         // multiple releases here, if multiple releases are permitted.
-        final Version[] expectedVersions = {
-            new Version(3, 44, 3),
-            new Version(3, 50, 0)
-        };
+        final Version[] expectedVersions = {new Version(3, 50, 1)};
         for (Version v : expectedVersions) {
             if (versionIsOkay(actualVersion, v)) {
                 return;
