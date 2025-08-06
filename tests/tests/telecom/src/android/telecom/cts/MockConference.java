@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -49,6 +50,7 @@ public class MockConference extends Conference {
     public List<Uri> mParticipants = new ArrayList<>();
     public CompletableFuture<Void> mLock = new CompletableFuture<>();
     private int mVideoState = VideoProfile.STATE_AUDIO_ONLY;
+    private LinkedBlockingQueue<Conference> mOnMergeQueue;
 
     public MockConference(PhoneAccountHandle phoneAccount) {
         super(phoneAccount);
@@ -112,6 +114,28 @@ public class MockConference extends Conference {
         }
         if (mRemoteConference != null) {
             mRemoteConference.merge();
+        }
+    }
+
+    /**
+     * Use this to provide a queue which will receive the results of {@link #onMerge(Conference)}
+     * for this {@link Conference}.
+     *
+     * @param onMergeQueue the queue.
+     */
+    public void setOnMergeQueue(LinkedBlockingQueue<Conference> onMergeQueue) {
+        this.mOnMergeQueue = onMergeQueue;
+    }
+
+    /***
+     * Handles incoming requests to merge this {@link Conference} with another {@link Conference} by
+     * offering the conference to the mOnMergeQueue if one was provided.
+     * @param mergeWith The {@code Conference} to merge.
+     */
+    @Override
+    public void onMerge(Conference mergeWith) {
+        if (mOnMergeQueue != null) {
+            mOnMergeQueue.offer(mergeWith);
         }
     }
 
