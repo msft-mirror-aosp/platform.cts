@@ -2530,7 +2530,7 @@ public class RecordingTest extends Camera2SurfaceViewTestCase {
         MediaExtractor extractor = new MediaExtractor();
         try {
             extractor.setDataSource(mOutMediaFileName);
-            long durationUs = 0;
+            float durationUs = 0.0f;
             int width = -1, height = -1;
             int numTracks = extractor.getTrackCount();
             int selectedTrack = -1;
@@ -2556,7 +2556,7 @@ public class RecordingTest extends Camera2SurfaceViewTestCase {
             Size videoSz = new Size(width, height);
             assertTrue("Video size doesn't match, expected " + sz.toString() +
                     " got " + videoSz.toString(), videoSz.equals(sz));
-            float duration = (float) (durationUs / 1000);
+            float duration = durationUs / 1000.0f;
             if (VERBOSE) {
                 Log.v(TAG, String.format("Video duration: recorded %fms, expected [%f,%f]ms",
                                          duration, expectedDurationMinMs, expectedDurationMaxMs));
