@@ -16,6 +16,8 @@
 
 package android.sharesheet.cts;
 
+import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
+
 import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Intent;
@@ -29,13 +31,12 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
+import android.view.WindowMetrics;
 import android.widget.Button;
 
-import androidx.annotation.GuardedBy;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import java.util.ArrayList;
 import java.util.Objects;
 
 public class CtsInteractiveChooserTestActivity extends Activity {
@@ -47,20 +48,17 @@ public class CtsInteractiveChooserTestActivity extends Activity {
     private static final String TEST_CATEGORY = "android.sharesheet.cts.TEST_CATEGORY";
 
     public static final String PARAM_ACTIVITY_CONTROLLER_CALLBACK = "controller-callback";
+    public static final String PARAM_ORIENTATION = "orientation";
 
     private Button mLaunchChooser;
     private ViewGroup mChooserActionRow;
     private boolean mIsTargetEnabled = true;
 
-    @GuardedBy("this")
+    private final InteractiveTestActivityReportBuilder mReportBuilder =
+            new InteractiveTestActivityReportBuilder();
+
     @Nullable
     private ChooserSession mChooserSession;
-
-    @GuardedBy("this")
-    private final ArrayList<Integer> mReportedStates = new ArrayList<>();
-
-    @GuardedBy("this")
-    private final ArrayList<Rect> mReportedBounds = new ArrayList<>();
 
     private final ChooserSession.StateListener mChooserSessionStateListener =
             new ChooserSession.StateListener() {
@@ -75,16 +73,18 @@ public class CtsInteractiveChooserTestActivity extends Activity {
                 }
             };
 
-    private final InteractiveTestActivityController mActivityController = () -> createTestReport();
-
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        int orientation =
+                getIntent().getIntExtra(PARAM_ORIENTATION, SCREEN_ORIENTATION_UNSPECIFIED);
+        android.util.Log.d(TAG, "using orientation: " + orientation);
+        setRequestedOrientation(orientation);
         Bundle extras = getIntent().getExtras();
         IBinder binder =
                 extras == null ? null : extras.getBinder(PARAM_ACTIVITY_CONTROLLER_CALLBACK);
         if (binder instanceof InteractiveTestActivityControllerCallback controllerCallback) {
-            controllerCallback.setTestActivityController(mActivityController);
+            controllerCallback.setTestActivityController(this::createTestReport);
         } else {
             Log.e(TAG, "Controller callback was not provided");
             finish();
@@ -127,47 +127,42 @@ public class CtsInteractiveChooserTestActivity extends Activity {
         Button disableButton = findViewById(R.id.target_status);
         disableButton.setOnClickListener((v) -> toggleTargetEnableStatus((Button) v));
 
-        boolean hasActiveSession;
-        synchronized (this) {
-            hasActiveSession = mChooserSession != null;
-        }
-        onSessionActiveStateChanged(hasActiveSession);
+        onSessionActiveStateChanged(mChooserSession != null);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        synchronized (this) {
-            if (mChooserSession != null) {
-                mChooserSession.endSession();
-                mChooserSession = null;
-            }
+        if (mChooserSession != null) {
+            mChooserSession.endSession();
+            mChooserSession = null;
+            mReportBuilder.setSession(null);
         }
     }
 
-    private synchronized void onChooserStateChanged(int state) {
+    private void onChooserStateChanged(int state) {
         Log.d(TAG, "Chooser session state changed; state: " + state);
-        mReportedStates.add(state);
+        mReportBuilder.addReportedState(state);
         if (state == ChooserSession.STATE_STARTED) {
             onSessionActiveStateChanged(true);
         } else if (state == ChooserSession.STATE_CLOSED) {
             mChooserSession = null;
+            mReportBuilder.setSession(null);
             onSessionActiveStateChanged(false);
         }
     }
 
-    private synchronized void onChooserBoundsChanged(Rect bounds) {
+    private void onChooserBoundsChanged(Rect bounds) {
         Log.d(TAG, "Chooser bounds changed; bounds: " + bounds);
-        mReportedBounds.add(bounds);
+        mReportBuilder.addReportedBound(bounds);
     }
 
-    private synchronized InteractiveTestActivityReport createTestReport() {
-        return new InteractiveTestActivityReport(
-                mChooserSession != null,
-                mChooserSession == null ? -1 : mChooserSession.getState(),
-                mChooserSession == null ? null : mChooserSession.getBounds(),
-                new ArrayList<>(mReportedStates),
-                new ArrayList<>(mReportedBounds));
+    private InteractiveTestActivityReport createTestReport() {
+        WindowMetrics windowMetrics = getWindowManager().getCurrentWindowMetrics();
+        mReportBuilder.setWindowInsets(
+                windowMetrics.getWindowInsets().getInsets(WindowInsets.Type.systemBars()));
+        mReportBuilder.setWindowHeight(windowMetrics.getBounds().height());
+        return mReportBuilder.build();
     }
 
     private void launchChooser() {
@@ -183,6 +178,7 @@ public class CtsInteractiveChooserTestActivity extends Activity {
         }
         mChooserSession.endSession();
         mChooserSession = null;
+        mReportBuilder.setSession(null);
         onSessionActiveStateChanged(false);
     }
 
@@ -223,6 +219,7 @@ public class CtsInteractiveChooserTestActivity extends Activity {
                 Objects.requireNonNull(getSystemService(ChooserManager.class))
                         .startSession(this, chooserIntent);
         mChooserSession.addStateListener(getMainExecutor(), mChooserSessionStateListener);
+        mReportBuilder.setSession(mChooserSession);
     }
 
     private void onSessionActiveStateChanged(boolean isActive) {

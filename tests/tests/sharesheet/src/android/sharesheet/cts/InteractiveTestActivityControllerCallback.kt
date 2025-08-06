@@ -16,8 +16,10 @@
 
 package android.sharesheet.cts
 
+import android.graphics.Insets
 import android.graphics.Rect
 import android.os.Binder
+import android.service.chooser.ChooserSession
 
 internal abstract class InteractiveTestActivityControllerCallback : Binder() {
     abstract fun setTestActivityController(controller: InteractiveTestActivityController)
@@ -33,4 +35,49 @@ internal data class InteractiveTestActivityReport(
     val chooserBounds: Rect?,
     val stateUpdateHistory: List<Int>,
     val boundsUpdateHistory: List<Rect>,
+    val windowHeight: Int,
+    val windowInsets: Insets?,
 )
+
+internal class InteractiveTestActivityReportBuilder {
+    private val reportedStates = ArrayList<Int>()
+    private val reportedBounds = ArrayList<Rect>()
+    private var session: ChooserSession? = null
+    private var windowInsets: Insets? = null
+    private var windowHeight: Int = -1
+
+    @Synchronized
+    fun addReportedState(state: Int) {
+        reportedStates.add(state)
+    }
+
+    @Synchronized
+    fun addReportedBound(bound: Rect) {
+        reportedBounds.add(bound)
+    }
+
+    @Synchronized
+    fun setSession(session: ChooserSession?) {
+        this.session = session
+    }
+
+    @Synchronized
+    fun setWindowInsets(insets: Insets?) {
+        windowInsets = insets
+    }
+
+    @Synchronized
+    fun setWindowHeight(height: Int) {
+        windowHeight = height
+    }
+
+    fun build(): InteractiveTestActivityReport = InteractiveTestActivityReport(
+        hasActiveSession = session != null,
+        chooserSessionState = session?.state ?: -1,
+        chooserBounds = session?.bounds,
+        stateUpdateHistory = ArrayList(reportedStates),
+        boundsUpdateHistory = ArrayList(reportedBounds),
+        windowHeight = windowHeight,
+        windowInsets = windowInsets,
+    )
+}
