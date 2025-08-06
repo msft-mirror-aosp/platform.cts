@@ -221,6 +221,7 @@ android_library {
         "cts-install-lib-java",
     ],
     min_sdk_version: "29",
+    sdk_version: "test_current",
 }
 
 java_library_host {

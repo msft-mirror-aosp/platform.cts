@@ -31,5 +31,5 @@ android_library {
         "androidx.test.uiautomator_uiautomator",
         "kotlin-stdlib",
     ],
-    platform_apis: true,
+    sdk_version: "test_current",
 }
