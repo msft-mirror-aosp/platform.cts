@@ -137,10 +137,12 @@ import java.util.List;
             cmd.append(' ').append(sessionId);
 
             result = device.executeShellCommand(cmd.toString());
+            boolean installSuccess =
+                    result.contains("Success") || result.contains("Completed with warning(s)");
             if (expectingSuccess) {
-                TestCase.assertTrue(result, result.contains("Success"));
+                TestCase.assertTrue(result, installSuccess);
             } else {
-                TestCase.assertFalse(result, result.contains("Success"));
+                TestCase.assertFalse(result, installSuccess);
             }
             success = true;
         } finally {
