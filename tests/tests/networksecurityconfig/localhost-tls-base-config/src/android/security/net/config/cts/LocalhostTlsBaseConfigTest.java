@@ -21,6 +21,7 @@ import static com.android.org.conscrypt.net.flags.Flags.FLAG_NETWORK_SECURITY_CO
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.security.net.config.cts.CtsNetSecConfigLocalhostTlsBaseConfigTestCases.R;
 
 import androidx.test.runner.AndroidJUnit4;
 
@@ -32,48 +33,51 @@ import org.junit.runner.RunWith;
 
 import java.net.ServerSocket;
 
+import javax.net.ssl.SSLServerSocket;
+
 @RunWith(AndroidJUnit4.class)
 @RequiresFlagsEnabled(FLAG_NETWORK_SECURITY_CONFIG_LOCALHOST)
-public class LocalhostCleartextTest extends BaseTestCase {
+public class LocalhostTlsBaseConfigTest extends BaseTestCase {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    private ServerSocket mServerSocket;
+    private ServerSocket mCleartextServerSocket;
+    private SSLServerSocket mTlsServerSocket;
 
     @Before
     public void setUp() throws Exception {
-        mServerSocket = TestUtils.bindCleartextServer();
-        TestUtils.startMockServer(mServerSocket);
+        mTlsServerSocket = TestUtils.bindTLSServer(mContext, R.raw.valid_chain, R.raw.test_key);
+        TestUtils.startMockServer(mTlsServerSocket);
+        mCleartextServerSocket = TestUtils.bindCleartextServer();
+        TestUtils.startMockServer(mCleartextServerSocket);
     }
 
     @After
     public void tearDown() throws Exception {
-        mServerSocket.close();
+        mTlsServerSocket.close();
+        mCleartextServerSocket.close();
+    }
+
+    @Test
+    public void connectWithTlsOnIpV4Localhost_connectionSucceeds() throws Exception {
+        TestUtils.assertTlsConnectionSucceeds("localhost", mTlsServerSocket.getLocalPort());
+    }
+
+    @Test
+    public void connectWithTlsOnIpV6Localhost_connectionSucceeds() throws Exception {
+        TestUtils.assertTlsConnectionSucceeds("ip6-localhost", mTlsServerSocket.getLocalPort());
     }
 
     @Test
     public void connectInCleartextOnIpV4Localhost_connectionSucceeds() throws Exception {
-        TestUtils.assertCleartextConnectionSucceeds("localhost", mServerSocket.getLocalPort());
+        TestUtils.assertCleartextConnectionSucceeds(
+                "localhost", mCleartextServerSocket.getLocalPort());
     }
 
     @Test
     public void connectInCleartextOnIpV6Localhost_connectionSucceeds() throws Exception {
-        TestUtils.assertCleartextConnectionSucceeds("ip6-localhost", mServerSocket.getLocalPort());
-    }
-
-    @Test
-    public void connectInCleartextOnIpV4127_0_0_1_connectionSucceeds() throws Exception {
-        TestUtils.assertCleartextConnectionSucceeds("127.0.0.1", mServerSocket.getLocalPort());
-    }
-
-    @Test
-    public void connectInCleartextOnIpV4127_0_0_42_connectionSucceeds() throws Exception {
-        TestUtils.assertCleartextConnectionSucceeds("127.0.0.42", mServerSocket.getLocalPort());
-    }
-
-    @Test
-    public void connectInCleartextOnIpV6LoopbackAddress_connectionSucceeds() throws Exception {
-        TestUtils.assertCleartextConnectionSucceeds("[::1]", mServerSocket.getLocalPort());
+        TestUtils.assertCleartextConnectionSucceeds(
+                "ip6-localhost", mCleartextServerSocket.getLocalPort());
     }
 }

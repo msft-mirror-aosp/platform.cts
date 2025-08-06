@@ -53,27 +53,27 @@ public class LocalhostCleartextWithNscTest extends BaseTestCase {
     }
 
     @Test
-    public void testIpV4LocalhostAllowed() throws Exception {
+    public void connectInCleartextOnIpV4Localhost_connectionSucceeds() throws Exception {
         TestUtils.assertCleartextConnectionSucceeds("localhost", mServerSocket.getLocalPort());
     }
 
     @Test
-    public void testIpV6LocalhostAllowed() throws Exception {
+    public void connectInCleartextOnIpV6Localhost_connectionSucceeds() throws Exception {
         TestUtils.assertCleartextConnectionSucceeds("ip6-localhost", mServerSocket.getLocalPort());
     }
 
     @Test
-    public void testIpV4AddressLocalhostAllowed() throws Exception {
+    public void connectInCleartextOnIpV4127_0_0_1_connectionSucceeds() throws Exception {
         TestUtils.assertCleartextConnectionSucceeds("127.0.0.1", mServerSocket.getLocalPort());
     }
 
     @Test
-    public void testIpV4Address42LocalhostAllowed() throws Exception {
+    public void connectInCleartextOnIpV4127_0_0_42_connectionSucceeds() throws Exception {
         TestUtils.assertCleartextConnectionSucceeds("127.0.0.42", mServerSocket.getLocalPort());
     }
 
     @Test
-    public void testIpV6AddressLocalhostAllowed() throws Exception {
+    public void connectInCleartextOnIpV6LoopbackAddress_connectionSucceeds() throws Exception {
         TestUtils.assertCleartextConnectionSucceeds("[::1]", mServerSocket.getLocalPort());
     }
 }
