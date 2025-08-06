@@ -1575,21 +1575,32 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
      */
     @Test
     public void testDialogPositionChangedAfterImeIsShown() throws Exception {
+        final var testActivity =
+                new TestActivity.Starter()
+                        .withWindowingMode(WINDOWING_MODE_FULLSCREEN)
+                        .startSync(
+                                activity -> {
+                                    return new LinearLayout(activity);
+                                },
+                                TestActivity.class);
+        CtsWindowInfoUtils.waitForStableWindowGeometry(Duration.ofMillis(LAYOUT_STABLE_THRESHOLD));
+
         final AtomicReference<AlertDialog> dialogRef = new AtomicReference<>();
-        try (MockImeSession imeSession = MockImeSession.create(
-                InstrumentationRegistry.getInstrumentation().getContext(),
-                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-                new ImeSettings.Builder().setInputViewHeight(
-                        NEW_KEYBOARD_HEIGHT).setDrawsBehindNavBar(true))) {
+        try (MockImeSession imeSession =
+                MockImeSession.create(
+                        InstrumentationRegistry.getInstrumentation().getContext(),
+                        InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                        new ImeSettings.Builder()
+                                .setInputViewHeight(calculateNewKeyboardHeight(testActivity))
+                                .setDrawsBehindNavBar(true))) {
             final ImeEventStream stream = imeSession.openEventStream();
             final String marker = getTestMarker();
             final AtomicReference<EditText> editTextRef = new AtomicReference<>();
 
-            final var testActivity = new TestActivity.Starter().withWindowingMode(
-                    WINDOWING_MODE_FULLSCREEN).startSync(activity -> {
-                openDialogAndShowIme(activity, marker, dialogRef, editTextRef);
-                return new LinearLayout(activity);
-            }, TestActivity.class);
+            TestUtils.runOnMainSync(
+                    () -> {
+                        openDialogAndShowIme(testActivity, marker, dialogRef, editTextRef);
+                    });
 
             expectEvent(stream, eventMatcher("onStartInput"), TIMEOUT);
             expectEvent(stream, eventMatcher("onStartInputView"), TIMEOUT);
@@ -1644,6 +1655,19 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 dialogRef.get().dismiss();
             }
         }
+    }
+
+    private int calculateNewKeyboardHeight(TestActivity testActivity) {
+        if (!isAutomotiveScalableUI()) {
+            return NEW_KEYBOARD_HEIGHT;
+        }
+        // To ensure the mock IME overlaps the test dialog in automotive multi-window,
+        // set IME height to 50% of test activity wherever it is located.
+        final var decorView = testActivity.getWindow().getDecorView();
+        final int[] locationOnScreen = new int[2];
+        decorView.getLocationOnScreen(locationOnScreen);
+        final int activityHeight = decorView.getHeight();
+        return locationOnScreen[1] + (activityHeight / 2);
     }
 
     private static void openDialogAndShowIme(TestActivity activity, String marker,
