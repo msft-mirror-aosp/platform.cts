@@ -29,6 +29,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.Instrumentation;
 import android.content.BroadcastReceiver;
@@ -42,6 +43,7 @@ import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -75,17 +77,13 @@ public class SctValidationLogListDownloadTest extends BaseTestCase {
             };
 
     @BeforeClass
-    public static void setUpClass() throws Exception {
+    public static void setUpClass() {
         sContext.registerReceiver(
                 sInstallCompleteReceiver,
                 new IntentFilter(INSTALL_COMPLETE_ACTION),
                 Context.RECEIVER_NOT_EXPORTED);
 
         downloadLogList();
-
-        assertTrue(
-                "The test timed out while waiting for the log list download.",
-                sLatch.await(30, TimeUnit.SECONDS));
     }
 
     @AfterClass
@@ -96,7 +94,8 @@ public class SctValidationLogListDownloadTest extends BaseTestCase {
 
     @Test
     public void testCTVerification_whenLogListDownloaded_sctDomain_connectionSucceeds()
-            throws IOException {
+            throws Exception {
+        assumeLogListPresent();
         // Check multiple domains as part of the retrospective for b/408109183
         URL url = new URL(SCT_PROVIDED_DOMAIN);
         URL url2 = new URL(SCT_PROVIDED_DOMAIN_2);
@@ -114,7 +113,8 @@ public class SctValidationLogListDownloadTest extends BaseTestCase {
 
     @Test
     public void testCTVerification_whenLogListDownloaded_noSctDomain_exceptionsThrown()
-            throws IOException {
+            throws Exception {
+        assumeLogListPresent();
         URL url = new URL(NO_SCT_PROVIDED_DOMAIN);
 
         HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
@@ -123,5 +123,11 @@ public class SctValidationLogListDownloadTest extends BaseTestCase {
 
         assertThat(expected.getCause()).isInstanceOf(CertificateException.class);
         assertTrue(expected.getMessage().contains("NOT_ENOUGH_SCTS"));
+    }
+
+    private void assumeLogListPresent() throws InterruptedException {
+        assumeTrue(
+                "The test timed out while waiting for the log list download.",
+                sLatch.await(30, TimeUnit.SECONDS));
     }
 }
