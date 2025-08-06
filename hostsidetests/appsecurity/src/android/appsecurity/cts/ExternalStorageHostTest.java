@@ -28,6 +28,7 @@ import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.ddmlib.Log;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
+import com.android.tradefed.device.UserInfo;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.AbiUtils;
@@ -517,7 +518,7 @@ public class ExternalStorageHostTest extends BaseHostJUnit4Test {
 
         for (int user : mUsers) {
             String probe = "/sdcard/../" + user;
-            if (user == Utils.USER_SYSTEM) {
+            if (user == UserInfo.USER_SYSTEM) {
                 // Primary user should always be visible. Skip checking raw
                 // mount points, since we'd get false-positives for physical
                 // devices that aren't multi-user aware.

@@ -16,13 +16,17 @@
 
 package android.appsecurity.cts;
 
+import static com.android.tradefed.device.UserInfo.USER_SYSTEM;
+
 import com.android.ddmlib.AdbCommandRejectedException;
 import com.android.ddmlib.CollectingOutputReceiver;
 import com.android.ddmlib.Log;
+import com.android.ddmlib.Log.LogLevel;
 import com.android.ddmlib.testrunner.RemoteAndroidTestRunner;
 import com.android.ddmlib.testrunner.TestResult.TestStatus;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
+import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.result.CollectingTestListener;
 import com.android.tradefed.result.TestDescription;
 import com.android.tradefed.result.TestResult;
@@ -37,8 +41,6 @@ import java.util.concurrent.TimeUnit;
 
 public class Utils {
     private static final String LOG_TAG = Utils.class.getSimpleName();
-
-    public static final int USER_SYSTEM = 0;
 
     static final String PKG = "com.android.cts.splitapp";
     static final String CLASS = PKG + ".SplitAppTest";
@@ -59,6 +61,8 @@ public class Utils {
     static final String APK_mips = "CtsSplitApp_mips.apk";
 
     static final HashMap<String, String> ABI_TO_APK = new HashMap<>();
+
+    private static final long WAIT_FOR_BOOT_COMPLETED_MS = 10_000;
 
     static {
         ABI_TO_APK.put("x86", APK_x86);
@@ -225,14 +229,24 @@ public class Utils {
                 Log.d(LOG_TAG, "Yay, system is ready!");
                 // or is it really ready?
                 // guard against potential USB mode switch weirdness at boot
-                RunUtil.getDefault().sleep(10 * 1000);
+                sleep(
+                        WAIT_FOR_BOOT_COMPLETED_MS,
+                        "guard against potential USB mode switch weirdness at boot");
                 return;
             }
             Log.d(LOG_TAG, "Waiting for system ready...");
-            // For low performance devices
-            RunUtil.getDefault().sleep(10*1000);
+            sleep(
+                    WAIT_FOR_BOOT_COMPLETED_MS,
+                    "Waiting for system ready...for low performance devices");
         }
         throw new AssertionError("System failed to become ready!");
+    }
+
+    /** Sleeps for the given time, logging the reason */
+    public static void sleep(long napTimeMs, String reason) {
+        CLog.logAndDisplay(LogLevel.INFO, "Sleeping %dms. Reason: %s", napTimeMs, reason);
+        RunUtil.getDefault().sleep(napTimeMs);
+        CLog.logAndDisplay(LogLevel.INFO, "Little Suzy woke up!");
     }
 
     private static boolean isBootCompleted(ITestDevice device) throws Exception {
@@ -241,7 +255,9 @@ public class Utils {
             device.getIDevice().executeShellCommand("getprop sys.boot_completed", receiver);
         } catch (AdbCommandRejectedException e) {
             // do nothing: device might be temporarily disconnected
-            Log.d(LOG_TAG, "Ignored AdbCommandRejectedException while `getprop sys.boot_completed`");
+            Log.d(
+                    LOG_TAG,
+                    "Ignored AdbCommandRejectedException while `getprop sys.boot_completed`");
         }
         String output = receiver.getOutput();
         if (output != null) {
