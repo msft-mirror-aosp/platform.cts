@@ -54,6 +54,7 @@ import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoEvConnectorT
 import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoEvPortLocationVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getLocationCharacterizationVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getNightModeVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getParkingBrakeOnVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfOdometerVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfSteeringAngleVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getRangeRemainingVerifierBuilder;
@@ -1802,12 +1803,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     private static VehiclePropertyVerifier.Builder<Float> getPerfVehicleSpeedVerifierBuilder() {
         return VehiclePropertyVerifier.<Float>newDefaultBuilder(
                         VehiclePropertyIds.PERF_VEHICLE_SPEED)
-                .requireProperty();
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean> getParkingBrakeOnVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                        VehiclePropertyIds.PARKING_BRAKE_ON)
                 .requireProperty();
     }
 

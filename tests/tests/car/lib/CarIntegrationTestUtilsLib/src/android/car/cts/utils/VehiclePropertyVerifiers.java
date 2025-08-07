@@ -193,6 +193,13 @@ public class VehiclePropertyVerifiers {
                             VehicleGear.GEAR_NINTH)
                     .build();
 
+    /** Gets the verifier builder for {@link VehiclePropertyIds#PARKING_BRAKE_ON}. */
+    public static VehiclePropertyVerifier.Builder<Boolean> getParkingBrakeOnVerifierBuilder() {
+        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
+                        VehiclePropertyIds.PARKING_BRAKE_ON)
+                .requireProperty();
+    }
+
     /** Gets the verifier builder for {@link VehiclePropertyIds#VEHICLE_CURB_WEIGHT}. */
     public static VehiclePropertyVerifier.Builder<Integer> getVehicleCurbWeightVerifierBuilder() {
         VehiclePropertyVerifier.Builder<Integer> verifierBuilder =
