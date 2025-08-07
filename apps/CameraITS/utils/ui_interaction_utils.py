@@ -311,6 +311,11 @@ def jca_ui_zoom(dut, zoom_ratio, log_path):
   )
   dut.ui.click(x=center_x, y=center_y)
   time.sleep(UI_OBJECT_WAIT_TIME_SECONDS.total_seconds())
+  if not dut.ui(res=UI_ZOOM_RATIO_TEXT_RESOURCE_ID).text:
+    dut.ui.press.back()
+    dut.ui(res=UI_ZOOM_RATIO_TEXT_RESOURCE_ID).wait.exists(
+        UI_OBJECT_WAIT_TIME_SECONDS
+    )
   zoom_ratio_text_after_zoom = dut.ui(res=UI_ZOOM_RATIO_TEXT_RESOURCE_ID).text
   logging.debug('zoom ratio text after zoom: %s', zoom_ratio_text_after_zoom)
   zoom_ratio_after_zoom = float(zoom_ratio_text_after_zoom[:-1])  # remove `x`
