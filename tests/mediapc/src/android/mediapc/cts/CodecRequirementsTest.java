@@ -41,6 +41,8 @@ import android.mediapc.cts.common.PerformanceClassTestRule;
 import android.mediapc.cts.common.Preconditions;
 import android.mediapc.cts.common.Requirements;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Size;
 
 import androidx.annotation.Nullable;
@@ -64,6 +66,8 @@ import java.util.stream.IntStream;
 
 @RunWith(TestParameterInjector.class)
 public class CodecRequirementsTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @TestParameter({
         MediaFormat.MIMETYPE_VIDEO_AVC, MediaFormat.MIMETYPE_VIDEO_HEVC,
