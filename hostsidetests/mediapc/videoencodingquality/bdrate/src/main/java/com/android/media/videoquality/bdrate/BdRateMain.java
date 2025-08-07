@@ -127,13 +127,19 @@ public class BdRateMain {
         LOGGER.info(
                 String.format(
                         "Checking Video Encoding Quality (VEQ) for %s", refConfig.referenceFile()));
-
-        return checkVeq(
-                mBdRateCalculator,
-                mBdQualityCalculator,
-                refConfig.referenceCurve(),
-                veqTestResult.curve(),
-                refConfig.referenceThreshold());
+        Result res = Result.SUCCESS;
+        try {
+            res = checkVeq(
+                   mBdRateCalculator,
+                   mBdQualityCalculator,
+                   refConfig.referenceCurve(),
+                   veqTestResult.curve(),
+                   refConfig.referenceThreshold());
+        } catch (BdPreconditionFailedException e) {
+            LOGGER.log(Level.SEVERE, e.getMessage());
+            return Result.INVALID_ARGS;
+        }
+        return res;
     }
 
     /**
