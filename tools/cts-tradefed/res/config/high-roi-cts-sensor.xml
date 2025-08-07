@@ -17,31 +17,30 @@
     <include name="cts-automated"/>
     <!-- CtsSensorTestCases -->
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SensorAdditionalInfoTest#testSensorAdditionalInfo"/>
+    <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SensorBatchingTests#testGameRotationVector_fastest_batching"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SensorBatchingTests#testGravity_50hz_batching"/>
+    <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SensorBatchingTests#testGravity_fastest_batching"/>
+    <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SensorBatchingTests#testGyroscope_50hz_batching"/>
+    <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SensorBatchingTests#testGyroscope_50hz_flush"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SensorBatchingTests#testMagneticFieldUncalibrated_50hz_batching"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SensorBatchingTests#testMagneticFieldUncalibrated_fastest_flush"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SensorBatchingTests#testMagneticField_50hz_batching"/>
+    <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SensorBatchingTests#testMagneticField_50hz_flush"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SensorBatchingTests#testMagneticField_fastest_batching"/>
+    <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SensorBatchingTests#testMagneticField_fastest_flush"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SensorBatchingTests#testOrientation_50hz_batching"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SensorIntegrationTests#testGyroscopeReconfigureWhileActive"/>
-    <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SingleSensorTests#testAccelerometer_1hz"/>
+    <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SensorParameterRangeTest#testMagnetometerRange"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SingleSensorTests#testGravity_50hz"/>
-    <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SingleSensorTests#testGyroscopeUncalibrated_10hz"/>
+    <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SingleSensorTests#testGravity_fastest"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SingleSensorTests#testGyroscopeUncalibrated_fastest"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SingleSensorTests#testGyroscope_50hz"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SingleSensorTests#testMagneticFieldUncalibrated_25hz"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SingleSensorTests#testMagneticField_10hz"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SingleSensorTests#testMagneticField_15hz"/>
+    <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SingleSensorTests#testMagneticField_5hz"/>
     <!-- CtsSensorTestCases[instant] -->
     <option name="compatibility:include-filter" value="CtsSensorTestCases[instant] android.hardware.cts.SensorBatchingTests#testGameRotationVector_fastest_flush"/>
-    <option name="compatibility:include-filter" value="CtsSensorTestCases[instant] android.hardware.cts.SensorBatchingTests#testGravity_fastest_batching"/>
-    <option name="compatibility:include-filter" value="CtsSensorTestCases[instant] android.hardware.cts.SensorBatchingTests#testMagneticField_50hz_batching"/>
-    <option name="compatibility:include-filter" value="CtsSensorTestCases[instant] android.hardware.cts.SensorBatchingTests#testMagneticField_50hz_flush"/>
-    <option name="compatibility:include-filter" value="CtsSensorTestCases[instant] android.hardware.cts.SensorBatchingTests#testMagneticField_fastest_batching"/>
-    <option name="compatibility:include-filter" value="CtsSensorTestCases[instant] android.hardware.cts.SensorBatchingTests#testMagneticField_fastest_flush"/>
-    <option name="compatibility:include-filter" value="CtsSensorTestCases[instant] android.hardware.cts.SingleSensorTests#testMagneticField_100hz"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases[instant] android.hardware.cts.SingleSensorTests#testMagneticField_10hz"/>
-    <option name="compatibility:include-filter" value="CtsSensorTestCases[instant] android.hardware.cts.SingleSensorTests#testMagneticField_15hz"/>
-    <option name="compatibility:include-filter" value="CtsSensorTestCases[instant] android.hardware.cts.SingleSensorTests#testMagneticField_200hz"/>
-    <option name="compatibility:include-filter" value="CtsSensorTestCases[instant] android.hardware.cts.SingleSensorTests#testMagneticField_25hz"/>
+    <option name="compatibility:include-filter" value="CtsSensorTestCases[instant] android.hardware.cts.SingleSensorTests#testMagneticField_1hz"/>
 </configuration>
