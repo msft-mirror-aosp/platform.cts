@@ -101,3 +101,28 @@ specs {
     }
   }
 }
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_17
+    specification: "same"
+    required_values: {
+      key: "av1_encoder_resolution"
+      value {
+        int_value: 480
+      }
+    }
+    required_values: {
+      key: "av1_encoder_fps"
+      value {
+        double_value: 30.0
+      }
+    }
+    required_values: {
+      key: "av1_encoder_bitrate"
+      value {
+        int_value: 1
+      }
+    }
+  }
+}

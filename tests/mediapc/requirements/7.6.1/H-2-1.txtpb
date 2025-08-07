@@ -85,3 +85,16 @@ specs {
     }
   }
 }
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_17
+    specification: "MUST have at least 8 GB of physical memory, with at least 6.64 GB available to the kernel as reported by android.app.ActivityManager.MemoryInfo."
+    required_values: {
+      key: "physical_memory_mb"
+      value: {
+        long_value: 6800
+      }
+    }
+  }
+}

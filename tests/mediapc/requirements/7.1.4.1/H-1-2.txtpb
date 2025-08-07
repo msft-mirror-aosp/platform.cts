@@ -63,3 +63,22 @@ specs {
     }
   }
 }
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_17
+    specification: "MUST support the EGL_IMG_context_priority and EGL_EXT_protected_content extensions."
+    required_values: {
+      key: "egl_img_context_priority"
+      value: {
+        bool_value: true
+      }
+    }
+    required_values: {
+      key: "egl_ext_protected_content"
+      value: {
+        bool_value: true
+      }
+    }
+  }
+}

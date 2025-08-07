@@ -111,3 +111,27 @@ specs {
     }
   }
 }
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_17
+    specification: "same"
+    required_values: {
+      key: "codec_initialization_latency_ms"
+      value {
+        long_value: 40
+      }
+    }
+    variant_specs: {
+      key: "dolby"
+      value: {
+        required_values: {
+          key: "codec_initialization_latency_ms"
+          value {
+            long_value: 50
+          }
+        }
+      }
+    }
+  }
+}

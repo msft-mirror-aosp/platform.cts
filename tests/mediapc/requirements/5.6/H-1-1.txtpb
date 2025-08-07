@@ -138,3 +138,22 @@ specs {
     }
   }
 }
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_17
+    specification: "same"
+    required_values {
+      key: "native_latency_ms"
+      value {
+        double_value: 80.0
+      }
+    }
+    required_values {
+      key: "java_latency_ms"
+      value {
+        double_value: 80.0
+      }
+    }
+  }
+}

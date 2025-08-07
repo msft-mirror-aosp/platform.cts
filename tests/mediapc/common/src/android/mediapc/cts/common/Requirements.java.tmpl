@@ -55,16 +55,26 @@
 
 {{- /*
  * VersionCode generates the android.Build VersionCode constant from an mpc value.
- * It is an error if the mpc value listed here.
+ * It is an error if the value is not listed here.
  */}}
 {{- define "VersionCode" -}}
-    VERSION_CODES.
-    {{- if  eq . 30}}R
-    {{- else if eq . 31}}S
-    {{- else if eq . 33}}TIRAMISU
-    {{- else if eq . 34}}UPSIDE_DOWN_CAKE
-    {{- else if eq . 35}}VANILLA_ICE_CREAM
-    {{- else }}{{.}}
+    {{- if  eq . 30 -}}
+    VERSION_CODES.R
+    {{- else if eq . 31 -}}
+    VERSION_CODES.S
+    {{- else if eq . 33 -}}
+    VERSION_CODES.TIRAMISU
+    {{- else if eq . 34 -}}
+    VERSION_CODES.UPSIDE_DOWN_CAKE
+    {{- else if eq . 35 -}}
+    VERSION_CODES.VANILLA_ICE_CREAM
+    {{- else if eq . 35 -}}
+    VERSION_CODES.VANILLA_ICE_CREAM
+    {{- else if eq . 37 -}}
+    {{- /* TODO b/437117624 - Use VERSION_CODES when available. */ -}}
+    37
+    {{- else -}}
+    VERSION_CODES.ERROR_MPC_{{.}}_NOT_FOUND
     {{- end }}
 {{- end -}}
 

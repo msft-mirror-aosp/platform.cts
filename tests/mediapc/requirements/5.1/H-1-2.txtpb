@@ -239,3 +239,29 @@ specs {
     }
   }
 }
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_17
+    specification: "MUST support 6 instances of 8-bit (SDR) hardware video decoder sessions (AVC, HEVC, VP9, AV1, or later) in any codec combination running concurrently with 3 sessions at 1080p resolution@30 fps and 3 sessions at 4k resolution@30fps, unless AV1. For all sessions, there MUST NOT be more than 1 frame dropped per second. AV1 codecs are only required to support 1080p resolution, but are still required to support 6 instances at 1080p30fps."
+    test_config_id: "4k"
+    required_values: {
+      key: "concurrent_fps"
+      value {
+        double_value: 171  # 6 decoders * 30 fps * 0.95 tolerance factor
+      }
+    }
+    required_values: {
+      key: "frame_drops_per_sec"
+      value {
+        double_value: 1
+      }
+    }
+    required_values: {
+      key: "resolution"
+      value {
+        int_value: 2160
+      }
+    }
+  }
+}

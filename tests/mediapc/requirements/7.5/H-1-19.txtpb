@@ -46,3 +46,16 @@ specs {
     }
   }
 }
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_17
+    specification: "MUST support CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION for 1080p HLG10 preview with maximum-size 16:9 aspect ratio JPEG, and for 720p HLG10 preview with maximum-size 16:9 aspect ratio JPEG stream combinations for the primary rear camera."
+    required_values {
+      key: "primary_camera_hlg_combination_supported"
+      value {
+        bool_value: true
+      }
+    }
+  }
+}

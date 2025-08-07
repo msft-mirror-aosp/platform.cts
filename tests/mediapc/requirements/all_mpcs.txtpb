@@ -14,4 +14,4 @@
 #
 # proto-file: third_party/android/mediapc_requirements/requirements.proto
 # proto-message: RequirementList
-all_mpcs: [30, 31, 33, 34, 35]
+all_mpcs: [30, 31, 33, 34, 35, 37]

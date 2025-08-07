@@ -215,3 +215,34 @@ specs {
     }
   }
 }
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_17
+    specification: "same"
+    required_values {
+      key: "primary_camera_available"
+      value {
+        bool_value: true
+      }
+    }
+    required_values {
+      key: "primary_camera_resolution"
+      value {
+        long_value: 5000000
+      }
+    }
+    required_values {
+      key: "primary_camera_video_size_req_satisfied"
+      value {
+        bool_value: true
+      }
+    }
+    required_values {
+      key: "primary_camera_video_fps"
+      value {
+        double_value: 29.9
+      }
+    }
+  }
+}

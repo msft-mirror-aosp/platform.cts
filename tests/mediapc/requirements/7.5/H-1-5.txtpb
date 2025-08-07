@@ -138,3 +138,22 @@ specs {
     }
   }
 }
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_17
+    specification: "same"
+    required_values {
+      key: "rear_camera_latency"
+      value {
+        float_value: 1000
+      }
+    }
+    required_values {
+      key: "front_camera_latency"
+      value {
+        float_value: 1000
+      }
+    }
+  }
+}

@@ -120,3 +120,22 @@ specs {
     }
   }
 }
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_17
+    specification: "same"
+    required_values: {
+      key: "long_resolution_pixels"
+      value: {
+        int_value: 1920
+      }
+    }
+    required_values: {
+      key: "short_resolution_pixels"
+      value: {
+        int_value: 1080
+      }
+    }
+  }
+}
