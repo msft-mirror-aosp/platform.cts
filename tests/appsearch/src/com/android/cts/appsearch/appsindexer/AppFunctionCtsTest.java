@@ -13,41 +13,57 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package android.app.appsearch.cts.appindexer;
+package android.app.appsearch.cts.appsindexer;
 
-import static android.app.appsearch.testutil.AppFunctionConstants.APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PRINT_APP_FUNCTION;
-import static android.app.appsearch.testutil.AppFunctionConstants.APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_COMMON_SCHEMA_METADATA;
-import static android.app.appsearch.testutil.AppFunctionConstants.APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_PRINT_APP_FUNCTION;
-import static android.app.appsearch.testutil.AppFunctionConstants.APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION;
-import static android.app.appsearch.testutil.AppFunctionConstants.APP_A_V2_PRINT_APP_FUNCTION;
-import static android.app.appsearch.testutil.AppFunctionConstants.APP_B_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION;
-import static android.app.appsearch.testutil.AppFunctionConstants.APP_B_PRINT_APP_FUNCTION;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PRINT_APP_FUNCTION;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_COMMON_SCHEMA_METADATA;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_PRINT_APP_FUNCTION;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.APP_A_V2_PRINT_APP_FUNCTION;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.APP_B_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.APP_B_PRINT_APP_FUNCTION;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.PROPERTY_DISPLAY_NAME_STRING_RES;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.PROPERTY_ENABLED_BY_DEFAULT;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.PROPERTY_FUNCTION_ID;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.PROPERTY_PACKAGE_NAME;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.PROPERTY_RESTRICT_CALLERS_WITH_EXECUTE_APP_FUNCTIONS;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.PROPERTY_SCHEMA_CATEGORY;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.PROPERTY_SCHEMA_NAME;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.PROPERTY_SCHEMA_VERSION;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.TEST_APP_A_APP_FUNCTION_SERVICE_DISABLED;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.TEST_APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PATH;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.TEST_APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_PATH;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.TEST_APP_A_DYNAMIC_SCHEMA_PATH;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.TEST_APP_A_PKG;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.TEST_APP_A_V1_PATH;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.TEST_APP_A_V2_PATH;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.TEST_APP_A_V3_PATH;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.TEST_APP_B_DYNAMIC_SCHEMA_PATH;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.TEST_APP_B_PKG;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.TEST_APP_B_V1_PATH;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.clearTimestampsAndParentTypesInDocument;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.installPackage;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.retryAssert;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.searchAppFunctionDocumentsIntoMap;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.searchAppFunctionsWithPackageName;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.searchMobileApplicationWithId;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.uninstallPackage;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.updateAppFunctionServiceEnabledState;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import android.Manifest;
 import android.app.appsearch.GenericDocument;
-import android.app.appsearch.GlobalSearchSessionShim;
-import android.app.appsearch.SearchResult;
-import android.app.appsearch.SearchResultsShim;
-import android.app.appsearch.SearchSpec;
 import android.app.appsearch.testutil.AppSearchTestUtils;
-import android.app.appsearch.testutil.GlobalSearchSessionShimImpl;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.util.ArrayMap;
 
-import androidx.annotation.NonNull;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.filters.SdkSuppress;
-import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.appsearch.flags.Flags;
-import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
@@ -58,53 +74,13 @@ import org.junit.rules.RuleChain;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
 @RequiresFlagsEnabled(Flags.FLAG_APPS_INDEXER_ENABLED)
-public class AppIndexerCtsTest {
-    public static final String INDEXER_PACKAGE_NAME = "android";
+public class AppFunctionCtsTest {
 
     @Rule public final RuleChain mRuleChain = AppSearchTestUtils.createCommonTestRules();
 
     private final Context mContext = ApplicationProvider.getApplicationContext();
-    private static final String TEST_APP_ROOT_FOLDER = "/data/local/tmp/cts/appsearch/";
-    private static final String TEST_APP_A_V1_PATH =
-            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppAV1.apk";
-    private static final String TEST_APP_A_V2_PATH =
-            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppAV2.apk";
-    private static final String TEST_APP_A_V3_PATH =
-            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppAV3.apk";
-    private static final String TEST_APP_B_V1_PATH =
-            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppBV1.apk";
-    private static final String TEST_APP_A_DYNAMIC_SCHEMA_PATH =
-            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppADynamicSchema.apk";
-    private static final String TEST_APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PATH =
-            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppADynamicSchemaFewerTypes.apk";
-    private static final String TEST_APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_PATH =
-            TEST_APP_ROOT_FOLDER
-                    + "CtsAppSearchIndexerTestAppADynamicSchemaMultipleRootSchemas.apk";
-    private static final String TEST_APP_B_DYNAMIC_SCHEMA_PATH =
-            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppBDynamicSchema.apk";
-
-    private static final String TEST_APP_A_APP_FUNCTION_SERVICE_DISABLED =
-            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppAAppFunctionServiceDisabled.apk";
-    private static final String TEST_APP_A_PKG = "com.android.cts.appsearch.indexertestapp.a";
-    private static final String TEST_APP_B_PKG = "com.android.cts.appsearch.indexertestapp.b";
-    private static final String NAMESPACE_MOBILE_APPLICATION = "apps";
-    private static final String NAMESPACE_APP_FUNCTIONS = "app_functions";
-    private static final String APP_PROPERTY_DISPLAY_NAME = "displayName";
-    private static final String PROPERTY_FUNCTION_ID = "functionId";
-    private static final String PROPERTY_PACKAGE_NAME = "packageName";
-    private static final String PROPERTY_SCHEMA_NAME = "schemaName";
-    private static final String PROPERTY_SCHEMA_VERSION = "schemaVersion";
-    private static final String PROPERTY_SCHEMA_CATEGORY = "schemaCategory";
-    private static final String PROPERTY_DISPLAY_NAME_STRING_RES = "displayNameStringRes";
-    private static final String PROPERTY_ENABLED_BY_DEFAULT = "enabledByDefault";
-    private static final String PROPERTY_RESTRICT_CALLERS_WITH_EXECUTE_APP_FUNCTIONS =
-            "restrictCallersWithExecuteAppFunctions";
-
-    private static final long RETRY_CHECK_INTERVAL_MILLIS = 500;
-    private static final long RETRY_MAX_INTERVALS = 10;
 
     @Before
     @After
@@ -120,53 +96,10 @@ public class AppIndexerCtsTest {
     }
 
     @Test
-    public void indexMobileApplications_packageChanges() throws Throwable {
-        {
-            // Install a new app
-            installPackage(TEST_APP_A_V1_PATH);
-
-            retryAssert(
-                    () -> {
-                        GenericDocument mobileApplication =
-                                searchMobileApplicationWithId(TEST_APP_A_PKG);
-                        assertThat(mobileApplication).isNotNull();
-                        assertThat(mobileApplication.getPropertyString(APP_PROPERTY_DISPLAY_NAME))
-                                .isEqualTo("App A [v1]");
-                    });
-        }
-
-        {
-            // Update it
-            installPackage(TEST_APP_A_V2_PATH);
-
-            retryAssert(
-                    () -> {
-                        GenericDocument mobileApplication =
-                                searchMobileApplicationWithId(TEST_APP_A_PKG);
-                        assertThat(mobileApplication).isNotNull();
-                        assertThat(mobileApplication.getPropertyString(APP_PROPERTY_DISPLAY_NAME))
-                                .isEqualTo("App A [v2]");
-                    });
-        }
-
-        {
-            // Uninstall it
-            uninstallPackage(TEST_APP_A_PKG);
-
-            retryAssert(
-                    () -> {
-                        GenericDocument mobileApplication =
-                                searchMobileApplicationWithId(TEST_APP_A_PKG);
-                        assertThat(mobileApplication).isNull();
-                    });
-        }
-    }
-
-    @Test
     public void indexAppFunctions_packageChanges() throws Throwable {
         {
             // Install A V1 which does not have app functions.
-            installPackage(TEST_APP_A_V1_PATH);
+            installPackage(mContext, TEST_APP_A_V1_PATH);
 
             retryAssert(
                     () -> {
@@ -178,7 +111,7 @@ public class AppIndexerCtsTest {
 
         {
             // Update to v2 which has one app function
-            installPackage(TEST_APP_A_V2_PATH);
+            installPackage(mContext, TEST_APP_A_V2_PATH);
             retryAssert(
                     () -> {
                         List<GenericDocument> appFunctions =
@@ -194,7 +127,7 @@ public class AppIndexerCtsTest {
 
         {
             // Update to v3 which no longer has print1 but has print2 and print3.
-            installPackage(TEST_APP_A_V3_PATH);
+            installPackage(mContext, TEST_APP_A_V3_PATH);
             retryAssert(
                     () -> {
                         List<GenericDocument> appFunctions =
@@ -231,7 +164,7 @@ public class AppIndexerCtsTest {
     public void indexAppFunctions_fullXml() throws Throwable {
         // The XML in A v2 has the full XML which specifies all the properties. Here we verify
         // all the properties are being indexed properly.
-        installPackage(TEST_APP_A_V2_PATH);
+        installPackage(mContext, TEST_APP_A_V2_PATH);
         retryAssert(
                 () -> {
                     List<GenericDocument> appFunctions =
@@ -262,7 +195,7 @@ public class AppIndexerCtsTest {
     public void indexAppFunctions_defaultValue() throws Throwable {
         // The XML in B V1 only have functionId, schema_name, schema_version and schema_category.
         // Here, we check the default value of the optional properties are set properly.
-        installPackage(TEST_APP_B_V1_PATH);
+        installPackage(mContext, TEST_APP_B_V1_PATH);
         retryAssert(
                 () -> {
                     List<GenericDocument> appFunctions =
@@ -285,7 +218,7 @@ public class AppIndexerCtsTest {
             throws Throwable {
         // Install the test app B V1 which has one app function. That function should be indexed.
         {
-            installPackage(TEST_APP_B_V1_PATH);
+            installPackage(mContext, TEST_APP_B_V1_PATH);
             retryAssert(
                     () -> {
                         List<GenericDocument> appFunctions =
@@ -300,7 +233,7 @@ public class AppIndexerCtsTest {
         // Install test app A v1 which does not have any app function. The functions from B
         // should be retained.
         {
-            installPackage(TEST_APP_A_V1_PATH);
+            installPackage(mContext, TEST_APP_A_V1_PATH);
             retryAssert(
                     () -> {
                         // Ensure the app A is indexed before checking if the function is retained.
@@ -324,7 +257,7 @@ public class AppIndexerCtsTest {
     public void indexAppFunctionsFromTwoApps() throws Throwable {
         // Install the test app B V1 which has one app function. That function should be indexed.
         {
-            installPackage(TEST_APP_B_V1_PATH);
+            installPackage(mContext, TEST_APP_B_V1_PATH);
             retryAssert(
                     () -> {
                         List<GenericDocument> appFunctions =
@@ -339,7 +272,7 @@ public class AppIndexerCtsTest {
         // Install test app A v2 which also has one app function. The function from B should be
         // retained and the new function from A should be indexed.
         {
-            installPackage(TEST_APP_A_V2_PATH);
+            installPackage(mContext, TEST_APP_A_V2_PATH);
             retryAssert(
                     () -> {
                         List<GenericDocument> appFunctionsFromB =
@@ -363,7 +296,7 @@ public class AppIndexerCtsTest {
     public void indexMobileApplicationAndAppFunction_withoutLauncherIcon() throws Throwable {
         {
             // Install B V1 which does not have a launcher icon but have app functions.
-            installPackage(TEST_APP_B_V1_PATH);
+            installPackage(mContext, TEST_APP_B_V1_PATH);
 
             retryAssert(
                     () -> {
@@ -388,7 +321,7 @@ public class AppIndexerCtsTest {
     @Test
     public void indexAppWithDynamicSchema_dynamicSchemasDisabled_indexesPredefinedSchemaFieldsOnly()
             throws Throwable {
-        installPackage(TEST_APP_A_DYNAMIC_SCHEMA_PATH);
+        installPackage(mContext, TEST_APP_A_DYNAMIC_SCHEMA_PATH);
 
         // Retry till the indexer has completed a run.
         retryAssert(
@@ -411,7 +344,7 @@ public class AppIndexerCtsTest {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void indexAppWithDynamicSchema() throws Throwable {
-        installPackage(TEST_APP_A_DYNAMIC_SCHEMA_PATH);
+        installPackage(mContext, TEST_APP_A_DYNAMIC_SCHEMA_PATH);
 
         // Retry till the indexer has completed a run.
         retryAssert(
@@ -434,7 +367,7 @@ public class AppIndexerCtsTest {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void indexAppWithDynamicSchema_multipleRootSchemas() throws Throwable {
-        installPackage(TEST_APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_PATH);
+        installPackage(mContext, TEST_APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_PATH);
 
         // Retry till the indexer has completed a run.
         retryAssert(
@@ -463,8 +396,8 @@ public class AppIndexerCtsTest {
     @Test
     public void indexMultipleAppsWithDynamicSchema() throws Throwable {
 
-        installPackage(TEST_APP_B_DYNAMIC_SCHEMA_PATH);
-        installPackage(TEST_APP_A_DYNAMIC_SCHEMA_PATH);
+        installPackage(mContext, TEST_APP_B_DYNAMIC_SCHEMA_PATH);
+        installPackage(mContext, TEST_APP_A_DYNAMIC_SCHEMA_PATH);
 
         retryAssert(
                 () -> {
@@ -495,8 +428,8 @@ public class AppIndexerCtsTest {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void indexAppsWithAndWithoutDynamicSchema() throws Throwable {
-        installPackage(TEST_APP_A_DYNAMIC_SCHEMA_PATH);
-        installPackage(TEST_APP_B_V1_PATH);
+        installPackage(mContext, TEST_APP_A_DYNAMIC_SCHEMA_PATH);
+        installPackage(mContext, TEST_APP_B_V1_PATH);
 
         // Retry till the indexer has completed a run.
         retryAssert(
@@ -525,7 +458,7 @@ public class AppIndexerCtsTest {
     @Test
     public void indexApp_updateToDynamicSchema() throws Throwable {
         {
-            installPackage(TEST_APP_A_V2_PATH);
+            installPackage(mContext, TEST_APP_A_V2_PATH);
 
             // Retry till the indexer has completed a run.
             retryAssert(
@@ -544,7 +477,7 @@ public class AppIndexerCtsTest {
         }
 
         {
-            installPackage(TEST_APP_A_DYNAMIC_SCHEMA_PATH);
+            installPackage(mContext, TEST_APP_A_DYNAMIC_SCHEMA_PATH);
 
             // Retry till the indexer has completed a run.
             retryAssert(
@@ -568,7 +501,7 @@ public class AppIndexerCtsTest {
     @Test
     public void indexApp_updateToWithoutDynamicSchema() throws Throwable {
         {
-            installPackage(TEST_APP_A_DYNAMIC_SCHEMA_PATH);
+            installPackage(mContext, TEST_APP_A_DYNAMIC_SCHEMA_PATH);
 
             // Retry till the indexer has completed a run.
             retryAssert(
@@ -589,7 +522,7 @@ public class AppIndexerCtsTest {
         }
 
         {
-            installPackage(TEST_APP_A_V2_PATH);
+            installPackage(mContext, TEST_APP_A_V2_PATH);
 
             // Retry till the indexer has completed another run.
             retryAssert(
@@ -612,7 +545,7 @@ public class AppIndexerCtsTest {
     @Test
     public void indexApp_updateToDynamicSchemaWithFewerTypes() throws Throwable {
         {
-            installPackage(TEST_APP_A_DYNAMIC_SCHEMA_PATH);
+            installPackage(mContext, TEST_APP_A_DYNAMIC_SCHEMA_PATH);
 
             // Retry till the indexer has completed a run.
             retryAssert(
@@ -633,7 +566,7 @@ public class AppIndexerCtsTest {
         }
 
         {
-            installPackage(TEST_APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PATH);
+            installPackage(mContext, TEST_APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PATH);
 
             // Retry till the indexer has completed another run.
             retryAssert(
@@ -656,7 +589,7 @@ public class AppIndexerCtsTest {
     @Test
     public void indexApp_updateToDynamicSchemaWithMoreTypesThanBefore() throws Throwable {
         {
-            installPackage(TEST_APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PATH);
+            installPackage(mContext, TEST_APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PATH);
 
             // Retry till the indexer has completed a run.
             retryAssert(
@@ -677,7 +610,7 @@ public class AppIndexerCtsTest {
         }
 
         {
-            installPackage(TEST_APP_A_DYNAMIC_SCHEMA_PATH);
+            installPackage(mContext, TEST_APP_A_DYNAMIC_SCHEMA_PATH);
 
             // Retry till the indexer has completed another run.
             retryAssert(
@@ -700,8 +633,8 @@ public class AppIndexerCtsTest {
     @Test
     public void indexApp_appFunctionServiceEnabledInRuntime_functionsIndexed() throws Throwable {
         {
-            installPackage(TEST_APP_A_APP_FUNCTION_SERVICE_DISABLED);
-            installPackage(TEST_APP_B_V1_PATH);
+            installPackage(mContext, TEST_APP_A_APP_FUNCTION_SERVICE_DISABLED);
+            installPackage(mContext, TEST_APP_B_V1_PATH);
 
             // Retry till the indexer has completed a run.
             retryAssert(
@@ -719,7 +652,7 @@ public class AppIndexerCtsTest {
 
         {
             updateAppFunctionServiceEnabledState(
-                    TEST_APP_A_PKG, PackageManager.COMPONENT_ENABLED_STATE_ENABLED);
+                    mContext, TEST_APP_A_PKG, PackageManager.COMPONENT_ENABLED_STATE_ENABLED);
 
             // Retry till the indexer has completed another run.
             retryAssert(
@@ -732,28 +665,12 @@ public class AppIndexerCtsTest {
         }
     }
 
-    private void updateAppFunctionServiceEnabledState(String packageName, int newState) {
-        InstrumentationRegistry.getInstrumentation()
-                .getUiAutomation()
-                .adoptShellPermissionIdentity(Manifest.permission.CHANGE_COMPONENT_ENABLED_STATE);
-
-        mContext.getPackageManager()
-                .setComponentEnabledSetting(
-                        new ComponentName(
-                                packageName, "com.android.cts.appsearch.helper.AppFunctionService"),
-                        newState,
-                        /* flags= */ 0);
-        InstrumentationRegistry.getInstrumentation()
-                .getUiAutomation()
-                .dropShellPermissionIdentity();
-    }
-
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_INDEXER_RUN_ON_APP_FUNCTION_COMPONENT_CHANGE)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void indexApp_appFunctionServiceDisabledInRuntime_functionsRemoved() throws Throwable {
         {
-            installPackage(TEST_APP_A_DYNAMIC_SCHEMA_PATH);
+            installPackage(mContext, TEST_APP_A_DYNAMIC_SCHEMA_PATH);
 
             // Retry till the indexer has completed a run.
             retryAssert(
@@ -767,7 +684,7 @@ public class AppIndexerCtsTest {
 
         {
             updateAppFunctionServiceEnabledState(
-                    TEST_APP_A_PKG, PackageManager.COMPONENT_ENABLED_STATE_DISABLED);
+                    mContext, TEST_APP_A_PKG, PackageManager.COMPONENT_ENABLED_STATE_DISABLED);
 
             // Retry till the indexer has completed another run.
             retryAssert(
@@ -787,7 +704,7 @@ public class AppIndexerCtsTest {
             indexApp_compChangeFlagDisabled_appFunctionServiceDisabledInRuntime_functionNotRemoved()
                     throws Throwable {
         {
-            installPackage(TEST_APP_A_DYNAMIC_SCHEMA_PATH);
+            installPackage(mContext, TEST_APP_A_DYNAMIC_SCHEMA_PATH);
 
             // Retry till the indexer has completed a run.
             retryAssert(
@@ -801,7 +718,7 @@ public class AppIndexerCtsTest {
 
         {
             updateAppFunctionServiceEnabledState(
-                    TEST_APP_A_PKG, PackageManager.COMPONENT_ENABLED_STATE_DISABLED);
+                    mContext, TEST_APP_A_PKG, PackageManager.COMPONENT_ENABLED_STATE_DISABLED);
 
             // Retry till the indexer has completed another run.
             retryAssert(
@@ -813,128 +730,5 @@ public class AppIndexerCtsTest {
                         assertThat(appFnMap).hasSize(1);
                     });
         }
-    }
-
-    private GenericDocument clearTimestampsAndParentTypesInDocument(
-            @NonNull GenericDocument document) {
-        GenericDocument.Builder<?> builder =
-                new GenericDocument.Builder<>(document)
-                        .setCreationTimestampMillis(0)
-                        // GenericDocument#PARENT_TYPES_SYNTHETIC_PROPERTY is hidden
-                        .clearProperty("$$__AppSearch__parentTypes");
-
-        for (String propertyName : document.getPropertyNames()) {
-            Object property = document.getProperty(propertyName);
-            if (property instanceof GenericDocument[] nestedDocuments) {
-                GenericDocument[] clearedNestedDocuments =
-                        new GenericDocument[nestedDocuments.length];
-
-                for (int i = 0; i < nestedDocuments.length; i++) {
-                    clearedNestedDocuments[i] =
-                            clearTimestampsAndParentTypesInDocument(nestedDocuments[i]);
-                }
-
-                builder.setPropertyDocument(propertyName, clearedNestedDocuments);
-            }
-        }
-
-        return builder.build();
-    }
-
-    private GenericDocument searchMobileApplicationWithId(String id)
-            throws ExecutionException, InterruptedException {
-        GlobalSearchSessionShim globalSearchSession =
-                GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync().get();
-
-        SearchResultsShim searchResults =
-                globalSearchSession.search(
-                        "",
-                        new SearchSpec.Builder()
-                                .addFilterNamespaces(NAMESPACE_MOBILE_APPLICATION)
-                                .addFilterPackageNames(INDEXER_PACKAGE_NAME)
-                                .build());
-        List<GenericDocument> genericDocuments = collectAllResults(searchResults);
-        for (int i = 0; i < genericDocuments.size(); i++) {
-            GenericDocument genericDocument = genericDocuments.get(i);
-            if (genericDocument.getId().equals(id)) {
-                return genericDocument;
-            }
-        }
-        return null;
-    }
-
-    private List<GenericDocument> searchAppFunctionsWithPackageName(String packageName)
-            throws ExecutionException, InterruptedException {
-        GlobalSearchSessionShim globalSearchSession =
-                GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync().get();
-
-        SearchResultsShim searchResults =
-                globalSearchSession.search(
-                        String.format("packageName:\"%s\"", packageName),
-                        new SearchSpec.Builder()
-                                .addFilterNamespaces(NAMESPACE_APP_FUNCTIONS)
-                                .addFilterPackageNames(INDEXER_PACKAGE_NAME)
-                                .setVerbatimSearchEnabled(true)
-                                .build());
-        return collectAllResults(searchResults);
-    }
-
-    private Map<String, GenericDocument> searchAppFunctionDocumentsIntoMap(String packageName)
-            throws ExecutionException, InterruptedException {
-        Map<String, GenericDocument> appFns = new ArrayMap<>();
-        for (GenericDocument document : searchAppFunctionsWithPackageName(packageName)) {
-            appFns.put(document.getId(), document);
-        }
-
-        return appFns;
-    }
-
-    private List<GenericDocument> collectAllResults(SearchResultsShim searchResults)
-            throws ExecutionException, InterruptedException {
-        List<GenericDocument> documents = new ArrayList<>();
-        List<SearchResult> results;
-        do {
-            results = searchResults.getNextPageAsync().get();
-            for (SearchResult result : results) {
-                documents.add(result.getGenericDocument());
-            }
-        } while (results.size() > 0);
-        return documents;
-    }
-
-    private void installPackage(@NonNull String path) {
-        assertThat(
-                        SystemUtil.runShellCommand(
-                                String.format(
-                                        "pm install -r -i %s -t -g %s",
-                                        mContext.getPackageName(), path)))
-                .isEqualTo("Success\n");
-    }
-
-    private void uninstallPackage(@NonNull String packageName) {
-        SystemUtil.runShellCommand("pm uninstall " + packageName);
-    }
-
-    /** Retries an assertion with a delay between attempts. */
-    private static void retryAssert(ThrowRunnable runnable) throws Throwable {
-        Throwable lastError = null;
-
-        for (int attempt = 0; attempt < RETRY_MAX_INTERVALS; attempt++) {
-            try {
-                runnable.run();
-                return;
-            } catch (Throwable e) {
-                lastError = e;
-                if (attempt < RETRY_MAX_INTERVALS) {
-                    Thread.sleep(RETRY_CHECK_INTERVAL_MILLIS);
-                }
-            }
-        }
-        throw lastError;
-    }
-
-    /** Runnable that throws. */
-    public interface ThrowRunnable {
-        void run() throws Throwable;
     }
 }
