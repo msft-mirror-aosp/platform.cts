@@ -729,9 +729,7 @@ public final class CameraDeviceInfo extends DeviceInfo {
         charsKeyNames.add(CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE.getName());
         charsKeyNames.add(CameraCharacteristics.CONTROL_AVAILABLE_SETTINGS_OVERRIDES.getName());
         charsKeyNames.add(CameraCharacteristics.CONTROL_AUTOFRAMING_AVAILABLE.getName());
-        if (Flags.cameraAeModeLowLightBoost()) {
-            charsKeyNames.add(CameraCharacteristics.CONTROL_LOW_LIGHT_BOOST_INFO_LUMINANCE_RANGE.getName());
-        }
+        charsKeyNames.add(CameraCharacteristics.CONTROL_LOW_LIGHT_BOOST_INFO_LUMINANCE_RANGE.getName());
         if (Flags.aePriority()) {
             charsKeyNames.add(CameraCharacteristics.CONTROL_AE_AVAILABLE_PRIORITY_MODES.getName());
         }
