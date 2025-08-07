@@ -419,6 +419,7 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
         mUiBot.focusByRelativeId(ID_CC_NUMBER);
         sReplier.getNextFillRequest();
         // Trigger "buy" button
+        mUiBot.scrollDownTo("buy");
         mUiBot.selectByRelativeId("buy");
 
         // Now switch back to A...
