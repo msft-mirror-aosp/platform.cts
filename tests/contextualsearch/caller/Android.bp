@@ -23,6 +23,7 @@ android_test_helper_app {
     defaults: ["cts_defaults"],
     sdk_version: "test_current",
     static_libs: [
+        "android.app.contextualsearch.flags-aconfig-java",
         "androidx.annotation_annotation",
         "compatibility-device-util-axt",
     ],

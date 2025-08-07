@@ -16,8 +16,10 @@
 package android.contextualsearch.caller
 
 import android.app.Activity
+import android.app.contextualsearch.ContextualSearchConfig
 import android.app.contextualsearch.ContextualSearchManager
 import android.os.Bundle
+import com.android.compatibility.common.util.BroadcastMessenger
 
 /**
  * This activity is used to test Contextual Search Manager Service interactions with activities
@@ -27,11 +29,29 @@ class CallerActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        getSystemService(ContextualSearchManager::class.java).startContextualSearch()
+
+        val manager = getSystemService(ContextualSearchManager::class.java)
+        try {
+            val config = intent.getParcelableExtra(
+                EXTRA_CONTEXTUAL_SEARCH_CONFIG,
+                ContextualSearchConfig::class.java
+            )
+            manager.startContextualSearch(this, config)
+        } catch (e: SecurityException) {
+            BroadcastMessenger.send(
+                this,
+                ContextualSearchMessage.TAG,
+                ContextualSearchMessage(ContextualSearchMessage.RESULT_EXCEPTION)
+            )
+        } catch (e: Exception) {
+            throw RuntimeException("Caught unexpected exception", e)
+        }
         finish()
     }
 
     companion object {
         private val TAG: String = "CallerActivity"
+        const val EXTRA_CONTEXTUAL_SEARCH_CONFIG =
+            "android.contextualsearch.caller.EXTRA_CONTEXTUAL_SEARCH_CONFIG"
     }
 }
