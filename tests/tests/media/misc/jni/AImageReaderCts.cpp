@@ -578,6 +578,77 @@ testSucceedsWithHardwareBufferFormatAndDataSpaceNative(JNIEnv* /*env*/, jclass /
 }
 
 extern "C" jboolean Java_android_media_misc_cts_NativeImageReaderTest_\
+testSucceedsWithBufferConfigureAfterCreationNative(JNIEnv* /*env*/, jclass /*clazz*/) {
+    static constexpr uint64_t kTestImageUsage = AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN;
+    static constexpr int kTestImageCount = 8;
+
+    static constexpr int32_t kTestUpdatedWidth = 1024;
+    static constexpr int32_t kTestUpdatedHeight = 768;
+    static constexpr uint32_t kTestUpdatedBufferFormat =
+            AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM;
+    static constexpr int32_t kTestUpdatedDataSpace = ADATASPACE_BT709;
+
+    if (__builtin_available(android 37, *)) {
+        AImageReader* outReader = nullptr;
+        media_status_t ret = AImageReader_newWithUsage(
+                kTestImageWidth, kTestImageHeight,
+                kTestImageFormat, kTestImageUsage, kTestImageCount, &outReader);
+        if (ret != AMEDIA_OK || outReader == nullptr) {
+            ALOGE("AImageReader_newWithUsage failed with %d", ret);
+            return false;
+        }
+
+        ret = AImageReader_setDefaultBufferSize(
+                outReader, kTestUpdatedWidth, kTestUpdatedHeight);
+        if (ret != AMEDIA_OK) {
+            ALOGE("AImageReader_setDefaultBufferSize failed with %d", ret);
+            AImageReader_delete(outReader);
+            return false;
+        }
+
+        ret = AImageReader_setDefaultAHardwareBufferFormat(
+                outReader, kTestUpdatedBufferFormat);
+        if (ret != AMEDIA_OK) {
+            ALOGE("AImageReader_setDefaultAHardwareBufferFormat failed with %d", ret);
+            AImageReader_delete(outReader);
+            return false;
+        }
+
+        ret = AImageReader_setDefaultBufferDataSpace(outReader, kTestUpdatedDataSpace);
+
+        ANativeWindow *window = nullptr;
+        ret = AImageReader_getWindow(outReader, &window);
+        if (ret != AMEDIA_OK || window == nullptr) {
+            ALOGE("AImageReader_getWindow failed with %d", ret);
+            AImageReader_delete(outReader);
+            return false;
+        }
+
+        int32_t outWidth = ANativeWindow_getWidth(window);
+        int32_t outHeight = ANativeWindow_getHeight(window);
+        int32_t outFormat = ANativeWindow_getFormat(window);
+        int32_t outDataSpace = ANativeWindow_getBuffersDefaultDataSpace(window);
+
+        if (outWidth != kTestUpdatedWidth || outHeight != kTestUpdatedHeight ||
+                outFormat != kTestUpdatedBufferFormat ||
+                outDataSpace != kTestUpdatedDataSpace) {
+            ALOGE("Retrieved wrong values width:%d(%d), height:%d(%d), "
+                    "format:%d(%d) dataspace:%d(%d)",
+                    outWidth, kTestUpdatedWidth, outHeight, kTestUpdatedHeight,
+                    outFormat, kTestUpdatedBufferFormat, outDataSpace, kTestUpdatedDataSpace);
+            AImageReader_delete(outReader);
+            return false;
+        }
+        AImageReader_delete(outReader);
+        return true;
+    }
+    ALOGE("NDK API AImageReader_setDefaultBufferSize, "
+            "AImageReader_setDefaultAHardwareBufferFormat and "
+            "AImageReader_setDefaultBufferDataSpace are not supported before api 37!");
+    return false;
+}
+
+extern "C" jboolean Java_android_media_misc_cts_NativeImageReaderTest_\
 testTakePicturesNative(JNIEnv* /*env*/, jclass /*clazz*/) {
     for (auto& readerUsage :
          {AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN}) {
