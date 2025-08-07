@@ -68,6 +68,7 @@ public class CodecEncoderTestBase extends CodecTestBase {
     protected int mInputBufferReadOffset;
     protected int mNumBytesSubmitted;
     protected long mInputOffsetPts;
+    protected int mAudioEnqueueLimit; // max number of raw pcm bytes to send in an enqueue call.
 
     protected ArrayList<MediaCodec.BufferInfo> mInfoList = new ArrayList<>();
 
@@ -280,6 +281,7 @@ public class CodecEncoderTestBase extends CodecTestBase {
         mInputBufferReadOffset = 0;
         mNumBytesSubmitted = 0;
         mInputOffsetPts = 0;
+        mAudioEnqueueLimit = Integer.MAX_VALUE;
         mInfoList.clear();
     }
 
@@ -405,6 +407,7 @@ public class CodecEncoderTestBase extends CodecTestBase {
                         * mActiveEncCfg.mChannelCount * mActiveEncCfg.mSampleRate);
                 int bytesPerFrame = mActiveRawRes.mBytesPerSample * mActiveEncCfg.mChannelCount;
                 size = Math.min(inputBuffer.capacity(), mInputData.length - mInputBufferReadOffset);
+                size = Math.min(size, mAudioEnqueueLimit);
                 size = size - (size % bytesPerFrame);
                 String msg = String.format(Locale.getDefault(),
                         "buffer capacity %d, bytes left in input file %d.\n Failed to queue at "
@@ -570,6 +573,12 @@ public class CodecEncoderTestBase extends CodecTestBase {
 
     public void setLoopBack(boolean loopBack) {
         mIsLoopBack = loopBack;
+    }
+
+    public void setAudioEnqueueLimit(int limit) {
+        if (limit > 0) {
+            mAudioEnqueueLimit = limit;
+        }
     }
 
     public String getMuxedOutputFilePath() {
