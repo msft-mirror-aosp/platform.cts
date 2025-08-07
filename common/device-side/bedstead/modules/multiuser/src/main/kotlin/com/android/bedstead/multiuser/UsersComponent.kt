@@ -97,8 +97,7 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
             return
         }
 
-        // We need to find a different user to switch to
-        // full users only, starting with lowest ID
+        // Find a different user to switch to, starting with the lowest ID
         val users = users().all().sortedBy { it.id() }
         for (otherUser in users) {
             if (otherUser == user) {
@@ -322,7 +321,7 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
         if (mutableSwitchedToUser == OptionalBoolean.TRUE && !instrumentedUser.canBeSwitchedTo()) {
             if (users().isHeadlessSystemUserMode() && instrumentedUser == users().system()) {
                 throw IllegalStateException(
-                    "Cannot switch to system user on headless devices. " +
+                    "This device doesn't support switching to the headless system user. " +
                             "Either add @RequireNotHeadlessSystemUserMode, or specify " +
                             "switchedToUser=ANY"
                 )
