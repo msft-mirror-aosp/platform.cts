@@ -452,3 +452,22 @@ android_test {
     },
     test_config_template: ":CtsPackageInstallerCUJMultiUsersTestCases-test-config_v2",
 }
+
+android_test {
+    name: "CtsPackageInstallerCUJDeveloperVerificationTestCases",
+    defaults: ["cts_package_installer_cuj_defaults"],
+    manifest: "AndroidManifest_developerverification.xml",
+
+    srcs: [
+        "src/android/packageinstaller/criticaluserjourney/cts/DeveloperVerificationTestBase.java",
+        "src/android/packageinstaller/criticaluserjourney/cts/DeveloperVerificationViaIntentCujTest.java",
+        "src/android/packageinstaller/criticaluserjourney/cts/InstallationTestBase.java",
+        "src/android/packageinstaller/criticaluserjourney/cts/PackageInstallerCujTestBase.java",
+    ],
+
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+    test_config_template: ":CtsPackageInstallerCUJInstallationTestCases-test-config_v2",
+}
