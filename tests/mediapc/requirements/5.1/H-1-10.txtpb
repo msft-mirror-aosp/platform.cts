@@ -1,0 +1,126 @@
+# Copyright (C) 2025 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# proto-file: third_party/android/mediapc_requirements/requirements.proto
+# proto-message: Requirement
+id: "5.1/H-1-10"
+name: "Video Decoder Sessions"
+description: "hardware decoders, secure with non-secure hardware decoders"
+test_configs: {
+  key: "1080p"
+  value: {
+    description: "Test config for 1080p"
+    proto_field_number: 23
+  }
+}
+test_configs: {
+  key: "4k"
+  value: {
+    description: "Test config for 4k"
+    proto_field_number: 24
+  }
+}
+measurements: {
+  key: "concurrent_fps"
+  value: {
+    description: "Achieved FPS"
+    measurement_type: MEASUREMENT_TYPE_DOUBLE
+    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    proto_field_number: 3
+  }
+}
+measurements: {
+  key: "frame_drops_per_sec"
+  value: {
+    description: "Number of frame drops per second"
+    measurement_type: MEASUREMENT_TYPE_DOUBLE
+    comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    proto_field_number: 4
+  }
+}
+measurements: {
+  key: "resolution"
+  value: {
+    description: "The resolution the test was run at"
+    measurement_type: MEASUREMENT_TYPE_INT
+    comparison: COMPARISON_CONFIG
+    proto_field_number: 5
+  }
+}
+specs {
+  key: 33
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_13
+    specification: "MUST support 3 instances of non-secure hardware video decoder sessions together with 1 instance of secure hardware video decoder session (4 instances total) (AVC, HEVC, VP9, AV1 or later) in any codec combination running concurrently at 1080p resolution@30fps."
+    test_config_id: "1080p"
+    required_values: {
+      key: "concurrent_fps"
+      value {
+        double_value: 114  # 4 decoders * 30 fps * 0.95 tolerance factor
+      }
+    }
+    required_values: {
+      key: "resolution"
+      value {
+        int_value: 1080
+      }
+    }
+  }
+}
+specs {
+  key: 34
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_14
+    specification: "MUST support 3 instances of non-secure hardware video decoder sessions together with 1 instance of secure hardware video decoder session (4 instances total) (AVC, HEVC, VP9, AV1 or later) in any codec combination running concurrently with 3 sessions at 4K resolution@30 fps (unless AV1) which includes one secure decoder session and 1 nn-secure session at 1080p resolution@30fps where at most 2 sessions can be in 10-bit HDR. AV1 codec sessions are only required to support 1080p resolution even when this requirement calls for 4K."
+    test_config_id: "4k"
+    required_values: {
+      key: "concurrent_fps"
+      value {
+        double_value: 114  # 4 decoders * 30 fps * 0.95 tolerance factor
+      }
+    }
+    required_values: {
+      key: "resolution"
+      value {
+        int_value: 2160
+      }
+    }
+  }
+}
+specs {
+  key: 35
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_15
+    specification: "MUST support 3 instances of non-secure hardware video decoder sessions together with 1 instance of secure hardware video decoder session (4 instances total) (AVC, HEVC, VP9, AV1, or later) in any codec combination running concurrently with 3 sessions at 4K resolution@30fps (unless AV1) which includes one secure decoder session and 1 nn-secure session at 1080p resolution@30fps where at most 2 sessions can be in 10-bit HDR. For all sessions, there MUST NOT be more than 1 frame dropped per second. AV1 codec sessions are only required to support 1080p resolution even when this requirement calls for 4K."
+    test_config_id: "4k"
+    required_values: {
+      key: "concurrent_fps"
+      value {
+        double_value: 114  # 4 decoders * 30 fps * 0.95 tolerance factor
+      }
+    }
+    required_values: {
+      key: "frame_drops_per_sec"
+      value {
+        double_value: 1
+      }
+    }
+    required_values: {
+      key: "resolution"
+      value {
+        int_value: 2160
+      }
+    }
+  }
+}

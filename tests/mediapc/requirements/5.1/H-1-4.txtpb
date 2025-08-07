@@ -1,0 +1,270 @@
+# Copyright (C) 2025 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# proto-file: third_party/android/mediapc_requirements/requirements.proto
+# proto-message: Requirement
+id: "5.1/H-1-4"
+name: "Concurrent Video Encoder Sessions"
+description: "Concurrent video encoder sessions"
+test_configs: {
+  key: "720p"
+  value: {
+    description: "Tests running at 720p"
+    proto_field_number: 10
+  }
+}
+test_configs: {
+  key: "1080p"
+  value: {
+    description: "Tests running at 1080p"
+    proto_field_number: 11
+  }
+}
+test_configs: {
+  key: "4k"
+  value: {
+    description: "Tests running at 4k"
+    proto_field_number: 12
+  }
+}
+variants: {
+  key: "byte_buffer_mode"
+  value: {
+    description: "When the test is run in byte buffer mode"
+  }
+}
+measurements: {
+  key: "concurrent_fps"
+  value: {
+    description: "The number of frames per second that can be decoded concurrently"
+    measurement_type: MEASUREMENT_TYPE_DOUBLE
+    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    proto_field_number: 3
+  }
+}
+measurements: {
+  key: "frame_drops_per_sec"
+  value: {
+    description: "The number of frames dropped per second"
+    measurement_type: MEASUREMENT_TYPE_DOUBLE
+    comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    proto_field_number: 4
+  }
+}
+measurements: {
+  key: "resolution"
+  value: {
+    description: "The resolution the test was run at"
+    measurement_type: MEASUREMENT_TYPE_INT
+    comparison: COMPARISON_CONFIG
+    proto_field_number: 5
+  }
+}
+specs {
+  key: 30
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_11
+    specification: "MUST support 6 instances of hardware video encoder sessions (AVC or HEVC) in any codec combination running concurrently at 720p resolution@30 fps."
+    test_config_id: "720p"
+    required_values: {
+      key: "concurrent_fps"
+      value {
+        double_value: 171  # 6 encoders * 30 fps * 0.95 tolerance factor
+      }
+    }
+    required_values: {
+      key: "resolution"
+      value {
+        int_value: 720
+      }
+    }
+    variant_specs: {
+      key: "byte_buffer_mode"
+      value: {
+        required_values: {
+          key: "concurrent_fps"
+          value {
+            double_value: 0  # Requirement not asserted in byte buffer mode
+          }
+        }
+        required_values: {
+          key: "resolution"
+          value {
+            int_value: 720
+          }
+        }
+      }
+    }
+  }
+}
+specs {
+  key: 31
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_12
+    specification: "MUST support 6 instances of hardware video encoder sessions (AVC, HEVC, VP9* or later) in any codec combination running concurrently at 720p resolution@30 fps. *Only 2 instances are required if VP9 codec is present."
+    test_config_id: "720p"
+    required_values: {
+      key: "concurrent_fps"
+      value {
+        double_value: 171  # 6 encoders * 30 fps * 0.95 tolerance factor
+      }
+    }
+    required_values: {
+      key: "resolution"
+      value {
+        int_value: 720
+      }
+    }
+    variant_specs: {
+      key: "byte_buffer_mode"
+      value: {
+        required_values: {
+          key: "concurrent_fps"
+          value {
+            double_value: 0  # Requirement not asserted in byte buffer mode
+          }
+        }
+        required_values: {
+          key: "resolution"
+          value {
+            int_value: 720
+          }
+        }
+      }
+    }
+  }
+}
+specs {
+  key: 33
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_13
+    specification: "MUST support 6 instances of hardware video encoder sessions (AVC, HEVC, VP9, AV1 or later) in any codec combination running concurrently at 1080p resolution@30fps."
+    test_config_id: "1080p"
+    required_values: {
+      key: "concurrent_fps"
+      value {
+        double_value: 171  # 6 encoders * 30 fps * 0.95 tolerance factor
+      }
+    }
+    required_values: {
+      key: "resolution"
+      value {
+        int_value: 1080
+      }
+    }
+    variant_specs: {
+      key: "byte_buffer_mode"
+      value: {
+        required_values: {
+          key: "concurrent_fps"
+          value {
+            double_value: 0  # Requirement not asserted in byte buffer mode
+          }
+        }
+        required_values: {
+          key: "resolution"
+          value {
+            int_value: 1080
+          }
+        }
+      }
+    }
+  }
+}
+specs {
+  key: 34
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_14
+    specification: "MUST support 6 instances of 8-bit (SDR) hardware video encoder sessions (AVC, HEVC, VP9, AV1 or later) in any codec combination running concurrently with 4 sessions at 1080p resolution@30 fps and 2 sessions at 4k resolution@30fps, unless AV1. AV1 codecs are only required to support 1080p resolution, but are still required to support 6 instances at 1080p30fps."
+    test_config_id: "4k"
+    required_values: {
+      key: "concurrent_fps"
+      value {
+        double_value: 171  # 6 encoders * 30 fps * 0.95 tolerance factor
+      }
+    }
+    required_values: {
+      key: "resolution"
+      value {
+        int_value: 2160
+      }
+    }
+    variant_specs: {
+      key: "byte_buffer_mode"
+      value: {
+        required_values: {
+          key: "concurrent_fps"
+          value {
+            double_value: 0  # Requirement not asserted in byte buffer mode
+          }
+        }
+        required_values: {
+          key: "resolution"
+          value {
+            int_value: 2160
+          }
+        }
+      }
+    }
+  }
+}
+specs {
+  key: 35
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_15
+    specification: "MUST support 6 instances of 8-bit (SDR) hardware video encoder sessions (AVC, HEVC, VP9, AV1, or later) in any codec combination running concurrently with 4 sessions at 1080p resolution@30 fps and 2 sessions at 4k resolution@30fps, unless AV1. For all sessions, there MUST NOT be more than 1 frame dropped per second. AV1 codecs are only required to support 1080p resolution, but are still required to support 6 instances at 1080p30fps."
+    test_config_id: "4k"
+    required_values: {
+      key: "concurrent_fps"
+      value {
+        double_value: 171  # 6 encoders * 30 fps * 0.95 tolerance factor
+      }
+    }
+    required_values: {
+      key: "frame_drops_per_sec"
+      value {
+        double_value: 1
+      }
+    }
+    required_values: {
+      key: "resolution"
+      value {
+        int_value: 2160
+      }
+    }
+    variant_specs: {
+      key: "byte_buffer_mode"
+      value: {
+        required_values: {
+          key: "concurrent_fps"
+          value {
+            double_value: 0  # Requirement not asserted in byte buffer mode
+          }
+        }
+        required_values: {
+          key: "frame_drops_per_sec"
+          value {
+            double_value: 1
+          }
+        }
+        required_values: {
+          key: "resolution"
+          value: {
+            int_value: 2160
+          }
+        }
+      }
+    }
+  }
+}

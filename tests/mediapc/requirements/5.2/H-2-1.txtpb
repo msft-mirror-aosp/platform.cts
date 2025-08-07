@@ -1,0 +1,150 @@
+# Copyright (C) 2025 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# proto-file: third_party/android/mediapc_requirements/requirements.proto
+# proto-message: Requirement
+id: "5.2/H-2-1"
+name: "VEQ"
+description: "Video encoding quality (VEQ) tests."
+test_configs: {
+  key: ""
+  value: {
+    description: "Default test config"
+    proto_field_number: 39
+  }
+}
+measurements: {
+  key: "bdrate_vmaf"
+  value: {
+    description: "BDRATE-VMAF result"
+    measurement_type: MEASUREMENT_TYPE_DOUBLE
+    comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    proto_field_number: 3
+  }
+}
+measurements: {
+  key: "calculated"
+  value: {
+    description:
+      "Was BDRATE-VMAF calculated. "
+      "Because 0 is a passing BDRATE-VMAF result, setting this field verifies "
+      "the calculation was done."
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 4
+  }
+}
+measurements: {
+  key: "codec_name"
+  value: {
+    description: "Codec name"
+    measurement_type: MEASUREMENT_TYPE_STRING
+    comparison: COMPARISON_INFO_ONLY
+    proto_field_number: 5
+  }
+}
+measurements: {
+  key: "bframes_allowed"
+  value: {
+    description: "The encoding is allowed to include b-frames."
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_INFO_ONLY
+    proto_field_number: 6
+  }
+}
+measurements: {
+  key: "resolution"
+  value: {
+    description:
+      "The resolution of the video written as height x width p "
+      "(for example 1080x1920p)."
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_INFO_ONLY
+    proto_field_number: 7
+  }
+}
+specs {
+  key: 34
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_14
+    specification:
+      "MUST meet the minimum quality target defined by the video encoder "
+      "rate-distortion curves for hardware AVC and HEVC codecs, as defined "
+      "in Run Performance Class 14 (PC14)-Video encoding quality (VEQ) tests."
+    required_values: {
+      key: "bdrate_vmaf"
+      value {
+        double_value: 0.0
+      }
+    }
+    required_values: {
+      key: "calculated"
+      value {
+        bool_value: true
+      }
+    }
+    required_values: {
+      key: "codec_name"
+      value {
+      }
+    }
+    required_values: {
+      key: "bframes_allowed"
+      value {
+      }
+    }
+    required_values: {
+      key: "resolution"
+      value {
+      }
+    }
+  }
+}
+specs {
+  key: 35
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_14
+    specification:
+      "MUST meet the minimum quality target defined by the video encoder "
+      "rate-distortion curves for hardware AVC and HEVC codecs, as defined "
+      "in Run Performance Class 14 (PC14)-Video encoding quality (VEQ) tests."
+    required_values: {
+      key: "bdrate_vmaf"
+      value {
+        double_value: 0.0
+      }
+    }
+    required_values: {
+      key: "calculated"
+      value {
+        bool_value: true
+      }
+    }
+    required_values: {
+      key: "codec_name"
+      value {
+      }
+    }
+    required_values: {
+      key: "bframes_allowed"
+      value {
+      }
+    }
+    required_values: {
+      key: "resolution"
+      value {
+      }
+    }
+  }
+}

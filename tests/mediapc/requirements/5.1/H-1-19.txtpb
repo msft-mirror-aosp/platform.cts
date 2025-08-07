@@ -1,0 +1,97 @@
+# Copyright (C) 2025 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# proto-file: third_party/android/mediapc_requirements/requirements.proto
+# proto-message: Requirement
+id: "5.1/H-1-19"
+name: "Concurrent HDR Transcoding Sessions"
+description: "Concurrent HDR transcoding sessions"
+test_configs: {
+  key: ""
+  value: {
+    description: "Default test config"
+    proto_field_number: 33
+  }
+}
+measurements: {
+  key: "concurrent_fps"
+  value: {
+    description: "The number of frames per second that can be decoded concurrently"
+    measurement_type: MEASUREMENT_TYPE_DOUBLE
+    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    proto_field_number: 3
+  }
+}
+measurements: {
+  key: "frame_drops_per_sec"
+  value: {
+    description: "The number of frames dropped per second"
+    measurement_type: MEASUREMENT_TYPE_DOUBLE
+    comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    proto_field_number: 4
+  }
+}
+measurements: {
+  key: "resolution"
+  value: {
+    description: "The resolution the test was run at"
+    measurement_type: MEASUREMENT_TYPE_INT
+    comparison: COMPARISON_CONFIG
+    proto_field_number: 5
+  }
+}
+specs {
+  key: 34
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_14
+    specification: "MUST support 3 instances of 10-bit (HDR) hardware video decoder and hardware video encoder sessions (AVC, HEVC, VP9, AV1 or later) in any codec combination running concurrently at 4K@30fps resolution (unless AV1) out of which at most 1 is an encoder session, which could be configured in RGBA_1010102 input format through a GL surface. HDR metadata generation by the encoder is not required if encoding from the GL surface. AV1 codec sessions are only required to support 1080p resolution even when this requirement calls for 4K."
+    required_values: {
+      key: "concurrent_fps"
+      value {
+        double_value: 42.75  # 3 codecs * 30 fps * 0.95 tolerance factor / 2
+      }
+    }
+    required_values: {
+      key: "resolution"
+      value {
+        int_value: 2160
+      }
+    }
+  }
+}
+specs {
+  key: 35
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_15
+    specification: "MUST support 2 instances of secure hardware video decoder sessions (AVC, HEVC, VP9, AV1, or later) in any codec combination running concurrently at 4k resolution@30 fps (unless AV1) for both 8-bit (SDR) and 10-bit HDR content. For all sessions, there MUST NOT be more than 1 frame dropped per second. AV1 codec sessions are only required to support 1080p resolution even when this requirement calls for 4K."
+    required_values: {
+      key: "concurrent_fps"
+      value {
+        double_value: 42.75  # 3 codecs * 30 fps * 0.95 tolerance factor / 2
+      }
+    }
+    required_values: {
+      key: "frame_drops_per_sec"
+      value {
+        double_value: 1
+      }
+    }
+    required_values: {
+      key: "resolution"
+      value {
+        int_value: 2160
+      }
+    }
+  }
+}

@@ -21,9 +21,9 @@ import (
 	_ "embed"
 )
 
-// MPC Requirements data from requirements.txtpb
+// MPC Requirements data
 //
-//go:embed requirements.binbp
+//go:embed requirements_data.binarypb
 var reqBinary []byte
 
 func TestGensrc(t *testing.T) {

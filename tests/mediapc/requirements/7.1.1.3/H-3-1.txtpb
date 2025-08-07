@@ -1,0 +1,84 @@
+# Copyright (C) 2025 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# proto-file: third_party/android/mediapc_requirements/requirements.proto
+# proto-message: Requirement
+id: "7.1.1.3/H-3-1"
+name: "HDR display"
+description: "HDR display"
+test_configs: {
+  key: ""
+  value: {
+    description: "Default test config"
+    proto_field_number: 73
+  }
+}
+measurements: {
+  key: "is_hdr"
+  value: {
+    id: "is_hdr"
+    description: "Does the display support HDR"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 3
+  }
+}
+measurements: {
+  key: "display_luminance_nits"
+  value: {
+    id: "display_luminance_nits"
+    description: "The display luminance in nits."
+    measurement_type: MEASUREMENT_TYPE_DOUBLE
+    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    proto_field_number: 4
+  }
+}
+specs {
+  key: 34
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_INVALID
+    specification: "MUST have a HDR display supporting at least 1000 nits"
+    required_values: {
+      key: "display_luminance_nits"
+      value: {
+        double_value: 1000
+      }
+    }
+    required_values: {
+      key: "is_hdr"
+      value: {
+        bool_value: true
+      }
+    }
+  }
+}
+specs {
+  key: 35
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_INVALID
+    specification: "MUST have a HDR display supporting at least 1000 nits"
+    required_values: {
+      key: "display_luminance_nits"
+      value: {
+        double_value: 1000
+      }
+    }
+    required_values: {
+      key: "is_hdr"
+      value: {
+        bool_value: true
+      }
+    }
+  }
+}

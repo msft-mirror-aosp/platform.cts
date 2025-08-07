@@ -1,0 +1,277 @@
+# Copyright (C) 2025 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# proto-file: third_party/android/mediapc_requirements/requirements.proto
+# proto-message: Requirement
+id: "7.5/H-1-1"
+name: "Primary Rear Camera Resolution and Frame Rate"
+description: "Primary rear camera resolution and frame rate"
+test_configs: {
+  key: ""
+  value: {
+    description: "Default test config"
+    proto_field_number: 50
+  }
+}
+measurements: {
+  key: "primary_camera_available"
+  value: {
+    description: "Is the primary camera available"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 3
+  }
+}
+measurements: {
+  key: "primary_camera_resolution"
+  value: {
+    description: "Resolution of the primary camera"
+    measurement_type: MEASUREMENT_TYPE_LONG
+    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    proto_field_number: 4
+  }
+}
+measurements: {
+  key: "primary_camera_video_size_req_satisfied"
+  value: {
+    description: "Video size requirement satisfied at 4k"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 5
+  }
+}
+measurements: {
+  key: "primary_camera_1080p_video_size_req_satisfied"
+  value: {
+    description: "Video size requirement satisfied at 1080p"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 6
+  }
+}
+measurements: {
+  key: "primary_camera_720p_video_size_req_satisfied"
+  value: {
+    description: "Video size requirement satisfied at 720p"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 7
+  }
+}
+measurements: {
+  key: "primary_camera_video_fps"
+  value: {
+    description: "Video fps at 4k"
+    measurement_type: MEASUREMENT_TYPE_DOUBLE
+    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    proto_field_number: 8
+  }
+}
+measurements: {
+  key: "primary_camera_1080p_video_fps"
+  value: {
+    description: "Video fps at 1080p"
+    measurement_type: MEASUREMENT_TYPE_DOUBLE
+    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    proto_field_number: 9
+  }
+}
+measurements: {
+  key: "primary_camera_720p_video_fps"
+  value: {
+    description: "Video fps at 720p"
+    measurement_type: MEASUREMENT_TYPE_DOUBLE
+    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    proto_field_number: 10
+  }
+}
+specs {
+  key: 30
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_11
+    specification: "MUST have a primary rear facing camera with a resolution of at least 12 megapixels supporting video capture at 4k@30fps. The primary rear-facing camera is the rear-facing camera with the lowest camera ID."
+    required_values {
+      key: "primary_camera_available"
+      value {
+        bool_value: true
+      }
+    }
+    required_values {
+      key: "primary_camera_resolution"
+      value {
+        long_value: 12000000
+      }
+    }
+    required_values {
+      key: "primary_camera_video_size_req_satisfied"
+      value {
+        bool_value: true
+      }
+    }
+    required_values {
+      key: "primary_camera_video_fps"
+      value {
+        double_value: 29.9
+      }
+    }
+  }
+}
+specs {
+  key: 31
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_12
+    specification: "same"
+    required_values {
+      key: "primary_camera_available"
+      value {
+        bool_value: true
+      }
+    }
+    required_values {
+      key: "primary_camera_resolution"
+      value {
+        long_value: 12000000
+      }
+    }
+    required_values {
+      key: "primary_camera_video_size_req_satisfied"
+      value {
+        bool_value: true
+      }
+    }
+    required_values {
+      key: "primary_camera_video_fps"
+      value {
+        double_value: 29.9
+      }
+    }
+  }
+}
+specs {
+  key: 33
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_13
+    specification: "same"
+    required_values {
+      key: "primary_camera_available"
+      value {
+        bool_value: true
+      }
+    }
+    required_values {
+      key: "primary_camera_resolution"
+      value {
+        long_value: 12000000
+      }
+    }
+    required_values {
+      key: "primary_camera_video_size_req_satisfied"
+      value {
+        bool_value: true
+      }
+    }
+    required_values {
+      key: "primary_camera_video_fps"
+      value {
+        double_value: 29.9
+      }
+    }
+  }
+}
+specs {
+  key: 34
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_14
+    specification: "same"
+    required_values {
+      key: "primary_camera_available"
+      value {
+        bool_value: true
+      }
+    }
+    required_values {
+      key: "primary_camera_resolution"
+      value {
+        long_value: 12000000
+      }
+    }
+    required_values {
+      key: "primary_camera_video_size_req_satisfied"
+      value {
+        bool_value: true
+      }
+    }
+    required_values {
+      key: "primary_camera_video_fps"
+      value {
+        double_value: 29.9
+      }
+    }
+  }
+}
+specs {
+  key: 35
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_15
+    specification: "MUST have a primary rear facing camera with a resolution of at least 12 megapixels supporting video capture at 4k@30fps, 1080p@60fps, and 720p@60fps. The primary rear-facing camera is the rear-facing camera with the lowest camera ID."
+    required_values {
+      key: "primary_camera_available"
+      value {
+        bool_value: true
+      }
+    }
+    required_values {
+      key: "primary_camera_resolution"
+      value {
+        long_value: 12000000
+      }
+    }
+    required_values {
+      key: "primary_camera_video_size_req_satisfied"
+      value {
+        bool_value: true
+      }
+    }
+    required_values {
+      key: "primary_camera_1080p_video_size_req_satisfied"
+      value {
+        bool_value: true
+      }
+    }
+    required_values {
+      key: "primary_camera_720p_video_size_req_satisfied"
+      value {
+        bool_value: true
+      }
+    }
+    required_values {
+      key: "primary_camera_video_fps"
+      value {
+        double_value: 29.9
+      }
+    }
+    required_values {
+      key: "primary_camera_1080p_video_fps"
+      value {
+        double_value: 59.9
+      }
+    }
+    required_values {
+      key: "primary_camera_720p_video_fps"
+      value {
+        double_value: 59.9
+      }
+    }
+  }
+}
