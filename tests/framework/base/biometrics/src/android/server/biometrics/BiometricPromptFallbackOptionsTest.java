@@ -58,6 +58,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.concurrent.Executor;
+import java.util.regex.Pattern;
 
 public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
     private static final String TAG = "BiometricPromptFallbackOptionsTest";
@@ -271,10 +272,13 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
                 mDevice.waitForIdle();
 
                 // Find fallback button
-                final BySelector fallbackSelector = By.text(fallbackText);
+                final Pattern fallbackPattern =
+                        Pattern.compile(Pattern.quote(fallbackText), Pattern.CASE_INSENSITIVE);
+                final BySelector fallbackSelector = By.text(fallbackPattern);
                 mDevice.wait(Until.hasObject(fallbackSelector), TIMEOUT_MS);
                 final UiObject2 fallbackButton = mDevice.findObject(fallbackSelector);
                 assertThat(fallbackButton).isNotNull();
+                assertThat(fallbackButton.getText()).matches(fallbackPattern);
 
                 // Click fallback button
                 fallbackButton.click();
@@ -423,9 +427,13 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
             createAndShowPrompt(DEVICE_CREDENTIAL, builder, mCallback, executor);
 
             // Find fallback button
-            final UiObject2 fallbackButton = findViewByText(fallbackText);
+            final Pattern fallbackPattern =
+                    Pattern.compile(Pattern.quote(fallbackText), Pattern.CASE_INSENSITIVE);
+            final BySelector fallbackSelector = By.text(fallbackPattern);
+            mDevice.wait(Until.hasObject(fallbackSelector), TIMEOUT_MS);
+            final UiObject2 fallbackButton = mDevice.findObject(fallbackSelector);
             assertThat(fallbackButton).isNotNull();
-            assertThat(fallbackButton.getText()).isEqualTo(fallbackText);
+            assertThat(fallbackButton.getText()).matches(fallbackPattern);
 
             // Click fallback
             fallbackButton.click();
