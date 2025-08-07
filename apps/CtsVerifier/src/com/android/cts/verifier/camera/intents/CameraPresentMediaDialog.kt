@@ -91,7 +91,17 @@ public class CameraPresentMediaDialog : DialogFragment() {
     return dialog
   }
 
+  override fun onDismiss(dialog: DialogInterface) {
+    if (!exoPlayer.isReleased()) {
+      exoPlayer.release()
+    }
+    super.onDismiss(dialog)
+  }
+
   override fun onCancel(dialog: DialogInterface) {
+    if (!exoPlayer.isReleased()) {
+      exoPlayer.release()
+    }
     (activity as DialogCallback).onDialogClose(containsMotionPhotoMetadata = false)
   }
 
