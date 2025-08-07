@@ -27,14 +27,35 @@ public class CtsCallStreamingService extends CallStreamingService {
     private static final String LOG_TAG = "CtsCallStreamingService";
     public static final String EXTRA_CALL_EXTRAS = "android.telecom.cts.extra.CALL_EXTRAS";
     public static final String EXTRA_FAILED = "android.telecom.cts.extra.FAILED";
+
+    // These static variables are used to communicate between the service and the test harness.
+    // They are reset by CtsCallStreamingServiceControl upon binding.
+    public static StreamingCall sStreamingCall = null;
     public static Bundle sCallBundle = null;
     public static CountDownLatch sCallStreamingStartedLatch = new CountDownLatch(1);
+    public static CountDownLatch sCallStreamingStoppedLatch = new CountDownLatch(1);
+    public static CountDownLatch sCallStreamingStateChangedLatch = new CountDownLatch(1);
+    public static int sLastStreamingState = -1; // Default to an invalid state
 
     @Override
     public void onCallStreamingStarted(StreamingCall call) {
         Log.i(LOG_TAG, "onCallStreamingStarted: id=" + call.getExtras());
+        sStreamingCall = call;
         sCallBundle = new Bundle();
         sCallBundle.putBundle(EXTRA_CALL_EXTRAS, call.getExtras());
         sCallStreamingStartedLatch.countDown();
+    }
+
+    @Override
+    public void onCallStreamingStopped() {
+        Log.i(LOG_TAG, "onCallStreamingStopped received");
+        sCallStreamingStoppedLatch.countDown();
+    }
+
+    @Override
+    public void onCallStreamingStateChanged(int state) {
+        Log.i(LOG_TAG, "onCallStreamingStateChanged received: state=" + state);
+        sLastStreamingState = state;
+        sCallStreamingStateChangedLatch.countDown();
     }
 }
