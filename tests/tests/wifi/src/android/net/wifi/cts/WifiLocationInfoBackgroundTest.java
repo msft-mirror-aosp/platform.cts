@@ -26,6 +26,7 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.os.Build;
@@ -92,7 +93,7 @@ public class WifiLocationInfoBackgroundTest extends WifiJUnit4TestBase{
     @BeforeClass
     public static void setUpClass() throws Exception {
         sContext = InstrumentationRegistry.getInstrumentation().getContext();
-        if (!WifiFeature.isWifiSupported(sContext)) {
+        if (!WifiFeature.isWifiSupported(sContext) || isAutomotive(sContext)) {
             return;
         }
         sShouldRunTest = true;
@@ -284,5 +285,9 @@ public class WifiLocationInfoBackgroundTest extends WifiJUnit4TestBase{
         InstrumentationRegistry.getInstrumentation().getUiAutomation().grantRuntimePermission(
                 WIFI_LOCATION_TEST_APP_PACKAGE_NAME, ACCESS_FINE_LOCATION);
         retrieveTransportInfoBgServiceAndAssertStatusIs(false);
+    }
+
+   private static boolean isAutomotive(Context context) {
+        return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 }
