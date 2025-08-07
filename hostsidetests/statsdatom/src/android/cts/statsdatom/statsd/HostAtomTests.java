@@ -100,6 +100,7 @@ public class HostAtomTests extends DeviceTestCase implements IBuildReceiver {
     }
 
     public void testScreenStateChangedAtom() throws Exception {
+        if (DeviceUtils.hasFeature(getDevice(), FEATURE_AUTOMOTIVE)) return;
         // Setup, make sure the screen is off and turn off AoD if it is on.
         // AoD needs to be turned off because the screen should go into an off state. But, if AoD is
         // on and the device doesn't support STATE_DOZE, the screen sadly goes back to STATE_ON.
