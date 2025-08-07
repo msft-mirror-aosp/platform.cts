@@ -30,6 +30,8 @@ import android.graphics.Region;
 import android.os.IBinder;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.CtsWindowInfoUtils;
 import android.util.Pair;
 import android.view.SurfaceControlViewHost;
@@ -63,6 +65,9 @@ import java.util.concurrent.TimeUnit;
 @MediumTest
 @RunWith(AndroidJUnit4.class)
 public class SurfaceViewTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private SurfaceViewCtsActivity mActivity;
     private SurfaceViewCtsActivity.TestSurfaceView mTestSurfaceView;
     private static final long WAIT_TIME_SECONDS = 5L * HW_TIMEOUT_MULTIPLIER;

@@ -56,6 +56,8 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
@@ -91,6 +93,9 @@ import java.util.concurrent.TimeUnit;
 
 @Presubmit
 public class ASurfaceControlInputReceiverTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String TAG = "ASurfaceControlInputReceiverTest";
     private TestActivity mActivity;
     private static final Rect sBounds = new Rect(0, 0, 100, 100);

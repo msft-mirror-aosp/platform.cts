@@ -76,6 +76,8 @@ import android.os.SystemProperties;
 import android.os.Trace;
 import android.platform.test.annotations.RequiresDevice;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.view.Display;
 import android.view.Surface;
@@ -116,6 +118,9 @@ import java.util.function.Consumer;
 @LargeTest
 @RunWith(AndroidJUnit4.class)
 public class ASurfaceControlTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String TAG = ASurfaceControlTest.class.getSimpleName();
     private static final boolean DEBUG = false;
 
