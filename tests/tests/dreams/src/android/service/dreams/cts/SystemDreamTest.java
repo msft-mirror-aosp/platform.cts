@@ -27,6 +27,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.DreamCoordinator;
 import android.server.wm.WindowManagerState.Task;
@@ -40,6 +42,7 @@ import com.android.compatibility.common.util.ApiTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -51,6 +54,9 @@ import java.util.concurrent.TimeUnit;
 @SmallTest
 @Ignore("b/325686454")
 public class SystemDreamTest extends ActivityManagerTestBase {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String TEST_PACKAGE_DREAM_OVERLAY_TEST_APP = "android.app.dream.cts.app";
     private static final ComponentName USER_DREAM_COMPONENT =
             ComponentName.unflattenFromString(
