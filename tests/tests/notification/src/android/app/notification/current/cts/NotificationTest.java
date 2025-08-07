@@ -1574,8 +1574,7 @@ public class NotificationTest {
                                         .addMetric(
                                                 new Notification.Metric(
                                                         new Notification.Metric.FixedInt(1),
-                                                        "Int",
-                                                        Notification.Metric.MEANING_UNKNOWN)))
+                                                        "Int")))
                         .setSmallIcon(android.R.drawable.sym_def_app_icon)
                         .build();
         assertThat(n.extras.getString(Notification.EXTRA_TEMPLATE))
