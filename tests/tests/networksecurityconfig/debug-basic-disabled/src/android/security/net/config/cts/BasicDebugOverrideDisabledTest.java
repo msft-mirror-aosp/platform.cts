@@ -28,6 +28,6 @@ public class BasicDebugOverrideDisabledTest extends BaseTestCase {
 
     @Test
     public void testDefaultConfig() throws Exception {
-        assertTlsConnectionFails("android.com", 443);
+        assertTlsConnectionFails("android.com");
     }
 }

@@ -29,6 +29,6 @@ public class BasicDebugOverrideEnabledTest extends BaseTestCase {
     @Test
     public void testDefaultConfig() throws Exception {
         // Connections should work thanks to the debug overrides adding the system CA store.
-        assertTlsConnectionSucceeds("android.com", 443);
+        assertTlsConnectionSucceeds("android.com");
     }
 }

@@ -30,23 +30,23 @@ public class CleartextPermittedTest extends BaseTestCase {
 
     @Test
     public void testDefaultDenied() throws Exception {
-        assertCleartextConnectionFails("google.com", 80);
-        assertTlsConnectionSucceeds("google.com", 443);
+        assertCleartextConnectionFails("google.com");
+        assertTlsConnectionSucceeds("google.com");
     }
 
     @Test
     public void testCleartextAllowed() throws Exception {
-        assertCleartextConnectionSucceeds("android.com", 80);
-        assertTlsConnectionSucceeds("android.com", 443);
+        assertCleartextConnectionSucceeds("android.com");
+        assertTlsConnectionSucceeds("android.com");
         // subdomains of android.com are also disallowed.
-        assertCleartextConnectionSucceeds("www.android.com", 80);
-        assertTlsConnectionSucceeds("www.android.com", 443);
+        assertCleartextConnectionSucceeds("www.android.com");
+        assertTlsConnectionSucceeds("www.android.com");
     }
 
     @Test
     public void testNestedCleartextDenied() throws Exception {
         // developer.android.com is explicitly denied.
-        assertCleartextConnectionFails("developer.android.com", 80);
-        assertTlsConnectionSucceeds("developer.android.com", 443);
+        assertCleartextConnectionFails("developer.android.com");
+        assertTlsConnectionSucceeds("developer.android.com");
     }
 }

@@ -29,12 +29,12 @@ public class InvalidPinTest extends BaseTestCase {
 
     @Test
     public void testPinFailure() throws Exception {
-        assertTlsConnectionFails("android.com", 443);
+        assertTlsConnectionFails("android.com");
     }
 
     @Test
     public void testDefaultDomainUnaffected() throws Exception {
-        assertTlsConnectionSucceeds("google.com", 443);
-        assertTlsConnectionSucceeds("developer.android.com", 443);
+        assertTlsConnectionSucceeds("google.com");
+        assertTlsConnectionSucceeds("developer.android.com");
     }
 }

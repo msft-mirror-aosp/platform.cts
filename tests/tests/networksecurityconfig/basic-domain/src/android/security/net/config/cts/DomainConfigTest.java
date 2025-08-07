@@ -36,14 +36,14 @@ public class DomainConfigTest extends BaseTestCase {
 
     @Test
     public void testDomainConfig() throws Exception {
-        assertTlsConnectionSucceeds("android.com", 443);
+        assertTlsConnectionSucceeds("android.com");
     }
 
     @Test
     public void testDefaultConfig() throws Exception {
         // The default config in this case has no trusted CAs, so all connections should fail.
-        assertTlsConnectionFails("developer.android.com", 443);
-        assertTlsConnectionFails("google.com", 443);
+        assertTlsConnectionFails("developer.android.com");
+        assertTlsConnectionFails("google.com");
     }
 
     @Test

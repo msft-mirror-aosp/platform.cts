@@ -33,14 +33,14 @@ public class NestedDomainConfigTest extends BaseTestCase {
 
     @Test
     public void testRootDomainConfig() throws Exception {
-        assertTlsConnectionFails("android.com", 443);
+        assertTlsConnectionFails("android.com");
         NetworkSecurityPolicy instance = NetworkSecurityPolicy.getInstance();
         assertTrue(instance.isCleartextTrafficPermitted("android.com"));
     }
 
     @Test
     public void testNestedDomainConfig() throws Exception {
-        assertTlsConnectionFails("developer.android.com", 443);
+        assertTlsConnectionFails("developer.android.com");
         NetworkSecurityPolicy instance = NetworkSecurityPolicy.getInstance();
         assertFalse(instance.isCleartextTrafficPermitted("developer.android.com"));
     }
