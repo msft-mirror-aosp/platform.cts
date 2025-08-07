@@ -16,7 +16,11 @@
 package templatefns
 
 import (
+	"cmp"
 	"fmt"
+	"regexp"
+	"slices"
+	"strconv"
 	"strings"
 	"text/template"
 	"unicode"
@@ -30,17 +34,18 @@ func Funcs() template.FuncMap {
 	// These function are made available in templates by calling their key values, e.g. {{SnakeCase "HelloWorld"}}.
 	return template.FuncMap{
 		// go/keep-sorted start
-		"Dict":             dict,
-		"HasConfigVariant": HasConfigVariant,
-		"KebabCase":        kebabCase,
-		"LowerCamelCase":   lowerCamelCase,
-		"LowerCase":        strings.ToLower,
-		"SafeReqID":        safeReqID,
-		"SafeTestConfigID": safeTestConfigID,
-		"SnakeCase":        snakeCase,
-		"TitleCase":        titleCase,
-		"UpperCamelCase":   upperCamelCase,
-		"UpperCase":        strings.ToUpper,
+		"Dict":                 dict,
+		"HasConfigVariant":     HasConfigVariant,
+		"KebabCase":            kebabCase,
+		"LowerCamelCase":       lowerCamelCase,
+		"LowerCase":            strings.ToLower,
+		"SafeReqID":            safeReqID,
+		"SafeTestConfigID":     safeTestConfigID,
+		"SnakeCase":            snakeCase,
+		"SortRequirementsByID": SortRequirementsByID,
+		"TitleCase":            titleCase,
+		"UpperCamelCase":       upperCamelCase,
+		"UpperCase":            strings.ToUpper,
 		// go/keep-sorted end
 	}
 }
@@ -178,4 +183,43 @@ func toString(v any) string {
 	default:
 		return fmt.Sprintf("%v", v)
 	}
+}
+
+// SortRequirementsByID sorts a list of requirements by id using numeric and lexicographical comparison.
+func SortRequirementsByID(reqs []*pb.Requirement) []*pb.Requirement {
+	sortedReqs := slices.Clone(reqs)
+	slices.SortFunc(sortedReqs, func(a, b *pb.Requirement) int {
+		return compareReqIds(a.GetId(), b.GetId())
+	})
+	return sortedReqs
+}
+
+var reqIDSplitter = regexp.MustCompile(`[\./-]`)
+
+func compareReqIds(reqID1, reqID2 string) int {
+	parts1 := reqIDSplitter.Split(reqID1, -1)
+	parts2 := reqIDSplitter.Split(reqID2, -1)
+
+	for i := 0; i < len(parts1) && i < len(parts2); i++ {
+		p1 := parts1[i]
+		p2 := parts2[i]
+
+		n1, err1 := strconv.Atoi(p1)
+		n2, err2 := strconv.Atoi(p2)
+
+		if err1 == nil && err2 == nil {
+			// Both parts are numbers.
+			if c := cmp.Compare(n1, n2); c != 0 {
+				return c
+			}
+		} else {
+			// One or both parts are not numbers, so compare them as strings.
+			if c := cmp.Compare(p1, p2); c != 0 {
+				return c
+			}
+		}
+	}
+
+	// If all parts are equal so far, the shorter ID comes first
+	return cmp.Compare(len(parts1), len(parts2))
 }

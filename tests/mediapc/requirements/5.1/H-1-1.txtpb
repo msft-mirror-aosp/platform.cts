@@ -1,0 +1,226 @@
+# Copyright (C) 2025 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# proto-file: third_party/android/mediapc_requirements/requirements.proto
+# proto-message: Requirement
+id: "5.1/H-1-1"
+name: "Video Decoder Instances"
+description: "Video decoder instances"
+test_configs: {
+  key: "720p"
+  value: {
+    description: "Tests running at 720p"
+    proto_field_number: 1
+  }
+}
+test_configs: {
+  key: "1080p"
+  value: {
+    description: "Tests running at 1080p"
+    proto_field_number: 2
+  }
+}
+test_configs: {
+  key: "4k"
+  value: {
+    description: "Tests running at 4k"
+    proto_field_number: 3
+  }
+}
+variants: {
+  key: "VP9"
+  value: {
+    description: "When one of the codecs is VP9, variant used in 720p tests"
+  }
+}
+variants: {
+  key: "AV1"
+  value: {
+    description: "When one of the codecs is AV1, variant used in 720p tests"
+  }
+}
+measurements: {
+  key: "concurrent_sessions"
+  value: {
+    description: "The number of concurrent sessions"
+    measurement_type: MEASUREMENT_TYPE_INT
+    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    proto_field_number: 3
+  }
+}
+measurements: {
+  key: "resolution"
+  value: {
+    description: "The resolution the test was run at"
+    measurement_type: MEASUREMENT_TYPE_INT
+    comparison: COMPARISON_CONFIG
+    proto_field_number: 4
+  }
+}
+specs {
+  key: 30
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_11
+    specification: "MUST advertise the maximum number of hardware video decoder sessions that can be run concurrently in any codec combination via the CodecCapabilities.getMaxSupportedInstances() and VideoCapabilities.getSupportedPerformancePoints() methods."
+    test_config_id: "720p"
+    required_values: {
+      key: "concurrent_sessions"
+      value {
+        int_value: 6
+      }
+    }
+    required_values: {
+      key: "resolution"
+      value {
+        int_value: 720
+      }
+    }
+    variant_specs: {
+      key: "VP9"
+      value: {
+        required_values: {
+          key: "resolution"
+          value {
+            int_value: 720
+          }
+        }
+      }
+    }
+    variant_specs: {
+      key: "AV1"
+      value: {
+        required_values: {
+          key: "resolution"
+          value {
+            int_value: 720
+          }
+        }
+      }
+    }
+  }
+}
+specs {
+  key: 31
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_12
+    specification: "same"
+    test_config_id: "720p"
+    required_values: {
+      key: "concurrent_sessions"
+      value {
+        int_value: 6
+      }
+    }
+    required_values: {
+      key: "resolution"
+      value {
+        int_value: 720
+      }
+    }
+    variant_specs: {
+      key: "VP9"
+      value: {
+        required_values: {
+          key: "concurrent_sessions"
+          value {
+            int_value: 2
+          }
+        }
+        required_values: {
+          key: "resolution"
+          value {
+            int_value: 720
+          }
+        }
+      }
+    }
+    variant_specs: {
+      key: "AV1"
+      value: {
+        required_values: {
+          key: "concurrent_sessions"
+          value {
+            int_value: 6
+          }
+        }
+        required_values: {
+          key: "resolution"
+          value {
+            int_value: 720
+          }
+        }
+      }
+    }
+  }
+}
+specs {
+  key: 33
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_13
+    specification: "same"
+    test_config_id: "1080p"
+    required_values: {
+      key: "concurrent_sessions"
+      value {
+        int_value: 6
+      }
+    }
+    required_values: {
+      key: "resolution"
+      value {
+        int_value: 1080
+      }
+    }
+  }
+}
+specs {
+  key: 34
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_14
+    specification: "same"
+    test_config_id: "4k"
+    required_values: {
+      key: "concurrent_sessions"
+      value {
+        int_value: 6
+      }
+    }
+    required_values: {
+      key: "resolution"
+      value {
+        int_value: 2160
+      }
+    }
+  }
+}
+specs {
+  key: 35
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_15
+    specification: "same"
+    test_config_id: "4k"
+    required_values: {
+      key: "concurrent_sessions"
+      value {
+        int_value: 6
+      }
+    }
+    required_values: {
+      key: "resolution"
+      value {
+        int_value: 2160
+      }
+    }
+  }
+}

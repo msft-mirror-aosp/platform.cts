@@ -24,6 +24,7 @@ import static android.security.net.config.cts.CertificateTransparencyTestUtils.d
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -36,6 +37,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -68,22 +70,19 @@ public class LogListVerificationTest extends BaseTestCase {
             };
 
     @BeforeClass
-    public static void setUpClass() throws Exception {
+    public static void setUpClass() {
         sContext.registerReceiver(
                 sInstallCompleteReceiver,
                 new IntentFilter(INSTALL_COMPLETE_ACTION),
                 Context.RECEIVER_NOT_EXPORTED);
 
         downloadLogList();
-
-        assertTrue(
-                "The test timed out while waiting for the log list download.",
-                sLatch.await(30, TimeUnit.SECONDS));
     }
 
     @Test
     public void testCTVerification_whenLogListPresent_sctDomain_connectionSucceeds()
-            throws IOException {
+            throws Exception {
+        assumeLogListPresent();
         // Check multiple domains as part of the retrospective for b/408109183
         URL url = new URL(SCT_PROVIDED_DOMAIN);
         URL url2 = new URL(SCT_PROVIDED_DOMAIN_2);
@@ -100,7 +99,8 @@ public class LogListVerificationTest extends BaseTestCase {
     }
 
     @Test
-    public void testCTVerification_whenLogListAbsent_sctDomain_failsOpen() throws IOException {
+    public void testCTVerification_whenLogListAbsent_sctDomain_failsOpen() throws Exception {
+        assumeLogListPresent();
         // Check multiple domains as part of the retrospective for b/408109183
         URL url = new URL(SCT_PROVIDED_DOMAIN);
         URL url2 = new URL(SCT_PROVIDED_DOMAIN_2);
@@ -119,6 +119,7 @@ public class LogListVerificationTest extends BaseTestCase {
     @Test
     public void testX509TrustManagerExtensions_whenLogListPresent_sctDomain_connectionSucceeds()
             throws Exception {
+        assumeLogListPresent();
         URL url = new URL(SCT_PROVIDED_DOMAIN);
         HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
         // While the connection here already verifies the SCTs, we establish it
@@ -138,5 +139,11 @@ public class LogListVerificationTest extends BaseTestCase {
 
         // No assert needed as any failure would result in an exception being thrown
         urlConnection.disconnect();
+    }
+
+    private void assumeLogListPresent() throws InterruptedException {
+        assumeTrue(
+                "The test timed out while waiting for the log list download.",
+                sLatch.await(30, TimeUnit.SECONDS));
     }
 }

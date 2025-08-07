@@ -26,6 +26,6 @@ import android.util.Log;
 public class AwareReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
-        Log.v(AWARE, "BroadcastReceiver.onReceive()");
+        Log.v(AWARE, "BroadcastReceiver.onReceive(): " + intent.getAction());
     }
 }

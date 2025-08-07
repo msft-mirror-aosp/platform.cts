@@ -29,6 +29,7 @@ public class BaseBootReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        Log.d(TAG, "onReceive(): " + intent.getAction());
         try {
             context = context.createDeviceProtectedStorageContext();
             final File probe = new File(context.getFilesDir(),

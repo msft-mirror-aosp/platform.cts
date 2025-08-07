@@ -24,7 +24,12 @@ import android.app.admin.DpcAuthority;
 import android.app.admin.EnforcingAdmin;
 import android.app.admin.RoleAuthority;
 import android.app.admin.UnknownAuthority;
+import android.app.admin.flags.Flags;
+import android.content.ComponentName;
 import android.os.UserHandle;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
@@ -44,6 +49,10 @@ public final class EnforcingAdminAndAuthorityTest {
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
 
+    @Rule
+    public static final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String PACKAGE_NAME = "packageName";
 
     private static final Authority AUTHORITY = DpcAuthority.DPC_AUTHORITY;
@@ -52,6 +61,7 @@ public final class EnforcingAdminAndAuthorityTest {
 
     private static final UserHandle USER_HANDLE = sDeviceState.primaryUser().userHandle();
 
+    private static final ComponentName COMPONENT_NAME = new ComponentName(PACKAGE_NAME, "admin");
 
     @Test
     @Postsubmit(reason = "new test")
@@ -78,6 +88,17 @@ public final class EnforcingAdminAndAuthorityTest {
         EnforcingAdmin admin = new EnforcingAdmin(PACKAGE_NAME, AUTHORITY, USER_HANDLE);
 
         assertThat(admin.getUserHandle()).isEqualTo(USER_HANDLE);
+    }
+
+    @Test
+    @Postsubmit(reason = "new test")
+    @ApiTest(apis = "android.app.admin.EnforcingAdmin#getComponentName")
+    @RequiresFlagsEnabled(Flags.FLAG_ENFORCING_ADMIN_GET_COMPONENT_NAME_ENABLED)
+    public void enforcingAdmin_getComponentName_returnsCorrectComponentName() {
+        EnforcingAdmin admin =
+                new EnforcingAdmin(PACKAGE_NAME, AUTHORITY, USER_HANDLE, COMPONENT_NAME);
+
+        assertThat(admin.getComponentName()).isEqualTo(COMPONENT_NAME);
     }
 
     @Test

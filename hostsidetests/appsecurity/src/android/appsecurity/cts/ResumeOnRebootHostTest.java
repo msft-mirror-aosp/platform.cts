@@ -16,6 +16,7 @@
 
 package android.appsecurity.cts;
 
+import static android.appsecurity.cts.Utils.logAndDisplay;
 import static android.appsecurity.cts.Utils.sleep;
 import static android.appsecurity.cts.Utils.waitForBootCompleted;
 
@@ -30,7 +31,6 @@ import android.cts.host.utils.DisableDeviceConfigSyncRule;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.HostSideTestUtils;
-import com.android.ddmlib.Log.LogLevel;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
@@ -45,6 +45,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -147,6 +148,11 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
 
         int managedUserId = createManagedProfile(initialUser);
 
+        logAndDisplay(
+                "resumeOnReboot_ManagedProfile_Success(): users=%s, initialUser=%d, "
+                        + "managedUserId=%d, currentUser=%d",
+                Arrays.toString(users), initialUser, managedUserId, getDevice().getCurrentUser());
+
         try {
             // Set up test app and secure lock screens
             installTestPackages();
@@ -173,15 +179,16 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
     public void resumeOnReboot_TwoUsers_SingleUserUnlock_Success() throws Exception {
         assumeTrue("Device isn't at least S or has no lock screen", isSupportedSDevice());
         assumeTrue("Device does not support file-based encryption", supportFileBasedEncryption());
-
-        if (!mSupportsMultiUser) {
-            CLog.v(TAG, "Device doesn't support multi-user; skipping test");
-            return;
-        }
+        assumeSupportsMultiUser();
 
         int[] users = prepareUsers(2);
         int initialUser = users[0];
         int secondaryUser = users[1];
+
+        logAndDisplay(
+                "resumeOnReboot_TwoUsers_SingleUserUnlock_Success(): users=%s, initialUser=%d, "
+                        + "secondaryUser=%d, currentUser=%d",
+                Arrays.toString(users), initialUser, secondaryUser, getDevice().getCurrentUser());
 
         try {
             // Set up test app and secure lock screens
@@ -223,15 +230,16 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
     public void resumeOnReboot_TwoUsers_BothUserUnlock_Success() throws Exception {
         assumeTrue("Device isn't at least S or has no lock screen", isSupportedSDevice());
         assumeTrue("Device does not support file-based encryption", supportFileBasedEncryption());
-
-        if (!mSupportsMultiUser) {
-            CLog.v(TAG, "Device doesn't support multi-user; skipping test");
-            return;
-        }
+        assumeSupportsMultiUser();
 
         int[] users = prepareUsers(2);
         int initialUser = users[0];
         int secondaryUser = users[1];
+
+        logAndDisplay(
+                "resumeOnReboot_TwoUsers_BothUserUnlock_Success(): users=%s, initialUser=%d, "
+                        + "secondaryUser=%d, currentUser=%d",
+                Arrays.toString(users), initialUser, secondaryUser, getDevice().getCurrentUser());
 
         try {
             installTestPackages();
@@ -279,6 +287,11 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
         int[] users = prepareUsers(1);
         int initialUser = users[0];
 
+        logAndDisplay(
+                "resumeOnReboot_SingleUser_ServerBased_Success(): users=%s, initialUser=%d, "
+                        + "currentUser=%d",
+                Arrays.toString(users), initialUser, getDevice().getCurrentUser());
+
         try {
             installTestPackages();
 
@@ -306,6 +319,11 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
 
         int[] users = prepareUsers(1);
         int initialUser = users[0];
+
+        logAndDisplay(
+                "resumeOnReboot_SingleUser_MultiClient_ClientASuccess(): users=%s, initialUser=%d, "
+                        + "currentUser=%d",
+                Arrays.toString(users), initialUser, getDevice().getCurrentUser());
 
         final String clientA = "ClientA";
         final String clientB = "ClientB";
@@ -342,6 +360,11 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
         int[] users = prepareUsers(1);
         int initialUser = users[0];
 
+        logAndDisplay(
+                "resumeOnReboot_SingleUser_MultiClient_ClientBSuccess(): users=%s, initialUser=%d, "
+                        + "currentUser=%d",
+                Arrays.toString(users), initialUser, getDevice().getCurrentUser());
+
         final String clientA = "ClientA";
         final String clientB = "ClientB";
         try {
@@ -370,14 +393,15 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
 
     private void deviceSetupServerBasedParameter() throws Exception {
         getDevice().executeShellCommand("device_config put ota server_based_ror_enabled true");
-        String res = getDevice().executeShellCommand(
-                "device_config get ota server_based_ror_enabled");
+        String res =
+                getDevice().executeShellCommand("device_config get ota server_based_ror_enabled");
         if (res == null || !res.contains("true")) {
             fail("could not set up server based ror");
         }
 
-        getDevice().executeShellCommand(
-                "cmd lock_settings set-resume-on-reboot-provider-package " + PKG);
+        getDevice()
+                .executeShellCommand(
+                        "cmd lock_settings set-resume-on-reboot-provider-package " + PKG);
     }
 
     private void deviceCleanupServerBasedParameter() throws Exception {
@@ -396,9 +420,13 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
         CLog.i("deviceSetup(userId=%d)", userId);
 
         // To receive boot broadcasts, kick our other app out of stopped state
-        getDevice().executeShellCommand("am start -a android.intent.action.MAIN"
-                + " --user " + userId
-                + " -c android.intent.category.LAUNCHER com.android.cts.splitapp/.MyActivity");
+        getDevice()
+                .executeShellCommand(
+                        "am start -a android.intent.action.MAIN"
+                                + " --user "
+                                + userId
+                                + " -c android.intent.category.LAUNCHER"
+                                + " com.android.cts.splitapp/.MyActivity");
 
         sleep(DEVICE_SETUP_WAIT_MS, "Give enough time for PackageManager to persist stopped state");
 
@@ -451,9 +479,13 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
     }
 
     private void verifyLskfCaptured(String clientName) throws Exception {
-        HostSideTestUtils.waitUntil("Lskf isn't captured after "
-                        + UNLOCK_BROADCAST_WAIT_SECONDS + " seconds for " + clientName,
-                UNLOCK_BROADCAST_WAIT_SECONDS, () -> isLskfCapturedForClient(clientName));
+        HostSideTestUtils.waitUntil(
+                "Lskf isn't captured after "
+                        + UNLOCK_BROADCAST_WAIT_SECONDS
+                        + " seconds for "
+                        + clientName,
+                UNLOCK_BROADCAST_WAIT_SECONDS,
+                () -> isLskfCapturedForClient(clientName));
     }
 
     private boolean isLskfCapturedForClient(String clientName) throws Exception {
@@ -506,23 +538,25 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
         return getDevice().listUsers();
     }
 
-    /**
-     * Calls switch-user, but without trying to dismiss the keyguard.
-     */
+    /** Calls switch-user, but without trying to dismiss the keyguard. */
     private void switchUser(int userId) throws Exception {
         var device = getDevice();
-        CLog.logAndDisplay(
-                LogLevel.INFO, "Switching from user %d to %d", device.getCurrentUser(), userId);
+        int currentUserId = device.getCurrentUser();
+        if (userId == currentUserId) {
+            CLog.d("switchUser(): current user is already %d", userId);
+            return;
+        }
+        logAndDisplay("Switching from user %d to %d", currentUserId, userId);
         device.switchUser(userId);
         HostSideTestUtils.waitUntil(
                 () ->
                         String.format(
                                 Locale.ENGLISH,
                                 "Current user (%d) is not %d after switch",
-                                device.getCurrentUser(),
+                                currentUserId,
                                 userId),
                 USER_SWITCH_TIMEOUT_SECONDS,
-                () -> device.getCurrentUser() == userId);
+                () -> currentUserId == userId);
         sleep(POST_USER_SWITCH_WAIT_MS, "post user switch nap");
     }
 
@@ -599,8 +633,9 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
     private void setScreenStayOnValue(boolean value) throws DeviceNotAvailableException {
         CommandResult result = getDevice().executeShellV2Command("svc power stayon " + value);
         if (result.getStatus() != CommandStatus.SUCCESS) {
-            CLog.w("Could not set screen stay-on value. " + generateErrorStringFromCommandResult(
-                    result));
+            CLog.w(
+                    "Could not set screen stay-on value: %s",
+                    generateErrorStringFromCommandResult(result));
         }
     }
 
@@ -622,6 +657,7 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
 
     private void normalizeUserStates() throws Exception {
         int[] userIds = Utils.getAllUsers(getDevice());
+        CLog.d("normalizeUserStates(): allUsers=%s", Arrays.toString(userIds));
         switchUser(userIds[0]);
 
         for (int userId : userIds) {
@@ -629,16 +665,20 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
                     getDevice().executeShellV2Command(
                             "locksettings get-disabled --old " + DEFAULT_PIN + " --user " + userId);
             if (lockScreenDisabledResult.getStatus() != CommandStatus.SUCCESS) {
-                CLog.w("Couldn't check whether there's already a PIN on the device. "
-                        + generateErrorStringFromCommandResult(lockScreenDisabledResult));
+                CLog.w(
+                        "Couldn't check whether there's already a PIN on the device for user %d:"
+                                + " %s",
+                        userId, generateErrorStringFromCommandResult(lockScreenDisabledResult));
             }
             if ("false".equals(lockScreenDisabledResult.getStdout().trim())) {
                 CommandResult unsetPinResult =
                         getDevice().executeShellV2Command(
                                 "locksettings clear --old " + DEFAULT_PIN + " --user " + userId);
                 if (unsetPinResult.getStatus() != CommandStatus.SUCCESS) {
-                    CLog.w("Couldn't unset existing PIN on device. Test might not work properly. "
-                            + generateErrorStringFromCommandResult(unsetPinResult));
+                    CLog.w(
+                            "Couldn't unset existing PIN on device for user %d (%s). Test might not"
+                                    + " work properly",
+                            userId, generateErrorStringFromCommandResult(unsetPinResult));
                 }
             }
         }
@@ -659,5 +699,9 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
 
     private int[] prepareUsers(int users) throws DeviceNotAvailableException {
         return Utils.prepareMultipleUsers(getDevice(), users);
+    }
+
+    private void assumeSupportsMultiUser() {
+        assumeTrue("Device doesn't support multi-user", mSupportsMultiUser);
     }
 }

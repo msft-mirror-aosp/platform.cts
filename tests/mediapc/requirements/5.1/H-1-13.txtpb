@@ -1,0 +1,73 @@
+# Copyright (C) 2025 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# proto-file: third_party/android/mediapc_requirements/requirements.proto
+# proto-message: Requirement
+id: "5.1/H-1-13"
+name: "Audio decoder init latency"
+description: "Maximum codec initialization latency for a 128 kbps or lower bitrate audio decoding session for all audio decoders when under load."
+test_configs: {
+  key: ""
+  value: {
+    proto_field_number: 27
+  }
+}
+measurements: {
+  key: "codec_initialization_latency_ms"
+  value: {
+    description: "Codec initialization latency in milliseconds"
+    measurement_type: MEASUREMENT_TYPE_LONG
+    comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    proto_field_number: 3
+  }
+}
+specs {
+  key: 33
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_13
+    specification: "MUST have a codec initialization latency of 30 ms or less for a 128 kbps or lower bitrate audio decoding session for all audio decoders when under load. Load here is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs together with the 1080p audio-video playback initialization."
+    required_values: {
+      key: "codec_initialization_latency_ms"
+      value {
+        long_value: 30
+      }
+    }
+  }
+}
+specs {
+  key: 34
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_14
+    specification: "MUST have a codec initialization latency of 30 ms or less for a 128 kbps or lower bitrate audio decoding session for all audio decoders when under load. Load here is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs together with the 1080p audio-video playback initialization."
+    required_values: {
+      key: "codec_initialization_latency_ms"
+      value {
+        long_value: 30
+      }
+    }
+  }
+}
+specs {
+  key: 35
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_15
+    specification: "MUST have a codec initialization latency of 30 ms or less for a 128 kbps or lower bitrate audio decoding session for all audio decoders when under load. Load here is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs together with the 1080p audio-video playback initialization."
+    required_values: {
+      key: "codec_initialization_latency_ms"
+      value {
+        long_value: 30
+      }
+    }
+  }
+}

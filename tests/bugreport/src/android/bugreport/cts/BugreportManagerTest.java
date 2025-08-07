@@ -39,6 +39,8 @@ import android.os.ParcelFileDescriptor;
 import android.os.UserHandle;
 import android.platform.test.annotations.PlatinumTest;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.TextUtils;
 import android.util.Pair;
 
@@ -50,6 +52,7 @@ import com.android.compatibility.common.util.FileUtils;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -63,6 +66,9 @@ import java.util.concurrent.TimeUnit;
  */
 @RunWith(AndroidJUnit4.class)
 public class BugreportManagerTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final long BUGREPORT_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(4);
     // Sent by Shell when bugreport finishes (contains final bugreport/screenshot file name
     // associated to this bugreport)

@@ -1063,15 +1063,26 @@ public final class UserReference implements AutoCloseable {
             return null;
         }
 
-        if (TestApis.users().isHeadlessSystemUserMode() && equals(TestApis.users().system())) {
-            return "Cannot switch to system user on HSUM devices";
+        if (!Versions.meetsMinimumSdkVersionRequirement(U)) {
+            // UserInfo.supportsSwitchTo() was fixed for headless system user in U (b/262402637).
+            if (TestApis.users().isHeadlessSystemUserMode() && equals(TestApis.users().system())) {
+                return "Cannot switch to system user on HSUM devices";
+            }
         }
 
         UserInfo userInfo = userInfo();
         if (!userInfo.supportsSwitchTo()) {
-            return "supportsSwitchTo=false(partial=" + userInfo.getPartial() + ", isEnabled="
-                    + userInfo.isEnabled() + ", preCreated=" + userInfo.getPreCreated() + ", isFull="
-                    + userInfo.isFull() + ")";
+            return "supportsSwitchTo=false(partial="
+                    + userInfo.getPartial()
+                    + ", isEnabled="
+                    + userInfo.isEnabled()
+                    + ", preCreated="
+                    + userInfo.getPreCreated()
+                    + ", isFull="
+                    + userInfo.isFull()
+                    + ", isHeadlessSystemUserMode="
+                    + TestApis.users().isHeadlessSystemUserMode()
+                    + ")";
         }
 
         return null;

@@ -28,6 +28,7 @@ import android.car.PortLocationType;
 import android.car.VehicleAreaSeat;
 import android.car.VehicleAreaType;
 import android.car.VehicleGear;
+import android.car.VehicleIgnitionState;
 import android.car.VehiclePropertyIds;
 import android.car.VehicleSeatOccupancyState;
 import android.car.VehicleUnit;
@@ -192,6 +193,26 @@ public class VehiclePropertyVerifiers {
                             VehicleGear.GEAR_EIGHTH,
                             VehicleGear.GEAR_NINTH)
                     .build();
+
+    /** Gets the verifier builder for {@link VehiclePropertyIds#IGNITION_STATE}. */
+    public static VehiclePropertyVerifier.Builder<Integer> getIgnitionStateVerifierBuilder() {
+        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(VehiclePropertyIds.IGNITION_STATE)
+                .setAllPossibleEnumValues(
+                        ImmutableSet.of(
+                                VehicleIgnitionState.UNDEFINED,
+                                VehicleIgnitionState.LOCK,
+                                VehicleIgnitionState.OFF,
+                                VehicleIgnitionState.ACC,
+                                VehicleIgnitionState.ON,
+                                VehicleIgnitionState.START));
+    }
+
+    /** Gets the verifier builder for {@link VehiclePropertyIds#PARKING_BRAKE_ON}. */
+    public static VehiclePropertyVerifier.Builder<Boolean> getParkingBrakeOnVerifierBuilder() {
+        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
+                        VehiclePropertyIds.PARKING_BRAKE_ON)
+                .requireProperty();
+    }
 
     /** Gets the verifier builder for {@link VehiclePropertyIds#VEHICLE_CURB_WEIGHT}. */
     public static VehiclePropertyVerifier.Builder<Integer> getVehicleCurbWeightVerifierBuilder() {

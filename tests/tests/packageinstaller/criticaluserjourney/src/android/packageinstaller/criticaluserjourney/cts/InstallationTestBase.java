@@ -548,6 +548,22 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
         findPackageInstallerObject(BUTTON_UPDATE_ANYWAY_LABEL);
     }
 
+    private static void assertOkButton() throws Exception {
+        findPackageInstallerObject(BUTTON_OK_LABEL);
+    }
+
+    private static void assertCloseButton() throws Exception {
+        findPackageInstallerObject(BUTTON_CLOSE_LABEL);
+    }
+
+    private static void assertInstallWithoutVerifyingButton() throws Exception {
+        findPackageInstallerObject(BUTTON_INSTALL_WITHOUT_VERIFYING_LABEL);
+    }
+
+    private static void assertUpdateWithoutVerifyingButton() throws Exception {
+        findPackageInstallerObject(BUTTON_UPDATE_WITHOUT_VERIFYING_LABEL);
+    }
+
     /**
      * Assert the install dialog for installing the test app.
      */
@@ -656,21 +672,43 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
         assertThat(openButton).isNull();
     }
 
+    /** Assert the App Not Installed dialog when the installation fails. */
+    public static void assertAppNotInstalledDialog() throws Exception {
+        assertTitleIsAppNotInstalled();
+        assertCloseButton();
+    }
+
     /**
      * Click the Install button and wait for the dialog to disappear. Also allow install if the
      * GPP dialog exists.
      */
     public static void clickInstallButton() throws Exception {
-        clickInstallButton(/* checkInstallingDialog= */ false);
+        clickInstallButton(
+                /* checkInstallingDialog= */ false,
+                /* expectingDeveloperVerificationDialog= */ false);
     }
 
     /**
-     * Click the Install button and wait for the dialog to disappear. Also allow install if the
-     * GPP dialog exists. If {@code checkInstallingDialog} is true, check the Installing dialog.
-     * Otherwise, don't check the Installing dialog. E.g. The installation via intent triggers
-     * the Installing dialog.
+     * Same as {@link #clickInstallButton(boolean, boolean)} except that the developer verification
+     * dialog is not expected to show.
      */
     public static void clickInstallButton(boolean checkInstallingDialog) throws Exception {
+        clickInstallButton(
+                checkInstallingDialog, /* expectingDeveloperVerificationDialog= */ false);
+    }
+
+    /**
+     * Click the Install button and wait for the dialog to disappear. Also allow install if the GPP
+     * dialog exists. If {@code checkInstallingDialog} is true, check the Installing dialog.
+     * Otherwise, don't check the Installing dialog. E.g. The installation via intent triggers the
+     * Installing dialog.
+     *
+     * <p>If {@code expectingDeveloperVerificationDialog} is true, expect the developer verification
+     * dialog, which will be checked in the followup test code. Otherwise, expect the GPP dialog.
+     */
+    public static void clickInstallButton(
+            boolean checkInstallingDialog, boolean expectingDeveloperVerificationDialog)
+            throws Exception {
         assertTitleIsTestAppLabel();
 
         clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_INSTALL_LABEL));
@@ -679,7 +717,9 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
             waitForInstallingDialogGone();
         }
 
-        if (!isTestPackageInstalled()) {
+        if (!isTestPackageInstalled() && !expectingDeveloperVerificationDialog) {
+            // Not expecting developer verification dialog, but expecting package verification
+            // dialog.
             allowInstallIfVerificationDialogExists();
         }
     }
@@ -703,15 +743,31 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
     }
 
     /**
-     * Click the Update button, assert the title is {@link #TEST_APP_LABEL} and wait for the
-     * dialog to disappear. If {@code checkInstallingDialog} is true, check the Installing
-     * dialog. Otherwise, don't check the Installing dialog. E.g. The installation via intent
-     * triggers Installing dialog. If {@code isUpdatedViaPackageUri} is true, do NOT check the
-     * GPP dialog. Otherwise, check the GPP dialog. The installation via intent with package
-     * uri doesn't trigger the GPP dialog.
+     * Same as above except that {@code isUpdatedViaPackageUri} is explicitly set in the parameters.
      */
-    public static void clickUpdateButton(boolean checkInstallingDialog,
-            boolean isUpdatedViaPackageUri) throws Exception {
+    public static void clickUpdateButton(
+            boolean checkInstallingDialog, boolean isUpdatedViaPackageUri) throws Exception {
+        clickUpdateButton(
+                checkInstallingDialog,
+                isUpdatedViaPackageUri,
+                /* expectingDeveloperVerificationDialog= */ false);
+    }
+
+    /**
+     * Click the Update button, assert the title is {@link #TEST_APP_LABEL} and wait for the dialog
+     * to disappear. If {@code checkInstallingDialog} is true, check the Installing dialog.
+     * Otherwise, don't check the Installing dialog. E.g. The installation via intent triggers
+     * Installing dialog. If {@code isUpdatedViaPackageUri} or {@code
+     * expectingDeveloperVerificationDialog}is true, do NOT check the GPP dialog. Otherwise, check
+     * the GPP dialog. The installation via intent with package uri doesn't trigger the GPP dialog.
+     * For the case with developer verification dialog, GPP dialog will show up later and will be
+     * checked after the developer verification dialog.
+     */
+    public static void clickUpdateButton(
+            boolean checkInstallingDialog,
+            boolean isUpdatedViaPackageUri,
+            boolean expectingDeveloperVerificationDialog)
+            throws Exception {
         assertTitleIsTestAppLabel();
 
         clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_UPDATE_LABEL));
@@ -720,7 +776,9 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
             waitForInstallingDialogGone();
         }
 
-        if (!isUpdatedViaPackageUri && !isTestPackageVersion2Installed()) {
+        if (!isUpdatedViaPackageUri
+                && !isTestPackageVersion2Installed()
+                && !expectingDeveloperVerificationDialog) {
             allowInstallIfVerificationDialogExists();
         }
     }
@@ -793,6 +851,36 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
             assertTitleIsInstallerLabel();
         }
         clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_SETTINGS_LABEL));
+    }
+
+    /** Click the OK button and wait for the dialog to disappear. */
+    public static void clickOkButton() throws Exception {
+        clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_OK_LABEL));
+    }
+
+    /** Click the Close button and wait for the dialog to disappear. */
+    public static void clickCloseButton() throws Exception {
+        clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_CLOSE_LABEL));
+    }
+
+    /** Click the More details button and wait for the dialog to update. */
+    public static void clickMoreDetailsButton() throws Exception {
+        clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_MORE_DETAILS));
+    }
+
+    /** Click the Install without verifying button and wait for the dialog to disappear. */
+    public static void clickInstallWithoutVerifyingButton(boolean isAppUpdating) throws Exception {
+        if (isAppUpdating) {
+            clickAndWaitForNewWindow(
+                    findPackageInstallerObject(BUTTON_UPDATE_WITHOUT_VERIFYING_LABEL));
+        } else {
+            clickAndWaitForNewWindow(
+                    findPackageInstallerObject(BUTTON_INSTALL_WITHOUT_VERIFYING_LABEL));
+        }
+        if (!isTestPackageInstalled()) {
+            // It's possible that GPP dialog will show up after the developer verification dialog
+            allowInstallIfVerificationDialogExists();
+        }
     }
 
     /**
@@ -947,6 +1035,20 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
      */
     public static void assertInstallerVersion2Installed() {
         assertThat(isInstallerVersion2Installed()).isTrue();
+    }
+
+    /** Assert the developer verification user confirmation dialog has been displayed. */
+    public static void assertDeveloperVerificationUserConfirmationDialog(
+            boolean isBypassAllowed, boolean isAppUpdating) throws Exception {
+        assertOkButton();
+        if (isBypassAllowed) {
+            clickMoreDetailsButton();
+            if (isAppUpdating) {
+                assertUpdateWithoutVerifyingButton();
+            } else {
+                assertInstallWithoutVerifyingButton();
+            }
+        }
     }
 
     private static class InstallerResponseReceiver extends BroadcastReceiver {

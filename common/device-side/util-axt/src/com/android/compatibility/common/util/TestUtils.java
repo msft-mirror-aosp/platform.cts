@@ -69,6 +69,7 @@ public class TestUtils {
             if (predicate.getAsBoolean()) {
                 return; // okay
             }
+            Log.v(TAG, "Sleeping " + sleep + "ms. Reason: " + message);
             Thread.sleep(sleep);
             sleep *= 5;
             sleep = Math.min(2000, sleep);

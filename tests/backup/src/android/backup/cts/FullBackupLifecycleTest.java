@@ -19,7 +19,8 @@ package android.backup.cts;
 import static com.android.compatibility.common.util.BackupUtils.LOCAL_TRANSPORT_TOKEN;
 
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.SetFlagsRule;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
@@ -33,14 +34,14 @@ import org.junit.runner.RunWith;
 /** Verifies that key methods are called in expected order during backup / restore. */
 @RunWith(AndroidJUnit4.class)
 public class FullBackupLifecycleTest extends BaseBackupCtsTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String BACKUP_APP_NAME = "android.backup.app";
 
     private static final int LOCAL_TRANSPORT_CONFORMING_FILE_SIZE = 5 * 1024;
 
     private static final int TIMEOUT_SECONDS = 30;
-
-    @Rule public final SetFlagsRule mSetFlagsRule = new SetFlagsRule();
 
     @Before
     public void setUp() throws Exception {

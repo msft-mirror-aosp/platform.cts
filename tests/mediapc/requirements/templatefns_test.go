@@ -234,3 +234,94 @@ func TestHasConfigVariant(t *testing.T) {
 		}
 	}
 }
+
+func TestCompareReqIds(t *testing.T) {
+	tests := []struct {
+		name string
+		req1 string
+		req2 string
+		want int
+	}{
+		{
+			name: "equal",
+			req1: "5.1/H-1-1",
+			req2: "5.1/H-1-1",
+			want: 0,
+		},
+		{
+			name: "simple less",
+			req1: "5.1/H-1-1",
+			req2: "5.1/H-1-2",
+			want: -1,
+		},
+		{
+			name: "simple greater",
+			req1: "5.1/H-1-2",
+			req2: "5.1/H-1-1",
+			want: 1,
+		},
+		{
+			name: "numeric less",
+			req1: "5.1/H-1-2",
+			req2: "5.1/H-1-10",
+			want: -1,
+		},
+		{
+			name: "numeric greater",
+			req1: "5.1/H-1-10",
+			req2: "5.1/H-1-2",
+			want: 1,
+		},
+		{
+			name: "lexicographical less",
+			req1: "5.1/H-1-H",
+			req2: "5.1/H-1-T",
+			want: -1,
+		},
+		{
+			name: "lexicographical greater",
+			req1: "5.1/H-1-T",
+			req2: "5.1/H-1-H",
+			want: 1,
+		},
+		{
+			name: "different lengths shorter first",
+			req1: "5.1/H-1",
+			req2: "5.1/H-1-1",
+			want: -1,
+		},
+		{
+			name: "different lengths longer second",
+			req1: "5.1/H-1-1",
+			req2: "5.1/H-1",
+			want: 1,
+		},
+		{
+			name: "mixed numeric and string less",
+			req1: "5.1/H-1-A",
+			req2: "5.1/H-1-2",
+			want: 1,
+		},
+		{
+			name: "mixed numeric and string greater",
+			req1: "5.1/H-1-2",
+			req2: "5.1/H-1-A",
+			want: -1,
+		},
+		{
+			name: "double digit in dots",
+			req1: "5.2.1/H-1-1",
+			req2: "5.10.1/H-1-1",
+			want: -1,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := compareReqIds(tc.req1, tc.req2)
+			if got != tc.want {
+				t.Errorf("compareReqIds(%q, %q) = %v, want %v", tc.req1, tc.req2, got, tc.want)
+			}
+		})
+	}
+}

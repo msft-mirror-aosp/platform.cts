@@ -16,6 +16,7 @@
 package com.android.bedstead.settings
 
 import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.service.settings.preferences.SettingsPreferenceValue
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
@@ -30,6 +31,9 @@ import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
 class PreferenceForcedIntoStateTest {
+
+    @get:Rule
+    val checkFlagRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @RequiresFlagsEnabled(FLAG_SETTINGS_CATALYST, FLAG_WRITE_SYSTEM_PREFERENCE_PERMISSION_ENABLED)
     @PreferenceTest(

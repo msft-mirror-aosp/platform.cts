@@ -35,10 +35,10 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Environment;
-import android.os.PowerManager;
 import android.os.StrictMode;
 import android.os.StrictMode.ViolationInfo;
 import android.os.SystemClock;
+import android.os.UserHandle;
 import android.os.UserManager;
 import android.os.strictmode.CredentialProtectedWhileLockedViolation;
 import android.os.strictmode.ImplicitDirectBootViolation;
@@ -60,7 +60,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
-public class EncryptionAppTest extends InstrumentationTestCase {
+public final class EncryptionAppTest extends InstrumentationTestCase {
     private static final String TAG = "EncryptionAppTest";
 
     private static final String KEY_BOOT = "boot";
@@ -84,6 +84,7 @@ public class EncryptionAppTest extends InstrumentationTestCase {
 
     @Override
     public void setUp() throws Exception {
+        Log.d(TAG, "setUp() on user " + UserHandle.myUserId());
         super.setUp();
 
         mCe = getInstrumentation().getContext();
@@ -96,6 +97,7 @@ public class EncryptionAppTest extends InstrumentationTestCase {
 
     @Override
     public void tearDown() throws Exception {
+        Log.d(TAG, "tearDown() on user " + UserHandle.myUserId());
         super.tearDown();
 
         if (mActivity != null) {
@@ -104,6 +106,8 @@ public class EncryptionAppTest extends InstrumentationTestCase {
     }
 
     public void testSetUp() throws Exception {
+        Log.d(TAG, "testSetup()");
+
         // Write both CE/DE data for ourselves
         assertTrue("CE file", getTestFile(mCe).createNewFile());
         assertTrue("DE file", getTestFile(mDe).createNewFile());
@@ -126,6 +130,8 @@ public class EncryptionAppTest extends InstrumentationTestCase {
     }
 
     public void testTearDown() throws Exception {
+        Log.d(TAG, "testTearDown()");
+
         // Since there's not a good way to check whether the keyguard is already dismissed, summon
         // the keyguard and dismiss it.
         summonKeyguard();
@@ -141,38 +147,48 @@ public class EncryptionAppTest extends InstrumentationTestCase {
     }
 
     public void testLockScreen() throws Exception {
+        Log.d(TAG, "testLockScreen()");
+
         summonKeyguard();
     }
 
     public void testUnlockScreen() throws Exception {
+        Log.d(TAG, "testUnlockScreen()");
+
         dismissKeyguard();
     }
 
     public void doBootCountBefore() throws Exception {
-        final int thisCount = getBootCount();
+        int thisCount = getBootCount();
+        Log.d(TAG, "doBootCountBefore(): thisCount=" + thisCount);
         mDe.getSharedPreferences(KEY_BOOT, 0).edit().putInt(KEY_BOOT, thisCount).commit();
     }
 
     public void doBootCountAfter() throws Exception {
-        final int lastCount = mDe.getSharedPreferences(KEY_BOOT, 0).getInt(KEY_BOOT, -1);
-        final int thisCount = getBootCount();
+        int lastCount = mDe.getSharedPreferences(KEY_BOOT, 0).getInt(KEY_BOOT, -1);
+        int thisCount = getBootCount();
+        Log.d(TAG, "doBootCountAfter(): lastCount=" + lastCount + ", thisCount=" + thisCount);
         assertTrue("Current boot count " + thisCount + " not greater than last " + lastCount,
                 thisCount > lastCount);
     }
 
     public void testCheckServiceInteraction() {
+        Log.d(TAG, "testCheckServiceInteraction()");
+
         boolean wrapCalled =
                 mDe.getSharedPreferences(RebootEscrowFakeService.SERVICE_PREFS, 0)
                         .getBoolean("WRAP_CALLED", false);
-        assertTrue(wrapCalled);
+        assertWithMessage("WRAP_CALLED").that(wrapCalled).isTrue();
 
         boolean unwrapCalled =
                 mDe.getSharedPreferences(RebootEscrowFakeService.SERVICE_PREFS, 0)
                         .getBoolean("UNWRAP_CALLED", false);
-        assertTrue(unwrapCalled);
+        assertWithMessage("UNWRAP_CALLED").that(unwrapCalled).isTrue();
     }
 
     public void testVerifyUnlockedAndDismiss() throws Exception {
+        Log.d(TAG, "testVerifyUnlockedAndDismiss()");
+
         doBootCountAfter();
         assertUnlocked();
         dismissKeyguard();
@@ -180,16 +196,21 @@ public class EncryptionAppTest extends InstrumentationTestCase {
     }
 
     public void testVerifyLockedAndDismiss() throws Exception {
+        Log.d(TAG, "testVerifyLockedAndDismiss()");
+
         doBootCountAfter();
         assertLocked();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        final BroadcastReceiver receiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                latch.countDown();
-            }
-        };
+        final BroadcastReceiver receiver =
+                new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        Log.v(TAG, "Received intent " + intent.getAction());
+
+                        latch.countDown();
+                    }
+                };
         mDe.registerReceiver(receiver, new IntentFilter(Intent.ACTION_USER_UNLOCKED));
 
         dismissKeyguard();
@@ -203,6 +224,8 @@ public class EncryptionAppTest extends InstrumentationTestCase {
     }
 
     private void enterTestPin() throws Exception {
+        Log.d(TAG, "enterTestPin()");
+
         // TODO: change the combination on my luggage
 
         // Give enough time for the lock screen to show up in the UI.
@@ -220,6 +243,8 @@ public class EncryptionAppTest extends InstrumentationTestCase {
     }
 
     private void dismissKeyguard() throws Exception {
+        Log.d(TAG, "dismissKeyguard()");
+
         mDevice.waitForIdle();
         mDevice.wakeUp();
         mDevice.waitForIdle();
@@ -260,6 +285,8 @@ public class EncryptionAppTest extends InstrumentationTestCase {
     }
 
     private void summonKeyguard() throws Exception {
+        Log.d(TAG, "summonKeyguard()");
+
         final KeyguardManager keyguardManager =
             mDe.getSystemService(KeyguardManager.class);
         mDevice.pressKeyCode(KeyEvent.KEYCODE_SLEEP);
@@ -271,6 +298,8 @@ public class EncryptionAppTest extends InstrumentationTestCase {
     }
 
     public void assertLocked() throws Exception {
+        Log.d(TAG, "assertLocked()");
+
         awaitBroadcast(Intent.ACTION_LOCKED_BOOT_COMPLETED);
 
         assertFalse("CE exists", getTestFile(mCe).exists());
@@ -329,6 +358,7 @@ public class EncryptionAppTest extends InstrumentationTestCase {
     }
 
     public void assertUnlocked() throws Exception {
+        Log.d(TAG, "assertUnlocked()");
         awaitBroadcast(Intent.ACTION_LOCKED_BOOT_COMPLETED);
         awaitBroadcast(Intent.ACTION_BOOT_COMPLETED);
 
@@ -384,6 +414,7 @@ public class EncryptionAppTest extends InstrumentationTestCase {
                 new StrictMode.VmPolicy.Builder().detectCredentialProtectedWhileLocked()
                         .penaltyLog().build(),
                 ceFile::exists);
+        Log.v(TAG, "assertUnlocked(): Saul Goodman!");
     }
 
     private void pollForExternalStorageMountedState() {
@@ -489,11 +520,13 @@ public class EncryptionAppTest extends InstrumentationTestCase {
     }
 
     private void awaitBroadcast(String action) throws Exception {
+        Log.v(TAG, "awaitBroadcast(" + action + ")");
         String fileName = getBootCount() + "." + action;
         Uri fileUri = FILE_INFO_URI.buildUpon().appendPath(fileName).build();
 
         TestUtils.waitUntil("Didn't receive broadcast " + action + " for boot " + getBootCount(),
                 BOOT_TIMEOUT_SECONDS, () -> queryFileExists(fileUri));
+        Log.v(TAG, "awaitBroadcast(" + action + "): Saul Goodman!");
     }
 
     public interface ThrowingRunnable {

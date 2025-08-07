@@ -67,6 +67,10 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".VirtualDeviceUiModeTest$UiModeActivity"
+            android:configChanges="uiMode"
+            android:exported="false" />
+        <activity
             android:name="android.app.Activity"
             android:exported="false" />
         <service android:name=".AppComponents$TestService" />

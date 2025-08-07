@@ -48,12 +48,14 @@ import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureC
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureDisplayUnitsVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureSetVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureValueSuggestionVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getIgnitionStateVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoDriverSeatVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoEvBatteryCapacityVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoEvConnectorTypeVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoEvPortLocationVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getLocationCharacterizationVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getNightModeVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getParkingBrakeOnVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfOdometerVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfSteeringAngleVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getRangeRemainingVerifierBuilder;
@@ -77,7 +79,6 @@ import android.car.FuelType;
 import android.car.GsrComplianceType;
 import android.car.VehicleAreaType;
 import android.car.VehicleAreaWheel;
-import android.car.VehicleIgnitionState;
 import android.car.VehiclePropertyIds;
 import android.car.VehicleUnit;
 import android.car.cts.AbstractCarTestCase;
@@ -1805,12 +1806,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireProperty();
     }
 
-    private static VehiclePropertyVerifier.Builder<Boolean> getParkingBrakeOnVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                        VehiclePropertyIds.PARKING_BRAKE_ON)
-                .requireProperty();
-    }
-
     private static VehiclePropertyVerifier.Builder<Integer>
             getEmergencyLaneKeepAssistStateVerifierBuilder() {
         ImmutableSet<Integer> possibleEnumValues =
@@ -2788,18 +2783,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         ImmutableSet.of(
                                 GsrComplianceType.GSR_COMPLIANCE_TYPE_NOT_REQUIRED,
                                 GsrComplianceType.GSR_COMPLIANCE_TYPE_REQUIRED_V1));
-    }
-
-    private static VehiclePropertyVerifier.Builder<Integer> getIgnitionStateVerifierBuilder() {
-        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(VehiclePropertyIds.IGNITION_STATE)
-                .setAllPossibleEnumValues(
-                        ImmutableSet.of(
-                                VehicleIgnitionState.UNDEFINED,
-                                VehicleIgnitionState.LOCK,
-                                VehicleIgnitionState.OFF,
-                                VehicleIgnitionState.ACC,
-                                VehicleIgnitionState.ON,
-                                VehicleIgnitionState.START));
     }
 
     private static VehiclePropertyVerifier.Builder<Integer>

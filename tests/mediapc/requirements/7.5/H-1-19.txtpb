@@ -1,0 +1,48 @@
+# Copyright (C) 2025 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# proto-file: third_party/android/mediapc_requirements/requirements.proto
+# proto-message: Requirement
+id: "7.5/H-1-19"
+name: "Camera Video Preview Stabilization"
+description: "Support for video preview stabilization for primary cameras"
+test_configs: {
+  key: ""
+  value: {
+    description: "Default test config"
+    proto_field_number: 67
+  }
+}
+measurements: {
+  key: "primary_camera_hlg_combination_supported"
+  value: {
+    description: "Is the rear primary camera stabilization supported"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 3
+  }
+}
+specs {
+  key: 35
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_15
+    specification: "MUST support CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION for 1080p HLG10 preview with maximum-size 16:9 aspect ratio JPEG, and for 720p HLG10 preview with maximum-size 16:9 aspect ratio JPEG stream combinations for the primary rear camera."
+    required_values {
+      key: "primary_camera_hlg_combination_supported"
+      value {
+        bool_value: true
+      }
+    }
+  }
+}

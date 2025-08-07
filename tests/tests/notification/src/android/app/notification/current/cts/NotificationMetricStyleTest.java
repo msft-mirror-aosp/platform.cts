@@ -16,17 +16,6 @@
 
 package android.app.notification.current.cts;
 
-import static android.app.Notification.Metric.MEANING_CELESTIAL_MOON_PHASE;
-import static android.app.Notification.Metric.MEANING_CHRONOMETER_TIMER;
-import static android.app.Notification.Metric.MEANING_EVENT_DATE;
-import static android.app.Notification.Metric.MEANING_EVENT_TIME;
-import static android.app.Notification.Metric.MEANING_HEALTH_STEPS;
-import static android.app.Notification.Metric.MEANING_MOVEMENT_DISTANCE_TRAVELED;
-import static android.app.Notification.Metric.MEANING_TRAVEL_PORT;
-import static android.app.Notification.Metric.MEANING_TRAVEL_TERMINAL;
-import static android.app.Notification.Metric.MEANING_UNKNOWN;
-import static android.app.Notification.Metric.MEANING_WEATHER_TEMPERATURE_OUTDOOR;
-
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
@@ -71,7 +60,7 @@ public class NotificationMetricStyleTest {
 
     @Test
     public void builderBuild_setsMetricStyle() {
-        Metric metric = new Metric(new FixedInt(1979), "Steps", MEANING_HEALTH_STEPS);
+        Metric metric = new Metric(new FixedInt(1979), "Steps");
         Notification n =
                 new Notification.Builder(mContext)
                         .setSmallIcon(R.drawable.ic_android)
@@ -97,17 +86,15 @@ public class NotificationMetricStyleTest {
     @Test
     public void addMetric_adds() {
         MetricStyle style = new MetricStyle();
-        style.addMetric(new Metric(new FixedString("Blah"), "Meh", MEANING_TRAVEL_TERMINAL));
-        style.addMetric(new Metric(new FixedInt(42), "Steps", MEANING_HEALTH_STEPS));
-        style.addMetric(
-                new Metric(new FixedDate(LocalDate.of(2017, 4, 1)), "X", MEANING_EVENT_DATE));
+        style.addMetric(new Metric(new FixedString("Blah"), "Meh"));
+        style.addMetric(new Metric(new FixedInt(42), "Steps"));
+        style.addMetric(new Metric(new FixedDate(LocalDate.of(2017, 4, 1)), "X"));
 
         assertThat(style.getMetrics())
                 .containsExactly(
-                        new Metric(new FixedString("Blah"), "Meh", MEANING_TRAVEL_TERMINAL),
-                        new Metric(new FixedInt(42), "Steps", MEANING_HEALTH_STEPS),
-                        new Metric(
-                                new FixedDate(LocalDate.of(2017, 4, 1)), "X", MEANING_EVENT_DATE))
+                        new Metric(new FixedString("Blah"), "Meh"),
+                        new Metric(new FixedInt(42), "Steps"),
+                        new Metric(new FixedDate(LocalDate.of(2017, 4, 1)), "X"))
                 .inOrder();
     }
 
@@ -120,13 +107,12 @@ public class NotificationMetricStyleTest {
     @Test
     public void setMetrics_replaces() {
         MetricStyle style = new MetricStyle();
-        style.addMetric(new Metric(new FixedString("Will be discarded"), "A", MEANING_UNKNOWN));
-        style.addMetric(new Metric(new FixedString("And this too"), "B", MEANING_UNKNOWN));
+        style.addMetric(new Metric(new FixedString("Will be discarded"), "A"));
+        style.addMetric(new Metric(new FixedString("And this too"), "B"));
 
-        style.setMetrics(List.of(new Metric(new FixedInt(10), "X", MEANING_HEALTH_STEPS)));
+        style.setMetrics(List.of(new Metric(new FixedInt(10), "X")));
 
-        assertThat(style.getMetrics())
-                .containsExactly(new Metric(new FixedInt(10), "X", MEANING_HEALTH_STEPS));
+        assertThat(style.getMetrics()).containsExactly(new Metric(new FixedInt(10), "X"));
     }
 
     @Test
@@ -135,9 +121,7 @@ public class NotificationMetricStyleTest {
 
         assertThrows(
                 UnsupportedOperationException.class,
-                () ->
-                        style.getMetrics()
-                                .add(new Metric(new FixedInt(10), "X", MEANING_HEALTH_STEPS)));
+                () -> style.getMetrics().add(new Metric(new FixedInt(10), "X")));
     }
 
     @Test
@@ -149,18 +133,9 @@ public class NotificationMetricStyleTest {
                                         TimeDifference.forPausedTimer(
                                                 Duration.ofSeconds(30),
                                                 TimeDifference.FORMAT_ADAPTIVE),
-                                        "Timer",
-                                        MEANING_CHRONOMETER_TIMER))
-                        .addMetric(
-                                new Metric(
-                                        new FixedString("Gibbous"),
-                                        "Moon",
-                                        MEANING_CELESTIAL_MOON_PHASE))
-                        .addMetric(
-                                new Metric(
-                                        new FixedTime(LocalTime.of(19, 30)),
-                                        "Event",
-                                        MEANING_EVENT_TIME));
+                                        "Timer"))
+                        .addMetric(new Metric(new FixedString("Gibbous"), "Moon"))
+                        .addMetric(new Metric(new FixedTime(LocalTime.of(19, 30)), "Event"));
 
         MetricStyle style2 =
                 new MetricStyle()
@@ -170,16 +145,9 @@ public class NotificationMetricStyleTest {
                                                 TimeDifference.forPausedTimer(
                                                         Duration.ofSeconds(30),
                                                         TimeDifference.FORMAT_ADAPTIVE),
-                                                "Timer",
-                                                MEANING_CHRONOMETER_TIMER),
-                                        new Metric(
-                                                new FixedString("Gibbous"),
-                                                "Moon",
-                                                MEANING_CELESTIAL_MOON_PHASE),
-                                        new Metric(
-                                                new FixedTime(LocalTime.of(19, 30)),
-                                                "Event",
-                                                MEANING_EVENT_TIME)));
+                                                "Timer"),
+                                        new Metric(new FixedString("Gibbous"), "Moon"),
+                                        new Metric(new FixedTime(LocalTime.of(19, 30)), "Event")));
 
         assertThat(style1).isEqualTo(style2);
         assertThat(style1.hashCode()).isEqualTo(style2.hashCode());
@@ -194,13 +162,8 @@ public class NotificationMetricStyleTest {
                                         TimeDifference.forPausedTimer(
                                                 Duration.ofSeconds(30),
                                                 TimeDifference.FORMAT_ADAPTIVE),
-                                        "Timer",
-                                        MEANING_CHRONOMETER_TIMER))
-                        .addMetric(
-                                new Metric(
-                                        new FixedString("Gibbous"),
-                                        "Moon",
-                                        MEANING_CELESTIAL_MOON_PHASE));
+                                        "Timer"))
+                        .addMetric(new Metric(new FixedString("Gibbous"), "Moon"));
 
         MetricStyle style2 =
                 new MetricStyle()
@@ -210,12 +173,8 @@ public class NotificationMetricStyleTest {
                                                 TimeDifference.forPausedTimer(
                                                         Duration.ofSeconds(30),
                                                         TimeDifference.FORMAT_ADAPTIVE),
-                                                "A *different* timer",
-                                                MEANING_CHRONOMETER_TIMER),
-                                        new Metric(
-                                                new FixedString("Gibbous"),
-                                                "Moon",
-                                                MEANING_CELESTIAL_MOON_PHASE)));
+                                                "A *different* timer"),
+                                        new Metric(new FixedString("Gibbous"), "Moon")));
 
         assertThat(style1).isNotEqualTo(style2);
         assertThat(style1.hashCode()).isNotEqualTo(style2.hashCode());
@@ -223,25 +182,16 @@ public class NotificationMetricStyleTest {
 
     @Test
     public void newMetric_constructs() {
-        Metric metric = new Metric(new FixedString("str"), "Port", MEANING_TRAVEL_PORT);
+        Metric metric = new Metric(new FixedString("str"), "Port");
 
         assertThat(metric.getValue()).isEqualTo(new FixedString("str"));
-        assertThat(metric.getMeaning()).isEqualTo(MEANING_TRAVEL_PORT);
         assertThat(metric.getLabel()).isEqualTo("Port");
     }
 
     @Test
     public void equalsAndHash_sameMetric_isEqual() {
-        Metric metric1 =
-                new Metric(
-                        new FixedFloat(23.5f, "°C", 0, 1),
-                        "Temp",
-                        MEANING_WEATHER_TEMPERATURE_OUTDOOR);
-        Metric metric2 =
-                new Metric(
-                        new FixedFloat(23.5f, "°C", 0, 1),
-                        "Temp",
-                        MEANING_WEATHER_TEMPERATURE_OUTDOOR);
+        Metric metric1 = new Metric(new FixedFloat(23.5f, "°C", 0, 1), "Temp");
+        Metric metric2 = new Metric(new FixedFloat(23.5f, "°C", 0, 1), "Temp");
 
         assertThat(metric1).isEqualTo(metric2);
         assertThat(metric1.hashCode()).isEqualTo(metric2.hashCode());
@@ -249,10 +199,8 @@ public class NotificationMetricStyleTest {
 
     @Test
     public void equalsAndHash_differentMetric_isDifferent() {
-        Metric metric1 =
-                new Metric(new FixedInt(23, "m"), "Distance", MEANING_MOVEMENT_DISTANCE_TRAVELED);
-        Metric metric2 =
-                new Metric(new FixedInt(24, "m"), "Distance", MEANING_MOVEMENT_DISTANCE_TRAVELED);
+        Metric metric1 = new Metric(new FixedInt(23, "m"), "Distance");
+        Metric metric2 = new Metric(new FixedInt(24, "m"), "Distance");
 
         assertThat(metric1).isNotEqualTo(metric2);
         assertThat(metric1.hashCode()).isNotEqualTo(metric2.hashCode());
@@ -260,28 +208,22 @@ public class NotificationMetricStyleTest {
 
     @Test
     public void newMetric_nullValue_throws() {
-        assertThrows(NullPointerException.class, () -> new Metric(null, "X", MEANING_UNKNOWN));
+        assertThrows(NullPointerException.class, () -> new Metric(null, "X"));
     }
 
     @Test
     public void newMetric_nullLabel_throws() {
-        assertThrows(
-                NullPointerException.class,
-                () -> new Metric(new FixedInt(10), null, MEANING_UNKNOWN));
+        assertThrows(NullPointerException.class, () -> new Metric(new FixedInt(10), null));
     }
 
     @Test
     public void newMetric_emptyLabel_throws() {
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> new Metric(new FixedInt(10), "", MEANING_UNKNOWN));
+        assertThrows(IllegalArgumentException.class, () -> new Metric(new FixedInt(10), ""));
     }
 
     @Test
     public void newMetric_blankLabel_throws() {
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> new Metric(new FixedInt(10), "   ", MEANING_UNKNOWN));
+        assertThrows(IllegalArgumentException.class, () -> new Metric(new FixedInt(10), "   "));
     }
 
     @Test

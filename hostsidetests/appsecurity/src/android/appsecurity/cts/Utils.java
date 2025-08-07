@@ -33,13 +33,18 @@ import com.android.tradefed.result.TestResult;
 import com.android.tradefed.result.TestRunResult;
 import com.android.tradefed.util.RunUtil;
 
+import com.google.errorprone.annotations.FormatMethod;
+import com.google.errorprone.annotations.FormatString;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-public class Utils {
+import javax.annotation.Nullable;
+
+public final class Utils {
     private static final String LOG_TAG = Utils.class.getSimpleName();
 
     static final String PKG = "com.android.cts.splitapp";
@@ -173,9 +178,7 @@ public class Utils {
         return prepareMultipleUsers(device, 1);
     }
 
-    /**
-     * Prepare and return two users relevant for testing.
-     */
+    /** Prepare and return two users relevant for testing. */
     public static int[] prepareMultipleUsers(ITestDevice device)
             throws DeviceNotAvailableException {
         return prepareMultipleUsers(device, 2);
@@ -202,8 +205,8 @@ public class Utils {
         }
     }
 
-    public static int[] getAllUsers(ITestDevice device)
-            throws DeviceNotAvailableException {
+    /** Gets all the users! */
+    public static int[] getAllUsers(ITestDevice device) throws DeviceNotAvailableException {
         Integer primary = device.getPrimaryUserId();
         if (device.isHeadlessSystemUserMode()
                 && primary == USER_SYSTEM
@@ -213,7 +216,7 @@ public class Utils {
         if (primary == null) {
             primary = USER_SYSTEM;
         }
-        int[] users = new int[] { primary };
+        int[] users = new int[] {primary};
         for (Integer user : device.listUsers()) {
             if ((user != USER_SYSTEM) && !Objects.equals(user, primary)) {
                 users = Arrays.copyOf(users, users.length + 1);
@@ -249,6 +252,12 @@ public class Utils {
         CLog.logAndDisplay(LogLevel.INFO, "Little Suzy woke up!");
     }
 
+    /** Logs (and displays!) the given message. */
+    @FormatMethod
+    public static void logAndDisplay(@FormatString String msgFmt, @Nullable Object... msgArgs) {
+        CLog.logAndDisplay(LogLevel.INFO, msgFmt, msgArgs);
+    }
+
     private static boolean isBootCompleted(ITestDevice device) throws Exception {
         CollectingOutputReceiver receiver = new CollectingOutputReceiver();
         try {
@@ -265,5 +274,4 @@ public class Utils {
         }
         return "1".equals(output);
     }
-
 }

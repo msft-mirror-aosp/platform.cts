@@ -1,0 +1,48 @@
+# Copyright (C) 2025 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# proto-file: third_party/android/mediapc_requirements/requirements.proto
+# proto-message: Requirement
+id: "7.6.1/H-1-1"
+name: "Android 11 Memory"
+description: "Minimum memory available to the kernel as reported by ActivityManager.MemoryInfo.totalMemory"
+test_configs: {
+  key: ""
+  value: {
+    description: "Default test config"
+    proto_field_number: 74
+  }
+}
+measurements: {
+  key: "physical_memory_mb"
+  value: {
+    description: "Physical memory in MiB as reported by ActivityManager.MemeryInfo.totalMemory."
+    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    measurement_type: MEASUREMENT_TYPE_LONG
+    proto_field_number: 3
+  }
+}
+specs {
+  key: 30
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_11
+    specification: "MUST have at least 6 GB of physical memory."
+    required_values: {
+      key: "physical_memory_mb"
+      value: {
+        long_value: 5120
+      }
+    }
+  }
+}
