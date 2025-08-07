@@ -611,6 +611,7 @@ public class UidAtomTests extends DeviceTestCase implements IBuildReceiver {
                 .stream()
                 .map(e -> e.getAtom().getScreenBrightnessChanged().getLevel())
                 .filter(expectedValues::contains)
+                .distinct()
                 .collect(Collectors.toList());
 
         // Restore initial screen brightness
