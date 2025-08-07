@@ -16,6 +16,12 @@
 
 package android.security.net.config.cts;
 
+import static android.security.net.config.cts.TestUtils.assertCleartextConnectionSucceeds;
+import static android.security.net.config.cts.TestUtils.assertTlsConnectionSucceeds;
+import static android.security.net.config.cts.TestUtils.bindCleartextServer;
+import static android.security.net.config.cts.TestUtils.bindTLSServer;
+import static android.security.net.config.cts.TestUtils.startMockServer;
+
 import static com.android.org.conscrypt.net.flags.Flags.FLAG_NETWORK_SECURITY_CONFIG_LOCALHOST;
 
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -47,10 +53,10 @@ public class LocalhostTlsBaseConfigTest extends BaseTestCase {
 
     @Before
     public void setUp() throws Exception {
-        mTlsServerSocket = TestUtils.bindTLSServer(mContext, R.raw.valid_chain, R.raw.test_key);
-        TestUtils.startMockServer(mTlsServerSocket);
-        mCleartextServerSocket = TestUtils.bindCleartextServer();
-        TestUtils.startMockServer(mCleartextServerSocket);
+        mTlsServerSocket = bindTLSServer(mContext, R.raw.valid_chain, R.raw.test_key);
+        startMockServer(mTlsServerSocket);
+        mCleartextServerSocket = bindCleartextServer();
+        startMockServer(mCleartextServerSocket);
     }
 
     @After
@@ -61,23 +67,21 @@ public class LocalhostTlsBaseConfigTest extends BaseTestCase {
 
     @Test
     public void connectWithTlsOnIpV4Localhost_connectionSucceeds() throws Exception {
-        TestUtils.assertTlsConnectionSucceeds("localhost", mTlsServerSocket.getLocalPort());
+        assertTlsConnectionSucceeds("localhost", mTlsServerSocket.getLocalPort());
     }
 
     @Test
     public void connectWithTlsOnIpV6Localhost_connectionSucceeds() throws Exception {
-        TestUtils.assertTlsConnectionSucceeds("ip6-localhost", mTlsServerSocket.getLocalPort());
+        assertTlsConnectionSucceeds("ip6-localhost", mTlsServerSocket.getLocalPort());
     }
 
     @Test
     public void connectInCleartextOnIpV4Localhost_connectionSucceeds() throws Exception {
-        TestUtils.assertCleartextConnectionSucceeds(
-                "localhost", mCleartextServerSocket.getLocalPort());
+        assertCleartextConnectionSucceeds("localhost", mCleartextServerSocket.getLocalPort());
     }
 
     @Test
     public void connectInCleartextOnIpV6Localhost_connectionSucceeds() throws Exception {
-        TestUtils.assertCleartextConnectionSucceeds(
-                "ip6-localhost", mCleartextServerSocket.getLocalPort());
+        assertCleartextConnectionSucceeds("ip6-localhost", mCleartextServerSocket.getLocalPort());
     }
 }

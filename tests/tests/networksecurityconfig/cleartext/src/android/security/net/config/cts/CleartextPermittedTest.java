@@ -16,6 +16,10 @@
 
 package android.security.net.config.cts;
 
+import static android.security.net.config.cts.TestUtils.assertCleartextConnectionFails;
+import static android.security.net.config.cts.TestUtils.assertCleartextConnectionSucceeds;
+import static android.security.net.config.cts.TestUtils.assertTlsConnectionSucceeds;
+
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Test;
@@ -26,23 +30,23 @@ public class CleartextPermittedTest extends BaseTestCase {
 
     @Test
     public void testDefaultDenied() throws Exception {
-        TestUtils.assertCleartextConnectionFails("google.com", 80);
-        TestUtils.assertTlsConnectionSucceeds("google.com", 443);
+        assertCleartextConnectionFails("google.com", 80);
+        assertTlsConnectionSucceeds("google.com", 443);
     }
 
     @Test
     public void testCleartextAllowed() throws Exception {
-        TestUtils.assertCleartextConnectionSucceeds("android.com", 80);
-        TestUtils.assertTlsConnectionSucceeds("android.com", 443);
+        assertCleartextConnectionSucceeds("android.com", 80);
+        assertTlsConnectionSucceeds("android.com", 443);
         // subdomains of android.com are also disallowed.
-        TestUtils.assertCleartextConnectionSucceeds("www.android.com", 80);
-        TestUtils.assertTlsConnectionSucceeds("www.android.com", 443);
+        assertCleartextConnectionSucceeds("www.android.com", 80);
+        assertTlsConnectionSucceeds("www.android.com", 443);
     }
 
     @Test
     public void testNestedCleartextDenied() throws Exception {
         // developer.android.com is explicitly denied.
-        TestUtils.assertCleartextConnectionFails("developer.android.com", 80);
-        TestUtils.assertTlsConnectionSucceeds("developer.android.com", 443);
+        assertCleartextConnectionFails("developer.android.com", 80);
+        assertTlsConnectionSucceeds("developer.android.com", 443);
     }
 }

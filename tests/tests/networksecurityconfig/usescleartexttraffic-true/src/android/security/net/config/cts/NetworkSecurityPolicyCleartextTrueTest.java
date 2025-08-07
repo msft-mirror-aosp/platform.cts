@@ -16,6 +16,10 @@
 
 package android.security.net.config.cts;
 
+import static android.security.net.config.cts.TestUtils.assertCleartextConnectionSucceeds;
+import static android.security.net.config.cts.TestUtils.assertDownloadManagerSucceeds;
+import static android.security.net.config.cts.TestUtils.assertTlsConnectionSucceeds;
+
 import static org.junit.Assert.assertEquals;
 
 import android.security.NetworkSecurityPolicy;
@@ -34,21 +38,21 @@ public class NetworkSecurityPolicyCleartextTrueTest extends BaseTestCase {
 
     @Test
     public void testCleartextAllowed() throws Exception {
-        TestUtils.assertCleartextConnectionSucceeds("android.com", 80);
+        assertCleartextConnectionSucceeds("android.com", 80);
     }
 
     @Test
     public void testTlsAllowed() throws Exception {
-        TestUtils.assertTlsConnectionSucceeds("android.com", 443);
+        assertTlsConnectionSucceeds("android.com", 443);
     }
 
     @Test
     public void testCleartextDownloadManagerAllowed() throws Exception {
-        TestUtils.assertDownloadManagerSucceeds(mContext, "android.com", 80, /* https= */ false);
+        assertDownloadManagerSucceeds(mContext, "android.com", 80, /* https= */ false);
     }
 
     @Test
     public void testTlsDownloadManagerAllowed() throws Exception {
-        TestUtils.assertDownloadManagerSucceeds(mContext, "android.com", 443, /* https= */ true);
+        assertDownloadManagerSucceeds(mContext, "android.com", 443, /* https= */ true);
     }
 }

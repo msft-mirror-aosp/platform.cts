@@ -16,6 +16,8 @@
 
 package android.security.net.config.cts;
 
+import static android.security.net.config.cts.TestUtils.assertTlsConnectionFails;
+
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Test;
@@ -26,6 +28,6 @@ public class BasicDebugOverrideDisabledTest extends BaseTestCase {
 
     @Test
     public void testDefaultConfig() throws Exception {
-        TestUtils.assertTlsConnectionFails("android.com", 443);
+        assertTlsConnectionFails("android.com", 443);
     }
 }
