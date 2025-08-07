@@ -13,13 +13,8 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<configuration description="Run CTS-ON-GSI high ROI camera tests.">
+<configuration description="Run high ROI CTS-ON-GSI camera tests.">
     <include name="cts-on-gsi"/>
-    <!-- CtsCameraTestCases -->
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testAllOutputYUVResolutions[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testRepeatingRaw[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.PerformanceTest#testReprocessingCaptureStall"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.RobustnessTest#testMandatoryPreviewStabilizationOutputCombinations[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.StillCaptureTest#testPreviewPersistence[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testFaceDetection"/>
+    <!-- CtsSampleHostTestCases -->
+    <option name="compatibility:include-filter" value="CtsSampleHostTestCases android.sample.cts.SampleHostDeviceInfo#testCollectDeviceInfo"/>
 </configuration>
