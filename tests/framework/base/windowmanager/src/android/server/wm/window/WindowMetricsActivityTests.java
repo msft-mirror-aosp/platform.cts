@@ -333,10 +333,6 @@ public class WindowMetricsActivityTests extends WindowManagerTestBase {
         ComponentName activityName = activity.getComponentName();
         mWmState.computeState(activityName);
         WindowManagerState.Activity activityContainer = mWmState.getActivity(activityName);
-        final boolean shouldBoundsIncludeInsets =
-                activity.getResources().getConfiguration().windowConfiguration
-                        .getWindowingMode() == WINDOWING_MODE_FREEFORM
-                        || activityContainer.inSizeCompatMode();
         final WindowManager windowManager = activity.getWindowManager();
         final WindowMetrics currentMetrics = windowManager.getCurrentWindowMetrics();
         final WindowMetrics maxMetrics = windowManager.getMaximumWindowMetrics();
@@ -344,7 +340,7 @@ public class WindowMetricsActivityTests extends WindowManagerTestBase {
         final Rect maxBounds = windowManager.getMaximumWindowMetrics().getBounds();
         final Display display = activity.getDisplay();
 
-        assertMetricsMatchDisplay(maxMetrics, currentMetrics, display, shouldBoundsIncludeInsets);
+        assertMetricsMatchDisplay(maxMetrics, currentMetrics, display);
 
         // Max window bounds should match either DisplayArea bounds, or activity bounds if it is
         // sandboxed.

@@ -114,6 +114,7 @@ public class AppSearchConfigImpl implements AppSearchConfig {
     public int getMaxPageBytesLimitForVm() {
         return mIcingOptionsConfig.getMaxPageBytesLimitForVm();
     }
+
     @Override
     public int getIntegerIndexBucketSplitThreshold() {
         return mIcingOptionsConfig.getIntegerIndexBucketSplitThreshold();

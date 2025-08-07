@@ -22,10 +22,12 @@ import static android.car.VehicleAreaSeat.SEAT_ROW_1_RIGHT;
 import static android.car.cts.utils.ShellPermissionUtils.runWithShellPermissionIdentity;
 import static android.car.cts.utils.VehiclePropertyVerifiers.PORT_LOCATION_TYPES;
 import static android.car.cts.utils.VehiclePropertyVerifiers.assertFuelPropertyNotImplementedOnEv;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getCurrentGearVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEngineRpmVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEvBatteryLevelVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getFuelDoorOpenVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getFuelLevelVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getGearSelectionVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacAcOnVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacActualFanSpeedRpmVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacAutoOnVerifierBuilder;
@@ -75,7 +77,6 @@ import android.car.FuelType;
 import android.car.GsrComplianceType;
 import android.car.VehicleAreaType;
 import android.car.VehicleAreaWheel;
-import android.car.VehicleGear;
 import android.car.VehicleIgnitionState;
 import android.car.VehiclePropertyIds;
 import android.car.VehicleUnit;
@@ -212,24 +213,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
             ImmutableSet.of(
                     CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_NONE,
                     CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE);
-    private static final ImmutableSet<Integer> VEHICLE_GEARS =
-            ImmutableSet.<Integer>builder()
-                    .add(
-                            VehicleGear.GEAR_UNKNOWN,
-                            VehicleGear.GEAR_NEUTRAL,
-                            VehicleGear.GEAR_REVERSE,
-                            VehicleGear.GEAR_PARK,
-                            VehicleGear.GEAR_DRIVE,
-                            VehicleGear.GEAR_FIRST,
-                            VehicleGear.GEAR_SECOND,
-                            VehicleGear.GEAR_THIRD,
-                            VehicleGear.GEAR_FOURTH,
-                            VehicleGear.GEAR_FIFTH,
-                            VehicleGear.GEAR_SIXTH,
-                            VehicleGear.GEAR_SEVENTH,
-                            VehicleGear.GEAR_EIGHTH,
-                            VehicleGear.GEAR_NINTH)
-                    .build();
     private static final ImmutableSet<Integer> TRAILER_STATES =
             ImmutableSet.<Integer>builder()
                     .add(
@@ -1816,33 +1799,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         verifier.verify(step, verifierInfo.mExceptedExceptionClass);
     }
 
-    private static VehiclePropertyVerifier.Builder<Integer> getGearSelectionVerifierBuilder() {
-        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(VehiclePropertyIds.GEAR_SELECTION)
-                .requireProperty()
-                .setAllPossibleEnumValues(VEHICLE_GEARS)
-                .setPossibleConfigArrayValues(VEHICLE_GEARS)
-                .requirePropertyValueTobeInConfigArray()
-                .setConfigArrayVerifier(
-                        (verifierContext, configArray) -> {
-                            assertWithMessage(
-                                            "GEAR_SELECTION must list GEAR_REVERSE and GEAR_NEUTRAL"
-                                                    + " in the config array.")
-                                    .that(configArray)
-                                    .containsAtLeast(
-                                            VehicleGear.GEAR_REVERSE, VehicleGear.GEAR_NEUTRAL);
-                            assertWithMessage(
-                                            "GEAR_SELECTION must list GEAR_FIRST or both GEAR_DRIVE"
-                                                    + " and GEAR_PARK in the config array.")
-                                    .that(
-                                            configArray.containsAll(
-                                                            ImmutableList.of(
-                                                                    VehicleGear.GEAR_DRIVE,
-                                                                    VehicleGear.GEAR_PARK))
-                                                    || configArray.contains(VehicleGear.GEAR_FIRST))
-                                    .isTrue();
-                        });
-    }
-
     private static VehiclePropertyVerifier.Builder<Float> getPerfVehicleSpeedVerifierBuilder() {
         return VehiclePropertyVerifier.<Float>newDefaultBuilder(
                         VehiclePropertyIds.PERF_VEHICLE_SPEED)
@@ -2832,32 +2788,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         ImmutableSet.of(
                                 GsrComplianceType.GSR_COMPLIANCE_TYPE_NOT_REQUIRED,
                                 GsrComplianceType.GSR_COMPLIANCE_TYPE_REQUIRED_V1));
-    }
-
-    private static VehiclePropertyVerifier.Builder<Integer> getCurrentGearVerifierBuilder() {
-        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(VehiclePropertyIds.CURRENT_GEAR)
-                .setAllPossibleEnumValues(VEHICLE_GEARS)
-                .setPossibleConfigArrayValues(VEHICLE_GEARS)
-                .requirePropertyValueTobeInConfigArray()
-                .setConfigArrayVerifier(
-                        (verifierContext, configArray) -> {
-                            assertWithMessage(
-                                            "CURRENT_GEAR must list GEAR_REVERSE and GEAR_NEUTRAL"
-                                                    + " in the config array.")
-                                    .that(configArray)
-                                    .containsAtLeast(
-                                            VehicleGear.GEAR_REVERSE, VehicleGear.GEAR_NEUTRAL);
-                            assertWithMessage(
-                                            "CURRENT_GEAR must list GEAR_FIRST or both GEAR_DRIVE"
-                                                    + " and GEAR_PARK in the config array.")
-                                    .that(
-                                            configArray.containsAll(
-                                                            ImmutableList.of(
-                                                                    VehicleGear.GEAR_DRIVE,
-                                                                    VehicleGear.GEAR_PARK))
-                                                    || configArray.contains(VehicleGear.GEAR_FIRST))
-                                    .isTrue();
-                        });
     }
 
     private static VehiclePropertyVerifier.Builder<Integer> getIgnitionStateVerifierBuilder() {

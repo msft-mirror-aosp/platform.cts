@@ -58,6 +58,7 @@ import static android.server.wm.second.Components.SECOND_LAUNCH_BROADCAST_ACTION
 import static android.server.wm.second.Components.SECOND_LAUNCH_BROADCAST_RECEIVER;
 import static android.server.wm.third.Components.THIRD_ACTIVITY;
 import static android.view.WindowManager.DISPLAY_IME_POLICY_LOCAL;
+
 import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT;
 
 import static org.junit.Assert.assertEquals;
@@ -88,9 +89,9 @@ import android.server.wm.MultiDisplayTestBase;
 import android.server.wm.WindowManagerState.DisplayContent;
 import android.server.wm.WindowManagerState.Task;
 import android.view.SurfaceView;
-import com.android.window.flags.Flags;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.window.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -316,7 +317,8 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
                 .setSimulateDisplay(true).createDisplay();
         // Launch a non-resizeable activity on a primary display.
         final ActivitySession nonResizeableSession = virtualLauncher.launchActivity(
-                builder -> builder.setTargetActivity(NON_RESIZEABLE_ACTIVITY).setNewTask(true));
+                builder -> builder.setTargetActivity(NON_RESIZEABLE_ACTIVITY)
+                        .setDisplayId(getMainDisplayId()).setNewTask(true));
 
         // Launch a resizeable activity on new secondary display to create a new task there.
         virtualLauncher.launchActivityOnDisplay(RESIZEABLE_ACTIVITY, newDisplay);

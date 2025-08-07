@@ -268,17 +268,29 @@ genrule {
         " $(location merge_zips) $(out) $(genDir)/cts-verifier.zip $(location :camera-its) $(location :camera-webcam-test)",
 }
 
+// The "cts-verifier" contains: "android-cts-verifier" and "cts-v-host".
+genrule {
+    name: "cts-verifier",
+    srcs: [
+        ":android-cts-verifier",
+        ":cts-v-host",
+    ],
+    tools: ["soong_zip"],
+    out: ["android-cts-verifier.zip"],
+    cmd: "mkdir $(genDir)/cts-verifier &&" +
+        " unzip -q -d $(genDir)/cts-verifier $(location :android-cts-verifier) &&" +
+        " unzip -q -d $(genDir)/cts-verifier/android-cts-verifier $(location :cts-v-host) &&" +
+        " $(location soong_zip) -d -o $(out) -C $(genDir)/cts-verifier -D $(genDir)/cts-verifier/android-cts-verifier",
+    dist: {
+        targets: ["cts"],
+    },
+}
+
 gen_notice {
     name: "android-cts-verifier-notice",
     for: ["android-cts-verifier"],
     stem: "NOTICE",
     suffix: ".txt",
-}
-
-filegroup {
-    name: "android-cts-verifier-for-make",
-    srcs: [":android-cts-verifier"],
-    export_to_make_var: "SOONG_ANDROID_CTS_VERIFIER_ZIP",
 }
 
 genrule {

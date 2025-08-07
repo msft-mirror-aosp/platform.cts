@@ -16,6 +16,7 @@
 
 package android.appsecurity.cts;
 
+import static android.appsecurity.cts.Utils.sleep;
 import static android.appsecurity.cts.Utils.waitForBootCompleted;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -29,13 +30,13 @@ import android.cts.host.utils.DisableDeviceConfigSyncRule;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.HostSideTestUtils;
+import com.android.ddmlib.Log.LogLevel;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.CommandResult;
 import com.android.tradefed.util.CommandStatus;
-import com.android.tradefed.util.RunUtil;
 
 import org.junit.After;
 import org.junit.Before;
@@ -44,18 +45,19 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * Set of tests that verify behavior of Resume on Reboot, if supported.
- * <p>
- * Note that these tests drive PIN setup manually instead of relying on device
- * administrators, which are not supported by all devices.
+ *
+ * <p>Note that these tests drive PIN setup manually instead of relying on device administrators,
+ * which are not supported by all devices.
  */
 @RunWith(DeviceJUnit4ClassRunner.class)
-public class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
+public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
+
     private static final String TAG = "ResumeOnRebootTest";
 
     private static final String PKG = "com.android.cts.encryptionapp";
@@ -71,12 +73,14 @@ public class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
             "feature:android.software.secure_lock_screen";
     private static final String FEATURE_WATCH = "android.hardware.type.watch";
 
-    private static final long SHUTDOWN_TIME_MS = TimeUnit.SECONDS.toMillis(30);
+    private static final long SHUTDOWN_TIME_MS = 30_000;
     private static final int USER_SYSTEM = 0;
 
     private static final int USER_SWITCH_TIMEOUT_SECONDS = 10;
-    private static final long USER_SWITCH_WAIT = TimeUnit.SECONDS.toMillis(10);
-    private static final int UNLOCK_BROADCAST_WAIT_SECONDS = 10;
+    private static final long POST_USER_SWITCH_WAIT_MS = 10_000;
+    private static final long UNLOCK_BROADCAST_WAIT_SECONDS = 10;
+    private static final long DEVICE_SETUP_WAIT_MS = 15_000;
+    private static final long LOCK_SCREEN_WAIT_MS = 500;
 
     // This is the PIN set in EncryptionAppTest.testSetUp()
     private static final String DEFAULT_PIN = "1234";
@@ -389,18 +393,18 @@ public class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
     }
 
     private void deviceSetup(int userId) throws Exception {
+        CLog.i("deviceSetup(userId=%d)", userId);
+
         // To receive boot broadcasts, kick our other app out of stopped state
         getDevice().executeShellCommand("am start -a android.intent.action.MAIN"
                 + " --user " + userId
                 + " -c android.intent.category.LAUNCHER com.android.cts.splitapp/.MyActivity");
 
-        // Give enough time for PackageManager to persist stopped state
-        RunUtil.getDefault().sleep(15000);
+        sleep(DEVICE_SETUP_WAIT_MS, "Give enough time for PackageManager to persist stopped state");
 
         runDeviceTestsAsUser("testSetUp", userId);
 
-        // Give enough time for vold to update keys
-        RunUtil.getDefault().sleep(15000);
+        sleep(DEVICE_SETUP_WAIT_MS, "Give enough time for vold to update keys");
     }
 
     private void deviceRequestLskf() throws Exception {
@@ -430,8 +434,7 @@ public class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
         boolean retry = false;
         do {
             if (retry) {
-                CLog.i("Retrying to summon lockscreen...");
-                RunUtil.getDefault().sleep(500);
+                sleep(LOCK_SCREEN_WAIT_MS, "Retrying to summon lockscreen...");
             }
             runDeviceTestsAsUser("testLockScreen", userId);
             retry = !LockScreenInspector.newInstance(getDevice()).isDisplayedAndNotOccluded();
@@ -471,11 +474,14 @@ public class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
     }
 
     private void deviceRebootAndApply(String clientName) throws Exception {
+        CLog.d("deviceRebootAndApply(clientName=%s)", clientName);
+
         verifyLskfCaptured(clientName);
         mBootCountTrackingRule.increaseExpectedBootCountDifference(1);
 
-        String res = executeShellCommandWithLogging(
-                "cmd recovery reboot-and-apply " + clientName + " cts-test");
+        String res =
+                executeShellCommandWithLogging(
+                        "cmd recovery reboot-and-apply " + clientName + " cts-test");
         if (res != null && res.contains("Reboot and apply status: failure")) {
             fail("could not call reboot-and-apply");
         }
@@ -504,10 +510,20 @@ public class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
      * Calls switch-user, but without trying to dismiss the keyguard.
      */
     private void switchUser(int userId) throws Exception {
-        getDevice().switchUser(userId);
-        HostSideTestUtils.waitUntil("Could not switch users", USER_SWITCH_TIMEOUT_SECONDS,
-                () -> getDevice().getCurrentUser() == userId);
-        RunUtil.getDefault().sleep(USER_SWITCH_WAIT);
+        var device = getDevice();
+        CLog.logAndDisplay(
+                LogLevel.INFO, "Switching from user %d to %d", device.getCurrentUser(), userId);
+        device.switchUser(userId);
+        HostSideTestUtils.waitUntil(
+                () ->
+                        String.format(
+                                Locale.ENGLISH,
+                                "Current user (%d) is not %d after switch",
+                                device.getCurrentUser(),
+                                userId),
+                USER_SWITCH_TIMEOUT_SECONDS,
+                () -> device.getCurrentUser() == userId);
+        sleep(POST_USER_SWITCH_WAIT_MS, "post user switch nap");
     }
 
     private void stopUserAsync(int userId) throws Exception {
@@ -515,12 +531,15 @@ public class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
     }
 
     private void removeUser(int userId) throws Exception {
-        if (listUsers().contains(userId) && userId != USER_SYSTEM
-                && userId != getDevice().getMainUserId()) {
+        Integer mainUserId = getDevice().getMainUserId();
+        CLog.d("removeUser(%d): mainUser=%s", userId, mainUserId);
+        if (listUsers().contains(userId)
+                && userId != USER_SYSTEM
+                && (mainUserId == null || mainUserId != userId)) {
             // Don't log output, as tests sometimes set no debug user restriction, which
             // causes this to fail, we should still continue and remove the user.
             String stopUserCommand = "am stop-user -w -f " + userId;
-            CLog.d("stopping and removing user " + userId);
+            CLog.d("stopping and removing user %d", userId);
             getDevice().executeShellCommand(stopUserCommand);
             // Ephemeral users may have already been removed after being stopped.
             if (listUsers().contains(userId)) {

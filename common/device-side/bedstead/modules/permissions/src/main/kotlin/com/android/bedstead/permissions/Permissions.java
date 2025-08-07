@@ -828,7 +828,7 @@ public final class Permissions {
      *
      * <p>Note: Does not compute anything for Versions < S, returns an empty set instead.
      */
-    private static Set<String> getAdoptedShellPermissions() {
+    public static Set<String> getAdoptedShellPermissions() {
         if (Versions.meetsMinimumSdkVersionRequirement(Versions.S)) {
             return TestApisReflectionKt.getAdoptedShellPermissions(
                     ShellCommandUtils.uiAutomation());

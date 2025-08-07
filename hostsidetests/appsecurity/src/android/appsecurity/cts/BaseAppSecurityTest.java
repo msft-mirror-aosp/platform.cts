@@ -17,6 +17,7 @@
 package android.appsecurity.cts;
 
 import com.android.tradefed.device.DeviceNotAvailableException;
+import com.android.tradefed.device.UserInfo;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 
 import org.junit.Assert;
@@ -44,8 +45,8 @@ public abstract class BaseAppSecurityTest extends BaseHostJUnit4Test {
         mPrimaryUserId = getDevice().getPrimaryUserId();
         mFixedUsers = new ArrayList<>();
         mFixedUsers.add(mPrimaryUserId);
-        if (mPrimaryUserId != Utils.USER_SYSTEM) {
-            mFixedUsers.add(Utils.USER_SYSTEM);
+        if (mPrimaryUserId != UserInfo.USER_SYSTEM) {
+            mFixedUsers.add(UserInfo.USER_SYSTEM);
         }
     }
 

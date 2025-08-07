@@ -41,7 +41,7 @@ public class MockInCallService extends InCallService {
     private static final List<Call> sCalls = Collections.synchronizedList(new ArrayList<>());
     private static Call sLastCall = null;
     private final List<Call> mConferenceCalls = Collections.synchronizedList(new ArrayList<>());
-    private static InCallServiceCallbacks sCallbacks;
+    private static final List<InCallServiceCallbacks> sCallbacks = new ArrayList<>();
     private Map<Call, MockVideoCallCallback> mVideoCallCallbacks =
             new ArrayMap<Call, MockVideoCallCallback>();
 
@@ -107,138 +107,142 @@ public class MockInCallService extends InCallService {
     }
 
     /**
-     * Note that the super implementations of the callback methods are all no-ops, but we call
-     * them anyway to make sure that the CTS coverage tool detects that we are testing them.
+     * Note that the super implementations of the callback methods are all no-ops, but we call them
+     * anyway to make sure that the CTS coverage tool detects that we are testing them.
      */
-    private Call.Callback mCallCallback = new Call.Callback() {
-        @Override
-        public void onStateChanged(Call call, int state) {
-            super.onStateChanged(call, state);
-            if (getCallbacks() != null) {
-                getCallbacks().onCallStateChanged(call, state);
-            }
-        }
+    private Call.Callback mCallCallback =
+            new Call.Callback() {
+                @Override
+                public void onStateChanged(Call call, int state) {
+                    super.onStateChanged(call, state);
+                    for (InCallServiceCallbacks callback : getCallbacks()) {
+                        callback.onCallStateChanged(call, state);
+                    }
+                }
 
-        @Override
-        public void onVideoCallChanged(Call call, InCallService.VideoCall videoCall) {
-            super.onVideoCallChanged(call, videoCall);
-            saveVideoCall(call, videoCall);
-        }
+                @Override
+                public void onVideoCallChanged(Call call, InCallService.VideoCall videoCall) {
+                    super.onVideoCallChanged(call, videoCall);
+                    saveVideoCall(call, videoCall);
+                }
 
-        @Override
-        public void onParentChanged(Call call, Call parent) {
-            super.onParentChanged(call, parent);
-            if (getCallbacks() != null) {
-                getCallbacks().onParentChanged(call, parent);
-            }
-        }
+                @Override
+                public void onParentChanged(Call call, Call parent) {
+                    super.onParentChanged(call, parent);
+                    for (InCallServiceCallbacks callback : getCallbacks()) {
+                        callback.onParentChanged(call, parent);
+                    }
+                }
 
-        @Override
-        public void onChildrenChanged(Call call, List<Call> children) {
-            super.onChildrenChanged(call, children);
-            if (getCallbacks() != null) {
-                getCallbacks().onChildrenChanged(call, children);
-            }
-        }
+                @Override
+                public void onChildrenChanged(Call call, List<Call> children) {
+                    super.onChildrenChanged(call, children);
+                    for (InCallServiceCallbacks callback : getCallbacks()) {
+                        callback.onChildrenChanged(call, children);
+                    }
+                }
 
-        @Override
-        public void onConferenceableCallsChanged(Call call, List<Call> conferenceableCalls) {
-            super.onConferenceableCallsChanged(call, conferenceableCalls);
-            if (getCallbacks() != null) {
-                getCallbacks().onConferenceableCallsChanged(call, conferenceableCalls);
-            }
-        }
+                @Override
+                public void onConferenceableCallsChanged(
+                        Call call, List<Call> conferenceableCalls) {
+                    super.onConferenceableCallsChanged(call, conferenceableCalls);
+                    for (InCallServiceCallbacks callback : getCallbacks()) {
+                        callback.onConferenceableCallsChanged(call, conferenceableCalls);
+                    }
+                }
 
-        @Override
-        public void onCallDestroyed(Call call) {
-            super.onCallDestroyed(call);
-            if (getCallbacks() != null) {
-                getCallbacks().onCallDestroyed(call);
-            }
-        }
+                @Override
+                public void onCallDestroyed(Call call) {
+                    super.onCallDestroyed(call);
+                    for (InCallServiceCallbacks callback : getCallbacks()) {
+                        callback.onCallDestroyed(call);
+                    }
+                }
 
-        @Override
-        public void onDetailsChanged(Call call, Call.Details details) {
-            super.onDetailsChanged(call, details);
-            if (getCallbacks() != null) {
-                getCallbacks().onDetailsChanged(call, details);
-            }
-        }
+                @Override
+                public void onDetailsChanged(Call call, Call.Details details) {
+                    super.onDetailsChanged(call, details);
+                    for (InCallServiceCallbacks callback : getCallbacks()) {
+                        callback.onDetailsChanged(call, details);
+                    }
+                }
 
-        @Override
-        public void onPostDialWait(Call call, String remainingPostDialSequence) {
-            super.onPostDialWait(call, remainingPostDialSequence);
-            if (getCallbacks() != null) {
-                getCallbacks().onPostDialWait(call, remainingPostDialSequence);
-            }
-        }
+                @Override
+                public void onPostDialWait(Call call, String remainingPostDialSequence) {
+                    super.onPostDialWait(call, remainingPostDialSequence);
+                    for (InCallServiceCallbacks callback : getCallbacks()) {
+                        callback.onPostDialWait(call, remainingPostDialSequence);
+                    }
+                }
 
-        @Override
-        public void onCannedTextResponsesLoaded(Call call, List<String> cannedTextResponses) {
-            super.onCannedTextResponsesLoaded(call, cannedTextResponses);
-            if (getCallbacks() != null) {
-                getCallbacks().onCannedTextResponsesLoaded(call, cannedTextResponses);
-            }
-        }
+                @Override
+                public void onCannedTextResponsesLoaded(
+                        Call call, List<String> cannedTextResponses) {
+                    super.onCannedTextResponsesLoaded(call, cannedTextResponses);
+                    for (InCallServiceCallbacks callback : getCallbacks()) {
+                        callback.onCannedTextResponsesLoaded(call, cannedTextResponses);
+                    }
+                }
 
-        @Override
-        public void onConnectionEvent(Call call, String event, Bundle extras) {
-            Log.i(LOG_TAG, String.format("onConnectionEvent: call=[%s], event=[%s]",
-                    call, event));
-            super.onConnectionEvent(call, event, extras);
-            if (getCallbacks() != null) {
-                getCallbacks().onConnectionEvent(call, event, extras);
-            }
-        }
+                @Override
+                public void onConnectionEvent(Call call, String event, Bundle extras) {
+                    Log.i(
+                            LOG_TAG,
+                            String.format("onConnectionEvent: call=[%s], event=[%s]", call, event));
+                    super.onConnectionEvent(call, event, extras);
+                    for (InCallServiceCallbacks callback : getCallbacks()) {
+                        callback.onConnectionEvent(call, event, extras);
+                    }
+                }
 
-        @Override
-        public void onRttModeChanged(Call call, int mode) {
-            super.onRttModeChanged(call, mode);
-            if (getCallbacks() != null) {
-                getCallbacks().onRttModeChanged(call, mode);
-            }
-        }
+                @Override
+                public void onRttModeChanged(Call call, int mode) {
+                    super.onRttModeChanged(call, mode);
+                    for (InCallServiceCallbacks callback : getCallbacks()) {
+                        callback.onRttModeChanged(call, mode);
+                    }
+                }
 
-        @Override
-        public void onRttStatusChanged(Call call, boolean enabled, Call.RttCall rttCall) {
-            super.onRttStatusChanged(call, enabled, rttCall);
-            if (getCallbacks() != null) {
-                getCallbacks().onRttStatusChanged(call, enabled, rttCall);
-            }
-        }
+                @Override
+                public void onRttStatusChanged(Call call, boolean enabled, Call.RttCall rttCall) {
+                    super.onRttStatusChanged(call, enabled, rttCall);
+                    for (InCallServiceCallbacks callback : getCallbacks()) {
+                        callback.onRttStatusChanged(call, enabled, rttCall);
+                    }
+                }
 
-        @Override
-        public void onRttRequest(Call call, int id) {
-            super.onRttRequest(call, id);
-            if (getCallbacks() != null) {
-                getCallbacks().onRttRequest(call, id);
-            }
-        }
+                @Override
+                public void onRttRequest(Call call, int id) {
+                    super.onRttRequest(call, id);
+                    for (InCallServiceCallbacks callback : getCallbacks()) {
+                        callback.onRttRequest(call, id);
+                    }
+                }
 
-        @Override
-        public void onRttInitiationFailure(Call call, int reason) {
-            super.onRttInitiationFailure(call, reason);
-            if (getCallbacks() != null) {
-                getCallbacks().onRttInitiationFailure(call, reason);
-            }
-        }
+                @Override
+                public void onRttInitiationFailure(Call call, int reason) {
+                    super.onRttInitiationFailure(call, reason);
+                    for (InCallServiceCallbacks callback : getCallbacks()) {
+                        callback.onRttInitiationFailure(call, reason);
+                    }
+                }
 
-        @Override
-        public void onHandoverComplete(Call call) {
-            super.onHandoverComplete(call);
-            if (getCallbacks() != null) {
-                getCallbacks().onHandoverComplete(call);
-            }
-        }
+                @Override
+                public void onHandoverComplete(Call call) {
+                    super.onHandoverComplete(call);
+                    for (InCallServiceCallbacks callback : getCallbacks()) {
+                        callback.onHandoverComplete(call);
+                    }
+                }
 
-        @Override
-        public void onHandoverFailed(Call call, int failureReason) {
-            super.onHandoverFailed(call, failureReason);
-            if (getCallbacks() != null) {
-                getCallbacks().onHandoverFailed(call, failureReason);
-            }
-        }
-    };
+                @Override
+                public void onHandoverFailed(Call call, int failureReason) {
+                    super.onHandoverFailed(call, failureReason);
+                    for (InCallServiceCallbacks callback : getCallbacks()) {
+                        callback.onHandoverFailed(call, failureReason);
+                    }
+                }
+            };
 
     private void saveVideoCall(Call call, VideoCall videoCall) {
         if (videoCall != null) {
@@ -255,18 +259,18 @@ public class MockInCallService extends InCallService {
     @Override
     public android.os.IBinder onBind(android.content.Intent intent) {
         Log.i(LOG_TAG, "Service bounded");
-        if (getCallbacks() != null) {
-            getCallbacks().setService(this);
-        }
+        // This will ensure setService is called on all registered callbacks.
+        getCallbacks();
         mIsServiceBound = true;
         return super.onBind(intent);
     }
+
 
     @Override
     public void onCallAdded(Call call) {
         Log.i(LOG_TAG, String.format("onCallAdded: call=[%s]", call));
         super.onCallAdded(call);
-        if (call.getDetails().hasProperty(Call.Details.PROPERTY_CONFERENCE) == true) {
+        if (call.getDetails().hasProperty(Call.Details.PROPERTY_CONFERENCE)) {
             if (!mConferenceCalls.contains(call)) {
                 mConferenceCalls.add(call);
                 call.registerCallback(mCallCallback);
@@ -283,8 +287,8 @@ public class MockInCallService extends InCallService {
                 }
             }
         }
-        if (getCallbacks() != null) {
-            getCallbacks().onCallAdded(call, sCalls.size() + mConferenceCalls.size());
+        for (InCallServiceCallbacks callback : getCallbacks()) {
+            callback.onCallAdded(call, sCalls.size() + mConferenceCalls.size());
         }
     }
 
@@ -292,7 +296,7 @@ public class MockInCallService extends InCallService {
     public void onCallRemoved(Call call) {
         Log.i(LOG_TAG, String.format("onCallRemoved: call=[%s]", call));
         super.onCallRemoved(call);
-        if (call.getDetails().hasProperty(Call.Details.PROPERTY_CONFERENCE) == true) {
+        if (call.getDetails().hasProperty(Call.Details.PROPERTY_CONFERENCE)) {
             mConferenceCalls.remove(call);
         } else {
             sCalls.remove(call);
@@ -300,49 +304,49 @@ public class MockInCallService extends InCallService {
                 sLastCall = null;
             }
         }
-        if (getCallbacks() != null) {
-            getCallbacks().onCallRemoved(call, sCalls.size() + mConferenceCalls.size());
-            saveVideoCall(call, null /* remove videoCall */);
+        for (InCallServiceCallbacks callback : getCallbacks()) {
+            callback.onCallRemoved(call, sCalls.size() + mConferenceCalls.size());
         }
+        saveVideoCall(call, null /* remove videoCall */);
     }
 
     @Override
     public void onCanAddCallChanged(boolean canAddCall) {
         super.onCanAddCallChanged(canAddCall);
-        if (getCallbacks() != null) {
-            getCallbacks().onCanAddCallsChanged(canAddCall);
+        for (InCallServiceCallbacks callback : getCallbacks()) {
+            callback.onCanAddCallsChanged(canAddCall);
         }
     }
 
     @Override
     public void onBringToForeground(boolean showDialpad) {
         super.onBringToForeground(showDialpad);
-        if (getCallbacks() != null) {
-            getCallbacks().onBringToForeground(showDialpad);
+        for (InCallServiceCallbacks callback : getCallbacks()) {
+            callback.onBringToForeground(showDialpad);
         }
     }
 
     @Override
     public void onCallAudioStateChanged(CallAudioState audioState) {
         super.onCallAudioStateChanged(audioState);
-        if (getCallbacks() != null) {
-            getCallbacks().onCallAudioStateChanged(audioState);
+        for (InCallServiceCallbacks callback : getCallbacks()) {
+            callback.onCallAudioStateChanged(audioState);
         }
     }
 
     @Override
     public void onCallEndpointChanged(CallEndpoint callEndpoint) {
         super.onCallEndpointChanged(callEndpoint);
-        if (getCallbacks() != null) {
-            getCallbacks().onCallEndpointChanged(callEndpoint);
+        for (InCallServiceCallbacks callback : getCallbacks()) {
+            callback.onCallEndpointChanged(callEndpoint);
         }
     }
 
     @Override
     public void onAvailableCallEndpointsChanged(List<CallEndpoint> availableEndpoints) {
         super.onAvailableCallEndpointsChanged(availableEndpoints);
-        if (getCallbacks() != null) {
-            getCallbacks().onAvailableCallEndpointsChanged(availableEndpoints);
+        for (InCallServiceCallbacks callback : getCallbacks()) {
+            callback.onAvailableCallEndpointsChanged(availableEndpoints);
         }
     }
 
@@ -350,16 +354,16 @@ public class MockInCallService extends InCallService {
     public void onMuteStateChanged(boolean isMuted) {
         super.onMuteStateChanged(isMuted);
         mEndpointIsMute = isMuted;
-        if (getCallbacks() != null) {
-            getCallbacks().onMuteStateChanged(isMuted);
+        for (InCallServiceCallbacks callback : getCallbacks()) {
+            callback.onMuteStateChanged(isMuted);
         }
     }
 
     @Override
     public void onSilenceRinger(){
         super.onSilenceRinger();
-        if(getCallbacks() != null) {
-            getCallbacks().onSilenceRinger();
+        for (InCallServiceCallbacks callback : getCallbacks()) {
+            callback.onSilenceRinger();
         }
     }
 
@@ -444,18 +448,39 @@ public class MockInCallService extends InCallService {
         }
     }
 
+    /**
+     * Reset all known callbacks and set the new ones.
+     *
+     * @param callbacks
+     */
     public static void setCallbacks(InCallServiceCallbacks callbacks) {
         synchronized (sLock) {
-            sCallbacks = callbacks;
+            sCallbacks.clear();
+            if (callbacks != null) {
+                sCallbacks.add(callbacks);
+            }
         }
     }
 
-    private InCallServiceCallbacks getCallbacks() {
+    /**
+     * Add new callbacks to the known collection.
+     *
+     * @param callbacks
+     */
+    public static void addCallbacks(InCallServiceCallbacks callbacks) {
         synchronized (sLock) {
-            if (sCallbacks != null) {
-                sCallbacks.setService(this);
+            if (callbacks != null) {
+                sCallbacks.add(callbacks);
             }
-            return sCallbacks;
+        }
+    }
+
+    private List<InCallServiceCallbacks> getCallbacks() {
+        synchronized (sLock) {
+            for (InCallServiceCallbacks callback : sCallbacks) {
+                callback.setService(this);
+            }
+            return new ArrayList<>(sCallbacks);
         }
     }
 

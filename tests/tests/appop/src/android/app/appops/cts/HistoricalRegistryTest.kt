@@ -98,6 +98,7 @@ class HistoricalRegistryTest {
 
     @Test
     fun appOpAccessesAreRecordedInBothDatabase() {
+        ensureNoteOpBatchingDoesNotAffectTest()
         val opNames = listOf(SHORT_INTERVAL_OP, LONG_INTERVAL_OP)
         ensureAppOpsModeAllowed(testUid, testPackageName, opNames)
         noteOpWithShellIdentity(SHORT_INTERVAL_OP, testUid, testPackageName)
@@ -123,6 +124,7 @@ class HistoricalRegistryTest {
 
     @Test
     fun appOpAccessesArePersistedAcrossReboot() {
+        ensureNoteOpBatchingDoesNotAffectTest()
         val opNames = listOf(SHORT_INTERVAL_OP, LONG_INTERVAL_OP)
         ensureAppOpsModeAllowed(testUid, testPackageName, opNames)
         noteOpWithShellIdentity(SHORT_INTERVAL_OP, testUid, testPackageName, null)
@@ -218,6 +220,41 @@ class HistoricalRegistryTest {
         val toleranceMillis = 200 // Actual duration would be a little more than 2 seconds
         assertThat(accessEvent.totalDurationMillis).isAtLeast(2000)
         assertThat(accessEvent.totalDurationMillis).isAtMost(2000 + toleranceMillis)
+    }
+
+    @Test
+    fun getHistoricalOpsInDisabledMode() {
+        setAppOpHistoryParameters("mode=HISTORICAL_MODE_DISABLED")
+        try {
+            waitUntilSafelyInTimeQuant(SHORT_INTERVAL_QUANTIZATION_MILLIS, 5 * 1000)
+            val opNames = listOf(SHORT_INTERVAL_OP)
+            ensureAppOpsModeAllowed(testUid, testPackageName, opNames)
+            runWithShellPermissionIdentity {
+                appOpsManager.startOp(SHORT_INTERVAL_OP, testUid, testPackageName, null, null)
+                Thread.sleep(50) // duration for the operation
+                appOpsManager.finishOp(SHORT_INTERVAL_OP, testUid, testPackageName, null)
+            }
+
+            val historicalOps =
+                getHistoricalOps(historyFlag = HISTORY_FLAGS_ALL, opNames = opNames)
+            val appOps = convertHistoricalOpsToAggregatedAccessEvents(historicalOps)
+            assertThat(appOps.size).isEqualTo(0)
+        } finally {
+            setAppOpHistoryParameters("mode=HISTORICAL_MODE_ENABLED_ACTIVE")
+        }
+    }
+
+    private fun setAppOpHistoryParameters(value: String) {
+        runWithShellPermissionIdentity {
+            instrumentation.uiAutomation
+                .executeShellCommand("settings put global appop_history_parameters $value")
+        }
+    }
+
+    // noteOp calls within same second can be batched and affect the test, if 2 tests run fast
+    // enough to run in the same second.
+    private fun ensureNoteOpBatchingDoesNotAffectTest() {
+        Thread.sleep(1000)
     }
 
     private fun ensureAppOpsModeAllowed(uid: Int, packageName: String, appOpNames: List<String>) {

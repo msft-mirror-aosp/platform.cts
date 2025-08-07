@@ -120,7 +120,8 @@ class NumFacesTest(its_base_test.ItsBaseTest):
       # Load chart for scene
       its_session_utils.load_scene(
           cam, props, self.scene, self.tablet, self.chart_distance,
-          log_path=self.log_path)
+          log_path=self.log_path,
+          chart_scaling=self.chart_scaling)
 
       # Check media performance class
       should_run = camera_properties_utils.face_detect(props)

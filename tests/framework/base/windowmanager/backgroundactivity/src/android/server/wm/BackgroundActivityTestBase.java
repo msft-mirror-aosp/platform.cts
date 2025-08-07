@@ -86,7 +86,7 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
     // This can be long as the activity should start
     static final Duration ACTIVITY_FOCUS_TIMEOUT = Duration.ofSeconds(10);
 
-    private static final int TEST_SERVICE_SETUP_TIMEOUT_MS = 5_000;
+    private static final int TEST_SERVICE_SETUP_TIMEOUT_MS = 15_000;
     public static final int FOCUS_LOSS_TIMEOUT_MS = 10_000;
     final List<TaskStateDump> mTaskStateDumps = new ArrayList<>();
     final Instant mTestStartTime = Instant.now();

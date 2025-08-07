@@ -20,6 +20,7 @@ import com.android.ddmlib.Log.LogLevel;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
+import com.android.tradefed.device.UserInfo;
 import com.android.tradefed.log.ITestLogger;
 import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.result.ITestLoggerReceiver;
@@ -29,6 +30,8 @@ import com.android.tradefed.targetprep.BuildError;
 import com.android.tradefed.targetprep.ITargetCleaner;
 import com.android.tradefed.targetprep.ITargetPreparer;
 import com.android.tradefed.targetprep.TargetSetupError;
+
+import java.util.Arrays;
 
 /**
  * Creates secondary and tertiary users for use during a test suite.
@@ -42,17 +45,22 @@ public class AppSecurityPreparer implements ITargetPreparer, ITargetCleaner, ITe
             throws TargetSetupError, BuildError, DeviceNotAvailableException {
         // Clean up any lingering users from other tests to ensure that we have
         // best shot at creating the users we need below.
-        removeSecondaryUsers(device);
+        removeExtraUsers(device);
 
-        final int maxUsers = device.getMaxNumberOfUsersSupported();
+        int maxUsers = device.getMaxNumberOfUsersSupported();
+        CLog.d("setUp(): maxUsers=%d, currentUser=%d", maxUsers, device.getCurrentUser());
         try {
             if (maxUsers > 1) {
-                CLog.logAndDisplay(LogLevel.INFO,
-                        "Created secondary user " + device.createUser("CTS_" + System.nanoTime()));
+                String name = "CTS_User1_" + System.nanoTime();
+                int userId = device.createUser(name);
+                CLog.logAndDisplay(
+                        LogLevel.INFO, "Created 1st user (id=%d, name=%s)", userId, name);
             }
             if (maxUsers > 2) {
-                CLog.logAndDisplay(LogLevel.INFO,
-                        "Created secondary user " + device.createUser("CTS_" + System.nanoTime()));
+                String name = "CTS_User2_" + System.nanoTime();
+                int userId = device.createUser(name);
+                CLog.logAndDisplay(
+                        LogLevel.INFO, "Created 2nd user (id=%d, name=%s)", userId, name);
             }
         } catch (IllegalStateException e) {
             try (InputStreamSource logcat = device.getLogcatDump()) {
@@ -65,15 +73,23 @@ public class AppSecurityPreparer implements ITargetPreparer, ITargetCleaner, ITe
     @Override
     public void tearDown(ITestDevice device, IBuildInfo buildInfo, Throwable throwable)
             throws DeviceNotAvailableException {
-        removeSecondaryUsers(device);
+        removeExtraUsers(device);
     }
 
-    private void removeSecondaryUsers(ITestDevice device) throws DeviceNotAvailableException {
-        final int[] userIds = Utils.getAllUsers(device);
+    private void removeExtraUsers(ITestDevice device) throws DeviceNotAvailableException {
+        int[] userIds = Utils.getAllUsers(device);
+        Integer mainUserId = device.getMainUserId();
+        int currentUserId = device.getCurrentUser();
+        CLog.d(
+                "removeExtraUsers(): allUsers=%s, mainUserId=%s, currentUserId=%d",
+                Arrays.toString(userIds), mainUserId, currentUserId);
         for (int i = 1; i < userIds.length; i++) {
-            if (device.getCurrentUser() != userIds[i]) {
-                device.removeUser(userIds[i]);
-                CLog.logAndDisplay(LogLevel.INFO, "Destroyed secondary user " + userIds[i]);
+            int userId = userIds[i];
+            if (userId != currentUserId
+                    && userId != UserInfo.USER_SYSTEM
+                    && (mainUserId == null || userId != mainUserId)) {
+                CLog.logAndDisplay(LogLevel.INFO, "Removing user (id=%d)", userId);
+                device.removeUser(userId);
             }
         }
     }
