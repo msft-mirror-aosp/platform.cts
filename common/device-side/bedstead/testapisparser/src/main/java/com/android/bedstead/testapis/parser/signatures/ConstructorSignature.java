@@ -16,8 +16,6 @@
 
 package com.android.bedstead.testapis.parser.signatures;
 
-import static com.android.bedstead.testapis.parser.signatures.MethodSignature.parameterTypes;
-
 import com.google.common.collect.ImmutableList;
 
 /**
@@ -31,20 +29,6 @@ public final class ConstructorSignature {
     public ConstructorSignature(String className, ImmutableList<String> parameterTypes) {
         mClassName = className;
         mParameterTypes = parameterTypes;
-    }
-
-    public static ConstructorSignature forString(String frameworkClass, String apiString) {
-        try {
-            String constructor = apiString.substring(apiString.indexOf("public"),
-                    apiString.indexOf(";"));
-
-            ImmutableList<String> parameterTypes = parameterTypes(constructor);
-
-            return new ConstructorSignature(frameworkClass, parameterTypes);
-        } catch (Exception e) {
-            throw new RuntimeException("TestApisReflection: unable to parse Test Api: " + apiString,
-                    e);
-        }
     }
 
     @Override

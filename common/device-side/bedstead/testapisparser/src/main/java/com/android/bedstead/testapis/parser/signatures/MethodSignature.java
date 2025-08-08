@@ -16,7 +16,6 @@
 
 package com.android.bedstead.testapis.parser.signatures;
 
-import static com.android.bedstead.testapis.parser.utils.TypeUtils.splitParameterList;
 
 import com.google.common.collect.ImmutableList;
 
@@ -43,9 +42,13 @@ public final class MethodSignature {
     private static final List<String> FIELD_ANNOTATIONS_TO_IGNORE =
             ImmutableList.of("@NonNull", "@Nullable");
 
-    private MethodSignature(String frameworkClass,
-            String name, ReturnType returnType, ImmutableList<String> parameterTypes,
-            boolean isStatic, boolean isGetter) {
+    public MethodSignature(
+            String frameworkClass,
+            String name,
+            ReturnType returnType,
+            ImmutableList<String> parameterTypes,
+            boolean isStatic,
+            boolean isGetter) {
         this.mFrameworkClass = frameworkClass;
         this.mName = name;
         this.mReturnType = returnType;
@@ -73,92 +76,12 @@ public final class MethodSignature {
         return isGetter;
     }
 
-    /** Create a {@link MethodSignature} for the given {@code apiString}. */
-    public static MethodSignature forApiString(String frameworkClass, String apiString) {
-        try {
-            String method = apiString.substring(apiString.indexOf("public"),
-                    apiString.indexOf(";"));
-
-            String[] methodParts = method.trim()
-                    .replaceAll("default", "")
-                    .replaceAll("final", "")
-                    .replaceAll(" +", " ")
-                    .split(" ");
-
-            if (method.contains("static")) {
-                String name = methodParts[3].substring(0, methodParts[3].indexOf("("));
-                String returnType = methodParts[2];
-                ImmutableList<String> parameterTypes = parameterTypes(method);
-
-                return new MethodSignature(frameworkClass, name, new ReturnType(returnType,
-                        /* proxyType= */ null), parameterTypes(method), /* isStatic= */ true,
-                        /* isGetter= */ isGetterInternal(name, parameterTypes));
-            } else {
-                String name = methodParts[2].substring(0, methodParts[2].indexOf("("));
-                String returnType = methodParts[1];
-                ImmutableList<String> parameterTypes = parameterTypes(method);
-
-                return new MethodSignature(frameworkClass, name, new ReturnType(returnType,
-                        /* proxyType= */ null), parameterTypes, /* isStatic= */ false,
-                        /* isGetter= */ isGetterInternal(name, parameterTypes));
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("TestApisReflection: unable to parse Test Api: " + apiString,
-                    e);
-        }
-    }
-
-    public static ImmutableList<String> parameterTypes(String method) {
-        try {
-            ImmutableList<String> parameterTypes = ImmutableList.of();
-            String params = method.substring(method.indexOf("(") + 1, method.indexOf(")"))
-                    .replaceAll(" +", "")
-                    // TODO(b/337769574): add support for var args
-                    .replaceAll("[.]{3}", "");
-
-            if (params.length() > 0) {
-                for (String f : FIELD_ANNOTATIONS_TO_IGNORE) {
-                    params = params.replaceAll(f, "");
-                }
-
-                parameterTypes = splitParameterList(params);
-
-                if (parameterTypes.contains("java.util.Map<android.graphics.Point")) {
-                    throw new RuntimeException("TestApisReflection: found bad point in: " + params);
-                }
-            }
-
-            return parameterTypes;
-        } catch (Exception e) {
-            throw new RuntimeException(
-                    "TestApisReflection: unable to parse parameter types: " + method, e);
-        }
-    }
-
-    private static boolean isGetterInternal(String methodName,
-            ImmutableList<String> parameterTypes) {
-        // We only consider methods with zero parameters as true 'getters' since this is to
-        // convert them to a kotlin get property later on.
-        if (!parameterTypes.isEmpty()) {
-            return false;
-        }
-
-        if (methodName.startsWith("get")) {
-            return Character.isUpperCase(methodName.charAt(3));
-        }
-        if (methodName.startsWith("is")) {
-            return Character.isUpperCase(methodName.charAt(2));
-        }
-
-        return false;
-    }
-
     public static class ReturnType {
         private final String type;
 
         private String proxyType;
 
-        ReturnType(String type, String proxyType) {
+        public ReturnType(String type, String proxyType) {
             this.type = type;
             this.proxyType = proxyType;
         }
