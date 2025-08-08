@@ -19,8 +19,6 @@ import android.annotation.ColorInt;
 import android.graphics.Color;
 
 public class PixelColor {
-    private static final short BASE_TOLERANCE = 4;
-    private static final short ENLARGE_TOLERANCE = 17;
     public static final int TRANSLUCENT_RED = 0x7FFF0000;
 
     private final short mTolerance;
@@ -39,8 +37,12 @@ public class PixelColor {
     public short mGreen;
     public short mBlue;
 
+    // The default tolerance allows for an error of up to +/- 4 (approximately 1.5%) for an 8-bit
+    // color depth (256 values).
+    private static final short DEFAULT_TOLERANCE = 4;
+
     public PixelColor(@ColorInt int color) {
-        this(color, false /* enlargeTolerance */);
+        this(color, DEFAULT_TOLERANCE);
     }
 
     public PixelColor() {
@@ -48,17 +50,16 @@ public class PixelColor {
     }
 
     /**
-     * @param enlargeTolerance Whether to enlarging the tolerance when matching colors. This can be
-     *     useful if the source color is encoded in a format below 8888-bit, as it might exhibit
-     *     greater distortion when upscaled.
+     * @param tolerance The acceptable color difference, which is useful if the source color is
+     *     encoded in a format below 8888-bit, as it might exhibit greater distortion when upscaled.
      */
-    public PixelColor(@ColorInt int color, boolean enlargeTolerance) {
+    public PixelColor(@ColorInt int color, short tolerance) {
         mAlpha = (short) ((color >> 24) & 0xFF);
         mRed = (short) ((color >> 16) & 0xFF);
         mGreen = (short) ((color >> 8) & 0xFF);
         mBlue = (short) (color & 0xFF);
 
-        mTolerance = enlargeTolerance ? ENLARGE_TOLERANCE : BASE_TOLERANCE;
+        mTolerance = tolerance;
         mMinAlpha = (short) getMinValue(mAlpha);
         mMaxAlpha = (short) getMaxValue(mAlpha);
         mMinRed = (short) getMinValue(mRed);
