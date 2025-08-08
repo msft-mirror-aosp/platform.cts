@@ -18,30 +18,36 @@ package android.app.appops.cts
 
 import android.app.AppOpsManager
 import android.app.AppOpsManager.MODE_ALLOWED
+import android.content.Context
+import android.content.Intent
 import android.os.Process
 import android.platform.test.annotations.AsbSecurityTest
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity
+import java.util.concurrent.CountDownLatch
 import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.iterator
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class AppOpsMemoryUsageTest {
-    val context = InstrumentationRegistry.getInstrumentation().context!!
+    val context: Context = InstrumentationRegistry.getInstrumentation().context!!
     val appOpsManager = context.getSystemService(AppOpsManager::class.java)!!
     val attributionTag = "cts_test_tag"
     val proxiedPkg = "com.android.shell"
+    val api29Pkg = "android.app.appops.cts.api29appops"
     val rootPkg = "root"
     val proxiedUid = Process.SHELL_UID
     val op = AppOpsManager.OPSTR_VIBRATE
+    val intentExtra = "extra_op"
 
     // Proxy apps could use the attribution tag validation exemption for certain system apps to
     // overwhelm the app ops system memory
@@ -59,6 +65,29 @@ class AppOpsMemoryUsageTest {
     @AsbSecurityTest(cveBugId = [416491779])
     fun testCannotApplyArbitraryAttributionWithProxyOpForRoot() {
         assertAttrTagOverwrittenToNull(Process.ROOT_UID, rootPkg)
+    }
+
+    @Test
+    @AsbSecurityTest(cveBugId = [417987184])
+    fun testApi29AppCannotSupplyArbitraryAttribution() {
+        val notedLatch = CountDownLatch(1)
+        var tag: String? = null
+        runWithShellPermissionIdentity {
+            appOpsManager.startWatchingNoted(arrayOf(op)) { _, _, packageName, attrTag, _, _ ->
+                if (packageName == api29Pkg) {
+                    tag = attrTag
+                    notedLatch.countDown()
+                }
+            }
+        }
+        context.startActivity(
+            Intent(Intent.ACTION_MAIN)
+                .setPackage(api29Pkg)
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .putExtra(intentExtra, op)
+        )
+        notedLatch.await()
+        assertNull("Expected a null attribution tag", tag)
     }
 
     private fun assertAttrTagOverwrittenToNull(proxiedUid: Int, proxiedPkg: String) {
