@@ -104,10 +104,7 @@ public class SnapshotTaskTests extends ActivityManagerTestBase {
                 boundToCheck.inset(mActivity.getSystemBarOverlaps());
                 final BitmapPixelChecker pixelChecker =
                         new BitmapPixelChecker(
-                                Color.RED,
-                                null /* boundsToLog */,
-                                bitmap.getConfig()
-                                        != Bitmap.Config.ARGB_8888 /* enlargeTolerance */);
+                                Color.RED, null /* boundsToLog */, bitmap.getConfig());
                 int expectedMatching =
                         boundToCheck.width() * boundToCheck.height()
                                 - MATCHING_PIXEL_MISMATCH_ALLOWED
@@ -148,10 +145,7 @@ public class SnapshotTaskTests extends ActivityManagerTestBase {
         Rect boundToCheck = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
         boundToCheck.inset(mActivity.getSystemBarOverlaps());
         final BitmapPixelChecker pixelChecker =
-                new BitmapPixelChecker(
-                        Color.RED,
-                        null /* boundsToLog */,
-                        bitmap.getConfig() != Bitmap.Config.ARGB_8888 /* enlargeTolerance */);
+                new BitmapPixelChecker(Color.RED, null /* boundsToLog */, bitmap.getConfig());
         int matchingPixels = pixelChecker.getNumMatchingPixels(bitmap, boundToCheck);
         assertTrue(
                 "Expected <=" + MATCHING_PIXEL_MISMATCH_ALLOWED + " matched " + matchingPixels,
