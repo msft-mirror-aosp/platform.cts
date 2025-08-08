@@ -31,6 +31,8 @@ import static org.junit.Assume.assumeTrue;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
 import android.telephony.SubscriptionManager;
@@ -40,9 +42,13 @@ import android.telephony.cts.util.TelephonyUtils;
 import com.android.internal.telephony.flags.Flags;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class SmsMessageTest {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private TelephonyManager mTelephonyManager;
     private PackageManager mPackageManager;
