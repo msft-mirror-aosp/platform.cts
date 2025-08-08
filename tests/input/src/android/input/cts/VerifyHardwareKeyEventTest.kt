@@ -18,6 +18,7 @@ package android.input.cts
 
 import android.hardware.input.InputManager
 import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
@@ -41,6 +42,8 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 @RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
 class VerifyHardwareKeyEventTest {
+    @get:Rule
+    val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
 
