@@ -24,6 +24,8 @@ import static org.junit.Assert.fail;
 
 import android.Manifest;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.security.Flags;
 import android.security.advancedprotection.AdvancedProtectionManager;
 
@@ -47,6 +49,10 @@ import java.util.concurrent.TimeUnit;
 public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
     @ClassRule @Rule
     public static final DeviceState sDeviceState = new DeviceState();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final int TIMEOUT_S = 3;
 
     @ApiTest(apis = {
