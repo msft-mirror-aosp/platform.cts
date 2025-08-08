@@ -484,6 +484,41 @@ public class SingleCallingTest extends BaseAppVerifier {
         }
     }
 
+    /**
+     * Test the scenario where a new MANAGED incoming call is created and attempts to transitions
+     * from RINGING to AUDIO_PROCESSING but does not have the required permissions.
+     *
+     * <h3> Test Steps: </h3>
+     * <ul>
+     *  1. create a managed call that is backed by a {@link android.telecom.ConnectionService }
+     *  via {@link android.telecom.TelecomManager#addNewIncomingCall(PhoneAccountHandle, Bundle)}
+     * <p>
+     *  2. transition the call to AUDIO_PROCESSING via
+     *  {@link Call#enterBackgroundAudioProcessing(AUDIO_PROCESSING_USE_CASE_VOICE_MAIL)}
+     * <p>
+     *  </ul>
+     *  Catch the SecurityException and assert the call was not transitioned to AUDIO_PROCESSING.
+     */
+    @Test
+    public void testIncomingCallEnterBackgroundAudioProcessingWithoutPermissions_shouldFail_ManagedConnectionServiceApp()
+        throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        AppControlWrapper managedApp = null;
+        managedApp = bindToApp(ManagedConnectionServiceApp);
+        String mt = addIncomingCallAndVerify(managedApp);
+        try {
+            verifyCallIsInState(mt, STATE_RINGING);
+            enterBackgroundAudioProcessingViaInCallServiceWithoutPermissions(mt,
+                AUDIO_PROCESSING_USE_CASE_VOICEMAIL);
+        } catch (SecurityException e) {
+            verifyCallIsInState(mt, STATE_RINGING);
+        } finally {
+            tearDownApp(managedApp);
+        }
+    }
+
     /*********************************************************************************************
      *                           ConnectionServiceVoipAppMain
      /*********************************************************************************************/

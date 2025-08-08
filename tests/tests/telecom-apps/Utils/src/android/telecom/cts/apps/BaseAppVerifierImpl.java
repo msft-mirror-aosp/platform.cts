@@ -539,6 +539,7 @@ public class BaseAppVerifierImpl {
     }
 
     public void enterBackgroundAudioProcessingViaInCallService(String id, int useCase) {
+        setupEnterBackgroundAudioProcessingPermissions();
         Call call = findTargetCall(id);
         call.enterBackgroundAudioProcessing(useCase);
     }
@@ -548,6 +549,11 @@ public class BaseAppVerifierImpl {
         enterBackgroundAudioProcessingViaInCallService(id, useCase);
         verifyCallIsInState(id, STATE_AUDIO_PROCESSING);
         verifyCallAudioProcessingUseCase(id, useCase);
+    }
+
+    public void enterBackgroundAudioProcessingViaInCallServiceWithoutPermissions(String id,
+        int useCase) {
+        enterBackgroundAudioProcessingViaInCallService(id, useCase);
     }
 
     public void exitBackgroundAudioProcessingViaInCallService(String id, boolean shouldRing,
@@ -840,6 +846,21 @@ public class BaseAppVerifierImpl {
                 InstrumentationRegistry.getInstrumentation());
         ShellCommandExecutor.clearTestEmergencyPhoneAccountPackageFilter(
                 InstrumentationRegistry.getInstrumentation());
+    }
+
+    /**
+     * Call#enterBackgroundAudioProcessing() required MODIFY_AUDIO_ROUTING & CAPTURE_AUDIO_OUTPUT
+     * permission. Adopting them with shell identity will allow them to run the permission.
+     */
+    public void setupEnterBackgroundAudioProcessingPermissions() {
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+            .adoptShellPermissionIdentity("android.permission.MODIFY_AUDIO_ROUTING",
+                "android.permission.CAPTURE_AUDIO_OUTPUT");
+    }
+
+    public void tearDownEnterBackgroundAudioProcessingPermissions() {
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+            .dropShellPermissionIdentity();
     }
 
     private Call findTargetCall(String id) {
