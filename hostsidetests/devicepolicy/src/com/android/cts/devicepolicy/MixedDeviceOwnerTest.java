@@ -16,19 +16,15 @@
 
 package com.android.cts.devicepolicy;
 
-import static com.android.cts.devicepolicy.metrics.DevicePolicyEventLogVerifier.assertMetricsLogged;
-
 import static org.junit.Assert.fail;
 
 import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.LargeTest;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.host.HostFlagsValueProvider;
-import android.stats.devicepolicy.EventId;
 
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.IgnoreOnHeadlessSystemUserMode;
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.TemporarilyIgnoreOnHeadlessSystemUserMode;
-import com.android.cts.devicepolicy.metrics.DevicePolicyEventWrapper;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil.CLog;
 
@@ -146,12 +142,6 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
     @Test
     public void testLockScreenInfo() throws Exception {
         executeDeviceTestClass(".LockScreenInfoTest");
-
-        assertMetricsLogged(getDevice(), () -> {
-            executeDeviceTestMethod(".LockScreenInfoTest", "testSetAndGetLockInfo");
-        }, new DevicePolicyEventWrapper.Builder(EventId.SET_DEVICE_OWNER_LOCK_SCREEN_INFO_VALUE)
-                .setAdminPackageName(DEVICE_ADMIN_PKG)
-                .build());
     }
 
     @Test
@@ -175,22 +165,6 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
         pushUpdateFileToDevice("wrongSize.zip");
 
         executeInstallUpdateTest(/* testName= */ null);
-    }
-
-    @Test
-    public void testInstallUpdateLogged() throws Exception {
-        assumeIsDeviceAb();
-
-        pushUpdateFileToDevice("wrongHash.zip");
-        assertMetricsLogged(getDevice(), () -> {
-            executeInstallUpdateTest("testInstallUpdate_failWrongHash");
-        }, new DevicePolicyEventWrapper.Builder(EventId.INSTALL_SYSTEM_UPDATE_VALUE)
-                    .setAdminPackageName(DEVICE_ADMIN_PKG)
-                    .setBoolean(/* isDeviceAb */ true)
-                    .build(),
-            new DevicePolicyEventWrapper.Builder(EventId.INSTALL_SYSTEM_UPDATE_ERROR_VALUE)
-                    .setInt(UPDATE_ERROR_UPDATE_FILE_INVALID)
-                    .build());
     }
 
     private void executeInstallUpdateTest(String testName) throws Exception {
@@ -242,21 +216,6 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
                 getDevice().setSetting("global", "stay_on_while_plugged_in", stayAwake);
             }
         }
-    }
-
-    @Test
-    public void testSecurityLoggingEnabledLogged() throws Exception {
-        assertMetricsLogged(getDevice(), () -> {
-            executeDeviceTestMethod(".SecurityLoggingTest", "testEnablingSecurityLogging");
-            executeDeviceTestMethod(".SecurityLoggingTest", "testDisablingSecurityLogging");
-        }, new DevicePolicyEventWrapper.Builder(EventId.SET_SECURITY_LOGGING_ENABLED_VALUE)
-                .setAdminPackageName(DEVICE_ADMIN_PKG)
-                .setBoolean(true)
-                .build(),
-            new DevicePolicyEventWrapper.Builder(EventId.SET_SECURITY_LOGGING_ENABLED_VALUE)
-                    .setAdminPackageName(DEVICE_ADMIN_PKG)
-                    .setBoolean(false)
-                    .build());
     }
 
     @Test

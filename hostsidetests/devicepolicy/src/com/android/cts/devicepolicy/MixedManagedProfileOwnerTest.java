@@ -20,13 +20,10 @@ import static com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.FEATUR
 
 import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.LargeTest;
-import android.stats.devicepolicy.EventId;
 
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresAdditionalFeatures;
 import com.android.cts.devicepolicy.annotations.LockSettingsTest;
 import com.android.cts.devicepolicy.annotations.PermissionsTest;
-import com.android.cts.devicepolicy.metrics.DevicePolicyEventLogVerifier;
-import com.android.cts.devicepolicy.metrics.DevicePolicyEventWrapper;
 
 import org.junit.Test;
 
@@ -121,21 +118,6 @@ public final class MixedManagedProfileOwnerTest extends DeviceAndProfileOwnerTes
                 "testGetSetPreferentialNetworkServiceStatus");
     }
 
-    @Test
-    public void testSetPreferentialNetworkServiceStatusLogged() throws Exception {
-        DevicePolicyEventLogVerifier.assertMetricsLogged(getDevice(), () -> {
-            executeDeviceTestMethod(".DevicePolicyLoggingTest",
-                    "testSetPreferentialNetworkServiceEnabledLogged");
-        }, new DevicePolicyEventWrapper.Builder(
-                EventId.SET_PREFERENTIAL_NETWORK_SERVICE_ENABLED_VALUE)
-                .setBoolean(true)
-                .build(),
-        new DevicePolicyEventWrapper.Builder(
-                EventId.SET_PREFERENTIAL_NETWORK_SERVICE_ENABLED_VALUE)
-                .setBoolean(false)
-                .build());
-    }
-
     /** VPN tests don't require physical device for managed profile, thus overriding. */
     @FlakyTest
     @Override
@@ -203,12 +185,6 @@ public final class MixedManagedProfileOwnerTest extends DeviceAndProfileOwnerTes
                 "testFailsWithoutProfileOwnerIdsGrant", mUserId);
         // Positive test case lives in
         // OrgOwnedProfileOwnerTest#testDeviceIdAttestationForProfileOwner
-    }
-
-    @Test
-    @Override
-    public void testSetKeyguardDisabledSecureCameraLogged() {
-        // Managed profiles are not allowed to set keyguard disabled secure camera
     }
 
     @FlakyTest

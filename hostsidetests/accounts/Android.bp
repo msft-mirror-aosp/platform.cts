@@ -28,7 +28,6 @@ java_test_host {
         "platform-test-annotations-host",
         "compatibility-host-util",
         "truth",
-        "device-policy-log-verifier-util",
     ],
     static_libs: [
         "compatibility-host-util-axt",

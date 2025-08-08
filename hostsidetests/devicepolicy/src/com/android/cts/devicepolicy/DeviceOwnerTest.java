@@ -16,8 +16,6 @@
 
 package com.android.cts.devicepolicy;
 
-import static com.android.cts.devicepolicy.metrics.DevicePolicyEventLogVerifier.assertMetricsLogged;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -27,11 +25,9 @@ import static org.junit.Assume.assumeFalse;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.LargeTest;
-import android.stats.devicepolicy.EventId;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.IgnoreOnHeadlessSystemUserMode;
-import com.android.cts.devicepolicy.metrics.DevicePolicyEventWrapper;
 import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.util.RunUtil;
 
@@ -436,35 +432,6 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
         executeDeviceTestMethod(".AffiliationTest", "testSetAffiliationId_containsEmptyString");
     }
 
-    @Test
-    @Ignore("b/145932189")
-    public void testSetSystemUpdatePolicyLogged() throws Exception {
-        assertMetricsLogged(getDevice(), () -> {
-            executeDeviceTestMethod(".SystemUpdatePolicyTest", "testSetAutomaticInstallPolicy");
-        }, new DevicePolicyEventWrapper.Builder(EventId.SET_SYSTEM_UPDATE_POLICY_VALUE)
-                    .setAdminPackageName(DEVICE_OWNER_PKG)
-                    .setInt(TYPE_INSTALL_AUTOMATIC)
-                    .build());
-        assertMetricsLogged(getDevice(), () -> {
-            executeDeviceTestMethod(".SystemUpdatePolicyTest", "testSetWindowedInstallPolicy");
-        }, new DevicePolicyEventWrapper.Builder(EventId.SET_SYSTEM_UPDATE_POLICY_VALUE)
-                    .setAdminPackageName(DEVICE_OWNER_PKG)
-                    .setInt(TYPE_INSTALL_WINDOWED)
-                    .build());
-        assertMetricsLogged(getDevice(), () -> {
-            executeDeviceTestMethod(".SystemUpdatePolicyTest", "testSetPostponeInstallPolicy");
-        }, new DevicePolicyEventWrapper.Builder(EventId.SET_SYSTEM_UPDATE_POLICY_VALUE)
-                    .setAdminPackageName(DEVICE_OWNER_PKG)
-                    .setInt(TYPE_POSTPONE)
-                    .build());
-        assertMetricsLogged(getDevice(), () -> {
-            executeDeviceTestMethod(".SystemUpdatePolicyTest", "testSetEmptytInstallPolicy");
-        }, new DevicePolicyEventWrapper.Builder(EventId.SET_SYSTEM_UPDATE_POLICY_VALUE)
-                    .setAdminPackageName(DEVICE_OWNER_PKG)
-                    .setInt(TYPE_NONE)
-                    .build());
-    }
-
     @FlakyTest(bugId = 127101449)
     @Test
     public void testWifiConfigLockdown() throws Exception {
@@ -567,15 +534,6 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
                 "testDeviceOwnerOrganizationName");
         executeDeviceTestMethod(".AdminActionBookkeepingTest",
                 "testIsDeviceManaged");
-
-        assertMetricsLogged(getDevice(), () -> {
-            executeDeviceTestMethod(".AdminActionBookkeepingTest", "testRetrieveSecurityLogs");
-        }, new DevicePolicyEventWrapper.Builder(EventId.RETRIEVE_SECURITY_LOGS_VALUE)
-                .setAdminPackageName(DEVICE_OWNER_PKG)
-                .build(),
-        new DevicePolicyEventWrapper.Builder(EventId.RETRIEVE_PRE_REBOOT_SECURITY_LOGS_VALUE)
-                .setAdminPackageName(DEVICE_OWNER_PKG)
-                .build());
     }
 
     @Test
@@ -650,41 +608,19 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
             // Install the package in primary user
             runDeviceTestsAsUser(
                     DEVICE_OWNER_PKG, ".PackageInstallTest", "testPackageInstall", mMainUserId);
-            assertMetricsLogged(
-                    getDevice(),
-                    () -> {
-                        runDeviceTestsAsUser(
-                                DEVICE_OWNER_PKG,
-                                ".PackageInstallTest",
-                                "testKeepPackageCache",
-                                mMainUserId);
-                    },
-                    new DevicePolicyEventWrapper.Builder(
-                                    EventId.SET_KEEP_UNINSTALLED_PACKAGES_VALUE)
-                            .setAdminPackageName(DEVICE_OWNER_PKG)
-                            .setBoolean(false)
-                            .setStrings(TEST_APP_PKG)
-                            .build());
+            runDeviceTestsAsUser(
+                    DEVICE_OWNER_PKG, ".PackageInstallTest", "testKeepPackageCache", mMainUserId);
 
             // Remove the package in primary user
             runDeviceTestsAsUser(
                     DEVICE_OWNER_PKG, ".PackageInstallTest", "testPackageUninstall", mMainUserId);
 
-            assertMetricsLogged(
-                    getDevice(),
-                    () -> {
-                        // Should be able to enable the cached package in primary user
-                        runDeviceTestsAsUser(
-                                DEVICE_OWNER_PKG,
-                                ".PackageInstallTest",
-                                "testInstallExistingPackage",
-                                mMainUserId);
-                    },
-                    new DevicePolicyEventWrapper.Builder(EventId.INSTALL_EXISTING_PACKAGE_VALUE)
-                            .setAdminPackageName(DEVICE_OWNER_PKG)
-                            .setBoolean(false)
-                            .setStrings(TEST_APP_PKG)
-                            .build());
+            // Should be able to enable the cached package in primary user
+            runDeviceTestsAsUser(
+                    DEVICE_OWNER_PKG,
+                    ".PackageInstallTest",
+                    "testInstallExistingPackage",
+                    mMainUserId);
         } finally {
             String command = "rm " + TEST_APP_LOCATION + apk.getName();
             getDevice().executeShellCommand(command);
@@ -772,52 +708,6 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     @Test
     public void testPrivateDnsPolicy() throws Exception {
         executeDeviceOwnerTest("PrivateDnsPolicyTest");
-    }
-
-    @Test
-    public void testSetKeyguardDisabledLogged() throws Exception {
-        assertMetricsLogged(getDevice(), () -> {
-            executeDeviceTestMethod(".DevicePolicyLoggingTest", "testSetKeyguardDisabledLogged");
-        }, new DevicePolicyEventWrapper.Builder(EventId.SET_KEYGUARD_DISABLED_VALUE)
-                .setAdminPackageName(DEVICE_OWNER_PKG)
-                .build());
-    }
-
-    @Test
-    public void testSetStatusBarDisabledLogged() throws Exception {
-        assumeFalse("Test does not apply to WearOS", mIsWatch);
-        assertMetricsLogged(getDevice(), () -> {
-            executeDeviceTestMethod(".DevicePolicyLoggingTest", "testSetStatusBarDisabledLogged");
-        }, new DevicePolicyEventWrapper.Builder(EventId.SET_STATUS_BAR_DISABLED_VALUE)
-                    .setAdminPackageName(DEVICE_OWNER_PKG)
-                    .setBoolean(true)
-                    .build(),
-            new DevicePolicyEventWrapper.Builder(EventId.SET_STATUS_BAR_DISABLED_VALUE)
-                    .setAdminPackageName(DEVICE_OWNER_PKG)
-                    .setBoolean(true)
-                    .build());
-    }
-
-    @Test
-    public void testSetGlobalSettingLogged() throws Exception {
-        assertMetricsLogged(getDevice(), () -> {
-            executeDeviceTestMethod(".DevicePolicyLoggingTest", "testSetGlobalSettingLogged");
-        }, new DevicePolicyEventWrapper.Builder(EventId.SET_GLOBAL_SETTING_VALUE)
-                .setAdminPackageName(DEVICE_OWNER_PKG)
-                .setStrings(GLOBAL_SETTING_AUTO_TIME, "1")
-                .build(),
-        new DevicePolicyEventWrapper.Builder(EventId.SET_GLOBAL_SETTING_VALUE)
-                .setAdminPackageName(DEVICE_OWNER_PKG)
-                .setStrings(GLOBAL_SETTING_AUTO_TIME_ZONE, "1")
-                .build(),
-        new DevicePolicyEventWrapper.Builder(EventId.SET_GLOBAL_SETTING_VALUE)
-                .setAdminPackageName(DEVICE_OWNER_PKG)
-                .setStrings(GLOBAL_SETTING_DATA_ROAMING, "1")
-                .build(),
-        new DevicePolicyEventWrapper.Builder(EventId.SET_GLOBAL_SETTING_VALUE)
-                .setAdminPackageName(DEVICE_OWNER_PKG)
-                .setStrings(GLOBAL_SETTING_USB_MASS_STORAGE_ENABLED, "1")
-                .build());
     }
 
     @Test
