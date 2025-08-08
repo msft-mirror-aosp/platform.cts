@@ -33,6 +33,7 @@
         <option name="test-file-name" value="AppThatCanBeForcedIntoForegroundStates.apk" />
         <option name="test-file-name" value="AppForDiscreteTest.apk" />
         <option name="test-file-name" value="AppForHistoricalRegistryTest.apk" />
+        <option name="test-file-name" value="CtsAppThatUsesAppOpApi29.apk" />
     </target_preparer>
 
     <!-- Create place to store apks -->
