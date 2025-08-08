@@ -522,7 +522,7 @@ def switch_default_camera(dut, facing, log_path):
       camera has been switched.
   """
   flip_camera_pattern = (
-      r'(switch to|flip camera|switch camera|camera switch|'
+      r'(switch to|flip camera|switch camera|camera switch|camera_switch|'
       r'switch to front camera|switch_control_default_button_icon|'
       r'toggle_button|front_back_switcher|switch_camera_button|'
       r'camera_switch_button|switch to rear camera|capture_bar_camera_switch)'
