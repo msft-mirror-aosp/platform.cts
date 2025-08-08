@@ -1235,14 +1235,14 @@ public class UiBot {
      */
     private void assertAccessibilityTitle(UiObject2 object, String expectedTitle) {
         AccessibilityWindowInfo windowInfo = object.getAccessibilityNodeInfo().getWindow();
+        CharSequence title = windowInfo != null ? windowInfo.getTitle() : null;
         Log.d(
                 TAG,
                 "assertAccessibilityTitle(): nodeWindowInfo title ="
-                        + windowInfo.getTitle()
+                        + title
                         + ", expected title="
                         + expectedTitle);
-        if (windowInfo.getTitle() != null
-                && windowInfo.getTitle().toString().equals(expectedTitle)) {
+        if (title != null && title.toString().equals(expectedTitle)) {
             return;
         }
         throw new RetryableException("Title '%s' not found for %s", expectedTitle, object);
