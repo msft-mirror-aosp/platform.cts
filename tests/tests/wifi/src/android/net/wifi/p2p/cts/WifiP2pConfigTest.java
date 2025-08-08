@@ -37,6 +37,8 @@ import android.net.wifi.p2p.WifiP2pPairingBootstrappingConfig;
 import android.os.Build;
 import android.os.PersistableBundle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
@@ -45,6 +47,7 @@ import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.wifi.flags.Flags;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -53,6 +56,9 @@ import java.util.List;
 
 @RunWith(AndroidJUnit4.class)
 public class WifiP2pConfigTest extends WifiJUnit4TestBase {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String TEST_NETWORK_NAME = "DIRECT-xy-Hello";
     private static final String TEST_PASSPHRASE = "8etterW0r1d";
     private static final int TEST_OWNER_BAND = WifiP2pConfig.GROUP_OWNER_BAND_5GHZ;
