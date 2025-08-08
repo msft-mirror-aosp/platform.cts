@@ -1153,15 +1153,17 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
     })
     @Test
     public void testLaunchActivityOnDisplayCannotHostTasks() {
-        // Create a simulated display that allows content mode switch.
+        final MirrorBuiltInDisplaySession mirrorSession = createMirrorBuiltInDisplaySession();
+        // Enable external display mirroring setting.
+        mirrorSession.set(1);
+
+        // Create a simulated display that allows content mode switch. It should be unable to host
+        // tasks as the external display mirroring has been enabled.
         final DisplayContent newDisplay = createManagedVirtualDisplaySession()
                 .setSimulateDisplay(true)
                 .setAllowContentModeSwitch(true)
                 .setDisplayImePolicy(DISPLAY_IME_POLICY_LOCAL)
                 .createDisplay();
-        final MirrorBuiltInDisplaySession mirrorSession = createMirrorBuiltInDisplaySession();
-        // When mirroring starts on the new display, it becomes unable to host tasks.
-        mirrorSession.set(1);
 
         final ActivityManager activityManager =
                 mTargetContext.getSystemService(ActivityManager.class);
