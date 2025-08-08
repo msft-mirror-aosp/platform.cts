@@ -23,6 +23,7 @@ import static android.app.fgstesthelper.LocalForegroundServiceBase.RESULT_SECURI
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityManager;
 import android.app.AppOpsManager;
@@ -206,6 +207,11 @@ public final class ActivityManagerForegroundServiceTypeTest {
     @RequiresFlagsEnabled(android.app.Flags.FLAG_SYSTEM_DIALER_PHONE_CALL_FGS_GRANT)
     public void testForegroundServiceTypePhoneCallSystemDialer() throws Exception {
         try {
+            // This test does not apply to devices with no dialer role as there will be no system
+            // dialer present.
+            RoleManager roleManager = mContext.getSystemService(RoleManager.class);
+            assumeTrue(roleManager != null && roleManager.isRoleAvailable(RoleManager.ROLE_DIALER));
+
             executeShellCommand(
                     "telecom set-system-dialer " + TEST_COMP_TARGET_FGS_ALL_TYPE.flattenToString());
 
