@@ -1601,6 +1601,10 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                         .setMovingScanInterval(Duration.ofSeconds(60))
                         .setStationaryScanInterval(Duration.ofSeconds(180))
                         .build();
+        assertEquals(4, screenOffScanSchedule.getScanIterations());
+        assertEquals(5, screenOffScanSchedule.getScanMultiplier());
+        assertEquals(60, screenOffScanSchedule.getMovingScanInterval().toSeconds());
+        assertEquals(180, screenOffScanSchedule.getStationaryScanInterval().toSeconds());
 
         // Verify no permission will trigger SecurityException
         assertThrows(
