@@ -58,10 +58,7 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
 
         mUserId = mMainUserId;
 
-        CLog.i(
-                "%s.setUp(): mUserId=%d, mPrimaryUserId=%d, mInitialUserId=%d, "
-                        + "mDeviceOwnerUserId=%d",
-                getClass(), mUserId, mMainUserId, mInitialUserId, mDeviceOwnerUserId);
+        CLog.i("%s.setUp(): mUserId=%d", getClass().getSimpleName(), mUserId);
 
         installDeviceOwnerApp(DEVICE_ADMIN_APK);
         mDeviceOwnerSet = setDeviceOwner(DEVICE_ADMIN_COMPONENT_FLATTENED, mDeviceOwnerUserId,
