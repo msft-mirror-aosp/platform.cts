@@ -55,7 +55,9 @@ class SystemPaletteTest(
     @CddTest(requirements = ["3.8.6/C-1-4,C-1-5,C-1-6"])
     fun a_testThemeStyles() {
         // THEME_CUSTOMIZATION_OVERLAY_PACKAGES is not available in Wear OS
-        if (FeatureUtil.isWatch()) return
+        // THEME_CUSTOMIZATION_OVERLAY_PACKAGES is not enforced in Automotive
+        if (FeatureUtil.isWatch() ||
+            FeatureUtil.isAutomotive()) return
 
         val newSetting = assurePaletteSetting()
 

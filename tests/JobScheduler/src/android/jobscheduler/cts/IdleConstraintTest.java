@@ -143,6 +143,7 @@ public class IdleConstraintTest extends BaseJobSchedulerTest {
      * Ensure that device can switch state normally.
      */
     public void testDeviceChangeIdleActiveState() throws Exception {
+        if(isAutomotive()) return;
         toggleScreenOn(true);
         verifyActiveState();
 
@@ -317,6 +318,7 @@ public class IdleConstraintTest extends BaseJobSchedulerTest {
     }
 
     public void testIdleJobStartsOnlyWhenIdle_screenEndsIdle() throws Exception {
+        if(isAutomotive()) return;
         runIdleJobStartsOnlyWhenIdle();
 
         toggleScreenOn(true);

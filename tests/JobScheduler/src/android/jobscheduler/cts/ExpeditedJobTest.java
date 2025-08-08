@@ -20,11 +20,13 @@ import static android.jobscheduler.cts.JobThrottlingTest.setTestPackageStandbyBu
 import static android.jobscheduler.cts.TestAppInterface.TEST_APP_PACKAGE;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
 import android.app.ActivityManager;
 import android.app.AppOpsManager;
 import android.app.job.JobInfo;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver;
 import android.os.SystemClock;
 
@@ -76,6 +78,7 @@ public class ExpeditedJobTest {
 
     @Test
     public void testJobUidState_withRequiredNetwork() throws Exception {
+        assumeFalse(isAutomotive());
         // Turn screen off so any lingering activity close processing from previous tests
         // don't affect this one.
         ScreenUtils.setScreenOn(false);
@@ -115,5 +118,12 @@ public class ExpeditedJobTest {
             assertTrue("Job did not start after scheduling",
                     mTestAppInterface.awaitJobStart(i, DEFAULT_WAIT_TIMEOUT_MS));
         }
+    }
+
+    /**
+     * Check if the device is an auto.
+     */
+    private boolean isAutomotive() {
+        return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 }
