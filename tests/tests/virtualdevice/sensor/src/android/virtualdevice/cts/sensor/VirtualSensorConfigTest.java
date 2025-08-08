@@ -114,6 +114,25 @@ public class VirtualSensorConfigTest {
         assertThat(recreatedConfig.getFlags()).isEqualTo(1 | REPORTING_MODE_ON_CHANGE << 1);
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_SENSOR_ADDITIONAL_INFO)
+    @Test
+    public void additionalInfoNotSupported() {
+        final VirtualSensorConfig configWithoutAdditionalInfoSupport =
+                new VirtualSensorConfig.Builder(TYPE_ACCELEROMETER, SENSOR_NAME)
+                        .build();
+        assertThat(configWithoutAdditionalInfoSupport.isAdditionalInfoSupported()).isFalse();
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_SENSOR_ADDITIONAL_INFO)
+    @Test
+    public void additionalInfoSupported() {
+        final VirtualSensorConfig configWithAdditionalInfoSupport =
+                new VirtualSensorConfig.Builder(TYPE_ACCELEROMETER, SENSOR_NAME)
+                        .setAdditionalInfoSupported(true)
+                        .build();
+        assertThat(configWithAdditionalInfoSupport.isAdditionalInfoSupported()).isTrue();
+    }
+
     @Test
     public void virtualSensorConfig_invalidName_throwsException() {
         assertThrows(
