@@ -1631,6 +1631,34 @@ class ItsSession(object):
 
     return ret
 
+  def do_orthogonal_position_capture(self, capture_format='yuv'):
+    """Do 3A and take a single capture with a shared session to check rotation.
+
+    Args:
+      capture_format: Optional[str]; image format to use for the capture.
+
+    Returns:
+      RGB float-3 image array, with pixel values in [0.0, 1.0].
+    """
+    self.__enter__()  # Ensure that camera is open before 3A/captures
+    width, height = (
+        capture_request_utils.get_available_output_sizes(
+            capture_format, self.props)[0]
+    )
+    out_surface = {
+        'width': width, 'height': height, 'format': capture_format
+    }
+    logging.debug(
+        'Using out_surface: %s for orthogonal position captures', out_surface
+    )
+    self.do_3a(out_surfaces=out_surface)
+    cap = self.do_capture(
+        capture_request_utils.auto_capture_request(),
+        out_surface,
+        reuse_session=True
+    )
+    return image_processing_utils.convert_capture_to_rgb_image(cap)
+
   def do_jca_capture(
       self, dut, log_path, flash_mode_desc, lens_facing, zoom_ratio=1.0,
       save_image_delay=None):
