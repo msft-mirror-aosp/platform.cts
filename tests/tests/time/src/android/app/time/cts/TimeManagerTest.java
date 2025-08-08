@@ -48,6 +48,7 @@ import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -179,6 +180,7 @@ public class TimeManagerTest {
     }
 
     @Test
+    @Ignore("b/436253548 Tests needs to be improved to not fail due to external sources.")
     public void externalSuggestions() throws Exception {
         boolean disableAutoDetectionAfterTest = false;
         if (!mTimeDetectorShellHelper.isAutoDetectionEnabled()) {
