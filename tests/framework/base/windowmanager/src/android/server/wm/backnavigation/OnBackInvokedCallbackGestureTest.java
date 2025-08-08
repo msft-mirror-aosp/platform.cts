@@ -22,7 +22,6 @@ import static android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT;
 import static android.window.OnBackInvokedDispatcher.PRIORITY_SYSTEM_NAVIGATION_OBSERVER;
 
 import static com.android.window.flags.Flags.FLAG_PREDICTIVE_BACK_PRIORITY_SYSTEM_NAVIGATION_OBSERVER;
-import static com.android.window.flags.Flags.FLAG_PREDICTIVE_BACK_SWIPE_EDGE_NONE_API;
 import static com.android.window.flags.Flags.FLAG_PREDICTIVE_BACK_SYSTEM_OVERRIDE_CALLBACK;
 import static com.android.window.flags.Flags.FLAG_PREDICTIVE_BACK_TIMESTAMP_API;
 
@@ -224,31 +223,6 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsDisabled(FLAG_PREDICTIVE_BACK_SWIPE_EDGE_NONE_API)
-    public void invokesCallbackInButtonsNav_invoked_preEdgeNoneApi() throws InterruptedException {
-        registerBackCallback(mActivity, mAnimationCallback, PRIORITY_DEFAULT);
-        long downTime = TouchHelper.injectKeyActionDown(KeyEvent.KEYCODE_BACK,
-                /* longpress = */ false,
-                /* sync = */ true);
-
-        assertInvoked(mTracker.mStartLatch);
-        assertNotInvoked(mTracker.mProgressLatch);
-        assertNotInvoked(mTracker.mInvokeLatch);
-        assertNotInvoked(mTracker.mCancelLatch);
-        assertTrue(mActivity.mOnUserInteractionCalled);
-
-        TouchHelper.injectKeyActionUp(KeyEvent.KEYCODE_BACK,
-                /* downTime = */ downTime,
-                /* cancelled = */ false,
-                /* sync = */ true);
-
-        assertInvoked(mTracker.mInvokeLatch);
-        assertNotInvoked(mTracker.mProgressLatch);
-        assertNotInvoked(mTracker.mCancelLatch);
-    }
-
-    @Test
-    @RequiresFlagsEnabled(FLAG_PREDICTIVE_BACK_SWIPE_EDGE_NONE_API)
     public void invokesCallbackInButtonsNav_invoked() throws InterruptedException {
         registerBackCallback(mActivity, mAnimationCallback, PRIORITY_DEFAULT);
         long downTime = TouchHelper.injectKeyActionDown(KeyEvent.KEYCODE_BACK,
