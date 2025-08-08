@@ -36,8 +36,8 @@ public class SilentUpdateHostsideTests extends BaseHostJUnit4Test {
     private static final String TEST_PKG = "com.android.tests.silentupdate";
     private static final String TEST_CLS = "com.android.tests.silentupdate.SilentUpdateTests";
     private static final String CURRENT_APK = "SilentInstallCurrent.apk";
-    private static final String S_APK = "SilentInstallS.apk";
     private static final String T_APK = "SilentInstallT.apk";
+    private static final String U_APK = "SilentInstallU.apk";
 
     @Before
     public void installAppOpAllowed() throws Exception {
@@ -90,15 +90,15 @@ public class SilentUpdateHostsideTests extends BaseHostJUnit4Test {
     }
 
     @Test
-    public void updatePreTApp_RequiresUserAction() throws Exception {
-        install(S_APK, TEST_PKG);
-        runDeviceTests(TEST_PKG, TEST_CLS, "updatePreTApp_RequiresUserAction");
+    public void updatePreUApp_RequiresUserAction() throws Exception {
+        install(T_APK, TEST_PKG);
+        runDeviceTests(TEST_PKG, TEST_CLS, "updatePreUApp_RequiresUserAction");
     }
 
     @Test
-    public void updateTApp_RequiresNoUserAction() throws Exception {
-        install(T_APK, TEST_PKG);
-        runDeviceTests(TEST_PKG, TEST_CLS, "updateTApp_RequiresNoUserAction");
+    public void updateUApp_RequiresNoUserAction() throws Exception {
+        install(U_APK, TEST_PKG);
+        runDeviceTests(TEST_PKG, TEST_CLS, "updateUApp_RequiresNoUserAction");
     }
 
     @Test
@@ -112,7 +112,7 @@ public class SilentUpdateHostsideTests extends BaseHostJUnit4Test {
 
     @Test
     public void setRequireUserAction_throwsOnIllegalArgument() throws Exception {
-        install(T_APK, TEST_PKG);
+        install(U_APK, TEST_PKG);
         runDeviceTests(TEST_PKG, TEST_CLS, "setRequireUserAction_throwsOnIllegalArgument");
     }
 
