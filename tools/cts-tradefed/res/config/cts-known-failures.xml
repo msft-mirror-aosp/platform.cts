@@ -428,6 +428,10 @@
     <!-- b/367914183 -->
     <option name="compatibility:exclude-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.AppSearchSessionCtsTest#testEmbeddingSearch_simple" />
     <option name="compatibility:exclude-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.AppSearchSessionCtsTest#testEmbeddingSearch_propertyRestriction" />
+
+    <!-- b/416663089 -->
+    <option name="compatibility:exclude-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.SyncAdapterEnumerationTests#queriesPackage_getRunningServiceControlPanel_canSeeSyncAdapterTarget" />
+
     <option name="compatibility:exclude-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.AppSearchSessionCtsTest#testEmbeddingSearch_multipleSearchEmbeddings" />
     <option name="compatibility:exclude-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.AppSearchSessionCtsTest#testEmbeddingSearch_hybrid" />
     <option name="compatibility:exclude-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.AppSearchSessionCtsTest#testInformationalRankingExpressions" />
