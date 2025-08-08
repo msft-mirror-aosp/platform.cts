@@ -34,10 +34,13 @@ import android.net.Uri;
 import android.os.Parcel;
 import android.os.Process;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.widget.RemoteViews;
 
 import androidx.test.runner.AndroidJUnit4;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -51,6 +54,8 @@ import java.util.List;
  */
 @RunWith(AndroidJUnit4.class)
 public class SmartspaceTargetTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String TAG = "SmartspaceTargetTest";
 
