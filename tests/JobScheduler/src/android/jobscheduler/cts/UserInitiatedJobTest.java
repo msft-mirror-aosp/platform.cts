@@ -34,6 +34,7 @@ import android.app.job.JobScheduler;
 import android.content.Context;
 import android.content.IntentFilter;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.jobscheduler.cts.jobtestapp.TestFgsService;
 import android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver;
 import android.os.ParcelFileDescriptor;
@@ -357,6 +358,7 @@ public class UserInitiatedJobTest {
     /** Test that UI jobs can't be scheduled directly from the background. */
     @Test
     public void testSchedulingBg() throws Exception {
+        assumeFalse(isAutomotive());
         // Close the activity and turn the screen off so the app isn't considered TOP.
         mTestAppInterface.closeActivity();
         ScreenUtils.setScreenOn(false);
@@ -370,6 +372,8 @@ public class UserInitiatedJobTest {
     /** Test that UI jobs can't be scheduled directly from EJs. */
     @Test
     public void testSchedulingEj() throws Exception {
+        assumeFalse(isAutomotive());
+
         // Close the activity and turn the screen off so the app isn't considered TOP.
         mTestAppInterface.closeActivity();
         ScreenUtils.setScreenOn(false);
@@ -629,4 +633,12 @@ public class UserInitiatedJobTest {
             }
         }
     }
+
+   /**
+     * Check if the device is an auto.
+     */
+    private boolean isAutomotive() {
+        return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
+    }
+
 }
