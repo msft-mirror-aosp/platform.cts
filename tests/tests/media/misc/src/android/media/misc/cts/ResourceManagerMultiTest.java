@@ -28,6 +28,8 @@ import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresDevice;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Range;
 
 import androidx.test.rule.ActivityTestRule;
@@ -56,6 +58,8 @@ import java.util.List;
 @RunWith(Parameterized.class)
 @FrameworkSpecificTest
 public class ResourceManagerMultiTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String TAG = "ResourceManagerMultiTest";
 

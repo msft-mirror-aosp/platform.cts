@@ -24,6 +24,8 @@ import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresDevice;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.rule.ActivityTestRule;
@@ -71,6 +73,8 @@ import org.junit.runner.RunWith;
 @FrameworkSpecificTest
 @RunWith(AndroidJUnit4.class)
 public class ResourceManagerTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     public static final boolean FIRST_SDK_IS_AT_LEAST_U =
             ApiLevelUtil.isFirstApiAfter(Build.VERSION_CODES.TIRAMISU);
