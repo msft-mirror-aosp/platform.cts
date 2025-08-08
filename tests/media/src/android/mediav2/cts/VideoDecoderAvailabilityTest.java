@@ -41,6 +41,8 @@ import android.mediav2.common.cts.CodecDynamicTestActivity;
 import android.mediav2.common.cts.OutputManager;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.util.Pair;
 import android.util.Range;
@@ -120,6 +122,9 @@ class CodecAsyncHandlerResource extends CodecAsyncHandler {
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
 @RunWith(Parameterized.class)
 public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String LOG_TAG = VideoDecoderAvailabilityTest.class.getSimpleName();
     private static final String MEDIA_DIR = WorkDir.getMediaDirString();
     // Minimum threshold for resource consumption of a codec for a given performance point.

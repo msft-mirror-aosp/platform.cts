@@ -25,10 +25,14 @@ import static org.junit.Assert.assertTrue;
 import android.media.MediaCodec;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Pair;
 
 import androidx.annotation.NonNull;
 import androidx.test.filters.SdkSuppress;
+
+import org.junit.Rule;
 
 import java.util.ArrayDeque;
 import java.util.LinkedList;
@@ -41,6 +45,9 @@ import java.util.LinkedList;
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName = "VanillaIceCream")
 @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
 public class CodecAsyncHandlerMultiAccessUnits extends CodecAsyncHandler {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private final LinkedList<Pair<Integer, ArrayDeque<MediaCodec.BufferInfo>>> mCbOutputQueue;
 
     public CodecAsyncHandlerMultiAccessUnits() {

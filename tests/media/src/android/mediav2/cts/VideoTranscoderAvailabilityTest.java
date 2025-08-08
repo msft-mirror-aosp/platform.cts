@@ -34,6 +34,8 @@ import android.mediav2.common.cts.EncoderConfigParams;
 import android.mediav2.common.cts.OutputManager;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Pair;
 
 import androidx.test.filters.LargeTest;
@@ -44,6 +46,7 @@ import com.android.compatibility.common.util.VsrTest;
 
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -63,6 +66,9 @@ import java.util.Locale;
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
 @RunWith(Parameterized.class)
 public class VideoTranscoderAvailabilityTest extends CodecEncoderSurfaceTestBase {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     //private static final String LOG_TAG = VideoTranscoderAvailabilityTest.class.getSimpleName();
     private static final String MEDIA_DIR = WorkDir.getMediaDirString();
     private static List<CodecResource> GLOBAL_AVBL_RESOURCES;
