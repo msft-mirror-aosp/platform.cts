@@ -63,6 +63,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
@@ -209,6 +210,9 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
      */
     @Test
     public void testLaunchExternalDisplayActivityWhilePrimaryOff() {
+        // TODO(b/437105925): Rewrite the test with a new way of turning all displays off.
+        assumeFalse(isCar());
+
         // Leanback devices may launch a live broadcast app during screen off-on cycles.
         final boolean mayLaunchActivityOnScreenOff = isLeanBack();
 
@@ -1027,6 +1031,8 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
      */
     @Test
     public void testLaunchNoHistoryActivityOnNewDisplay() {
+        // TODO(b/437105925): Rewrite the test with a new way of turning all displays off.
+        assumeFalse(isCar());
         launchActivity(NO_HISTORY_ACTIVITY);
         waitAndAssertTopResumedActivity(NO_HISTORY_ACTIVITY, DEFAULT_DISPLAY,
                 "Activity launched on primary display and on top");

@@ -244,6 +244,8 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
      */
     @Test
     public void testExternalDisplayActivityTurnPrimaryOff() {
+        // TODO(b/437105925): Rewrite the test with a new way of turning all displays off.
+        assumeFalse(isCar());
         // Launch something on the primary display so we know there is a resumed activity there
         launchActivity(RESIZEABLE_ACTIVITY);
         waitAndAssertTopResumedActivity(RESIZEABLE_ACTIVITY, DEFAULT_DISPLAY,
