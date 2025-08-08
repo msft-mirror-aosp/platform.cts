@@ -105,8 +105,14 @@ public class CtsCallStreamingServiceControl extends Service {
                         Log.e(TAG, "waitForCallStreamingStateChanged: interrupted", e);
                         return -1; // Return an invalid state on error
                     }
-                    Log.i(TAG, "waitForCallStreamingStateChanged: latch finished");
-                    return CtsCallStreamingService.sLastStreamingState;
+                    int state = CtsCallStreamingService.sLastStreamingState;
+                    Log.i(
+                            TAG,
+                            "waitForCallStreamingStateChanged: "
+                                    + "latch finished stat=["
+                                    + state
+                                    + "]");
+                    return state;
                 }
 
                 /** Resets the latches in the streaming service to prepare for a new event. */

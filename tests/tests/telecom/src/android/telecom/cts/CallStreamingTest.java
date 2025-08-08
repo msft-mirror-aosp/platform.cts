@@ -175,7 +175,7 @@ public class CallStreamingTest extends BaseTelecomTestWithMockServices {
                     new OutcomeReceiver<CallControl, CallException>() {
                         @Override
                         public void onResult(CallControl callControl) {
-                            assertNotNull("onResult: callControl must not be null", callControl);
+                            assertNotNull("onResult: callControl is null", callControl);
                             mCallControl = callControl;
                             latch.countDown();
                         }
@@ -263,9 +263,9 @@ public class CallStreamingTest extends BaseTelecomTestWithMockServices {
 
     @Override
     public void setUp() throws Exception {
+        Log.i(TAG, "setUp: running...");
         super.setUp();
         if (!mShouldTestTelecom) return;
-
         mCtsRoleManagerAdapter = new CtsRoleManagerAdapter(getInstrumentation());
         mPreviousRoleHolder =
                 mCtsRoleManagerAdapter
@@ -282,13 +282,12 @@ public class CallStreamingTest extends BaseTelecomTestWithMockServices {
         mTelecomManager.registerPhoneAccount(ACCOUNT);
         mStreamingServiceControl = bindToStreamingService();
         configureNotificationChannel();
-        cleanup(); // Initial cleanup
     }
 
     @Override
     public void tearDown() throws Exception {
+        Log.i(TAG, "tearDown: running...");
         if (!mShouldTestTelecom) return;
-
         cleanup(); // Disconnects active call sessions
         mTelecomManager.unregisterPhoneAccount(ACCOUNT_HANDLE);
 
@@ -410,14 +409,15 @@ public class CallStreamingTest extends BaseTelecomTestWithMockServices {
                         .setCallType(CallAttributes.AUDIO_CALL)
                         .setCallCapabilities(CallAttributes.SUPPORTS_SET_INACTIVE)
                         .build());
-
+        Call call = getInCallService().getLastCall();
         mCurrentSession.startCallStreaming();
         mCurrentSession.setActive();
         mStreamingServiceControl.waitForCallAdded();
-        assertCallState(getInCallService().getLastCall(), Call.STATE_ACTIVE);
+        assertCallState(call, Call.STATE_ACTIVE);
 
         try {
             // Request HOLD from the streaming device --> verify onSetInactive is called on client.
+            Log.i(TAG, "Requesting <HOLD, STATE_HOLDING> update");
             mStreamingServiceControl.requestCallStreamingState(StreamingCall.STATE_HOLDING);
             verifyCallbackTriggered(
                     mCurrentSession,
@@ -425,6 +425,9 @@ public class CallStreamingTest extends BaseTelecomTestWithMockServices {
                     "onSetInactive was not called for STATE_HOLDING");
 
             // Request STREAMING from the streaming device --> verify onSetActive is called.
+            Log.i(
+                    TAG,
+                    "Verified <HOLD, STATE_HOLDING>  update. Now Requesting <ACTIVE, STREAMING>");
             mCurrentSession.resetCallbackLatch(ON_SET_ACTIVE);
             mStreamingServiceControl.requestCallStreamingState(StreamingCall.STATE_STREAMING);
             verifyCallbackTriggered(
@@ -433,11 +436,19 @@ public class CallStreamingTest extends BaseTelecomTestWithMockServices {
                     "onSetActive was not called for STATE_STREAMING");
 
             // Request DISCONNECT from the streaming device --> verify onDisconnect is called.
+            Log.i(
+                    TAG,
+                    "Verified <ACTIVE, STREAMING> update. Now Requesting <DISCONNECT,"
+                            + " STATE_DISCONNECTED>");
             mStreamingServiceControl.requestCallStreamingState(StreamingCall.STATE_DISCONNECTED);
             verifyCallbackTriggered(
                     mCurrentSession,
                     ON_DISCONNECT,
                     "onDisconnect was not called for STATE_DISCONNECTED");
+            assertCallState(call, Call.STATE_DISCONNECTED);
+
+            // clear the session object so the session is not disconnected in cleanup
+            mCurrentSession = null;
         } catch (RemoteException e) {
             fail("RemoteException while controlling test service: " + e);
         }
@@ -463,12 +474,13 @@ public class CallStreamingTest extends BaseTelecomTestWithMockServices {
                             .setCallType(CallAttributes.AUDIO_CALL)
                             .setCallCapabilities(CallAttributes.SUPPORTS_SET_INACTIVE)
                             .build());
+            Call call = getInCallService().getLastCall();
             mCurrentSession.startCallStreaming();
             mStreamingServiceControl.waitForCallAdded();
 
             // Test onCallStreamingStateChanged: setting the call active will trigger the callback.
             mCurrentSession.setActive();
-            assertCallState(getInCallService().getLastCall(), Call.STATE_ACTIVE);
+            assertCallState(call, Call.STATE_ACTIVE);
             int initialState = mStreamingServiceControl.waitForCallStreamingStateChanged();
             assertEquals(
                     "Streaming service should receive STATE_STREAMING after call becomes active",
@@ -480,6 +492,7 @@ public class CallStreamingTest extends BaseTelecomTestWithMockServices {
 
             // Wait for the streaming service to report it was stopped.
             mStreamingServiceControl.waitForCallStreamingStopped();
+            assertCallState(call, Call.STATE_DISCONNECTED);
 
             // clear the session object so the session is not disconnected in cleanup
             mCurrentSession = null;
