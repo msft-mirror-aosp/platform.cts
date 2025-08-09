@@ -16,14 +16,10 @@
 
 package com.android.cts.devicepolicy;
 
-import static com.android.cts.devicepolicy.metrics.DevicePolicyEventLogVerifier.assertMetricsLogged;
-
 import static org.junit.Assert.assertTrue;
 
 import android.platform.test.annotations.FlakyTest;
-import android.stats.devicepolicy.EventId;
 
-import com.android.cts.devicepolicy.metrics.DevicePolicyEventWrapper;
 import com.android.tradefed.device.DeviceNotAvailableException;
 
 import org.junit.Test;
@@ -69,28 +65,6 @@ public final class ManagedProfileWipeTest extends BaseManagedProfileTest {
                 mTestArgs);
         // Note: the managed profile is removed by this test, which will make removeUserCommand in
         // tearDown() to complain, but that should be OK since its result is not asserted.
-        waitUntilUserRemoved(mProfileUserId);
-    }
-
-    @FlakyTest
-    @Test
-    public void testWipeDataLogged() throws Exception {
-        assertTrue(listUsers().contains(mProfileUserId));
-
-        // Both the profile wipe and notification verification are done on the device side test
-        // because notifications are checked using a NotificationListenerService
-        assertMetricsLogged(getDevice(), () -> {
-            runDeviceTestsAsUser(
-                    MANAGED_PROFILE_PKG,
-                    ".WipeDataNotificationTest",
-                    "testWipeDataWithReasonVerification",
-                    mParentUserId,
-                    mTestArgs);
-        }, new DevicePolicyEventWrapper.Builder(EventId.WIPE_DATA_WITH_REASON_VALUE)
-                .setAdminPackageName(MANAGED_PROFILE_PKG)
-                .setInt(0)
-                .setStrings("notCalledFromParent")
-                .build());
         waitUntilUserRemoved(mProfileUserId);
     }
 

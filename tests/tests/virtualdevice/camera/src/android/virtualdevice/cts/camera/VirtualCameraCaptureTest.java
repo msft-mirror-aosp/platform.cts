@@ -81,6 +81,7 @@ import junitparams.naming.TestCaseName;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -582,6 +583,7 @@ public class VirtualCameraCaptureTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_NO_FRAME_DUPLICATION)
+    @Ignore("b/422724125")
     public void captureMultipleImages_motionCapture_noDuplication() {
         int width = 460;
         int height = 260;

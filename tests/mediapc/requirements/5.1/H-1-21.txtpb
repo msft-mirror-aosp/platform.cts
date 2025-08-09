@@ -46,3 +46,16 @@ specs {
     }
   }
 }
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_17
+    specification: "MUST support FEATURE_DynamicColorAspect for all hardware video decoders (AVC, HEVC, VP9, AV1, or later). Note: This means applications can update the color aspects of the video content during the decoding session. Decoders that support 10-bit and 8-bit content MUST support dynamically switching between 8- and 10-bit content in Surface mode. Decoders that support HDR transfer function MUST support dynamically switching between SDR and HDR content."
+    required_values: {
+      key: "dynamic_color_aspects"
+      value {
+        bool_value: true
+      }
+    }
+  }
+}

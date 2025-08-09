@@ -71,6 +71,9 @@ public class AudioEncoderTest extends CodecEncoderTestBase {
     private static final ArrayList<String> REQUIRED_MEDIA_TYPE_LIST =
             CodecTestBase.compileRequiredMediaTypeList(true, true, false);
 
+    private int mDefaultInputBufferSize;
+    private final List<Integer> mTestedInputBufferSizesList = new ArrayList<>();
+
     public AudioEncoderTest(String encoder, String mediaType, EncoderConfigParams encCfgParams,
             @SuppressWarnings("unused") String testLabel, String allTestParams) {
         super(encoder, mediaType, new EncoderConfigParams[]{encCfgParams}, allTestParams);
@@ -127,7 +130,8 @@ public class AudioEncoderTest extends CodecEncoderTestBase {
         final boolean needAudio = true;
         final boolean needVideo = false;
         List<Object[]> defArgsList = new ArrayList<>(Arrays.asList(new Object[][]{
-                // mediaType, arrays of bit-rates, sample rates, channel counts, pcm encoding
+                // mediaType, arrays of bit-rates, sample rates, channel counts, pcm encoding,
+                // profile
                 {MediaFormat.MIMETYPE_AUDIO_AAC, new int[]{64000, 128000}, new int[]{8000, 12000,
                         16000, 22050, 24000, 32000, 44100, 48000}, new int[]{1, 2, 5, 6},
                         AudioFormat.ENCODING_PCM_16BIT, AACObjectLC},
@@ -169,6 +173,8 @@ public class AudioEncoderTest extends CodecEncoderTestBase {
                         + mTestEnv, mActiveEncCfg.mPcmEncoding,
                 acceptedFmt.getInteger(MediaFormat.KEY_PCM_ENCODING,
                         AudioFormat.ENCODING_PCM_16BIT));
+        mDefaultInputBufferSize = acceptedFmt.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
+        mTestedInputBufferSizesList.add(mDefaultInputBufferSize);
         mCodec.start();
         doWork(Integer.MAX_VALUE);
         queueEOS();
@@ -220,10 +226,67 @@ public class AudioEncoderTest extends CodecEncoderTestBase {
     }
 
     /**
-     * Check description of class {@link AudioEncoderTest}
+     * This method MUST be called only after invoking {@link AudioEncoderTest#encodeAndValidate()}.
+     * encodeAndValidate() populates fields {@link CodecTestBase#mOutputBuff},
+     * {@link AudioEncoderTest#mDefaultInputBufferSize},
+     * {@link AudioEncoderTest#mTestedInputBufferSizesList} which are required for this method to
+     * work correctly.
+     */
+    void validateCodecOutputForDifferentInputSizes() throws IOException, InterruptedException {
+        OutputManager ref = mOutputBuff;
+        int bytesPerSample = mActiveEncCfg.mChannelCount * AudioFormat.getBytesPerSample(
+                mActiveEncCfg.mPcmEncoding);
+        MediaFormat format = mActiveEncCfg.getFormat();
+        mOutputBuff = new OutputManager(ref.getSharedErrorLogs());
+        mCodec = MediaCodec.createByCodecName(mCodecName);
+        for (float scalar = 0.1f; scalar <= 2.0f; scalar += 0.1f) {
+            int clientReqBufferSize = (int) (scalar * mDefaultInputBufferSize);
+            clientReqBufferSize += (bytesPerSample - 1);
+            clientReqBufferSize /= bytesPerSample;
+            clientReqBufferSize *= bytesPerSample;
+            format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, clientReqBufferSize);
+            mOutputBuff.reset();
+            mInfoList.clear();
+            configureCodec(format, true, true, true);
+            MediaFormat inputFormat = mCodec.getInputFormat();
+            int gotInputBufferSize = inputFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
+            int enqueueSize = Math.min(clientReqBufferSize, gotInputBufferSize);
+            if (mTestedInputBufferSizesList.contains(enqueueSize)) {
+                mCodec.reset();
+                continue;
+            }
+            setAudioEnqueueLimit(enqueueSize);
+            mTestedInputBufferSizesList.add(enqueueSize);
+            mCodec.start();
+            doWork(Integer.MAX_VALUE);
+            queueEOS();
+            waitForAllOutputs();
+            mCodec.reset();
+            if (!ref.equalsDequeuedOutput(mOutputBuff)) {
+                fail("Output of encoder differs for between configurations \n config ref : "
+                        + mActiveEncCfg.getFormat() + " \n config test : " + format + mTestConfig
+                        + mTestEnv + mOutputBuff.getErrMsg());
+            }
+        }
+        mCodec.release();
+    }
+
+    /**
+     * Check description of class {@link AudioEncoderTest}.
+     * <p>
+     * This test also checks audio encoder component for different configurations of key
+     * {@link android.media.MediaFormat#KEY_MAX_INPUT_SIZE}
+     * <p>
+     * The test sets media format key "max-input-size" for different values and uses it to
+     * configure the encoder. The encoder may or may not honor this client requested value.
+     * Minimum of client requested value and component honored value is selected and this many
+     * number of bytes are queued for each enqueue call. After encoding is done, it checks if the
+     * encoded output is bit-exact with the reference output. The reference is generated by not
+     * setting max-input-size key.
      */
     @ApiTest(apis = {"android.media.AudioFormat#ENCODING_PCM_16BIT",
-            "android.media.AudioFormat#ENCODING_PCM_FLOAT"})
+            "android.media.AudioFormat#ENCODING_PCM_FLOAT",
+            "android.media.MediaFormat#KEY_MAX_INPUT_SIZE"})
     @CddTest(requirements = {"2.2.2/5.1/H-0-1", "2.2.2/5.1/H-0-2", "2.2.2/5.1/H-0-3",
             "2.2.2/5.1/H-0-4", "2.2.2/5.1/H-0-5", "2.3.2/5.1/T-0-1", "2.3.2/5.1/T-0-2",
             "2.3.2/5.1/T-0-3", "2.5.2/5.1/A-0-1", "2.5.2/5.1/A-0-2", "2.5.2/5.1/A-0-3",
@@ -243,5 +306,6 @@ public class AudioEncoderTest extends CodecEncoderTestBase {
         assertNotNull("no raw resource found for testing config : " + mActiveEncCfg + mTestConfig
                 + mTestEnv, mActiveRawRes);
         encodeAndValidate();
+        validateCodecOutputForDifferentInputSizes();
     }
 }

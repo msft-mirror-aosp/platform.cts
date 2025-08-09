@@ -18,7 +18,6 @@ package com.android.cts.devicepolicy;
 
 import static com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.FEATURE_MANAGED_USERS;
 import static com.android.cts.devicepolicy.DeviceAndProfileOwnerTest.DEVICE_ADMIN_COMPONENT_FLATTENED;
-import static com.android.cts.devicepolicy.metrics.DevicePolicyEventLogVerifier.assertMetricsLogged;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -26,10 +25,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.platform.test.annotations.LargeTest;
-import android.stats.devicepolicy.EventId;
 
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresAdditionalFeatures;
-import com.android.cts.devicepolicy.metrics.DevicePolicyEventWrapper;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.util.RunUtil;
@@ -145,21 +142,6 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
     }
 
     @Test
-    public void testUserRestrictionSetOnParentLogged() throws Exception {
-        assertMetricsLogged(getDevice(), () -> {
-            runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".DevicePolicyLoggingParentTest",
-                    "testUserRestrictionLogged", mUserId);
-                }, new DevicePolicyEventWrapper.Builder(EventId.ADD_USER_RESTRICTION_VALUE)
-                        .setAdminPackageName(DEVICE_ADMIN_PKG)
-                        .setStrings(DISALLOW_CONFIG_LOCATION, CALLED_FROM_PARENT)
-                        .build(),
-                new DevicePolicyEventWrapper.Builder(EventId.REMOVE_USER_RESTRICTION_VALUE)
-                        .setAdminPackageName(DEVICE_ADMIN_PKG)
-                        .setStrings(DISALLOW_CONFIG_LOCATION, CALLED_FROM_PARENT)
-                        .build());
-    }
-
-    @Test
     public void testUserRestrictionsSetOnParentAreNotPersisted() throws Exception {
         assumeCanCreateAdditionalUsers(1);
 
@@ -214,23 +196,6 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
                     "testCanOpenCamera",
                     mMainUserId);
         }
-    }
-
-    @Test
-    public void testCameraDisabledOnParentLogged() throws Exception {
-        assertMetricsLogged(getDevice(), () -> {
-                    runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".DevicePolicyLoggingParentTest",
-                            "testCameraDisabledLogged", mUserId);
-                }, new DevicePolicyEventWrapper.Builder(EventId.SET_CAMERA_DISABLED_VALUE)
-                        .setAdminPackageName(DEVICE_ADMIN_PKG)
-                        .setBoolean(true)
-                        .setStrings(CALLED_FROM_PARENT)
-                        .build(),
-                new DevicePolicyEventWrapper.Builder(EventId.SET_CAMERA_DISABLED_VALUE)
-                        .setAdminPackageName(DEVICE_ADMIN_PKG)
-                        .setBoolean(false)
-                        .setStrings(CALLED_FROM_PARENT)
-                        .build());
     }
 
     @Test
@@ -374,21 +339,6 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
         runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".InputMethodsTest", mUserId);
     }
 
-    @Test
-    public void testPermittedInputMethodsLogged() throws Exception {
-        assertMetricsLogged(getDevice(), () ->
-                        runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".InputMethodsTest",
-                                "testPermittedInputMethodsOnParent", mUserId),
-                new DevicePolicyEventWrapper.Builder(EventId.SET_PERMITTED_INPUT_METHODS_VALUE)
-                        .setAdminPackageName(DEVICE_ADMIN_PKG)
-                        .setStrings(CALLED_FROM_PARENT, new String[0])
-                        .build(),
-                new DevicePolicyEventWrapper.Builder(EventId.SET_PERMITTED_INPUT_METHODS_VALUE)
-                        .setAdminPackageName(DEVICE_ADMIN_PKG)
-                        .setStrings(CALLED_FROM_PARENT, new String[0])
-                        .build());
-    }
-
     private void setupIme(String imeComponent, int userId) throws Exception {
         // Wait until IMS service is registered by the system.
         waitForOutput("Failed waiting for IME to become available",
@@ -417,38 +367,6 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
         }
 
         assertThat(listUsers()).doesNotContain(userId);
-    }
-
-    @Test
-    public void testSetPersonalAppsSuspendedLogged() throws Exception {
-        assertMetricsLogged(getDevice(), () -> {
-                    runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".DevicePolicyLoggingTest",
-                            "testSetPersonalAppsSuspendedLogged", mUserId);
-                }, new DevicePolicyEventWrapper.Builder(EventId.SET_PERSONAL_APPS_SUSPENDED_VALUE)
-                        .setAdminPackageName(DEVICE_ADMIN_PKG)
-                        .setBoolean(true)
-                        .build(),
-                new DevicePolicyEventWrapper.Builder(EventId.SET_PERSONAL_APPS_SUSPENDED_VALUE)
-                        .setAdminPackageName(DEVICE_ADMIN_PKG)
-                        .setBoolean(false)
-                        .build());
-    }
-
-    @Test
-    public void testSetManagedProfileMaximumTimeOffLogged() throws Exception {
-        assertMetricsLogged(getDevice(), () -> {
-                    runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".PersonalAppsSuspensionTest",
-                            "testSetManagedProfileMaximumTimeOff", mUserId);
-                }, new DevicePolicyEventWrapper.Builder(
-                        EventId.SET_MANAGED_PROFILE_MAXIMUM_TIME_OFF_VALUE)
-                        .setAdminPackageName(DEVICE_ADMIN_PKG)
-                        .setTimePeriod(123456789)
-                        .build(),
-                new DevicePolicyEventWrapper.Builder(
-                        EventId.SET_MANAGED_PROFILE_MAXIMUM_TIME_OFF_VALUE)
-                        .setAdminPackageName(DEVICE_ADMIN_PKG)
-                        .setTimePeriod(0)
-                        .build());
     }
 
     @Test
@@ -591,30 +509,6 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
             runDeviceTestsAsUser(packageName, testClassName,
                     "testSetNetworkLogsEnabled_false", mUserId);
         }
-    }
-
-    @Test
-    public void testNetworkLoggingLogged() throws Exception {
-        installAppAsUser(DEVICE_ADMIN_APK, mMainUserId);
-        assertMetricsLogged(getDevice(), () -> {
-            testNetworkLoggingOnWorkProfile(DEVICE_ADMIN_PKG, ".NetworkLoggingTest");
-        }, new DevicePolicyEventWrapper.Builder(EventId.SET_NETWORK_LOGGING_ENABLED_VALUE)
-                .setAdminPackageName(DEVICE_ADMIN_PKG)
-                .setBoolean(false)
-                .setInt(1)
-                .setStrings(LOG_TAG_PROFILE_OWNER)
-                .build(),
-           new DevicePolicyEventWrapper.Builder(EventId.RETRIEVE_NETWORK_LOGS_VALUE)
-                .setAdminPackageName(DEVICE_ADMIN_PKG)
-                .setBoolean(false)
-                .setStrings(LOG_TAG_PROFILE_OWNER)
-                .build(),
-           new DevicePolicyEventWrapper.Builder(EventId.SET_NETWORK_LOGGING_ENABLED_VALUE)
-                .setAdminPackageName(DEVICE_ADMIN_PKG)
-                .setBoolean(false)
-                .setInt(0)
-                .setStrings(LOG_TAG_PROFILE_OWNER)
-                .build());
     }
 
     private void toggleQuietMode(boolean quietModeEnable) throws Exception {

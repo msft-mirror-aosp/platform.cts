@@ -86,3 +86,16 @@ specs {
     }
   }
 }
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_17
+    specification: "same"
+    required_values: {
+      key: "display_density_dpi"
+      value: {
+        int_value: 400
+      }
+    }
+  }
+}

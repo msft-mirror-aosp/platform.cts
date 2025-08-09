@@ -71,3 +71,16 @@ specs {
     }
   }
 }
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_17
+    specification: "MUST have a codec initialization latency of 30 ms or less for a 128 kbps or lower bitrate audio decoding session for all audio decoders when under load. Load here is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs together with the 1080p audio-video playback initialization."
+    required_values: {
+      key: "codec_initialization_latency_ms"
+      value {
+        long_value: 30
+      }
+    }
+  }
+}

@@ -124,3 +124,29 @@ specs {
     }
   }
 }
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_17
+    specification: "MUST support 3 instances of non-secure hardware video decoder sessions together with 1 instance of secure hardware video decoder session (4 instances total) (AVC, HEVC, VP9, AV1, or later) in any codec combination running concurrently with 3 sessions at 4K resolution@30fps (unless AV1) which includes one secure decoder session and 1 nn-secure session at 1080p resolution@30fps where at most 2 sessions can be in 10-bit HDR. For all sessions, there MUST NOT be more than 1 frame dropped per second. AV1 codec sessions are only required to support 1080p resolution even when this requirement calls for 4K."
+    test_config_id: "4k"
+    required_values: {
+      key: "concurrent_fps"
+      value {
+        double_value: 114  # 4 decoders * 30 fps * 0.95 tolerance factor
+      }
+    }
+    required_values: {
+      key: "frame_drops_per_sec"
+      value {
+        double_value: 1
+      }
+    }
+    required_values: {
+      key: "resolution"
+      value {
+        int_value: 2160
+      }
+    }
+  }
+}

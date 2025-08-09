@@ -30,6 +30,7 @@ import com.android.ddmlib.testrunner.TestResult.TestStatus;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
+import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.result.CollectingTestListener;
 import com.android.tradefed.result.TestDescription;
 import com.android.tradefed.result.TestResult;
@@ -95,6 +96,7 @@ public class AccountManagerXUserTest extends BaseMultiUserTest implements IBuild
         device.installPackageForUser(apkFile, true, true, mParentUserId, "-t");
 
         mProfileUserId = createProfile(mParentUserId);
+        CLog.d("setUp(): mProfileUserId=%d (mParentUserId=%d)", mProfileUserId, mParentUserId);
         device.startUser(mProfileUserId, true);
         device.installPackageForUser(apkFile, true, true, mProfileUserId, "-t");
 
@@ -235,12 +237,15 @@ public class AccountManagerXUserTest extends BaseMultiUserTest implements IBuild
             }
         }
         final CollectingTestListener listener = new CollectingTestListener();
+        CLog.d("Running test (%s:%s#%s) on user %d with args %s", packageName, testClassName,
+                testMethodName, userId, testArgs);
         device.runInstrumentationTestsAsUser(testRunner, userId, listener);
 
         final TestRunResult result = listener.getCurrentRunResults();
         if (result.isRunFailure()) {
-            throw new AssertionError("Failed to successfully run device tests for "
-                    + result.getName() + ": " + result.getRunFailureMessage());
+            throw new AssertionError(
+                    "Failed to successfully run device tests for " + result.getName() + " on user "
+                            + userId + ":" + result.getRunFailureMessage());
         }
         if (result.getNumTests() == 0) {
             throw new AssertionError("No tests were run on the device");

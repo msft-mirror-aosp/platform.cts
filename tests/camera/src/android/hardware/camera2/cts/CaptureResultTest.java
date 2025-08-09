@@ -1062,9 +1062,7 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
         resultKeys.add(CaptureResult.CONTROL_SETTINGS_OVERRIDE);
         resultKeys.add(CaptureResult.CONTROL_AUTOFRAMING);
         resultKeys.add(CaptureResult.CONTROL_AUTOFRAMING_STATE);
-        if (Flags.cameraAeModeLowLightBoost()) {
-            resultKeys.add(CaptureResult.CONTROL_LOW_LIGHT_BOOST_STATE);
-        }
+        resultKeys.add(CaptureResult.CONTROL_LOW_LIGHT_BOOST_STATE);
         if (Flags.zoomMethod()) {
             resultKeys.add(CaptureResult.CONTROL_ZOOM_METHOD);
         }

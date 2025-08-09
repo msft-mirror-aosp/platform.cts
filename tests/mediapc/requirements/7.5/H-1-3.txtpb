@@ -137,3 +137,22 @@ specs {
     }
   }
 }
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_17
+    specification: "same"
+    required_values {
+      key: "rear_primary_camera_hwl_level"
+      value {
+        int_value: 1
+      }
+    }
+    required_values {
+      key: "front_primary_camera_hwl_level"
+      value {
+        int_value: 1
+      }
+    }
+  }
+}

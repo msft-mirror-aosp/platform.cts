@@ -43,6 +43,8 @@ import android.media.tv.flags.Flags;
 import android.os.PersistableBundle;
 import android.os.RemoteException;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
@@ -51,6 +53,7 @@ import androidx.test.runner.AndroidJUnit4;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
@@ -65,6 +68,9 @@ import java.util.function.Supplier;
 @RunWith(AndroidJUnit4.class)
 @SmallTest
 public class MediaQualityTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private MediaQualityManager mManager;
     private static final String PACKAGE_NAME = "android.media.mediaquality.cts";
     private AmbientBacklightSettings mAmbientBacklightSettings;

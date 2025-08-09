@@ -17,6 +17,7 @@
 package android.input.cts
 
 import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.util.Log
 import android.view.MotionEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -52,6 +53,9 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 @RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
 class MotionEventIsResampledTest {
+    @get:Rule
+    val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private lateinit var touchScreen: UinputTouchScreen
     private lateinit var verifier: BlockingQueueEventVerifier

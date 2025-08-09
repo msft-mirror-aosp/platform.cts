@@ -16,6 +16,12 @@
 
 package android.security.net.config.cts;
 
+import static android.security.net.config.cts.TestUtils.assertDownloadManagerFailsAsPaused;
+import static android.security.net.config.cts.TestUtils.assertDownloadManagerSucceeds;
+import static android.security.net.config.cts.TestUtils.bindCleartextServer;
+import static android.security.net.config.cts.TestUtils.bindTLSServer;
+import static android.security.net.config.cts.TestUtils.startMockServer;
+
 import android.security.net.config.cts.CtsNetSecConfigDownloadManagerTestCases.R;
 
 import androidx.test.runner.AndroidJUnit4;
@@ -32,27 +38,30 @@ public class DownloadManagerTest extends BaseTestCase {
 
     @Test
     public void testConfigTrustedCaAccepted() throws Exception {
-        mServerSocket = TestUtils.bindTLSServer(mContext, R.raw.valid_chain, R.raw.test_key);
-        TestUtils.startMockServer(mServerSocket);
-        TestUtils.assertDownloadManagerSucceeds(
+        mServerSocket = bindTLSServer(mContext, R.raw.valid_chain, R.raw.test_key);
+        startMockServer(mServerSocket);
+
+        assertDownloadManagerSucceeds(
                 mContext, "localhost", mServerSocket.getLocalPort(), /* https= */ true);
         mServerSocket.close();
     }
 
     @Test
     public void testUntrustedCaRejected() throws Exception {
-        mServerSocket = TestUtils.bindTLSServer(mContext, R.raw.invalid_chain, R.raw.test_key);
-        TestUtils.startMockServer(mServerSocket);
-        TestUtils.assertDownloadManagerFailsAsPaused(
+        mServerSocket = bindTLSServer(mContext, R.raw.invalid_chain, R.raw.test_key);
+        startMockServer(mServerSocket);
+
+        assertDownloadManagerFailsAsPaused(
                 mContext, "localhost", mServerSocket.getLocalPort(), /* https= */ true);
         mServerSocket.close();
     }
 
     @Test
     public void testPerDomainCleartextAccepted() throws Exception {
-        mServerSocket = TestUtils.bindCleartextServer();
-        TestUtils.startMockServer(mServerSocket);
-        TestUtils.assertDownloadManagerSucceeds(
+        mServerSocket = bindCleartextServer();
+        startMockServer(mServerSocket);
+
+        assertDownloadManagerSucceeds(
                 mContext, "localhost", mServerSocket.getLocalPort(), /* https= */ false);
         mServerSocket.close();
     }

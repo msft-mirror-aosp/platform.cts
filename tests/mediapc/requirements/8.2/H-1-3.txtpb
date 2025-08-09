@@ -86,3 +86,16 @@ specs {
     }
   }
 }
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_17
+    specification: "same"
+    required_values: {
+      key: "filesystem_io_rate_mbps"
+      value: {
+        double_value: 250
+      }
+    }
+  }
+}

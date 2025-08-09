@@ -79,3 +79,31 @@ specs {
     ]
   }
 }
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_17
+    specification: "MUST support VkPhysicalDeviceProtectedMemoryFeatures.protectedMemory and VK_KHR_global_priority."
+    required_values: [
+      {
+        key: "vk_ext_global_priority"
+        value: {
+          bool_value: true
+
+        }
+      },
+      {
+        key: "vk_physical_device_protected_memory"
+        value: {
+          bool_value: true
+        }
+      },
+      {
+        key: "vk_non_cpu_device_count"
+        value: {
+          int_value: 1
+        }
+      }
+    ]
+  }
+}

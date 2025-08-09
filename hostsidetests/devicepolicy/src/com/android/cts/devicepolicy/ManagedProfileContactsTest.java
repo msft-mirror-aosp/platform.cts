@@ -16,13 +16,9 @@
 
 package com.android.cts.devicepolicy;
 
-import static com.android.cts.devicepolicy.metrics.DevicePolicyEventLogVerifier.assertMetricsLogged;
-
 import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.LargeTest;
-import android.stats.devicepolicy.EventId;
 
-import com.android.cts.devicepolicy.metrics.DevicePolicyEventWrapper;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil;
 
@@ -93,32 +89,6 @@ public final class ManagedProfileContactsTest extends BaseManagedProfileTest {
                 contactsTestSet.checkIfCanListEnterpriseContacts(false);
                 contactsTestSet.checkIfCanFilterSelfContacts();
                 contactsTestSet.checkIfNoEnterpriseDirectoryFound();
-                assertMetricsLogged(getDevice(), () -> {
-                    contactsTestSet.setCallerIdEnabled(true);
-                    contactsTestSet.setCallerIdEnabled(false);
-                }, new DevicePolicyEventWrapper
-                        .Builder(EventId.SET_CROSS_PROFILE_CALLER_ID_DISABLED_VALUE)
-                        .setAdminPackageName(MANAGED_PROFILE_PKG)
-                        .setBoolean(false)
-                        .build(),
-                new DevicePolicyEventWrapper
-                        .Builder(EventId.SET_CROSS_PROFILE_CALLER_ID_DISABLED_VALUE)
-                        .setAdminPackageName(MANAGED_PROFILE_PKG)
-                        .setBoolean(true)
-                        .build());
-                assertMetricsLogged(getDevice(), () -> {
-                    contactsTestSet.setContactsSearchEnabled(true);
-                    contactsTestSet.setContactsSearchEnabled(false);
-                }, new DevicePolicyEventWrapper
-                        .Builder(EventId.SET_CROSS_PROFILE_CONTACTS_SEARCH_DISABLED_VALUE)
-                        .setAdminPackageName(MANAGED_PROFILE_PKG)
-                        .setBoolean(false)
-                        .build(),
-                new DevicePolicyEventWrapper
-                        .Builder(EventId.SET_CROSS_PROFILE_CONTACTS_SEARCH_DISABLED_VALUE)
-                        .setAdminPackageName(MANAGED_PROFILE_PKG)
-                        .setBoolean(true)
-                        .build());
                 return null;
             } finally {
                 // reset policies

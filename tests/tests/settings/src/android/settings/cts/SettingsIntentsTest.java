@@ -23,6 +23,7 @@ import static com.android.cts.install.lib.InstallUtils.getPackageInfo;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNotNull;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.Intent;
@@ -102,6 +103,11 @@ public class SettingsIntentsTest {
         assumeFalse(
                 "SIM is not supported on visible background user",
                 new UserHelper(mContext).isVisibleBackgroundUser());
+
+        // Skip if device does not have telephony capabilities.
+        assumeTrue(
+                "Skipping test: Telephony APIs are not supported.",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         // Skipping for single sim devices as the intent is only for multi-sim devices.
         assumeFalse(

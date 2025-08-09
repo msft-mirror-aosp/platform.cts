@@ -37,6 +37,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.filters.LargeTest;
@@ -70,10 +71,10 @@ public class CrossUserSuspendTest {
     @ClassRule
     public static final DeviceState sDeviceState = new DeviceState();
 
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Rule
-    public final TestRule mCheckFlagsRule = RuleChain
-            .outerRule(DeviceFlagsValueProvider.createCheckFlagsRule())
-            .around(sDeviceState);
+    public final TestRule mRuleChain = RuleChain.outerRule(mCheckFlagsRule).around(sDeviceState);
 
     private static final Context sContext = TestApis.context().instrumentedContext();
 

@@ -68,6 +68,8 @@ import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresDevice;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.view.Surface;
 
@@ -83,6 +85,7 @@ import com.android.compatibility.common.util.MediaUtils;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -103,6 +106,9 @@ import java.util.concurrent.TimeUnit;
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 @RunWith(AndroidJUnit4.class)
 public class MediaRecorderTest extends MediaTestBase {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private final String TAG = "MediaRecorderTest";
     private final String OUTPUT_PATH;
     private final String OUTPUT_PATH2;

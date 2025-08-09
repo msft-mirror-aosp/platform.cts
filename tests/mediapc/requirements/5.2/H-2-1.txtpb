@@ -148,3 +148,40 @@ specs {
     }
   }
 }
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_17
+    specification:
+      "MUST meet the minimum quality target defined by the video encoder "
+      "rate-distortion curves for hardware AVC and HEVC codecs, as defined "
+      "in Run Performance Class 14 (PC14)-Video encoding quality (VEQ) tests."
+    required_values: {
+      key: "bdrate_vmaf"
+      value {
+        double_value: 0.0
+      }
+    }
+    required_values: {
+      key: "calculated"
+      value {
+        bool_value: true
+      }
+    }
+    required_values: {
+      key: "codec_name"
+      value {
+      }
+    }
+    required_values: {
+      key: "bframes_allowed"
+      value {
+      }
+    }
+    required_values: {
+      key: "resolution"
+      value {
+      }
+    }
+  }
+}

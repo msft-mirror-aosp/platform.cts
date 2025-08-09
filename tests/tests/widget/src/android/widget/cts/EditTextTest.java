@@ -34,6 +34,8 @@ import android.content.res.Configuration;
 import android.graphics.Point;
 import android.os.SystemClock;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.WindowManagerStateHelper;
 import android.support.test.uiautomator.By;
 import android.support.test.uiautomator.UiDevice;
@@ -87,6 +89,8 @@ import java.util.concurrent.atomic.AtomicReference;
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class EditTextTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Activity mActivity;
     private EditText mEditText1;

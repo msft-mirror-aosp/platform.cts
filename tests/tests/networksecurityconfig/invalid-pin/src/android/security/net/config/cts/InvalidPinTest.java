@@ -16,6 +16,9 @@
 
 package android.security.net.config.cts;
 
+import static android.security.net.config.cts.TestUtils.assertTlsConnectionFails;
+import static android.security.net.config.cts.TestUtils.assertTlsConnectionSucceeds;
+
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Test;
@@ -26,12 +29,12 @@ public class InvalidPinTest extends BaseTestCase {
 
     @Test
     public void testPinFailure() throws Exception {
-        TestUtils.assertTlsConnectionFails("android.com", 443);
+        assertTlsConnectionFails("android.com");
     }
 
     @Test
     public void testDefaultDomainUnaffected() throws Exception {
-        TestUtils.assertTlsConnectionSucceeds("google.com", 443);
-        TestUtils.assertTlsConnectionSucceeds("developer.android.com", 443);
+        assertTlsConnectionSucceeds("google.com");
+        assertTlsConnectionSucceeds("developer.android.com");
     }
 }

@@ -19,6 +19,7 @@ package android.input.cts
 import android.graphics.Point
 import android.graphics.PointF
 import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.view.InputDevice
 import android.view.MotionEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -53,6 +54,9 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 @RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
 class DrawingTabletTest {
+    @get:Rule
+    val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+
     private lateinit var drawingTablet: UinputTouchDevice
     private lateinit var verifier: BlockingQueueEventVerifier
 

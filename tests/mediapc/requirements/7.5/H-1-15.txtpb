@@ -122,3 +122,34 @@ specs {
     }
   }
 }
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_17
+    specification: "same"
+    required_values {
+      key: "rear_camera2_extension_night_supported"
+      value {
+        bool_value: true
+      }
+    }
+    required_values {
+      key: "front_camera2_extension_night_supported"
+      value {
+        bool_value: true
+      }
+    }
+    required_values {
+      key: "rear_camerax_extension_night_supported"
+      value {
+        bool_value: true
+      }
+    }
+    required_values {
+      key: "front_camerax_extension_night_supported"
+      value {
+        bool_value: true
+      }
+    }
+  }
+}

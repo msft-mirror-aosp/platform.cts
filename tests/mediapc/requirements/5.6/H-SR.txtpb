@@ -29,3 +29,10 @@ specs {
     specification: "same"
   }
 }
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_17
+    specification: "same"
+  }
+}

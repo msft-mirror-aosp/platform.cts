@@ -16,6 +16,10 @@
 
 package android.security.net.config.cts;
 
+import static android.security.net.config.cts.TestUtils.assertCleartextConnectionSucceeds;
+import static android.security.net.config.cts.TestUtils.bindCleartextServer;
+import static android.security.net.config.cts.TestUtils.startMockServer;
+
 import static com.android.org.conscrypt.net.flags.Flags.FLAG_NETWORK_SECURITY_CONFIG_LOCALHOST;
 
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -43,8 +47,8 @@ public class LocalhostCleartextTest extends BaseTestCase {
 
     @Before
     public void setUp() throws Exception {
-        mServerSocket = TestUtils.bindCleartextServer();
-        TestUtils.startMockServer(mServerSocket);
+        mServerSocket = bindCleartextServer();
+        startMockServer(mServerSocket);
     }
 
     @After
@@ -54,26 +58,26 @@ public class LocalhostCleartextTest extends BaseTestCase {
 
     @Test
     public void connectInCleartextOnIpV4Localhost_connectionSucceeds() throws Exception {
-        TestUtils.assertCleartextConnectionSucceeds("localhost", mServerSocket.getLocalPort());
+        assertCleartextConnectionSucceeds("localhost", mServerSocket.getLocalPort());
     }
 
     @Test
     public void connectInCleartextOnIpV6Localhost_connectionSucceeds() throws Exception {
-        TestUtils.assertCleartextConnectionSucceeds("ip6-localhost", mServerSocket.getLocalPort());
+        assertCleartextConnectionSucceeds("ip6-localhost", mServerSocket.getLocalPort());
     }
 
     @Test
     public void connectInCleartextOnIpV4127_0_0_1_connectionSucceeds() throws Exception {
-        TestUtils.assertCleartextConnectionSucceeds("127.0.0.1", mServerSocket.getLocalPort());
+        assertCleartextConnectionSucceeds("127.0.0.1", mServerSocket.getLocalPort());
     }
 
     @Test
     public void connectInCleartextOnIpV4127_0_0_42_connectionSucceeds() throws Exception {
-        TestUtils.assertCleartextConnectionSucceeds("127.0.0.42", mServerSocket.getLocalPort());
+        assertCleartextConnectionSucceeds("127.0.0.42", mServerSocket.getLocalPort());
     }
 
     @Test
     public void connectInCleartextOnIpV6LoopbackAddress_connectionSucceeds() throws Exception {
-        TestUtils.assertCleartextConnectionSucceeds("[::1]", mServerSocket.getLocalPort());
+        assertCleartextConnectionSucceeds("[::1]", mServerSocket.getLocalPort());
     }
 }

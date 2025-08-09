@@ -28,6 +28,8 @@ import android.media.tv.interactive.TvInteractiveAppServiceInfo;
 import android.media.tv.interactive.TvInteractiveAppView;
 import android.os.ConditionVariable;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.tv.cts.R;
 import android.view.InputEvent;
 
@@ -51,6 +53,9 @@ import java.util.concurrent.Executor;
  */
 @RunWith(AndroidJUnit4.class)
 public class TvInteractiveAppViewTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final long TIME_OUT_MS = 20000L;
 
     private Instrumentation mInstrumentation;

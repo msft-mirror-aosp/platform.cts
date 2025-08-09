@@ -16,18 +16,13 @@
 
 package android.content.cts;
 
-import static com.android.cts.devicepolicy.metrics.DevicePolicyEventLogVerifier.assertMetricsLogged;
-import static com.android.cts.devicepolicy.metrics.DevicePolicyEventLogVerifier.assertMetricsNotLogged;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.SystemUserOnly;
-import android.stats.devicepolicy.EventId;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
-import com.android.cts.devicepolicy.metrics.DevicePolicyEventWrapper;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
@@ -437,102 +432,6 @@ public class ContextCrossProfileHostTest extends BaseContextCrossProfileTest
                 mTestArgs,
                 /* timeout= */60L,
                 TimeUnit.SECONDS);
-    }
-
-    @Test
-    public void testBindServiceAsUser_sameProfileGroup_reportsMetric()
-            throws Exception {
-        assumeTrue(supportsManagedUsers());
-        int userInSameProfileGroup = createProfile(mParentUserId);
-        getDevice().startUser(userInSameProfileGroup, /* waitFlag= */ true);
-        mTestArgs.put("testUser", Integer.toString(userInSameProfileGroup));
-        getDevice().installPackageForUser(
-                mApkFile,
-                /* reinstall= */ true,
-                /* grantPermissions= */ true,
-                userInSameProfileGroup,
-                /* extraArgs= */ "-t",
-                /* extraArgs= */ "--force-queryable");
-
-        CompatibilityBuildHelper buildHelper = new CompatibilityBuildHelper(mCtsBuild);
-        File testServiceApkFile = buildHelper.getTestFile(TEST_SERVICE_WITH_PERMISSION_APK);
-        getDevice().installPackageForUser(
-                testServiceApkFile,
-                /* reinstall= */ true,
-                /* grantPermissions= */ true,
-                userInSameProfileGroup,
-                /* extraArgs= */ "-t",
-                /* extraArgs= */ "--force-queryable");
-
-        assertMetricsLogged(getDevice(), () -> {
-            runDeviceTests(
-                    getDevice(),
-                    TEST_WITH_PERMISSION_PKG,
-                    ".ContextCrossProfileDeviceTest",
-                    "testBindServiceAsUser_withInteractAcrossProfilePermission_noAsserts",
-                    mParentUserId,
-                    mTestArgs,
-                    /* timeout= */ 60L,
-                    TimeUnit.SECONDS);
-        }, new DevicePolicyEventWrapper.Builder(EventId.BIND_CROSS_PROFILE_SERVICE_VALUE)
-                .setStrings(TEST_WITH_PERMISSION_PKG)
-                .build());
-    }
-
-    @Test
-    public void testBindServiceAsUser_differentProfileGroup_doesNotReportMetric()
-            throws Exception {
-        int userInDifferentProfileGroup = createUser();
-        getDevice().startUser(userInDifferentProfileGroup, /* waitFlag= */ true);
-        mTestArgs.put("testUser", Integer.toString(userInDifferentProfileGroup));
-        getDevice().installPackageForUser(
-                mApkFile, /* reinstall= */ true, /* grantPermissions= */ true,
-                userInDifferentProfileGroup, /* extraArgs= */ "-t",
-                /* extraArgs= */ "--force-queryable");
-
-        CompatibilityBuildHelper buildHelper = new CompatibilityBuildHelper(mCtsBuild);
-        File testServiceApkFile = buildHelper.getTestFile(TEST_SERVICE_WITH_PERMISSION_APK);
-        getDevice().installPackageForUser(
-                testServiceApkFile,
-                /* reinstall= */ true,
-                /* grantPermissions= */ true,
-                userInDifferentProfileGroup,
-                /* extraArgs= */ "-t",
-                /* extraArgs= */ "--force-queryable");
-
-        assertMetricsNotLogged(getDevice(), () -> {
-            runDeviceTests(
-                    getDevice(),
-                    TEST_WITH_PERMISSION_PKG,
-                    ".ContextCrossProfileDeviceTest",
-                    "testBindServiceAsUser_withInteractAcrossUsersFullPermission_noAsserts",
-                    mParentUserId,
-                    mTestArgs,
-                    /* timeout= */ 60L,
-                    TimeUnit.SECONDS);
-        }, new DevicePolicyEventWrapper.Builder(EventId.BIND_CROSS_PROFILE_SERVICE_VALUE)
-                .setStrings(TEST_WITH_PERMISSION_PKG)
-                .build());
-    }
-
-    @Test
-    public void testBindServiceAsUser_sameUser_doesNotReportMetric()
-            throws Exception {
-        mTestArgs.put("testUser", Integer.toString(mParentUserId));
-
-        assertMetricsNotLogged(getDevice(), () -> {
-            runDeviceTests(
-                    getDevice(),
-                    TEST_WITH_PERMISSION_PKG,
-                    ".ContextCrossProfileDeviceTest",
-                    "testBindServiceAsUser_withInteractAcrossProfilePermission_noAsserts",
-                    mParentUserId,
-                    mTestArgs,
-                    /* timeout= */ 60L,
-                    TimeUnit.SECONDS);
-        }, new DevicePolicyEventWrapper.Builder(EventId.BIND_CROSS_PROFILE_SERVICE_VALUE)
-                .setStrings(TEST_WITH_PERMISSION_PKG)
-                .build());
     }
 
     @Test

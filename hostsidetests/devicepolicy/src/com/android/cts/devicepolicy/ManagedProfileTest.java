@@ -15,16 +15,12 @@
  */
 package com.android.cts.devicepolicy;
 
-import static com.android.cts.devicepolicy.metrics.DevicePolicyEventLogVerifier.assertMetricsLogged;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.platform.test.annotations.LargeTest;
-import android.stats.devicepolicy.EventId;
 
-import com.android.cts.devicepolicy.metrics.DevicePolicyEventWrapper;
 import com.android.ddmlib.Log.LogLevel;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil.CLog;
@@ -144,13 +140,11 @@ public final class ManagedProfileTest extends BaseManagedProfileTest {
                 "testDefaultOrganizationNameIsNull", mProfileUserId);
         runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".OrganizationInfoTest",
                 mProfileUserId);
-        assertMetricsLogged(getDevice(), () -> {
-            runDeviceTestsAsUser(
-                    MANAGED_PROFILE_PKG, MANAGED_PROFILE_PKG + ".OrganizationInfoTest",
-                    "testSetOrganizationColor", mProfileUserId);
-        }, new DevicePolicyEventWrapper.Builder(EventId.SET_ORGANIZATION_COLOR_VALUE)
-                .setAdminPackageName(MANAGED_PROFILE_PKG)
-                .build());
+        runDeviceTestsAsUser(
+                MANAGED_PROFILE_PKG,
+                MANAGED_PROFILE_PKG + ".OrganizationInfoTest",
+                "testSetOrganizationColor",
+                mProfileUserId);
     }
 
     @Test
@@ -321,17 +315,6 @@ public final class ManagedProfileTest extends BaseManagedProfileTest {
         // The Profile Owner should have access to all device identifiers.
         runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".DeviceIdentifiersTest",
                 "testProfileOwnerOnPersonalDeviceCannotGetDeviceIdentifiers", mProfileUserId);
-    }
-
-    @Test
-    public void testSetProfileNameLogged() throws Exception {
-        assertMetricsLogged(getDevice(), () -> {
-            runDeviceTestsAsUser(
-                    MANAGED_PROFILE_PKG, MANAGED_PROFILE_PKG + ".DevicePolicyLoggingTest",
-                    "testSetProfileNameLogged", mProfileUserId);
-        }, new DevicePolicyEventWrapper.Builder(EventId.SET_PROFILE_NAME_VALUE)
-                .setAdminPackageName(MANAGED_PROFILE_PKG)
-                .build());
     }
 
     @Test

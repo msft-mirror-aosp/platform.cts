@@ -19,6 +19,7 @@ package android.input.cts
 import android.Manifest
 import android.hardware.input.InputManager
 import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.provider.Settings
 import android.view.KeyEvent
 import androidx.test.ext.junit.rules.ActivityScenarioRule
@@ -51,6 +52,8 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 @RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
 class ModifierKeyRemappingTest {
+    @get:Rule
+    val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
 

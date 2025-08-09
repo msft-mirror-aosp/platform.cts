@@ -15,9 +15,7 @@
  */
 package android.host.accounts;
 
-import static org.junit.Assert.fail;
-
-import com.android.tradefed.device.CollectingOutputReceiver;
+import com.android.compatibility.common.util.CommonTestUtils;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.log.LogUtil.CLog;
@@ -26,9 +24,7 @@ import com.android.tradefed.testtype.IDeviceTest;
 import org.junit.After;
 import org.junit.Before;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Base class for multi user tests.
@@ -71,7 +67,7 @@ public class BaseMultiUserTest implements IDeviceTest {
     @After
     public void tearDown() throws Exception {
         if (getDevice().getCurrentUser() != mInitialUserId) {
-            CLog.w("User changed during test. Switching back to " + mInitialUserId);
+            CLog.w("User changed during test. Switching back to %d", mInitialUserId);
             getDevice().switchUser(mInitialUserId);
         }
         // Remove the users created during this test.
@@ -118,9 +114,9 @@ public class BaseMultiUserTest implements IDeviceTest {
             throws DeviceNotAvailableException, IllegalStateException {
         final String command =
                 "pm create-user " + extraParam + " TestUser_" + System.currentTimeMillis();
-        CLog.d("Starting command: " + command);
+        CLog.d("Starting command: %s", command);
         final String output = getDevice().executeShellCommand(command);
-        CLog.d("Output for command " + command + ": " + output);
+        CLog.d("Output for command %s: %s", command, output);
 
         if (output.startsWith("Success")) {
             try {
@@ -130,7 +126,8 @@ public class BaseMultiUserTest implements IDeviceTest {
             }
         }
 
-        throw new IllegalStateException("Failed to create user: " + output);
+        throw new IllegalStateException("Failed to create user with command '" + command + "'. "
+                + "Output was: '" + output + "'");
     }
 
     protected int createGuestUser() throws Exception {
@@ -161,16 +158,25 @@ public class BaseMultiUserTest implements IDeviceTest {
         }
     }
 
-    protected void waitForBroadcastIdle() throws DeviceNotAvailableException, IOException {
-        final CollectingOutputReceiver receiver = new CollectingOutputReceiver();
+    // TODO(b/131736394): move this method to some helper class, the problem is deciding where
+    // (CommonTestUtils itself or another class in that module, HostSideTestUtils or another class
+    // in that module, ActivityManagerUtil in the same package as UserUtil, etc...)
+    protected void waitForBroadcastIdle() throws Exception {
         // We allow 8min for the command to complete and 4min for the command to start to
-        // output something.
-        getDevice().executeShellCommand(
-                "am wait-for-broadcast-idle", receiver, 8, 4, TimeUnit.MINUTES, 0);
-        final String output = receiver.getOutput();
-        if (!output.contains("All broadcast queues are idle!")) {
-            CLog.e("Output from 'am wait-for-broadcast-idle': %s", output);
-            fail("'am wait-for-broadcase-idle' did not complete.");
-        }
+        // output something
+        String command = "am wait-for-broadcast-idle";
+        String expectedOutputLine = "All broadcast queues are idle!";
+        CommonTestUtils.waitUntil(command, /* timeoutSeconds= */ 12 * 60, () -> {
+            String output = mDevice.executeShellCommand(command);
+            CLog.d("Output from %s: %s", command, output);
+            // NOTE: often the command completes with an error like:
+            //
+            // Test idle failed due to 481516 2342:some.app/u0a42 runnable at -11ms because ...
+            //
+            // We need to ignore those lines and wait until the "All BC are idle!" line, and the
+            // simplest way is to retry - using the executeShellCommand() method that takes a
+            // CollectingOutputReceiver doesn't seem to handle this situation well...
+            return output.contains(expectedOutputLine);
+        });
     }
 }

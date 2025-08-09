@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,23 @@
  * limitations under the License.
  */
 
-package android.security.net.config.cts;
+package android.view.animation.cts;
 
-import static android.security.net.config.cts.TestUtils.assertTlsConnectionSucceeds;
+import android.platform.test.annotations.AppModeSdkSandbox;
+import android.view.animation.AnticipateInterpolator;
 
+import androidx.test.filters.MediumTest;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+@MediumTest
 @RunWith(AndroidJUnit4.class)
-public class BasicDebugOverrideEnabledTest extends BaseTestCase {
-
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
+public class AnticipateInterpolatorTest {
     @Test
-    public void testDefaultConfig() throws Exception {
-        // Connections should work thanks to the debug overrides adding the system CA store.
-        assertTlsConnectionSucceeds("android.com");
+    public void testConstructor() {
+        new AnticipateInterpolator();
     }
 }

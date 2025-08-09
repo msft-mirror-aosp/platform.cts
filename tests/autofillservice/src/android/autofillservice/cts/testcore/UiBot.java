@@ -1234,15 +1234,16 @@ public class UiBot {
      * Asserts a given object has the expected accessibility title.
      */
     private void assertAccessibilityTitle(UiObject2 object, String expectedTitle) {
-        // TODO: ideally it should get the AccessibilityWindowInfo from the object, but UiAutomator
-        // does not expose that.
-        for (AccessibilityWindowInfo window : mAutoman.getWindows()) {
-            final CharSequence title = window.getTitle();
-            Log.d(TAG, "assertAccessibilityTitle(): found title =" + title + ", expected title="
-                    + expectedTitle);
-            if (title != null && title.toString().equals(expectedTitle)) {
-                return;
-            }
+        AccessibilityWindowInfo windowInfo = object.getAccessibilityNodeInfo().getWindow();
+        CharSequence title = windowInfo != null ? windowInfo.getTitle() : null;
+        Log.d(
+                TAG,
+                "assertAccessibilityTitle(): nodeWindowInfo title ="
+                        + title
+                        + ", expected title="
+                        + expectedTitle);
+        if (title != null && title.toString().equals(expectedTitle)) {
+            return;
         }
         throw new RetryableException("Title '%s' not found for %s", expectedTitle, object);
     }

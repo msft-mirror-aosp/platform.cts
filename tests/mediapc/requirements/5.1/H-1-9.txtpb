@@ -135,3 +135,34 @@ specs {
     }
   }
 }
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_17
+    specification:
+      "MUST support 2 instances of secure hardware video decoder sessions "
+      "(AVC, HEVC, VP9, AV1, or later) in any codec combination running "
+      "concurrently at 1080p resolution@30 fps for both 8-bit "
+      "(SDR) and 10-bit HDR content. For all sessions, there MUST NOT be "
+      "more than 1 frame dropped per second."
+    test_config_id: "HDR"
+    required_values: {
+      key: "concurrent_fps"
+      value {
+        double_value: 57  # 2 decoders * 30 fps * 0.95 tolerance factor
+      }
+    }
+    required_values: {
+      key: "frame_drops_per_sec"
+      value {
+        double_value: 1
+      }
+    }
+    required_values: {
+      key: "is_hdr"
+      value {
+        bool_value: true
+      }
+    }
+  }
+}

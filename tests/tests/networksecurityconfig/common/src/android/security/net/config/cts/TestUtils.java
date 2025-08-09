@@ -69,23 +69,47 @@ public final class TestUtils {
     private TestUtils() {
     }
 
+    /** Asserts that TLS connections on port 443 to {@code host} succeed */
+    public static void assertTlsConnectionSucceeds(String host) throws Exception {
+        assertTlsConnectionSucceeds(host, /* port= */ 443);
+    }
+
+    /** Asserts that TLS connections to {@code host} on {@code port} succeed */
     public static void assertTlsConnectionSucceeds(String host, int port) throws Exception {
         assertSslSocketSucceeds(host, port);
         assertHttpClientSucceeds(host, port, true /* https */);
         assertUrlConnectionSucceeds(host, port, true /* https */);
     }
 
+    /** Asserts that TLS connections on port 443 to {@code host} fail */
+    public static void assertTlsConnectionFails(String host) throws Exception {
+        assertTlsConnectionFails(host, /* port= */ 443);
+    }
+
+    /** Asserts that TLS connections to {@code host} on {@code port} fail */
     public static void assertTlsConnectionFails(String host, int port) throws Exception {
         assertSslSocketFails(host, port);
         assertHttpClientFails(host, port, true /* https */);
         assertUrlConnectionFails(host, port, true /* https */);
     }
 
+    /** Asserts that cleartext connections on port 80 to {@code host} succeed */
+    public static void assertCleartextConnectionSucceeds(String host) throws Exception {
+        assertCleartextConnectionSucceeds(host, /* port= */ 80);
+    }
+
+    /** Asserts that cleartext connections to {@code host} on {@code port} succeed */
     public static void assertCleartextConnectionSucceeds(String host, int port) throws Exception {
         assertHttpClientSucceeds(host, port, false /* http */);
         assertUrlConnectionSucceeds(host, port, false /* http */);
     }
 
+    /** Asserts that cleartext connections on port 80 to {@code host} fail */
+    public static void assertCleartextConnectionFails(String host) throws Exception {
+        assertCleartextConnectionFails(host, /* port= */ 80);
+    }
+
+    /** Asserts that cleartext connections to {@code host} on {@code port} fail */
     public static void assertCleartextConnectionFails(String host, int port) throws Exception {
         assertHttpClientFails(host, port, false /* http */);
         assertUrlConnectionFails(host, port, false /* http */);
@@ -301,12 +325,41 @@ public final class TestUtils {
 
     private static final long DOWNLOAD_MANAGER_TIMEOUT = 10 * DateUtils.SECOND_IN_MILLIS;
 
+    /** Asserts that the DownloadManager is able to retrieve the root of a webserver on port 80 */
+    public static void assertCleartextDownloadManagerSucceeds(Context ctx, String host)
+            throws Exception {
+        assertDownloadManagerSucceeds(ctx, host, /* port= */ 80, /* https= */ false);
+    }
+
+    /**
+     * Asserts that the DownloadManager is able to retrieve the root of a TLS webserver on port 443
+     */
+    public static void assertTlsDownloadManagerSucceeds(Context ctx, String host) throws Exception {
+        assertDownloadManagerSucceeds(ctx, host, /* port= */ 443, /* https= */ true);
+    }
+
     /** Asserts that the DownloadManager is able to retrieve the root of a webserver. */
     public static void assertDownloadManagerSucceeds(
             Context ctx, String host, int port, boolean https) throws Exception {
         Uri destination = Uri.parse((https ? "https://" : "http://") + host + ":" + port);
         int result = startDownloadManager(ctx, destination);
         assertStatusEquals(DownloadManager.STATUS_SUCCESSFUL, result);
+    }
+
+    /**
+     * Asserts that the DownloadManager is not able to retrieve the root of a webserver on port 80
+     */
+    public static void assertCleartextDownloadManagerFails(Context ctx, String host)
+            throws Exception {
+        assertDownloadManagerFails(ctx, host, /* port= */ 80, /* https= */ false);
+    }
+
+    /**
+     * Asserts that the DownloadManager is not able to retrieve the root of a TLS webserver on port
+     * 443
+     */
+    public static void assertTlsDownloadManagerFails(Context ctx, String host) throws Exception {
+        assertDownloadManagerFails(ctx, host, /* port= */ 443, /* https= */ true);
     }
 
     /**

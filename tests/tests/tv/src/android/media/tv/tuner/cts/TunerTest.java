@@ -120,6 +120,8 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.tv.cts.R;
 import android.util.SparseIntArray;
 
@@ -157,6 +159,9 @@ import java.util.concurrent.TimeUnit;
 @SmallTest
 @CddTest(requirements = {"2.3.3/3/T-1-1"})
 public class TunerTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String TAG = "MediaTunerTest";
 
     @Rule

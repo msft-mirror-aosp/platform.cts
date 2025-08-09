@@ -62,8 +62,16 @@ public class NativeImageReaderTest extends AndroidTestCase {
                  testSucceedsWithHardwareBufferFormatAndDataSpaceNative());
     }
 
+    @SdkSuppress(minSdkVersion = 37)
+    public void testSucceedsWithBufferConfigureAfterCreation() {
+        assertTrue(
+                "Native test failed, see log for details",
+                 testSucceedsWithBufferConfigureAfterCreationNative());
+    }
+
     private static native boolean testSucceedsWithSupportedUsageFormatNative();
     private static native boolean testSucceedsWithHardwareBufferFormatAndDataSpaceNative();
+    private static native boolean testSucceedsWithBufferConfigureAfterCreationNative();
     private static native boolean testTakePicturesNative();
     private static native Surface testCreateSurfaceNative();
 }

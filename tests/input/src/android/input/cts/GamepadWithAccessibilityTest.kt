@@ -19,6 +19,7 @@ package android.input.cts
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.app.Instrumentation
 import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.view.KeyCharacterMap.VIRTUAL_KEYBOARD
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityManager
@@ -77,6 +78,9 @@ private fun setTouchExplorationEnabled(instrumentation: Instrumentation, enabled
 @RunWith(AndroidJUnit4::class)
 @RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
 class GamepadWithAccessibilityTest {
+    @get:Rule
+    val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+
     @get:Rule
     val activityRule = ActivityScenarioRule(CaptureEventActivity::class.java)
     private lateinit var activity: CaptureEventActivity

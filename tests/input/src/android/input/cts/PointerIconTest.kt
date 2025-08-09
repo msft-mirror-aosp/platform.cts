@@ -22,6 +22,7 @@ import android.graphics.Color
 import android.hardware.input.VirtualMouse
 import android.os.SystemProperties
 import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.view.MotionEvent
 import android.view.PointerIcon
 import android.virtualdevice.cts.common.VirtualDeviceRule
@@ -65,6 +66,9 @@ import platform.test.screenshot.matchers.BitmapMatcher
 @RunWith(Parameterized::class)
 @RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
 class PointerIconTest {
+    @get:Rule
+    val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+
     private lateinit var activity: CaptureEventActivity
     private lateinit var verifier: BlockingQueueEventVerifier
     private lateinit var exactScreenshotMatcher: BitmapMatcher

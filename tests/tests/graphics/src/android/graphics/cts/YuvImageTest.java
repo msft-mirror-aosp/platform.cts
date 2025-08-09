@@ -32,6 +32,8 @@ import android.graphics.YuvImage;
 import android.media.ExifInterface;
 import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
@@ -42,6 +44,7 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.BitmapUtils;
 import com.android.graphics.flags.Flags;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -54,6 +57,9 @@ import java.util.Arrays;
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class YuvImageTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     // Coefficients are taken from jcolor.c in libjpeg.
     private static final int CSHIFT = 16;
     private static final int CYR = 19595;
