@@ -30,6 +30,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Point;
+import android.server.wm.WindowManagerStateHelper;
 import android.support.test.uiautomator.By;
 import android.support.test.uiautomator.UiDevice;
 import android.support.test.uiautomator.Until;
@@ -65,6 +66,7 @@ import androidx.test.runner.AndroidJUnit4;
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.CtsKeyEventUtil;
 import com.android.compatibility.common.util.CtsTouchUtils;
+import com.android.compatibility.common.util.UserHelper;
 import com.android.compatibility.common.util.WindowUtil;
 
 import org.junit.After;
@@ -88,6 +90,8 @@ public class EditTextTest {
     private Instrumentation mInstrumentation;
     private CtsTouchUtils mCtsTouchUtils;
     private CtsKeyEventUtil mCtsKeyEventUtil;
+    private final UserHelper mUserHelper =
+            new UserHelper(InstrumentationRegistry.getInstrumentation().getContext());
 
     @Rule(order = 0)
     public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
@@ -121,6 +125,8 @@ public class EditTextTest {
     public void teardown() throws Throwable {
         mActivityRule.runOnUiThread(() -> mEditText1.setSingleLine(false));
         mEmptyActivityRule.finishActivity();
+        mActivityRule.finishActivity();
+        waitForTransitionIdle();
     }
 
     @Test
@@ -943,5 +949,12 @@ public class EditTextTest {
 
         assertTrue(editor.isBlinking());
 
+    }
+
+    private void waitForTransitionIdle() {
+        WindowManagerStateHelper wmState = new WindowManagerStateHelper();
+        // Wait for app transition idle on display to prevent future activities launches in the
+        // same transition
+        wmState.waitForAppTransitionIdleOnDisplay(mUserHelper.getMainDisplayId());
     }
 }
