@@ -39,11 +39,6 @@ abstract class BaseDeviceOwnerTest extends BaseDevicePolicyTest {
 
     private boolean mDeviceOwnerSet;
 
-    /**
-     * @deprecated TODO(b/435528858): should use mDeviceOwnerUserId instead
-     */
-    @Deprecated protected int mMainUserId;
-
     @Override
     public void setUp() throws Exception {
         super.setUp();
@@ -54,7 +49,6 @@ abstract class BaseDeviceOwnerTest extends BaseDevicePolicyTest {
                             + " owner.",
                     getDevice().getMainUserId());
         }
-        mMainUserId = getMainUser();
         installDeviceOwnerApp(DEVICE_OWNER_APK);
 
         mDeviceOwnerSet = setDeviceOwner(DEVICE_OWNER_COMPONENT, mDeviceOwnerUserId,
@@ -86,7 +80,7 @@ abstract class BaseDeviceOwnerTest extends BaseDevicePolicyTest {
     }
 
     protected final void executeDeviceOwnerTest(String testClassName) throws Exception {
-        executeDeviceOwnerTestOnSpecificUser(testClassName, mMainUserId);
+        executeDeviceOwnerTestOnSpecificUser(testClassName, mDeviceOwnerUserId);
     }
 
     protected final void executeDeviceOwnerTestOnDeviceOwnerUser(String testClassName)
@@ -107,7 +101,7 @@ abstract class BaseDeviceOwnerTest extends BaseDevicePolicyTest {
 
     protected final void executeDeviceTestMethod(String className, String testName)
             throws Exception {
-        executeDeviceOwnerPackageTestMethod(className, testName, mMainUserId);
+        executeDeviceOwnerPackageTestMethod(className, testName, mDeviceOwnerUserId);
     }
 
     protected final String getStopBgUsersOnSwitchProperty() throws Exception {
