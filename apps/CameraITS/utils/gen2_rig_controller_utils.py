@@ -13,13 +13,20 @@
 # limitations under the License.
 """Utility functions for gen2 rig hardware."""
 
-
 import logging
+import os
 import struct
+import subprocess
 import time
+
+import capture_request_utils
+import cv2
+import image_processing_utils
+import ip_chart_extraction_utils as ce
+import ip_chart_pattern_detector as pd
+import numpy as np
 import pyudev
 import serial
-import subprocess
 
 
 # baudrates used for lights and servo controllers
@@ -36,6 +43,7 @@ _LSS_CONFIG_ANGULAR_HOLDING_STIFFNESS = 'CAH'
 _LSS_CONFIG_ANGULAR_ACCELERATION = 'CAA'
 _LSS_CONFIG_ANGULAR_DECELERATION = 'CAD'
 _LSS_ACTION_MOVE = 'D'
+_LSS_ACTION_RELATIVE_MOVE = 'MD'
 _LSS_ACTION_HOLD = 'H'
 _LSS_ACTION_LIMP = 'L'
 _LSS_CONFIG_FILTER_POSITION_COUNT = 'CFPC'
@@ -69,6 +77,13 @@ _POSITION_0_DEGREE = '0'
 _SERVO_ANGLE_SCALE_FACTOR = 10
 _MIN_SERVO_POSITION = -180
 _MAX_SERVO_POSITION = 180
+
+# Orthogonal rotation constants
+_ANGLE_DIFF_THRESHOLD = 0.5  # degrees
+_ORTHOGONAL_ANGLE = 90  # degrees
+_ORTHOGONAL_CAPTURE_FORMAT_STR = 'yuv'
+_ORTHOGONAL_POSITION_MAX_TRIES = 5
+_ROTATION_WAIT_TIME = 3  # seconds
 
 _ARDUINO_BRIGHTNESS_MAX = 1
 _ARDUINO_BRIGHTNESS_MIN = 0
@@ -115,6 +130,18 @@ def _rotator_write(serial_port, channel, command, value=None):
   msg = (f'{_LSS_COMMAND_START}{tmp}{_LSS_COMMAND_END}').encode()
   logging.debug('Writing message to rotator board: %s', msg)
   serial_port.write(msg)
+
+
+def _get_angle_from_qr_code(qr_code):
+  """Get the correction angle from the QR code."""
+  alpha = qr_code[:, :, 3]
+  y, x = np.nonzero(alpha > 0)
+  points = np.column_stack((x, y))
+  if not points.any():
+    raise ValueError('No points found in QR code.')
+  _, _, angle = cv2.minAreaRect(points)
+  logging.debug('Using alpha channel angle %.2f', angle)
+  return round(angle / _ORTHOGONAL_ANGLE) * _ORTHOGONAL_ANGLE - angle
 
 
 def get_usb_devices_connected():
@@ -241,6 +268,34 @@ def _move_to_timed(serial_port, channel, position, move_time):
   _rotator_write(serial_port, channel, _LSS_ACTION_MOVE, value)
 
 
+def _relative_move_to(serial_port, channel, degree):
+  """Send command to move servo relatively by the specified degree.
+
+  Args:
+    serial_port: obj; the serial port
+    channel: int; channel used by rotator
+    degree: int; Amount in degrees to move the servo relatively
+  """
+  _rotator_write(serial_port, channel, _LSS_ACTION_RELATIVE_MOVE, degree)
+  # Wait for two seconds.
+  time.sleep(_WAIT_FOR_ROTATOR_MOVEMENT)
+
+
+def relative_move(serial_port, channel, degree=0):
+  """Move servo by the specified degree in the corresponding direction.
+
+  Args:
+    serial_port: serial port to be used for communication
+    channel: int; channel used by rotator
+    degree: float; Amount in degrees to move the servo
+  """
+  logging.debug('Moving servo %s relatively by %s degrees', channel, degree)
+  _relative_move_to(
+      serial_port, channel, int(round(degree * _SERVO_ANGLE_SCALE_FACTOR)))
+  # Hold the angular position after movement
+  _rotator_write(serial_port, channel, _LSS_ACTION_HOLD)
+
+
 def rotate(serial_port, channel, position_degree=0):
   """Rotate servo to the specified direction.
 
@@ -258,7 +313,7 @@ def rotate(serial_port, channel, position_degree=0):
   """
   if _MIN_SERVO_POSITION <= position_degree <= _MAX_SERVO_POSITION:
     if position_degree != 0:
-      position_degree = position_degree * _SERVO_ANGLE_SCALE_FACTOR
+      position_degree = int(position_degree * _SERVO_ANGLE_SCALE_FACTOR)
       position = str(position_degree)
     else:
       position = _POSITION_0_DEGREE
@@ -271,6 +326,47 @@ def rotate(serial_port, channel, position_degree=0):
   else:
     logging.debug('Not a valid servo position: %s', position_degree)
     return None
+
+
+def rotate_to_orthogonal_position(
+    cam, log_path, motor_port, motor_channel):
+  """Rotate servo to orthogonal position using center QR code angle.
+
+  Args:
+    cam: its_session_utils.ItsSession camera object
+    log_path: str; path to save images
+    motor_port: serial port to be used for communication
+    motor_channel: int; channel used by rotator
+  Raises:
+    AssertionError: If motor failed to rotate to orthogonal position.
+  """
+  num_tries = 0
+  while num_tries < _ORTHOGONAL_POSITION_MAX_TRIES:
+    img = cam.do_orthogonal_position_capture()
+    image_path = os.path.join(log_path, f'orthogonal_position_{num_tries}.jpg')
+    image_processing_utils.write_image(img, image_path)
+
+    default_qr_code, _ = ce.get_feature_from_image(
+        image_path,
+        'default_qr_code',
+        log_path,
+        pd.TestChartFeature.CENTER_QR_CODE,
+    )
+    cv2.imwrite(
+        os.path.join(log_path, f'default_qr_code_{num_tries}.png'),
+        default_qr_code
+    )
+    correction_angle = _get_angle_from_qr_code(default_qr_code)
+    logging.debug(
+        'QR code correction angle before moving: %s', correction_angle
+    )
+    if abs(correction_angle) < _ANGLE_DIFF_THRESHOLD:
+      break
+    relative_move(motor_port, motor_channel, round(correction_angle, 1))
+    time.sleep(_ROTATION_WAIT_TIME)
+    num_tries += 1
+  else:
+    raise AssertionError('Failed to rotate to orthogonal position.')
 
 
 def rotation_rig_sensor_fusion(rotate_cntl, rotate_ch, num_rotations, angles):

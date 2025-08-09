@@ -286,6 +286,7 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
         if (shouldSkipTest()) {
             return;
         }
+        setupEnterBackgroundAudioProcessingPermissions();
         setupForEmergencyCalling(TEST_EMERGENCY_NUMBER);
         setupIncomingCallWithCallScreening();
 
@@ -322,12 +323,14 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
         // Notify as incoming, since the user has already answered the call.
         verifyCallLogging(connection.getAddress(), CallLog.Calls.INCOMING_TYPE,
                 TestUtils.TEST_PHONE_ACCOUNT_HANDLE);
+        tearDownEnterBackgroundAudioProcessingPermissions();
     }
 
     public void testAudioProcessActiveCall() {
         if (shouldSkipTest()) {
             return;
         }
+        setupEnterBackgroundAudioProcessingPermissions();
         Connection connection = placeActiveOutgoingCall();
         Call call = mInCallCallbacks.getService().getLastCall();
 
@@ -342,12 +345,14 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
         assertConnectionState(connection, Connection.STATE_ACTIVE);
 
         verifySimulateRingAndUserPickup(call, connection);
+        tearDownEnterBackgroundAudioProcessingPermissions();
     }
 
     public void testAudioProcessActiveCallMissed() throws Exception {
         if (shouldSkipTest()) {
             return;
         }
+        setupEnterBackgroundAudioProcessingPermissions();
 
         Connection connection = placeActiveOutgoingCall();
         Call call = mInCallCallbacks.getService().getLastCall();
@@ -363,16 +368,17 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
         }
 
         verifySimulateRingAndUserMissed(call, connection);
+        tearDownEnterBackgroundAudioProcessingPermissions();
     }
 
     public void testAudioProcessActiveCallRemoteHangup() {
         if (shouldSkipTest()) {
             return;
         }
+        setupEnterBackgroundAudioProcessingPermissions();
 
         Connection connection = placeActiveOutgoingCall();
         Call call = mInCallCallbacks.getService().getLastCall();
-
         call.enterBackgroundAudioProcessing();
         assertCallState(call, Call.STATE_AUDIO_PROCESSING);
         assertConnectionState(connection, Connection.STATE_ACTIVE);
@@ -387,12 +393,15 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
         assertCallState(call, Call.STATE_DISCONNECTED);
         assertEquals(DisconnectCause.REMOTE, call.getDetails().getDisconnectCause().getCode());
         connection.destroy();
+
+        tearDownEnterBackgroundAudioProcessingPermissions();
     }
 
     public void testAudioProcessOutgoingActiveEmergencyCallPlaced() throws Exception {
         if (shouldSkipTest()) {
             return;
         }
+        setupEnterBackgroundAudioProcessingPermissions();
         setupForEmergencyCalling(TEST_EMERGENCY_NUMBER);
 
         Connection connection = placeActiveOutgoingCall();
@@ -420,13 +429,14 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
         // marked outgoing, not missed.
         verifyCallLogging(connection.getAddress(), CallLog.Calls.OUTGOING_TYPE,
                 TestUtils.TEST_PHONE_ACCOUNT_HANDLE);
+        tearDownEnterBackgroundAudioProcessingPermissions();
     }
 
     public void testManualAudioCallScreenAccept() {
         if (shouldSkipTest()) {
             return;
         }
-
+        setupEnterBackgroundAudioProcessingPermissions();
         addAndVerifyNewIncomingCall(createTestNumber(), null);
         final MockConnection connection = verifyConnectionForIncomingCall();
 
@@ -447,13 +457,14 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
         assertCallState(call, Call.STATE_ACTIVE);
         waitOnAllHandlers(getInstrumentation());
         assertAudioMode(audioManager, AudioManager.MODE_IN_CALL);
+        tearDownEnterBackgroundAudioProcessingPermissions();
     }
 
     public void testManualAudioCallScreenReject() {
         if (shouldSkipTest()) {
             return;
         }
-
+        setupEnterBackgroundAudioProcessingPermissions();
         addAndVerifyNewIncomingCall(createTestNumber(), null);
         final MockConnection connection = verifyConnectionForIncomingCall();
 
@@ -473,6 +484,7 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
         call.disconnect();
         assertCallState(call, Call.STATE_DISCONNECTED);
         assertEquals(DisconnectCause.REJECTED, call.getDetails().getDisconnectCause().getCode());
+        tearDownEnterBackgroundAudioProcessingPermissions();
     }
 
     public void testEnterAudioProcessingWithoutPermission() {
@@ -672,6 +684,17 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
     private void tearDownControl() throws Exception {
         Api29InCallUtils.tearDownControl(mContext,
                 mApiCompatControlServiceConnection);
+    }
+
+    private void setupEnterBackgroundAudioProcessingPermissions() {
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+            .adoptShellPermissionIdentity("android.permission.MODIFY_AUDIO_ROUTING",
+                "android.permission.CAPTURE_AUDIO_OUTPUT");
+    }
+
+    private void tearDownEnterBackgroundAudioProcessingPermissions() {
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+            .dropShellPermissionIdentity();
     }
 
     private void clearRoleHoldersAsUser(String roleName)

@@ -91,6 +91,7 @@ android_test {
         ":SharedUidTestApp2",
         ":AppThatExploitsAttributionTags",
         ":AppForHistoricalRegistryTest",
+        ":CtsAppThatUsesAppOpApi29",
     ],
     per_testcase_directory: true,
 }

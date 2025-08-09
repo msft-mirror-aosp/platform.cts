@@ -65,7 +65,9 @@ public class GLRotationGuideRenderer implements GLSurfaceView.Renderer {
         clearBackground(gl);
         gl.glMatrixMode(GL10.GL_MODELVIEW);
         gl.glLoadIdentity();
-        gl.glRotatef(mAngle, mRotateX, mRotateY, mRotateZ);
+        if (mRotateX != 0.0f || mRotateY != 0.0f || mRotateZ != 0.0f) {
+            gl.glRotatef(mAngle, mRotateX, mRotateY, mRotateZ);
+        }
         mMonolith.draw(gl);
         mAngle += ANGLE_INCREMENT;
     }

@@ -469,6 +469,13 @@ public class BaseAppVerifier {
         mBaseAppVerifierImpl.enterBackgroundAudioProcessingViaInCallServiceAndVerify(id, useCase);
     }
 
+    public void enterBackgroundAudioProcessingViaInCallServiceWithoutPermissions(String id,
+        int useCase)
+        throws Exception {
+        mBaseAppVerifierImpl.enterBackgroundAudioProcessingViaInCallServiceWithoutPermissions(id,
+            useCase);
+    }
+
     public void exitBackgroundAudioProcessingViaInCallService(String id, boolean shouldRing,
         int useCase) {
         mBaseAppVerifierImpl.exitBackgroundAudioProcessingViaInCallService(id, shouldRing, useCase);
