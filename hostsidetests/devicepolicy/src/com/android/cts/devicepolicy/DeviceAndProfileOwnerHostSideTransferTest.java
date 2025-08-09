@@ -27,21 +27,18 @@ public abstract class DeviceAndProfileOwnerHostSideTransferTest extends BaseDevi
             "com.android.cts.transferowner"
                     + ".DeviceAndProfileOwnerTransferIncomingTest$BasicAdminService";
 
-    /**
-     * @deprecated TODO(b/435528858): should use proper method from DevicePolicyUsersPreparer
-     */
-    @Deprecated private int mMainUserId;
-
     protected int mUserId;
+    private int mParentUserId;
+
     protected String mOutgoingTestClassName;
     protected String mIncomingTestClassName;
 
-    // TODO(b/435528858): remove once mMainUserId is gone
     @Override
     public void setUp() throws Exception {
         super.setUp();
 
-        mMainUserId = getMainUser();
+        // TODO(b/435528858): should get from UsersOracle
+        mParentUserId = getMainUser();
     }
 
     @Test
@@ -99,7 +96,7 @@ public abstract class DeviceAndProfileOwnerHostSideTransferTest extends BaseDevi
 
     protected int setupManagedProfile(String apkName, String adminReceiverClassName)
             throws Exception {
-        final int userId = createManagedProfile(mMainUserId);
+        final int userId = createManagedProfile(mParentUserId);
         installAppAsUser(apkName, userId);
         if (!setProfileOwner(adminReceiverClassName, userId, false)) {
             removeAdmin(TRANSFER_OWNER_OUTGOING_TEST_RECEIVER, userId);
