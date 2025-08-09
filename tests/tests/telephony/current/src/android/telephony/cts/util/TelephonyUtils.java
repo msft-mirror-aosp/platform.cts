@@ -224,9 +224,6 @@ public class TelephonyUtils {
 
     private static final String COMMAND_END_BLOCK_SUPPRESSION = "cmd phone end-block-suppression";
 
-    private static final String COMMAND_FLUSH_TELEPHONY_METRICS =
-            "/system/bin/dumpsys activity service TelephonyDebugService --metricsproto";
-
     private static final String COMMAND_AM_COMPAT = "am compat ";
 
     public static final String CTS_APP_PACKAGE = "android.telephony.cts";
@@ -252,10 +249,6 @@ public class TelephonyUtils {
 
     public static void endBlockSuppression(Instrumentation instr) throws Exception {
         executeShellCommand(instr, COMMAND_END_BLOCK_SUPPRESSION);
-    }
-
-    public static void flushTelephonyMetrics(Instrumentation instr) throws Exception {
-        executeShellCommand(instr, COMMAND_FLUSH_TELEPHONY_METRICS);
     }
 
     public static void enableCompatCommand(Instrumentation instr, String pkgName,
