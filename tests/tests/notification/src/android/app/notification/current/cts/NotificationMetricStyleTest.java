@@ -415,9 +415,13 @@ public class NotificationMetricStyleTest {
 
     @Test
     public void newFixedString_constructs() {
-        FixedString fixedString = new FixedString("Hello!");
+        FixedString fixedString = new FixedString("120/80", "mmHg");
+        assertThat(fixedString.getValue()).isEqualTo("120/80");
+        assertThat(fixedString.getUnit()).isEqualTo("mmHg");
 
-        assertThat(fixedString.getValue()).isEqualTo("Hello!");
+        FixedString defaults = new FixedString("Hello!");
+        assertThat(defaults.getValue()).isEqualTo("Hello!");
+        assertThat(defaults.getUnit()).isNull();
     }
 
     @Test
