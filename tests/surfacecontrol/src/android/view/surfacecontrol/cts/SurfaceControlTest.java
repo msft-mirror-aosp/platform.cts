@@ -50,6 +50,8 @@ import android.media.ImageWriter;
 import android.os.SystemClock;
 import android.platform.test.annotations.RequiresDevice;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.view.Choreographer;
 import android.view.Display;
@@ -119,6 +121,9 @@ public class SurfaceControlTest {
     private static final PixelColor MAGENTA = new PixelColor(Color.MAGENTA);
     private static final PixelColor GREEN = new PixelColor(Color.GREEN);
     private static final PixelColor YELLOW = new PixelColor(Color.YELLOW);
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Rule
     public ActivityScenarioRule<ASurfaceControlTestActivity> mActivityRule =
