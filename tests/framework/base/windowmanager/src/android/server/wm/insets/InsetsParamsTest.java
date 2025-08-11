@@ -23,6 +23,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityOptions;
+import android.app.WindowConfiguration;
 import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
 import android.content.Intent;
@@ -128,11 +129,16 @@ public class InsetsParamsTest extends MultiDisplayTestBase {
     }
 
     private static WindowInsets getActualInsets(Context displayContext) throws Exception {
-        TestActivity activity = (TestActivity) getInstrumentation().startActivitySync(
-                new Intent(displayContext, TestActivity.class)
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                ActivityOptions.makeBasic()
-                        .setLaunchDisplayId(displayContext.getDisplayId()).toBundle());
+        final ActivityOptions options = ActivityOptions.makeBasic();
+        options.setLaunchWindowingMode(WindowConfiguration.WINDOWING_MODE_FULLSCREEN);
+        options.setLaunchDisplayId(displayContext.getDisplayId());
+        TestActivity activity =
+                (TestActivity)
+                        getInstrumentation()
+                                .startActivitySync(
+                                        new Intent(displayContext, TestActivity.class)
+                                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                                        options.toBundle());
         activity.mLaidOut.await(4, TimeUnit.SECONDS);
         return activity.mLastDecorInsets;
     }
