@@ -44,7 +44,6 @@ import static android.media.AudioManager.VIBRATE_TYPE_NOTIFICATION;
 import static android.media.AudioManager.VIBRATE_TYPE_RINGER;
 import static android.media.audio.Flags.FLAG_SCO_MANAGED_BY_AUDIO;
 import static android.media.audio.cts.AudioTestUtil.resetVolumeIndex;
-import static android.media.audio.cts.AudioVolumeTestRule.INIT_VOL;
 import static android.media.audiopolicy.AudioProductStrategy.DEFAULT_ZONE_ID;
 import static android.media.audiopolicy.AudioVolumeGroup.DEFAULT_VOLUME_GROUP;
 import static android.provider.Settings.Global.APPLY_RAMPING_RINGER;
@@ -68,6 +67,7 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
+import android.app.AutomaticZenRule;
 import android.app.Instrumentation;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -142,6 +142,7 @@ import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -162,6 +163,7 @@ import java.util.stream.IntStream;
 public class AudioManagerTest {
     private static final String TAG = "AudioManagerTest";
 
+    private static final int INIT_VOL = 1;
     private static final int MP3_TO_PLAY = R.raw.testmp3; // ~ 5 second mp3
     private static final long POLL_TIME_PLAY_MUSIC = 2000;
     private static final long TIME_TO_PLAY = 2000;
@@ -214,6 +216,10 @@ public class AudioManagerTest {
     // so completely skip those tests here.
     // These tests are migrated to CTS verifier tests to ensure test coverage.
     private Context mContext;
+    private int mOriginalRingerMode;
+    private Map<Integer, Integer> mOriginalStreamVolumes = new HashMap<>();
+    private NotificationManager.Policy mOriginalNotificationPolicy;
+    private int mOriginalZen;
     private boolean mDoNotCheckUnmute;
     private boolean mAppsBypassingDnd;
 
@@ -228,10 +234,6 @@ public class AudioManagerTest {
     public static final SettingsStateKeeperRule mSurroundSoundModeSettingsKeeper =
             new SettingsStateKeeperRule(InstrumentationRegistry.getTargetContext(),
                     Namespace.GLOBAL, Settings.Global.ENCODED_SURROUND_OUTPUT);
-
-    @Rule(order = 0) // execute this last, default order -1 will be executed first
-    public final AudioVolumeTestRule mAudioVolumeTestRule =
-            new AudioVolumeTestRule(getInstrumentation().getContext());
 
     @Rule
     public final CancelAllFuturesRule mCancelRule = new CancelAllFuturesRule();
@@ -270,6 +272,55 @@ public class AudioManagerTest {
 
         mUserHelper = new UserHelper(mContext);
 
+        // TODO (b/294941969) pull out volume/ringer/zen state setting/resetting into test rule
+        // Store the original volumes that that they can be recovered in tearDown().
+        final int[] streamTypes = {
+            STREAM_VOICE_CALL,
+            STREAM_SYSTEM,
+            STREAM_RING,
+            STREAM_MUSIC,
+            STREAM_ALARM,
+            STREAM_NOTIFICATION,
+            STREAM_DTMF,
+            STREAM_ACCESSIBILITY,
+        };
+        mOriginalRingerMode = mAudioManager.getRingerMode();
+        SystemUtil.runWithShellPermissionIdentity(() -> {
+            for (int streamType : streamTypes) {
+                if (mAudioManager.getStreamTypeAlias(streamType) == streamType) {
+                    mOriginalStreamVolumes.put(streamType,
+                            mAudioManager.getStreamVolume(streamType));
+                }
+            }
+        });
+
+        // Tests require the known state of volumes set to INIT_VOL and zen mode
+        // turned off.
+        try {
+            Utils.toggleNotificationPolicyAccess(
+                    mContext.getPackageName(), getInstrumentation(), true);
+
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> {
+                        mOriginalNotificationPolicy = mNm.getNotificationPolicy();
+                        mOriginalZen = mNm.getCurrentInterruptionFilter();
+                        mAudioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
+                        setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL);
+                    },
+                    Manifest.permission.STATUS_BAR_SERVICE);
+        } finally {
+            Utils.toggleNotificationPolicyAccess(
+                    mContext.getPackageName(), getInstrumentation(), false);
+        }
+
+        SystemUtil.runWithShellPermissionIdentity(() -> {
+            for (int streamType : streamTypes) {
+                if (mAudioManager.getStreamTypeAlias(streamType) == streamType) {
+                    mAudioManager.setStreamVolume(streamType, INIT_VOL, 0 /* flags */);
+                }
+            }
+        });
+
         // Check original microphone mute/unmute status
         mDoNotCheckUnmute = false;
         if (mAudioManager.isMicrophoneMute()) {
@@ -287,8 +338,36 @@ public class AudioManagerTest {
 
     @After
     public void tearDown() throws Exception {
-        // Recover CEC setting
-        if (mIsTelevision) enableCec(true);
+        try {
+            Utils.toggleNotificationPolicyAccess(
+                    mContext.getPackageName(), getInstrumentation(), true);
+            mAudioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
+
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> {
+                        mNm.setNotificationPolicy(mOriginalNotificationPolicy);
+                        setInterruptionFilter(mOriginalZen);
+                    },
+                    Manifest.permission.STATUS_BAR_SERVICE);
+
+            Map<String, AutomaticZenRule> rules = mNm.getAutomaticZenRules();
+            for (String ruleId : rules.keySet()) {
+                mNm.removeAutomaticZenRule(ruleId);
+            }
+
+            // Recover the volume and the ringer mode that the test may have overwritten.
+            for (Map.Entry<Integer, Integer> e : mOriginalStreamVolumes.entrySet()) {
+                mAudioManager.setStreamVolume(e.getKey(), e.getValue(),
+                                              AudioManager.FLAG_ALLOW_RINGER_MODES);
+            }
+            mAudioManager.setRingerMode(mOriginalRingerMode);
+
+            // Recover CEC setting
+            if (mIsTelevision) enableCec(true);
+        } finally {
+            Utils.toggleNotificationPolicyAccess(
+                    mContext.getPackageName(), getInstrumentation(), false);
+        }
     }
 
     @AppModeFull(reason = "Instant apps cannot hold android.permission.MODIFY_AUDIO_SETTINGS")
@@ -912,15 +991,13 @@ public class AudioManagerTest {
         // set mode to SILENT
         Utils.toggleNotificationPolicyAccess(
                 mContext.getPackageName(), getInstrumentation(), true);
-        final NotificationManager.Policy originalPolicy =
-                mAudioVolumeTestRule.getOriginalNotificationPolicy();
         mNm.setNotificationPolicy(
                 new NotificationManager.Policy(
-                        originalPolicy.priorityCategories
+                        mOriginalNotificationPolicy.priorityCategories
                                 | NotificationManager.Policy.PRIORITY_CATEGORY_ALARMS
                                 | NotificationManager.Policy.PRIORITY_CATEGORY_MEDIA,
-                        originalPolicy.priorityCallSenders,
-                        originalPolicy.priorityMessageSenders));
+                        mOriginalNotificationPolicy.priorityCallSenders,
+                        mOriginalNotificationPolicy.priorityMessageSenders));
         assertStreamMuteStateChange(() -> mAudioManager.setRingerMode(RINGER_MODE_SILENT),
                 expectedTransitionsSilentMode,
                 "RING/NOTIF should mute in SILENT");
@@ -1312,16 +1389,6 @@ public class AudioManagerTest {
         Utils.toggleNotificationPolicyAccess(
                 mContext.getPackageName(), getInstrumentation(), true);
         mAudioManager.setRingerMode(RINGER_MODE_SILENT);
-
-        var future =
-                getFutureForIntent(
-                        mContext,
-                        AudioManager.RINGER_MODE_CHANGED_ACTION,
-                        i ->
-                                (i != null)
-                                        && i.getIntExtra(AudioManager.EXTRA_RINGER_MODE, -1)
-                                                == AudioManager.RINGER_MODE_SILENT);
-        var intent = future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
         Utils.toggleNotificationPolicyAccess(
                 mContext.getPackageName(), getInstrumentation(), false);
         // Verify streams cannot be unmuted without policy access.
@@ -1745,15 +1812,13 @@ public class AudioManagerTest {
 
         Utils.toggleNotificationPolicyAccess(
                 mContext.getPackageName(), getInstrumentation(), true);
-        final NotificationManager.Policy originalPolicy =
-                mAudioVolumeTestRule.getOriginalNotificationPolicy();
         mNm.setNotificationPolicy(
                 new NotificationManager.Policy(
-                        originalPolicy.priorityCategories
+                        mOriginalNotificationPolicy.priorityCategories
                                 | NotificationManager.Policy.PRIORITY_CATEGORY_ALARMS
                                 | NotificationManager.Policy.PRIORITY_CATEGORY_MEDIA,
-                        originalPolicy.priorityCallSenders,
-                        originalPolicy.priorityMessageSenders));
+                        mOriginalNotificationPolicy.priorityCallSenders,
+                        mOriginalNotificationPolicy.priorityMessageSenders));
 
         Map<Integer, MuteStateTransition> expectedSilentTransition = Map.of(
                 STREAM_MUSIC, new MuteStateTransition(false, false),
