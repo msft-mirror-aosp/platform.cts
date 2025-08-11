@@ -55,9 +55,13 @@ import java.util.concurrent.Executors;
  *
  * @hide
  */
-public class GlobalSearchSessionShimImpl implements GlobalSearchSessionShim {
+public final class GlobalSearchSessionShimImpl implements GlobalSearchSessionShim {
+
+    private static final String TAG = GlobalSearchSessionShimImpl.class.getSimpleName();
+
     private final GlobalSearchSession mGlobalSearchSession;
     private final ExecutorService mExecutor;
+    private final UserAwareLogger mLogger;
 
     /**
      * Creates a global search session.
@@ -83,6 +87,7 @@ public class GlobalSearchSessionShimImpl implements GlobalSearchSessionShim {
 
     private GlobalSearchSessionShimImpl(
             @NonNull GlobalSearchSession session, @NonNull ExecutorService executor) {
+        mLogger = new UserAwareLogger(TAG);
         mGlobalSearchSession = Objects.requireNonNull(session);
         mExecutor = Objects.requireNonNull(executor);
     }
@@ -93,6 +98,8 @@ public class GlobalSearchSessionShimImpl implements GlobalSearchSessionShim {
             @NonNull String packageName,
             @NonNull String databaseName,
             @NonNull GetByDocumentIdRequest request) {
+        mLogger.logV("getByDocumentIdAsync(%s, %s, %s)",
+                packageName, databaseName, FriendlyNeighborhoodStringerMan.toString(request));
         SettableFuture<AppSearchBatchResult<String, GenericDocument>> future =
                 SettableFuture.create();
         mGlobalSearchSession.getByDocumentId(
@@ -101,10 +108,12 @@ public class GlobalSearchSessionShimImpl implements GlobalSearchSessionShim {
         return future;
     }
 
+
     @Override
     @NonNull
     public ListenableFuture<OpenBlobForReadResponse> openBlobForReadAsync(
             @NonNull Set<AppSearchBlobHandle> handles) {
+        mLogger.logV("openBlobForReadAsync(%s)", handles);
         SettableFuture<AppSearchResult<OpenBlobForReadResponse>> future =
                 SettableFuture.create();
         mGlobalSearchSession.openBlobForRead(handles, mExecutor, future::set);
@@ -115,6 +124,7 @@ public class GlobalSearchSessionShimImpl implements GlobalSearchSessionShim {
     @Override
     public SearchResultsShim search(
             @NonNull String queryExpression, @NonNull SearchSpec searchSpec) {
+        mLogger.logV("search(%s, %s)", queryExpression, searchSpec);
         SearchResults searchResults = mGlobalSearchSession.search(queryExpression, searchSpec);
         return new SearchResultsShimImpl(searchResults, mExecutor);
     }
@@ -123,6 +133,7 @@ public class GlobalSearchSessionShimImpl implements GlobalSearchSessionShim {
     @Override
     public ListenableFuture<Void> reportSystemUsageAsync(
             @NonNull ReportSystemUsageRequest request) {
+        mLogger.logV("reportSystemUsageAsync(%s)", request);
         SettableFuture<AppSearchResult<Void>> future = SettableFuture.create();
         mGlobalSearchSession.reportSystemUsage(request, mExecutor, future::set);
         return Futures.transformAsync(future, this::transformResult, mExecutor);
@@ -132,6 +143,7 @@ public class GlobalSearchSessionShimImpl implements GlobalSearchSessionShim {
     @Override
     public ListenableFuture<GetSchemaResponse> getSchemaAsync(
             @NonNull String packageName, @NonNull String databaseName) {
+        mLogger.logV("getSchemaAsync(%s, %s)", packageName, databaseName);
         SettableFuture<AppSearchResult<GetSchemaResponse>> future = SettableFuture.create();
         mGlobalSearchSession.getSchema(packageName, databaseName, mExecutor, future::set);
         return Futures.transformAsync(future, this::transformResult, mExecutor);
@@ -143,6 +155,7 @@ public class GlobalSearchSessionShimImpl implements GlobalSearchSessionShim {
             @NonNull ObserverSpec spec,
             @NonNull Executor executor,
             @NonNull ObserverCallback observer) throws AppSearchException {
+        mLogger.logV("registerObserverCallback(%s, %s, %s)", targetPackageName, spec, observer);
         mGlobalSearchSession.registerObserverCallback(targetPackageName, spec, mExecutor, observer);
     }
 
@@ -150,18 +163,27 @@ public class GlobalSearchSessionShimImpl implements GlobalSearchSessionShim {
     public void unregisterObserverCallback(
             @NonNull String targetPackageName, @NonNull ObserverCallback observer)
             throws AppSearchException {
+        mLogger.logV("unregisterObserverCallback(%s, %s)", targetPackageName, observer);
         mGlobalSearchSession.unregisterObserverCallback(targetPackageName, observer);
     }
 
     @NonNull
     @Override
     public Features getFeatures() {
-        return new MainlineFeaturesImpl();
+        var features = new MainlineFeaturesImpl();
+        mLogger.logV("getFeatures(%s)", features);
+        return features;
     }
 
     @Override
     public void close() {
+        mLogger.logV("close()");
         mGlobalSearchSession.close();
+    }
+
+    @Override
+    public String toString() {
+        return "GlobalSearchSessionShimImpl[mGlobalSearchSession=" + mGlobalSearchSession + "]";
     }
 
     private <T> ListenableFuture<T> transformResult(

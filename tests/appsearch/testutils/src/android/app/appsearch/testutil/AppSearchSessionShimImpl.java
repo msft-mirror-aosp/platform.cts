@@ -65,9 +65,13 @@ import java.util.concurrent.Executors;
  * a consistent interface.
  * @hide
  */
-public class AppSearchSessionShimImpl implements AppSearchSessionShim {
+public final class AppSearchSessionShimImpl implements AppSearchSessionShim {
+    private static final String TAG = AppSearchSessionShimImpl.class.getSimpleName();
+
     private final AppSearchSession mAppSearchSession;
     private final ExecutorService mExecutor;
+
+    private final UserAwareLogger mLogger;
 
     /** Creates the SearchSessionShim with given SearchContext. */
     @NonNull
@@ -103,13 +107,16 @@ public class AppSearchSessionShimImpl implements AppSearchSessionShim {
 
     private AppSearchSessionShimImpl(
             @NonNull AppSearchSession session, @NonNull ExecutorService executor) {
+        mLogger = new UserAwareLogger(TAG);
         mAppSearchSession = Objects.requireNonNull(session);
         mExecutor = Objects.requireNonNull(executor);
+        mLogger.logD("constructor(session=%s)", session);
     }
 
     @Override
     @NonNull
     public ListenableFuture<SetSchemaResponse> setSchemaAsync(@NonNull SetSchemaRequest request) {
+        mLogger.logV("setSchemaAsync(%s)", request);
         SettableFuture<AppSearchResult<SetSchemaResponse>> future = SettableFuture.create();
         mAppSearchSession.setSchema(request, mExecutor, mExecutor, future::set);
         return Futures.transformAsync(future, this::transformResult, mExecutor);
@@ -118,6 +125,7 @@ public class AppSearchSessionShimImpl implements AppSearchSessionShim {
     @Override
     @NonNull
     public ListenableFuture<GetSchemaResponse> getSchemaAsync() {
+        mLogger.logV("getSchemaAsync()");
         SettableFuture<AppSearchResult<GetSchemaResponse>> future = SettableFuture.create();
         mAppSearchSession.getSchema(mExecutor, future::set);
         return Futures.transformAsync(future, this::transformResult, mExecutor);
@@ -126,6 +134,7 @@ public class AppSearchSessionShimImpl implements AppSearchSessionShim {
     @NonNull
     @Override
     public ListenableFuture<Set<String>> getNamespacesAsync() {
+        mLogger.logV("getNamespacesAsync()");
         SettableFuture<AppSearchResult<Set<String>>> future = SettableFuture.create();
         mAppSearchSession.getNamespaces(mExecutor, future::set);
         return Futures.transformAsync(future, this::transformResult, mExecutor);
@@ -135,6 +144,7 @@ public class AppSearchSessionShimImpl implements AppSearchSessionShim {
     @NonNull
     public ListenableFuture<AppSearchBatchResult<String, Void>> putAsync(
             @NonNull PutDocumentsRequest request) {
+        mLogger.logV("putAsync(%s)", FriendlyNeighborhoodStringerMan.toString(request));
         SettableFuture<AppSearchBatchResult<String, Void>> future = SettableFuture.create();
         mAppSearchSession.put(
                 request, mExecutor, new BatchResultCallbackAdapter<>(future));
@@ -145,6 +155,7 @@ public class AppSearchSessionShimImpl implements AppSearchSessionShim {
     @NonNull
     public ListenableFuture<AppSearchBatchResult<String, GenericDocument>> getByDocumentIdAsync(
             @NonNull GetByDocumentIdRequest request) {
+        mLogger.logV("getByDocumentIdAsync(%s)", request);
         SettableFuture<AppSearchBatchResult<String, GenericDocument>> future =
                 SettableFuture.create();
         mAppSearchSession.getByDocumentId(
@@ -156,6 +167,7 @@ public class AppSearchSessionShimImpl implements AppSearchSessionShim {
     @NonNull
     public ListenableFuture<OpenBlobForWriteResponse> openBlobForWriteAsync(
             @NonNull Set<AppSearchBlobHandle> handles) {
+        mLogger.logV("openBlobForWriteAsync(%s)", handles);
         SettableFuture<AppSearchResult<OpenBlobForWriteResponse>> future =
                 SettableFuture.create();
         mAppSearchSession.openBlobForWrite(handles, mExecutor, future::set);
@@ -166,6 +178,7 @@ public class AppSearchSessionShimImpl implements AppSearchSessionShim {
     @NonNull
     public ListenableFuture<RemoveBlobResponse> removeBlobAsync(
             @NonNull Set<AppSearchBlobHandle> handles) {
+        mLogger.logV("removeBlobAsync(%s)", handles);
         SettableFuture<AppSearchResult<RemoveBlobResponse>> future =
                 SettableFuture.create();
         mAppSearchSession.removeBlob(handles, mExecutor, future::set);
@@ -176,6 +189,7 @@ public class AppSearchSessionShimImpl implements AppSearchSessionShim {
     @NonNull
     public ListenableFuture<CommitBlobResponse> commitBlobAsync(
             @NonNull Set<AppSearchBlobHandle> handles) {
+        mLogger.logV("commitBlobAsync(%s)", handles);
         SettableFuture<AppSearchResult<CommitBlobResponse>> future =
                 SettableFuture.create();
         mAppSearchSession.commitBlob(handles, mExecutor, future::set);
@@ -186,6 +200,7 @@ public class AppSearchSessionShimImpl implements AppSearchSessionShim {
     @NonNull
     public ListenableFuture<OpenBlobForReadResponse> openBlobForReadAsync(
             @NonNull Set<AppSearchBlobHandle> handles) {
+        mLogger.logV("openBlobForReadAsync(%s)", handles);
         SettableFuture<AppSearchResult<OpenBlobForReadResponse>> future =
                 SettableFuture.create();
         mAppSearchSession.openBlobForRead(handles, mExecutor, future::set);
@@ -196,6 +211,7 @@ public class AppSearchSessionShimImpl implements AppSearchSessionShim {
     @NonNull
     public ListenableFuture<Void> setBlobVisibilityAsync(
             @NonNull SetBlobVisibilityRequest request) {
+        mLogger.logV("setBlobVisibilityAsync(%s)", request);
         SettableFuture<AppSearchResult<Void>> future = SettableFuture.create();
         mAppSearchSession.setBlobVisibility(request, mExecutor, future::set);
         return Futures.transformAsync(future, this::transformResult, mExecutor);
@@ -206,12 +222,14 @@ public class AppSearchSessionShimImpl implements AppSearchSessionShim {
     public SearchResultsShim search(
             @NonNull String queryExpression, @NonNull SearchSpec searchSpec) {
         SearchResults searchResults = mAppSearchSession.search(queryExpression, searchSpec);
+        mLogger.logV("search(%s, %s): %s", queryExpression, searchSpec, searchResults);
         return new SearchResultsShimImpl(searchResults, mExecutor);
     }
 
     @Override
     @NonNull
     public ListenableFuture<Void> reportUsageAsync(@NonNull ReportUsageRequest request) {
+        mLogger.logV("reportUsageAsync(%s)", request);
         SettableFuture<AppSearchResult<Void>> future = SettableFuture.create();
         mAppSearchSession.reportUsage(request, mExecutor, future::set);
         return Futures.transformAsync(future, this::transformResult, mExecutor);
@@ -221,6 +239,7 @@ public class AppSearchSessionShimImpl implements AppSearchSessionShim {
     @NonNull
     public ListenableFuture<AppSearchBatchResult<String, Void>> removeAsync(
             @NonNull RemoveByDocumentIdRequest request) {
+        mLogger.logV("removeAsync(%s)", request);
         SettableFuture<AppSearchBatchResult<String, Void>> future = SettableFuture.create();
         mAppSearchSession.remove(request, mExecutor, new BatchResultCallbackAdapter<>(future));
         return future;
@@ -230,6 +249,7 @@ public class AppSearchSessionShimImpl implements AppSearchSessionShim {
     @NonNull
     public ListenableFuture<Void> removeAsync(
             @NonNull String queryExpression, @NonNull SearchSpec searchSpec) {
+        mLogger.logV("removeAsync(%s, %s)", queryExpression, searchSpec);
         SettableFuture<AppSearchResult<Void>> future = SettableFuture.create();
         mAppSearchSession.remove(queryExpression, searchSpec, mExecutor, future::set);
         return Futures.transformAsync(future, this::transformResult, mExecutor);
@@ -238,6 +258,7 @@ public class AppSearchSessionShimImpl implements AppSearchSessionShim {
     @NonNull
     @Override
     public ListenableFuture<StorageInfo> getStorageInfoAsync() {
+        mLogger.logV("getStorageInfoAsync()");
         SettableFuture<AppSearchResult<StorageInfo>> future = SettableFuture.create();
         mAppSearchSession.getStorageInfo(mExecutor, future::set);
         return Futures.transformAsync(future, this::transformResult, mExecutor);
@@ -246,6 +267,7 @@ public class AppSearchSessionShimImpl implements AppSearchSessionShim {
     @Override
     @NonNull
     public ListenableFuture<Void> requestFlushAsync() {
+        mLogger.logV("requestFlushAsync()");
         SettableFuture<AppSearchResult<Void>> future = SettableFuture.create();
         // The data in platform will be flushed by scheduled task. AppSearchSession won't do
         // anything extra flush.
@@ -258,6 +280,8 @@ public class AppSearchSessionShimImpl implements AppSearchSessionShim {
     public ListenableFuture<List<SearchSuggestionResult>> searchSuggestionAsync(
             @NonNull String suggestionQueryExpression,
             @NonNull SearchSuggestionSpec searchSuggestionSpec) {
+        mLogger.logV("searchSuggestionAsync(%s, %s)", suggestionQueryExpression,
+                searchSuggestionSpec);
         SettableFuture<AppSearchResult<List<SearchSuggestionResult>>> future =
                 SettableFuture.create();
         mAppSearchSession.searchSuggestion(
@@ -268,12 +292,21 @@ public class AppSearchSessionShimImpl implements AppSearchSessionShim {
     @Override
     @NonNull
     public Features getFeatures() {
-        return new MainlineFeaturesImpl();
+        var features = new MainlineFeaturesImpl();
+        mLogger.logV("getFeatures(%s)", features);
+        return features;
     }
 
     @Override
     public void close() {
+        mLogger.logV("close()");
         mAppSearchSession.close();
+    }
+
+    @Override
+    public String toString() {
+        return "AppSearchSessionShimImpl[userId=" + mLogger.getUserId() + ", session="
+                + mAppSearchSession + "]";
     }
 
     private <T> ListenableFuture<T> transformResult(
