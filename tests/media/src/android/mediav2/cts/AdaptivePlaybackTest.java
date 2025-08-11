@@ -24,6 +24,7 @@ import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_HW;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
 import static android.mediav2.common.cts.CodecTestBase.VNDK_IS_AT_MOST_U;
 import static android.mediav2.common.cts.DecodeStreamToYuv.getFormatInStream;
+import static android.mediav2.cts.DolbyVisionDecoderParamPreparer.getDvTestParams;
 
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
@@ -203,6 +204,7 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
                             CODEC_OPTIONAL},
             }));
         }
+        exhaustiveArgsList.addAll(getDvTestParams(AdaptivePlaybackTest.class));
         List<Object[]> argsList = prepareParamList(exhaustiveArgsList, isEncoder, needAudio,
                 needVideo, false);
 

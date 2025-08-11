@@ -18,6 +18,7 @@ package android.mediav2.cts;
 
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
+import static android.mediav2.cts.DolbyVisionDecoderParamPreparer.getDvTestParams;
 
 import static org.junit.Assert.fail;
 
@@ -222,6 +223,7 @@ public class CodecDecoderSurfaceReconfigureTest extends CodecDecoderTestBase {
                     "bbb_340x280_768kbps_30fps_av1.mp4", CODEC_ALL},
             }));
         }
+        exhaustiveArgsList.addAll(getDvTestParams(CodecDecoderSurfaceReconfigureTest.class));
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, true);
     }
 

@@ -22,6 +22,7 @@ import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ANY;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_DEFAULT;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_HW;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
+import static android.mediav2.cts.DolbyVisionDecoderParamPreparer.getDvTestParams;
 
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableIamf;
 
@@ -784,6 +785,7 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
                     {MEDIA_TYPE_EAC3, new String[]{"audio/eac3_200_48kHz_256.mp4"},
                             null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
             }));
+            exhaustiveArgsList.addAll(getDvTestParams(CodecDecoderValidationTest.class));
         }
 
         // iamf

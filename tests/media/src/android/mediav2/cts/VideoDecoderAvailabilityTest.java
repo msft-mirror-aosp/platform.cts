@@ -29,6 +29,7 @@ import static android.mediav2.cts.CodecResourceUtils.compareResources;
 import static android.mediav2.cts.CodecResourceUtils.computeConsumption;
 import static android.mediav2.cts.CodecResourceUtils.getCurrentGlobalCodecResources;
 import static android.mediav2.cts.CodecResourceUtils.validateGetCodecResources;
+import static android.mediav2.cts.DolbyVisionDecoderParamPreparer.getDvTestParams;
 
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
@@ -206,6 +207,7 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
                                 "bbb_640x360_512kbps_30fps_mpeg2_nob.mp4",
                                 "bbb_640x360_512kbps_30fps_mpeg2_2b.mp4"}},
                 }));
+        exhaustiveArgsList.addAll(getDvTestParams(VideoDecoderAvailabilityTest.class));
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, false,
                 ComponentClass.HARDWARE);
     }

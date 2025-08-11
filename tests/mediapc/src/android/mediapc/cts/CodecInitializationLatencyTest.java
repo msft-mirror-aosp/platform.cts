@@ -21,6 +21,7 @@ import static android.media.codec.Flags.apvSupport;
 import static android.mediapc.cts.CodecTestBase.codecFilter;
 import static android.mediapc.cts.CodecTestBase.codecPrefix;
 import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
+import static android.mediapc.cts.DolbyVisionParamPreparer.getDvResForInitializationLatencyTest;
 import static android.mediav2.common.cts.CodecTestBase.IS_AFTER_B;
 import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_B;
 import static android.mediav2.common.cts.CodecTestBase.areFormatsSupported;
@@ -117,8 +118,6 @@ public class CodecInitializationLatencyTest {
         // Video media types
         mTestFiles.put(MediaFormat.MIMETYPE_VIDEO_AV1, "bbb_1920x1080_4mbps_30fps_av1.mp4");
         mTestFiles.put(MediaFormat.MIMETYPE_VIDEO_AVC, "bbb_1920x1080_6mbps_30fps_avc.mp4");
-        mTestFiles.put(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION,
-                "video_dovi_1920x1080_30fps_dvhe_08_04.mp4");
         mTestFiles.put(MediaFormat.MIMETYPE_VIDEO_H263, "bbb_cif_768kbps_30fps_h263.mp4");
         mTestFiles.put(MediaFormat.MIMETYPE_VIDEO_HEVC, "bbb_1920x1080_4mbps_30fps_hevc.mp4");
         mTestFiles.put(MediaFormat.MIMETYPE_VIDEO_MPEG2, "bbb_1920x1080_12mbps_30fps_mpeg2.mp4");
@@ -357,7 +356,12 @@ public class CodecInitializationLatencyTest {
                     sumOfCodecInitializationLatencyMs += latency;
                     count++;
                 } else {
-                    String testFile = mTestFiles.get(mMediaType);
+                    String testFile;
+                    if (mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION)) {
+                        testFile = getDvResForInitializationLatencyTest(mCodecName);
+                    } else {
+                        testFile = mTestFiles.get(mMediaType);
+                    }
                     assumeTrue("Add test vector for media type: " + mMediaType, testFile != null);
                     if (isAudio) {
                         DecoderInitializationLatency decoderInitializationLatency =
