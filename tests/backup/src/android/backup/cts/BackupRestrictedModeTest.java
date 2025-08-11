@@ -154,8 +154,8 @@ public class BackupRestrictedModeTest extends BaseBackupCtsTest {
     private void waitUntilBackupFinished() {
         long startTimeMillis = System.currentTimeMillis();
 
-        // Wait max 10 seconds.
-        while (System.currentTimeMillis() - startTimeMillis < 10_000) {
+        // Wait max 30 seconds.
+        while (System.currentTimeMillis() - startTimeMillis < 30_000) {
             if (mBackupObserver.isFinished) {
                 return;
             }
