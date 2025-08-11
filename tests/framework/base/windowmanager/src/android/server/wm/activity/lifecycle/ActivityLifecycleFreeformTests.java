@@ -34,7 +34,9 @@ import static android.server.wm.activity.lifecycle.TransitionVerifier.assertResu
 import static android.server.wm.activity.lifecycle.TransitionVerifier.assertSequence;
 import static android.server.wm.app27.Components.SDK_27_LAUNCHING_ACTIVITY;
 import static android.server.wm.app27.Components.SDK_27_TEST_ACTIVITY;
+
 import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeTrue;
 
@@ -44,10 +46,13 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.WindowManagerState;
+
 import androidx.test.filters.MediumTest;
-import java.util.Collections;
+
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.Collections;
 
 /**
  * Build/Install/Run:
@@ -86,6 +91,9 @@ public class ActivityLifecycleFreeformTests extends ActivityLifecycleClientTestB
 
     @Test
     public void testMultiLaunchInFreeform() throws Exception {
+        // Mock the TaskOrganizer here so we don't trigger ShellTaskOrganizer and potential task
+        // limit logic - since a task limit of 2 or below breaks this test (that opens 3 tasks).
+        mTaskOrganizer.registerOrganizerIfNeeded();
         // Launch a fullscreen activity, mainly to prevent setting pending due to task switching.
         launchActivityInFullscreenAndWait(CallbackTrackingActivity.class);
 
