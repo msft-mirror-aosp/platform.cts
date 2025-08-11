@@ -31,7 +31,7 @@ import com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_A
 @EnterprisePolicy(
     dpc = [APPLIED_BY_DEVICE_OWNER or APPLIED_BY_PROFILE_OWNER or APPLIES_TO_OWN_USER],
     permissions = [EnterprisePolicy.Permission(
-        appliedWith = MANAGE_DEVICE_POLICY_APP_FUNCTIONS,
+        appliedWith = [MANAGE_DEVICE_POLICY_APP_FUNCTIONS],
         appliesTo = APPLIES_TO_OWN_USER
     )]
 )
