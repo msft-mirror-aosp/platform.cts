@@ -402,8 +402,9 @@ public class MultiUserTest {
                     equalTo(bundle.getInt(MockTestActivityUtil.ACTION_KEY_REPLY_USER_HANDLE)));
             latch.countDown();
         });
-        try (AutoCloseable ignored = MockTestActivityUtil.launchSyncAsUser(userId, isInstantApp(),
-                null, onCreateInputConnectionCallback)) {
+        try (AutoCloseable ignored = MockTestActivityUtil.launchSyncAsUser(mContext, userId,
+                isInstantApp(), false /* splitScreen */, null /* extras */,
+                onCreateInputConnectionCallback)) {
             if (!latch.await(TIMEOUT, TimeUnit.MILLISECONDS)) {
                 fail(String.format("IME not connected to the same user #%s within timeout",
                         userId));

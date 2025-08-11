@@ -39,6 +39,7 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 /**
@@ -53,7 +54,7 @@ public final class MainActivity extends Activity {
     private BroadcastReceiver mBroadcastReceiver;
 
     @Nullable
-    private String getStringIntentExtra(String key) {
+    private String getStringIntentExtra(@NonNull String key) {
         if (getPackageManager().isInstantApp()) {
             final Uri uri = getIntent().getData();
             if (uri == null || !uri.isHierarchical()) {
@@ -64,15 +65,16 @@ public final class MainActivity extends Activity {
         return getIntent().getStringExtra(key);
     }
 
-    private Integer getIntegerIntentExtra(String key) {
-        String value = getIntent().getStringExtra(key);
+    @Nullable
+    private Integer getIntegerIntentExtra(@NonNull String key) {
+        String value = getStringIntentExtra(key);
         if (value != null) {
             return Integer.parseInt(value);
         }
         return null;
     }
 
-    private boolean getBooleanIntentExtra(String key) {
+    private boolean getBooleanIntentExtra(@NonNull String key) {
         if (getPackageManager().isInstantApp()) {
             final Uri uri = getIntent().getData();
             if (uri == null || !uri.isHierarchical()) {
@@ -171,6 +173,10 @@ public final class MainActivity extends Activity {
 
                 if (extras.containsKey(MockTestActivityUtil.EXTRA_SHOW_SOFT_INPUT)) {
                     getSystemService(InputMethodManager.class).showSoftInput(mEditor, 0);
+                }
+
+                if (extras.containsKey(MockTestActivityUtil.EXTRA_FINISH)) {
+                    mHandler.postDelayed(() -> finish(), 100);
                 }
 
                 if (extras.getBoolean(MockTestActivityUtil.EXTRA_DISMISS_DIALOG, false)) {

@@ -87,6 +87,9 @@ public final class MockTestActivityUtil {
      */
     public static final String EXTRA_DISMISS_DIALOG = "extra_dismiss_dialog";
 
+    /** Can be passed to {@link #sendBroadcastAction(String)} to finish the test activity. */
+    public static final String EXTRA_FINISH = "extra_finish";
+
     /**
      * Can be passed to {@link #sendBroadcastAction(String)} call
      * {@link android.view.inputmethod.InputMethodManager#showSoftInput(android.view.View, int)}.
@@ -217,18 +220,23 @@ public final class MockTestActivityUtil {
     }
 
     /**
-     * Launches {@link android.view.inputmethod.ctstestapp.MainActivity}.
+     * Launches {@link android.view.inputmethod.ctstestapp.MainActivity}. For non-splitScreen use
+     * {@code InstrumentationRegistry.getInstrumentation().getContext()} as the given context. For
+     * splitScreen use, pass the context of the activity to launch together in split screen with.
      *
+     * @param context the context to launch the activity from.
      * @param userId the user id for which the Activity should be started
+     * @param splitScreen whether to launch this activity in split screen together with the one from
+     *     the given {@code context}.
      * @param instant {@code true} when the Activity is installed as an instant app.
      * @param extras extra parameters to be passed to the Activity.
      * @param onCreateInputConnectionCallback the callback that will be invoked, once the input
-     *                                        connection was created
+     *     connection was created
      * @return {@link AutoCloseable} object to automatically stop the test Activity package.
      */
-    public static AutoCloseable launchSyncAsUser(int userId, boolean instant,
-            @Nullable Map<String, String> extras, RemoteCallback onCreateInputConnectionCallback) {
-        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+    public static AutoCloseable launchSyncAsUser(@NonNull Context context, int userId,
+            boolean instant, boolean splitScreen, @Nullable Map<String, String> extras,
+            RemoteCallback onCreateInputConnectionCallback) {
         final Intent intent = new Intent().setClassName(TEST_ACTIVITY.getPackageName(),
                 TEST_ACTIVITY.getClassName()).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
         if (extras != null) {
@@ -240,6 +248,12 @@ public final class MockTestActivityUtil {
             intent.putExtra(EXTRA_ON_CREATE_USER_HANDLE_SESSION_ID,
                     Long.toString(SystemClock.elapsedRealtimeNanos()));
         }
+        if (splitScreen) {
+            intent.setFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK
+                            | Intent.FLAG_ACTIVITY_MULTIPLE_TASK
+                            | Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT);
+        }
 
         if (instant) {
             // Override app-links domain verification.
@@ -247,7 +261,8 @@ public final class MockTestActivityUtil {
                     String.format("pm set-app-links-user-selection --user %s --package %s true %s",
                             userId, TEST_ACTIVITY.getPackageName(), TEST_ACTIVITY_URI.getHost()));
             intent.setAction(Intent.ACTION_VIEW).addCategory(Intent.CATEGORY_BROWSABLE);
-            intent.setData(TEST_ACTIVITY_URI);
+            final Uri uri = formatStringIntentParam(TEST_ACTIVITY_URI, extras);
+            intent.setData(uri);
         } else {
             intent.setAction(Intent.ACTION_MAIN);
         }
