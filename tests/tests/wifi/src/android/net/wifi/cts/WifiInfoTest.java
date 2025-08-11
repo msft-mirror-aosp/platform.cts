@@ -40,6 +40,8 @@ import android.os.Build;
 import android.os.PersistableBundle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.SubscriptionManager;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -54,6 +56,7 @@ import com.android.wifi.flags.Flags;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -64,6 +67,9 @@ import java.util.List;
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "Cannot get WifiManager in instant app mode")
 public class WifiInfoTest extends WifiJUnit4TestBase{
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static Context sContext;
 
     private static boolean sShouldRunTest = false;

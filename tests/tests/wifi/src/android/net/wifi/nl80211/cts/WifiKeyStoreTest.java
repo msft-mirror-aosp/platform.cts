@@ -26,6 +26,8 @@ import android.net.wifi.WifiKeystore;
 import android.net.wifi.flags.Flags;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
@@ -33,6 +35,7 @@ import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -45,6 +48,9 @@ import org.junit.runner.RunWith;
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class WifiKeyStoreTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String TEST_ALIAS = "some_alias";
     private static final String TEST_PREFIX = "prefix_";
     private static final byte[] TEST_DATA = new byte[]{1, 2, 3, 4, 7};

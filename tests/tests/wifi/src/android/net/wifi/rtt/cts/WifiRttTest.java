@@ -56,6 +56,8 @@ import android.os.Build;
 import android.os.PersistableBundle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
@@ -67,6 +69,7 @@ import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
 import com.android.wifi.flags.Flags;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -84,6 +87,9 @@ import java.util.concurrent.TimeUnit;
 @LargeTest
 @RunWith(AndroidJUnit4.class)
 public class WifiRttTest extends TestBase {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     // Number of scans to do while searching for APs supporting IEEE 802.11mc
     private static final int NUM_SCANS_SEARCHING_FOR_IEEE80211MC_AP = 5;
 
