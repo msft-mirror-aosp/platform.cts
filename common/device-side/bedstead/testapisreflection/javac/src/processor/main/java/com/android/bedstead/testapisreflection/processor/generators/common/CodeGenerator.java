@@ -16,19 +16,19 @@
 
 package com.android.bedstead.testapisreflection.processor.generators.common;
 
-import static com.android.bedstead.testapisreflection.processor.Processor.ALLOWLISTED_TEST_FIELDS;
-import static com.android.bedstead.testapisreflection.processor.Processor.PACKAGE_NAME;
-import static com.android.bedstead.testapisreflection.processor.generators.ProxyClassesGenerator.SERVICES_ALIAS;
 import static com.android.bedstead.testapis.parser.utils.TypeUtils.convertToKotlinCompatibleType;
 import static com.android.bedstead.testapis.parser.utils.TypeUtils.getDeclaredType;
 import static com.android.bedstead.testapis.parser.utils.TypeUtils.getNestedClass;
 import static com.android.bedstead.testapis.parser.utils.TypeUtils.isNestedClass;
 import static com.android.bedstead.testapis.parser.utils.TypeUtils.isParameterizedType;
 import static com.android.bedstead.testapis.parser.utils.TypeUtils.parameterizedTypeWrapperName;
+import static com.android.bedstead.testapis.parser.utils.TypeUtils.splitParameterList;
 import static com.android.bedstead.testapis.parser.utils.TypeUtils.typeForString;
 import static com.android.bedstead.testapis.parser.utils.TypeUtils.typePackageName;
 import static com.android.bedstead.testapis.parser.utils.TypeUtils.typeSimpleName;
-import static com.android.bedstead.testapis.parser.utils.TypeUtils.splitParameterList;
+import static com.android.bedstead.testapisreflection.processor.Processor.ALLOWLISTED_TEST_FIELDS;
+import static com.android.bedstead.testapisreflection.processor.Processor.PACKAGE_NAME;
+import static com.android.bedstead.testapisreflection.processor.generators.ProxyClassesGenerator.SERVICES_ALIAS;
 
 import com.android.bedstead.testapis.parser.signatures.ClassSignature;
 import com.android.bedstead.testapis.parser.signatures.FieldSignature;
@@ -723,8 +723,12 @@ public final class CodeGenerator {
 
     private List<FieldSignature> getTestFieldsForClass(String frameworkClass) {
         return ALLOWLISTED_TEST_FIELDS.stream()
-                .map(f -> FieldSignature.forFieldString(f, mProcessingEnvironment.getTypeUtils(),
-                        mProcessingEnvironment.getElementUtils()))
+                .map(
+                        f ->
+                                FieldSignature.Companion.forFieldString(
+                                        f,
+                                        mProcessingEnvironment.getTypeUtils(),
+                                        mProcessingEnvironment.getElementUtils()))
                 .filter(t -> typeSimpleName(t.getFrameworkClass()).equals(frameworkClass))
                 .collect(Collectors.toUnmodifiableList());
     }

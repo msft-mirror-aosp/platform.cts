@@ -13,29 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package com.android.bedstead.testapis.parser.signatures;
-
-import com.google.common.collect.ImmutableList;
+package com.android.bedstead.testapis.parser.signatures
 
 /**
  * Represents a minimal representation of a constructor for comparison purposes.
  */
-public final class ConstructorSignature {
-
-    private final String mClassName;
-    private final ImmutableList<String> mParameterTypes;
-
-    public ConstructorSignature(String className, ImmutableList<String> parameterTypes) {
-        mClassName = className;
-        mParameterTypes = parameterTypes;
-    }
-
-    @Override
-    public String toString() {
-        return "ConstructorSignature{" +
-                "mClassName='" + mClassName + '\'' +
-                ", mParameterTypes=" + mParameterTypes +
-                '}';
-    }
-}
+data class ConstructorSignature(
+    private val mClassName: String?,
+    private val mParameterTypes: List<String>
+)
