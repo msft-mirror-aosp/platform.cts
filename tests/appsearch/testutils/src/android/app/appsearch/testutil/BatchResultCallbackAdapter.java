@@ -18,24 +18,39 @@ package android.app.appsearch.testutil;
 
 import android.app.appsearch.AppSearchBatchResult;
 import android.app.appsearch.BatchResultCallback;
+import android.os.UserHandle;
 
 import com.google.common.util.concurrent.SettableFuture;
 
-final class BatchResultCallbackAdapter<K, V>
-        implements BatchResultCallback<K, V> {
+import java.util.Objects;
+
+final class BatchResultCallbackAdapter<K, V> implements BatchResultCallback<K, V> {
+
+    private static final String TAG = BatchResultCallbackAdapter.class.getSimpleName();
+
+    private final UserAwareLogger mLogger;
+    private final String mId; // Used for debugging purposes
     private final SettableFuture<AppSearchBatchResult<K, V>> mFuture;
 
-    BatchResultCallbackAdapter(SettableFuture<AppSearchBatchResult<K, V>> future) {
-        mFuture = future;
+    BatchResultCallbackAdapter(String id, SettableFuture<AppSearchBatchResult<K, V>> future) {
+        mLogger = new UserAwareLogger(TAG, UserHandle.myUserId());
+        mId = Objects.requireNonNull(id, "id cannot be null");
+        mFuture = Objects.requireNonNull(future, "future cannot be null");
     }
 
     @Override
     public void onResult(AppSearchBatchResult<K, V> result) {
         mFuture.set(result);
+        if (result.isSuccess()) {
+            mLogger.logD("onResult(id=%s): %s", mId, result);
+        } else {
+            mLogger.logE("onResult(id=%s): %s", mId, result);
+        }
     }
 
     @Override
     public void onSystemError(Throwable t) {
         mFuture.setException(t);
+        mLogger.logE("onSystemError(id=%s): %s", mId, t);
     }
 }

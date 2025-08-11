@@ -104,7 +104,7 @@ public final class GlobalSearchSessionShimImpl implements GlobalSearchSessionShi
                 SettableFuture.create();
         mGlobalSearchSession.getByDocumentId(
                 packageName, databaseName, request, mExecutor,
-                new BatchResultCallbackAdapter<>(future));
+                new BatchResultCallbackAdapter<>("getByDocumentIdAsync()", future));
         return future;
     }
 
