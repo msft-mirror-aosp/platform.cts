@@ -61,12 +61,12 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_ANTI_LAG = "antiLag";
     public static final String KEY_ANTI_LAG_FEATURES_AMD = "antiLagFeaturesAMD";
     public static final String KEY_API_VERSION = "apiVersion";
+    public static final String KEY_ASTC_DECODE_FEATURES_EXT = "ASTCDecodeFeaturesEXT";
     public static final String KEY_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE = "attachmentFeedbackLoopDynamicState";
     public static final String KEY_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_FEATURES_EXT = "attachmentFeedbackLoopDynamicStateFeaturesEXT";
     public static final String KEY_ATTACHMENT_FEEDBACK_LOOP_LAYOUT = "attachmentFeedbackLoopLayout";
     public static final String KEY_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_FEATURES_EXT = "attachmentFeedbackLoopLayoutFeaturesEXT";
     public static final String KEY_ATTACHMENT_FRAGMENT_SHADING_RATE = "attachmentFragmentShadingRate";
-    public static final String KEY_A_STC_DECODE_FEATURES_EXT = "aSTCDecodeFeaturesEXT";
     public static final String KEY_BIDIRECTIONAL_FLOW_SUPPORTED = "bidirectionalFlowSupported";
     public static final String KEY_BIT16_STORAGE_FEATURES = "bit16StorageFeatures";
     public static final String KEY_BIT8_STORAGE_FEATURES = "bit8StorageFeatures";
@@ -450,6 +450,7 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_HOST_QUERY_RESET_FEATURES_EXT = "hostQueryResetFeaturesEXT";
     public static final String KEY_IDENTICAL_MEMORY_TYPE_REQUIREMENTS = "identicalMemoryTypeRequirements";
     public static final String KEY_ID_PROPERTIES = "idProperties";
+    public static final String KEY_ID_PROPERTIES_KHR = "IDPropertiesKHR";
     public static final String KEY_IMAGELESS_FRAMEBUFFER = "imagelessFramebuffer";
     public static final String KEY_IMAGELESS_FRAMEBUFFER_FEATURES = "imagelessFramebufferFeatures";
     public static final String KEY_IMAGELESS_FRAMEBUFFER_FEATURES_KHR = "imagelessFramebufferFeaturesKHR";
@@ -530,7 +531,6 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_8BIT_UNSIGNED_ACCELERATED = "integerDotProductAccumulatingSaturating8BitUnsignedAccelerated";
     public static final String KEY_INVOCATION_MASK = "invocationMask";
     public static final String KEY_INVOCATION_MASK_FEATURES_HUAWEI = "invocationMaskFeaturesHUAWEI";
-    public static final String KEY_I_D_PROPERTIES_KHR = "iDPropertiesKHR";
     public static final String KEY_LARGE_POINTS = "largePoints";
     public static final String KEY_LAYERED_API = "layeredAPI";
     public static final String KEY_LAYERED_API_COUNT = "layeredApiCount";
@@ -922,6 +922,7 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_PARTITIONED_ACCELERATION_STRUCTURE_PROPERTIES_NV = "partitionedAccelerationStructurePropertiesNV";
     public static final String KEY_PATCH = "patch";
     public static final String KEY_PCI_BUS = "pciBus";
+    public static final String KEY_PCI_BUS_INFO_PROPERTIES_EXT = "PCIBusInfoPropertiesEXT";
     public static final String KEY_PCI_DEVICE = "pciDevice";
     public static final String KEY_PCI_DOMAIN = "pciDomain";
     public static final String KEY_PCI_FUNCTION = "pciFunction";
@@ -1016,7 +1017,6 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_PUSH_DESCRIPTOR = "pushDescriptor";
     public static final String KEY_PUSH_DESCRIPTOR_PROPERTIES = "pushDescriptorProperties";
     public static final String KEY_PUSH_DESCRIPTOR_PROPERTIES_KHR = "pushDescriptorPropertiesKHR";
-    public static final String KEY_P_CI_BUS_INFO_PROPERTIES_EXT = "pCIBusInfoPropertiesEXT";
     public static final String KEY_P_COPY_DST_LAYOUTS = "pCopyDstLayouts";
     public static final String KEY_P_COPY_SRC_LAYOUTS = "pCopySrcLayouts";
     public static final String KEY_P_LAYERED_APIS = "pLayeredApis";
@@ -1076,6 +1076,7 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_RESIDENCY_STANDARD_2D_MULTISAMPLE_BLOCK_SHAPE = "residencyStandard2DMultisampleBlockShape";
     public static final String KEY_RESIDENCY_STANDARD_3D_BLOCK_SHAPE = "residencyStandard3DBlockShape";
     public static final String KEY_RESOURCE_DESCRIPTOR_BUFFER_ADDRESS_SPACE_SIZE = "resourceDescriptorBufferAddressSpaceSize";
+    public static final String KEY_RGBA_10_X_6_FORMATS_FEATURES_EXT = "RGBA10X6FormatsFeaturesEXT";
     public static final String KEY_ROBUSTNESS_2_FEATURES_EXT = "robustness2FeaturesEXT";
     public static final String KEY_ROBUSTNESS_2_FEATURES_KHR = "robustness2FeaturesKHR";
     public static final String KEY_ROBUSTNESS_2_PROPERTIES_EXT = "robustness2PropertiesEXT";
@@ -1094,7 +1095,6 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_ROBUST_UNIFORM_TEXEL_BUFFER_DESCRIPTOR_SIZE = "robustUniformTexelBufferDescriptorSize";
     public static final String KEY_ROUNDING_MODE_INDEPENDENCE = "roundingModeIndependence";
     public static final String KEY_RUNTIME_DESCRIPTOR_ARRAY = "runtimeDescriptorArray";
-    public static final String KEY_R_GBA_10_X_6_FORMATS_FEATURES_EXT = "rGBA10X6FormatsFeaturesEXT";
     public static final String KEY_SAMPLED_IMAGE_COLOR_SAMPLE_COUNTS = "sampledImageColorSampleCounts";
     public static final String KEY_SAMPLED_IMAGE_DEPTH_SAMPLE_COUNTS = "sampledImageDepthSampleCounts";
     public static final String KEY_SAMPLED_IMAGE_DESCRIPTOR_SIZE = "sampledImageDescriptorSize";
@@ -1640,7 +1640,9 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_VK_KHR_DRIVER_PROPERTIES = "VK_KHR_driver_properties";
     public static final String KEY_VK_KHR_DYNAMIC_RENDERING = "VK_KHR_dynamic_rendering";
     public static final String KEY_VK_KHR_DYNAMIC_RENDERING_LOCAL_READ = "VK_KHR_dynamic_rendering_local_read";
+    public static final String KEY_VK_KHR_EXTERNAL_FENCE_CAPABILITIES = "VK_KHR_external_fence_capabilities";
     public static final String KEY_VK_KHR_EXTERNAL_MEMORY_CAPABILITIES = "VK_KHR_external_memory_capabilities";
+    public static final String KEY_VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES = "VK_KHR_external_semaphore_capabilities";
     public static final String KEY_VK_KHR_FRAGMENT_SHADER_BARYCENTRIC = "VK_KHR_fragment_shader_barycentric";
     public static final String KEY_VK_KHR_FRAGMENT_SHADING_RATE = "VK_KHR_fragment_shading_rate";
     public static final String KEY_VK_KHR_GLOBAL_PRIORITY = "VK_KHR_global_priority";
