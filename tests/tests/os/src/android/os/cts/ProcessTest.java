@@ -24,7 +24,6 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import android.content.ComponentName;
 import android.content.Context;
@@ -66,7 +65,7 @@ public class ProcessTest {
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     public static final int THREAD_PRIORITY_HIGHEST = -20;
-    private static final String NONE_EXISITENT_NAME = "abcdefcg";
+    private static final String NONEXISTENT_NAME = "abcdefcg";
     private static final String WRONG_CACHE_NAME = "cache_abcdefg";
     private static final String PROCESS_SHELL= "shell";
     private static final String PROCESS_CACHE= "cache";
@@ -165,16 +164,16 @@ public class ProcessTest {
         Process.setThreadPriority(myTid, THREAD_PRIORITY_HIGHEST);
         assertEquals(THREAD_PRIORITY_HIGHEST, Process.getThreadPriority(myTid));
 
+        // Test that an IllegalArgumentException is thrown when the priority is out of range.
         int invalidPriority = THREAD_PRIORITY_HIGHEST - 1;
-        Process.setThreadPriority(myTid, invalidPriority);
-        assertEquals(THREAD_PRIORITY_HIGHEST, Process.getThreadPriority(myTid));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> Process.setThreadPriority(myTid, invalidPriority));
 
-        try {
-            Process.setThreadPriority(-1, Process.THREAD_PRIORITY_DEFAULT);
-            fail("Should throw IllegalArgumentException");
-        } catch (IllegalArgumentException e) {
-            // expect
-        } // Hard to address logic of throws SecurityException
+        // Same for invalid thread id.
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> Process.setThreadPriority(-1, Process.THREAD_PRIORITY_DEFAULT));
 
         /*
          * Returns the UID assigned to a particular user name, or -1 if there is
@@ -182,7 +181,7 @@ public class ProcessTest {
          * directly to a uid.
          */
         assertTrue(Process.getUidForName(PROCESS_SHELL) > 0);
-        assertEquals(-1, Process.getUidForName(NONE_EXISITENT_NAME));
+        assertEquals(-1, Process.getUidForName(NONEXISTENT_NAME));
         assertEquals(0, Process.getUidForName("0"));
 
         /*
