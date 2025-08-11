@@ -69,6 +69,7 @@ import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.annotations.SystemUserOnly;
+import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
@@ -129,10 +130,10 @@ public final class UserManagerTest {
     @ClassRule
     public static final DeviceState sDeviceState = new DeviceState();
 
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Rule
-    public TestRule chain = RuleChain
-            .outerRule(DeviceFlagsValueProvider.createCheckFlagsRule())
-            .around(sDeviceState);
+    public final TestRule mRuleChain = RuleChain.outerRule(mCheckFlagsRule).around(sDeviceState);
 
     private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
     private UserManager mUserManager;
