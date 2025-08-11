@@ -28,7 +28,6 @@ import android.mediav2.common.cts.RawResource;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Class containing encoder input resources.
@@ -94,6 +93,19 @@ public class EncoderInput {
                     return res;
                 }
             }
+            for (RawResource res : INPUT_AUDIO_FILES) {
+                if (cfg.mChannelCount == res.mChannelCount && 48000 == res.mSampleRate
+                        && cfg.mPcmEncoding == res.mAudioEncoding) {
+                    return res;
+                }
+            }
+            for (RawResource res : INPUT_AUDIO_FILES) {
+                if (2 == res.mChannelCount && 48000 == res.mSampleRate
+                        && cfg.mPcmEncoding == res.mAudioEncoding) {
+                    return res;
+                }
+            }
+            return null;
         } else {
             if (cfg.mColorFormat == COLOR_FormatYUV420Flexible) {
                 return INPUT_VIDEO_FILE;

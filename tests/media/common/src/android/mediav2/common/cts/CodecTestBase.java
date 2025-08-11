@@ -533,6 +533,12 @@ public abstract class CodecTestBase {
         return result;
     }
 
+    public static int[] combineUnique(int[] first, int[] second) {
+        Stream<Integer> s1 = Arrays.stream(first).boxed();
+        Stream<Integer> s2 = Arrays.stream(second).boxed();
+        return Stream.concat(s1, s2).distinct().mapToInt(Integer::intValue).toArray();
+    }
+
     public static Context getContext() {
         return InstrumentationRegistry.getInstrumentation().getTargetContext();
     }
