@@ -35,7 +35,6 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.OutcomeReceiver;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.telecom.Call;
 import android.telecom.CallAttributes;
 import android.telecom.CallControl;
@@ -1167,14 +1166,13 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_INTEGRATED_CALL_LOGS)
     @ApiTest(
             apis = {
                 "android.telecom.CallAttributes.Builder#setLogExcluded",
                 "android.telecom.CallAttributes#isLogExcluded"
             })
     public void testCallAttributesSetLogExcluded() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !Flags.integratedCallLogs()) {
             return;
         }
 
