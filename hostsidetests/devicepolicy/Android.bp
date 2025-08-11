@@ -67,6 +67,8 @@ java_test_host {
         ":CtsDeviceAdminService3",
         ":CtsDevicePolicyAssistApp",
         ":CtsDevicePolicyAutofillApp",
+        ":CtsDevicePolicyContentCaptureApp",
+        ":CtsDevicePolicyContentCaptureService",
         ":CtsEmptyTestApp",
         ":CtsHasLauncherActivityApp",
         ":CtsIntentReceiverApp",
