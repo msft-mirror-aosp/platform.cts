@@ -534,12 +534,7 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
         String refJsonFilePath = sHostWorkDir.getPath() + "/json/" + mJsonName;
         String testVmafFilePath = sHostWorkDir.getPath() + "/" + outDir + "/" + "all_vmafs.txt";
         String resultFilePath = sHostWorkDir.getPath() + "/" + outDir + "/result.txt";
-        int result;
-        try {
-            result = verifyBdRate(refJsonFilePath, testVmafFilePath, resultFilePath);
-        } catch (RuntimeException e) {
-            result = 1;
-        }
+        int result = verifyBdRate(refJsonFilePath, testVmafFilePath, resultFilePath);
         if (sMpc >= MEDIA_PERFORMANCE_CLASS_14) {
             Assert.assertEquals("bd rate validation failed.", 0, result);
         } else {
