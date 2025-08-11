@@ -41,8 +41,8 @@ public class InstallationViaIntentForResultWithUpdateOwnershipTest extends Updat
         clickUpdateAnywayButton();
 
         // TODO (b/349258056): should get the correct activity result
-//        assertInstallerResponseActivityResultOK();
-        assertTestPackageVersion2Installed();
+        //        assertInstallerResponseActivityResultOK();
+        assertTestPackageVersion2InstalledWithRetry();
     }
 
     @Test
