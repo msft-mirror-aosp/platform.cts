@@ -269,6 +269,7 @@ public class DeveloperVerifierServiceTest {
         PersistableBundle testExtensionResponse = new PersistableBundle();
         testExtensionResponse.putString("testKey", "testValue");
         sessionFromParcel.reportVerificationComplete(testStatus, testExtensionResponse);
+        sessionFromParcel.reportVerificationComplete(testStatus);
         // Test reportVerificationBypassed
         sessionFromParcel.reportVerificationBypassed(/* bypassReason= */ 20);
     }
