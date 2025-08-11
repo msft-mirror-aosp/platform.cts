@@ -2262,7 +2262,7 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         return serviceConnection;
     }
 
-    private static class TestServiceConnection implements ServiceConnection {
+    protected static class TestServiceConnection implements ServiceConnection {
         private final Context mContext;
         private final BlockingQueue<IBinder> mBlockingQueue = new LinkedBlockingQueue<>();
         private ICommandReceiver mCommandReceiver;
