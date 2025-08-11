@@ -28,16 +28,16 @@ import static android.telephony.CarrierConfigManager.KEY_CARRIER_SUPPORTED_SATEL
 import static android.telephony.CarrierConfigManager.KEY_CARRIER_VOLTE_PROVISIONED_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_CELLULAR_SERVICE_CAPABILITIES_INT_ARRAY;
 import static android.telephony.CarrierConfigManager.KEY_EMERGENCY_CALL_TO_SATELLITE_T911_HANDOVER_TIMEOUT_MILLIS_INT;
+import static android.telephony.CarrierConfigManager.KEY_EMERGENCY_MESSAGING_SUPPORTED_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_FORCE_HOME_NETWORK_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_LOG_CALLS_ANSWERED_ELSEWHERE_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_OVERRIDE_WFC_ROAMING_MODE_WHILE_USING_NTN_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_CONNECTED_NOTIFICATION_THROTTLE_MILLIS_INT;
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_CONNECTION_HYSTERESIS_SEC_INT;
-import static android.telephony.CarrierConfigManager.KEY_EMERGENCY_MESSAGING_SUPPORTED_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_DISPLAY_NAME_STRING;
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ENTITLEMENT_STATUS_REFRESH_DAYS_INT;
-import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ROAMING_ESOS_INACTIVITY_TIMEOUT_SEC_INT;
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL;
+import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ROAMING_ESOS_INACTIVITY_TIMEOUT_SEC_INT;
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ROAMING_P2P_SMS_INACTIVITY_TIMEOUT_SEC_INT;
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ROAMING_P2P_SMS_SUPPORTED_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ROAMING_SCREEN_OFF_INACTIVITY_TIMEOUT_SEC_INT;
@@ -54,6 +54,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -245,6 +246,12 @@ public class CarrierConfigManagerTest {
                     .KEY_CARRIER_SUPPORTED_SATELLITE_SERVICES_PER_PROVIDER_BUNDLE);
             assertTrue("KEY_CARRIER_SUPPORTED_SATELLITE_SERVICES_PER_PROVIDER_BUNDLE"
                     + " doesn't match static default.",bundle.isEmpty());
+            PersistableBundle satelliteConfigsPerPlmnBundle =
+                    config.getPersistableBundle(
+                            CarrierConfigManager.KEY_SATELLITE_CONFIGS_PER_PLMN_BUNDLE);
+            assertTrue(
+                    "KEY_SATELLITE_CONFIGS_PER_PLMN_BUNDLE" + " doesn't match static default.",
+                    satelliteConfigsPerPlmnBundle.isEmpty());
             assertEquals("KEY_SATELLITE_CONNECTION_HYSTERESIS_SEC_INT "
                             + "doesn't match static default.",
                     config.getInt(
@@ -276,6 +283,11 @@ public class CarrierConfigManagerTest {
             assertEquals("KEY_CARRIER_ROAMING_NTN_CONNECT_TYPE_INT doesn't match static default.",
                     config.getInt(KEY_CARRIER_ROAMING_NTN_CONNECT_TYPE_INT),
                     CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC);
+            assertNotEquals(
+                    "KEY_CARRIER_ROAMING_NTN_CONNECT_TYPE_INT matches "
+                            + "incorrect static default.",
+                    config.getInt(KEY_CARRIER_ROAMING_NTN_CONNECT_TYPE_INT),
+                    CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_HYBRID);
             assertEquals("KEY_CARRIER_ROAMING_NTN_EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_INT "
                     + "doesn't match static default.",
                     config.getInt(
