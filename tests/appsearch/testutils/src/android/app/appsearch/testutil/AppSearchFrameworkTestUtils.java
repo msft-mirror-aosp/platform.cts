@@ -20,7 +20,7 @@ import android.annotation.NonNull;
 import android.app.appsearch.SearchResult;
 import android.app.appsearch.exceptions.AppSearchException;
 
-import com.android.server.appsearch.appsindexer.SyncSearchResults;
+import com.android.server.appsearch.sync.SyncSearchResults;
 
 import java.util.ArrayList;
 import java.util.List;

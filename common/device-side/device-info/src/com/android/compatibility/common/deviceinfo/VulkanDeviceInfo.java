@@ -1533,7 +1533,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
 
-    private static void emitAntiLagFeaturesAMD(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkAMDAntiLag(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject amdAntiLagFeatures = parent.optJSONObject(KEY_VK_AMD_ANTI_LAG);
@@ -1551,7 +1551,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitCoherentMemoryFeaturesAMD(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkAMDDeviceCoherentMemory(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject amdCoherentMemoryFeatures = parent.optJSONObject(KEY_VK_AMD_DEVICE_COHERENT_MEMORY);
@@ -1569,7 +1569,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderCorePropertiesAMD(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkAMDShaderCoreProperties(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject amdShaderCoreProperties = parent.optJSONObject(KEY_VK_AMD_SHADER_CORE_PROPERTIES);
@@ -1600,7 +1600,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderCoreProperties2AMD(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkAMDShaderCoreProperties2(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject amdShaderCoreProperties2 = parent.optJSONObject(KEY_VK_AMD_SHADER_CORE_PROPERTIES2);
@@ -1619,7 +1619,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderEarlyAndLateFragmentTestsFeaturesAMD(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkAMDShaderEarlyAndLateFragmentTests(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject amdShaderEarlyAndLateFragmentTestsFeatures = parent.optJSONObject(KEY_VK_AMD_SHADER_EARLY_AND_LATE_FRAGMENT_TESTS);
@@ -1637,7 +1637,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitExternalFormatResolveFeaturesANDROID(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkANDROIDExternalFormatResolve(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject androidExternalFormatResolveFeatures = parent.optJSONObject(KEY_VK_ANDROID_EXTERNAL_FORMAT_RESOLVE);
@@ -1663,7 +1663,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitFormatPackFeaturesARM(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkARMFormatPack(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject armFormatPackFeatures = parent.optJSONObject(KEY_VK_ARM_FORMAT_PACK);
@@ -1681,7 +1681,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitPipelineOpacityMicromapFeaturesARM(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkARMPipelineOpacityMicromap(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject armPipelineOpacityMicromapFeatures = parent.optJSONObject(KEY_VK_ARM_PIPELINE_OPACITY_MICROMAP);
@@ -1699,7 +1699,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitRasterizationOrderAttachmentAccessFeaturesARM(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkARMRasterizationOrderAttachmentAccess(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject armRasterizationOrderAttachmentAccessFeatures = parent.optJSONObject(KEY_VK_ARM_RASTERIZATION_ORDER_ATTACHMENT_ACCESS);
@@ -1719,7 +1719,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitRenderPassStripedFeaturesARM(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkARMRenderPassStriped(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject armRenderPassStripedFeatures = parent.optJSONObject(KEY_VK_ARM_RENDER_PASS_STRIPED);
@@ -1750,7 +1750,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitSchedulingControlsFeaturesARM(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkARMSchedulingControls(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject armSchedulingControlsFeatures = parent.optJSONObject(KEY_VK_ARM_SCHEDULING_CONTROLS);
@@ -1774,7 +1774,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderCoreBuiltinsFeaturesARM(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkARMShaderCoreBuiltins(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject armShaderCoreBuiltinsFeatures = parent.optJSONObject(KEY_VK_ARM_SHADER_CORE_BUILTINS);
@@ -1800,7 +1800,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderCorePropertiesARM(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkARMShaderCoreProperties(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject armShaderCoreProperties = parent.optJSONObject(KEY_VK_ARM_SHADER_CORE_PROPERTIES);
@@ -1820,7 +1820,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitTensorPropertiesARM(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkARMTensors(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject armTensorProperties = parent.optJSONObject(KEY_VK_ARM_TENSORS);
@@ -1875,7 +1875,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emit4444FormatsFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXT4444Formats(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject ext4444FormatsFeatures = parent.optJSONObject(KEY_VK_EXT_4444_FORMATS);
@@ -1894,17 +1894,17 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitASTCDecodeFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTAstcDecodeMode(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extASTCDecodeFeatures = parent.optJSONObject(KEY_VK_EXT_ASTC_DECODE_MODE);
         if (extASTCDecodeFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_ASTC_DECODE_MODE));
             {
-                JSONObject aStcDecodeFeaturesEXT = extASTCDecodeFeatures.getJSONObject(KEY_A_STC_DECODE_FEATURES_EXT);
-                store.startGroup(getConvertedName(KEY_A_STC_DECODE_FEATURES_EXT));
+                JSONObject astcDecodeFeaturesEXT = extASTCDecodeFeatures.getJSONObject(KEY_ASTC_DECODE_FEATURES_EXT);
+                store.startGroup(getConvertedName(KEY_ASTC_DECODE_FEATURES_EXT));
                 {
-                    emitBoolean(store, aStcDecodeFeaturesEXT, KEY_DECODE_MODE_SHARED_EXPONENT);
+                    emitBoolean(store, astcDecodeFeaturesEXT, KEY_DECODE_MODE_SHARED_EXPONENT);
                 }
                 store.endGroup();
             }
@@ -1912,7 +1912,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitAttachmentFeedbackLoopDynamicStateFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTAttachmentFeedbackLoopDynamicState(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extAttachmentFeedbackLoopDynamicStateFeatures = parent.optJSONObject(KEY_VK_EXT_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE);
@@ -1930,7 +1930,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitAttachmentFeedbackLoopLayoutFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTAttachmentFeedbackLoopLayout(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extAttachmentFeedbackLoopLayoutFeatures = parent.optJSONObject(KEY_VK_EXT_ATTACHMENT_FEEDBACK_LOOP_LAYOUT);
@@ -1948,7 +1948,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitBlendOperationAdvancedFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTBlendOperationAdvanced(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extBlendOperationAdvancedFeatures = parent.optJSONObject(KEY_VK_EXT_BLEND_OPERATION_ADVANCED);
@@ -1977,7 +1977,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitBorderColorSwizzleFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTBorderColorSwizzle(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extBorderColorSwizzleFeatures = parent.optJSONObject(KEY_VK_EXT_BORDER_COLOR_SWIZZLE);
@@ -1996,7 +1996,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitBufferDeviceAddressFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTBufferDeviceAddress(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extBufferDeviceAddressFeatures = parent.optJSONObject(KEY_VK_EXT_BUFFER_DEVICE_ADDRESS);
@@ -2024,7 +2024,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitColorWriteEnableFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTColorWriteEnable(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extColorWriteEnableFeatures = parent.optJSONObject(KEY_VK_EXT_COLOR_WRITE_ENABLE);
@@ -2042,7 +2042,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitConditionalRenderingFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTConditionalRendering(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extConditionalRenderingFeatures = parent.optJSONObject(KEY_VK_EXT_CONDITIONAL_RENDERING);
@@ -2061,7 +2061,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitConservativeRasterizationPropertiesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTConservativeRasterization(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extConservativeRasterizationProperties = parent.optJSONObject(KEY_VK_EXT_CONSERVATIVE_RASTERIZATION);
@@ -2087,7 +2087,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitCustomBorderColorPropertiesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTCustomBorderColor(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extCustomBorderColorProperties = parent.optJSONObject(KEY_VK_EXT_CUSTOM_BORDER_COLOR);
@@ -2112,7 +2112,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitDepthBiasControlFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTDepthBiasControl(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extDepthBiasControlFeatures = parent.optJSONObject(KEY_VK_EXT_DEPTH_BIAS_CONTROL);
@@ -2133,7 +2133,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitDepthClampControlFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTDepthClampControl(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extDepthClampControlFeatures = parent.optJSONObject(KEY_VK_EXT_DEPTH_CLAMP_CONTROL);
@@ -2151,7 +2151,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitDepthClipControlFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTDepthClipControl(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extDepthClipControlFeatures = parent.optJSONObject(KEY_VK_EXT_DEPTH_CLIP_CONTROL);
@@ -2169,7 +2169,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitDepthClipEnableFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTDepthClipEnable(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extDepthClipEnableFeatures = parent.optJSONObject(KEY_VK_EXT_DEPTH_CLIP_ENABLE);
@@ -2187,7 +2187,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitDescriptorBufferPropertiesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTDescriptorBuffer(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extDescriptorBufferProperties = parent.optJSONObject(KEY_VK_EXT_DESCRIPTOR_BUFFER);
@@ -2252,7 +2252,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitDescriptorIndexingFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTDescriptorIndexing(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extDescriptorIndexingFeatures = parent.optJSONObject(KEY_VK_EXT_DESCRIPTOR_INDEXING);
@@ -2317,7 +2317,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitAddressBindingReportFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTDeviceAddressBindingReport(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extAddressBindingReportFeatures = parent.optJSONObject(KEY_VK_EXT_DEVICE_ADDRESS_BINDING_REPORT);
@@ -2335,7 +2335,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitFaultFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTDeviceFault(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extFaultFeatures = parent.optJSONObject(KEY_VK_EXT_DEVICE_FAULT);
@@ -2354,7 +2354,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitDeviceGeneratedCommandsFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTDeviceGeneratedCommands(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extDeviceGeneratedCommandsFeatures = parent.optJSONObject(KEY_VK_EXT_DEVICE_GENERATED_COMMANDS);
@@ -2390,7 +2390,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitDeviceMemoryReportFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTDeviceMemoryReport(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extDeviceMemoryReportFeatures = parent.optJSONObject(KEY_VK_EXT_DEVICE_MEMORY_REPORT);
@@ -2408,7 +2408,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitDiscardRectanglePropertiesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTDiscardRectangles(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extDiscardRectangleProperties = parent.optJSONObject(KEY_VK_EXT_DISCARD_RECTANGLES);
@@ -2426,7 +2426,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitDynamicRenderingUnusedAttachmentsFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTDynamicRenderingUnusedAttachments(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extDynamicRenderingUnusedAttachmentsFeatures = parent.optJSONObject(KEY_VK_EXT_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS);
@@ -2444,7 +2444,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitExtendedDynamicStateFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTExtendedDynamicState(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extExtendedDynamicStateFeatures = parent.optJSONObject(KEY_VK_EXT_EXTENDED_DYNAMIC_STATE);
@@ -2462,7 +2462,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitExtendedDynamicState2FeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTExtendedDynamicState2(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extExtendedDynamicState2Features = parent.optJSONObject(KEY_VK_EXT_EXTENDED_DYNAMIC_STATE2);
@@ -2482,7 +2482,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitExtendedDynamicState3FeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTExtendedDynamicState3(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extExtendedDynamicState3Features = parent.optJSONObject(KEY_VK_EXT_EXTENDED_DYNAMIC_STATE3);
@@ -2536,7 +2536,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitExternalMemoryHostPropertiesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTExternalMemoryHost(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extExternalMemoryHostProperties = parent.optJSONObject(KEY_VK_EXT_EXTERNAL_MEMORY_HOST);
@@ -2554,7 +2554,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitFragmentDensityMapFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTFragmentDensityMap(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extFragmentDensityMapFeatures = parent.optJSONObject(KEY_VK_EXT_FRAGMENT_DENSITY_MAP);
@@ -2594,7 +2594,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitFragmentDensityMap2FeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTFragmentDensityMap2(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extFragmentDensityMap2Features = parent.optJSONObject(KEY_VK_EXT_FRAGMENT_DENSITY_MAP2);
@@ -2621,7 +2621,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitFragmentDensityMapOffsetFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTFragmentDensityMapOffset(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extFragmentDensityMapOffsetFeatures = parent.optJSONObject(KEY_VK_EXT_FRAGMENT_DENSITY_MAP_OFFSET);
@@ -2651,7 +2651,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitFragmentShaderInterlockFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTFragmentShaderInterlock(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extFragmentShaderInterlockFeatures = parent.optJSONObject(KEY_VK_EXT_FRAGMENT_SHADER_INTERLOCK);
@@ -2671,7 +2671,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitFrameBoundaryFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTFrameBoundary(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extFrameBoundaryFeatures = parent.optJSONObject(KEY_VK_EXT_FRAME_BOUNDARY);
@@ -2689,7 +2689,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitGlobalPriorityQueryFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTGlobalPriorityQuery(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extGlobalPriorityQueryFeatures = parent.optJSONObject(KEY_VK_EXT_GLOBAL_PRIORITY_QUERY);
@@ -2707,7 +2707,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitGraphicsPipelineLibraryFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTGraphicsPipelineLibrary(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extGraphicsPipelineLibraryFeatures = parent.optJSONObject(KEY_VK_EXT_GRAPHICS_PIPELINE_LIBRARY);
@@ -2732,7 +2732,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitHostImageCopyFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTHostImageCopy(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extHostImageCopyFeatures = parent.optJSONObject(KEY_VK_EXT_HOST_IMAGE_COPY);
@@ -2761,7 +2761,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitHostQueryResetFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTHostQueryReset(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extHostQueryResetFeatures = parent.optJSONObject(KEY_VK_EXT_HOST_QUERY_RESET);
@@ -2779,7 +2779,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitImage2DViewOf3DFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTImage2dViewOf3d(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extImage2DViewOf3DFeatures = parent.optJSONObject(KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D);
@@ -2798,7 +2798,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitImageCompressionControlFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTImageCompressionControl(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extImageCompressionControlFeatures = parent.optJSONObject(KEY_VK_EXT_IMAGE_COMPRESSION_CONTROL);
@@ -2816,7 +2816,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitImageCompressionControlSwapchainFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTImageCompressionControlSwapchain(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extImageCompressionControlSwapchainFeatures = parent.optJSONObject(KEY_VK_EXT_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN);
@@ -2834,7 +2834,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitImageRobustnessFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTImageRobustness(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extImageRobustnessFeatures = parent.optJSONObject(KEY_VK_EXT_IMAGE_ROBUSTNESS);
@@ -2852,7 +2852,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitImageSlicedViewOf3DFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTImageSlicedViewOf3d(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extImageSlicedViewOf3DFeatures = parent.optJSONObject(KEY_VK_EXT_IMAGE_SLICED_VIEW_OF_3D);
@@ -2870,7 +2870,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitImageViewMinLodFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTImageViewMinLod(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extImageViewMinLodFeatures = parent.optJSONObject(KEY_VK_EXT_IMAGE_VIEW_MIN_LOD);
@@ -2888,7 +2888,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitIndexTypeUint8FeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTIndexTypeUint8(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extIndexTypeUint8Features = parent.optJSONObject(KEY_VK_EXT_INDEX_TYPE_UINT8);
@@ -2906,7 +2906,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitInlineUniformBlockFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTInlineUniformBlock(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extInlineUniformBlockFeatures = parent.optJSONObject(KEY_VK_EXT_INLINE_UNIFORM_BLOCK);
@@ -2935,7 +2935,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitLegacyDitheringFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTLegacyDithering(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extLegacyDitheringFeatures = parent.optJSONObject(KEY_VK_EXT_LEGACY_DITHERING);
@@ -2953,7 +2953,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitLegacyVertexAttributesFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTLegacyVertexAttributes(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extLegacyVertexAttributesFeatures = parent.optJSONObject(KEY_VK_EXT_LEGACY_VERTEX_ATTRIBUTES);
@@ -2977,7 +2977,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitLineRasterizationFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTLineRasterization(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extLineRasterizationFeatures = parent.optJSONObject(KEY_VK_EXT_LINE_RASTERIZATION);
@@ -3006,7 +3006,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitMapMemoryPlacedFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTMapMemoryPlaced(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extMapMemoryPlacedFeatures = parent.optJSONObject(KEY_VK_EXT_MAP_MEMORY_PLACED);
@@ -3032,7 +3032,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitMemoryPriorityFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTMemoryPriority(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extMemoryPriorityFeatures = parent.optJSONObject(KEY_VK_EXT_MEMORY_PRIORITY);
@@ -3050,7 +3050,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitMeshShaderFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTMeshShader(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extMeshShaderFeatures = parent.optJSONObject(KEY_VK_EXT_MESH_SHADER);
@@ -3105,7 +3105,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitMultiDrawFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTMultiDraw(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extMultiDrawFeatures = parent.optJSONObject(KEY_VK_EXT_MULTI_DRAW);
@@ -3129,7 +3129,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitMultisampledRenderToSingleSampledFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTMultisampledRenderToSingleSampled(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extMultisampledRenderToSingleSampledFeatures = parent.optJSONObject(KEY_VK_EXT_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED);
@@ -3147,7 +3147,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitMutableDescriptorTypeFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTMutableDescriptorType(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extMutableDescriptorTypeFeatures = parent.optJSONObject(KEY_VK_EXT_MUTABLE_DESCRIPTOR_TYPE);
@@ -3165,7 +3165,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitNestedCommandBufferFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTNestedCommandBuffer(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extNestedCommandBufferFeatures = parent.optJSONObject(KEY_VK_EXT_NESTED_COMMAND_BUFFER);
@@ -3191,7 +3191,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitNonSeamlessCubeMapFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTNonSeamlessCubeMap(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extNonSeamlessCubeMapFeatures = parent.optJSONObject(KEY_VK_EXT_NON_SEAMLESS_CUBE_MAP);
@@ -3209,7 +3209,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitOpacityMicromapFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTOpacityMicromap(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extOpacityMicromapFeatures = parent.optJSONObject(KEY_VK_EXT_OPACITY_MICROMAP);
@@ -3236,7 +3236,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitPageableDeviceLocalMemoryFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTPageableDeviceLocalMemory(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extPageableDeviceLocalMemoryFeatures = parent.optJSONObject(KEY_VK_EXT_PAGEABLE_DEVICE_LOCAL_MEMORY);
@@ -3254,20 +3254,20 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitPCIBusInfoPropertiesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTPciBusInfo(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extPCIBusInfoProperties = parent.optJSONObject(KEY_VK_EXT_PCI_BUS_INFO);
         if (extPCIBusInfoProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_PCI_BUS_INFO));
             {
-                JSONObject pCiBusInfoPropertiesEXT = extPCIBusInfoProperties.getJSONObject(KEY_P_CI_BUS_INFO_PROPERTIES_EXT);
-                store.startGroup(getConvertedName(KEY_P_CI_BUS_INFO_PROPERTIES_EXT));
+                JSONObject pciBusInfoPropertiesEXT = extPCIBusInfoProperties.getJSONObject(KEY_PCI_BUS_INFO_PROPERTIES_EXT);
+                store.startGroup(getConvertedName(KEY_PCI_BUS_INFO_PROPERTIES_EXT));
                 {
-                    emitLong(store, pCiBusInfoPropertiesEXT, KEY_PCI_DOMAIN);
-                    emitLong(store, pCiBusInfoPropertiesEXT, KEY_PCI_BUS);
-                    emitLong(store, pCiBusInfoPropertiesEXT, KEY_PCI_DEVICE);
-                    emitLong(store, pCiBusInfoPropertiesEXT, KEY_PCI_FUNCTION);
+                    emitLong(store, pciBusInfoPropertiesEXT, KEY_PCI_DOMAIN);
+                    emitLong(store, pciBusInfoPropertiesEXT, KEY_PCI_BUS);
+                    emitLong(store, pciBusInfoPropertiesEXT, KEY_PCI_DEVICE);
+                    emitLong(store, pciBusInfoPropertiesEXT, KEY_PCI_FUNCTION);
                 }
                 store.endGroup();
             }
@@ -3275,7 +3275,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitDrmPropertiesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTPhysicalDeviceDrm(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extDrmProperties = parent.optJSONObject(KEY_VK_EXT_PHYSICAL_DEVICE_DRM);
@@ -3298,7 +3298,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitPipelineCreationCacheControlFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTPipelineCreationCacheControl(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extPipelineCreationCacheControlFeatures = parent.optJSONObject(KEY_VK_EXT_PIPELINE_CREATION_CACHE_CONTROL);
@@ -3316,7 +3316,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitPipelineLibraryGroupHandlesFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTPipelineLibraryGroupHandles(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extPipelineLibraryGroupHandlesFeatures = parent.optJSONObject(KEY_VK_EXT_PIPELINE_LIBRARY_GROUP_HANDLES);
@@ -3334,7 +3334,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitPipelinePropertiesFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTPipelineProperties(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extPipelinePropertiesFeatures = parent.optJSONObject(KEY_VK_EXT_PIPELINE_PROPERTIES);
@@ -3352,7 +3352,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitPipelineProtectedAccessFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTPipelineProtectedAccess(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extPipelineProtectedAccessFeatures = parent.optJSONObject(KEY_VK_EXT_PIPELINE_PROTECTED_ACCESS);
@@ -3370,7 +3370,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitPipelineRobustnessFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTPipelineRobustness(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extPipelineRobustnessFeatures = parent.optJSONObject(KEY_VK_EXT_PIPELINE_ROBUSTNESS);
@@ -3397,7 +3397,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitPresentModeFifoLatestReadyFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTPresentModeFifoLatestReady(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extPresentModeFifoLatestReadyFeatures = parent.optJSONObject(KEY_VK_EXT_PRESENT_MODE_FIFO_LATEST_READY);
@@ -3415,7 +3415,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitPrimitiveTopologyListRestartFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTPrimitiveTopologyListRestart(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extPrimitiveTopologyListRestartFeatures = parent.optJSONObject(KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
@@ -3434,7 +3434,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitPrimitivesGeneratedQueryFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTPrimitivesGeneratedQuery(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extPrimitivesGeneratedQueryFeatures = parent.optJSONObject(KEY_VK_EXT_PRIMITIVES_GENERATED_QUERY);
@@ -3454,7 +3454,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitPrivateDataFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTPrivateData(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extPrivateDataFeatures = parent.optJSONObject(KEY_VK_EXT_PRIVATE_DATA);
@@ -3472,7 +3472,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitProvokingVertexFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTProvokingVertex(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extProvokingVertexFeatures = parent.optJSONObject(KEY_VK_EXT_PROVOKING_VERTEX);
@@ -3498,7 +3498,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitRasterizationOrderAttachmentAccessFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTRasterizationOrderAttachmentAccess(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extRasterizationOrderAttachmentAccessFeatures = parent.optJSONObject(KEY_VK_EXT_RASTERIZATION_ORDER_ATTACHMENT_ACCESS);
@@ -3518,17 +3518,17 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitRGBA10X6FormatsFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTRgba10x6Formats(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extRGBA10X6FormatsFeatures = parent.optJSONObject(KEY_VK_EXT_RGBA10X6_FORMATS);
         if (extRGBA10X6FormatsFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_RGBA10X6_FORMATS));
             {
-                JSONObject rGba10X6FormatsFeaturesEXT = extRGBA10X6FormatsFeatures.getJSONObject(KEY_R_GBA_10_X_6_FORMATS_FEATURES_EXT);
-                store.startGroup(getConvertedName(KEY_R_GBA_10_X_6_FORMATS_FEATURES_EXT));
+                JSONObject rgba10X6FormatsFeaturesEXT = extRGBA10X6FormatsFeatures.getJSONObject(KEY_RGBA_10_X_6_FORMATS_FEATURES_EXT);
+                store.startGroup(getConvertedName(KEY_RGBA_10_X_6_FORMATS_FEATURES_EXT));
                 {
-                    emitBoolean(store, rGba10X6FormatsFeaturesEXT, KEY_FORMAT_RGBA_10_X_6_WITHOUT_Y_CB_CR_SAMPLER);
+                    emitBoolean(store, rgba10X6FormatsFeaturesEXT, KEY_FORMAT_RGBA_10_X_6_WITHOUT_Y_CB_CR_SAMPLER);
                 }
                 store.endGroup();
             }
@@ -3536,7 +3536,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitRobustness2FeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTRobustness2(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extRobustness2Features = parent.optJSONObject(KEY_VK_EXT_ROBUSTNESS2);
@@ -3563,7 +3563,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitSampleLocationsPropertiesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTSampleLocations(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extSampleLocationsProperties = parent.optJSONObject(KEY_VK_EXT_SAMPLE_LOCATIONS);
@@ -3591,7 +3591,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitSamplerFilterMinmaxPropertiesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTSamplerFilterMinmax(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extSamplerFilterMinmaxProperties = parent.optJSONObject(KEY_VK_EXT_SAMPLER_FILTER_MINMAX);
@@ -3610,7 +3610,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitScalarBlockLayoutFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTScalarBlockLayout(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extScalarBlockLayoutFeatures = parent.optJSONObject(KEY_VK_EXT_SCALAR_BLOCK_LAYOUT);
@@ -3628,7 +3628,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderAtomicFloatFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTShaderAtomicFloat(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extShaderAtomicFloatFeatures = parent.optJSONObject(KEY_VK_EXT_SHADER_ATOMIC_FLOAT);
@@ -3657,7 +3657,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderAtomicFloat2FeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTShaderAtomicFloat2(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extShaderAtomicFloat2Features = parent.optJSONObject(KEY_VK_EXT_SHADER_ATOMIC_FLOAT2);
@@ -3686,7 +3686,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderDemoteToHelperInvocationFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTShaderDemoteToHelperInvocation(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extShaderDemoteToHelperInvocationFeatures = parent.optJSONObject(KEY_VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION);
@@ -3704,7 +3704,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderFloat8FeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTShaderFloat8(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extShaderFloat8Features = parent.optJSONObject(KEY_VK_EXT_SHADER_FLOAT8);
@@ -3723,7 +3723,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderImageAtomicInt64FeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTShaderImageAtomicInt64(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extShaderImageAtomicInt64Features = parent.optJSONObject(KEY_VK_EXT_SHADER_IMAGE_ATOMIC_INT64);
@@ -3742,7 +3742,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderModuleIdentifierFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTShaderModuleIdentifier(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extShaderModuleIdentifierFeatures = parent.optJSONObject(KEY_VK_EXT_SHADER_MODULE_IDENTIFIER);
@@ -3766,7 +3766,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderObjectFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTShaderObject(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extShaderObjectFeatures = parent.optJSONObject(KEY_VK_EXT_SHADER_OBJECT);
@@ -3791,7 +3791,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderReplicatedCompositesFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTShaderReplicatedComposites(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extShaderReplicatedCompositesFeatures = parent.optJSONObject(KEY_VK_EXT_SHADER_REPLICATED_COMPOSITES);
@@ -3809,7 +3809,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderTileImageFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTShaderTileImage(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extShaderTileImageFeatures = parent.optJSONObject(KEY_VK_EXT_SHADER_TILE_IMAGE);
@@ -3837,7 +3837,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitSubgroupSizeControlFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTSubgroupSizeControl(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extSubgroupSizeControlFeatures = parent.optJSONObject(KEY_VK_EXT_SUBGROUP_SIZE_CONTROL);
@@ -3865,7 +3865,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitSubpassMergeFeedbackFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTSubpassMergeFeedback(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extSubpassMergeFeedbackFeatures = parent.optJSONObject(KEY_VK_EXT_SUBPASS_MERGE_FEEDBACK);
@@ -3883,7 +3883,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitSwapchainMaintenance1FeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTSwapchainMaintenance1(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extSwapchainMaintenance1Features = parent.optJSONObject(KEY_VK_EXT_SWAPCHAIN_MAINTENANCE1);
@@ -3901,7 +3901,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitTexelBufferAlignmentFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTTexelBufferAlignment(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extTexelBufferAlignmentFeatures = parent.optJSONObject(KEY_VK_EXT_TEXEL_BUFFER_ALIGNMENT);
@@ -3928,7 +3928,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitTextureCompressionASTCHDRFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTTextureCompressionAstcHdr(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extTextureCompressionASTCHDRFeatures = parent.optJSONObject(KEY_VK_EXT_TEXTURE_COMPRESSION_ASTC_HDR);
@@ -3946,7 +3946,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitTransformFeedbackFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTTransformFeedback(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extTransformFeedbackFeatures = parent.optJSONObject(KEY_VK_EXT_TRANSFORM_FEEDBACK);
@@ -3980,7 +3980,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVertexAttributeDivisorPropertiesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTVertexAttributeDivisor(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extVertexAttributeDivisorProperties = parent.optJSONObject(KEY_VK_EXT_VERTEX_ATTRIBUTE_DIVISOR);
@@ -4005,7 +4005,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVertexAttributeRobustnessFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTVertexAttributeRobustness(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extVertexAttributeRobustnessFeatures = parent.optJSONObject(KEY_VK_EXT_VERTEX_ATTRIBUTE_ROBUSTNESS);
@@ -4023,7 +4023,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVertexInputDynamicStateFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTVertexInputDynamicState(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extVertexInputDynamicStateFeatures = parent.optJSONObject(KEY_VK_EXT_VERTEX_INPUT_DYNAMIC_STATE);
@@ -4041,7 +4041,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitYcbcr2Plane444FormatsFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTYcbcr2plane444Formats(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extYcbcr2Plane444FormatsFeatures = parent.optJSONObject(KEY_VK_EXT_YCBCR_2PLANE_444_FORMATS);
@@ -4059,7 +4059,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitYcbcrImageArraysFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTYcbcrImageArrays(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extYcbcrImageArraysFeatures = parent.optJSONObject(KEY_VK_EXT_YCBCR_IMAGE_ARRAYS);
@@ -4077,7 +4077,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitZeroInitializeDeviceMemoryFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkEXTZeroInitializeDeviceMemory(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject extZeroInitializeDeviceMemoryFeatures = parent.optJSONObject(KEY_VK_EXT_ZERO_INITIALIZE_DEVICE_MEMORY);
@@ -4095,7 +4095,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitClusterCullingShaderFeaturesHUAWEI(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkHUAWEIClusterCullingShader(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject huaweiClusterCullingShaderFeatures = parent.optJSONObject(KEY_VK_HUAWEI_CLUSTER_CULLING_SHADER);
@@ -4123,7 +4123,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitHdrVividFeaturesHUAWEI(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkHUAWEIHdrVivid(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject huaweiHdrVividFeatures = parent.optJSONObject(KEY_VK_HUAWEI_HDR_VIVID);
@@ -4141,7 +4141,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitInvocationMaskFeaturesHUAWEI(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkHUAWEIInvocationMask(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject huaweiInvocationMaskFeatures = parent.optJSONObject(KEY_VK_HUAWEI_INVOCATION_MASK);
@@ -4159,7 +4159,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitSubpassShadingFeaturesHUAWEI(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkHUAWEISubpassShading(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject huaweiSubpassShadingFeatures = parent.optJSONObject(KEY_VK_HUAWEI_SUBPASS_SHADING);
@@ -4183,7 +4183,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitRelaxedLineRasterizationFeaturesIMG(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkIMGRelaxedLineRasterization(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject imgRelaxedLineRasterizationFeatures = parent.optJSONObject(KEY_VK_IMG_RELAXED_LINE_RASTERIZATION);
@@ -4201,7 +4201,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderIntegerFunctions2FeaturesINTEL(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkINTELShaderIntegerFunctions2(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject intelShaderIntegerFunctions2Features = parent.optJSONObject(KEY_VK_INTEL_SHADER_INTEGER_FUNCTIONS2);
@@ -4219,7 +4219,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emit16BitStorageFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHR16bitStorage(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khr16BitStorageFeatures = parent.optJSONObject(KEY_VK_KHR_16BIT_STORAGE);
@@ -4240,7 +4240,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emit8BitStorageFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHR8bitStorage(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khr8BitStorageFeatures = parent.optJSONObject(KEY_VK_KHR_8BIT_STORAGE);
@@ -4260,7 +4260,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitAccelerationStructureFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRAccelerationStructure(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrAccelerationStructureFeatures = parent.optJSONObject(KEY_VK_KHR_ACCELERATION_STRUCTURE);
@@ -4295,7 +4295,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitBufferDeviceAddressFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRBufferDeviceAddress(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrBufferDeviceAddressFeatures = parent.optJSONObject(KEY_VK_KHR_BUFFER_DEVICE_ADDRESS);
@@ -4315,7 +4315,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitComputeShaderDerivativesFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRComputeShaderDerivatives(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrComputeShaderDerivativesFeatures = parent.optJSONObject(KEY_VK_KHR_COMPUTE_SHADER_DERIVATIVES);
@@ -4340,7 +4340,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitCooperativeMatrixFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRCooperativeMatrix(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrCooperativeMatrixFeatures = parent.optJSONObject(KEY_VK_KHR_COOPERATIVE_MATRIX);
@@ -4365,7 +4365,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitDepthClampZeroOneFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRDepthClampZeroOne(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrDepthClampZeroOneFeatures = parent.optJSONObject(KEY_VK_KHR_DEPTH_CLAMP_ZERO_ONE);
@@ -4383,7 +4383,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitDepthStencilResolvePropertiesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRDepthStencilResolve(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrDepthStencilResolveProperties = parent.optJSONObject(KEY_VK_KHR_DEPTH_STENCIL_RESOLVE);
@@ -4404,7 +4404,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitDriverPropertiesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRDriverProperties(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrDriverProperties = parent.optJSONObject(KEY_VK_KHR_DRIVER_PROPERTIES);
@@ -4433,7 +4433,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitDynamicRenderingFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRDynamicRendering(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrDynamicRenderingFeatures = parent.optJSONObject(KEY_VK_KHR_DYNAMIC_RENDERING);
@@ -4451,7 +4451,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitDynamicRenderingLocalReadFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRDynamicRenderingLocalRead(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrDynamicRenderingLocalReadFeatures = parent.optJSONObject(KEY_VK_KHR_DYNAMIC_RENDERING_LOCAL_READ);
@@ -4469,21 +4469,21 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitIDPropertiesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRExternalFenceCapabilities(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
-        JSONObject khrIDProperties = parent.optJSONObject(KEY_VK_KHR_EXTERNAL_MEMORY_CAPABILITIES);
+        JSONObject khrIDProperties = parent.optJSONObject(KEY_VK_KHR_EXTERNAL_FENCE_CAPABILITIES);
         if (khrIDProperties != null) {
-            store.startGroup(getConvertedName(KEY_VK_KHR_EXTERNAL_MEMORY_CAPABILITIES));
+            store.startGroup(getConvertedName(KEY_VK_KHR_EXTERNAL_FENCE_CAPABILITIES));
             {
-                JSONObject iDPropertiesKHR = khrIDProperties.getJSONObject(KEY_I_D_PROPERTIES_KHR);
-                store.startGroup(getConvertedName(KEY_I_D_PROPERTIES_KHR));
+                JSONObject idPropertiesKHR = khrIDProperties.getJSONObject(KEY_ID_PROPERTIES_KHR);
+                store.startGroup(getConvertedName(KEY_ID_PROPERTIES_KHR));
                 {
-                    emitLongArray(store, iDPropertiesKHR, KEY_DEVICE_UUID);
-                    emitLongArray(store, iDPropertiesKHR, KEY_DRIVER_UUID);
-                    emitLongArray(store, iDPropertiesKHR, KEY_DEVICE_LUID);
-                    emitLong(store, iDPropertiesKHR, KEY_DEVICE_NODE_MASK);
-                    emitBoolean(store, iDPropertiesKHR, KEY_DEVICE_LUID_VALID);
+                    emitLongArray(store, idPropertiesKHR, KEY_DEVICE_UUID);
+                    emitLongArray(store, idPropertiesKHR, KEY_DRIVER_UUID);
+                    emitLongArray(store, idPropertiesKHR, KEY_DEVICE_LUID);
+                    emitLong(store, idPropertiesKHR, KEY_DEVICE_NODE_MASK);
+                    emitBoolean(store, idPropertiesKHR, KEY_DEVICE_LUID_VALID);
                 }
                 store.endGroup();
             }
@@ -4491,7 +4491,51 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitFragmentShaderBarycentricFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRExternalMemoryCapabilities(DeviceInfoStore store, JSONObject parent)
+
+                throws IOException, JSONException {
+        JSONObject khrIDProperties = parent.optJSONObject(KEY_VK_KHR_EXTERNAL_MEMORY_CAPABILITIES);
+        if (khrIDProperties != null) {
+            store.startGroup(getConvertedName(KEY_VK_KHR_EXTERNAL_MEMORY_CAPABILITIES));
+            {
+                JSONObject idPropertiesKHR = khrIDProperties.getJSONObject(KEY_ID_PROPERTIES_KHR);
+                store.startGroup(getConvertedName(KEY_ID_PROPERTIES_KHR));
+                {
+                    emitLongArray(store, idPropertiesKHR, KEY_DEVICE_UUID);
+                    emitLongArray(store, idPropertiesKHR, KEY_DRIVER_UUID);
+                    emitLongArray(store, idPropertiesKHR, KEY_DEVICE_LUID);
+                    emitLong(store, idPropertiesKHR, KEY_DEVICE_NODE_MASK);
+                    emitBoolean(store, idPropertiesKHR, KEY_DEVICE_LUID_VALID);
+                }
+                store.endGroup();
+            }
+            store.endGroup();
+        }
+    }
+
+    private static void emitVkKHRExternalSemaphoreCapabilities(DeviceInfoStore store, JSONObject parent)
+
+                throws IOException, JSONException {
+        JSONObject khrIDProperties = parent.optJSONObject(KEY_VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES);
+        if (khrIDProperties != null) {
+            store.startGroup(getConvertedName(KEY_VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES));
+            {
+                JSONObject idPropertiesKHR = khrIDProperties.getJSONObject(KEY_ID_PROPERTIES_KHR);
+                store.startGroup(getConvertedName(KEY_ID_PROPERTIES_KHR));
+                {
+                    emitLongArray(store, idPropertiesKHR, KEY_DEVICE_UUID);
+                    emitLongArray(store, idPropertiesKHR, KEY_DRIVER_UUID);
+                    emitLongArray(store, idPropertiesKHR, KEY_DEVICE_LUID);
+                    emitLong(store, idPropertiesKHR, KEY_DEVICE_NODE_MASK);
+                    emitBoolean(store, idPropertiesKHR, KEY_DEVICE_LUID_VALID);
+                }
+                store.endGroup();
+            }
+            store.endGroup();
+        }
+    }
+
+    private static void emitVkKHRFragmentShaderBarycentric(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrFragmentShaderBarycentricFeatures = parent.optJSONObject(KEY_VK_KHR_FRAGMENT_SHADER_BARYCENTRIC);
@@ -4515,7 +4559,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitFragmentShadingRateFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRFragmentShadingRate(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrFragmentShadingRateFeatures = parent.optJSONObject(KEY_VK_KHR_FRAGMENT_SHADING_RATE);
@@ -4575,7 +4619,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitGlobalPriorityQueryFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRGlobalPriority(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrGlobalPriorityQueryFeatures = parent.optJSONObject(KEY_VK_KHR_GLOBAL_PRIORITY);
@@ -4593,7 +4637,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitImagelessFramebufferFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRImagelessFramebuffer(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrImagelessFramebufferFeatures = parent.optJSONObject(KEY_VK_KHR_IMAGELESS_FRAMEBUFFER);
@@ -4611,7 +4655,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitIndexTypeUint8FeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRIndexTypeUint8(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrIndexTypeUint8Features = parent.optJSONObject(KEY_VK_KHR_INDEX_TYPE_UINT8);
@@ -4629,7 +4673,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitLineRasterizationFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRLineRasterization(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrLineRasterizationFeatures = parent.optJSONObject(KEY_VK_KHR_LINE_RASTERIZATION);
@@ -4658,7 +4702,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitPointClippingPropertiesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRMaintenance2(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrPointClippingProperties = parent.optJSONObject(KEY_VK_KHR_MAINTENANCE2);
@@ -4676,7 +4720,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitMaintenance3PropertiesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRMaintenance3(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrMaintenance3Properties = parent.optJSONObject(KEY_VK_KHR_MAINTENANCE3);
@@ -4695,7 +4739,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitMaintenance4FeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRMaintenance4(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrMaintenance4Features = parent.optJSONObject(KEY_VK_KHR_MAINTENANCE4);
@@ -4719,7 +4763,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitMaintenance5FeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRMaintenance5(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrMaintenance5Features = parent.optJSONObject(KEY_VK_KHR_MAINTENANCE5);
@@ -4748,7 +4792,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitMaintenance6FeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRMaintenance6(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrMaintenance6Features = parent.optJSONObject(KEY_VK_KHR_MAINTENANCE6);
@@ -4774,7 +4818,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitMaintenance7FeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRMaintenance7(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrMaintenance7Features = parent.optJSONObject(KEY_VK_KHR_MAINTENANCE7);
@@ -4812,7 +4856,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitMaintenance8FeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRMaintenance8(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrMaintenance8Features = parent.optJSONObject(KEY_VK_KHR_MAINTENANCE8);
@@ -4830,7 +4874,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitMaintenance9FeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRMaintenance9(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrMaintenance9Features = parent.optJSONObject(KEY_VK_KHR_MAINTENANCE9);
@@ -4855,7 +4899,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitMultiviewFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRMultiview(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrMultiviewFeatures = parent.optJSONObject(KEY_VK_KHR_MULTIVIEW);
@@ -4882,7 +4926,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitPerformanceQueryFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRPerformanceQuery(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrPerformanceQueryFeatures = parent.optJSONObject(KEY_VK_KHR_PERFORMANCE_QUERY);
@@ -4907,7 +4951,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitPipelineBinaryFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRPipelineBinary(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrPipelineBinaryFeatures = parent.optJSONObject(KEY_VK_KHR_PIPELINE_BINARY);
@@ -4935,7 +4979,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitPipelineExecutablePropertiesFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRPipelineExecutableProperties(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrPipelineExecutablePropertiesFeatures = parent.optJSONObject(KEY_VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES);
@@ -4953,7 +4997,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitPresentIdFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRPresentId(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrPresentIdFeatures = parent.optJSONObject(KEY_VK_KHR_PRESENT_ID);
@@ -4971,7 +5015,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitPresentId2FeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRPresentId2(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrPresentId2Features = parent.optJSONObject(KEY_VK_KHR_PRESENT_ID2);
@@ -4989,7 +5033,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitPresentWaitFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRPresentWait(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrPresentWaitFeatures = parent.optJSONObject(KEY_VK_KHR_PRESENT_WAIT);
@@ -5007,7 +5051,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitPresentWait2FeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRPresentWait2(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrPresentWait2Features = parent.optJSONObject(KEY_VK_KHR_PRESENT_WAIT2);
@@ -5025,7 +5069,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitPushDescriptorPropertiesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRPushDescriptor(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrPushDescriptorProperties = parent.optJSONObject(KEY_VK_KHR_PUSH_DESCRIPTOR);
@@ -5043,7 +5087,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitRayQueryFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRRayQuery(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrRayQueryFeatures = parent.optJSONObject(KEY_VK_KHR_RAY_QUERY);
@@ -5061,7 +5105,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitRayTracingMaintenance1FeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRRayTracingMaintenance1(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrRayTracingMaintenance1Features = parent.optJSONObject(KEY_VK_KHR_RAY_TRACING_MAINTENANCE1);
@@ -5080,7 +5124,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitRayTracingPipelineFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRRayTracingPipeline(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrRayTracingPipelineFeatures = parent.optJSONObject(KEY_VK_KHR_RAY_TRACING_PIPELINE);
@@ -5115,7 +5159,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitRayTracingPositionFetchFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRRayTracingPositionFetch(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrRayTracingPositionFetchFeatures = parent.optJSONObject(KEY_VK_KHR_RAY_TRACING_POSITION_FETCH);
@@ -5133,7 +5177,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitRobustness2FeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRRobustness2(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrRobustness2Features = parent.optJSONObject(KEY_VK_KHR_ROBUSTNESS2);
@@ -5160,7 +5204,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitSamplerYcbcrConversionFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRSamplerYcbcrConversion(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrSamplerYcbcrConversionFeatures = parent.optJSONObject(KEY_VK_KHR_SAMPLER_YCBCR_CONVERSION);
@@ -5178,7 +5222,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitSeparateDepthStencilLayoutsFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRSeparateDepthStencilLayouts(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrSeparateDepthStencilLayoutsFeatures = parent.optJSONObject(KEY_VK_KHR_SEPARATE_DEPTH_STENCIL_LAYOUTS);
@@ -5196,7 +5240,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderAtomicInt64FeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRShaderAtomicInt64(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrShaderAtomicInt64Features = parent.optJSONObject(KEY_VK_KHR_SHADER_ATOMIC_INT64);
@@ -5215,7 +5259,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderBfloat16FeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRShaderBfloat16(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrShaderBfloat16Features = parent.optJSONObject(KEY_VK_KHR_SHADER_BFLOAT16);
@@ -5235,7 +5279,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderClockFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRShaderClock(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrShaderClockFeatures = parent.optJSONObject(KEY_VK_KHR_SHADER_CLOCK);
@@ -5254,7 +5298,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderExpectAssumeFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRShaderExpectAssume(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrShaderExpectAssumeFeatures = parent.optJSONObject(KEY_VK_KHR_SHADER_EXPECT_ASSUME);
@@ -5272,7 +5316,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderFloat16Int8FeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRShaderFloat16Int8(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrShaderFloat16Int8Features = parent.optJSONObject(KEY_VK_KHR_SHADER_FLOAT16_INT8);
@@ -5298,7 +5342,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitFloatControlsPropertiesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRShaderFloatControls(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrFloatControlsProperties = parent.optJSONObject(KEY_VK_KHR_SHADER_FLOAT_CONTROLS);
@@ -5332,7 +5376,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderFloatControls2FeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRShaderFloatControls2(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrShaderFloatControls2Features = parent.optJSONObject(KEY_VK_KHR_SHADER_FLOAT_CONTROLS2);
@@ -5350,7 +5394,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderIntegerDotProductFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRShaderIntegerDotProduct(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrShaderIntegerDotProductFeatures = parent.optJSONObject(KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT);
@@ -5403,7 +5447,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderMaximalReconvergenceFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRShaderMaximalReconvergence(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrShaderMaximalReconvergenceFeatures = parent.optJSONObject(KEY_VK_KHR_SHADER_MAXIMAL_RECONVERGENCE);
@@ -5421,7 +5465,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderQuadControlFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRShaderQuadControl(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrShaderQuadControlFeatures = parent.optJSONObject(KEY_VK_KHR_SHADER_QUAD_CONTROL);
@@ -5439,7 +5483,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderRelaxedExtendedInstructionFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRShaderRelaxedExtendedInstruction(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrShaderRelaxedExtendedInstructionFeatures = parent.optJSONObject(KEY_VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION);
@@ -5457,7 +5501,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderSubgroupExtendedTypesFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRShaderSubgroupExtendedTypes(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrShaderSubgroupExtendedTypesFeatures = parent.optJSONObject(KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES);
@@ -5475,7 +5519,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderSubgroupRotateFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRShaderSubgroupRotate(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrShaderSubgroupRotateFeatures = parent.optJSONObject(KEY_VK_KHR_SHADER_SUBGROUP_ROTATE);
@@ -5494,7 +5538,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderSubgroupUniformControlFlowFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRShaderSubgroupUniformControlFlow(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrShaderSubgroupUniformControlFlowFeatures = parent.optJSONObject(KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW);
@@ -5512,7 +5556,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderTerminateInvocationFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRShaderTerminateInvocation(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrShaderTerminateInvocationFeatures = parent.optJSONObject(KEY_VK_KHR_SHADER_TERMINATE_INVOCATION);
@@ -5530,7 +5574,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitSynchronization2FeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRSynchronization2(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrSynchronization2Features = parent.optJSONObject(KEY_VK_KHR_SYNCHRONIZATION2);
@@ -5548,7 +5592,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitTimelineSemaphoreFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRTimelineSemaphore(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrTimelineSemaphoreFeatures = parent.optJSONObject(KEY_VK_KHR_TIMELINE_SEMAPHORE);
@@ -5572,7 +5616,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitUnifiedImageLayoutsFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRUnifiedImageLayouts(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrUnifiedImageLayoutsFeatures = parent.optJSONObject(KEY_VK_KHR_UNIFIED_IMAGE_LAYOUTS);
@@ -5591,7 +5635,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitUniformBufferStandardLayoutFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRUniformBufferStandardLayout(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrUniformBufferStandardLayoutFeatures = parent.optJSONObject(KEY_VK_KHR_UNIFORM_BUFFER_STANDARD_LAYOUT);
@@ -5609,7 +5653,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVariablePointersFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRVariablePointers(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrVariablePointersFeatures = parent.optJSONObject(KEY_VK_KHR_VARIABLE_POINTERS);
@@ -5635,7 +5679,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVertexAttributeDivisorPropertiesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRVertexAttributeDivisor(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrVertexAttributeDivisorProperties = parent.optJSONObject(KEY_VK_KHR_VERTEX_ATTRIBUTE_DIVISOR);
@@ -5661,7 +5705,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVideoDecodeVP9FeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRVideoDecodeVp9(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrVideoDecodeVP9Features = parent.optJSONObject(KEY_VK_KHR_VIDEO_DECODE_VP9);
@@ -5679,7 +5723,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVideoEncodeAV1FeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRVideoEncodeAv1(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrVideoEncodeAV1Features = parent.optJSONObject(KEY_VK_KHR_VIDEO_ENCODE_AV1);
@@ -5697,7 +5741,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVideoEncodeQuantizationMapFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRVideoEncodeQuantizationMap(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrVideoEncodeQuantizationMapFeatures = parent.optJSONObject(KEY_VK_KHR_VIDEO_ENCODE_QUANTIZATION_MAP);
@@ -5715,7 +5759,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVideoMaintenance1FeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRVideoMaintenance1(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrVideoMaintenance1Features = parent.optJSONObject(KEY_VK_KHR_VIDEO_MAINTENANCE1);
@@ -5733,7 +5777,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVideoMaintenance2FeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRVideoMaintenance2(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrVideoMaintenance2Features = parent.optJSONObject(KEY_VK_KHR_VIDEO_MAINTENANCE2);
@@ -5751,7 +5795,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVulkanMemoryModelFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRVulkanMemoryModel(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrVulkanMemoryModelFeatures = parent.optJSONObject(KEY_VK_KHR_VULKAN_MEMORY_MODEL);
@@ -5771,7 +5815,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitWorkgroupMemoryExplicitLayoutFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRWorkgroupMemoryExplicitLayout(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrWorkgroupMemoryExplicitLayoutFeatures = parent.optJSONObject(KEY_VK_KHR_WORKGROUP_MEMORY_EXPLICIT_LAYOUT);
@@ -5792,7 +5836,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitZeroInitializeWorkgroupMemoryFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkKHRZeroInitializeWorkgroupMemory(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject khrZeroInitializeWorkgroupMemoryFeatures = parent.optJSONObject(KEY_VK_KHR_ZERO_INITIALIZE_WORKGROUP_MEMORY);
@@ -5810,7 +5854,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitImageAlignmentControlFeaturesMESA(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkMESAImageAlignmentControl(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject mesaImageAlignmentControlFeatures = parent.optJSONObject(KEY_VK_MESA_IMAGE_ALIGNMENT_CONTROL);
@@ -5834,7 +5878,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitLayeredDriverPropertiesMSFT(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkMSFTLayeredDriver(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject msftLayeredDriverProperties = parent.optJSONObject(KEY_VK_MSFT_LAYERED_DRIVER);
@@ -5852,7 +5896,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitMultiviewPerViewAttributesPropertiesNVX(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVXMultiviewPerViewAttributes(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvxMultiviewPerViewAttributesProperties = parent.optJSONObject(KEY_VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES);
@@ -5870,7 +5914,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitClusterAccelerationStructureFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVClusterAccelerationStructure(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvClusterAccelerationStructureFeatures = parent.optJSONObject(KEY_VK_NV_CLUSTER_ACCELERATION_STRUCTURE);
@@ -5901,7 +5945,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitCommandBufferInheritanceFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVCommandBufferInheritance(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvCommandBufferInheritanceFeatures = parent.optJSONObject(KEY_VK_NV_COMMAND_BUFFER_INHERITANCE);
@@ -5919,7 +5963,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitComputeShaderDerivativesFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVComputeShaderDerivatives(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvComputeShaderDerivativesFeatures = parent.optJSONObject(KEY_VK_NV_COMPUTE_SHADER_DERIVATIVES);
@@ -5938,7 +5982,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitCooperativeMatrixFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVCooperativeMatrix(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvCooperativeMatrixFeatures = parent.optJSONObject(KEY_VK_NV_COOPERATIVE_MATRIX);
@@ -5963,7 +6007,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitCooperativeMatrix2FeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVCooperativeMatrix2(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvCooperativeMatrix2Features = parent.optJSONObject(KEY_VK_NV_COOPERATIVE_MATRIX2);
@@ -5995,7 +6039,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitCooperativeVectorPropertiesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVCooperativeVector(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvCooperativeVectorProperties = parent.optJSONObject(KEY_VK_NV_COOPERATIVE_VECTOR);
@@ -6023,7 +6067,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitCopyMemoryIndirectFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVCopyMemoryIndirect(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvCopyMemoryIndirectFeatures = parent.optJSONObject(KEY_VK_NV_COPY_MEMORY_INDIRECT);
@@ -6047,7 +6091,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitCornerSampledImageFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVCornerSampledImage(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvCornerSampledImageFeatures = parent.optJSONObject(KEY_VK_NV_CORNER_SAMPLED_IMAGE);
@@ -6065,7 +6109,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitCoverageReductionModeFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVCoverageReductionMode(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvCoverageReductionModeFeatures = parent.optJSONObject(KEY_VK_NV_COVERAGE_REDUCTION_MODE);
@@ -6083,7 +6127,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitDedicatedAllocationImageAliasingFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVDedicatedAllocationImageAliasing(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvDedicatedAllocationImageAliasingFeatures = parent.optJSONObject(KEY_VK_NV_DEDICATED_ALLOCATION_IMAGE_ALIASING);
@@ -6101,7 +6145,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitDescriptorPoolOverallocationFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVDescriptorPoolOverallocation(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvDescriptorPoolOverallocationFeatures = parent.optJSONObject(KEY_VK_NV_DESCRIPTOR_POOL_OVERALLOCATION);
@@ -6119,7 +6163,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitDiagnosticsConfigFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVDeviceDiagnosticsConfig(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvDiagnosticsConfigFeatures = parent.optJSONObject(KEY_VK_NV_DEVICE_DIAGNOSTICS_CONFIG);
@@ -6137,7 +6181,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitDeviceGeneratedCommandsPropertiesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVDeviceGeneratedCommands(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvDeviceGeneratedCommandsProperties = parent.optJSONObject(KEY_VK_NV_DEVICE_GENERATED_COMMANDS);
@@ -6169,7 +6213,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitDeviceGeneratedCommandsComputeFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVDeviceGeneratedCommandsCompute(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvDeviceGeneratedCommandsComputeFeatures = parent.optJSONObject(KEY_VK_NV_DEVICE_GENERATED_COMMANDS_COMPUTE);
@@ -6189,7 +6233,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitExtendedSparseAddressSpaceFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVExtendedSparseAddressSpace(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvExtendedSparseAddressSpaceFeatures = parent.optJSONObject(KEY_VK_NV_EXTENDED_SPARSE_ADDRESS_SPACE);
@@ -6215,7 +6259,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitExternalComputeQueuePropertiesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVExternalComputeQueue(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvExternalComputeQueueProperties = parent.optJSONObject(KEY_VK_NV_EXTERNAL_COMPUTE_QUEUE);
@@ -6234,7 +6278,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitExternalMemoryRDMAFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVExternalMemoryRdma(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvExternalMemoryRDMAFeatures = parent.optJSONObject(KEY_VK_NV_EXTERNAL_MEMORY_RDMA);
@@ -6252,7 +6296,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitFragmentShadingRateEnumsFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVFragmentShadingRateEnums(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvFragmentShadingRateEnumsFeatures = parent.optJSONObject(KEY_VK_NV_FRAGMENT_SHADING_RATE_ENUMS);
@@ -6278,7 +6322,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitInheritedViewportScissorFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVInheritedViewportScissor(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvInheritedViewportScissorFeatures = parent.optJSONObject(KEY_VK_NV_INHERITED_VIEWPORT_SCISSOR);
@@ -6296,7 +6340,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitLinearColorAttachmentFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVLinearColorAttachment(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvLinearColorAttachmentFeatures = parent.optJSONObject(KEY_VK_NV_LINEAR_COLOR_ATTACHMENT);
@@ -6314,7 +6358,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitMemoryDecompressionFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVMemoryDecompression(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvMemoryDecompressionFeatures = parent.optJSONObject(KEY_VK_NV_MEMORY_DECOMPRESSION);
@@ -6339,7 +6383,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitMeshShaderFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVMeshShader(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvMeshShaderFeatures = parent.optJSONObject(KEY_VK_NV_MESH_SHADER);
@@ -6376,7 +6420,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitOpticalFlowFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVOpticalFlow(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvOpticalFlowFeatures = parent.optJSONObject(KEY_VK_NV_OPTICAL_FLOW);
@@ -6410,7 +6454,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitPartitionedAccelerationStructureFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVPartitionedAccelerationStructure(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvPartitionedAccelerationStructureFeatures = parent.optJSONObject(KEY_VK_NV_PARTITIONED_ACCELERATION_STRUCTURE);
@@ -6434,7 +6478,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitPerStageDescriptorSetFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVPerStageDescriptorSet(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvPerStageDescriptorSetFeatures = parent.optJSONObject(KEY_VK_NV_PER_STAGE_DESCRIPTOR_SET);
@@ -6453,7 +6497,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitPresentBarrierFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVPresentBarrier(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvPresentBarrierFeatures = parent.optJSONObject(KEY_VK_NV_PRESENT_BARRIER);
@@ -6471,7 +6515,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitRawAccessChainsFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVRawAccessChains(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvRawAccessChainsFeatures = parent.optJSONObject(KEY_VK_NV_RAW_ACCESS_CHAINS);
@@ -6489,7 +6533,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitRayTracingPropertiesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVRayTracing(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvRayTracingProperties = parent.optJSONObject(KEY_VK_NV_RAY_TRACING);
@@ -6514,7 +6558,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitRayTracingInvocationReorderPropertiesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVRayTracingInvocationReorder(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvRayTracingInvocationReorderProperties = parent.optJSONObject(KEY_VK_NV_RAY_TRACING_INVOCATION_REORDER);
@@ -6538,7 +6582,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitRayTracingLinearSweptSpheresFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVRayTracingLinearSweptSpheres(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvRayTracingLinearSweptSpheresFeatures = parent.optJSONObject(KEY_VK_NV_RAY_TRACING_LINEAR_SWEPT_SPHERES);
@@ -6557,7 +6601,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitRayTracingMotionBlurFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVRayTracingMotionBlur(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvRayTracingMotionBlurFeatures = parent.optJSONObject(KEY_VK_NV_RAY_TRACING_MOTION_BLUR);
@@ -6576,7 +6620,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitRayTracingValidationFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVRayTracingValidation(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvRayTracingValidationFeatures = parent.optJSONObject(KEY_VK_NV_RAY_TRACING_VALIDATION);
@@ -6594,7 +6638,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitRepresentativeFragmentTestFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVRepresentativeFragmentTest(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvRepresentativeFragmentTestFeatures = parent.optJSONObject(KEY_VK_NV_REPRESENTATIVE_FRAGMENT_TEST);
@@ -6612,7 +6656,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitExclusiveScissorFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVScissorExclusive(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvExclusiveScissorFeatures = parent.optJSONObject(KEY_VK_NV_SCISSOR_EXCLUSIVE);
@@ -6630,7 +6674,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderAtomicFloat16VectorFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVShaderAtomicFloat16Vector(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvShaderAtomicFloat16VectorFeatures = parent.optJSONObject(KEY_VK_NV_SHADER_ATOMIC_FLOAT16_VECTOR);
@@ -6648,7 +6692,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderImageFootprintFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVShaderImageFootprint(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvShaderImageFootprintFeatures = parent.optJSONObject(KEY_VK_NV_SHADER_IMAGE_FOOTPRINT);
@@ -6666,7 +6710,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShaderSMBuiltinsPropertiesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVShaderSmBuiltins(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvShaderSMBuiltinsProperties = parent.optJSONObject(KEY_VK_NV_SHADER_SM_BUILTINS);
@@ -6691,7 +6735,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitShadingRateImageFeaturesNV(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkNVShadingRateImage(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject nvShadingRateImageFeatures = parent.optJSONObject(KEY_VK_NV_SHADING_RATE_IMAGE);
@@ -6724,7 +6768,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitCubicClampFeaturesQCOM(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkQCOMFilterCubicClamp(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject qcomCubicClampFeatures = parent.optJSONObject(KEY_VK_QCOM_FILTER_CUBIC_CLAMP);
@@ -6742,7 +6786,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitCubicWeightsFeaturesQCOM(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkQCOMFilterCubicWeights(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject qcomCubicWeightsFeatures = parent.optJSONObject(KEY_VK_QCOM_FILTER_CUBIC_WEIGHTS);
@@ -6760,7 +6804,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitFragmentDensityMapOffsetFeaturesQCOM(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkQCOMFragmentDensityMapOffset(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject qcomFragmentDensityMapOffsetFeatures = parent.optJSONObject(KEY_VK_QCOM_FRAGMENT_DENSITY_MAP_OFFSET);
@@ -6790,7 +6834,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitImageProcessingFeaturesQCOM(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkQCOMImageProcessing(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject qcomImageProcessingFeatures = parent.optJSONObject(KEY_VK_QCOM_IMAGE_PROCESSING);
@@ -6837,7 +6881,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitImageProcessing2FeaturesQCOM(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkQCOMImageProcessing2(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject qcomImageProcessing2Features = parent.optJSONObject(KEY_VK_QCOM_IMAGE_PROCESSING2);
@@ -6867,7 +6911,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitMultiviewPerViewRenderAreasFeaturesQCOM(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkQCOMMultiviewPerViewRenderAreas(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject qcomMultiviewPerViewRenderAreasFeatures = parent.optJSONObject(KEY_VK_QCOM_MULTIVIEW_PER_VIEW_RENDER_AREAS);
@@ -6885,7 +6929,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitMultiviewPerViewViewportsFeaturesQCOM(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkQCOMMultiviewPerViewViewports(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject qcomMultiviewPerViewViewportsFeatures = parent.optJSONObject(KEY_VK_QCOM_MULTIVIEW_PER_VIEW_VIEWPORTS);
@@ -6903,7 +6947,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitTileMemoryHeapFeaturesQCOM(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkQCOMTileMemoryHeap(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject qcomTileMemoryHeapFeatures = parent.optJSONObject(KEY_VK_QCOM_TILE_MEMORY_HEAP);
@@ -6928,7 +6972,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitTilePropertiesFeaturesQCOM(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkQCOMTileProperties(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject qcomTilePropertiesFeatures = parent.optJSONObject(KEY_VK_QCOM_TILE_PROPERTIES);
@@ -6946,7 +6990,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitTileShadingFeaturesQCOM(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkQCOMTileShading(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject qcomTileShadingFeatures = parent.optJSONObject(KEY_VK_QCOM_TILE_SHADING);
@@ -6998,7 +7042,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitYcbcrDegammaFeaturesQCOM(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkQCOMYcbcrDegamma(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject qcomYcbcrDegammaFeatures = parent.optJSONObject(KEY_VK_QCOM_YCBCR_DEGAMMA);
@@ -7016,7 +7060,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitAmigoProfilingFeaturesSEC(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkSECAmigoProfiling(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject secAmigoProfilingFeatures = parent.optJSONObject(KEY_VK_SEC_AMIGO_PROFILING);
@@ -7034,7 +7078,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitDescriptorSetHostMappingFeaturesVALVE(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkVALVEDescriptorSetHostMapping(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject valveDescriptorSetHostMappingFeatures = parent.optJSONObject(KEY_VK_VALVE_DESCRIPTOR_SET_HOST_MAPPING);
@@ -7052,7 +7096,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitMutableDescriptorTypeFeaturesVALVE(DeviceInfoStore store, JSONObject parent)
+    private static void emitVkVALVEMutableDescriptorType(DeviceInfoStore store, JSONObject parent)
 
                 throws IOException, JSONException {
         JSONObject valveMutableDescriptorTypeFeatures = parent.optJSONObject(KEY_VK_VALVE_MUTABLE_DESCRIPTOR_TYPE);
@@ -7076,730 +7120,736 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         switch (key) {
 
             case KEY_VK_AMD_ANTI_LAG:
-                emitAntiLagFeaturesAMD(store, parent);
+                emitVkAMDAntiLag(store, parent);
                 break;
             case KEY_VK_AMD_DEVICE_COHERENT_MEMORY:
-                emitCoherentMemoryFeaturesAMD(store, parent);
+                emitVkAMDDeviceCoherentMemory(store, parent);
                 break;
             case KEY_VK_AMD_SHADER_CORE_PROPERTIES:
-                emitShaderCorePropertiesAMD(store, parent);
+                emitVkAMDShaderCoreProperties(store, parent);
                 break;
             case KEY_VK_AMD_SHADER_CORE_PROPERTIES2:
-                emitShaderCoreProperties2AMD(store, parent);
+                emitVkAMDShaderCoreProperties2(store, parent);
                 break;
             case KEY_VK_AMD_SHADER_EARLY_AND_LATE_FRAGMENT_TESTS:
-                emitShaderEarlyAndLateFragmentTestsFeaturesAMD(store, parent);
+                emitVkAMDShaderEarlyAndLateFragmentTests(store, parent);
                 break;
             case KEY_VK_ANDROID_EXTERNAL_FORMAT_RESOLVE:
-                emitExternalFormatResolveFeaturesANDROID(store, parent);
+                emitVkANDROIDExternalFormatResolve(store, parent);
                 break;
             case KEY_VK_ARM_FORMAT_PACK:
-                emitFormatPackFeaturesARM(store, parent);
+                emitVkARMFormatPack(store, parent);
                 break;
             case KEY_VK_ARM_PIPELINE_OPACITY_MICROMAP:
-                emitPipelineOpacityMicromapFeaturesARM(store, parent);
+                emitVkARMPipelineOpacityMicromap(store, parent);
                 break;
             case KEY_VK_ARM_RASTERIZATION_ORDER_ATTACHMENT_ACCESS:
-                emitRasterizationOrderAttachmentAccessFeaturesARM(store, parent);
+                emitVkARMRasterizationOrderAttachmentAccess(store, parent);
                 break;
             case KEY_VK_ARM_RENDER_PASS_STRIPED:
-                emitRenderPassStripedFeaturesARM(store, parent);
+                emitVkARMRenderPassStriped(store, parent);
                 break;
             case KEY_VK_ARM_SCHEDULING_CONTROLS:
-                emitSchedulingControlsFeaturesARM(store, parent);
+                emitVkARMSchedulingControls(store, parent);
                 break;
             case KEY_VK_ARM_SHADER_CORE_BUILTINS:
-                emitShaderCoreBuiltinsFeaturesARM(store, parent);
+                emitVkARMShaderCoreBuiltins(store, parent);
                 break;
             case KEY_VK_ARM_SHADER_CORE_PROPERTIES:
-                emitShaderCorePropertiesARM(store, parent);
+                emitVkARMShaderCoreProperties(store, parent);
                 break;
             case KEY_VK_ARM_TENSORS:
-                emitTensorPropertiesARM(store, parent);
+                emitVkARMTensors(store, parent);
                 break;
             case KEY_VK_EXT_4444_FORMATS:
-                emit4444FormatsFeaturesEXT(store, parent);
+                emitVkEXT4444Formats(store, parent);
                 break;
             case KEY_VK_EXT_ASTC_DECODE_MODE:
-                emitASTCDecodeFeaturesEXT(store, parent);
+                emitVkEXTAstcDecodeMode(store, parent);
                 break;
             case KEY_VK_EXT_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE:
-                emitAttachmentFeedbackLoopDynamicStateFeaturesEXT(store, parent);
+                emitVkEXTAttachmentFeedbackLoopDynamicState(store, parent);
                 break;
             case KEY_VK_EXT_ATTACHMENT_FEEDBACK_LOOP_LAYOUT:
-                emitAttachmentFeedbackLoopLayoutFeaturesEXT(store, parent);
+                emitVkEXTAttachmentFeedbackLoopLayout(store, parent);
                 break;
             case KEY_VK_EXT_BLEND_OPERATION_ADVANCED:
-                emitBlendOperationAdvancedFeaturesEXT(store, parent);
+                emitVkEXTBlendOperationAdvanced(store, parent);
                 break;
             case KEY_VK_EXT_BORDER_COLOR_SWIZZLE:
-                emitBorderColorSwizzleFeaturesEXT(store, parent);
+                emitVkEXTBorderColorSwizzle(store, parent);
                 break;
             case KEY_VK_EXT_BUFFER_DEVICE_ADDRESS:
-                emitBufferDeviceAddressFeaturesEXT(store, parent);
+                emitVkEXTBufferDeviceAddress(store, parent);
                 break;
             case KEY_VK_EXT_COLOR_WRITE_ENABLE:
-                emitColorWriteEnableFeaturesEXT(store, parent);
+                emitVkEXTColorWriteEnable(store, parent);
                 break;
             case KEY_VK_EXT_CONDITIONAL_RENDERING:
-                emitConditionalRenderingFeaturesEXT(store, parent);
+                emitVkEXTConditionalRendering(store, parent);
                 break;
             case KEY_VK_EXT_CONSERVATIVE_RASTERIZATION:
-                emitConservativeRasterizationPropertiesEXT(store, parent);
+                emitVkEXTConservativeRasterization(store, parent);
                 break;
             case KEY_VK_EXT_CUSTOM_BORDER_COLOR:
-                emitCustomBorderColorPropertiesEXT(store, parent);
+                emitVkEXTCustomBorderColor(store, parent);
                 break;
             case KEY_VK_EXT_DEPTH_BIAS_CONTROL:
-                emitDepthBiasControlFeaturesEXT(store, parent);
+                emitVkEXTDepthBiasControl(store, parent);
                 break;
             case KEY_VK_EXT_DEPTH_CLAMP_CONTROL:
-                emitDepthClampControlFeaturesEXT(store, parent);
+                emitVkEXTDepthClampControl(store, parent);
                 break;
             case KEY_VK_EXT_DEPTH_CLIP_CONTROL:
-                emitDepthClipControlFeaturesEXT(store, parent);
+                emitVkEXTDepthClipControl(store, parent);
                 break;
             case KEY_VK_EXT_DEPTH_CLIP_ENABLE:
-                emitDepthClipEnableFeaturesEXT(store, parent);
+                emitVkEXTDepthClipEnable(store, parent);
                 break;
             case KEY_VK_EXT_DESCRIPTOR_BUFFER:
-                emitDescriptorBufferPropertiesEXT(store, parent);
+                emitVkEXTDescriptorBuffer(store, parent);
                 break;
             case KEY_VK_EXT_DESCRIPTOR_INDEXING:
-                emitDescriptorIndexingFeaturesEXT(store, parent);
+                emitVkEXTDescriptorIndexing(store, parent);
                 break;
             case KEY_VK_EXT_DEVICE_ADDRESS_BINDING_REPORT:
-                emitAddressBindingReportFeaturesEXT(store, parent);
+                emitVkEXTDeviceAddressBindingReport(store, parent);
                 break;
             case KEY_VK_EXT_DEVICE_FAULT:
-                emitFaultFeaturesEXT(store, parent);
+                emitVkEXTDeviceFault(store, parent);
                 break;
             case KEY_VK_EXT_DEVICE_GENERATED_COMMANDS:
-                emitDeviceGeneratedCommandsFeaturesEXT(store, parent);
+                emitVkEXTDeviceGeneratedCommands(store, parent);
                 break;
             case KEY_VK_EXT_DEVICE_MEMORY_REPORT:
-                emitDeviceMemoryReportFeaturesEXT(store, parent);
+                emitVkEXTDeviceMemoryReport(store, parent);
                 break;
             case KEY_VK_EXT_DISCARD_RECTANGLES:
-                emitDiscardRectanglePropertiesEXT(store, parent);
+                emitVkEXTDiscardRectangles(store, parent);
                 break;
             case KEY_VK_EXT_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS:
-                emitDynamicRenderingUnusedAttachmentsFeaturesEXT(store, parent);
+                emitVkEXTDynamicRenderingUnusedAttachments(store, parent);
                 break;
             case KEY_VK_EXT_EXTENDED_DYNAMIC_STATE:
-                emitExtendedDynamicStateFeaturesEXT(store, parent);
+                emitVkEXTExtendedDynamicState(store, parent);
                 break;
             case KEY_VK_EXT_EXTENDED_DYNAMIC_STATE2:
-                emitExtendedDynamicState2FeaturesEXT(store, parent);
+                emitVkEXTExtendedDynamicState2(store, parent);
                 break;
             case KEY_VK_EXT_EXTENDED_DYNAMIC_STATE3:
-                emitExtendedDynamicState3FeaturesEXT(store, parent);
+                emitVkEXTExtendedDynamicState3(store, parent);
                 break;
             case KEY_VK_EXT_EXTERNAL_MEMORY_HOST:
-                emitExternalMemoryHostPropertiesEXT(store, parent);
+                emitVkEXTExternalMemoryHost(store, parent);
                 break;
             case KEY_VK_EXT_FRAGMENT_DENSITY_MAP:
-                emitFragmentDensityMapFeaturesEXT(store, parent);
+                emitVkEXTFragmentDensityMap(store, parent);
                 break;
             case KEY_VK_EXT_FRAGMENT_DENSITY_MAP2:
-                emitFragmentDensityMap2FeaturesEXT(store, parent);
+                emitVkEXTFragmentDensityMap2(store, parent);
                 break;
             case KEY_VK_EXT_FRAGMENT_DENSITY_MAP_OFFSET:
-                emitFragmentDensityMapOffsetFeaturesEXT(store, parent);
+                emitVkEXTFragmentDensityMapOffset(store, parent);
                 break;
             case KEY_VK_EXT_FRAGMENT_SHADER_INTERLOCK:
-                emitFragmentShaderInterlockFeaturesEXT(store, parent);
+                emitVkEXTFragmentShaderInterlock(store, parent);
                 break;
             case KEY_VK_EXT_FRAME_BOUNDARY:
-                emitFrameBoundaryFeaturesEXT(store, parent);
+                emitVkEXTFrameBoundary(store, parent);
                 break;
             case KEY_VK_EXT_GLOBAL_PRIORITY_QUERY:
-                emitGlobalPriorityQueryFeaturesEXT(store, parent);
+                emitVkEXTGlobalPriorityQuery(store, parent);
                 break;
             case KEY_VK_EXT_GRAPHICS_PIPELINE_LIBRARY:
-                emitGraphicsPipelineLibraryFeaturesEXT(store, parent);
+                emitVkEXTGraphicsPipelineLibrary(store, parent);
                 break;
             case KEY_VK_EXT_HOST_IMAGE_COPY:
-                emitHostImageCopyFeaturesEXT(store, parent);
+                emitVkEXTHostImageCopy(store, parent);
                 break;
             case KEY_VK_EXT_HOST_QUERY_RESET:
-                emitHostQueryResetFeaturesEXT(store, parent);
+                emitVkEXTHostQueryReset(store, parent);
                 break;
             case KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D:
-                emitImage2DViewOf3DFeaturesEXT(store, parent);
+                emitVkEXTImage2dViewOf3d(store, parent);
                 break;
             case KEY_VK_EXT_IMAGE_COMPRESSION_CONTROL:
-                emitImageCompressionControlFeaturesEXT(store, parent);
+                emitVkEXTImageCompressionControl(store, parent);
                 break;
             case KEY_VK_EXT_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN:
-                emitImageCompressionControlSwapchainFeaturesEXT(store, parent);
+                emitVkEXTImageCompressionControlSwapchain(store, parent);
                 break;
             case KEY_VK_EXT_IMAGE_ROBUSTNESS:
-                emitImageRobustnessFeaturesEXT(store, parent);
+                emitVkEXTImageRobustness(store, parent);
                 break;
             case KEY_VK_EXT_IMAGE_SLICED_VIEW_OF_3D:
-                emitImageSlicedViewOf3DFeaturesEXT(store, parent);
+                emitVkEXTImageSlicedViewOf3d(store, parent);
                 break;
             case KEY_VK_EXT_IMAGE_VIEW_MIN_LOD:
-                emitImageViewMinLodFeaturesEXT(store, parent);
+                emitVkEXTImageViewMinLod(store, parent);
                 break;
             case KEY_VK_EXT_INDEX_TYPE_UINT8:
-                emitIndexTypeUint8FeaturesEXT(store, parent);
+                emitVkEXTIndexTypeUint8(store, parent);
                 break;
             case KEY_VK_EXT_INLINE_UNIFORM_BLOCK:
-                emitInlineUniformBlockFeaturesEXT(store, parent);
+                emitVkEXTInlineUniformBlock(store, parent);
                 break;
             case KEY_VK_EXT_LEGACY_DITHERING:
-                emitLegacyDitheringFeaturesEXT(store, parent);
+                emitVkEXTLegacyDithering(store, parent);
                 break;
             case KEY_VK_EXT_LEGACY_VERTEX_ATTRIBUTES:
-                emitLegacyVertexAttributesFeaturesEXT(store, parent);
+                emitVkEXTLegacyVertexAttributes(store, parent);
                 break;
             case KEY_VK_EXT_LINE_RASTERIZATION:
-                emitLineRasterizationFeaturesEXT(store, parent);
+                emitVkEXTLineRasterization(store, parent);
                 break;
             case KEY_VK_EXT_MAP_MEMORY_PLACED:
-                emitMapMemoryPlacedFeaturesEXT(store, parent);
+                emitVkEXTMapMemoryPlaced(store, parent);
                 break;
             case KEY_VK_EXT_MEMORY_PRIORITY:
-                emitMemoryPriorityFeaturesEXT(store, parent);
+                emitVkEXTMemoryPriority(store, parent);
                 break;
             case KEY_VK_EXT_MESH_SHADER:
-                emitMeshShaderFeaturesEXT(store, parent);
+                emitVkEXTMeshShader(store, parent);
                 break;
             case KEY_VK_EXT_MULTI_DRAW:
-                emitMultiDrawFeaturesEXT(store, parent);
+                emitVkEXTMultiDraw(store, parent);
                 break;
             case KEY_VK_EXT_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED:
-                emitMultisampledRenderToSingleSampledFeaturesEXT(store, parent);
+                emitVkEXTMultisampledRenderToSingleSampled(store, parent);
                 break;
             case KEY_VK_EXT_MUTABLE_DESCRIPTOR_TYPE:
-                emitMutableDescriptorTypeFeaturesEXT(store, parent);
+                emitVkEXTMutableDescriptorType(store, parent);
                 break;
             case KEY_VK_EXT_NESTED_COMMAND_BUFFER:
-                emitNestedCommandBufferFeaturesEXT(store, parent);
+                emitVkEXTNestedCommandBuffer(store, parent);
                 break;
             case KEY_VK_EXT_NON_SEAMLESS_CUBE_MAP:
-                emitNonSeamlessCubeMapFeaturesEXT(store, parent);
+                emitVkEXTNonSeamlessCubeMap(store, parent);
                 break;
             case KEY_VK_EXT_OPACITY_MICROMAP:
-                emitOpacityMicromapFeaturesEXT(store, parent);
+                emitVkEXTOpacityMicromap(store, parent);
                 break;
             case KEY_VK_EXT_PAGEABLE_DEVICE_LOCAL_MEMORY:
-                emitPageableDeviceLocalMemoryFeaturesEXT(store, parent);
+                emitVkEXTPageableDeviceLocalMemory(store, parent);
                 break;
             case KEY_VK_EXT_PCI_BUS_INFO:
-                emitPCIBusInfoPropertiesEXT(store, parent);
+                emitVkEXTPciBusInfo(store, parent);
                 break;
             case KEY_VK_EXT_PHYSICAL_DEVICE_DRM:
-                emitDrmPropertiesEXT(store, parent);
+                emitVkEXTPhysicalDeviceDrm(store, parent);
                 break;
             case KEY_VK_EXT_PIPELINE_CREATION_CACHE_CONTROL:
-                emitPipelineCreationCacheControlFeaturesEXT(store, parent);
+                emitVkEXTPipelineCreationCacheControl(store, parent);
                 break;
             case KEY_VK_EXT_PIPELINE_LIBRARY_GROUP_HANDLES:
-                emitPipelineLibraryGroupHandlesFeaturesEXT(store, parent);
+                emitVkEXTPipelineLibraryGroupHandles(store, parent);
                 break;
             case KEY_VK_EXT_PIPELINE_PROPERTIES:
-                emitPipelinePropertiesFeaturesEXT(store, parent);
+                emitVkEXTPipelineProperties(store, parent);
                 break;
             case KEY_VK_EXT_PIPELINE_PROTECTED_ACCESS:
-                emitPipelineProtectedAccessFeaturesEXT(store, parent);
+                emitVkEXTPipelineProtectedAccess(store, parent);
                 break;
             case KEY_VK_EXT_PIPELINE_ROBUSTNESS:
-                emitPipelineRobustnessFeaturesEXT(store, parent);
+                emitVkEXTPipelineRobustness(store, parent);
                 break;
             case KEY_VK_EXT_PRESENT_MODE_FIFO_LATEST_READY:
-                emitPresentModeFifoLatestReadyFeaturesEXT(store, parent);
+                emitVkEXTPresentModeFifoLatestReady(store, parent);
                 break;
             case KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART:
-                emitPrimitiveTopologyListRestartFeaturesEXT(store, parent);
+                emitVkEXTPrimitiveTopologyListRestart(store, parent);
                 break;
             case KEY_VK_EXT_PRIMITIVES_GENERATED_QUERY:
-                emitPrimitivesGeneratedQueryFeaturesEXT(store, parent);
+                emitVkEXTPrimitivesGeneratedQuery(store, parent);
                 break;
             case KEY_VK_EXT_PRIVATE_DATA:
-                emitPrivateDataFeaturesEXT(store, parent);
+                emitVkEXTPrivateData(store, parent);
                 break;
             case KEY_VK_EXT_PROVOKING_VERTEX:
-                emitProvokingVertexFeaturesEXT(store, parent);
+                emitVkEXTProvokingVertex(store, parent);
                 break;
             case KEY_VK_EXT_RASTERIZATION_ORDER_ATTACHMENT_ACCESS:
-                emitRasterizationOrderAttachmentAccessFeaturesEXT(store, parent);
+                emitVkEXTRasterizationOrderAttachmentAccess(store, parent);
                 break;
             case KEY_VK_EXT_RGBA10X6_FORMATS:
-                emitRGBA10X6FormatsFeaturesEXT(store, parent);
+                emitVkEXTRgba10x6Formats(store, parent);
                 break;
             case KEY_VK_EXT_ROBUSTNESS2:
-                emitRobustness2FeaturesEXT(store, parent);
+                emitVkEXTRobustness2(store, parent);
                 break;
             case KEY_VK_EXT_SAMPLE_LOCATIONS:
-                emitSampleLocationsPropertiesEXT(store, parent);
+                emitVkEXTSampleLocations(store, parent);
                 break;
             case KEY_VK_EXT_SAMPLER_FILTER_MINMAX:
-                emitSamplerFilterMinmaxPropertiesEXT(store, parent);
+                emitVkEXTSamplerFilterMinmax(store, parent);
                 break;
             case KEY_VK_EXT_SCALAR_BLOCK_LAYOUT:
-                emitScalarBlockLayoutFeaturesEXT(store, parent);
+                emitVkEXTScalarBlockLayout(store, parent);
                 break;
             case KEY_VK_EXT_SHADER_ATOMIC_FLOAT:
-                emitShaderAtomicFloatFeaturesEXT(store, parent);
+                emitVkEXTShaderAtomicFloat(store, parent);
                 break;
             case KEY_VK_EXT_SHADER_ATOMIC_FLOAT2:
-                emitShaderAtomicFloat2FeaturesEXT(store, parent);
+                emitVkEXTShaderAtomicFloat2(store, parent);
                 break;
             case KEY_VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION:
-                emitShaderDemoteToHelperInvocationFeaturesEXT(store, parent);
+                emitVkEXTShaderDemoteToHelperInvocation(store, parent);
                 break;
             case KEY_VK_EXT_SHADER_FLOAT8:
-                emitShaderFloat8FeaturesEXT(store, parent);
+                emitVkEXTShaderFloat8(store, parent);
                 break;
             case KEY_VK_EXT_SHADER_IMAGE_ATOMIC_INT64:
-                emitShaderImageAtomicInt64FeaturesEXT(store, parent);
+                emitVkEXTShaderImageAtomicInt64(store, parent);
                 break;
             case KEY_VK_EXT_SHADER_MODULE_IDENTIFIER:
-                emitShaderModuleIdentifierFeaturesEXT(store, parent);
+                emitVkEXTShaderModuleIdentifier(store, parent);
                 break;
             case KEY_VK_EXT_SHADER_OBJECT:
-                emitShaderObjectFeaturesEXT(store, parent);
+                emitVkEXTShaderObject(store, parent);
                 break;
             case KEY_VK_EXT_SHADER_REPLICATED_COMPOSITES:
-                emitShaderReplicatedCompositesFeaturesEXT(store, parent);
+                emitVkEXTShaderReplicatedComposites(store, parent);
                 break;
             case KEY_VK_EXT_SHADER_TILE_IMAGE:
-                emitShaderTileImageFeaturesEXT(store, parent);
+                emitVkEXTShaderTileImage(store, parent);
                 break;
             case KEY_VK_EXT_SUBGROUP_SIZE_CONTROL:
-                emitSubgroupSizeControlFeaturesEXT(store, parent);
+                emitVkEXTSubgroupSizeControl(store, parent);
                 break;
             case KEY_VK_EXT_SUBPASS_MERGE_FEEDBACK:
-                emitSubpassMergeFeedbackFeaturesEXT(store, parent);
+                emitVkEXTSubpassMergeFeedback(store, parent);
                 break;
             case KEY_VK_EXT_SWAPCHAIN_MAINTENANCE1:
-                emitSwapchainMaintenance1FeaturesEXT(store, parent);
+                emitVkEXTSwapchainMaintenance1(store, parent);
                 break;
             case KEY_VK_EXT_TEXEL_BUFFER_ALIGNMENT:
-                emitTexelBufferAlignmentFeaturesEXT(store, parent);
+                emitVkEXTTexelBufferAlignment(store, parent);
                 break;
             case KEY_VK_EXT_TEXTURE_COMPRESSION_ASTC_HDR:
-                emitTextureCompressionASTCHDRFeaturesEXT(store, parent);
+                emitVkEXTTextureCompressionAstcHdr(store, parent);
                 break;
             case KEY_VK_EXT_TRANSFORM_FEEDBACK:
-                emitTransformFeedbackFeaturesEXT(store, parent);
+                emitVkEXTTransformFeedback(store, parent);
                 break;
             case KEY_VK_EXT_VERTEX_ATTRIBUTE_DIVISOR:
-                emitVertexAttributeDivisorPropertiesEXT(store, parent);
+                emitVkEXTVertexAttributeDivisor(store, parent);
                 break;
             case KEY_VK_EXT_VERTEX_ATTRIBUTE_ROBUSTNESS:
-                emitVertexAttributeRobustnessFeaturesEXT(store, parent);
+                emitVkEXTVertexAttributeRobustness(store, parent);
                 break;
             case KEY_VK_EXT_VERTEX_INPUT_DYNAMIC_STATE:
-                emitVertexInputDynamicStateFeaturesEXT(store, parent);
+                emitVkEXTVertexInputDynamicState(store, parent);
                 break;
             case KEY_VK_EXT_YCBCR_2PLANE_444_FORMATS:
-                emitYcbcr2Plane444FormatsFeaturesEXT(store, parent);
+                emitVkEXTYcbcr2plane444Formats(store, parent);
                 break;
             case KEY_VK_EXT_YCBCR_IMAGE_ARRAYS:
-                emitYcbcrImageArraysFeaturesEXT(store, parent);
+                emitVkEXTYcbcrImageArrays(store, parent);
                 break;
             case KEY_VK_EXT_ZERO_INITIALIZE_DEVICE_MEMORY:
-                emitZeroInitializeDeviceMemoryFeaturesEXT(store, parent);
+                emitVkEXTZeroInitializeDeviceMemory(store, parent);
                 break;
             case KEY_VK_HUAWEI_CLUSTER_CULLING_SHADER:
-                emitClusterCullingShaderFeaturesHUAWEI(store, parent);
+                emitVkHUAWEIClusterCullingShader(store, parent);
                 break;
             case KEY_VK_HUAWEI_HDR_VIVID:
-                emitHdrVividFeaturesHUAWEI(store, parent);
+                emitVkHUAWEIHdrVivid(store, parent);
                 break;
             case KEY_VK_HUAWEI_INVOCATION_MASK:
-                emitInvocationMaskFeaturesHUAWEI(store, parent);
+                emitVkHUAWEIInvocationMask(store, parent);
                 break;
             case KEY_VK_HUAWEI_SUBPASS_SHADING:
-                emitSubpassShadingFeaturesHUAWEI(store, parent);
+                emitVkHUAWEISubpassShading(store, parent);
                 break;
             case KEY_VK_IMG_RELAXED_LINE_RASTERIZATION:
-                emitRelaxedLineRasterizationFeaturesIMG(store, parent);
+                emitVkIMGRelaxedLineRasterization(store, parent);
                 break;
             case KEY_VK_INTEL_SHADER_INTEGER_FUNCTIONS2:
-                emitShaderIntegerFunctions2FeaturesINTEL(store, parent);
+                emitVkINTELShaderIntegerFunctions2(store, parent);
                 break;
             case KEY_VK_KHR_16BIT_STORAGE:
-                emit16BitStorageFeaturesKHR(store, parent);
+                emitVkKHR16bitStorage(store, parent);
                 break;
             case KEY_VK_KHR_8BIT_STORAGE:
-                emit8BitStorageFeaturesKHR(store, parent);
+                emitVkKHR8bitStorage(store, parent);
                 break;
             case KEY_VK_KHR_ACCELERATION_STRUCTURE:
-                emitAccelerationStructureFeaturesKHR(store, parent);
+                emitVkKHRAccelerationStructure(store, parent);
                 break;
             case KEY_VK_KHR_BUFFER_DEVICE_ADDRESS:
-                emitBufferDeviceAddressFeaturesKHR(store, parent);
+                emitVkKHRBufferDeviceAddress(store, parent);
                 break;
             case KEY_VK_KHR_COMPUTE_SHADER_DERIVATIVES:
-                emitComputeShaderDerivativesFeaturesKHR(store, parent);
+                emitVkKHRComputeShaderDerivatives(store, parent);
                 break;
             case KEY_VK_KHR_COOPERATIVE_MATRIX:
-                emitCooperativeMatrixFeaturesKHR(store, parent);
+                emitVkKHRCooperativeMatrix(store, parent);
                 break;
             case KEY_VK_KHR_DEPTH_CLAMP_ZERO_ONE:
-                emitDepthClampZeroOneFeaturesKHR(store, parent);
+                emitVkKHRDepthClampZeroOne(store, parent);
                 break;
             case KEY_VK_KHR_DEPTH_STENCIL_RESOLVE:
-                emitDepthStencilResolvePropertiesKHR(store, parent);
+                emitVkKHRDepthStencilResolve(store, parent);
                 break;
             case KEY_VK_KHR_DRIVER_PROPERTIES:
-                emitDriverPropertiesKHR(store, parent);
+                emitVkKHRDriverProperties(store, parent);
                 break;
             case KEY_VK_KHR_DYNAMIC_RENDERING:
-                emitDynamicRenderingFeaturesKHR(store, parent);
+                emitVkKHRDynamicRendering(store, parent);
                 break;
             case KEY_VK_KHR_DYNAMIC_RENDERING_LOCAL_READ:
-                emitDynamicRenderingLocalReadFeaturesKHR(store, parent);
+                emitVkKHRDynamicRenderingLocalRead(store, parent);
+                break;
+            case KEY_VK_KHR_EXTERNAL_FENCE_CAPABILITIES:
+                emitVkKHRExternalFenceCapabilities(store, parent);
                 break;
             case KEY_VK_KHR_EXTERNAL_MEMORY_CAPABILITIES:
-                emitIDPropertiesKHR(store, parent);
+                emitVkKHRExternalMemoryCapabilities(store, parent);
+                break;
+            case KEY_VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES:
+                emitVkKHRExternalSemaphoreCapabilities(store, parent);
                 break;
             case KEY_VK_KHR_FRAGMENT_SHADER_BARYCENTRIC:
-                emitFragmentShaderBarycentricFeaturesKHR(store, parent);
+                emitVkKHRFragmentShaderBarycentric(store, parent);
                 break;
             case KEY_VK_KHR_FRAGMENT_SHADING_RATE:
-                emitFragmentShadingRateFeaturesKHR(store, parent);
+                emitVkKHRFragmentShadingRate(store, parent);
                 break;
             case KEY_VK_KHR_GLOBAL_PRIORITY:
-                emitGlobalPriorityQueryFeaturesKHR(store, parent);
+                emitVkKHRGlobalPriority(store, parent);
                 break;
             case KEY_VK_KHR_IMAGELESS_FRAMEBUFFER:
-                emitImagelessFramebufferFeaturesKHR(store, parent);
+                emitVkKHRImagelessFramebuffer(store, parent);
                 break;
             case KEY_VK_KHR_INDEX_TYPE_UINT8:
-                emitIndexTypeUint8FeaturesKHR(store, parent);
+                emitVkKHRIndexTypeUint8(store, parent);
                 break;
             case KEY_VK_KHR_LINE_RASTERIZATION:
-                emitLineRasterizationFeaturesKHR(store, parent);
+                emitVkKHRLineRasterization(store, parent);
                 break;
             case KEY_VK_KHR_MAINTENANCE2:
-                emitPointClippingPropertiesKHR(store, parent);
+                emitVkKHRMaintenance2(store, parent);
                 break;
             case KEY_VK_KHR_MAINTENANCE3:
-                emitMaintenance3PropertiesKHR(store, parent);
+                emitVkKHRMaintenance3(store, parent);
                 break;
             case KEY_VK_KHR_MAINTENANCE4:
-                emitMaintenance4FeaturesKHR(store, parent);
+                emitVkKHRMaintenance4(store, parent);
                 break;
             case KEY_VK_KHR_MAINTENANCE5:
-                emitMaintenance5FeaturesKHR(store, parent);
+                emitVkKHRMaintenance5(store, parent);
                 break;
             case KEY_VK_KHR_MAINTENANCE6:
-                emitMaintenance6FeaturesKHR(store, parent);
+                emitVkKHRMaintenance6(store, parent);
                 break;
             case KEY_VK_KHR_MAINTENANCE7:
-                emitMaintenance7FeaturesKHR(store, parent);
+                emitVkKHRMaintenance7(store, parent);
                 break;
             case KEY_VK_KHR_MAINTENANCE8:
-                emitMaintenance8FeaturesKHR(store, parent);
+                emitVkKHRMaintenance8(store, parent);
                 break;
             case KEY_VK_KHR_MAINTENANCE9:
-                emitMaintenance9FeaturesKHR(store, parent);
+                emitVkKHRMaintenance9(store, parent);
                 break;
             case KEY_VK_KHR_MULTIVIEW:
-                emitMultiviewFeaturesKHR(store, parent);
+                emitVkKHRMultiview(store, parent);
                 break;
             case KEY_VK_KHR_PERFORMANCE_QUERY:
-                emitPerformanceQueryFeaturesKHR(store, parent);
+                emitVkKHRPerformanceQuery(store, parent);
                 break;
             case KEY_VK_KHR_PIPELINE_BINARY:
-                emitPipelineBinaryFeaturesKHR(store, parent);
+                emitVkKHRPipelineBinary(store, parent);
                 break;
             case KEY_VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES:
-                emitPipelineExecutablePropertiesFeaturesKHR(store, parent);
+                emitVkKHRPipelineExecutableProperties(store, parent);
                 break;
             case KEY_VK_KHR_PRESENT_ID:
-                emitPresentIdFeaturesKHR(store, parent);
+                emitVkKHRPresentId(store, parent);
                 break;
             case KEY_VK_KHR_PRESENT_ID2:
-                emitPresentId2FeaturesKHR(store, parent);
+                emitVkKHRPresentId2(store, parent);
                 break;
             case KEY_VK_KHR_PRESENT_WAIT:
-                emitPresentWaitFeaturesKHR(store, parent);
+                emitVkKHRPresentWait(store, parent);
                 break;
             case KEY_VK_KHR_PRESENT_WAIT2:
-                emitPresentWait2FeaturesKHR(store, parent);
+                emitVkKHRPresentWait2(store, parent);
                 break;
             case KEY_VK_KHR_PUSH_DESCRIPTOR:
-                emitPushDescriptorPropertiesKHR(store, parent);
+                emitVkKHRPushDescriptor(store, parent);
                 break;
             case KEY_VK_KHR_RAY_QUERY:
-                emitRayQueryFeaturesKHR(store, parent);
+                emitVkKHRRayQuery(store, parent);
                 break;
             case KEY_VK_KHR_RAY_TRACING_MAINTENANCE1:
-                emitRayTracingMaintenance1FeaturesKHR(store, parent);
+                emitVkKHRRayTracingMaintenance1(store, parent);
                 break;
             case KEY_VK_KHR_RAY_TRACING_PIPELINE:
-                emitRayTracingPipelineFeaturesKHR(store, parent);
+                emitVkKHRRayTracingPipeline(store, parent);
                 break;
             case KEY_VK_KHR_RAY_TRACING_POSITION_FETCH:
-                emitRayTracingPositionFetchFeaturesKHR(store, parent);
+                emitVkKHRRayTracingPositionFetch(store, parent);
                 break;
             case KEY_VK_KHR_ROBUSTNESS2:
-                emitRobustness2FeaturesKHR(store, parent);
+                emitVkKHRRobustness2(store, parent);
                 break;
             case KEY_VK_KHR_SAMPLER_YCBCR_CONVERSION:
-                emitSamplerYcbcrConversionFeaturesKHR(store, parent);
+                emitVkKHRSamplerYcbcrConversion(store, parent);
                 break;
             case KEY_VK_KHR_SEPARATE_DEPTH_STENCIL_LAYOUTS:
-                emitSeparateDepthStencilLayoutsFeaturesKHR(store, parent);
+                emitVkKHRSeparateDepthStencilLayouts(store, parent);
                 break;
             case KEY_VK_KHR_SHADER_ATOMIC_INT64:
-                emitShaderAtomicInt64FeaturesKHR(store, parent);
+                emitVkKHRShaderAtomicInt64(store, parent);
                 break;
             case KEY_VK_KHR_SHADER_BFLOAT16:
-                emitShaderBfloat16FeaturesKHR(store, parent);
+                emitVkKHRShaderBfloat16(store, parent);
                 break;
             case KEY_VK_KHR_SHADER_CLOCK:
-                emitShaderClockFeaturesKHR(store, parent);
+                emitVkKHRShaderClock(store, parent);
                 break;
             case KEY_VK_KHR_SHADER_EXPECT_ASSUME:
-                emitShaderExpectAssumeFeaturesKHR(store, parent);
+                emitVkKHRShaderExpectAssume(store, parent);
                 break;
             case KEY_VK_KHR_SHADER_FLOAT16_INT8:
-                emitShaderFloat16Int8FeaturesKHR(store, parent);
+                emitVkKHRShaderFloat16Int8(store, parent);
                 break;
             case KEY_VK_KHR_SHADER_FLOAT_CONTROLS:
-                emitFloatControlsPropertiesKHR(store, parent);
+                emitVkKHRShaderFloatControls(store, parent);
                 break;
             case KEY_VK_KHR_SHADER_FLOAT_CONTROLS2:
-                emitShaderFloatControls2FeaturesKHR(store, parent);
+                emitVkKHRShaderFloatControls2(store, parent);
                 break;
             case KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT:
-                emitShaderIntegerDotProductFeaturesKHR(store, parent);
+                emitVkKHRShaderIntegerDotProduct(store, parent);
                 break;
             case KEY_VK_KHR_SHADER_MAXIMAL_RECONVERGENCE:
-                emitShaderMaximalReconvergenceFeaturesKHR(store, parent);
+                emitVkKHRShaderMaximalReconvergence(store, parent);
                 break;
             case KEY_VK_KHR_SHADER_QUAD_CONTROL:
-                emitShaderQuadControlFeaturesKHR(store, parent);
+                emitVkKHRShaderQuadControl(store, parent);
                 break;
             case KEY_VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION:
-                emitShaderRelaxedExtendedInstructionFeaturesKHR(store, parent);
+                emitVkKHRShaderRelaxedExtendedInstruction(store, parent);
                 break;
             case KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES:
-                emitShaderSubgroupExtendedTypesFeaturesKHR(store, parent);
+                emitVkKHRShaderSubgroupExtendedTypes(store, parent);
                 break;
             case KEY_VK_KHR_SHADER_SUBGROUP_ROTATE:
-                emitShaderSubgroupRotateFeaturesKHR(store, parent);
+                emitVkKHRShaderSubgroupRotate(store, parent);
                 break;
             case KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW:
-                emitShaderSubgroupUniformControlFlowFeaturesKHR(store, parent);
+                emitVkKHRShaderSubgroupUniformControlFlow(store, parent);
                 break;
             case KEY_VK_KHR_SHADER_TERMINATE_INVOCATION:
-                emitShaderTerminateInvocationFeaturesKHR(store, parent);
+                emitVkKHRShaderTerminateInvocation(store, parent);
                 break;
             case KEY_VK_KHR_SYNCHRONIZATION2:
-                emitSynchronization2FeaturesKHR(store, parent);
+                emitVkKHRSynchronization2(store, parent);
                 break;
             case KEY_VK_KHR_TIMELINE_SEMAPHORE:
-                emitTimelineSemaphoreFeaturesKHR(store, parent);
+                emitVkKHRTimelineSemaphore(store, parent);
                 break;
             case KEY_VK_KHR_UNIFIED_IMAGE_LAYOUTS:
-                emitUnifiedImageLayoutsFeaturesKHR(store, parent);
+                emitVkKHRUnifiedImageLayouts(store, parent);
                 break;
             case KEY_VK_KHR_UNIFORM_BUFFER_STANDARD_LAYOUT:
-                emitUniformBufferStandardLayoutFeaturesKHR(store, parent);
+                emitVkKHRUniformBufferStandardLayout(store, parent);
                 break;
             case KEY_VK_KHR_VARIABLE_POINTERS:
-                emitVariablePointersFeaturesKHR(store, parent);
+                emitVkKHRVariablePointers(store, parent);
                 break;
             case KEY_VK_KHR_VERTEX_ATTRIBUTE_DIVISOR:
-                emitVertexAttributeDivisorPropertiesKHR(store, parent);
+                emitVkKHRVertexAttributeDivisor(store, parent);
                 break;
             case KEY_VK_KHR_VIDEO_DECODE_VP9:
-                emitVideoDecodeVP9FeaturesKHR(store, parent);
+                emitVkKHRVideoDecodeVp9(store, parent);
                 break;
             case KEY_VK_KHR_VIDEO_ENCODE_AV1:
-                emitVideoEncodeAV1FeaturesKHR(store, parent);
+                emitVkKHRVideoEncodeAv1(store, parent);
                 break;
             case KEY_VK_KHR_VIDEO_ENCODE_QUANTIZATION_MAP:
-                emitVideoEncodeQuantizationMapFeaturesKHR(store, parent);
+                emitVkKHRVideoEncodeQuantizationMap(store, parent);
                 break;
             case KEY_VK_KHR_VIDEO_MAINTENANCE1:
-                emitVideoMaintenance1FeaturesKHR(store, parent);
+                emitVkKHRVideoMaintenance1(store, parent);
                 break;
             case KEY_VK_KHR_VIDEO_MAINTENANCE2:
-                emitVideoMaintenance2FeaturesKHR(store, parent);
+                emitVkKHRVideoMaintenance2(store, parent);
                 break;
             case KEY_VK_KHR_VULKAN_MEMORY_MODEL:
-                emitVulkanMemoryModelFeaturesKHR(store, parent);
+                emitVkKHRVulkanMemoryModel(store, parent);
                 break;
             case KEY_VK_KHR_WORKGROUP_MEMORY_EXPLICIT_LAYOUT:
-                emitWorkgroupMemoryExplicitLayoutFeaturesKHR(store, parent);
+                emitVkKHRWorkgroupMemoryExplicitLayout(store, parent);
                 break;
             case KEY_VK_KHR_ZERO_INITIALIZE_WORKGROUP_MEMORY:
-                emitZeroInitializeWorkgroupMemoryFeaturesKHR(store, parent);
+                emitVkKHRZeroInitializeWorkgroupMemory(store, parent);
                 break;
             case KEY_VK_MESA_IMAGE_ALIGNMENT_CONTROL:
-                emitImageAlignmentControlFeaturesMESA(store, parent);
+                emitVkMESAImageAlignmentControl(store, parent);
                 break;
             case KEY_VK_MSFT_LAYERED_DRIVER:
-                emitLayeredDriverPropertiesMSFT(store, parent);
+                emitVkMSFTLayeredDriver(store, parent);
                 break;
             case KEY_VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES:
-                emitMultiviewPerViewAttributesPropertiesNVX(store, parent);
+                emitVkNVXMultiviewPerViewAttributes(store, parent);
                 break;
             case KEY_VK_NV_CLUSTER_ACCELERATION_STRUCTURE:
-                emitClusterAccelerationStructureFeaturesNV(store, parent);
+                emitVkNVClusterAccelerationStructure(store, parent);
                 break;
             case KEY_VK_NV_COMMAND_BUFFER_INHERITANCE:
-                emitCommandBufferInheritanceFeaturesNV(store, parent);
+                emitVkNVCommandBufferInheritance(store, parent);
                 break;
             case KEY_VK_NV_COMPUTE_SHADER_DERIVATIVES:
-                emitComputeShaderDerivativesFeaturesNV(store, parent);
+                emitVkNVComputeShaderDerivatives(store, parent);
                 break;
             case KEY_VK_NV_COOPERATIVE_MATRIX:
-                emitCooperativeMatrixFeaturesNV(store, parent);
+                emitVkNVCooperativeMatrix(store, parent);
                 break;
             case KEY_VK_NV_COOPERATIVE_MATRIX2:
-                emitCooperativeMatrix2FeaturesNV(store, parent);
+                emitVkNVCooperativeMatrix2(store, parent);
                 break;
             case KEY_VK_NV_COOPERATIVE_VECTOR:
-                emitCooperativeVectorPropertiesNV(store, parent);
+                emitVkNVCooperativeVector(store, parent);
                 break;
             case KEY_VK_NV_COPY_MEMORY_INDIRECT:
-                emitCopyMemoryIndirectFeaturesNV(store, parent);
+                emitVkNVCopyMemoryIndirect(store, parent);
                 break;
             case KEY_VK_NV_CORNER_SAMPLED_IMAGE:
-                emitCornerSampledImageFeaturesNV(store, parent);
+                emitVkNVCornerSampledImage(store, parent);
                 break;
             case KEY_VK_NV_COVERAGE_REDUCTION_MODE:
-                emitCoverageReductionModeFeaturesNV(store, parent);
+                emitVkNVCoverageReductionMode(store, parent);
                 break;
             case KEY_VK_NV_DEDICATED_ALLOCATION_IMAGE_ALIASING:
-                emitDedicatedAllocationImageAliasingFeaturesNV(store, parent);
+                emitVkNVDedicatedAllocationImageAliasing(store, parent);
                 break;
             case KEY_VK_NV_DESCRIPTOR_POOL_OVERALLOCATION:
-                emitDescriptorPoolOverallocationFeaturesNV(store, parent);
+                emitVkNVDescriptorPoolOverallocation(store, parent);
                 break;
             case KEY_VK_NV_DEVICE_DIAGNOSTICS_CONFIG:
-                emitDiagnosticsConfigFeaturesNV(store, parent);
+                emitVkNVDeviceDiagnosticsConfig(store, parent);
                 break;
             case KEY_VK_NV_DEVICE_GENERATED_COMMANDS:
-                emitDeviceGeneratedCommandsPropertiesNV(store, parent);
+                emitVkNVDeviceGeneratedCommands(store, parent);
                 break;
             case KEY_VK_NV_DEVICE_GENERATED_COMMANDS_COMPUTE:
-                emitDeviceGeneratedCommandsComputeFeaturesNV(store, parent);
+                emitVkNVDeviceGeneratedCommandsCompute(store, parent);
                 break;
             case KEY_VK_NV_EXTENDED_SPARSE_ADDRESS_SPACE:
-                emitExtendedSparseAddressSpaceFeaturesNV(store, parent);
+                emitVkNVExtendedSparseAddressSpace(store, parent);
                 break;
             case KEY_VK_NV_EXTERNAL_COMPUTE_QUEUE:
-                emitExternalComputeQueuePropertiesNV(store, parent);
+                emitVkNVExternalComputeQueue(store, parent);
                 break;
             case KEY_VK_NV_EXTERNAL_MEMORY_RDMA:
-                emitExternalMemoryRDMAFeaturesNV(store, parent);
+                emitVkNVExternalMemoryRdma(store, parent);
                 break;
             case KEY_VK_NV_FRAGMENT_SHADING_RATE_ENUMS:
-                emitFragmentShadingRateEnumsFeaturesNV(store, parent);
+                emitVkNVFragmentShadingRateEnums(store, parent);
                 break;
             case KEY_VK_NV_INHERITED_VIEWPORT_SCISSOR:
-                emitInheritedViewportScissorFeaturesNV(store, parent);
+                emitVkNVInheritedViewportScissor(store, parent);
                 break;
             case KEY_VK_NV_LINEAR_COLOR_ATTACHMENT:
-                emitLinearColorAttachmentFeaturesNV(store, parent);
+                emitVkNVLinearColorAttachment(store, parent);
                 break;
             case KEY_VK_NV_MEMORY_DECOMPRESSION:
-                emitMemoryDecompressionFeaturesNV(store, parent);
+                emitVkNVMemoryDecompression(store, parent);
                 break;
             case KEY_VK_NV_MESH_SHADER:
-                emitMeshShaderFeaturesNV(store, parent);
+                emitVkNVMeshShader(store, parent);
                 break;
             case KEY_VK_NV_OPTICAL_FLOW:
-                emitOpticalFlowFeaturesNV(store, parent);
+                emitVkNVOpticalFlow(store, parent);
                 break;
             case KEY_VK_NV_PARTITIONED_ACCELERATION_STRUCTURE:
-                emitPartitionedAccelerationStructureFeaturesNV(store, parent);
+                emitVkNVPartitionedAccelerationStructure(store, parent);
                 break;
             case KEY_VK_NV_PER_STAGE_DESCRIPTOR_SET:
-                emitPerStageDescriptorSetFeaturesNV(store, parent);
+                emitVkNVPerStageDescriptorSet(store, parent);
                 break;
             case KEY_VK_NV_PRESENT_BARRIER:
-                emitPresentBarrierFeaturesNV(store, parent);
+                emitVkNVPresentBarrier(store, parent);
                 break;
             case KEY_VK_NV_RAW_ACCESS_CHAINS:
-                emitRawAccessChainsFeaturesNV(store, parent);
+                emitVkNVRawAccessChains(store, parent);
                 break;
             case KEY_VK_NV_RAY_TRACING:
-                emitRayTracingPropertiesNV(store, parent);
+                emitVkNVRayTracing(store, parent);
                 break;
             case KEY_VK_NV_RAY_TRACING_INVOCATION_REORDER:
-                emitRayTracingInvocationReorderPropertiesNV(store, parent);
+                emitVkNVRayTracingInvocationReorder(store, parent);
                 break;
             case KEY_VK_NV_RAY_TRACING_LINEAR_SWEPT_SPHERES:
-                emitRayTracingLinearSweptSpheresFeaturesNV(store, parent);
+                emitVkNVRayTracingLinearSweptSpheres(store, parent);
                 break;
             case KEY_VK_NV_RAY_TRACING_MOTION_BLUR:
-                emitRayTracingMotionBlurFeaturesNV(store, parent);
+                emitVkNVRayTracingMotionBlur(store, parent);
                 break;
             case KEY_VK_NV_RAY_TRACING_VALIDATION:
-                emitRayTracingValidationFeaturesNV(store, parent);
+                emitVkNVRayTracingValidation(store, parent);
                 break;
             case KEY_VK_NV_REPRESENTATIVE_FRAGMENT_TEST:
-                emitRepresentativeFragmentTestFeaturesNV(store, parent);
+                emitVkNVRepresentativeFragmentTest(store, parent);
                 break;
             case KEY_VK_NV_SCISSOR_EXCLUSIVE:
-                emitExclusiveScissorFeaturesNV(store, parent);
+                emitVkNVScissorExclusive(store, parent);
                 break;
             case KEY_VK_NV_SHADER_ATOMIC_FLOAT16_VECTOR:
-                emitShaderAtomicFloat16VectorFeaturesNV(store, parent);
+                emitVkNVShaderAtomicFloat16Vector(store, parent);
                 break;
             case KEY_VK_NV_SHADER_IMAGE_FOOTPRINT:
-                emitShaderImageFootprintFeaturesNV(store, parent);
+                emitVkNVShaderImageFootprint(store, parent);
                 break;
             case KEY_VK_NV_SHADER_SM_BUILTINS:
-                emitShaderSMBuiltinsPropertiesNV(store, parent);
+                emitVkNVShaderSmBuiltins(store, parent);
                 break;
             case KEY_VK_NV_SHADING_RATE_IMAGE:
-                emitShadingRateImageFeaturesNV(store, parent);
+                emitVkNVShadingRateImage(store, parent);
                 break;
             case KEY_VK_QCOM_FILTER_CUBIC_CLAMP:
-                emitCubicClampFeaturesQCOM(store, parent);
+                emitVkQCOMFilterCubicClamp(store, parent);
                 break;
             case KEY_VK_QCOM_FILTER_CUBIC_WEIGHTS:
-                emitCubicWeightsFeaturesQCOM(store, parent);
+                emitVkQCOMFilterCubicWeights(store, parent);
                 break;
             case KEY_VK_QCOM_FRAGMENT_DENSITY_MAP_OFFSET:
-                emitFragmentDensityMapOffsetFeaturesQCOM(store, parent);
+                emitVkQCOMFragmentDensityMapOffset(store, parent);
                 break;
             case KEY_VK_QCOM_IMAGE_PROCESSING:
-                emitImageProcessingFeaturesQCOM(store, parent);
+                emitVkQCOMImageProcessing(store, parent);
                 break;
             case KEY_VK_QCOM_IMAGE_PROCESSING2:
-                emitImageProcessing2FeaturesQCOM(store, parent);
+                emitVkQCOMImageProcessing2(store, parent);
                 break;
             case KEY_VK_QCOM_MULTIVIEW_PER_VIEW_RENDER_AREAS:
-                emitMultiviewPerViewRenderAreasFeaturesQCOM(store, parent);
+                emitVkQCOMMultiviewPerViewRenderAreas(store, parent);
                 break;
             case KEY_VK_QCOM_MULTIVIEW_PER_VIEW_VIEWPORTS:
-                emitMultiviewPerViewViewportsFeaturesQCOM(store, parent);
+                emitVkQCOMMultiviewPerViewViewports(store, parent);
                 break;
             case KEY_VK_QCOM_TILE_MEMORY_HEAP:
-                emitTileMemoryHeapFeaturesQCOM(store, parent);
+                emitVkQCOMTileMemoryHeap(store, parent);
                 break;
             case KEY_VK_QCOM_TILE_PROPERTIES:
-                emitTilePropertiesFeaturesQCOM(store, parent);
+                emitVkQCOMTileProperties(store, parent);
                 break;
             case KEY_VK_QCOM_TILE_SHADING:
-                emitTileShadingFeaturesQCOM(store, parent);
+                emitVkQCOMTileShading(store, parent);
                 break;
             case KEY_VK_QCOM_YCBCR_DEGAMMA:
-                emitYcbcrDegammaFeaturesQCOM(store, parent);
+                emitVkQCOMYcbcrDegamma(store, parent);
                 break;
             case KEY_VK_SEC_AMIGO_PROFILING:
-                emitAmigoProfilingFeaturesSEC(store, parent);
+                emitVkSECAmigoProfiling(store, parent);
                 break;
             case KEY_VK_VALVE_DESCRIPTOR_SET_HOST_MAPPING:
-                emitDescriptorSetHostMappingFeaturesVALVE(store, parent);
+                emitVkVALVEDescriptorSetHostMapping(store, parent);
                 break;
             case KEY_VK_VALVE_MUTABLE_DESCRIPTOR_TYPE:
-                emitMutableDescriptorTypeFeaturesVALVE(store, parent);
+                emitVkVALVEMutableDescriptorType(store, parent);
                 break;
 
         }

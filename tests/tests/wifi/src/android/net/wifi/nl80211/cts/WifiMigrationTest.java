@@ -31,6 +31,8 @@ import android.os.HandlerExecutor;
 import android.os.HandlerThread;
 import android.os.UserHandle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
@@ -38,6 +40,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -50,6 +53,9 @@ import java.util.function.IntConsumer;
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class WifiMigrationTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String TEST_SSID_UNQUOTED = "testSsid1";
     private static final int TEST_WAIT_DURATION_MS = 10_000;
 

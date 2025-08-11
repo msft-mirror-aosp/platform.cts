@@ -46,6 +46,8 @@ import android.os.HandlerExecutor;
 import android.os.HandlerThread;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.support.test.uiautomator.UiDevice;
 import android.util.Log;
 
@@ -62,6 +64,7 @@ import com.android.wifi.flags.Flags;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -85,6 +88,9 @@ import java.util.stream.Collectors;
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class WifiBackupRestoreTest extends WifiJUnit4TestBase {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String TAG = "WifiBackupRestoreTest";
     private static final String LEGACY_SUPP_CONF_FILE =
             "assets/BackupLegacyFormatSupplicantConf.txt";

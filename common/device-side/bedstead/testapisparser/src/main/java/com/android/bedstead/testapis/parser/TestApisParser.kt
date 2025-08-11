@@ -19,11 +19,16 @@ import com.android.bedstead.testapis.parser.signatures.ClassSignature
 import com.android.bedstead.testapis.parser.signatures.ConstructorSignature
 import com.android.bedstead.testapis.parser.signatures.MethodSignature
 import com.android.bedstead.testapis.parser.signatures.PackageSignature
+import com.android.tools.metalava.model.ArrayTypeItem
+import com.android.tools.metalava.model.BaseTypeVisitor
+import com.android.tools.metalava.model.TypeItem
+import com.android.tools.metalava.model.WildcardTypeItem
+import com.android.tools.metalava.model.text.ApiFile
+import com.android.tools.metalava.model.text.SignatureFile
+import com.google.common.collect.ImmutableList
 import com.google.common.io.Resources
 import java.io.IOException
 import java.nio.charset.StandardCharsets
-import java.util.Deque
-import java.util.LinkedList
 
 /**
  * Helper class to parse `test-current.txt` and fetch TestApis.
@@ -43,145 +48,128 @@ object TestApisParser {
         }
     }
 
+    private fun isGetter(
+        methodName: String,
+        parameterTypes: List<String>
+    ): Boolean {
+        // We only consider methods with zero parameters as true 'getters' since this is to
+        // convert them to a kotlin get property later on.
+        if (!parameterTypes.isEmpty()) {
+            return false
+        }
+
+        if (methodName.startsWith("get")) {
+            return Character.isUpperCase(methodName[3])
+        }
+        if (methodName.startsWith("is")) {
+            return Character.isUpperCase(methodName[2])
+        }
+
+        return false
+    }
+
+    private fun hasWildcard(item: TypeItem): Boolean {
+        var foundWildcard = false
+        val visitor = object : BaseTypeVisitor() {
+           override fun visitWildcardType(wildcardType: WildcardTypeItem) {
+                foundWildcard = true
+           }
+        }
+        item.accept(visitor)
+
+        return foundWildcard
+    }
+
+    private fun hasVarArgs(item: TypeItem): Boolean {
+        var foundVarArgs = false
+        val visitor = object : BaseTypeVisitor() {
+            override fun visitArrayType(arrayType: ArrayTypeItem) {
+                if (arrayType.isVarargs) {
+                    foundVarArgs = true
+                }
+            }
+        }
+        item.accept(visitor)
+
+        return foundVarArgs
+    }
+
     /**
      * Parse all TestApis into a `List` of [PackageSignature].
      */
     @JvmStatic
-    fun parse(): MutableList<PackageSignature?> {
-        val packageSignatures: MutableList<PackageSignature?> = ArrayList<PackageSignature?>()
+    fun parse(): List<PackageSignature> {
+        val signatureFile = SignatureFile.fromText(API_FILE, API_TXT)
+        val codebase = ApiFile.parseApi(listOf(signatureFile))
 
-        val lines = API_TXT.split("\n".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+        return codebase.getPackages().packages.map { pack ->
+            val packageName = pack.qualifiedName()
 
-        val stack: Deque<Char?> = LinkedList<Char?>()
+            val classSignatures = pack.allClasses().mapNotNull classLoop@{ clazz ->
+                // TODO(b/436548677): Just use fullName()
+                // ClassSignature already contains the package, but maintaining compatibility.
+                val className = packageName + "." + clazz.fullName()
 
-        var packageName: String? = null
-        var className: String? = null
-        var classSignatures: MutableList<ClassSignature?>? = null
-        var constructorSignature: ConstructorSignature? = null
-        var methodSignatures: MutableList<MethodSignature?>? = null
-
-        // Marks a class to be ignored as it has an unhandled case
-        // TODO(b/337769574): add support for generic types and enums
-        var ignoringClass = false
-        for (line in lines) {
-            try {
-                if (line.contains("enum ")) {
-                    stack.addFirst('{')
-                    continue
-                }
-                if (line.contains("enum_constant ")) {
-                    continue
+                // TODO(b/337769574): Add support for generic types.
+                if (clazz.typeParameterList.isNotEmpty()) {
+                    return@classLoop null
                 }
 
-                if (line.startsWith("package ")) {
-                    stack.addFirst('{')
+                val methods = clazz.methods().mapNotNull methodLoop@{ method ->
+                    val methodName = method.name()
 
-                    // package declaration
-                    packageName =
-                        line.replace("package".toRegex(), "")
-                            .replace("\\{".toRegex(), "")
-                            .trim { it <= ' ' }
-
-                    classSignatures = ArrayList<ClassSignature?>()
-                } else if (line.contains("class ")) {
-                    stack.addFirst('{')
-
-                    // class declaration
-                    className =
-                        packageName + "." + line.substring(line.indexOf("class ") + 6)
-                            .split(" ".toRegex())
-                            .dropLastWhile { it.isEmpty() }
-                            .toTypedArray()[0]
-
-                    if (className.contains("<")) {
-                        ignoringClass = true
-                        continue
+                    if (!method.modifiers.isPublic()) {
+                        return@methodLoop null
                     }
 
-                    methodSignatures = ArrayList<MethodSignature?>()
-                } else if (line.contains("interface ")) {
-                    stack.addFirst('{')
-
-                    // interface declaration
-                    className =
-                        packageName + "." + line.substring(line.indexOf("interface ") + 10)
-                            .split(" ".toRegex())
-                            .dropLastWhile { it.isEmpty() }
-                            .toTypedArray()[0]
-
-                    if (className.contains("<")) {
-                        ignoringClass = true
-                        continue
+                    if (method.modifiers.isAbstract()) {
+                        return@methodLoop null
                     }
 
-                    methodSignatures = ArrayList<MethodSignature?>()
-                } else if (line.contains("ctor ")) {
-                    if (ignoringClass) {
-                        continue
+                    // TODO(b/337769574): Add support for wildcards.
+                    if (hasWildcard(method.returnType())) {
+                        return@methodLoop null
                     }
 
-                    // We only care about public constructors for our case
-                    if (line.contains("public ")) {
-                        constructorSignature = ConstructorSignature.forString(className, line)
-                    }
-                } else if (line.contains("method ")) {
-                    if (ignoringClass) {
-                        continue
+                    if (method.parameters().any {hasWildcard(it.type())}) {
+                        return@methodLoop null
                     }
 
-                    // We only care about non-abstract methods and methods that do not return
-                    // generic types for our case
-                    if (line.contains("public ") &&
-                            !line.contains("abstract ") &&
-                            !line.contains("?")) {
-                        val methodSignature = MethodSignature.forApiString(
-                            className,
-                            line
-                        )
-                        if (!methodSignatures!!.contains(methodSignature)) {
-                            methodSignatures.add(methodSignature)
-                        }
+                    // TODO(b/337769574): Add support for var args.
+                    if (method.parameters().any {hasVarArgs(it.type())}) {
+                        return@methodLoop null
                     }
-                } else if (line.endsWith("}")) {
-                    stack.removeFirst()
 
-                    if (stack.isEmpty()) {
-                        val packageSignature = PackageSignature(
-                            packageName,
-                            classSignatures
-                        )
-                        if (!packageSignatures.contains(packageSignature)) {
-                            packageSignatures.add(packageSignature)
-                        }
-                    } else {
-                        if (ignoringClass) {
-                            ignoringClass = false
-                            continue
-                        }
+                    val parameterTypes = method.parameters().map{ it.type().toTypeString() }
+                    val returnTypeString = method.returnType().toTypeString()
+                    val returnType = MethodSignature.ReturnType(returnTypeString, null)
+                    val isStatic = method.modifiers.isStatic()
+                    val isGetter = isGetter(methodName, parameterTypes)
 
-                        val classSignature = ClassSignature(
-                            packageName,
-                            className,
-                            constructorSignature,
-                            methodSignatures
-                        )
-
-                        if (!classSignatures!!.contains(classSignature)) {
-                            classSignatures.add(classSignature)
-                        }
-
-                        constructorSignature = null
-                    }
+                    MethodSignature(
+                        className,
+                        methodName,
+                        returnType,
+                        ImmutableList.copyOf(parameterTypes),
+                        isStatic,
+                        isGetter
+                    )
                 }
-            } catch (e: NullPointerException) {
-                println(
-                    ("Invalid test-current.txt detected. Parsing test-current.txt to load " +
-                            "TestApis failed for the line: '" + line + "'. Run update-apis.sh" +
-                            " to reset the file.")
-                )
-            }
+
+                val constructor = clazz.constructors().firstOrNull { it.isPublic }
+                val constructorSignature = constructor?.let {
+                    val parameterTypes = constructor.parameters().map{ it.type().toTypeString() }
+
+                    ConstructorSignature(className, ImmutableList.copyOf(parameterTypes))
+                }
+
+                ClassSignature(packageName, className, constructorSignature, methods)
+            }.toList()
+
+            PackageSignature(
+                packageName,
+                classSignatures
+            )
         }
-
-        return packageSignatures
     }
 }

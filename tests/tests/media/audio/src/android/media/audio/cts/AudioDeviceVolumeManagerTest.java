@@ -74,13 +74,13 @@ public class AudioDeviceVolumeManagerTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    @Rule
-    public final AudioVolumeTestRule mAudioVolumeTestRule =
-            new AudioVolumeTestRule(InstrumentationRegistry.getInstrumentation().getContext());
-
     private AudioDeviceVolumeManager mADVmgr;
     private AudioManager mAm;
     private final HashMap<AudioDeviceAttributes, VolumeInfo> mPrevVolume = new HashMap<>();
+    private boolean mWasMutedMusic;
+    private boolean mWasMutedNotif;
+    private int mPrevVolMusic;
+    private int mPrevVolNotif;
     private boolean mUseFixedVolume;
     private boolean mIsTelevision;
     private boolean mIsSingleVolume;
@@ -185,6 +185,27 @@ public class AudioDeviceVolumeManagerTest {
         mPrevVolume.put(BT_DEV2, mADVmgr.getDeviceVolume(volMedia, BT_DEV2));
         mPrevVolume.put(BT_SCO_DEV, mADVmgr.getDeviceVolume(volMedia, BT_SCO_DEV));
         mPrevVolume.put(SPEAKER_DEV, mADVmgr.getDeviceVolume(volMedia, SPEAKER_DEV));
+
+        mPrevVolMusic = mAm.getStreamVolume(AudioManager.STREAM_MUSIC);
+        mWasMutedMusic = mAm.isStreamMute(AudioManager.STREAM_MUSIC);
+        mPrevVolNotif = mAm.getStreamVolume(AudioManager.STREAM_NOTIFICATION);
+        mWasMutedNotif = mAm.isStreamMute(AudioManager.STREAM_NOTIFICATION);
+
+        if (mWasMutedMusic) {
+            mAm.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_UNMUTE, 0);
+        }
+        mAm.setStreamVolume(
+                AudioManager.STREAM_MUSIC,
+                mAm.getStreamMaxVolume(AudioManager.STREAM_MUSIC) / 2,
+                0);
+
+        if (mWasMutedNotif) {
+            mAm.adjustStreamVolume(AudioManager.STREAM_NOTIFICATION, AudioManager.ADJUST_UNMUTE, 0);
+        }
+        mAm.setStreamVolume(
+                AudioManager.STREAM_NOTIFICATION,
+                mAm.getStreamMaxVolume(AudioManager.STREAM_NOTIFICATION) / 2,
+                0);
     }
 
     @After
@@ -194,6 +215,17 @@ public class AudioDeviceVolumeManagerTest {
         mADVmgr.setDeviceVolume(mPrevVolume.get(BT_DEV2), BT_DEV2);
         mADVmgr.setDeviceVolume(mPrevVolume.get(BT_SCO_DEV), BT_SCO_DEV);
         mADVmgr.setDeviceVolume(mPrevVolume.get(SPEAKER_DEV), SPEAKER_DEV);
+
+        mAm.setStreamVolume(AudioManager.STREAM_MUSIC, mPrevVolMusic, 0);
+        if (mWasMutedMusic) {
+            mAm.adjustStreamVolume(
+                    AudioManager.STREAM_MUSIC, AudioManager.ADJUST_MUTE, /* flags= */ 0);
+        }
+        mAm.setStreamVolume(AudioManager.STREAM_NOTIFICATION, mPrevVolNotif, 0);
+        if (mWasMutedNotif) {
+            mAm.adjustStreamVolume(
+                    AudioManager.STREAM_NOTIFICATION, AudioManager.ADJUST_MUTE, /* flags= */ 0);
+        }
 
         // clean up device behavior
         if (unifyAbsoluteVolumeManagement()) {

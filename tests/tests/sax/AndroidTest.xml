@@ -15,7 +15,7 @@
 -->
 <configuration description="Config for CTS SAX test cases">
     <option name="test-suite-tag" value="cts" />
-    <option name="config-descriptor:metadata" key="component" value="framework" />
+    <option name="config-descriptor:metadata" key="component" value="systems" />
     <option name="config-descriptor:metadata" key="parameter" value="multi_abi" />
     <!-- Test is eligible to run on Android Multiuser users other than SYSTEM.
          See source.android.com/devices/tech/admin/multi-user#user_types -->

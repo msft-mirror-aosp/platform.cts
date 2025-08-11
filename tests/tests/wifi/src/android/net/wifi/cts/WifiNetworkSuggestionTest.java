@@ -54,6 +54,8 @@ import android.os.Build;
 import android.os.ParcelUuid;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.support.test.uiautomator.UiDevice;
 import android.telephony.TelephonyManager;
 
@@ -73,6 +75,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -96,6 +99,9 @@ import java.util.concurrent.ScheduledExecutorService;
 @LargeTest
 @RunWith(AndroidJUnit4.class)
 public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String TAG = "WifiNetworkSuggestionTest";
 
     private static final String TEST_SSID = "testSsid";

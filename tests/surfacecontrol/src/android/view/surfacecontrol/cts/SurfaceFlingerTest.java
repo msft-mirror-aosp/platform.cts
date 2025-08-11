@@ -27,20 +27,19 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.server.wm.Condition;
 import android.server.wm.UiDeviceUtils;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
-import androidx.test.runner.AndroidJUnit4;
-
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.annotations.RequireSdkVersion;
+import com.android.compatibility.common.util.CtsDownstreamingTest;
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
-import com.android.compatibility.common.util.CtsDownstreamingTest;
 import com.android.graphics.surfaceflinger.flags.Flags;
-
-import com.android.bedstead.harrier.annotations.RequireSdkVersion;
-import com.android.bedstead.harrier.BedsteadJUnit4;
 
 import org.junit.After;
 import org.junit.Before;
@@ -54,6 +53,8 @@ import java.util.regex.Pattern;
 @RunWith(BedsteadJUnit4.class)
 @RequireSdkVersion(min = 36)
 public class SurfaceFlingerTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Rule
     public VirtualDeviceRule mVirtualDeviceRule =
