@@ -346,14 +346,6 @@ public interface Features {
     String SEARCH_EMBEDDING_MATCH_INFO = "SEARCH_EMBEDDING_MATCH_INFO";
 
     /**
-     * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
-     * android.app.appsearch.usagereporting.ActionAccumulator#create}.
-     */
-    // Due to lint checks, we cannot include the word "ACTION" in this value
-
-    String SEARCH_AND_CLICK_ACCUMULATOR = "SEARCH_AND_CLICK_ACCUMULATOR";
-
-    /**
      * Returns whether a feature is supported at run-time. Feature support depends on the feature in
      * question, the AppSearch backend being used and the Android version of the device.
      *
