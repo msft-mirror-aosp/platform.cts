@@ -89,7 +89,7 @@ static void refreshRateCallbackWithDisplayManager(int64_t vsyncPeriodNanos, void
 static std::string dumpSupportedRefreshPeriods() {
     std::stringstream ss;
     ss << "{ ";
-    for (const long& period : gSupportedRefreshPeriods) {
+    for (const long period : gSupportedRefreshPeriods) {
         ss << period << ",";
     }
     ss << "}";
