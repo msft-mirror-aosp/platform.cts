@@ -104,6 +104,10 @@ public class AudioPlaybackConfigurationTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
+    @Rule
+    public final AudioVolumeTestRule mAudioVolumeTestRule =
+            new AudioVolumeTestRule(getInstrumentation().getContext());
+
     private static final int TEST_TIMING_TOLERANCE_MS = 150;
     /** acceptable timeout for the time it takes for a prepared MediaPlayer to have an audio device
      * selected and reported when starting to play */
