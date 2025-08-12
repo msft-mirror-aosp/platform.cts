@@ -683,6 +683,9 @@ public final class MockIme extends InputMethodService {
                     case "getImeCaptionBarHeight": {
                         return mView.getRootWindowInsets().getInsets(captionBar()).bottom;
                     }
+                    case "getPid": {
+                        return Process.myPid();
+                    }
                     case "registerCustomImeBackCallback":
                     {
                         getWindow()
