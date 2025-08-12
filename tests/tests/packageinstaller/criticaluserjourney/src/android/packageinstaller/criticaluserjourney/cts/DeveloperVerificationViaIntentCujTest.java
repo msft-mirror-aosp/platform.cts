@@ -159,6 +159,24 @@ public class DeveloperVerificationViaIntentCujTest extends DeveloperVerification
     }
 
     @Test
+    public void newInstall_launchGrantPermission_policyClosed_NetworkFailure_userRetry_success()
+            throws Exception {
+        setDeveloperVerificationResult(
+                TEST_APP_PACKAGE_NAME,
+                DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_CLOSED,
+                RESPONSE_INCOMPLETE_NETWORK, // retry once
+                RESPONSE_INCOMPLETE_NETWORK, // retry twice
+                RESPONSE_COMPLETE_WITH_PASS);
+
+        startInstallationViaIntent();
+
+        grantPermissionAndRetryOnDeveloperVerificationDialog(
+                /* isAppUpdating= */ true, /* retryCount= */ 2);
+
+        assertTestPackageInstalled();
+    }
+
+    @Test
     public void update_launchGrantPermission_policyOpen_UnknownError_userAbort_failed()
             throws Exception {
         installTestPackage();
@@ -168,10 +186,13 @@ public class DeveloperVerificationViaIntentCujTest extends DeveloperVerification
                 DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_OPEN,
                 RESPONSE_INCOMPLETE_UNKNOWN);
 
-        startInstallationViaIntent();
+        startInstallationUpdateViaIntent();
 
         grantPermissionAndAbortOnDeveloperVerificationDialog(
                 /* isBypassAllowed= */ true, /* isAppUpdating= */ true);
+
+        // Assert that the currently installed version is still the old version
+        assertTestPackageInstalled();
     }
 
     @Test
@@ -184,10 +205,13 @@ public class DeveloperVerificationViaIntentCujTest extends DeveloperVerification
                 DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_OPEN,
                 RESPONSE_INCOMPLETE_NETWORK);
 
-        startInstallationViaIntent();
+        startInstallationUpdateViaIntent();
 
         grantPermissionAndAbortOnDeveloperVerificationDialog(
                 /* isBypassAllowed= */ true, /* isAppUpdating= */ true);
+
+        // Assert that the currently installed version is still the old version
+        assertTestPackageInstalled();
     }
 
     @Test
@@ -200,10 +224,13 @@ public class DeveloperVerificationViaIntentCujTest extends DeveloperVerification
                 DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_OPEN,
                 RESPONSE_COMPLETE_WITH_REJECT);
 
-        startInstallationViaIntent();
+        startInstallationUpdateViaIntent();
         // Actual developer verification failure cannot be bypassed
         grantPermissionAndAbortOnDeveloperVerificationDialog(
                 /* isBypassAllowed= */ false, /* isAppUpdating= */ true);
+
+        // Assert that the currently installed version is still the old version
+        assertTestPackageInstalled();
     }
 
     @Test
@@ -216,9 +243,11 @@ public class DeveloperVerificationViaIntentCujTest extends DeveloperVerification
                 DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_OPEN,
                 RESPONSE_INCOMPLETE_UNKNOWN);
 
-        startInstallationViaIntent();
+        startInstallationUpdateViaIntent();
 
         grantPermissionAndBypassOnDeveloperVerificationDialog(/* isAppUpdating= */ true);
+
+        assertTestPackageVersion2Installed();
     }
 
     @Test
@@ -231,9 +260,11 @@ public class DeveloperVerificationViaIntentCujTest extends DeveloperVerification
                 DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_OPEN,
                 RESPONSE_INCOMPLETE_NETWORK);
 
-        startInstallationViaIntent();
+        startInstallationUpdateViaIntent();
 
         grantPermissionAndBypassOnDeveloperVerificationDialog(/* isAppUpdating= */ true);
+
+        assertTestPackageVersion2Installed();
     }
 
     @Test
@@ -246,10 +277,13 @@ public class DeveloperVerificationViaIntentCujTest extends DeveloperVerification
                 DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_CLOSED,
                 RESPONSE_INCOMPLETE_UNKNOWN);
 
-        startInstallationViaIntent();
+        startInstallationUpdateViaIntent();
 
         grantPermissionAndAbortOnDeveloperVerificationDialog(
                 /* isBypassAllowed= */ false, /* isAppUpdating= */ true);
+
+        // Assert that the currently installed version is still the old version
+        assertTestPackageInstalled();
     }
 
     @Test
@@ -262,10 +296,13 @@ public class DeveloperVerificationViaIntentCujTest extends DeveloperVerification
                 DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_CLOSED,
                 RESPONSE_INCOMPLETE_NETWORK);
 
-        startInstallationViaIntent();
+        startInstallationUpdateViaIntent();
 
         grantPermissionAndAbortOnDeveloperVerificationDialog(
                 /* isBypassAllowed= */ false, /* isAppUpdating= */ true);
+
+        // Assert that the currently installed version is still the old version
+        assertTestPackageInstalled();
     }
 
     @Test
@@ -278,9 +315,32 @@ public class DeveloperVerificationViaIntentCujTest extends DeveloperVerification
                 DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_CLOSED,
                 RESPONSE_COMPLETE_WITH_REJECT);
 
-        startInstallationViaIntent();
+        startInstallationUpdateViaIntent();
 
         grantPermissionAndAbortOnDeveloperVerificationDialog(
                 /* isBypassAllowed= */ false, /* isAppUpdating= */ true);
+
+        // Assert that the currently installed version is still the old version
+        assertTestPackageInstalled();
+    }
+
+    @Test
+    public void update_launchGrantPermission_policyClosed_NetworkFailure_userRetry_success()
+            throws Exception {
+        installTestPackage();
+
+        setDeveloperVerificationResult(
+                TEST_APP_PACKAGE_NAME,
+                DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_CLOSED,
+                RESPONSE_INCOMPLETE_NETWORK, // retry once
+                RESPONSE_INCOMPLETE_NETWORK, // retry twice
+                RESPONSE_COMPLETE_WITH_PASS);
+
+        startInstallationUpdateViaIntent();
+
+        grantPermissionAndRetryOnDeveloperVerificationDialog(
+                /* isAppUpdating= */ true, /* retryCount= */ 2);
+
+        assertTestPackageVersion2Installed();
     }
 }
