@@ -428,7 +428,7 @@ public class CallLogTest extends InstrumentationTestCase {
             String uuid = "testUid123";
             Uri newlyCreatedCallLogRow =
                     mContentResolver.insert(
-                            CallLog.Calls.CONTENT_URI, createCallLogIntegrationUuid(uuid));
+                            Calls.CONTENT_URI_WITH_VOIP_CALLS, createCallLogIntegrationUuid(uuid));
             // fetch the newly inserted call log and assert the values
             Cursor cursor =
                     mContentResolver.query(
