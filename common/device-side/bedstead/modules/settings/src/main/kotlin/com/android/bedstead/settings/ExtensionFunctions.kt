@@ -16,6 +16,12 @@
 package com.android.bedstead.settings
 
 import android.service.settings.preferences.SettingsPreferenceValue
+import android.service.settings.preferences.SettingsPreferenceValue.Builder
+import android.service.settings.preferences.SettingsPreferenceValue.TYPE_BOOLEAN
+import android.service.settings.preferences.SettingsPreferenceValue.TYPE_DOUBLE
+import android.service.settings.preferences.SettingsPreferenceValue.TYPE_INT
+import android.service.settings.preferences.SettingsPreferenceValue.TYPE_LONG
+import android.service.settings.preferences.SettingsPreferenceValue.TYPE_STRING
 
 /**
  * Creates a copy with an arbitrary value that is always different than the original one.
@@ -24,32 +30,38 @@ import android.service.settings.preferences.SettingsPreferenceValue
  * different than the original one.
  */
 fun SettingsPreferenceValue.arbitraryValue(): SettingsPreferenceValue {
-    val builder = SettingsPreferenceValue.Builder(type)
+    val builder = Builder(type)
     return when (type) {
-        SettingsPreferenceValue.TYPE_BOOLEAN -> {
-            builder.setBooleanValue(booleanValue.not()).build()
-        }
-
-        SettingsPreferenceValue.TYPE_DOUBLE -> {
-            if (doubleValue == 2.0) {
-                return builder.setDoubleValue(1.0).build()
+        TYPE_BOOLEAN -> builder.setBooleanValue(booleanValue.not()).build()
+        TYPE_DOUBLE -> {
+            return if (doubleValue == 2.0) {
+                builder.setDoubleValue(1.0).build()
             } else {
-                return builder.setDoubleValue(2.0).build()
+                builder.setDoubleValue(2.0).build()
             }
         }
 
-        SettingsPreferenceValue.TYPE_INT -> {
-            builder.setIntValue(intValue + 1).build()
-        }
+        TYPE_INT -> builder.setIntValue(intValue + 1).build()
+        TYPE_LONG -> builder.setLongValue(longValue + 1L).build()
+        TYPE_STRING -> builder.setStringValue(stringValue + RANDOM_STRING).build()
+        else -> throw IllegalStateException("unsupported type: $type")
+    }
+}
 
-        SettingsPreferenceValue.TYPE_LONG -> {
-            builder.setLongValue(longValue + 1L).build()
-        }
+/**
+ * Compares [SettingsPreferenceValue] values considering its type.
+ */
+fun SettingsPreferenceValue.isEqualTo(second: SettingsPreferenceValue?): Boolean {
+    if (type != second?.type) {
+        return false
+    }
 
-        SettingsPreferenceValue.TYPE_STRING -> {
-            builder.setStringValue(stringValue + RANDOM_STRING).build()
-        }
-
+    return when (type) {
+        TYPE_BOOLEAN -> booleanValue == second.booleanValue
+        TYPE_DOUBLE -> doubleValue == second.doubleValue
+        TYPE_INT -> intValue == second.intValue
+        TYPE_LONG -> longValue == second.longValue
+        TYPE_STRING -> stringValue == second.stringValue
         else -> throw IllegalStateException("unsupported type: $type")
     }
 }

@@ -22,8 +22,6 @@ import android.service.settings.preferences.SettingsPreferenceMetadata.EXPECT_PO
 import android.service.settings.preferences.SettingsPreferenceMetadata.NO_SENSITIVITY
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
-import com.android.bedstead.settings.SettingsPreferenceMetadataParameter.Companion.PREFERENCE_FILTER_READ_PERMISSIONS_NOT_EMPTY
-import com.android.bedstead.settings.SettingsPreferenceMetadataParameter.Companion.PREFERENCE_FILTER_WRITE_PERMISSIONS_NOT_EMPTY
 import com.google.common.truth.Truth.assertThat
 import org.junit.ClassRule
 import org.junit.Rule
@@ -31,12 +29,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
-class NotEmptyPermissionTest {
+class HappyPathSettingsPreferenceServiceClientTest {
 
     @Test
-    fun getValueResultWhenReadPermissionsNotEmpty_ResultOKReturned(
+    fun getValueResult_ResultOKReturned(
         @SettingsPreferenceMetadataParameter(
-            otherFilters = [PREFERENCE_FILTER_READ_PERMISSIONS_NOT_EMPTY],
             skipUnsupportedPreferences = true
         )
         argument: SettingsPreferenceMetadata
@@ -50,10 +47,9 @@ class NotEmptyPermissionTest {
     }
 
     @Test
-    fun setValueResultWhenWritePermissionsNotEmpty_ResultOKReturned(
+    fun setValueResult_ResultOKReturnedAndTheValueIsSet(
         @SettingsPreferenceMetadataParameter(
             writeSensitivity = [NO_SENSITIVITY, EXPECT_POST_CONFIRMATION],
-            otherFilters = [PREFERENCE_FILTER_WRITE_PERMISSIONS_NOT_EMPTY],
             skipUnsupportedPreferences = true
         )
         argument: SettingsPreferenceMetadata
@@ -61,16 +57,23 @@ class NotEmptyPermissionTest {
         val getValueResult = deviceState
             .getSettingsPreferenceRepository()
             .getValueResult(argument, grantRequiredPermissions = true)
-
+        val arbitraryValue = getValueResult.value!!.arbitraryValue()
         val setValueResult = deviceState
             .getSettingsPreferenceRepository()
             .setValueResult(
                 argument,
-                getValueResult.value!!.arbitraryValue(),
+                arbitraryValue,
                 grantRequiredPermissions = true
             )
 
         assertThat(setValueResult.resultCode).isEqualTo(SetValueResult.RESULT_OK)
+
+        val secondResult = deviceState
+            .getSettingsPreferenceRepository()
+            .getValueResult(argument, grantRequiredPermissions = true)
+
+        assertThat(secondResult.resultCode).isEqualTo(GetValueResult.RESULT_OK)
+        assertThat(arbitraryValue.isEqualTo(secondResult.value)).isTrue()
     }
 
     companion object {
