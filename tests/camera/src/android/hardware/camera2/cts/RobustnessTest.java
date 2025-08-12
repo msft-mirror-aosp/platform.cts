@@ -84,6 +84,8 @@ import android.media.Image;
 import android.media.ImageReader;
 import android.media.ImageWriter;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.util.Pair;
 import android.util.Size;
@@ -94,6 +96,7 @@ import com.android.internal.camera.flags.Flags;
 
 import com.google.common.collect.ImmutableList;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -111,6 +114,9 @@ import java.util.Set;
 
 @RunWith(Parameterized.class)
 public class RobustnessTest extends Camera2AndroidTestCase {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String TAG = "RobustnessTest";
     private static final boolean VERBOSE = Log.isLoggable(TAG, Log.VERBOSE);
 

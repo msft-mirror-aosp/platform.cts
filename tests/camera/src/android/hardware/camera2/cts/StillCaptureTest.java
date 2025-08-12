@@ -43,6 +43,8 @@ import android.media.ImageReader;
 import android.os.ConditionVariable;
 import android.platform.test.annotations.DesktopTest;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.util.Pair;
 import android.util.Range;
@@ -56,6 +58,7 @@ import com.android.internal.camera.flags.Flags;
 
 import junit.framework.Assert;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -69,6 +72,9 @@ import java.util.Set;
 @DesktopTest(cujs = {"b/420441751"})
 @RunWith(Parameterized.class)
 public class StillCaptureTest extends Camera2SurfaceViewTestCase {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String TAG = "StillCaptureTest";
     private static final boolean VERBOSE = Log.isLoggable(TAG, Log.VERBOSE);
     private static final boolean DEBUG = Log.isLoggable(TAG, Log.DEBUG);
@@ -451,8 +457,11 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
                 Log.i(TAG, "Testing raw+JPEG capture for Camera " + cameraIdsUnderTest[i]);
                 if (!mAllStaticInfo.get(cameraIdsUnderTest[i]).isCapabilitySupported(
                         CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_RAW)) {
-                    Log.i(TAG, "RAW capability is not supported in camera " + cameraIdsUnderTest[i] +
-                            ". Skip the test.");
+                    Log.i(
+                            TAG,
+                            "RAW capability is not supported in camera "
+                                    + cameraIdsUnderTest[i]
+                                    + ". Skip the test.");
                     continue;
                 }
 
@@ -481,8 +490,11 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
                 Log.i(TAG, "Testing raw+JPEG ZSL capture for Camera " + cameraIdsUnderTest[i]);
                 if (!mAllStaticInfo.get(cameraIdsUnderTest[i]).isCapabilitySupported(
                         CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_RAW)) {
-                    Log.i(TAG, "RAW capability is not supported in camera " + cameraIdsUnderTest[i] +
-                            ". Skip the test.");
+                    Log.i(
+                            TAG,
+                            "RAW capability is not supported in camera "
+                                    + cameraIdsUnderTest[i]
+                                    + ". Skip the test.");
                     continue;
                 }
                 openDevice(cameraIdsUnderTest[i]);
