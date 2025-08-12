@@ -76,17 +76,21 @@ public class HDRDecoderTest extends HDRDecoderTestBase {
     @Parameterized.Parameter(6)
     public boolean mMetaDataInContainer;
 
+    private boolean mIsPass = true;
+
+    private StringBuilder mMessage = new StringBuilder();
+
     private static int getHdrProfile(String mediaType, boolean dynamic) {
         int profile = 0;
         if (MediaFormat.MIMETYPE_VIDEO_HEVC.equals(mediaType)) {
             profile = dynamic ? MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10HDR10Plus
-                    : MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10HDR10;
+                              : MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10HDR10;
         } else if (MediaFormat.MIMETYPE_VIDEO_VP9.equals(mediaType)) {
             profile = dynamic ? MediaCodecInfo.CodecProfileLevel.VP9Profile2HDR10Plus
-                    : MediaCodecInfo.CodecProfileLevel.VP9Profile2HDR;
+                              : MediaCodecInfo.CodecProfileLevel.VP9Profile2HDR;
         } else if (MediaFormat.MIMETYPE_VIDEO_AV1.equals(mediaType)) {
             profile = dynamic ? MediaCodecInfo.CodecProfileLevel.AV1ProfileMain10HDR10Plus
-                    : MediaCodecInfo.CodecProfileLevel.AV1ProfileMain10HDR10;
+                              : MediaCodecInfo.CodecProfileLevel.AV1ProfileMain10HDR10;
         } else {
             Log.e(TAG, "Unsupported mediaType " + mediaType);
         }
@@ -122,7 +126,7 @@ public class HDRDecoderTest extends HDRDecoderTestBase {
 
     @Parameterized.Parameters(name = "{index}_{0}_{1}_{2}")
     public static Collection<Object[]> input() {
-        final List<Object[]> exhaustiveArgsList = Arrays.asList(new Object[][]{
+        final List<Object[]> exhaustiveArgsList = Arrays.asList(new Object[][] {
                 {MediaFormat.MIMETYPE_VIDEO_AV1, AV1_HDR_RES, AV1_HDR_STATIC_INFO, null, false},
                 {MediaFormat.MIMETYPE_VIDEO_HEVC, H265_HDR10_RES, H265_HDR10_STATIC_INFO, null,
                         false},
@@ -136,27 +140,24 @@ public class HDRDecoderTest extends HDRDecoderTestBase {
         return prepareParamList(exhaustiveArgsList);
     }
 
-    private void verifyHdrStaticInfo(String reason, MediaFormat format, String pattern) {
-        ByteBuffer staticMetadataBuffer = format.containsKey("hdr-static-info") ?
-                format.getByteBuffer("hdr-static-info") : null;
-        assertTrue(reason + ": empty",
-                staticMetadataBuffer != null && staticMetadataBuffer.remaining() > 0);
-        assertTrue(reason + ": mismatch",
-                Arrays.equals(loadByteArrayFromString(pattern), staticMetadataBuffer.array()));
-    }
-
-    private void verifyHdrDynamicInfo(String reason, MediaFormat format, String pattern) {
-        ByteBuffer hdr10PlusInfoBuffer = format.containsKey(MediaFormat.KEY_HDR10_PLUS_INFO) ?
-                format.getByteBuffer(MediaFormat.KEY_HDR10_PLUS_INFO) : null;
-        assertTrue(reason + ":empty",
-                hdr10PlusInfoBuffer != null && hdr10PlusInfoBuffer.remaining() > 0);
-        assertTrue(reason + ": mismatch",
-                Arrays.equals(loadByteArrayFromString(pattern), hdr10PlusInfoBuffer.array()));
+    private void verifyHdrMetadata(String reason, MediaFormat format, String key, String pattern) {
+        ByteBuffer testBuffer = format.getByteBuffer(key, null);
+        if (testBuffer == null || testBuffer.remaining() <= 0) {
+            mIsPass = false;
+            mMessage.append(reason + ": empty or null \n");
+            return;
+        }
+        ByteBuffer refBuffer = ByteBuffer.wrap(loadByteArrayFromString(pattern));
+        if (!refBuffer.equals(testBuffer)) {
+            mIsPass = false;
+            mMessage.append(reason + ": mismatch \n");
+            return;
+        }
     }
 
     @CddTest(requirements = {"5.3.5/C-3-1", "5.3.7/C-4-1", "5.3.9/C-3-1"})
     @ApiTest(apis = {"android.media.MediaFormat#KEY_HDR_STATIC_INFO",
-            "android.media.MediaFormat#KEY_HDR10_PLUS_INFO"})
+                     "android.media.MediaFormat#KEY_HDR10_PLUS_INFO"})
     @Test
     public void testHdrMetadata() throws Exception {
         AssetFileDescriptor infd = null;
@@ -176,11 +177,11 @@ public class HDRDecoderTest extends HDRDecoderTestBase {
             }
         }
 
-        assertTrue("Extractor failed to extract video track",
-                format != null && trackIndex >= 0);
+        assertTrue("Extractor failed to extract video track", format != null && trackIndex >= 0);
         if (mMetaDataInContainer) {
-            verifyHdrStaticInfo("Extractor failed to extract static info", format,
-                    mHdrStaticInfo);
+            verifyHdrMetadata("Extractor failed to extract static info", format,
+                    MediaFormat.KEY_HDR_STATIC_INFO, mHdrStaticInfo);
+            assertTrue(mMessage.toString(), mIsPass);
         }
 
         mExtractor.selectTrack(trackIndex);
@@ -198,72 +199,68 @@ public class HDRDecoderTest extends HDRDecoderTestBase {
         mDecoder = MediaCodec.createByCodecName(mCodecName);
         mDecoder.setCallback(new MediaCodec.Callback() {
             boolean mInputEOS;
-            boolean mOutputReceived;
+            boolean mOutputEOS;
             int mInputCount;
             int mOutputCount;
 
             @Override
-            public void onOutputBufferAvailable(
-                    MediaCodec codec, int index, BufferInfo info) {
-                if (mOutputReceived) {
-                    return;
-                }
+            public void onOutputBufferAvailable(MediaCodec codec, int index, BufferInfo info) {
+                if (info.size > 0) {
+                    MediaFormat bufferFormat = codec.getOutputFormat(index);
+                    Log.i(TAG, "got output buffer: format " + bufferFormat);
 
-                MediaFormat bufferFormat = codec.getOutputFormat(index);
-                Log.i(TAG, "got output buffer: format " + bufferFormat);
-
-                verifyHdrStaticInfo("Output buffer has wrong static info",
-                        bufferFormat, mHdrStaticInfo);
-
-                if (!dynamic) {
-                    codec.releaseOutputBuffer(index,  true);
-
-                    mOutputReceived = true;
-                    latch.countDown();
-                } else {
-                    ByteBuffer hdr10plus =
-                            bufferFormat.containsKey(MediaFormat.KEY_HDR10_PLUS_INFO)
-                            ? bufferFormat.getByteBuffer(MediaFormat.KEY_HDR10_PLUS_INFO)
-                            : null;
-
-                    verifyHdrDynamicInfo("Output buffer has wrong hdr10+ info",
-                            bufferFormat, mHdrDynamicInfo[mOutputCount]);
-
-                    codec.releaseOutputBuffer(index,  true);
-
-                    mOutputCount++;
-                    if (mOutputCount >= mHdrDynamicInfo.length) {
-                        mOutputReceived = true;
-                        latch.countDown();
+                    verifyHdrMetadata("Output buffer format has wrong hdr static info",
+                            bufferFormat, MediaFormat.KEY_HDR_STATIC_INFO, mHdrStaticInfo);
+                    if (dynamic) {
+                        verifyHdrMetadata("Output buffer format has wrong hdr10+ info",
+                                bufferFormat, MediaFormat.KEY_HDR10_PLUS_INFO,
+                                mHdrDynamicInfo[mOutputCount]);
                     }
+                    mOutputCount++;
+                }
+                codec.releaseOutputBuffer(index, true);
+                if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                    mOutputEOS = true;
+                    if (mInputCount != mOutputCount) {
+                        mIsPass = false;
+                        mMessage.append(String.format(
+                                "Decoder input count %d, output count %d are not identical\n",
+                                mInputCount, mOutputCount));
+                    }
+                }
+                if (mOutputEOS || !mIsPass) {
+                    latch.countDown();
                 }
             }
 
             @Override
             public void onInputBufferAvailable(MediaCodec codec, int index) {
-                // keep queuing until input EOS, or first output buffer received.
-                if (mInputEOS || mOutputReceived) {
+                // keep queuing until input EOS.
+                if (mInputEOS) {
                     return;
                 }
 
                 ByteBuffer inputBuffer = codec.getInputBuffer(index);
-
                 int size = mExtractor.readSampleData(inputBuffer, 0);
                 long timestamp = mExtractor.getSampleTime();
                 boolean hasSamples = mExtractor.advance();
 
-                if (dynamic && mMetaDataInContainer) {
-                    final Bundle params = new Bundle();
-                    // TODO: extractor currently doesn't extract the dynamic metadata.
-                    // Send in the test pattern for now to test the metadata propagation.
-                    byte[] info = loadByteArrayFromString(mHdrDynamicInfo[mInputCount]);
-                    params.putByteArray(MediaFormat.KEY_HDR10_PLUS_INFO, info);
-                    codec.setParameters(params);
-                    mInputCount++;
-                    if (mInputCount >= mHdrDynamicInfo.length) {
+                if (dynamic) {
+                    if (mMetaDataInContainer) {
+                        final Bundle params = new Bundle();
+                        // TODO: extractor currently doesn't extract the dynamic metadata.
+                        // Send in the test pattern for now to test the metadata propagation.
+                        byte[] info = loadByteArrayFromString(mHdrDynamicInfo[mInputCount]);
+                        params.putByteArray(MediaFormat.KEY_HDR10_PLUS_INFO, info);
+                        codec.setParameters(params);
+                    }
+                    if ((mInputCount + 1) >= mHdrDynamicInfo.length) {
                         mInputEOS = true;
                     }
+                } else {
+                    mInputEOS = true;
                 }
+                mInputCount++;
                 int flags = (mInputEOS || !hasSamples) ? MediaCodec.BUFFER_FLAG_END_OF_STREAM : 0;
                 codec.queueInputBuffer(index, 0, size, timestamp, flags);
             }
@@ -276,11 +273,11 @@ public class HDRDecoderTest extends HDRDecoderTestBase {
             @Override
             public void onOutputFormatChanged(MediaCodec codec, MediaFormat format) {
                 Log.i(TAG, "got output format: " + format);
-                verifyHdrStaticInfo("Output format has wrong static info",
-                        format, mHdrStaticInfo);
+                verifyHdrMetadata("Output format has wrong static info", format,
+                        MediaFormat.KEY_HDR_STATIC_INFO, mHdrStaticInfo);
             }
         });
-        mDecoder.configure(format, surface, null/*crypto*/, 0/*flags*/);
+        mDecoder.configure(format, surface, null /*crypto*/, 0 /*flags*/);
         mDecoder.start();
         try {
             assertTrue(latch.await(2000, TimeUnit.MILLISECONDS));
@@ -288,5 +285,6 @@ public class HDRDecoderTest extends HDRDecoderTestBase {
             fail("playback interrupted");
         }
         mDecoder.stop();
+        assertTrue("Test encountered following errors: " + mMessage, mIsPass);
     }
 }
