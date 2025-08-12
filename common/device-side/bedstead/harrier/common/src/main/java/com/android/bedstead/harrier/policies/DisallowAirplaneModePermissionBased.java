@@ -17,20 +17,15 @@
 package com.android.bedstead.harrier.policies;
 
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_GLOBALLY;
-import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_ACROSS_USERS;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_AIRPLANE_MODE;
 
 import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
 
-/** Policy related to setting {@code DISALLOW_AIRPLANE_MODE} */
-@EnterprisePolicy(
-        permissions = {
-            @EnterprisePolicy.Permission(
-                    appliedWith = {
-                        MANAGE_DEVICE_POLICY_AIRPLANE_MODE,
-                        MANAGE_DEVICE_POLICY_ACROSS_USERS
-                    },
-                    appliesTo = APPLIES_GLOBALLY)
-        })
+/**
+ * Policy related to setting {@code DISALLOW_AIRPLANE_MODE}
+ */
+@EnterprisePolicy(permissions = @EnterprisePolicy.Permission(
+                appliedWith = MANAGE_DEVICE_POLICY_AIRPLANE_MODE, appliesTo = APPLIES_GLOBALLY))
 // TODO(b/278869421): Add support for cross-user permissions.
-public final class DisallowAirplaneModePermissionBased {}
+public final class DisallowAirplaneModePermissionBased {
+}
