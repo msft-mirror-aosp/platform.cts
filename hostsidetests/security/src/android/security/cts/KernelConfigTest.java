@@ -16,13 +16,17 @@
 
 package android.security.cts;
 
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.CpuFeatures;
 import com.android.compatibility.common.util.PropertyUtil;
 import com.android.tradefed.build.IBuildInfo;
+import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
@@ -34,11 +38,16 @@ import org.junit.runner.RunWith;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.text.ParseException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
@@ -97,6 +106,83 @@ public class KernelConfigTest extends BaseHostJUnit4Test {
     }
 
     /**
+     * Retrieves and parses the content of /proc/cmdline from the device.
+     *
+     * <p>This retrieves the Linux kernel's cmdline, then parses it into a Map. The keys and values
+     * are processed as per the Linux kernel so that the right-most value of duplicate keys take
+     * precedence. Keys are also converted so that dashes become underscores since the Kernel
+     * doesn't differentiate between the two.
+     *
+     * @param device The ITestDevice to retrieve the cmdline from.
+     * @return A Map of options and their values, where each key is from /proc/cmdline. The value
+     *     may be an empty String if the command line option did not have a value.
+     * @throws IOException if the /proc/cmdline file does not exist or cannot be retrieved.
+     * @throws ParseException if /proc/cmdline could not be successfully parsed.
+     */
+    private static Map<String, String> getDeviceCmdline(ITestDevice device)
+            throws IOException, ParseException {
+        String cmdline = null;
+
+        try {
+            final String PROC_CMDLINE = "/proc/cmdline";
+
+            if (!device.doesFileExist(PROC_CMDLINE)) {
+                throw new FileNotFoundException();
+            }
+
+            cmdline = device.pullFileContents(PROC_CMDLINE);
+            if (cmdline == null) {
+                throw new IOException("failed to retrieve " + PROC_CMDLINE);
+            }
+        } catch (DeviceNotAvailableException dnae) {
+            throw new IOException(dnae);
+        }
+
+        Map<String, String> resultMap = new HashMap<>();
+
+        /* Matcher for one of three option forms:
+         *  param="value"
+         *  param=value
+         *  param
+         */
+        Pattern opt =
+                Pattern.compile(
+                        "^(?<key>[^ =]+)"
+                                + "((=\"(?<qvalue>[^\"]+)\")|"
+                                + "(=(?<value>[^\"][^ ]*))|"
+                                + ")"
+                                + "(?<remainder>.*)$");
+
+        cmdline = cmdline.trim();
+
+        /* Parse until empty or stop at --, as per the Kernel parser */
+        while (cmdline != null && cmdline.length() > 0 && !cmdline.startsWith("--")) {
+            Matcher m = opt.matcher(cmdline);
+            if (m.matches()) {
+                /* Linux kernel does not differentiate underscore and dash */
+                String key = m.group("key").replace('-', '_');
+
+                String value = m.group("qvalue");
+                if (value == null) value = m.group("value");
+                if (value == null) value = "";
+
+                /* Add, replacing any previous value, per kernel precedence */
+                resultMap.put(key, value);
+
+                cmdline = m.group("remainder");
+                if (cmdline != null) {
+                    cmdline = cmdline.trim();
+                }
+
+            } else {
+                throw new ParseException("Failed to parse cmdline '" + cmdline + "'", 0);
+            }
+        }
+
+        return resultMap;
+    }
+
+    /**
      * Test that the kernel has Stack Protector Strong enabled.
      *
      * @throws Exception
@@ -122,17 +208,30 @@ public class KernelConfigTest extends BaseHostJUnit4Test {
         if (configSet.contains("CONFIG_UH_RKP=y"))
             return;
 
-        assertTrue("Linux kernel must have RO data enabled: " +
-                "CONFIG_DEBUG_RODATA=y or CONFIG_STRICT_KERNEL_RWX=y",
-                configSet.contains("CONFIG_DEBUG_RODATA=y") ||
+        assertTrue("Linux kernel must have RO data enabled: CONFIG_STRICT_KERNEL_RWX=y",
                 configSet.contains("CONFIG_STRICT_KERNEL_RWX=y"));
 
         if (configSet.contains("CONFIG_MODULES=y")) {
             assertTrue("Linux kernel modules must also have RO data enabled: " +
-                    "CONFIG_DEBUG_SET_MODULE_RONX=y or CONFIG_STRICT_MODULE_RWX=y",
-                    configSet.contains("CONFIG_DEBUG_SET_MODULE_RONX=y") ||
+                    "CONFIG_STRICT_MODULE_RWX=y",
                     configSet.contains("CONFIG_STRICT_MODULE_RWX=y"));
         }
+
+        /* Try to retrieve the /proc/cmdline */
+        Map<String, String> cmdlineMap = null;
+        try {
+            cmdlineMap = getDeviceCmdline(mDevice);
+        } catch (IOException e) {
+            /* May not be retrievable before 36.1 */
+            if (PropertyUtil.getFirstApiLevel(mDevice) <= 36) {
+                assumeNotNull(cmdlineMap);
+            } else {
+                fail("/proc/cmdline should be accessible to adbd: " + e.getMessage());
+            }
+        }
+
+        String rodata = cmdlineMap.getOrDefault("rodata", "");
+        assertNotEquals("Linux kernel must have RO data enabled", "off", rodata);
     }
 
     /**

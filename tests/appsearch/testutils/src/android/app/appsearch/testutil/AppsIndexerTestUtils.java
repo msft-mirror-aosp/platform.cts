@@ -16,13 +16,71 @@
 
 package android.app.appsearch.testutil;
 
-import android.app.appsearch.GenericDocument;
+import static com.google.common.truth.Truth.assertThat;
 
-/** Constants for AppFunction indexer tests. */
-public final class AppFunctionConstants {
+import android.Manifest;
+import android.app.appsearch.GenericDocument;
+import android.app.appsearch.GlobalSearchSessionShim;
+import android.app.appsearch.SearchResult;
+import android.app.appsearch.SearchResultsShim;
+import android.app.appsearch.SearchSpec;
+import android.content.ComponentName;
+import android.content.Context;
+import android.util.ArrayMap;
+
+import androidx.annotation.NonNull;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import com.android.compatibility.common.util.SystemUtil;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+
+/** Utility class providing constants and helper methods for AppsIndexer tests. */
+public final class AppsIndexerTestUtils {
+    private static final String INDEXER_PACKAGE_NAME = "android";
+    private static final String TEST_APP_ROOT_FOLDER = "/data/local/tmp/cts/appsearch/";
+    private static final String NAMESPACE_MOBILE_APPLICATION = "apps";
     private static final String NAMESPACE_APP_FUNCTIONS = "app_functions";
-    private static final String TEST_APP_A_PKG = "com.android.cts.appsearch.indexertestapp.a";
-    private static final String TEST_APP_B_PKG = "com.android.cts.appsearch.indexertestapp.b";
+
+    private static final long RETRY_CHECK_INTERVAL_MILLIS = 500;
+    private static final long RETRY_MAX_INTERVALS = 10;
+
+    public static final String TEST_APP_A_V1_PATH =
+            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppAV1.apk";
+    public static final String TEST_APP_A_V2_PATH =
+            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppAV2.apk";
+    public static final String TEST_APP_A_V3_PATH =
+            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppAV3.apk";
+    public static final String TEST_APP_B_V1_PATH =
+            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppBV1.apk";
+    public static final String TEST_APP_A_DYNAMIC_SCHEMA_PATH =
+            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppADynamicSchema.apk";
+    public static final String TEST_APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PATH =
+            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppADynamicSchemaFewerTypes.apk";
+    public static final String TEST_APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_PATH =
+            TEST_APP_ROOT_FOLDER
+                    + "CtsAppSearchIndexerTestAppADynamicSchemaMultipleRootSchemas.apk";
+    public static final String TEST_APP_B_DYNAMIC_SCHEMA_PATH =
+            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppBDynamicSchema.apk";
+    public static final String TEST_APP_A_APP_FUNCTION_SERVICE_DISABLED =
+            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppAAppFunctionServiceDisabled.apk";
+
+    public static final String TEST_APP_A_PKG = "com.android.cts.appsearch.indexertestapp.a";
+    public static final String TEST_APP_B_PKG = "com.android.cts.appsearch.indexertestapp.b";
+
+    public static final String APP_PROPERTY_DISPLAY_NAME = "displayName";
+    public static final String PROPERTY_FUNCTION_ID = "functionId";
+    public static final String PROPERTY_PACKAGE_NAME = "packageName";
+    public static final String PROPERTY_SCHEMA_NAME = "schemaName";
+    public static final String PROPERTY_SCHEMA_VERSION = "schemaVersion";
+    public static final String PROPERTY_SCHEMA_CATEGORY = "schemaCategory";
+    public static final String PROPERTY_DISPLAY_NAME_STRING_RES = "displayNameStringRes";
+    public static final String PROPERTY_ENABLED_BY_DEFAULT = "enabledByDefault";
+    public static final String PROPERTY_RESTRICT_CALLERS_WITH_EXECUTE_APP_FUNCTIONS =
+            "restrictCallersWithExecuteAppFunctions";
 
     /** Print app function generic document as defined in the appfunctions.xml of App A V2. */
     public static final GenericDocument APP_A_V2_PRINT_APP_FUNCTION =
@@ -119,6 +177,148 @@ public final class AppFunctionConstants {
      */
     public static final GenericDocument APP_B_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION =
             buildPrintAppFunctionDocument(TEST_APP_B_PKG);
+
+    /** Updates the enabled state of the AppFunctionService for a given package. */
+    public static void updateAppFunctionServiceEnabledState(
+            Context context, String packageName, int newState) {
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.CHANGE_COMPONENT_ENABLED_STATE);
+
+        context.getPackageManager()
+                .setComponentEnabledSetting(
+                        new ComponentName(
+                                packageName, "com.android.cts.appsearch.helper.AppFunctionService"),
+                        newState,
+                        /* flags= */ 0);
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .dropShellPermissionIdentity();
+    }
+
+    /** Recursively removes timestamps and parent types from a document. */
+    public static GenericDocument clearTimestampsAndParentTypesInDocument(
+            @NonNull GenericDocument document) {
+        GenericDocument.Builder<?> builder =
+                new GenericDocument.Builder<>(document)
+                        .setCreationTimestampMillis(0)
+                        // GenericDocument#PARENT_TYPES_SYNTHETIC_PROPERTY is hidden
+                        .clearProperty("$$__AppSearch__parentTypes");
+
+        for (String propertyName : document.getPropertyNames()) {
+            Object property = document.getProperty(propertyName);
+            if (property instanceof GenericDocument[] nestedDocuments) {
+                GenericDocument[] clearedNestedDocuments =
+                        new GenericDocument[nestedDocuments.length];
+
+                for (int i = 0; i < nestedDocuments.length; i++) {
+                    clearedNestedDocuments[i] =
+                            clearTimestampsAndParentTypesInDocument(nestedDocuments[i]);
+                }
+
+                builder.setPropertyDocument(propertyName, clearedNestedDocuments);
+            }
+        }
+
+        return builder.build();
+    }
+
+    /** Queries GlobalSearchSession for a MobileApplication by its document ID. */
+    public static GenericDocument searchMobileApplicationWithId(String id)
+            throws ExecutionException, InterruptedException {
+        GlobalSearchSessionShim globalSearchSession =
+                GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync().get();
+
+        SearchResultsShim searchResults =
+                globalSearchSession.search(
+                        "",
+                        new SearchSpec.Builder()
+                                .addFilterNamespaces(NAMESPACE_MOBILE_APPLICATION)
+                                .addFilterPackageNames(INDEXER_PACKAGE_NAME)
+                                .build());
+        List<GenericDocument> genericDocuments = collectAllResults(searchResults);
+        for (int i = 0; i < genericDocuments.size(); i++) {
+            GenericDocument genericDocument = genericDocuments.get(i);
+            if (genericDocument.getId().equals(id)) {
+                return genericDocument;
+            }
+        }
+        return null;
+    }
+
+    /** Queries GlobalSearchSession for AppFunction documents by package name. */
+    public static List<GenericDocument> searchAppFunctionsWithPackageName(String packageName)
+            throws ExecutionException, InterruptedException {
+        GlobalSearchSessionShim globalSearchSession =
+                GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync().get();
+
+        SearchResultsShim searchResults =
+                globalSearchSession.search(
+                        String.format("packageName:\"%s\"", packageName),
+                        new SearchSpec.Builder()
+                                .addFilterNamespaces(NAMESPACE_APP_FUNCTIONS)
+                                .addFilterPackageNames(INDEXER_PACKAGE_NAME)
+                                .setVerbatimSearchEnabled(true)
+                                .build());
+        return collectAllResults(searchResults);
+    }
+
+    /** Returns a map of AppFunction documents for a package name keyed by the document ID. */
+    public static Map<String, GenericDocument> searchAppFunctionDocumentsIntoMap(String packageName)
+            throws ExecutionException, InterruptedException {
+        Map<String, GenericDocument> appFns = new ArrayMap<>();
+        for (GenericDocument document : searchAppFunctionsWithPackageName(packageName)) {
+            appFns.put(document.getId(), document);
+        }
+
+        return appFns;
+    }
+
+    /** Installs an APK from a given path and asserts success. */
+    public static void installPackage(@NonNull Context context, @NonNull String path) {
+        assertThat(
+                        SystemUtil.runShellCommand(
+                                String.format(
+                                        "pm install -r -i %s -t -g %s",
+                                        context.getPackageName(), path)))
+                .isEqualTo("Success\n");
+    }
+
+    /** Uninstalls an Android package by package name. */
+    public static void uninstallPackage(@NonNull String packageName) {
+        SystemUtil.runShellCommand("pm uninstall " + packageName);
+    }
+
+    /** Retries an assertion with a delay between attempts. */
+    public static void retryAssert(ThrowRunnable runnable) throws Throwable {
+        Throwable lastError = null;
+
+        for (int attempt = 0; attempt < RETRY_MAX_INTERVALS; attempt++) {
+            try {
+                runnable.run();
+                return;
+            } catch (Throwable e) {
+                lastError = e;
+                if (attempt < RETRY_MAX_INTERVALS) {
+                    Thread.sleep(RETRY_CHECK_INTERVAL_MILLIS);
+                }
+            }
+        }
+        throw lastError;
+    }
+
+    private static List<GenericDocument> collectAllResults(SearchResultsShim searchResults)
+            throws ExecutionException, InterruptedException {
+        List<GenericDocument> documents = new ArrayList<>();
+        List<SearchResult> results;
+        do {
+            results = searchResults.getNextPageAsync().get();
+            for (SearchResult result : results) {
+                documents.add(result.getGenericDocument());
+            }
+        } while (!results.isEmpty());
+        return documents;
+    }
 
     /**
      * Builds the generic document for print app function defined in app A with dynamic schema.
@@ -294,7 +494,8 @@ public final class AppFunctionConstants {
                 new GenericDocument.Builder<>(
                                 NAMESPACE_APP_FUNCTIONS,
                                 packageName
-                                        + "/com.example.utils#print/response/schema/properties0/schema",
+                                        + "/com.example.utils#print/response"
+                                        + "/schema/properties0/schema",
                                 "AppFunctionSchema-" + packageName)
                         .setCreationTimestampMillis(0)
                         .setPropertyLong("dataType", 8)
@@ -338,7 +539,8 @@ public final class AppFunctionConstants {
                 new GenericDocument.Builder<>(
                                 NAMESPACE_APP_FUNCTIONS,
                                 packageName
-                                        + "/com.example.utils#print/components0/schema/properties0/schema",
+                                        + "/com.example.utils#print/components0"
+                                        + "/schema/properties0/schema",
                                 "AppFunctionSchema-" + packageName)
                         .setCreationTimestampMillis(0)
                         .setPropertyLong("dataType", 8)
@@ -381,5 +583,11 @@ public final class AppFunctionConstants {
         return builder.build();
     }
 
-    private AppFunctionConstants() {}
+    /** Runnable that throws. */
+    public interface ThrowRunnable {
+        /** Executes the action. */
+        void run() throws Throwable;
+    }
+
+    private AppsIndexerTestUtils() {}
 }

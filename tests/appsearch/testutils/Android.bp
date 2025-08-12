@@ -26,13 +26,14 @@ java_library {
     libs: [
         "androidx.test.ext.junit",
         "appsearch_flags_java_lib",
+        "compatibility-device-util-axt",
         "framework-annotations-lib",
         "framework-appsearch.impl",
         "guava",
         "service-appsearch-for-tests",
         "truth",
     ],
-    sdk_version: "system_server_current",
+    platform_apis: true,
     visibility: [
         "//cts/hostsidetests/appsearch",
         "//cts/tests:__subpackages__",

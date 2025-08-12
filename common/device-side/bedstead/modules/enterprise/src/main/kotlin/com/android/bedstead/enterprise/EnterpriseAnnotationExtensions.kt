@@ -49,7 +49,7 @@ fun MostImportantCoexistenceTest.logic(
                 " 0 or 2+ permissions")
     }
 
-    val permission = arrayOf(policies[0].permissions[0].appliedWith)
+    val permission = policies[0].permissions[0].appliedWith
 
     testAppsComponent.ensureTestAppHasPermission(
         MostImportantCoexistenceTest.MORE_IMPORTANT,
@@ -66,6 +66,7 @@ fun MostImportantCoexistenceTest.logic(
         FailureMode.SKIP
     )
 }
+
 fun MostRestrictiveCoexistenceTest.logic(testAppsComponent: TestAppsComponent) {
     val policies: Array<EnterprisePolicy> =
         policy.java.getAnnotationsByType(EnterprisePolicy::class.java)
@@ -74,7 +75,7 @@ fun MostRestrictiveCoexistenceTest.logic(testAppsComponent: TestAppsComponent) {
                 "0 or 2+ permissions")
     }
 
-    val permission = arrayOf(policies[0].permissions[0].appliedWith)
+    val permission = policies[0].permissions[0].appliedWith
 
     testAppsComponent.ensureTestAppHasPermission(
         MostRestrictiveCoexistenceTest.DPC_1,

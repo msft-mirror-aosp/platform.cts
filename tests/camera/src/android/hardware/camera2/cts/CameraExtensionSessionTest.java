@@ -16,10 +16,13 @@
 
 package android.hardware.camera2.cts;
 
+import static android.hardware.camera2.cts.CameraTestUtils.*;
 import static android.hardware.camera2.cts.ImageReaderTest.validateDynamicDepthNative;
 import static android.hardware.camera2.cts.helpers.AssertHelpers.assertArrayContains;
-import static org.mockito.ArgumentMatchers.anyBoolean;
+import static android.hardware.cts.helpers.CameraUtils.*;
+
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -30,20 +33,8 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.android.compatibility.common.util.DeviceReportLog;
-import com.android.compatibility.common.util.ResultType;
-import com.android.compatibility.common.util.ResultUnit;
-import com.android.compatibility.common.util.Stat;
-import com.android.internal.camera.flags.Flags;
-import com.android.ex.camera2.blocking.BlockingSessionCallback;
-import com.android.ex.camera2.blocking.BlockingExtensionSessionCallback;
-import com.android.ex.camera2.blocking.BlockingStateCallback;
-import com.android.ex.camera2.exceptions.TimeoutRuntimeException;
-import com.android.ex.camera2.pos.AutoFocusStateMachine;
-
 import android.graphics.ColorSpace;
 import android.graphics.ImageFormat;
-import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.hardware.HardwareBuffer;
@@ -71,18 +62,27 @@ import android.media.ImageReader;
 import android.os.Build;
 import android.os.SystemClock;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.util.Log;
 import android.util.Range;
 import android.util.Size;
-
-import static android.hardware.camera2.cts.CameraTestUtils.*;
-import static android.hardware.cts.helpers.CameraUtils.*;
-
-import android.util.Log;
 import android.view.Surface;
 import android.view.TextureView;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
+
+import com.android.compatibility.common.util.DeviceReportLog;
+import com.android.compatibility.common.util.ResultType;
+import com.android.compatibility.common.util.ResultUnit;
+import com.android.compatibility.common.util.Stat;
+import com.android.ex.camera2.blocking.BlockingExtensionSessionCallback;
+import com.android.ex.camera2.blocking.BlockingSessionCallback;
+import com.android.ex.camera2.blocking.BlockingStateCallback;
+import com.android.ex.camera2.exceptions.TimeoutRuntimeException;
+import com.android.ex.camera2.pos.AutoFocusStateMachine;
+import com.android.internal.camera.flags.Flags;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -99,6 +99,9 @@ import java.util.stream.Collectors;
 
 @RunWith(Parameterized.class)
 public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String TAG = "CameraExtensionSessionTest";
     private static final boolean VERBOSE = Log.isLoggable(TAG, Log.VERBOSE);
     private static final long WAIT_FOR_COMMAND_TO_COMPLETE_MS = 5000;

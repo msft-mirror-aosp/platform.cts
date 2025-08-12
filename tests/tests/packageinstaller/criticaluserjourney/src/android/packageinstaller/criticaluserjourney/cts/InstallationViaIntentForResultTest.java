@@ -43,8 +43,8 @@ public class InstallationViaIntentForResultTest extends InstallationTestBase {
         clickInstallButton(/* checkInstallingDialog= */ true);
 
         // TODO (b/349258056): should get the correct activity result
-//        assertInstallerResponseActivityResultOK();
-        assertTestPackageInstalled();
+        //        assertInstallerResponseActivityResultOK();
+        assertTestPackageInstalledWithRetry();
     }
 
     @Test
@@ -197,8 +197,8 @@ public class InstallationViaIntentForResultTest extends InstallationTestBase {
 
         clickUpdateButton(/* checkInstallingDialog= */ true);
 
-//        assertInstallerResponseActivityResultOK();
-        assertTestPackageVersion2Installed();
+        //        assertInstallerResponseActivityResultOK();
+        assertTestPackageVersion2InstalledWithRetry();
     }
 
     @Test

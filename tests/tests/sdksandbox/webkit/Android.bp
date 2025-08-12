@@ -26,6 +26,7 @@ android_test {
         "android.test.base.stubs",
     ],
     static_libs: [
+        "android.webkit.flags-aconfig-java",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "CtsSdkSandboxTestScenario",

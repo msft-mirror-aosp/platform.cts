@@ -16,9 +16,6 @@
 
 package com.android.server.cts.device.statsdatom.appcompat;
 
-
-import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
-
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
 import static com.android.server.cts.device.statsdatom.StatsdCtsForegroundActivity.ACTION_LONG_SLEEP_WHILE_TOP;
@@ -45,6 +42,7 @@ import androidx.test.uiautomator.Until;
 import com.android.compatibility.common.util.DisableAnimationRule;
 import com.android.compatibility.common.util.NonApiTest;
 import com.android.server.cts.device.statsdatom.MinAspectRatioPortraitActivity;
+import com.android.server.cts.device.statsdatom.StatsdCtsMinAspectRatioLandscapeActivity;
 import com.android.server.cts.device.statsdatom.StatsdCtsMinAspectRatioPortraitActivity;
 
 import org.junit.After;
@@ -164,12 +162,11 @@ public class AppCompatTests {
         int deviceHeight = mDevice.getDisplayHeight();
         int x = deviceWidth / 2;
         final Context context = getApplicationContext();
-        final Intent intent = new Intent(context, StatsdCtsMinAspectRatioPortraitActivity.class);
+        final Intent intent = new Intent(context, StatsdCtsMinAspectRatioLandscapeActivity.class);
         intent.putExtra(KEY_ACTION, ACTION_LONG_SLEEP_WHILE_TOP);
-        final ActivityScenario<StatsdCtsMinAspectRatioPortraitActivity> scenario =
+        final ActivityScenario<StatsdCtsMinAspectRatioLandscapeActivity> scenario =
                 ActivityScenario.launch(intent);
 
-        scenario.onActivity(a -> a.setRequestedOrientation(SCREEN_ORIENTATION_LANDSCAPE));
         mDevice.waitForIdle();
 
         AtomicReference<Rect> atomicBounds = new AtomicReference<>(new Rect());
@@ -183,20 +180,23 @@ public class AppCompatTests {
             deviceHeight = deviceWidth;
         }
 
+        final int yUp = deviceHeight / 5;
+        final int yDown = 4 * yUp;
+
         // Reposition to top.
-        assertTrue(mGestureHelper.click(x, BOUNDS_OFFSET, 2));
+        assertTrue(mGestureHelper.click(x, yUp, 2));
         mGestureHelper.waitForAnimation();
 
         // Reposition back to center.
-        assertTrue(mGestureHelper.click(x, deviceHeight - BOUNDS_OFFSET, 2));
+        assertTrue(mGestureHelper.click(x, yDown, 2));
         mGestureHelper.waitForAnimation();
 
         // Reposition to bottom.
-        assertTrue(mGestureHelper.click(x, deviceHeight - BOUNDS_OFFSET, 2));
+        assertTrue(mGestureHelper.click(x, yDown, 2));
         mGestureHelper.waitForAnimation();
 
         // Reposition back to center.
-        assertTrue(mGestureHelper.click(x, BOUNDS_OFFSET, 2));
+        assertTrue(mGestureHelper.click(x, yUp, 2));
         mGestureHelper.waitForAnimation();
     }
 

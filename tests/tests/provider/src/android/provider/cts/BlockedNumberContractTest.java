@@ -26,7 +26,6 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.UserManager;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.BlockedNumberContract;
 import android.provider.BlockedNumberContract.BlockedNumbers;
 import android.provider.BlockedNumberContract.SystemContract;
@@ -421,8 +420,6 @@ public class BlockedNumberContractTest extends TestCaseThatRunsIfTelephonyIsEnab
         }
     }
 
-    @RequiresFlagsEnabled(
-            com.android.server.telecom.flags.Flags.FLAG_TELECOM_MAINLINE_BLOCKED_NUMBERS_MANAGER)
     public void testBlockSuppression() throws Exception {
         if (!mIsSystemUser
                 || !com.android.server.telecom.flags.Flags.telecomMainlineBlockedNumbersManager()) {
@@ -500,8 +497,6 @@ public class BlockedNumberContractTest extends TestCaseThatRunsIfTelephonyIsEnab
         }
     }
 
-    @RequiresFlagsEnabled(
-            com.android.server.telecom.flags.Flags.FLAG_TELECOM_MAINLINE_BLOCKED_NUMBERS_MANAGER)
     public void testEnhancedBlocking() throws Exception {
         if (!mIsSystemUser
                 || !com.android.server.telecom.flags.Flags.telecomMainlineBlockedNumbersManager()) {

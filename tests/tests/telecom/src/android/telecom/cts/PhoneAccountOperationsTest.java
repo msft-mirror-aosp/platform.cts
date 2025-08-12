@@ -23,7 +23,6 @@ import android.content.Context;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
@@ -268,10 +267,9 @@ public class PhoneAccountOperationsTest extends InstrumentationTestCase {
      * transactional.
      * @throws Exception
      */
-    @RequiresFlagsEnabled(
-            com.android.server.telecom.flags.Flags.FLAG_ENFORCE_TRANSACTIONAL_EXCLUSIVITY)
     public void testRegisterPhoneAccountBadCapabilitiesCombo() throws Exception {
-        if (!shouldTestTelecom(mContext)) {
+        if (!shouldTestTelecom(mContext) ||
+                !com.android.server.telecom.flags.Flags.enforceTransactionalExclusivity()) {
             return;
         }
 

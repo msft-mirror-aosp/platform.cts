@@ -43,10 +43,13 @@ import android.os.ConditionVariable;
 import android.os.UserHandle;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.BuildUtils;
 import android.server.wm.MultiDisplayTestBase;
 import android.server.wm.ShellCommandHelper;
 import android.server.wm.WindowManagerState;
+import android.server.wm.WindowManagerState.DisplayContent;
 import android.server.wm.WindowManagerState.Task;
 import android.server.wm.app.Components;
 
@@ -56,11 +59,13 @@ import com.android.window.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * Build/Install/Run:
@@ -70,6 +75,8 @@ import java.util.Map;
 @android.server.wm.annotation.Group3
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_WINDOW_REPOSITIONING_API)
 public class TaskMoveTests extends MultiDisplayTestBase {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final ComponentName TEST_ACTIVITY = Components.MOVE_TASK_TO_BOUNDS_ACTIVITY;
     private static final int TIMEOUT_MS = 2000 * BuildUtils.HW_TIMEOUT_MULTIPLIER;
@@ -122,16 +129,99 @@ public class TaskMoveTests extends MultiDisplayTestBase {
             })
     @Test
     public void testMoveTaskTo_move10PxRight() {
+        testMoveTaskTo_generalBoundsOperation(
+                r -> {
+                    r.offset(10, 0);
+                    return r;
+                });
+    }
+
+    /**
+     * Tests that a {@link android.app.ActivityManager.AppTask#moveTaskTo} call succeeds when the
+     * request is to expand the task 10 pixels to the left. Assumes that task moving is allowed on
+     * the host display.
+     */
+    @ApiTest(
+            apis = {
+                "android.app.ActivityManager.AppTask#moveTaskTo",
+                "android.app.ActivityManager#isTaskMoveAllowedOnDisplay"
+            })
+    @Test
+    public void testMoveTaskTo_expand10PxLeft() {
+        testMoveTaskTo_generalBoundsOperation(
+                r -> {
+                    r.inset(-10, 0, 0, 0);
+                    return r;
+                });
+    }
+
+    /**
+     * Tests that a {@link android.app.ActivityManager.AppTask#moveTaskTo} call succeeds when the
+     * request is to shrink the task 10 pixels from the bottom. Assumes that task moving is allowed
+     * on the host display.
+     */
+    @ApiTest(
+            apis = {
+                "android.app.ActivityManager.AppTask#moveTaskTo",
+                "android.app.ActivityManager#isTaskMoveAllowedOnDisplay"
+            })
+    @Test
+    public void testMoveTaskTo_shrink10PxBottom() {
+        testMoveTaskTo_generalBoundsOperation(
+                r -> {
+                    r.inset(0, 0, 0, 10);
+                    return r;
+                });
+    }
+
+    /**
+     * Tests that a {@link android.app.ActivityManager.AppTask#moveTaskTo} call succeeds when the
+     * request is to resize the task so that its bounds are shrunk by 10 px in all directions
+     * compared to initial ones. Assumes that task moving is allowed on the host display.
+     */
+    @ApiTest(
+            apis = {
+                "android.app.ActivityManager.AppTask#moveTaskTo",
+                "android.app.ActivityManager#isTaskMoveAllowedOnDisplay"
+            })
+    @Test
+    public void testMoveTaskTo_shrink10PxAllDirs() {
+        testMoveTaskTo_generalBoundsOperation(
+                r -> {
+                    r.inset(10, 10, 10, 10);
+                    return r;
+                });
+    }
+
+    /**
+     * Tests that a {@link android.app.ActivityManager.AppTask#moveTaskTo} call succeeds when the
+     * request is to resize the task so that its bounds are expanded by 10 px in all directions
+     * compared to initial ones. Assumes that task moving is allowed on the host display.
+     */
+    @ApiTest(
+            apis = {
+                "android.app.ActivityManager.AppTask#moveTaskTo",
+                "android.app.ActivityManager#isTaskMoveAllowedOnDisplay"
+            })
+    @Test
+    public void testMoveTaskTo_expand10PxAllDirs() {
+        testMoveTaskTo_generalBoundsOperation(
+                r -> {
+                    r.inset(-10, -10, -10, -10);
+                    return r;
+                });
+    }
+
+    private void testMoveTaskTo_generalBoundsOperation(Function<Rect, Rect> boundsModifier) {
         final int displayId = getMainDisplayId();
-        launchActivityOnDisplay(TEST_ACTIVITY, displayId);
+        launchActivityOnDisplayWithSafetyMargins(TEST_ACTIVITY, displayId);
         mWmState.computeState(TEST_ACTIVITY);
 
         assumeTaskMoveAllowedOnDisplay(displayId);
 
         final WindowManagerState.Task task = mWmState.getTaskByActivity(TEST_ACTIVITY);
         final Rect initialBounds = task.getBounds();
-        final Rect requestedBounds = new Rect(initialBounds);
-        requestedBounds.offset(10, 0);
+        final Rect requestedBounds = boundsModifier.apply(new Rect(initialBounds));
 
         sendTaskMoveRequest(displayId, requestedBounds);
         assertTaskMoveRequestReportedSuccess();
@@ -401,13 +491,13 @@ public class TaskMoveTests extends MultiDisplayTestBase {
                     finalBounds.width() == targetBounds.width()
                             && finalBounds.height() == targetBounds.height());
 
-            int requestedDeltaX = targetBounds.left - sourceBounds.left;
-            int requestedDeltaY = targetBounds.top - sourceBounds.top;
+            final int requestedDeltaX = targetBounds.left - sourceBounds.left;
+            final int requestedDeltaY = targetBounds.top - sourceBounds.top;
 
-            int finalDeltaX = finalBounds.left - sourceBounds.left;
-            int finalDeltaY = finalBounds.top - sourceBounds.top;
+            final int finalDeltaX = finalBounds.left - sourceBounds.left;
+            final int finalDeltaY = finalBounds.top - sourceBounds.top;
 
-            assumeTrue(
+            assertTrue(
                     "Final bounds differ in the direction of X coordinate change from requested"
                         + " bounds. The request was a pure move (without size change). (requested "
                             + targetBounds
@@ -415,7 +505,7 @@ public class TaskMoveTests extends MultiDisplayTestBase {
                             + finalBounds
                             + ")",
                     Math.signum(finalDeltaX) == Math.signum(requestedDeltaX) || finalDeltaX == 0);
-            assumeTrue(
+            assertTrue(
                     "Final bounds differ in the direction of Y coordinate change from requested"
                         + " bounds. The request was a pure move (without size change). (requested "
                             + targetBounds
@@ -425,10 +515,35 @@ public class TaskMoveTests extends MultiDisplayTestBase {
                     Math.signum(finalDeltaY) == Math.signum(requestedDeltaY) || finalDeltaY == 0);
         }
 
+        final int requestedDeltaWidth = targetBounds.width() - sourceBounds.width();
+        final int requestedDeltaHeight = targetBounds.height() - sourceBounds.height();
+
+        final int finalDeltaWidth = finalBounds.width() - sourceBounds.width();
+        final int finalDeltaHeight = finalBounds.height() - sourceBounds.height();
+
+        assertTrue(
+                "Final bounds differ in the direction of width change from requested bounds."
+                        + " (requested "
+                        + targetBounds
+                        + ", got "
+                        + finalBounds
+                        + ")",
+                Math.signum(finalDeltaWidth) == Math.signum(requestedDeltaWidth)
+                        || finalDeltaWidth == 0);
+        assertTrue(
+                "Final bounds differ in the direction of height change from requested bounds."
+                        + " (requested "
+                        + targetBounds
+                        + ", got "
+                        + finalBounds
+                        + ")",
+                Math.signum(finalDeltaHeight) == Math.signum(requestedDeltaHeight)
+                        || finalDeltaHeight == 0);
+
         final Rect sourceAndTargetBoundingBox = new Rect(sourceBounds);
         sourceAndTargetBoundingBox.union(targetBounds);
 
-        assumeTrue(
+        assertTrue(
                 "Final bounds are outside of bounding box of original and requested bounds."
                         + " (requested "
                         + targetBounds
@@ -598,5 +713,27 @@ public class TaskMoveTests extends MultiDisplayTestBase {
                 .setDisplayImePolicy(DISPLAY_IME_POLICY_LOCAL)
                 .createDisplay()
                 .mId;
+    }
+
+    private void launchActivityOnDisplayWithSafetyMargins(
+            ComponentName activityName, int displayId) {
+        launchActivityOnDisplayWithSafetyMargins(activityName, displayId, 100);
+    }
+
+    private void launchActivityOnDisplayWithSafetyMargins(
+            ComponentName activityName, int displayId, int safetyMargin) {
+        mWmState.computeState();
+        final DisplayContent display = mWmState.getDisplay(displayId);
+        final Rect displayBounds = display.getDisplayRect();
+        displayBounds.inset(safetyMargin, safetyMargin);
+
+        launchActivityOnDisplay(activityName, displayId);
+        resizeActivityTask(
+                activityName,
+                displayBounds.left,
+                displayBounds.top,
+                displayBounds.right,
+                displayBounds.bottom);
+        mWmState.waitForAppTransitionIdleOnDisplay(displayId);
     }
 }

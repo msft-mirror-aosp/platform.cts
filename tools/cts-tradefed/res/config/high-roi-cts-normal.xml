@@ -116,8 +116,6 @@
     <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.FledgeCtsDebuggableTest#testGetAdSelectionData_collectsCa_success"/>
     <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.FledgeCtsDebuggableTest#testPersistAdSelectionData_adSelectionIdDoesntExist_failure"/>
     <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.GenerateInputForEncodingShellCommandTest#testRun_generateInputForEncoding_happyPath"/>
-    <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.MeasurementCtsDebuggableTest#registerSourceAndTriggerAndRunAttributionAndAggregateReporting"/>
-    <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.MeasurementCtsDebuggableTest#registerSourceAndTriggerAndRunAttributionAndEventReporting"/>
     <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.SignalsCtsDebuggableTest#testUpdateSignals_badJson_failure"/>
     <!-- CtsAdServicesDeviceTestCases -->
     <option name="compatibility:include-filter" value="CtsAdServicesDeviceTestCases android.adservices.cts.AdServicesCommonManagerTest#testGetAdServicesModuleStates"/>

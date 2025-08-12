@@ -32,16 +32,16 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
-@RequireFlagsEnabled(
-    android.multiuser.Flags.FLAG_DECOUPLE_MAX_USERS_FROM_PROFILES,
-    android.multiuser.Flags.FLAG_CONSISTENT_MAX_USERS,
-    android.multiuser.Flags.FLAG_ALLOW_SUPERVISING_PROFILE,
-)
 class SupervisingProfileTest : BaseSupervisionTest() {
 
     @Test
     @EnsureHasPermission(MANAGE_USERS, CREATE_USERS, QUERY_USERS)
     @RequireRootInstrumentation(reason = "Use of MANAGE_USERS")
+    @RequireFlagsEnabled(
+        android.multiuser.Flags.FLAG_DECOUPLE_MAX_USERS_FROM_PROFILES,
+        android.multiuser.Flags.FLAG_CONSISTENT_MAX_USERS,
+        android.multiuser.Flags.FLAG_ALLOW_SUPERVISING_PROFILE,
+    )
     fun canCreateSupervisingProfile_atMaxSecondaryUsers() {
         withMaxSwitchableUsers { withSupervisingUser {} }
     }

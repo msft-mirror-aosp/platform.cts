@@ -26,6 +26,9 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Message;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Base64;
 import android.view.ViewGroup;
 import android.view.ViewParent;
@@ -63,7 +66,13 @@ import java.util.concurrent.BlockingQueue;
 @AppModeFull
 @MediumTest
 @RunWith(AndroidJUnit4.class)
-public class WebChromeClientTest extends SharedWebViewTest{
+public class WebChromeClientTest extends SharedWebViewTest {
+    @Rule
+    // Passing null because this code is reused in the SDK sandbox test, where it's run as an SDK
+    // instead of using instrumentation and so cannot get a UiAutomation.
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule(null);
+
     private static final String JAVASCRIPT_UNLOAD = "javascript unload";
     private static final String LISTENER_ADDED = "listener added";
     private static final String TOUCH_RECEIVED = "touch received";
@@ -412,7 +421,8 @@ public class WebChromeClientTest extends SharedWebViewTest{
                     expectedMessage,
                     consoleMessage.message());
             final int expectedLineNumber = k + consoleLineNumberOffset;
-            assertEquals("message " + k + " had wrong line number",
+            assertEquals(
+                    "message " + k + " had wrong line number",
                     expectedLineNumber,
                     consoleMessage.lineNumber());
         }
@@ -480,9 +490,106 @@ public class WebChromeClientTest extends SharedWebViewTest{
         }
     }
 
-    /**
-     * Taps in the the center of a webview.
-     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_FILE_SYSTEM_ACCESS)
+    public void testOnShowFileChooserOpenReadWrite() {
+        final WebSettings settings = mOnUiThread.getSettings();
+        settings.setJavaScriptEnabled(true);
+
+        final MockWebChromeClient webChromeClient = new MockWebChromeClient();
+        mOnUiThread.setWebChromeClient(webChromeClient);
+        final SettableFuture<String> pageCommitVisibleFuture = SettableFuture.create();
+        mOnUiThread.setWebViewClient(
+                new WaitForLoadedClient(mOnUiThread) {
+                    public void onPageCommitVisible(WebView view, String url) {
+                        pageCommitVisibleFuture.set(url);
+                    }
+                });
+
+        assertFalse(webChromeClient.hadOnShowFileChooser());
+        String url = mWebServer.getAssetUrl(TestHtmlConstants.SHOW_OPEN_FILE_PICKER_URL);
+        mOnUiThread.loadUrlAndWaitForCompletion(url);
+        WebkitUtils.waitForFuture(pageCommitVisibleFuture);
+        tapWebView();
+
+        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
+            @Override
+            protected boolean check() {
+                return webChromeClient.hadOnShowFileChooser();
+            }
+        }.run();
+        FileChooserParams params = webChromeClient.getFileChooserParams();
+        assertEquals(params.getMode(), FileChooserParams.MODE_OPEN);
+        assertEquals(params.getPermissionMode(), FileChooserParams.PERMISSION_MODE_READ_WRITE);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_FILE_SYSTEM_ACCESS)
+    public void testOnShowFileChooserDirectory() {
+        final WebSettings settings = mOnUiThread.getSettings();
+        settings.setJavaScriptEnabled(true);
+
+        final MockWebChromeClient webChromeClient = new MockWebChromeClient();
+        mOnUiThread.setWebChromeClient(webChromeClient);
+        final SettableFuture<String> pageCommitVisibleFuture = SettableFuture.create();
+        mOnUiThread.setWebViewClient(
+                new WaitForLoadedClient(mOnUiThread) {
+                    public void onPageCommitVisible(WebView view, String url) {
+                        pageCommitVisibleFuture.set(url);
+                    }
+                });
+
+        assertFalse(webChromeClient.hadOnShowFileChooser());
+        String url = mWebServer.getAssetUrl(TestHtmlConstants.SHOW_DIRECTORY_PICKER_URL);
+        mOnUiThread.loadUrlAndWaitForCompletion(url);
+        WebkitUtils.waitForFuture(pageCommitVisibleFuture);
+        tapWebView();
+
+        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
+            @Override
+            protected boolean check() {
+                return webChromeClient.hadOnShowFileChooser();
+            }
+        }.run();
+        FileChooserParams params = webChromeClient.getFileChooserParams();
+        assertEquals(params.getMode(), FileChooserParams.MODE_OPEN_FOLDER);
+        assertEquals(params.getPermissionMode(), FileChooserParams.PERMISSION_MODE_READ_WRITE);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_FILE_SYSTEM_ACCESS)
+    public void testOnShowFileChooserSave() {
+        final WebSettings settings = mOnUiThread.getSettings();
+        settings.setJavaScriptEnabled(true);
+
+        final MockWebChromeClient webChromeClient = new MockWebChromeClient();
+        mOnUiThread.setWebChromeClient(webChromeClient);
+        final SettableFuture<String> pageCommitVisibleFuture = SettableFuture.create();
+        mOnUiThread.setWebViewClient(
+                new WaitForLoadedClient(mOnUiThread) {
+                    public void onPageCommitVisible(WebView view, String url) {
+                        pageCommitVisibleFuture.set(url);
+                    }
+                });
+
+        assertFalse(webChromeClient.hadOnShowFileChooser());
+        String url = mWebServer.getAssetUrl(TestHtmlConstants.SHOW_SAVE_FILE_PICKER_URL);
+        mOnUiThread.loadUrlAndWaitForCompletion(url);
+        WebkitUtils.waitForFuture(pageCommitVisibleFuture);
+        tapWebView();
+
+        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
+            @Override
+            protected boolean check() {
+                return webChromeClient.hadOnShowFileChooser();
+            }
+        }.run();
+        FileChooserParams params = webChromeClient.getFileChooserParams();
+        assertEquals(params.getMode(), FileChooserParams.MODE_SAVE);
+        assertEquals(params.getPermissionMode(), FileChooserParams.PERMISSION_MODE_READ_WRITE);
+    }
+
+    /** Taps in the center of a webview. */
     private void tapWebView() {
         int[] location = mOnUiThread.getLocationOnScreen();
         int middleX = location[0] + mOnUiThread.getWebView().getWidth() / 2;

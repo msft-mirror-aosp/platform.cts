@@ -32,12 +32,15 @@ import static org.junit.Assume.assumeTrue;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.ColorSpace;
 import android.graphics.Insets;
 import android.graphics.Rect;
 import android.hardware.HardwareBuffer;
 import android.os.Bundle;
 import android.os.OutcomeReceiver;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.WindowManagerTestBase;
 import android.view.Display;
 import android.view.View;
@@ -57,6 +60,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.SystemUtil;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -64,6 +68,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 public class ScreenCaptureTest extends WindowManagerTestBase {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @RequiresFlagsEnabled(FLAG_READBACK_SCREENSHOT)
     @ApiTest(
@@ -234,6 +240,48 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                 });
 
         assertEquals(pixelFormat, result[0].getHardwareBuffer().getFormat());
+    }
+
+    @RequiresFlagsEnabled(FLAG_READBACK_SCREENSHOT)
+    @ApiTest(
+            apis = {
+                "android.window.ScreenCapture.ScreenCaptureParams.Builder#getDisplayId",
+                "android.window.ScreenCapture.ScreenCaptureParams.Builder#getCaptureMode",
+                "android.window.ScreenCapture.ScreenCaptureParams.Builder#getPixelFormat",
+            })
+    @Test
+    public void screenCaptureParamGetters() {
+        int displayId = Display.DEFAULT_DISPLAY;
+        int captureMode = ScreenCaptureParams.CAPTURE_MODE_REQUIRE_OPTIMIZED;
+        int pixelFormat = HardwareBuffer.RGB_565;
+
+        ScreenCaptureParams params =
+                new ScreenCaptureParams.Builder(displayId)
+                        .setCaptureMode(captureMode)
+                        .setPixelFormat(pixelFormat)
+                        .build();
+
+        assertEquals(displayId, params.getDisplayId());
+        assertEquals(captureMode, params.getCaptureMode());
+        assertEquals(pixelFormat, params.getPixelFormat());
+    }
+
+    @RequiresFlagsEnabled(FLAG_READBACK_SCREENSHOT)
+    @ApiTest(
+            apis = {
+                "android.window.ScreenCapture.ScreenCaptureResult#ScreenCaptureResult",
+            })
+    @Test
+    public void screenCaptureResultCtor() {
+        ColorSpace colorSpace = ColorSpace.get(ColorSpace.Named.SRGB);
+        HardwareBuffer hardwareBuffer =
+                HardwareBuffer.create(
+                        1, 1, HardwareBuffer.RGB_565, 1, HardwareBuffer.USAGE_CPU_READ_RARELY);
+
+        ScreenCaptureResult result = new ScreenCaptureResult(colorSpace, hardwareBuffer);
+
+        assertEquals(colorSpace, result.getColorSpace());
+        assertEquals(hardwareBuffer, result.getHardwareBuffer());
     }
 
     void launchActivity(boolean secure, @Nullable Rect outContentBounds)

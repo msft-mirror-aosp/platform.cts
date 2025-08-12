@@ -322,6 +322,7 @@ public class SmsManagerTest {
         return longText.equals(actualMessage);
     }
 
+    // Gets the app hash belong to the test app: android.telephony.cts.smsretriever
     private String getSmsRetrieverHash() throws Exception  {
         SystemUtil.runWithShellPermissionIdentity(() ->
                 mActivityManager.forceStopPackage(SMS_RETRIEVER_APP)
@@ -648,6 +649,27 @@ public class SmsManagerTest {
         assertTrue(
                 "Normal apps should not get SMS_RECEIVED for OTP calls",
                 mSmsReceivedReceiver.verifyNoCalls(NO_CALLS_TIMEOUT_MILLIS));
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    public void testOtpSmsBroadcastReceivedByRetrieverApp() throws Exception {
+        init();
+
+        // Get app hash belong to the test app: android.telephony.cts
+        Context context = getInstrumentation().getContext();
+        Intent intent = new Intent("android.provider.Telephony.SMS_RECEIVED")
+                .setPackage(context.getPackageName());
+        PendingIntent pIntent = PendingIntent.getBroadcast(context, 0, intent,
+                PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_MUTABLE_UNAUDITED);
+        String appHash = SmsManager.getDefault().createAppSpecificSmsTokenWithPackageInfo(
+                "testprefix1,testprefix2", pIntent);
+
+        sendSmsRetrieverOtpMessage(OTP_SMS_TEXT + " " + appHash);
+        assertTrue(
+                "App to which the SMS retriever hash was matched should get SMS_RECEIVED "
+                        + "for OTP calls",
+                mSmsReceivedReceiver.waitForCalls(1, TIME_OUT));
     }
 
     private void sendSmsRetrieverOtpMessage() throws Exception {

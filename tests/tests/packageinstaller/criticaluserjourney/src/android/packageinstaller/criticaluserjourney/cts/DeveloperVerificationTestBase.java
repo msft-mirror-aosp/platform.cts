@@ -22,10 +22,14 @@ import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.Before;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 public class DeveloperVerificationTestBase extends InstallationTestBase {
+    static final int RESPONSE_COMPLETE_WITH_PASS = 1;
+    static final int RESPONSE_COMPLETE_WITH_REJECT = 2;
     static final int RESPONSE_INCOMPLETE_UNKNOWN = 3;
     static final int RESPONSE_INCOMPLETE_NETWORK = 4;
-    static final int RESPONSE_COMPLETE_WITH_REJECT = 2;
 
     @Before
     @Override
@@ -72,6 +76,26 @@ public class DeveloperVerificationTestBase extends InstallationTestBase {
 
     void grantPermissionAndBypassOnDeveloperVerificationDialog(boolean isAppUpdating)
             throws Exception {
+        clickTillDeveloperVerificationUserConfirmationDialog(isAppUpdating);
+
+        assertDeveloperVerificationUserConfirmationDialog(
+                /* assertBypassAllowed= */ true, isAppUpdating);
+
+        clickInstallWithoutVerifyingButton(isAppUpdating);
+    }
+
+    void grantPermissionAndRetryOnDeveloperVerificationDialog(boolean isAppUpdating, int retryCount)
+            throws Exception {
+        clickTillDeveloperVerificationUserConfirmationDialog(isAppUpdating);
+
+        assertDeveloperVerificationUserConfirmationDialog(
+                /* assertBypassAllowed= */ false, isAppUpdating);
+
+        clickRetryButton(retryCount);
+    }
+
+    private void clickTillDeveloperVerificationUserConfirmationDialog(boolean isAppUpdating)
+            throws Exception {
         waitForUiIdle();
 
         clickSettingsButton();
@@ -94,17 +118,17 @@ public class DeveloperVerificationTestBase extends InstallationTestBase {
                     /* checkInstallingDialog= */ true,
                     /* expectingDeveloperVerificationDialog= */ true);
         }
-
-        assertDeveloperVerificationUserConfirmationDialog(
-                /* assertBypassAllowed= */ true, isAppUpdating);
-
-        clickInstallWithoutVerifyingButton(isAppUpdating);
     }
 
-    static void setDeveloperVerificationResult(String packageToInstall, int policy, int result) {
+    static void setDeveloperVerificationResult(
+            String packageToInstall, int policy, int... results) {
         SystemUtil.runShellCommand(
                 String.format(
-                        "pm set-developer-verification-result %s %d %d",
-                        packageToInstall, policy, result));
+                        "pm set-developer-verification-result %s %d %s",
+                        packageToInstall,
+                        policy,
+                        Arrays.stream(results)
+                                .mapToObj(String::valueOf)
+                                .collect(Collectors.joining(" "))));
     }
 }

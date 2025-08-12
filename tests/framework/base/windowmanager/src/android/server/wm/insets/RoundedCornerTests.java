@@ -37,9 +37,11 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
-import android.content.Intent;
+import android.app.ActivityOptions;
+import android.app.WindowConfiguration;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
@@ -57,12 +59,11 @@ import android.view.WindowManager;
 import android.view.WindowMetrics;
 
 import androidx.annotation.NonNull;
-import androidx.test.rule.ActivityTestRule;
+import androidx.test.core.app.ActivityScenario;
 
 import com.android.compatibility.common.util.PollingCheck;
 
 import org.junit.After;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -95,28 +96,73 @@ public class RoundedCornerTests extends ActivityManagerTestBase {
 
     @After
     public void tearDown() {
-        mTestActivityRule.finishActivity();
         mWindowManagerStateHelper.waitForDisplayUnfrozen();
     }
 
-    @Rule
-    public final ActivityTestRule<TestActivity> mTestActivityRule =
-            new ActivityTestRule<>(TestActivity.class, false /* initialTouchMode */,
-                    false /* launchActivity */);
-
     @Test
     public void testRoundedCorner_fullscreen() {
-        verifyRoundedCorners(false /* excludeRoundedCorners */);
+        final ActivityOptions options = ActivityOptions.makeBasic();
+        options.setLaunchWindowingMode(WindowConfiguration.WINDOWING_MODE_FULLSCREEN);
+        try (var scenario = ActivityScenario.launch(TestActivity.class, options.toBundle())) {
+            final TestActivity[] activity = new TestActivity[1];
+            scenario.onActivity(a -> activity[0] = a);
+            verifyRoundedCorners(
+                    activity[0],
+                    false /* excludeRoundedCorners */,
+                    true /* insetsShouldHaveRoundedCorners */);
+        }
     }
 
     @Test
-    public void testRoundedCorner_excludeRoundedCorners() {
-        verifyRoundedCorners(true /* excludeRoundedCorners */);
+    public void testRoundedCorner_freeform() {
+        assumeTrue(supportsFreeform());
+        final ActivityOptions options = ActivityOptions.makeBasic();
+        options.setLaunchWindowingMode(WindowConfiguration.WINDOWING_MODE_FREEFORM);
+        try (var scenario = ActivityScenario.launch(TestActivity.class, options.toBundle())) {
+            final TestActivity[] activity = new TestActivity[1];
+            scenario.onActivity(a -> activity[0] = a);
+            // TODO(b/354675563): Verify freeform window with rounded corner insets after the
+            // feature is complete.
+            verifyRoundedCorners(
+                    activity[0],
+                    false /* excludeRoundedCorners */,
+                    false /* insetsShouldHaveRoundedCorners */);
+        }
     }
 
-    private void verifyRoundedCorners(boolean excludedRoundedCorners) {
-        final TestActivity activity = mTestActivityRule.launchActivity(new Intent());
+    @Test
+    public void testRoundedCorner_excludeRoundedCorners_fullscreen() {
+        final ActivityOptions options = ActivityOptions.makeBasic();
+        options.setLaunchWindowingMode(WindowConfiguration.WINDOWING_MODE_FULLSCREEN);
+        try (var scenario = ActivityScenario.launch(TestActivity.class, options.toBundle())) {
+            final TestActivity[] activity = new TestActivity[1];
+            scenario.onActivity(a -> activity[0] = a);
+            verifyRoundedCorners(
+                    activity[0],
+                    true /* excludeRoundedCorners */,
+                    false /* insetsShouldHaveRoundedCorners */);
+        }
+    }
 
+    @Test
+    public void testRoundedCorner_excludeRoundedCorners_freeform() {
+        assumeTrue(supportsFreeform());
+        final ActivityOptions options = ActivityOptions.makeBasic();
+        options.setLaunchWindowingMode(WindowConfiguration.WINDOWING_MODE_FREEFORM);
+        try (var scenario = ActivityScenario.launch(TestActivity.class, options.toBundle())) {
+            final TestActivity[] activity = new TestActivity[1];
+            scenario.onActivity(a -> activity[0] = a);
+            verifyRoundedCorners(
+                    activity[0],
+                    true /* excludeRoundedCorners */,
+                    false /* insetsShouldHaveRoundedCorners */);
+        }
+    }
+
+    private void verifyRoundedCorners(
+            TestActivity activity,
+            boolean excludedRoundedCorners,
+            boolean insetsShouldHaveRoundedCorners) {
         if (excludedRoundedCorners && !activity.hasRoundedCorners()) {
             Log.d(TAG, "There is no rounded corner on the display. Skipped!!");
             return;
@@ -147,7 +193,7 @@ public class RoundedCornerTests extends ActivityManagerTestBase {
             final WindowInsets insets = activity.getDispatchedInsets();
             Log.d(TAG, "Received insets: " + insets);
 
-            if (excludedRoundedCorners) {
+            if (excludedRoundedCorners || !insetsShouldHaveRoundedCorners) {
                 for (int i = 0; i < POSITION_LENGTH; i++) {
                     assertNull("The rounded corners should be null.",
                             insets.getRoundedCorner(i));

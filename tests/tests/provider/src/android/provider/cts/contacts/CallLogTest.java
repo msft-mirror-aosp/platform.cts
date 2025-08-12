@@ -32,7 +32,6 @@ import android.os.ParcelFileDescriptor;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.CallLog;
 import android.provider.CallLog.Calls;
 import android.provider.cts.R;
@@ -378,7 +377,6 @@ public class CallLogTest extends InstrumentationTestCase {
      * {@link CallLog.Calls#ASSERTED_DISPLAY_NAME} values can be populated in the call logs and
      * fetched.
      */
-    @RequiresFlagsEnabled(Flags.FLAG_BUSINESS_CALL_COMPOSER)
     public void testInsertingBusinessCallComposerValues() {
         if (!Flags.businessCallComposer()) {
             return;
@@ -414,8 +412,11 @@ public class CallLogTest extends InstrumentationTestCase {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_INTEGRATED_CALL_LOGS)
     public void testInsertUuidValue() {
+        if (!Flags.integratedCallLogs()) {
+            return;
+        }
+
         final String[] uuidSelection = new String[] {Calls.NUMBER, Calls.TYPE, Calls.UUID};
         try {
             // needed in order to populate call log database
@@ -427,7 +428,7 @@ public class CallLogTest extends InstrumentationTestCase {
             String uuid = "testUid123";
             Uri newlyCreatedCallLogRow =
                     mContentResolver.insert(
-                            CallLog.Calls.CONTENT_URI, createCallLogIntegrationUuid(uuid));
+                            Calls.CONTENT_URI_WITH_VOIP_CALLS, createCallLogIntegrationUuid(uuid));
             // fetch the newly inserted call log and assert the values
             Cursor cursor =
                     mContentResolver.query(
@@ -443,7 +444,6 @@ public class CallLogTest extends InstrumentationTestCase {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_INTEGRATED_CALL_LOGS)
     public void testQueryAndDeleteVoIPCallLogs() {
         if (!Flags.integratedCallLogs()) {
             return;
@@ -589,7 +589,6 @@ public class CallLogTest extends InstrumentationTestCase {
                 e.getErrorCode());
     }
 
-    @RequiresFlagsEnabled(android.provider.Flags.FLAG_ALLOW_CONFIG_MAXIMUM_CALL_LOG_ENTRIES_PER_SIM)
     public void testAddCallLogs_withMaximumCallLogEntriesPerSim() {
         if (!android.provider.Flags.allowConfigMaximumCallLogEntriesPerSim()) {
             return;

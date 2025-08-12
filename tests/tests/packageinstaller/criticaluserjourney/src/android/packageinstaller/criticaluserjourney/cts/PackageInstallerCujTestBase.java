@@ -67,6 +67,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 /**
@@ -121,6 +123,7 @@ public class PackageInstallerCujTestBase {
     public static final String BUTTON_MORE_DETAILS = "More details";
     public static final String BUTTON_INSTALL_WITHOUT_VERIFYING_LABEL = "Install without verifying";
     public static final String BUTTON_UPDATE_WITHOUT_VERIFYING_LABEL = "Update without verifying";
+    public static final String BUTTON_RETRY_LABEL = "Try again";
 
     public static final String CLONE_LABEL = "Clone";
     public static final String DELETE_LABEL = "delete";
@@ -212,6 +215,44 @@ public class PackageInstallerCujTestBase {
      */
     public static void assertTestPackageVersion2Installed() {
         assertThat(isTestPackageVersion2Installed()).isTrue();
+    }
+
+    /**
+     * Assert the test package that is the {@link #TEST_APK_VERSION} is installed with a retry
+     * mechanism. The timeout value is 5 seconds.
+     */
+    public static void assertTestPackageInstalledWithRetry() {
+        assertTestPackageVersionInstalledWithRetry(TEST_APK_VERSION);
+    }
+
+    /**
+     * Assert the test package that is the {@link #TEST_APK_V2_VERSION} is installed with a retry
+     * mechanism. The timeout value is 5 seconds.
+     */
+    public static void assertTestPackageVersion2InstalledWithRetry() {
+        assertTestPackageVersionInstalledWithRetry(TEST_APK_V2_VERSION);
+    }
+
+    /**
+     * Assert the test package that is the {@code version} is installed with a retry mechanism. The
+     * timeout value is 5 seconds.
+     */
+    private static void assertTestPackageVersionInstalledWithRetry(long version) {
+        boolean result = isInstalledAndVerifyVersionCode(TEST_APP_PACKAGE_NAME, version);
+        final long timeoutMs = 5 * 1000L;
+        long startTime = System.currentTimeMillis();
+        final CompletableFuture<Boolean> completableFuture = new CompletableFuture<>();
+        while (startTime + timeoutMs > System.currentTimeMillis() && !result) {
+            // Use CompletableFuture to wait for 500 ms without using Thread.sleep here.
+            try {
+                completableFuture.get(500, TimeUnit.MILLISECONDS);
+            } catch (Exception expected) {
+                // do nothing
+            }
+            result = isInstalledAndVerifyVersionCode(TEST_APP_PACKAGE_NAME, version);
+        }
+
+        assertThat(result).isTrue();
     }
 
     /**

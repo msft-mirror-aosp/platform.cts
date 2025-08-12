@@ -138,8 +138,10 @@ public class NotificationAssistantServiceTest {
         PermissionUtils.grantPermission(mContext.getPackageName(), POST_NOTIFICATIONS);
         mNotificationManager = (NotificationManager) mContext.getSystemService(
                 Context.NOTIFICATION_SERVICE);
-        mNotificationManager.createNotificationChannel(new NotificationChannel(
-                NOTIFICATION_CHANNEL_ID, "name", NotificationManager.IMPORTANCE_DEFAULT));
+        NotificationChannel channel = new NotificationChannel(
+                NOTIFICATION_CHANNEL_ID, "name", NotificationManager.IMPORTANCE_DEFAULT);
+        channel.setSound(null, null);
+        mNotificationManager.createNotificationChannel(channel);
         mStatusBarManager = (StatusBarManager) mContext.getSystemService(
                 Context.STATUS_BAR_SERVICE);
         mHelper = new NotificationHelper(mContext);
