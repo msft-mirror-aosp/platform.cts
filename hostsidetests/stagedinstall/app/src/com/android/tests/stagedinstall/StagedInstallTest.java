@@ -22,6 +22,7 @@ import static com.android.cts.install.lib.InstallUtils.getPackageInstaller;
 import static com.android.cts.install.lib.PackageInstallerSessionInfoSubject.assertThat;
 import static com.android.cts.shim.lib.ShimPackage.DIFFERENT_APEX_PACKAGE_NAME;
 import static com.android.cts.shim.lib.ShimPackage.NOT_PRE_INSTALL_APEX_PACKAGE_NAME;
+import static com.android.cts.shim.lib.ShimPackage.PRIVILEGED_SHIM_PACKAGE_NAME;
 import static com.android.cts.shim.lib.ShimPackage.SHIM_APEX_PACKAGE_NAME;
 import static com.android.cts.shim.lib.ShimPackage.SHIM_PACKAGE_NAME;
 
@@ -168,6 +169,9 @@ public class StagedInstallTest {
             /*isApex*/true, "com.android.apex.cts.shim.v3_rebootless.apex");
     private static final TestApp Apex2AsApk = new TestApp("Apex2", SHIM_APEX_PACKAGE_NAME, 2,
             /*isApex*/false, "com.android.apex.cts.shim.v2.apex");
+    private static final TestApp UpgradedApkInApex = new TestApp(
+            "CtsShimPrivUpgradeApk", PRIVILEGED_SHIM_PACKAGE_NAME, 2,
+            /*isApex*/false, "CtsShimPrivUpgradePrebuilt.apk");
 
     @Before
     public void adoptShellPermissions() {
@@ -511,12 +515,10 @@ public class StagedInstallTest {
         try {
             SystemUtil.runShellCommandForNoOutput("pm bypass-staged-installer-check true");
             assertThat(getInstalledVersion(SHIM_APEX_PACKAGE_NAME)).isEqualTo(1);
-            TestApp apex = new TestApp(
-                    "Apex2", SHIM_APEX_PACKAGE_NAME, 2, /*isApex*/true,
-                    "com.android.apex.cts.shim.v2.apex");
-            InstallUtils.commitExpectingFailure(AssertionError.class,
+            InstallUtils.commitExpectingFailure(
+                    AssertionError.class,
                     "does not support non-staged update",
-                    Install.single(apex));
+                    Install.single(TestApp.Apex2));
             assertThat(getInstalledVersion(SHIM_APEX_PACKAGE_NAME)).isEqualTo(1);
         } finally {
             SystemUtil.runShellCommandForNoOutput("pm bypass-staged-installer-check false");
@@ -1362,6 +1364,25 @@ public class StagedInstallTest {
             }
             foundPackages.add(pi.packageName);
         }
+    }
+
+    @Test
+    public void testStagedInstallApex_updatedApkVersionBetterThanApkInApex_commit()
+            throws Exception {
+        // First, upgrade an APK contained in the APEX.
+        Install.single(UpgradedApkInApex).commit();
+
+        // Now stage the upgraded APEX for install.
+        int sessionId = stageSingleApk(TestApp.Apex2).assertSuccessful().getSessionId();
+        storeSessionId(sessionId);
+    }
+
+    @Test
+    public void testStagedInstallApex_updatedApkVersionBetterThanApkInApex_verifyPostReboot()
+            throws Exception {
+        int sessionId = retrieveLastSessionId();
+        assertSessionApplied(sessionId);
+        assertThat(getInstalledVersion(SHIM_APEX_PACKAGE_NAME)).isEqualTo(2);
     }
 
     // It becomes harder to maintain this variety of install-related helper methods.
