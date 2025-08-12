@@ -245,17 +245,19 @@ public class WifiP2pConfigTest extends AndroidTestCase {
     @ApiTest(
             apis = {
                 "android.net.wifi.p2p"
-                        + ".WifiP2pPairingBootstrappingConfig#GetPairingBootstrappingMethod"
+                        + ".WifiP2pPairingBootstrappingConfig#GetPairingBootstrappingMethod",
+                "android.net.wifi.p2p"
+                        + ".WifiP2pPairingBootstrappingConfig#getPairingBootstrappingPassword"
             })
     @RequiresFlagsEnabled(
             Flags.FLAG_EXTERNAL_APPROVER_SUPPORT_FOR_WFDR2_PASSWORD_BASED_BOOTSTRAPPING)
     @SdkSuppress(minSdkVersion = 37)
-    public void testWifiP2pConfigGetPairingBootstrappingMethod() {
+    public void testWifiP2pConfigGetPairingBootstrappingMethodAndPassword() {
         WifiP2pPairingBootstrappingConfig pairingBootstrappingConfig =
                 new WifiP2pPairingBootstrappingConfig(
                         WifiP2pPairingBootstrappingConfig
-                                .PAIRING_BOOTSTRAPPING_METHOD_KEYPAD_PASSPHRASE,
-                        "");
+                                .PAIRING_BOOTSTRAPPING_METHOD_DISPLAY_PASSPHRASE,
+                        TEST_PASSPHRASE);
         WifiP2pConfig config =
                 new WifiP2pConfig.Builder()
                         .setDeviceAddress(MacAddress.fromString(TEST_DEVICE_ADDRESS))
@@ -265,8 +267,11 @@ public class WifiP2pConfigTest extends AndroidTestCase {
                 config.getPairingBootstrappingConfig();
         assertNotNull(retrievedPairingBootstrappingConfig);
         assertEquals(
-                WifiP2pPairingBootstrappingConfig.PAIRING_BOOTSTRAPPING_METHOD_KEYPAD_PASSPHRASE,
+                WifiP2pPairingBootstrappingConfig.PAIRING_BOOTSTRAPPING_METHOD_DISPLAY_PASSPHRASE,
                 retrievedPairingBootstrappingConfig.getPairingBootstrappingMethod());
+        assertEquals(
+                TEST_PASSPHRASE,
+                retrievedPairingBootstrappingConfig.getPairingBootstrappingPassword());
     }
 
     private static void assertWifiP2pConfigHasFields(WifiP2pConfig config,
