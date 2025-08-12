@@ -19,9 +19,6 @@ import com.google.common.collect.ImmutableSet
 import com.google.common.io.Resources
 import java.io.IOException
 import java.nio.charset.StandardCharsets
-import java.util.Arrays
-import java.util.function.Function
-import java.util.stream.Collectors
 import javax.lang.model.type.TypeKind
 import javax.lang.model.type.TypeMirror
 import javax.lang.model.util.Elements
@@ -39,33 +36,27 @@ class Apis private constructor(private val mMethods: ImmutableSet<MethodSignatur
     }
 
     companion object {
-        private val API_FILES = arrayOf<String?>(
+        private val API_FILES = arrayOf<String>(
             "current.txt",
             "wifi-current.txt",
             "bluetooth-current.txt",
             "system-current.txt"
         )
 
-        private val API_TXTS: MutableMap<String?, String?> = initialiseApiTxts()
-        private val sPackageToApi: MutableMap<String?, Apis?> = HashMap<String?, Apis?>()
+        private val API_TXTS: Map<String, String> = initialiseApiTxts()
+        private val sPackageToApi: Map<String?, Apis?> = HashMap<String?, Apis?>()
 
-        private fun initialiseApiTxts(): MutableMap<String?, String?> {
-            return Arrays.stream<String?>(API_FILES)
-                .collect(
-                    Collectors.toMap(
-                        Function { f: String? -> f },
-                        Function toMap@{ f: String? ->
-                            try {
-                                return@toMap Resources.toString(
-                                    Processor::class.java.getResource("/apis/" + f),
-                                    StandardCharsets.UTF_8
-                                )
-                            } catch (e: IOException) {
-                                throw IllegalStateException("Could not read file " + f)
-                            }
-                        }
+        private fun initialiseApiTxts(): Map<String, String> {
+            return API_FILES.associate {
+                try {
+                    it to Resources.toString(
+                        Processor::class.java.getResource("/apis/$it"),
+                        StandardCharsets.UTF_8
                     )
-                )
+                } catch (e: IOException) {
+                    throw IllegalStateException("Could not read file $it", e)
+                }
+            }
         }
 
         /**
