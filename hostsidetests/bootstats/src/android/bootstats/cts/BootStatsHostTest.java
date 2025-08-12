@@ -16,7 +16,6 @@
 
 package android.bootstats.cts;
 
-import com.android.tradefed.util.RunUtil;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
@@ -24,6 +23,7 @@ import com.android.os.AtomsProto.Atom;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.IDeviceTest;
+import com.android.tradefed.util.RunUtil;
 
 import org.junit.Assert;
 import org.junit.Assume;
@@ -31,7 +31,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.LinkedList;
-
 
 /**
  * Set of tests that verify statistics collection during boot.
@@ -127,7 +126,7 @@ public class BootStatsHostTest implements IDeviceTest {
         // reboot device
         getDevice().rebootUntilOnline();
         waitForBootCompleted();
-        int upperBoundSeconds = (int) ((System.currentTimeMillis() - startTime) / 1000);
+        int upperBoundMilliseconds = (int) (System.currentTimeMillis() - startTime);
 
         // wait for logs to post
         RunUtil.getDefault().sleep(10000);
@@ -161,8 +160,9 @@ public class BootStatsHostTest implements IDeviceTest {
             }
         }
         Assert.assertTrue("log line did not contain a tag " + bucketTag, foundBucket);
-        Assert.assertTrue("reported boot time must be less than observed boot time",
-                bootTime < upperBoundSeconds);
+        Assert.assertTrue(
+                "reported boot time must be less than observed boot time",
+                bootTime < upperBoundMilliseconds);
         Assert.assertTrue("reported boot time must be non-zero", bootTime > 0);
     }
 
