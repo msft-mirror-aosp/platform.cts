@@ -100,7 +100,7 @@ public class WifiLocationInfoBackgroundTest extends WifiJUnit4TestBase{
             return;
         }
         // TODO(b/290671748): re-enable the test when we havea solution on wear devices
-        if (isWearDevice()) {
+        if (isWearDevice() || isAutomotiveDevice()) {
             return;
         }
         sShouldRunTest = true;
@@ -145,6 +145,10 @@ public class WifiLocationInfoBackgroundTest extends WifiJUnit4TestBase{
 
     private static boolean isWearDevice() {
         return sContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
+    }
+
+    private static boolean isAutomotiveDevice() {
+        return sContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 
     @Before
