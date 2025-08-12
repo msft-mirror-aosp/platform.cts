@@ -577,6 +577,48 @@ public class MediaStore_FilesTest {
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SPECIAL_FORMAT_COLUMN)
+    public void testSpecialFormatMediaColumn_enabled() throws Exception {
+        final File file =
+                new File(
+                        MediaProviderTestUtils.stageDownloadDir(mVolumeName),
+                        "test" + System.nanoTime() + ".jpg");
+
+        MediaProviderTestUtils.stageFile(R.raw.test_motion_photo, file);
+        final Uri uri = MediaStore.scanFile(mResolver, file);
+
+        try {
+            String mimeType = queryString(uri, FileColumns.MIME_TYPE);
+            assertEquals("image/jpeg", mimeType);
+            long specialFormat = queryLong(uri, FileColumns._SPECIAL_FORMAT);
+            assertEquals(FileColumns._SPECIAL_FORMAT_MOTION_PHOTO, specialFormat);
+        } finally {
+            mResolver.delete(uri, null);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SPECIAL_FORMAT_COLUMN)
+    public void testSpecialFormatMediaColumn_defaultValueNone() throws Exception {
+        final File file =
+                new File(
+                        MediaProviderTestUtils.stageDownloadDir(mVolumeName),
+                        "test" + System.nanoTime() + ".mp3");
+
+        MediaProviderTestUtils.stageFile(R.raw.iso88591_11, file);
+        final Uri uri = MediaStore.scanFile(mResolver, file);
+
+        try {
+            String mimeType = queryString(uri, FileColumns.MIME_TYPE);
+            assertEquals("audio/mpeg", mimeType);
+            long specialFormat = queryLong(uri, FileColumns._SPECIAL_FORMAT);
+            assertEquals(FileColumns._SPECIAL_FORMAT_NONE, specialFormat);
+        } finally {
+            mResolver.delete(uri, null);
+        }
+    }
+
     private long queryLong(Uri uri, String columnName) {
         try (Cursor c = mResolver.query(uri, new String[] { columnName }, null, null, null)) {
             assertTrue(c.moveToFirst());
