@@ -16,18 +16,25 @@
 
 package android.net.wifi.p2p.cts;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
+
+import android.net.wifi.cts.WifiJUnit4TestBase;
 import android.net.wifi.p2p.nsd.WifiP2pServiceInfo;
 import android.net.wifi.p2p.nsd.WifiP2pServiceRequest;
 import android.net.wifi.p2p.nsd.WifiP2pUpnpServiceRequest;
-import android.test.AndroidTestCase;
-import android.util.Log;
 
-import java.util.Arrays;
-import java.util.List;
+import androidx.test.filters.SmallTest;
+import androidx.test.runner.AndroidJUnit4;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.util.Locale;
-import java.util.stream.Collectors;
 
-public class WifiP2pServiceRequestTest extends AndroidTestCase {
+@SmallTest
+@RunWith(AndroidJUnit4.class)
+public class WifiP2pServiceRequestTest extends WifiJUnit4TestBase {
 
     private final int TEST_UPNP_VERSION = 0x10;
     private final String TEST_UPNP_QUERY = "ssdp:all";
@@ -40,7 +47,8 @@ public class WifiP2pServiceRequestTest extends AndroidTestCase {
         return sb.toString();
     }
 
-    public void testValidRawRequest() throws IllegalArgumentException {
+    @Test
+    public void validRawRequest() throws IllegalArgumentException {
         StringBuffer sb = new StringBuffer();
         sb.append(String.format(Locale.US, "%02x", TEST_UPNP_VERSION));
         sb.append(bin2HexStr(TEST_UPNP_QUERY.getBytes()));
@@ -57,19 +65,14 @@ public class WifiP2pServiceRequestTest extends AndroidTestCase {
         assertEquals(rawRequest, upnpRequest);
     }
 
-    public void testInvalidRawRequest() {
+    @Test
+    public void invalidRawRequest() {
         StringBuffer sb = new StringBuffer();
         sb.append(String.format(Locale.US, "%02x", TEST_UPNP_VERSION));
         sb.append(bin2HexStr(TEST_UPNP_QUERY.getBytes()));
         sb.append("x");
 
-        try {
-            WifiP2pServiceRequest request =
-                    WifiP2pServiceRequest.newInstance(
-                            WifiP2pServiceInfo.SERVICE_TYPE_UPNP, sb.toString());
-            fail("Expected IllegalArgumentException");
-        } catch (IllegalArgumentException ex) {
-            return;
-        }
+        assertThrows(IllegalArgumentException.class, () -> WifiP2pServiceRequest.newInstance(
+                WifiP2pServiceInfo.SERVICE_TYPE_UPNP, sb.toString()));
     }
 }
