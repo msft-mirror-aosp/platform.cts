@@ -1875,6 +1875,7 @@ public class TunerTest {
 
             // CASE2: check resource reclaim fail when sharee's priority > new requester
             tuner100 = new Tuner(mContext, null, 100);
+            tuner100.updateResourcePriority(100, 10);
 
             // apply target frontend only, for case when there are multiple instances in
             // frontend type
@@ -1882,6 +1883,7 @@ public class TunerTest {
             assertEquals(Tuner.RESULT_SUCCESS, res);
 
             tuner300 = new Tuner(mContext, null, 300);
+            tuner300.updateResourcePriority(300, 10);
             tuner300.shareFrontendFromTuner(tuner100);
             f = tuner100.openFilter(
                     Filter.TYPE_TS, Filter.SUBTYPE_SECTION, 1000,
@@ -1889,6 +1891,7 @@ public class TunerTest {
             assertNotNull(f);
 
             tuner200 = new Tuner(mContext, null, 200);
+            tuner200.updateResourcePriority(200, 10);
 
             // apply target frontend only, for case when there are multiple instances in
             // frontend type
