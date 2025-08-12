@@ -232,8 +232,12 @@ public class CodecDecoderSurfaceTest extends CodecDecoderTestBase {
                             + "mode \n" + mTestConfig + mTestEnv + test.getErrMsg());
                 }
                 int colorFormat = getOutputFormat().getInteger(MediaFormat.KEY_COLOR_FORMAT);
-                assertTrue("In surface mode, components MUST default to the color format"
-                        + " optimized for hardware display", colorFormat == COLOR_FormatSurface);
+                boolean isOMX = mCodecName.toUpperCase().startsWith("OMX");
+                // OMX decoders don't support COLOR_FormatSurface (same as
+                // OMX_COLOR_FormatAndroidOpaque) directly.
+                assertTrue("In surface mode, components MUST default to the color format optimized "
+                           + "for hardware display",
+                        colorFormat == COLOR_FormatSurface || isOMX);
             }
             mCodec.release();
             mExtractor.release();
