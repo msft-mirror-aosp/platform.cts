@@ -15,16 +15,24 @@
  */
 package android.sdksandbox.webkit.cts;
 
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.webkit.Flags;
+
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @MediumTest
 @RunWith(AndroidJUnit4.class)
 public class SdkSandboxWebChromeClientTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @ClassRule
     public static final WebViewSandboxTestRule sSdkTestSuiteSetup =
@@ -88,6 +96,24 @@ public class SdkSandboxWebChromeClientTest {
     @Test
     public void testOnShowFileChooserInputFileMultiple() throws Throwable {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testOnShowFileChooserInputFileMultiple");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_FILE_SYSTEM_ACCESS)
+    public void testOnShowFileChooserOpenReadWrite() throws Throwable {
+        sSdkTestSuiteSetup.assertSdkTestRunPasses("testOnShowFileChooserOpenReadWrite");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_FILE_SYSTEM_ACCESS)
+    public void testOnShowFileChooserDirectory() throws Throwable {
+        sSdkTestSuiteSetup.assertSdkTestRunPasses("testOnShowFileChooserDirectory");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_FILE_SYSTEM_ACCESS)
+    public void testOnShowFileChooserSave() throws Throwable {
+        sSdkTestSuiteSetup.assertSdkTestRunPasses("testOnShowFileChooserSave");
     }
 
     @Test

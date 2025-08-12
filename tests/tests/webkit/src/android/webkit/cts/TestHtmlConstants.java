@@ -79,6 +79,9 @@ public class TestHtmlConstants {
 
     public static final String INPUT_FILE_URL = "webkit/test_input_file.html";
     public static final String INPUT_FILE_MULTIPLE_URL = "webkit/test_input_file_multiple.html";
+    public static final String SHOW_OPEN_FILE_PICKER_URL = "webkit/test_show_open_file_picker.html";
+    public static final String SHOW_DIRECTORY_PICKER_URL = "webkit/test_show_directory_picker.html";
+    public static final String SHOW_SAVE_FILE_PICKER_URL = "webkit/test_show_save_file_picker.html";
 
     public static final String getFileUrl(String assetName) {
         if (assetName.contains(":") || assetName.startsWith("/")) {
