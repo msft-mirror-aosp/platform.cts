@@ -180,7 +180,7 @@ class PhotoPickerTestRule(private val context: Context) : TestRule {
     companion object {
         private const val REQUEST_CODE = 42
         private const val UI_TIMEOUT = 5000L
-        private val TAG = "PhotoPickerTestRule"
+        private const val TAG = "PhotoPickerTestRule"
 
         /**
          * Regex to find a single media item in the picker grid. It matches content descriptions
@@ -189,6 +189,9 @@ class PhotoPickerTestRule(private val context: Context) : TestRule {
          */
         private const val REGEX_MEDIA_ITEM_CONTENT_DESCRIPTION =
             "^(Media|Photo|Video|GIF|Motion)[^s].*"
+
+        private val MEDIA_ITEM_SELECTOR =
+            By.desc(Pattern.compile(REGEX_MEDIA_ITEM_CONTENT_DESCRIPTION))
 
         /**
          * Regex to find the confirmation button in the Modern Photo Picker (e.g., "Done", "Allow").
@@ -349,6 +352,15 @@ class PhotoPickerTestRule(private val context: Context) : TestRule {
     }
 
     /**
+     * Waits for an item in the Photo Picker UI to be visible. It finds items by matching their
+     * content description against a regex that identifies single media items.
+     */
+    fun waitForItem() {
+        val itemExists = device.wait(Until.hasObject(MEDIA_ITEM_SELECTOR), UI_TIMEOUT)
+        assertTrue("No media items were found in the picker grid.", itemExists)
+    }
+
+    /**
      * Selects an item in the Photo Picker UI grid by its index.
      *
      * This method waits for the photo grid to appear and then clicks on the item at the specified
@@ -359,15 +371,11 @@ class PhotoPickerTestRule(private val context: Context) : TestRule {
      * @throws AssertionError if no items are found or if the index is out of bounds.
      */
     fun selectItem(index: Int) {
-        val itemPattern = Pattern.compile(REGEX_MEDIA_ITEM_CONTENT_DESCRIPTION)
-        val itemSelector = By.desc(itemPattern)
-
         // Wait for at least one item to appear before trying to interact.
-        val itemExists = device.wait(Until.hasObject(itemSelector), UI_TIMEOUT)
-        assertTrue("No media items were found in the picker grid.", itemExists)
+        waitForItem()
 
         // Find all items and select the one at the given index
-        val items = device.findObjects(itemSelector)
+        val items = device.findObjects(MEDIA_ITEM_SELECTOR)
         assertTrue(
             "Item index $index is out of bounds. Found ${items.size} items.",
             items.size > index,
@@ -406,7 +414,6 @@ class PhotoPickerTestRule(private val context: Context) : TestRule {
             "Could not find the confirmation button matching regex: '$buttonPatternString'",
             button,
         )
-
         button.click()
         device.waitForIdle()
     }
