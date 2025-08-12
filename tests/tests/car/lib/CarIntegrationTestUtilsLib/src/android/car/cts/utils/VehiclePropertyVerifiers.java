@@ -207,6 +207,21 @@ public class VehiclePropertyVerifiers {
                                 VehicleIgnitionState.START));
     }
 
+    /** Gets the verifier builder for {@link VehiclePropertyIds#INFO_MAKE}. */
+    public static VehiclePropertyVerifier.Builder<String> getInfoMakeVerifierBuilder() {
+        return VehiclePropertyVerifier.<String>newDefaultBuilder(VehiclePropertyIds.INFO_MAKE)
+                .setCarPropertyValueVerifier(
+                        (verifierContext,
+                                carPropertyConfig,
+                                propertyId,
+                                areaId,
+                                timestampNanos,
+                                make) ->
+                                assertWithMessage("INFO_MAKE must not be empty")
+                                        .that(make)
+                                        .isNotEmpty());
+    }
+
     /** Gets the verifier builder for {@link VehiclePropertyIds#PARKING_BRAKE_ON}. */
     public static VehiclePropertyVerifier.Builder<Boolean> getParkingBrakeOnVerifierBuilder() {
         return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
