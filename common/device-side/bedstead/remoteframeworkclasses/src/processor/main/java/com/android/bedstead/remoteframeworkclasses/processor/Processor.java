@@ -36,6 +36,7 @@ import java.io.PrintWriter;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -109,8 +110,61 @@ public final class Processor extends AbstractProcessor {
 
     private static final ImmutableSet<String> BLOCKLISTED_TYPES =
             loadList("/apis/type-blocklist.txt");
-    private static final ImmutableSet<String> ALLOWLISTED_METHODS =
-            loadList("/apis/allowlisted-methods.txt");
+
+    // TODO(b/436548677): Remove once templates are supported.
+    private static final MethodSignature[] ALLOWLISTED_METHODS =
+            new MethodSignature[] {
+                MethodSignature.forHardcoded(
+                        MethodSignature.Visibility.PUBLIC,
+                        "android.accounts.AccountManagerFuture<V>",
+                        "addAccount",
+                        List.of(
+                                "java.lang.String",
+                                "java.lang.String",
+                                "java.lang.String[]",
+                                "android.os.Bundle",
+                                "android.app.Activity",
+                                "android.accounts.AccountManagerCallback<V>",
+                                "android.os.Handler")),
+                MethodSignature.forHardcoded(
+                        MethodSignature.Visibility.PUBLIC,
+                        "android.accounts.AccountManagerFuture<V>",
+                        "removeAccount",
+                        List.of(
+                                "android.accounts.Account",
+                                "android.app.Activity",
+                                "android.accounts.AccountManagerCallback<V>",
+                                "android.os.Handler")),
+                MethodSignature.forHardcoded(
+                        MethodSignature.Visibility.PUBLIC,
+                        "android.app.admin.DevicePolicyManager",
+                        "getParentProfileInstance",
+                        List.of("android.content.ComponentName")),
+                MethodSignature.forHardcoded(
+                        MethodSignature.Visibility.PUBLIC,
+                        "android.accounts.AccountManagerFuture<V>",
+                        "updateCredentials",
+                        List.of(
+                                "android.accounts.Account",
+                                "java.lang.String",
+                                "android.os.Bundle",
+                                "android.app.Activity",
+                                "android.accounts.AccountManagerCallback<V>",
+                                "android.os.Handler")),
+                MethodSignature.forHardcoded(
+                        MethodSignature.Visibility.PUBLIC,
+                        "android.content.ContentResolver",
+                        "getContentResolver",
+                        List.of()),
+                MethodSignature.forHardcoded(
+                        MethodSignature.Visibility.PUBLIC,
+                        "java.security.PrivateKey",
+                        "getPrivateKey",
+                        List.of("android.content.Context", "java.lang.String"),
+                        Set.of(
+                                "java.lang.InterruptedException",
+                                "android.security.KeyChainException"))
+            };
 
     /** A set of all classes listed in test-current.txt. */
     static final ImmutableSet<ClassSignature> CLASSES_LISTED_IN_TEST_CURRENT_FILE =
@@ -163,10 +217,8 @@ public final class Processor extends AbstractProcessor {
     public boolean process(Set<? extends TypeElement> annotations,
             RoundEnvironment roundEnv) {
         if (!roundEnv.getElementsAnnotatedWith(RemoteFrameworkClasses.class).isEmpty()) {
-            Set<MethodSignature> allowListedMethods = ALLOWLISTED_METHODS.stream()
-                    .map(i -> MethodSignature.forApiString(i, processingEnv.getTypeUtils(),
-                            processingEnv.getElementUtils()))
-                    .collect(Collectors.toUnmodifiableSet());
+            Set<MethodSignature> allowListedMethods =
+                    new HashSet<>(Arrays.asList(ALLOWLISTED_METHODS));
 
             for (String systemService : FRAMEWORK_CLASSES) {
                 TypeElement typeElement =
@@ -438,16 +490,18 @@ public final class Processor extends AbstractProcessor {
         TypeSpec.Builder classBuilder =
                 TypeSpec.classBuilder(className).addModifiers(Modifier.FINAL, Modifier.PUBLIC);
 
-        classBuilder.addAnnotation(AnnotationSpec.builder(CrossUser.class)
-                .addMember("parcelableWrappers",
-                        "{$T.class, $T.class, $T.class, $T.class, $T.class, $T.class}",
-                        NULL_PARCELABLE_REMOTE_DEVICE_POLICY_MANAGER_CLASSNAME,
-                        NULL_PARCELABLE_REMOTE_CONTENT_RESOLVER_CLASSNAME,
-                        NULL_PARCELABLE_REMOTE_BLUETOOTH_ADAPTER_CLASSNAME,
-                        NULL_PARCELABLE_ACTIVITY_CLASSNAME,
-                        NULL_PARCELABLE_ACCOUNT_MANAGER_CALLBACK_CLASSNAME,
-                        NULL_HANDLER_CALLBACK_CLASSNAME)
-                .build());
+        classBuilder.addAnnotation(
+                AnnotationSpec.builder(CrossUser.class)
+                        .addMember(
+                                "parcelableWrappers",
+                                "{$T.class, $T.class, $T.class, $T.class, $T.class, $T.class}",
+                                NULL_PARCELABLE_REMOTE_DEVICE_POLICY_MANAGER_CLASSNAME,
+                                NULL_PARCELABLE_REMOTE_CONTENT_RESOLVER_CLASSNAME,
+                                NULL_PARCELABLE_REMOTE_BLUETOOTH_ADAPTER_CLASSNAME,
+                                NULL_PARCELABLE_ACTIVITY_CLASSNAME,
+                                NULL_PARCELABLE_ACCOUNT_MANAGER_CALLBACK_CLASSNAME,
+                                NULL_HANDLER_CALLBACK_CLASSNAME)
+                        .build());
 
         classBuilder.addField(ClassName.get(frameworkClass),
                 "mFrameworkClass", Modifier.PRIVATE, Modifier.FINAL);
@@ -690,14 +744,16 @@ public final class Processor extends AbstractProcessor {
                     } else {
                         methodBuilder.addStatement(
                                 "return $L.$L($L, $L)",
-                                TEST_APIS_REFLECTION_FILE, method.getSimpleName(),
+                                TEST_APIS_REFLECTION_FILE,
+                                method.getSimpleName(),
                                 "mFrameworkClass",
                                 String.join(", ", paramNames));
                     }
                 } else {
                     methodBuilder.addStatement(
                             "return $L.$L($L)",
-                            frameworkClassName, method.getSimpleName(),
+                            frameworkClassName,
+                            method.getSimpleName(),
                             String.join(", ", paramNames));
                 }
             }
@@ -720,8 +776,6 @@ public final class Processor extends AbstractProcessor {
                 } else {
                     filteredMethods.add(new Api(method, /* isTestApi= */ false));
                 }
-            } else {
-                System.out.println("No matching public API for " + methodSignature);
             }
         }
 
