@@ -884,6 +884,20 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
     }
 
     /**
+     * This method expects that we only need to click the Retry button for {@code retryCount} times
+     * and the next developer verification should go through.
+     */
+    public static void clickRetryButton(int retryCount) throws Exception {
+        for (int i = 0; i < retryCount; i++) {
+            clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_RETRY_LABEL));
+        }
+        if (!isTestPackageInstalled()) {
+            // It's possible that GPP dialog will show up after the developer verification dialog
+            allowInstallIfVerificationDialogExists();
+        }
+    }
+
+    /**
      * Toggle to grant the AppOps permission REQUEST_INSTALL_PACKAGES to the CUJ Installer.
      */
     public static void toggleToGrantRequestInstallPackagesPermission() throws Exception {

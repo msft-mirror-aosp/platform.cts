@@ -121,6 +121,7 @@ public class PackageInstallerCujTestBase {
     public static final String BUTTON_MORE_DETAILS = "More details";
     public static final String BUTTON_INSTALL_WITHOUT_VERIFYING_LABEL = "Install without verifying";
     public static final String BUTTON_UPDATE_WITHOUT_VERIFYING_LABEL = "Update without verifying";
+    public static final String BUTTON_RETRY_LABEL = "Try again";
 
     public static final String CLONE_LABEL = "Clone";
     public static final String DELETE_LABEL = "delete";
