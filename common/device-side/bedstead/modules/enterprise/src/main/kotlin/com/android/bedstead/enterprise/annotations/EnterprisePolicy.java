@@ -34,8 +34,7 @@ public @interface EnterprisePolicy {
      */
     @interface Permission {
         /** The permission required to exercise the policy. */
-        String[] appliedWith();
-
+        String appliedWith();
         /** Flags indicating who the policy applies to when applied in this way. */
         int appliesTo();
         /** Additional modifiers. */
