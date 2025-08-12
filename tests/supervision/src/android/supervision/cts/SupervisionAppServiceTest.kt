@@ -23,9 +23,8 @@ import android.Manifest.permission.QUERY_USERS
 import android.app.supervision.flags.Flags
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
-import com.android.bedstead.harrier.annotations.RequireNotAutomotive
-import com.android.bedstead.harrier.annotations.RequireNotTv
 import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser
+import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.compatibility.common.util.ApiTest
 import com.android.compatibility.common.util.supervision.withSystemSupervisionRoleHeld
@@ -35,8 +34,9 @@ import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
 @RequireFlagsEnabled(Flags.FLAG_ENABLE_SUPERVISION_APP_SERVICE)
-@RequireNotAutomotive(reason = "The SYSTEM_SUPERVISION role is not supported on automotive")
-@RequireNotTv(reason = "The SYSTEM_SUPERVISION role is not supported on TV")
+@RequireNotHeadlessSystemUserMode(
+    reason = "b/434645293 - SYSTEM_SUPERVISION role qualification bypass does not support HSUM"
+)
 class SupervisionAppServiceTest : BaseSupervisionTest() {
 
     @Test
@@ -51,7 +51,7 @@ class SupervisionAppServiceTest : BaseSupervisionTest() {
         BYPASS_ROLE_QUALIFICATION,
         MANAGE_ROLE_HOLDERS,
         QUERY_USERS,
-        OBSERVE_ROLE_HOLDERS
+        OBSERVE_ROLE_HOLDERS,
     )
     @EnsureHasNoAdditionalUser
     fun testSupervisionAppService_withSystemSupervisionRoleHeld() {
