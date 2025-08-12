@@ -34,6 +34,8 @@ import android.hardware.devicestate.feature.flags.Flags;
 import android.hardware.display.DisplayManager;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.DeviceStateUtils;
 import android.server.wm.jetpack.utils.TestActivity;
 import android.server.wm.jetpack.utils.TestActivityLauncher;
@@ -73,6 +75,8 @@ import java.util.List;
 @RequiresFlagsEnabled(Flags.FLAG_DEVICE_STATE_RDM_V2)
 public class ExtensionRearDisplayOuterDefaultTest extends WindowManagerJetpackTestBase
         implements DeviceStateManager.DeviceStateCallback {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private final Context mInstrumentationContext = getInstrumentation().getTargetContext();
     private final DeviceStateManager mDeviceStateManager =

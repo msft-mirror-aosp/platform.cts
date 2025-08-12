@@ -16,16 +16,15 @@
 
 package android.server.wm.activity
 
+import android.app.HandoffActivityData
+import android.app.HandoffActivityDataRequestInfo
+import android.net.Uri
+import android.os.PersistableBundle
 import android.platform.test.annotations.RequiresFlagsEnabled
-import android.platform.test.flag.junit.SetFlagsRule
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.server.wm.WindowManagerTestBase
 import com.android.compatibility.common.util.ApiTest
 import org.junit.Assert.assertEquals
-import android.net.Uri
-import android.os.PersistableBundle
-import android.app.HandoffActivityData
-import android.app.HandoffActivityDataRequestInfo
-import android.content.ComponentName
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -45,7 +44,8 @@ import org.junit.Test
 )
 class HandoffActivityTests : WindowManagerTestBase() {
 
-    @get:Rule val checkFlagsRule = SetFlagsRule()
+    @get:Rule
+    val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     /**
      * Tests that [ActivityRecord.mIsHandoffEnabled] is correctly set when
@@ -114,7 +114,7 @@ class HandoffActivityTests : WindowManagerTestBase() {
 
     class TestActivity : FocusableActivity() {
 
-        private var mHandoffActivityData : HandoffActivityData? = null
+        private var mHandoffActivityData: HandoffActivityData? = null
 
         public fun setHandoffActivityData(handoffActivityData: HandoffActivityData?) {
             mHandoffActivityData = handoffActivityData

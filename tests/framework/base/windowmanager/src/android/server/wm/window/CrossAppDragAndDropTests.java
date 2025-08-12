@@ -38,6 +38,8 @@ import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.DeprecatedTargetSdkUtils;
 import android.server.wm.TestLogService;
@@ -51,6 +53,7 @@ import com.google.common.collect.ImmutableSet;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -66,6 +69,9 @@ import java.util.Map;
 @RunWith(Parameterized.class)
 @android.server.wm.annotation.Group2
 public class CrossAppDragAndDropTests extends ActivityManagerTestBase {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String TAG = "CrossAppDragAndDrop";
 
     private static final int SWIPE_STEPS = 100;
