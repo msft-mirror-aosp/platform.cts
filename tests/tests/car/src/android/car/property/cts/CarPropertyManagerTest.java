@@ -54,6 +54,7 @@ import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoEvBatteryCap
 import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoEvConnectorTypeVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoEvPortLocationVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoMakeVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoModelVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getLocationCharacterizationVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getNightModeVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getParkingBrakeOnVerifierBuilder;
@@ -2295,20 +2296,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                 assertWithMessage("INFO_VIN must be 17 characters")
                                         .that(vin)
                                         .hasLength(17));
-    }
-
-    private static VehiclePropertyVerifier.Builder<String> getInfoModelVerifierBuilder() {
-        return VehiclePropertyVerifier.<String>newDefaultBuilder(VehiclePropertyIds.INFO_MODEL)
-                .setCarPropertyValueVerifier(
-                        (verifierContext,
-                                carPropertyConfig,
-                                propertyId,
-                                areaId,
-                                timestampNanos,
-                                model) ->
-                                assertWithMessage("INFO_MODEL must not be empty")
-                                        .that(model)
-                                        .isNotEmpty());
     }
 
     private static VehiclePropertyVerifier.Builder<Integer> getInfoModelYearVerifierBuilder() {

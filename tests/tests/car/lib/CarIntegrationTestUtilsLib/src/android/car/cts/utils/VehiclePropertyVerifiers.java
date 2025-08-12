@@ -222,6 +222,21 @@ public class VehiclePropertyVerifiers {
                                         .isNotEmpty());
     }
 
+    /** Gets the verifier builder for {@link VehiclePropertyIds#INFO_MODEL}. */
+    public static VehiclePropertyVerifier.Builder<String> getInfoModelVerifierBuilder() {
+        return VehiclePropertyVerifier.<String>newDefaultBuilder(VehiclePropertyIds.INFO_MODEL)
+                .setCarPropertyValueVerifier(
+                        (verifierContext,
+                                carPropertyConfig,
+                                propertyId,
+                                areaId,
+                                timestampNanos,
+                                model) ->
+                                assertWithMessage("INFO_MODEL must not be empty")
+                                        .that(model)
+                                        .isNotEmpty());
+    }
+
     /** Gets the verifier builder for {@link VehiclePropertyIds#PARKING_BRAKE_ON}. */
     public static VehiclePropertyVerifier.Builder<Boolean> getParkingBrakeOnVerifierBuilder() {
         return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
