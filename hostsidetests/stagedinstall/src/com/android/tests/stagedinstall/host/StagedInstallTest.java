@@ -38,7 +38,6 @@ import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -652,7 +651,7 @@ public class StagedInstallTest extends BaseHostJUnit4Test {
                 () -> new AssertionError("Can't find " + SHIM_APEX_PACKAGE_NAME)
         );
 
-        assertThat(shimApex.sourceDir).startsWith("/data/apex/active");
+        assertThat(shimApex.isFactory).isFalse();
         assertThat(getDevice().pullFile(shimApex.sourceDir)).isNotNull();
     }
 
@@ -897,7 +896,10 @@ public class StagedInstallTest extends BaseHostJUnit4Test {
 
         private String getStagedSessions() {
             try {
-                return mInstance.getDevice().executeShellV2Command("pm get-stagedsessions").getStdout();
+                return mInstance
+                        .getDevice()
+                        .executeShellV2Command("pm get-stagedsessions")
+                        .getStdout();
             } catch (DeviceNotAvailableException e) {
                 Log.e(TAG, e);
                 return "Failed to get staged sessions";
