@@ -19,11 +19,10 @@ import com.android.bedstead.testapis.parser.signatures.ClassSignature
 import com.android.tools.metalava.model.ArrayTypeItem
 import com.android.tools.metalava.model.BaseTypeVisitor
 import com.android.tools.metalava.model.MethodItem
+import com.android.tools.metalava.model.PrimitiveTypeItem
+import com.android.tools.metalava.model.ReferenceTypeItem
 import com.android.tools.metalava.model.TypeItem
-import java.util.Arrays
-import java.util.Locale
 import java.util.Objects
-import java.util.stream.Collectors
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.Modifier
 import javax.lang.model.type.DeclaredType
@@ -196,159 +195,52 @@ class MethodSignature(
 
             val name = method.name()
 
-            val returnType = typeForString(method.returnType().toTypeString(), types, elements)
+            val returnType = typeForApi(method.returnType(), types, elements)
             val parameters = method.parameters().map {
-                typeForString(it.type().toTypeString(), types, elements)
+                typeForApi(it.type(), types, elements)
             }
             val throws = method.throwsTypes().map {
-                typeForString(it.toTypeString(), types, elements)
+                typeForApi(it, types, elements)
             }
 
             return MethodSignature(visibility, returnType, name, parameters, throws.toSet())
         }
 
-        /**
-         * Create a [MethodSignature] for the given string from an API file.
-         */
-        // TODO(b/436548677): Remove when allowlisted-methods.txt is handled differently.
-        @JvmStatic
-        fun forApiString(
-            string: String,
-            types: Types,
-            elements: Elements
-        ): MethodSignature? {
-            var string = string
-            try {
-                // Strip annotations
-                string = string.replace("@\\w+?\\(.+?\\) ".toRegex(), "")
-                string = string.replace("@.+? ".toRegex(), "")
-
-                var parts = string.split(" ".toRegex(), limit = 2).toTypedArray()
-                val visibility: Visibility
-                try {
-                    visibility = Visibility.valueOf(parts[0].uppercase(Locale.getDefault()))
-                } catch (e: IllegalArgumentException) {
-                    throw IllegalStateException("Error finding visibility in string " + string)
-                }
-                string = parts[1]
-                parts = string.split(" ".toRegex(), limit = 2).toTypedArray()
-
-                val returnType: TypeMirror
-                while (parts[0] == "abstract" || parts[0] == "final" || parts[0] == "static") {
-                    // These don't affect the signature in ways we care about
-                    string = parts[1]
-                    parts = string.split(" ".toRegex(), limit = 2).toTypedArray()
-                }
-
-                if (string.startsWith("<")) {
-                    // This includes type arguments, for now we ignore this method
-                    return null
-                }
-
-                returnType = typeForString(parts[0], types, elements)
-
-                string = parts[1]
-                parts = string.split("\\(".toRegex(), limit = 2).toTypedArray()
-                val methodName = parts[0]
-                string = parts[1]
-                parts = string.split("\\)".toRegex(), limit = 2).toTypedArray()
-                // Remove generic types as we don't need to care about them at this point
-                var parametersString = parts[0].replace("<.*>".toRegex(), "")
-                // Remove varargs
-                parametersString = parametersString.replace("\\.\\.\\.".toRegex(), "")
-                val parameters: MutableList<TypeMirror>
-                try {
-                    parameters = Arrays.stream<String?>(
-                        parametersString.split(", ".toRegex())
-                        .dropLastWhile { it.isEmpty() }
-                        .toTypedArray())
-                        .map<String?> { obj: String? -> obj!!.trim { it <= ' ' } }
-                        .filter { t: String? -> !t!!.isEmpty() }
-                        .map<TypeMirror?> { t: String? ->
-                            Companion.typeForString(
-                                t!!, types, elements
-                            )
-                        }
-                        .collect(Collectors.toList())
-                } catch (e: IllegalStateException) {
-                    throw IllegalStateException(
-                        "Error parsing types from string " + parametersString,
-                        e
-                    )
-                }
-                string = parts[1]
-                var exceptions: MutableSet<TypeMirror> = HashSet()
-                if (string.contains("throws")) {
-                    exceptions = Arrays.stream<String?>(
-                        string.split("throws ".toRegex(), limit = 2)
-                        .toTypedArray()[1].split(",".toRegex())
-                        .dropLastWhile { it.isEmpty() }
-                        .toTypedArray())
-                        .map<String?> { t: String? -> t!!.trim { it <= ' ' } }
-                        .filter { t: String? -> !t!!.isEmpty() }
-                        .map<TypeMirror?> { t: String? ->
-                            Companion.typeForString(
-                                t!!, types, elements
-                            )
-                        }
-                        .collect(Collectors.toSet())
-                }
-
-                return MethodSignature(
-                    visibility,
-                    returnType,
-                    methodName,
-                    parameters.toList(),
-                    exceptions.toSet()
-                )
-            } catch (e: Exception) {
-                throw RuntimeException("TestApisReflection: unable to parse method: " + string, e)
+        private fun typeForApi(type: PrimitiveTypeItem, types: Types): TypeMirror {
+            val kind = when (type.kind) {
+                PrimitiveTypeItem.Primitive.BOOLEAN -> TypeKind.BOOLEAN
+                PrimitiveTypeItem.Primitive.BYTE -> TypeKind.BYTE
+                PrimitiveTypeItem.Primitive.CHAR -> TypeKind.CHAR
+                PrimitiveTypeItem.Primitive.DOUBLE -> TypeKind.DOUBLE
+                PrimitiveTypeItem.Primitive.FLOAT -> TypeKind.FLOAT
+                PrimitiveTypeItem.Primitive.INT -> TypeKind.INT
+                PrimitiveTypeItem.Primitive.LONG -> TypeKind.LONG
+                PrimitiveTypeItem.Primitive.SHORT -> TypeKind.SHORT
+                PrimitiveTypeItem.Primitive.VOID -> return types.getNoType(TypeKind.VOID)
             }
+
+            return types.getPrimitiveType(kind)
         }
 
-        private fun typeForString(typeName: String, types: Types, elements: Elements): TypeMirror {
-            var typeName = typeName
-            if (typeName == "void") {
-                return types.getNoType(TypeKind.VOID)
-            }
-
-            if (isTestClass(typeName, elements)) {
-                // Use the proxy type instead
-                typeName = proxyType(typeName)
-            }
-
-            if (typeName.contains("<")) {
-                // Because of type erasure we can just drop the type argument
-                return typeForString(
-                    typeName.split("<".toRegex(), limit = 2).toTypedArray()[0],
-                    types,
-                    elements
+        private fun typeForApi(type: TypeItem, types: Types, elements: Elements): TypeMirror {
+            return when (type) {
+                is PrimitiveTypeItem -> typeForApi(type, types)
+                is ArrayTypeItem -> types.getArrayType(
+                    typeForApi(type.componentType, types, elements)
                 )
+                is ReferenceTypeItem -> {
+                    var typeName = type.toErasedTypeString()
+
+                    if (isTestClass(typeName, elements)) {
+                        typeName = proxyType(typeName)
+                    }
+
+                    val typeElement = elements.getTypeElement(typeName)
+                    checkNotNull(typeElement) { "Unknown type: $typeName" }
+                    typeElement.asType()
+                }
+                else -> throw IllegalArgumentException("Could not convert $type")
             }
-
-            if (typeName.endsWith("[]")) {
-                return types.getArrayType(
-                    typeForString(typeName.substring(0, typeName.length - 2), types, elements)
-                )
-            }
-
-            try {
-                return types.getPrimitiveType(
-                    TypeKind.valueOf(typeName.uppercase(Locale.getDefault()))
-                )
-            } catch (e: IllegalArgumentException) {
-                // Not a primitive
-            }
-
-            var element = elements.getTypeElement(typeName)
-            if (element == null) {
-                // It could be java.lang
-                element = elements.getTypeElement("java.lang." + typeName)
-            }
-
-            checkNotNull(element) { "Unknown type: " + typeName }
-
-            return element.asType()
         }
 
         /**
