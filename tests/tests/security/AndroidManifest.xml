@@ -340,6 +340,14 @@
             android:process=":pipActivity"
             android:supportsPictureInPicture="true" />
 
+        <service android:name="android.security.cts.CVE_2025_0083.PocVoipService"
+            android:exported="true"
+            android:permission="android.permission.BIND_TELECOM_CONNECTION_SERVICE">
+            <intent-filter>
+                <action android:name="android.telecom.ConnectionService"/>
+            </intent-filter>
+        </service>
+
         <!-- CVE-2025-22429 -->
         <activity android:name=".CVE_2025_22429.PocActivity"
             android:exported="true" />
