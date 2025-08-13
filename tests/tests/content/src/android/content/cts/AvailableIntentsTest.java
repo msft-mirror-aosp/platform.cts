@@ -362,7 +362,6 @@ public class AvailableIntentsTest extends AndroidTestCase {
         }
     }
 
-    @RequiresFlagsEnabled(com.android.providers.media.flags.Flags.FLAG_MOTION_PHOTO_INTENT)
     public void testMotionPhotoCaptureIntentsHandledBySystem()
             throws InterruptedException, PackageManager.NameNotFoundException, IOException {
         PackageManager packageManager = mContext.getPackageManager();
