@@ -16,7 +16,7 @@
 <configuration description="Config for CTS tests of sync adapters with different certs as the authenticator">
     <option name="test-suite-tag" value="cts" />
 
-    <option name="config-descriptor:metadata" key="component" value="framework" />
+    <option name="config-descriptor:metadata" key="component" value="packagemanager" />
     <!-- Instant apps can't have a sync adapter. -->
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
     <!-- SDK sandboxes can't have a sync adapter as they cannot declare services. -->
