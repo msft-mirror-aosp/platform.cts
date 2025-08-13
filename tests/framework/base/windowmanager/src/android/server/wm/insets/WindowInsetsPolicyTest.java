@@ -33,6 +33,8 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
+import android.app.ActivityOptions;
+import android.app.WindowConfiguration;
 import android.content.ComponentName;
 import android.content.pm.PackageManager;
 import android.graphics.Insets;
@@ -48,9 +50,7 @@ import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowManager.LayoutParams;
 
-import androidx.test.rule.ActivityTestRule;
-
-import com.android.compatibility.common.util.WindowUtil;
+import androidx.test.core.app.ActivityScenario;
 
 import org.hamcrest.CustomTypeSafeMatcher;
 import org.hamcrest.Matcher;
@@ -62,6 +62,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ErrorCollector;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 
 @Presubmit
@@ -71,32 +73,14 @@ public class WindowInsetsPolicyTest extends ActivityManagerTestBase {
 
     private ComponentName mTestActivityComponentName;
 
+    private final List<ActivityScenario<? extends Activity>> mLaunchedScenarios = new ArrayList<>();
+
     @ClassRule
     public static DisableImmersiveModeConfirmationRule mDisableImmersiveModeConfirmationRule =
             new DisableImmersiveModeConfirmationRule();
 
     @Rule
     public final ErrorCollector mErrorCollector = new ErrorCollector();
-
-    @Rule
-    public final ActivityTestRule<TestActivity> mTestActivity =
-            new ActivityTestRule<>(TestActivity.class, false /* initialTouchMode */,
-                    false /* launchActivity */);
-
-    @Rule
-    public final ActivityTestRule<FullscreenTestActivity> mFullscreenTestActivity =
-            new ActivityTestRule<>(FullscreenTestActivity.class, false /* initialTouchMode */,
-                    false /* launchActivity */);
-
-    @Rule
-    public final ActivityTestRule<FullscreenWmFlagsTestActivity> mFullscreenWmFlagsTestActivity =
-            new ActivityTestRule<>(FullscreenWmFlagsTestActivity.class,
-                    false /* initialTouchMode */, false /* launchActivity */);
-
-    @Rule
-    public final ActivityTestRule<ImmersiveFullscreenTestActivity> mImmersiveTestActivity =
-            new ActivityTestRule<>(ImmersiveFullscreenTestActivity.class,
-                    false /* initialTouchMode */, false /* launchActivity */);
 
     @Before
     @Override
@@ -107,12 +91,17 @@ public class WindowInsetsPolicyTest extends ActivityManagerTestBase {
 
     @After
     public void tearDown() {
+        for (ActivityScenario<? extends Activity> scenario : mLaunchedScenarios) {
+            scenario.close();
+        }
+        mLaunchedScenarios.clear();
         Components.forceStopPackage();
     }
 
     @Test
     public void testWindowInsets_dispatched() {
-        final TestActivity activity = launchAndWait(mTestActivity);
+        final TestActivity activity =
+                launchAndWait(TestActivity.class, ActivityOptions.makeBasic());
 
         WindowInsets insets = getOnMainSync(activity::getDispatchedInsets);
         Assert.assertThat("test setup failed, no insets dispatched", insets, notNullValue());
@@ -122,7 +111,8 @@ public class WindowInsetsPolicyTest extends ActivityManagerTestBase {
 
     @Test
     public void testWindowInsets_root() {
-        final TestActivity activity = launchAndWait(mTestActivity);
+        final TestActivity activity =
+                launchAndWait(TestActivity.class, ActivityOptions.makeBasic());
 
         WindowInsets insets = getOnMainSync(activity::getRootInsets);
         Assert.assertThat("test setup failed, no insets at root", insets, notNullValue());
@@ -131,15 +121,16 @@ public class WindowInsetsPolicyTest extends ActivityManagerTestBase {
     }
 
     /**
-     * Tests whether an activity in split screen gets the top insets force consumed if
-     * {@link View#SYSTEM_UI_FLAG_FULLSCREEN} is set, and doesn't otherwise.
+     * Tests whether an activity in split screen gets the top insets force consumed if {@link
+     * View#SYSTEM_UI_FLAG_FULLSCREEN} is set, and doesn't otherwise.
      */
     @Test
-    public void testForcedConsumedTopInsets() throws Exception {
+    public void testForcedConsumedTopInsets() {
         assumeTrue("Skipping test: no split multi-window support",
                 supportsSplitScreenMultiWindow());
 
-        final TestActivity activity = launchAndWait(mTestActivity);
+        final TestActivity activity =
+                launchAndWait(TestActivity.class, ActivityOptions.makeBasic());
         final int rotation = activity.getDisplay().getRotation();
         final boolean isPortrait = activity.getResources().getConfiguration()
                 .orientation == ORIENTATION_PORTRAIT;
@@ -166,7 +157,8 @@ public class WindowInsetsPolicyTest extends ActivityManagerTestBase {
                 rootInsets.getSystemWindowInsetTop(), insets.getSystemWindowInsetTop());
 
         // Ensure that top insets are fully consumed for FULLSCREEN
-        final TestActivity fullscreenActivity = launchAndWait(mFullscreenTestActivity);
+        final TestActivity fullscreenActivity =
+                launchAndWait(FullscreenTestActivity.class, ActivityOptions.makeBasic());
         insets = getOnMainSync(fullscreenActivity::getDispatchedInsets);
         assertEquals("top insets must be consumed if FULLSCREEN is set",
                 0, insets.getSystemWindowInsetTop());
@@ -174,7 +166,7 @@ public class WindowInsetsPolicyTest extends ActivityManagerTestBase {
         // Ensure that top insets are fully consumed for FULLSCREEN when setting it over wm
         // layout params
         final TestActivity fullscreenWmFlagsActivity =
-                launchAndWait(mFullscreenWmFlagsTestActivity);
+                launchAndWait(FullscreenWmFlagsTestActivity.class, ActivityOptions.makeBasic());
         insets = getOnMainSync(fullscreenWmFlagsActivity::getDispatchedInsets);
         assertEquals("top insets must be consumed if FULLSCREEN is set",
                 0, insets.getSystemWindowInsetTop());
@@ -185,7 +177,10 @@ public class WindowInsetsPolicyTest extends ActivityManagerTestBase {
         assumeFalse("Skipping test: Automotive is allowed to partially block fullscreen "
                         + "applications with system bars.", isAutomotive());
 
-        final TestActivity fullscreenActivity = launchAndWait(mFullscreenTestActivity);
+        final ActivityOptions fullscreenOptions = ActivityOptions.makeBasic();
+        fullscreenOptions.setLaunchWindowingMode(WindowConfiguration.WINDOWING_MODE_FULLSCREEN);
+        final TestActivity fullscreenActivity =
+                launchAndWait(FullscreenTestActivity.class, fullscreenOptions);
         View decorView = fullscreenActivity.getDecorView();
         View contentView = decorView.findViewById(android.R.id.content);
         boolean hasFullWidth = decorView.getMeasuredWidth() == contentView.getMeasuredWidth();
@@ -195,7 +190,7 @@ public class WindowInsetsPolicyTest extends ActivityManagerTestBase {
     }
 
     @Test
-    public void testImmersiveFullscreenHidesSystemBars() throws Throwable {
+    public void testImmersiveFullscreenHidesSystemBars() {
         assumeFalse(isCar() && remoteInsetsControllerControlsSystemBars());
 
         // Run the test twice, because the issue that shows system bars even in the immersive mode,
@@ -203,7 +198,10 @@ public class WindowInsetsPolicyTest extends ActivityManagerTestBase {
         for (int i = 1; i <= 2; ++i) {
             Log.d(TAG, "testImmersiveFullscreenHidesSystemBars: try" + i);
 
-            TestActivity immersiveActivity = launchAndWait(mImmersiveTestActivity);
+            final ActivityOptions fullscreenOptions = ActivityOptions.makeBasic();
+            fullscreenOptions.setLaunchWindowingMode(WindowConfiguration.WINDOWING_MODE_FULLSCREEN);
+            TestActivity immersiveActivity =
+                    launchAndWait(ImmersiveFullscreenTestActivity.class, fullscreenOptions);
             WindowInsets insets = getOnMainSync(immersiveActivity::getDispatchedInsets);
 
             assertFalse(insets.isVisible(WindowInsets.Type.statusBars()));
@@ -274,10 +272,13 @@ public class WindowInsetsPolicyTest extends ActivityManagerTestBase {
         getInstrumentation().runOnMainSync(runnable);
     }
 
-    private <T extends Activity> T launchAndWait(ActivityTestRule<T> rule) {
-        final T activity = rule.launchActivity(null);
-        WindowUtil.waitForFocus(activity);
-        return activity;
+    private <T extends Activity> T launchAndWait(Class<T> activityClass, ActivityOptions options) {
+        final ActivityScenario<T> scenario =
+                ActivityScenario.launch(activityClass, options.toBundle());
+        mLaunchedScenarios.add(scenario);
+        final Activity[] activity = new Activity[1];
+        scenario.onActivity(a -> activity[0] = a);
+        return (T) activity[0];
     }
 
     private boolean isAutomotive() {
