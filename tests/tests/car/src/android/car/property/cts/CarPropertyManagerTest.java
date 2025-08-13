@@ -61,6 +61,7 @@ import static android.car.cts.utils.VehiclePropertyVerifiers.getNightModeVerifie
 import static android.car.cts.utils.VehiclePropertyVerifiers.getParkingBrakeOnVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfOdometerVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfSteeringAngleVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfVehicleSpeedVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getRangeRemainingVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getSeatOccupancyVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getTirePressureVerifierBuilder;
@@ -1798,12 +1799,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         // Run the verification.
         var verifier = verifierInfo.mBuilder.setCarPropertyManager(mCarPropertyManager).build();
         verifier.verify(step, verifierInfo.mExceptedExceptionClass);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Float> getPerfVehicleSpeedVerifierBuilder() {
-        return VehiclePropertyVerifier.<Float>newDefaultBuilder(
-                        VehiclePropertyIds.PERF_VEHICLE_SPEED)
-                .requireProperty();
     }
 
     private static VehiclePropertyVerifier.Builder<Integer>

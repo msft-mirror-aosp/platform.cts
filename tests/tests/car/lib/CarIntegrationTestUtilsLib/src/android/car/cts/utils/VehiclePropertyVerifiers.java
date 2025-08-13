@@ -1287,6 +1287,13 @@ public class VehiclePropertyVerifiers {
                 .setAllPossibleEnumValues(TURN_SIGNAL_STATES);
     }
 
+    /** Gets the verifier builder for {@link VehiclePropertyIds#PERF_VEHICLE_SPEED}. */
+    public static VehiclePropertyVerifier.Builder<Float> getPerfVehicleSpeedVerifierBuilder() {
+        return VehiclePropertyVerifier.<Float>newDefaultBuilder(
+                        VehiclePropertyIds.PERF_VEHICLE_SPEED)
+                .requireProperty();
+    }
+
     /**
      * Gets the verifier builder for {@link
      * VehiclePropertyIds#VEHICLE_DRIVING_AUTOMATION_TARGET_LEVEL}.
