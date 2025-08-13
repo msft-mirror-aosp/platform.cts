@@ -45,6 +45,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import android.content.pm.PackageManager;
+import android.hardware.biometrics.BiometricEnrollmentStatus;
 import android.hardware.biometrics.BiometricManager;
 import android.hardware.biometrics.BiometricManager.Authenticators;
 import android.hardware.biometrics.BiometricPrompt;
@@ -102,6 +103,16 @@ public class BiometricSimpleTests extends BiometricTestBase {
                 enrollForSensor(session, prop.getSensorId());
             }
         }
+    }
+
+    /** Tests BiometricEnrollmentStatus. */
+    @ApiTest(apis = {"android.hardware.biometrics.BiometricManager#getEnrollmentStatus"})
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MOVE_FM_API_TO_BM)
+    public void testBiometricEnrollmentStatus() {
+        BiometricEnrollmentStatus status = new BiometricEnrollmentStatus(BIOMETRIC_STRONG, 1);
+        assertEquals(1, status.getEnrollmentCount());
+        assertEquals(BIOMETRIC_STRONG, status.getStrength());
     }
 
     /** Tests that the corresponding enrolled count is correct. */
