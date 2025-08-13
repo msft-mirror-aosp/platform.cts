@@ -18,9 +18,14 @@ package com.android.bedstead.testapp;
 
 import android.content.Context;
 import android.content.IntentFilter;
+import android.util.Log;
 
 import com.google.android.enterprise.connectedapps.annotations.CrossUser;
 
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,6 +33,7 @@ import java.util.Map;
  * Class used to issue overall control over a remote test app.
  */
 public final class TestAppController {
+    private static final String TAG = "TestAppController";
 
     private static final Map<Long, BaseTestAppBroadcastReceiver> sBroadcastReceivers =
             new HashMap<>();
@@ -42,12 +48,10 @@ public final class TestAppController {
         registerReceiver(context, receiverId, intentFilter, 0);
     }
 
-    /**
-     * See {@link registerReceiver(Context, long, IntentFilter)}.
-     */
+    /** See {@link #registerReceiver(Context, long, IntentFilter)}. */
     @CrossUser
-    public void registerReceiver(Context context, long receiverId, IntentFilter intentFilter,
-            int flags) {
+    public void registerReceiver(
+            Context context, long receiverId, IntentFilter intentFilter, int flags) {
         BaseTestAppBroadcastReceiver broadcastReceiver = new BaseTestAppBroadcastReceiver();
         sBroadcastReceivers.put(receiverId, broadcastReceiver);
 
@@ -62,6 +66,38 @@ public final class TestAppController {
         BaseTestAppBroadcastReceiver receiver = sBroadcastReceivers.remove(receiverId);
         if (receiver != null) {
             context.unregisterReceiver(receiver);
+        }
+    }
+
+    /**
+     * Makes an HTTP request at the given address. Ignores network and DNS errors.
+     *
+     * @param urlString a HTTP[S] url valid according to {@link android.webkit.URLUtil#isNetworkUrl}
+     * @return {@code true} iff the request was made successfully.
+     * @throws IllegalArgumentException when {@code urlString} is not valid.
+     */
+    @CrossUser
+    public boolean makeHttpRequest(String urlString) {
+        HttpURLConnection urlConnection = null;
+        final URL url;
+        try {
+            url = new URL(urlString);
+        } catch (MalformedURLException e) {
+            throw new IllegalArgumentException("invalid url", e);
+        }
+        try {
+            urlConnection = (HttpURLConnection) url.openConnection();
+            urlConnection.setConnectTimeout(2000);
+            urlConnection.setReadTimeout(2000);
+            urlConnection.getResponseCode();
+            return true;
+        } catch (IOException e) {
+            Log.i(TAG, "Failed to make HTTP request", e);
+            return false;
+        } finally {
+            if (urlConnection != null) {
+                urlConnection.disconnect();
+            }
         }
     }
 }

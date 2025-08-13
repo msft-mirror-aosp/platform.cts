@@ -40,7 +40,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.bedstead.dpmwrapper.DeviceOwnerHelper;
 import com.android.bedstead.dpmwrapper.TestAppSystemServiceFactory;
 import com.android.compatibility.common.util.SystemUtil;
-import com.android.cts.deviceandprofileowner.BaseDeviceAdminTest.BasicAdminReceiver;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -54,12 +53,6 @@ import java.util.concurrent.CountDownLatch;
 public abstract class BaseDeviceAdminTest extends InstrumentationTestCase {
 
     public static final class BasicAdminReceiver extends DeviceAdminReceiver {
-
-        static final String ACTION_NETWORK_LOGS_AVAILABLE =
-                "com.android.cts.deviceandprofileowner.action.ACTION_NETWORK_LOGS_AVAILABLE";
-
-        static final String EXTRA_NETWORK_LOGS_BATCH_TOKEN =
-                "com.android.cts.deviceandprofileowner.extra.NETWORK_LOGS_BATCH_TOKEN";
 
         // Shared preference used to coordinate compliance acknowledgement test.
         static final String COMPLIANCE_ACK_PREF_NAME = "compliance-pref";
@@ -91,16 +84,6 @@ public abstract class BaseDeviceAdminTest extends InstrumentationTestCase {
             if (mOnPasswordExpiryTimeoutCalled != null) {
                 mOnPasswordExpiryTimeoutCalled.countDown();
             }
-        }
-
-        @Override
-        public void onNetworkLogsAvailable(Context context, Intent intent, long batchToken,
-                int networkLogsCount) {
-            super.onNetworkLogsAvailable(context, intent, batchToken, networkLogsCount);
-            // send the broadcast, the rest of the test happens in NetworkLoggingTest
-            Intent batchIntent = new Intent(ACTION_NETWORK_LOGS_AVAILABLE);
-            batchIntent.putExtra(EXTRA_NETWORK_LOGS_BATCH_TOKEN, batchToken);
-            context.sendBroadcast(batchIntent);
         }
 
         @Override
