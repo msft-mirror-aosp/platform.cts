@@ -86,15 +86,15 @@ public class ShortcutManagerBackupTest extends BaseShortcutManagerHostTest {
         mSupportsBackup = getDevice().hasFeature(FEATURE_BACKUP);
 
         if (mSupportsBackup) {
-            clearShortcuts(LAUNCHER1_PKG, getMainUserId());
-            clearShortcuts(LAUNCHER2_PKG, getMainUserId());
-            clearShortcuts(LAUNCHER3_PKG, getMainUserId());
-            clearShortcuts(LAUNCHER4_PKG, getMainUserId());
+            clearShortcuts(LAUNCHER1_PKG, getBackupUserId());
+            clearShortcuts(LAUNCHER2_PKG, getBackupUserId());
+            clearShortcuts(LAUNCHER3_PKG, getBackupUserId());
+            clearShortcuts(LAUNCHER4_PKG, getBackupUserId());
 
-            clearShortcuts(PUBLISHER1_PKG, getMainUserId());
-            clearShortcuts(PUBLISHER2_PKG, getMainUserId());
-            clearShortcuts(PUBLISHER3_PKG, getMainUserId());
-            clearShortcuts(PUBLISHER4_PKG, getMainUserId());
+            clearShortcuts(PUBLISHER1_PKG, getBackupUserId());
+            clearShortcuts(PUBLISHER2_PKG, getBackupUserId());
+            clearShortcuts(PUBLISHER3_PKG, getBackupUserId());
+            clearShortcuts(PUBLISHER4_PKG, getBackupUserId());
 
             uninstallPackageAndWaitUntilBroadcastsDrain(LAUNCHER1_PKG);
             uninstallPackageAndWaitUntilBroadcastsDrain(LAUNCHER2_PKG);
@@ -231,25 +231,25 @@ public class ShortcutManagerBackupTest extends BaseShortcutManagerHostTest {
         }
         dumpsys("Test start");
 
-        installAppAsUser(LAUNCHER1_APK, getMainUserId());
-        installAppAsUser(LAUNCHER2_APK, getMainUserId());
-        installAppAsUser(LAUNCHER3_APK, getMainUserId());
+        installAppAsUser(LAUNCHER1_APK, getBackupUserId());
+        installAppAsUser(LAUNCHER2_APK, getBackupUserId());
+        installAppAsUser(LAUNCHER3_APK, getBackupUserId());
 
-        installAppAsUser(PUBLISHER1_APK, getMainUserId());
-        installAppAsUser(PUBLISHER2_APK, getMainUserId());
-        installAppAsUser(PUBLISHER3_APK, getMainUserId());
+        installAppAsUser(PUBLISHER1_APK, getBackupUserId());
+        installAppAsUser(PUBLISHER2_APK, getBackupUserId());
+        installAppAsUser(PUBLISHER3_APK, getBackupUserId());
 
         // Prepare shortcuts
-        runDeviceTestsAsUser(PUBLISHER1_PKG, ".ShortcutManagerPreBackupTest", getMainUserId());
-        runDeviceTestsAsUser(PUBLISHER2_PKG, ".ShortcutManagerPreBackupTest", getMainUserId());
-        runDeviceTestsAsUser(PUBLISHER3_PKG, ".ShortcutManagerPreBackupTest", getMainUserId());
+        runDeviceTestsAsUser(PUBLISHER1_PKG, ".ShortcutManagerPreBackupTest", getBackupUserId());
+        runDeviceTestsAsUser(PUBLISHER2_PKG, ".ShortcutManagerPreBackupTest", getBackupUserId());
+        runDeviceTestsAsUser(PUBLISHER3_PKG, ".ShortcutManagerPreBackupTest", getBackupUserId());
 
-        runDeviceTestsAsUser(LAUNCHER1_PKG, ".ShortcutManagerPreBackupTest", getMainUserId());
-        runDeviceTestsAsUser(LAUNCHER2_PKG, ".ShortcutManagerPreBackupTest", getMainUserId());
-        runDeviceTestsAsUser(LAUNCHER3_PKG, ".ShortcutManagerPreBackupTest", getMainUserId());
+        runDeviceTestsAsUser(LAUNCHER1_PKG, ".ShortcutManagerPreBackupTest", getBackupUserId());
+        runDeviceTestsAsUser(LAUNCHER2_PKG, ".ShortcutManagerPreBackupTest", getBackupUserId());
+        runDeviceTestsAsUser(LAUNCHER3_PKG, ".ShortcutManagerPreBackupTest", getBackupUserId());
 
         // Tweak shortcuts a little bit to make disabled shortcuts.
-        runDeviceTestsAsUser(PUBLISHER2_PKG, ".ShortcutManagerPreBackup2Test", getMainUserId());
+        runDeviceTestsAsUser(PUBLISHER2_PKG, ".ShortcutManagerPreBackup2Test", getBackupUserId());
 
         dumpsys("Before backup");
 
@@ -277,70 +277,70 @@ public class ShortcutManagerBackupTest extends BaseShortcutManagerHostTest {
         dumpsys("After restore");
 
         // First, restore launcher 1, which shouldn't see any shortcuts from the packages yet.
-        installAppAsUser(LAUNCHER1_APK, getMainUserId());
+        installAppAsUser(LAUNCHER1_APK, getBackupUserId());
         runDeviceTestsAsUser(
                 LAUNCHER1_PKG,
                 ".ShortcutManagerPostBackupTest",
                 "testWithUninstall_beforeAppRestore",
-                getMainUserId());
+                getBackupUserId());
 
         // Restore the apps.  Even though launcher 2 hasn't been re-installed yet, they should
         // still have pinned shortcuts by launcher 2.
-        installAppAsUser(PUBLISHER1_APK, getMainUserId());
-        installAppAsUser(PUBLISHER2_APK, getMainUserId());
-        installAppAsUser(PUBLISHER3_APK, getMainUserId());
+        installAppAsUser(PUBLISHER1_APK, getBackupUserId());
+        installAppAsUser(PUBLISHER2_APK, getBackupUserId());
+        installAppAsUser(PUBLISHER3_APK, getBackupUserId());
 
         runDeviceTestsAsUser(
                 PUBLISHER1_PKG,
                 ".ShortcutManagerPostBackupTest",
                 "testWithUninstall",
-                getMainUserId());
+                getBackupUserId());
 
         runDeviceTestsAsUser(
                 PUBLISHER2_PKG,
                 ".ShortcutManagerPostBackupTest",
                 "testWithUninstall",
-                getMainUserId());
+                getBackupUserId());
 
         runDeviceTestsAsUser(
                 PUBLISHER3_PKG,
                 ".ShortcutManagerPostBackupTest",
                 "testWithUninstall",
-                getMainUserId());
+                getBackupUserId());
 
         // Now launcher 1 should see shortcuts from these packages.
         runDeviceTestsAsUser(
                 LAUNCHER1_PKG,
                 ".ShortcutManagerPostBackupTest",
                 "testWithUninstall_afterAppRestore",
-                getMainUserId());
+                getBackupUserId());
 
         // Then restore launcher 2 and check.
-        installAppAsUser(LAUNCHER2_APK, getMainUserId());
+        installAppAsUser(LAUNCHER2_APK, getBackupUserId());
         runDeviceTestsAsUser(
                 LAUNCHER2_PKG,
                 ".ShortcutManagerPostBackupTest",
                 "testWithUninstall_afterAppRestore",
-                getMainUserId());
+                getBackupUserId());
 
         // Run the same package side check.  The result should be the same.
         runDeviceTestsAsUser(
                 PUBLISHER1_PKG,
                 ".ShortcutManagerPostBackupTest",
                 "testWithUninstall",
-                getMainUserId());
+                getBackupUserId());
 
         runDeviceTestsAsUser(
                 PUBLISHER2_PKG,
                 ".ShortcutManagerPostBackupTest",
                 "testWithUninstall",
-                getMainUserId());
+                getBackupUserId());
 
         runDeviceTestsAsUser(
                 PUBLISHER3_PKG,
                 ".ShortcutManagerPostBackupTest",
                 "testWithUninstall",
-                getMainUserId());
+                getBackupUserId());
     }
 
     @Test
@@ -352,11 +352,11 @@ public class ShortcutManagerBackupTest extends BaseShortcutManagerHostTest {
 
         // First, publish shortcuts from the new version and pin them.
 
-        installAppAsUser(PUBLISHER4_NEW_APK, getMainUserId());
-        installAppAsUser(LAUNCHER4_NEW_APK, getMainUserId());
+        installAppAsUser(PUBLISHER4_NEW_APK, getBackupUserId());
+        installAppAsUser(LAUNCHER4_NEW_APK, getBackupUserId());
 
-        runDeviceTestsAsUser(PUBLISHER4_PKG, ".ShortcutManagerPreBackupTest", getMainUserId());
-        runDeviceTestsAsUser(LAUNCHER4_PKG, ".ShortcutManagerPreBackupTest", getMainUserId());
+        runDeviceTestsAsUser(PUBLISHER4_PKG, ".ShortcutManagerPreBackupTest", getBackupUserId());
+        runDeviceTestsAsUser(LAUNCHER4_PKG, ".ShortcutManagerPreBackupTest", getBackupUserId());
 
         dumpsys("Before backup");
 
@@ -380,37 +380,37 @@ public class ShortcutManagerBackupTest extends BaseShortcutManagerHostTest {
 
         // Restore the old version of the app, and the launcher.
         // (But we don't check the launcher's version, so using old is fine.)
-        installAppAsUser(LAUNCHER4_OLD_APK, getMainUserId());
-        installAppAsUser(PUBLISHER4_OLD_APK, getMainUserId());
+        installAppAsUser(LAUNCHER4_OLD_APK, getBackupUserId());
+        installAppAsUser(PUBLISHER4_OLD_APK, getBackupUserId());
         waitUntilBroadcastsDrain();
 
         runDeviceTestsAsUser(
                 PUBLISHER4_PKG,
                 ".ShortcutManagerPostBackupTest",
                 "testRestoredOnOldVersion",
-                getMainUserId());
+                getBackupUserId());
 
         runDeviceTestsAsUser(
                 LAUNCHER4_PKG,
                 ".ShortcutManagerPostBackupTest",
                 "testRestoredOnOldVersion",
-                getMainUserId());
+                getBackupUserId());
 
         // New install the original version. All blocked shortcuts should re-appear.
-        installAppAsUser(PUBLISHER4_NEW_APK, getMainUserId());
+        installAppAsUser(PUBLISHER4_NEW_APK, getBackupUserId());
         waitUntilBroadcastsDrain();
 
         runDeviceTestsAsUser(
                 PUBLISHER4_PKG,
                 ".ShortcutManagerPostBackupTest",
                 "testRestoredOnNewVersion",
-                getMainUserId());
+                getBackupUserId());
 
         runDeviceTestsAsUser(
                 LAUNCHER4_PKG,
                 ".ShortcutManagerPostBackupTest",
                 "testRestoredOnNewVersion",
-                getMainUserId());
+                getBackupUserId());
     }
 
     @Test
@@ -422,11 +422,11 @@ public class ShortcutManagerBackupTest extends BaseShortcutManagerHostTest {
 
         // First, publish shortcuts from "nobackup" version.
 
-        installAppAsUser(PUBLISHER4_NEW_NOBACKUP_APK, getMainUserId());
-        installAppAsUser(LAUNCHER4_NEW_APK, getMainUserId());
+        installAppAsUser(PUBLISHER4_NEW_NOBACKUP_APK, getBackupUserId());
+        installAppAsUser(LAUNCHER4_NEW_APK, getBackupUserId());
 
-        runDeviceTestsAsUser(PUBLISHER4_PKG, ".ShortcutManagerPreBackupTest", getMainUserId());
-        runDeviceTestsAsUser(LAUNCHER4_PKG, ".ShortcutManagerPreBackupTest", getMainUserId());
+        runDeviceTestsAsUser(PUBLISHER4_PKG, ".ShortcutManagerPreBackupTest", getBackupUserId());
+        runDeviceTestsAsUser(LAUNCHER4_PKG, ".ShortcutManagerPreBackupTest", getBackupUserId());
 
         dumpsys("Before backup");
 
@@ -449,15 +449,15 @@ public class ShortcutManagerBackupTest extends BaseShortcutManagerHostTest {
         dumpsys("After restore");
 
         // Install the "backup-ok" version. But restoration is limited.
-        installAppAsUser(LAUNCHER4_NEW_APK, getMainUserId());
-        installAppAsUser(PUBLISHER4_NEW_APK, getMainUserId());
+        installAppAsUser(LAUNCHER4_NEW_APK, getBackupUserId());
+        installAppAsUser(PUBLISHER4_NEW_APK, getBackupUserId());
         waitUntilBroadcastsDrain();
 
         runDeviceTestsAsUser(
                 PUBLISHER4_PKG,
                 ".ShortcutManagerPostBackupTest",
                 "testBackupDisabled",
-                getMainUserId());
+                getBackupUserId());
     }
 
     @Test
@@ -469,11 +469,11 @@ public class ShortcutManagerBackupTest extends BaseShortcutManagerHostTest {
 
         // First, publish shortcuts from backup-ok version.
 
-        installAppAsUser(PUBLISHER4_NEW_APK, getMainUserId());
-        installAppAsUser(LAUNCHER4_NEW_APK, getMainUserId());
+        installAppAsUser(PUBLISHER4_NEW_APK, getBackupUserId());
+        installAppAsUser(LAUNCHER4_NEW_APK, getBackupUserId());
 
-        runDeviceTestsAsUser(PUBLISHER4_PKG, ".ShortcutManagerPreBackupTest", getMainUserId());
-        runDeviceTestsAsUser(LAUNCHER4_PKG, ".ShortcutManagerPreBackupTest", getMainUserId());
+        runDeviceTestsAsUser(PUBLISHER4_PKG, ".ShortcutManagerPreBackupTest", getBackupUserId());
+        runDeviceTestsAsUser(LAUNCHER4_PKG, ".ShortcutManagerPreBackupTest", getBackupUserId());
 
         dumpsys("Before backup");
 
@@ -496,15 +496,15 @@ public class ShortcutManagerBackupTest extends BaseShortcutManagerHostTest {
         dumpsys("After restore");
 
         // Install the nobackup version. Restoration is limited.
-        installAppAsUser(LAUNCHER4_NEW_APK, getMainUserId());
-        installAppAsUser(PUBLISHER4_NEW_NOBACKUP_APK, getMainUserId());
+        installAppAsUser(LAUNCHER4_NEW_APK, getBackupUserId());
+        installAppAsUser(PUBLISHER4_NEW_NOBACKUP_APK, getBackupUserId());
         waitUntilBroadcastsDrain();
 
         runDeviceTestsAsUser(
                 PUBLISHER4_PKG,
                 ".ShortcutManagerPostBackupTest",
                 "testBackupDisabled",
-                getMainUserId());
+                getBackupUserId());
     }
 
     @Test
@@ -516,11 +516,11 @@ public class ShortcutManagerBackupTest extends BaseShortcutManagerHostTest {
 
         // First, publish shortcuts from backup-ok version.
 
-        installAppAsUser(PUBLISHER4_NEW_APK, getMainUserId());
-        installAppAsUser(LAUNCHER4_NEW_APK, getMainUserId());
+        installAppAsUser(PUBLISHER4_NEW_APK, getBackupUserId());
+        installAppAsUser(LAUNCHER4_NEW_APK, getBackupUserId());
 
-        runDeviceTestsAsUser(PUBLISHER4_PKG, ".ShortcutManagerPreBackupTest", getMainUserId());
-        runDeviceTestsAsUser(LAUNCHER4_PKG, ".ShortcutManagerPreBackupTest", getMainUserId());
+        runDeviceTestsAsUser(PUBLISHER4_PKG, ".ShortcutManagerPreBackupTest", getBackupUserId());
+        runDeviceTestsAsUser(LAUNCHER4_PKG, ".ShortcutManagerPreBackupTest", getBackupUserId());
 
         dumpsys("Before backup");
 
@@ -543,21 +543,21 @@ public class ShortcutManagerBackupTest extends BaseShortcutManagerHostTest {
         dumpsys("After restore");
 
         // Install the nobackup version. Restoration is limited.
-        installAppAsUser(LAUNCHER4_NEW_APK, getMainUserId());
-        installAppAsUser(PUBLISHER4_NEW_WRONGKEY_APK, getMainUserId());
+        installAppAsUser(LAUNCHER4_NEW_APK, getBackupUserId());
+        installAppAsUser(PUBLISHER4_NEW_WRONGKEY_APK, getBackupUserId());
         waitUntilBroadcastsDrain();
 
         runDeviceTestsAsUser(
                 PUBLISHER4_PKG,
                 ".ShortcutManagerPostBackupTest",
                 "testRestoreWrongKey",
-                getMainUserId());
+                getBackupUserId());
 
         runDeviceTestsAsUser(
                 LAUNCHER4_PKG,
                 ".ShortcutManagerPostBackupTest",
                 "testRestoreWrongKey",
-                getMainUserId());
+                getBackupUserId());
     }
 
     @Test
@@ -569,11 +569,11 @@ public class ShortcutManagerBackupTest extends BaseShortcutManagerHostTest {
 
         // First, publish shortcuts from backup-ok version.
 
-        installAppAsUser(PUBLISHER4_NEW_APK, getMainUserId());
-        installAppAsUser(LAUNCHER4_NEW_APK, getMainUserId());
+        installAppAsUser(PUBLISHER4_NEW_APK, getBackupUserId());
+        installAppAsUser(LAUNCHER4_NEW_APK, getBackupUserId());
 
-        runDeviceTestsAsUser(PUBLISHER4_PKG, ".ShortcutManagerPreBackupTest", getMainUserId());
-        runDeviceTestsAsUser(LAUNCHER4_PKG, ".ShortcutManagerPreBackupTest", getMainUserId());
+        runDeviceTestsAsUser(PUBLISHER4_PKG, ".ShortcutManagerPreBackupTest", getBackupUserId());
+        runDeviceTestsAsUser(LAUNCHER4_PKG, ".ShortcutManagerPreBackupTest", getBackupUserId());
 
         dumpsys("Before backup");
 
@@ -596,21 +596,21 @@ public class ShortcutManagerBackupTest extends BaseShortcutManagerHostTest {
         dumpsys("After restore");
 
         // Install the nobackup version. Restoration is limited.
-        installAppAsUser(LAUNCHER4_NEW_APK, getMainUserId());
-        installAppAsUser(PUBLISHER4_OLD_NO_MANIFST_APK, getMainUserId());
+        installAppAsUser(LAUNCHER4_NEW_APK, getBackupUserId());
+        installAppAsUser(PUBLISHER4_OLD_NO_MANIFST_APK, getBackupUserId());
         waitUntilBroadcastsDrain();
 
         runDeviceTestsAsUser(
                 PUBLISHER4_PKG,
                 ".ShortcutManagerPostBackupTest",
                 "testRestoreNoManifestOnOldVersion",
-                getMainUserId());
+                getBackupUserId());
 
         runDeviceTestsAsUser(
                 LAUNCHER4_PKG,
                 ".ShortcutManagerPostBackupTest",
                 "testRestoreNoManifestOnOldVersion",
-                getMainUserId());
+                getBackupUserId());
     }
 
     @Test
@@ -622,11 +622,11 @@ public class ShortcutManagerBackupTest extends BaseShortcutManagerHostTest {
 
         // First, publish shortcuts from backup-ok version.
 
-        installAppAsUser(PUBLISHER4_NEW_APK, getMainUserId());
-        installAppAsUser(LAUNCHER4_NEW_APK, getMainUserId());
+        installAppAsUser(PUBLISHER4_NEW_APK, getBackupUserId());
+        installAppAsUser(LAUNCHER4_NEW_APK, getBackupUserId());
 
-        runDeviceTestsAsUser(PUBLISHER4_PKG, ".ShortcutManagerPreBackupTest", getMainUserId());
-        runDeviceTestsAsUser(LAUNCHER4_PKG, ".ShortcutManagerPreBackupTest", getMainUserId());
+        runDeviceTestsAsUser(PUBLISHER4_PKG, ".ShortcutManagerPreBackupTest", getBackupUserId());
+        runDeviceTestsAsUser(LAUNCHER4_PKG, ".ShortcutManagerPreBackupTest", getBackupUserId());
 
         dumpsys("Before backup");
 
@@ -649,21 +649,21 @@ public class ShortcutManagerBackupTest extends BaseShortcutManagerHostTest {
         dumpsys("After restore");
 
         // Install the nobackup version. Restoration is limited.
-        installAppAsUser(LAUNCHER4_NEW_APK, getMainUserId());
-        installAppAsUser(PUBLISHER4_NEW_NO_MANIFST_APK, getMainUserId());
+        installAppAsUser(LAUNCHER4_NEW_APK, getBackupUserId());
+        installAppAsUser(PUBLISHER4_NEW_NO_MANIFST_APK, getBackupUserId());
         waitUntilBroadcastsDrain();
 
         runDeviceTestsAsUser(
                 PUBLISHER4_PKG,
                 ".ShortcutManagerPostBackupTest",
                 "testRestoreNoManifestOnNewVersion",
-                getMainUserId());
+                getBackupUserId());
 
         runDeviceTestsAsUser(
                 LAUNCHER4_PKG,
                 ".ShortcutManagerPostBackupTest",
                 "testRestoreNoManifestOnNewVersion",
-                getMainUserId());
+                getBackupUserId());
     }
 
     /**
@@ -680,11 +680,11 @@ public class ShortcutManagerBackupTest extends BaseShortcutManagerHostTest {
 
         // First, publish shortcuts from backup-ok version.
 
-        installAppAsUser(PUBLISHER4_NEW_APK, getMainUserId());
-        installAppAsUser(LAUNCHER4_NEW_APK, getMainUserId());
+        installAppAsUser(PUBLISHER4_NEW_APK, getBackupUserId());
+        installAppAsUser(LAUNCHER4_NEW_APK, getBackupUserId());
 
-        runDeviceTestsAsUser(PUBLISHER4_PKG, ".ShortcutManagerPreBackupTest", getMainUserId());
-        runDeviceTestsAsUser(LAUNCHER4_PKG, ".ShortcutManagerPreBackupTest", getMainUserId());
+        runDeviceTestsAsUser(PUBLISHER4_PKG, ".ShortcutManagerPreBackupTest", getBackupUserId());
+        runDeviceTestsAsUser(LAUNCHER4_PKG, ".ShortcutManagerPreBackupTest", getBackupUserId());
 
         dumpsys("Before backup");
 
@@ -707,21 +707,21 @@ public class ShortcutManagerBackupTest extends BaseShortcutManagerHostTest {
         dumpsys("After restore");
 
         // Install the nobackup version. Restoration is limited.
-        installAppAsUser(LAUNCHER4_NEW_APK, getMainUserId());
-        installAppAsUser(PUBLISHER4_OLD_NO_MANIFST_APK, getMainUserId());
+        installAppAsUser(LAUNCHER4_NEW_APK, getBackupUserId());
+        installAppAsUser(PUBLISHER4_OLD_NO_MANIFST_APK, getBackupUserId());
         waitUntilBroadcastsDrain();
 
         runDeviceTestsAsUser(
                 PUBLISHER4_PKG,
                 ".ShortcutManagerPostBackupTest",
                 "testInvisibleIgnored",
-                getMainUserId());
+                getBackupUserId());
 
         runDeviceTestsAsUser(
                 LAUNCHER4_PKG,
                 ".ShortcutManagerPostBackupTest",
                 "testInvisibleIgnored",
-                getMainUserId());
+                getBackupUserId());
     }
 
     @Test
@@ -730,12 +730,12 @@ public class ShortcutManagerBackupTest extends BaseShortcutManagerHostTest {
             return;
         }
 
-        installAppAsUser(PUBLISHER1_APK, getMainUserId());
-        installAppAsUser(PUBLISHER3_APK, getMainUserId());
+        installAppAsUser(PUBLISHER1_APK, getBackupUserId());
+        installAppAsUser(PUBLISHER3_APK, getBackupUserId());
 
         // Prepare shortcuts
-        runDeviceTestsAsUser(PUBLISHER1_PKG, ".ShortcutManagerPreBackupTest", getMainUserId());
-        runDeviceTestsAsUser(PUBLISHER3_PKG, ".ShortcutManagerPreBackupTest", getMainUserId());
+        runDeviceTestsAsUser(PUBLISHER1_PKG, ".ShortcutManagerPreBackupTest", getBackupUserId());
+        runDeviceTestsAsUser(PUBLISHER3_PKG, ".ShortcutManagerPreBackupTest", getBackupUserId());
 
         // Backup & restore.
         doBackup();
@@ -746,12 +746,12 @@ public class ShortcutManagerBackupTest extends BaseShortcutManagerHostTest {
                 PUBLISHER1_PKG,
                 ".ShortcutManagerPostBackupTest",
                 "testWithNoUninstall",
-                getMainUserId());
+                getBackupUserId());
 
         runDeviceTestsAsUser(
                 PUBLISHER3_PKG,
                 ".ShortcutManagerPostBackupTest",
                 "testWithNoUninstall",
-                getMainUserId());
+                getBackupUserId());
     }
 }

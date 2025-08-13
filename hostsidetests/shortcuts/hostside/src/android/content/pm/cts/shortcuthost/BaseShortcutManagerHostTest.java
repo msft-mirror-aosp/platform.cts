@@ -104,7 +104,7 @@ abstract public class BaseShortcutManagerHostTest extends BaseHostJUnit4Test {
 
     // TODO(b/412272133): Plan to deprecate this. Callers need to be updated to use the current
     //                    user for broader test coverage on non-main users.
-    protected int getMainUserId() throws DeviceNotAvailableException {
+    protected final int getBackupUserId() throws DeviceNotAvailableException {
         return getDevice().getMainUserId();
     }
 
