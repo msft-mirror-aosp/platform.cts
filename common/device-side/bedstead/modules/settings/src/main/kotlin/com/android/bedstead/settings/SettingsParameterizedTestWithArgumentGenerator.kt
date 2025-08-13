@@ -39,13 +39,10 @@ class SettingsParameterizedTestWithArgumentGenerator(
         frameworkMethod: FrameworkMethod,
         annotation: Annotation
     ): List<FrameworkMethod> {
-        if (annotation is SettingsPreferenceMetadataParameter) {
-            return annotation.logic(frameworkMethod)
+        return if (annotation is SettingsPreferenceMetadataParameter) {
+            annotation.logic(frameworkMethod)
         } else {
-            throw IllegalStateException(
-                "annotation $annotation isn't handled by " +
-                        "SettingsParameterizedTestWithArgumentGenerator"
-            )
+            super.handleFrameworkMethod(frameworkMethod, annotation)
         }
     }
 
