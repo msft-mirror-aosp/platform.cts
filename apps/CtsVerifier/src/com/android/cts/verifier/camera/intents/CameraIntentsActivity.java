@@ -889,7 +889,15 @@ public class CameraIntentsActivity extends PassFailButtons.Activity
     @Override
     public void onDialogClose(boolean containsMotionPhotoMetadata) {
         if (mImageTarget != null) {
-            mImageTarget.delete();
+            if (!containsMotionPhotoMetadata) {
+                Log.e(TAG, "No motion metadata detected! To improve debugging," +
+                    " please consider pulling the file at: " + mImageTarget.getPath() +
+                    " and including it along with a bugreport!");
+                Toast.makeText(this, "Verification failed! Please check logcat for instructions!",
+                        Toast.LENGTH_SHORT).show();
+            } else {
+                mImageTarget.delete();
+            }
         }
 
         mActionSuccess = containsMotionPhotoMetadata;
