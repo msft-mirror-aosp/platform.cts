@@ -409,10 +409,10 @@ public class CallStreamingTest extends BaseTelecomTestWithMockServices {
                         .setCallType(CallAttributes.AUDIO_CALL)
                         .setCallCapabilities(CallAttributes.SUPPORTS_SET_INACTIVE)
                         .build());
-        Call call = getInCallService().getLastCall();
         mCurrentSession.startCallStreaming();
         mCurrentSession.setActive();
         mStreamingServiceControl.waitForCallAdded();
+        Call call = waitForInCallServiceToGetCall();
         assertCallState(call, Call.STATE_ACTIVE);
 
         try {
@@ -474,12 +474,12 @@ public class CallStreamingTest extends BaseTelecomTestWithMockServices {
                             .setCallType(CallAttributes.AUDIO_CALL)
                             .setCallCapabilities(CallAttributes.SUPPORTS_SET_INACTIVE)
                             .build());
-            Call call = getInCallService().getLastCall();
             mCurrentSession.startCallStreaming();
             mStreamingServiceControl.waitForCallAdded();
 
             // Test onCallStreamingStateChanged: setting the call active will trigger the callback.
             mCurrentSession.setActive();
+            Call call = waitForInCallServiceToGetCall();
             assertCallState(call, Call.STATE_ACTIVE);
             int initialState = mStreamingServiceControl.waitForCallStreamingStateChanged();
             assertEquals(
@@ -502,6 +502,25 @@ public class CallStreamingTest extends BaseTelecomTestWithMockServices {
     }
 
     // Helper Methods
+
+    private Call waitForInCallServiceToGetCall() {
+        waitOnInCallService();
+        waitUntilConditionIsTrueOrTimeout(
+                new Condition() {
+                    @Override
+                    public Object expected() {
+                        return true;
+                    }
+
+                    @Override
+                    public Object actual() {
+                        return getInCallService().getLastCall() != null;
+                    }
+                },
+                5000,
+                "Call was not added to the CTS InCallService in time");
+        return getInCallService().getLastCall();
+    }
 
     private void setupStreamingCall(CallAttributes attributes) throws InterruptedException {
         mCurrentSession = new StreamingCallSession("streaming_call");
