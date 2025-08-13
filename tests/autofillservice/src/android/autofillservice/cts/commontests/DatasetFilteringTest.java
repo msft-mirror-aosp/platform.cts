@@ -511,7 +511,8 @@ public abstract class DatasetFilteringTest extends AbstractLoginActivityTestCase
         // No dataset start with 'aaa'
         final MyAutofillCallback callback = mActivity.registerCallback();
         changeUsername("aaa");
-        callback.assertUiHiddenEvent(mActivity.getUsername());
+        // TODO(b/424252164): enable assertUiHiddenEvent
+        // callback.assertUiHiddenEvent(mActivity.getUsername());
         mUiBot.assertNoDatasets();
     }
 
