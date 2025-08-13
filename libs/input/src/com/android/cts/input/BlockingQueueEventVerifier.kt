@@ -42,10 +42,9 @@ private fun <T> peekEvent(queue: BlockingQueue<T>, timeout: Duration): T? {
 }
 
 class BlockingQueueEventVerifier(val queue: BlockingQueue<InputEvent>) {
-    fun assertReceivedMotion(matcher: Matcher<MotionEvent>, msg: String? = null): MotionEvent {
+    fun assertReceivedMotion(matcher: Matcher<MotionEvent>, msg: String? = null) {
         val event = getEventOfType(MotionEvent::class.java, msg)
         assertThat(msg ?: "MotionEvent checks", event, matcher)
-        return event
     }
 
     /**

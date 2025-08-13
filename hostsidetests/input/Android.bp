@@ -48,11 +48,8 @@ java_test_host {
     ],
 
     static_libs: [
-        "com.android.hardware.input-aconfig-java",
-        "CompatChangeGatingTestBase",
         "cts-host-utils",
         "cts-statsd-atom-host-test-utils",
-        "flag-junit-host",
         "hamcrest-library",
         "host-libprotobuf-java-full",
         "platformprotos",
