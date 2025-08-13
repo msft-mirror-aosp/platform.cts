@@ -7109,9 +7109,14 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                     == ScanResult.WIFI_STANDARD_11BE);
 
             // Disable Wi-Fi 7 while connected: check new connection is not Wi-Fi 7
+            // Skip test if vendor Android version is less than 15,Android 15 (V) corresponds to API level 35
+            int vendorSdkVersion = SystemProperties.getInt("ro.vendor.build.version.sdk", 0);
+            assumeTrue("Skipping test - requires vendor Android version 15 or higher",
+                    vendorSdkVersion >= 35);
             wifi7Network.setWifi7Enabled(false);
             assertFalse(wifi7Network.isWifi7Enabled());
             sWifiManager.updateNetwork(wifi7Network);
+            waitForDisconnection();
             waitForConnection();
             assertTrue(sWifiManager.getConnectionInfo().getWifiStandard()
                     != ScanResult.WIFI_STANDARD_11BE);
