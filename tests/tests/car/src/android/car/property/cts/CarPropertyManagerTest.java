@@ -55,6 +55,7 @@ import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoEvConnectorT
 import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoEvPortLocationVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoMakeVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoModelVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoModelYearVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getLocationCharacterizationVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getNightModeVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getParkingBrakeOnVerifierBuilder;
@@ -168,7 +169,6 @@ import org.junit.runner.RunWith;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.time.Year;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -210,8 +210,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     private static final int FAST_OR_FASTEST_EVENT_COUNTER = 10;
     private static final int SECONDS_TO_MILLIS = 1_000;
     private static final long ASYNC_WAIT_TIMEOUT_IN_SEC = 15;
-    private static final int REASONABLE_FUTURE_MODEL_YEAR_OFFSET = 5;
-    private static final int REASONABLE_PAST_MODEL_YEAR_OFFSET = -10;
     private static final ImmutableSet<Integer> NO_READ_ACCESS_SET =
             ImmutableSet.of(
                     CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_NONE,
@@ -2296,34 +2294,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                 assertWithMessage("INFO_VIN must be 17 characters")
                                         .that(vin)
                                         .hasLength(17));
-    }
-
-    private static VehiclePropertyVerifier.Builder<Integer> getInfoModelYearVerifierBuilder() {
-        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
-                        VehiclePropertyIds.INFO_MODEL_YEAR)
-                .setCarPropertyValueVerifier(
-                        (verifierContext,
-                                carPropertyConfig,
-                                propertyId,
-                                areaId,
-                                timestampNanos,
-                                modelYear) -> {
-                            int currentYear = Year.now().getValue();
-                            assertWithMessage(
-                                            "INFO_MODEL_YEAR Integer value must be greater"
-                                                    + " than or equal "
-                                                    + (currentYear
-                                                            + REASONABLE_PAST_MODEL_YEAR_OFFSET))
-                                    .that(modelYear)
-                                    .isAtLeast(currentYear + REASONABLE_PAST_MODEL_YEAR_OFFSET);
-                            assertWithMessage(
-                                            "INFO_MODEL_YEAR Integer value must be less"
-                                                    + " than or equal "
-                                                    + (currentYear
-                                                            + REASONABLE_FUTURE_MODEL_YEAR_OFFSET))
-                                    .that(modelYear)
-                                    .isAtMost(currentYear + REASONABLE_FUTURE_MODEL_YEAR_OFFSET);
-                        });
     }
 
     private static VehiclePropertyVerifier.Builder<Float> getInfoFuelCapacityVerifierBuilder() {

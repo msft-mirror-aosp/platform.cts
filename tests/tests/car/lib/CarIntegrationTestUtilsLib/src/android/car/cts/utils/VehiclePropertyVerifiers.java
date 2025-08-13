@@ -47,8 +47,10 @@ import android.util.ArraySet;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Range;
 import com.google.common.collect.Sets;
 
+import java.time.Year;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -194,6 +196,9 @@ public class VehiclePropertyVerifiers {
                             VehicleGear.GEAR_NINTH)
                     .build();
 
+    private static final int REASONABLE_FUTURE_MODEL_YEAR_OFFSET = 5;
+    private static final int REASONABLE_PAST_MODEL_YEAR_OFFSET = -10;
+
     /** Gets the verifier builder for {@link VehiclePropertyIds#IGNITION_STATE}. */
     public static VehiclePropertyVerifier.Builder<Integer> getIgnitionStateVerifierBuilder() {
         return VehiclePropertyVerifier.<Integer>newDefaultBuilder(VehiclePropertyIds.IGNITION_STATE)
@@ -235,6 +240,32 @@ public class VehiclePropertyVerifiers {
                                 assertWithMessage("INFO_MODEL must not be empty")
                                         .that(model)
                                         .isNotEmpty());
+    }
+
+    /** Gets the verifier builder for {@link VehiclePropertyIds#INFO_MODEL_YEAR}. */
+    public static VehiclePropertyVerifier.Builder<Integer> getInfoModelYearVerifierBuilder() {
+        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                        VehiclePropertyIds.INFO_MODEL_YEAR)
+                .setCarPropertyValueVerifier(
+                        (verifierContext,
+                                carPropertyConfig,
+                                propertyId,
+                                areaId,
+                                timestampNanos,
+                                modelYear) -> {
+                            int currentYear = Year.now().getValue();
+                            int minYear = currentYear + REASONABLE_PAST_MODEL_YEAR_OFFSET;
+                            int maxYear = currentYear + REASONABLE_FUTURE_MODEL_YEAR_OFFSET;
+
+                            assertWithMessage(
+                                            String.format(
+                                                    "INFO_MODEL_YEAR must be within a reasonable"
+                                                        + " range. Current year: %d, model year:"
+                                                        + " %d, valid range: [%d, %d]",
+                                                    currentYear, modelYear, minYear, maxYear))
+                                    .that(modelYear)
+                                    .isIn(Range.closed(minYear, maxYear));
+                        });
     }
 
     /** Gets the verifier builder for {@link VehiclePropertyIds#PARKING_BRAKE_ON}. */
