@@ -19,8 +19,9 @@ import com.android.bedstead.testapis.parser.signatures.ClassSignature
 import com.android.tools.metalava.model.ArrayTypeItem
 import com.android.tools.metalava.model.BaseTypeVisitor
 import com.android.tools.metalava.model.MethodItem
+import com.android.tools.metalava.model.PrimitiveTypeItem
+import com.android.tools.metalava.model.ReferenceTypeItem
 import com.android.tools.metalava.model.TypeItem
-import java.util.Locale
 import java.util.Objects
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.Modifier
@@ -194,60 +195,52 @@ class MethodSignature(
 
             val name = method.name()
 
-            val returnType = typeForString(method.returnType().toTypeString(), types, elements)
+            val returnType = typeForApi(method.returnType(), types, elements)
             val parameters = method.parameters().map {
-                typeForString(it.type().toTypeString(), types, elements)
+                typeForApi(it.type(), types, elements)
             }
             val throws = method.throwsTypes().map {
-                typeForString(it.toTypeString(), types, elements)
+                typeForApi(it, types, elements)
             }
 
             return MethodSignature(visibility, returnType, name, parameters, throws.toSet())
         }
 
-        private fun typeForString(typeName: String, types: Types, elements: Elements): TypeMirror {
-            var typeName = typeName
-            if (typeName == "void") {
-                return types.getNoType(TypeKind.VOID)
+        private fun typeForApi(type: PrimitiveTypeItem, types: Types): TypeMirror {
+            val kind = when (type.kind) {
+                PrimitiveTypeItem.Primitive.BOOLEAN -> TypeKind.BOOLEAN
+                PrimitiveTypeItem.Primitive.BYTE -> TypeKind.BYTE
+                PrimitiveTypeItem.Primitive.CHAR -> TypeKind.CHAR
+                PrimitiveTypeItem.Primitive.DOUBLE -> TypeKind.DOUBLE
+                PrimitiveTypeItem.Primitive.FLOAT -> TypeKind.FLOAT
+                PrimitiveTypeItem.Primitive.INT -> TypeKind.INT
+                PrimitiveTypeItem.Primitive.LONG -> TypeKind.LONG
+                PrimitiveTypeItem.Primitive.SHORT -> TypeKind.SHORT
+                PrimitiveTypeItem.Primitive.VOID -> return types.getNoType(TypeKind.VOID)
             }
 
-            if (isTestClass(typeName, elements)) {
-                // Use the proxy type instead
-                typeName = proxyType(typeName)
-            }
+            return types.getPrimitiveType(kind)
+        }
 
-            if (typeName.contains("<")) {
-                // Because of type erasure we can just drop the type argument
-                return typeForString(
-                    typeName.split("<".toRegex(), limit = 2).toTypedArray()[0],
-                    types,
-                    elements
+        private fun typeForApi(type: TypeItem, types: Types, elements: Elements): TypeMirror {
+            return when (type) {
+                is PrimitiveTypeItem -> typeForApi(type, types)
+                is ArrayTypeItem -> types.getArrayType(
+                    typeForApi(type.componentType, types, elements)
                 )
+                is ReferenceTypeItem -> {
+                    var typeName = type.toErasedTypeString()
+
+                    if (isTestClass(typeName, elements)) {
+                        typeName = proxyType(typeName)
+                    }
+
+                    val typeElement = elements.getTypeElement(typeName)
+                    checkNotNull(typeElement) { "Unknown type: $typeName" }
+                    typeElement.asType()
+                }
+                else -> throw IllegalArgumentException("Could not convert $type")
             }
-
-            if (typeName.endsWith("[]")) {
-                return types.getArrayType(
-                    typeForString(typeName.substring(0, typeName.length - 2), types, elements)
-                )
-            }
-
-            try {
-                return types.getPrimitiveType(
-                    TypeKind.valueOf(typeName.uppercase(Locale.getDefault()))
-                )
-            } catch (e: IllegalArgumentException) {
-                // Not a primitive
-            }
-
-            var element = elements.getTypeElement(typeName)
-            if (element == null) {
-                // It could be java.lang
-                element = elements.getTypeElement("java.lang." + typeName)
-            }
-
-            checkNotNull(element) { "Unknown type: " + typeName }
-
-            return element.asType()
         }
 
         /**
