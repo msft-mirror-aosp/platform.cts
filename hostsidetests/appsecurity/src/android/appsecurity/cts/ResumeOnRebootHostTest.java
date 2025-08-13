@@ -538,6 +538,7 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
         return getDevice().listUsers();
     }
 
+    // TODO(b/437419984): Simplify this code.
     /** Calls switch-user, but without trying to dismiss the keyguard. */
     private void switchUser(int userId) throws Exception {
         var device = getDevice();
@@ -552,11 +553,12 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
                 () ->
                         String.format(
                                 Locale.ENGLISH,
-                                "Current user (%d) is not %d after switch",
-                                currentUserId,
+                                "Current user (%d) is not %d after switch (most likely switch"
+                                  + " failed because the current user is locked)",
+                                device.getCurrentUser(),
                                 userId),
                 USER_SWITCH_TIMEOUT_SECONDS,
-                () -> currentUserId == userId);
+                () -> device.getCurrentUser() == userId);
         sleep(POST_USER_SWITCH_WAIT_MS, "post user switch nap");
     }
 
