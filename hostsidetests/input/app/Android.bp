@@ -41,7 +41,6 @@ android_test_helper_app {
         "androidx.test.rules",
         "cts-input-lib",
         "ctstestrunner-axt",
-        "desktop-test-lib",
         "truth",
     ],
 
