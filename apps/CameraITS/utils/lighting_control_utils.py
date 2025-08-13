@@ -17,12 +17,15 @@
 import logging
 import struct
 import time
+import gen2_rig_controller_utils
 import sensor_fusion_utils
 
 # Constants for Arduino
 ARDUINO_BRIGHTNESS_MAX = 255
 ARDUINO_BRIGHTNESS_MIN = 0
 ARDUINO_LIGHT_START_BYTE = 254
+LIGHT_ON = 'ON'
+LIGHT_OFF = 'OFF'
 
 
 def _toggle_screen_state(device, desired_state):
@@ -69,7 +72,7 @@ def set_light_brightness(ch, brightness, serial_port, delay=0):
   time.sleep(delay)
 
 
-def lighting_control(lighting_cntl, lighting_ch):
+def lighting_control(lighting_cntl, lighting_ch, use_gen2=False):
   """Establish communication with lighting controller.
 
   lighting_ch is hard wired and must be determined from physical setup.
@@ -80,12 +83,19 @@ def lighting_control(lighting_cntl, lighting_ch):
   Args:
     lighting_cntl: str to identify 'arduino' controller.
     lighting_ch: str to identify lighting channel number.
+    use_gen2: optional bool to identify if gen2 lighting controller is used.
   Returns:
     serial port pointer
   """
-
-  logging.debug('Controller: %s, ch: %s', lighting_cntl, lighting_ch)
-  if lighting_cntl.lower() == 'arduino':
+  if use_gen2:
+    logging.debug(
+        'Gen2 lighting controller: %s, ch: %s', lighting_cntl, lighting_ch)
+    lights_port = gen2_rig_controller_utils.find_serial_port(lighting_cntl)
+    sensor_fusion_utils.establish_serial_comm(lights_port)
+    return lights_port
+  elif lighting_cntl.lower() == 'arduino':
+    logging.debug(
+        'Arduino lighting Controller: %s, ch: %s', lighting_cntl, lighting_ch)
     # identify port
     arduino_serial_port = sensor_fusion_utils.serial_port_def('arduino')
 
@@ -94,26 +104,33 @@ def lighting_control(lighting_cntl, lighting_ch):
 
     # return serial port
     return arduino_serial_port
-
   else:
     logging.debug('No lighting control: need to control lights manually.')
     return None
 
 
-def set_lighting_state(arduino_serial_port, lighting_ch, state):
+def set_lighting_state(arduino_serial_port, lighting_ch, state, use_gen2=False):
   """Turn lights ON in test rig.
 
   Args:
     arduino_serial_port: serial port object
     lighting_ch: str for lighting channel
     state: str 'ON/OFF'
+    use_gen2: optional bool to identify if gen2 lighting controller is used.
   """
-  if state == 'ON':
+  if use_gen2:
+    logging.debug(
+        'Setting lighting state to %s using Gen2 lighting controller.', state)
+    gen2_rig_controller_utils.set_lighting_state(
+        arduino_serial_port, int(lighting_ch), state)
+    return
+
+  if state == LIGHT_ON:
     level = 255
-  elif state == 'OFF':
+  elif state == LIGHT_OFF:
     level = 0
   else:
-    raise AssertionError(f'Lighting state not defined correctly: {state}')
+    raise ValueError(f'Lighting state not defined correctly: {state}')
 
   if arduino_serial_port:
     set_light_brightness(lighting_ch, level, arduino_serial_port, delay=1)

@@ -19,6 +19,7 @@ import os.path
 from mobly import test_runner
 import camera_properties_utils
 import capture_request_utils
+import gen2_rig_controller_utils
 import image_processing_utils
 import its_base_test
 import its_session_utils
@@ -168,6 +169,9 @@ def _compare_means(formats_means, ae_mode, flash_strengths):
 class FlashStrengthTest(its_base_test.ItsBaseTest):
   """Test if flash strength control (SINGLE capture mode) feature works as intended."""
 
+  def teardown_test(self):
+    if self.use_gen2: self.lighting_control_port.close()
+
   def test_flash_strength(self):
     name_with_path = os.path.join(self.log_path, _TEST_NAME)
 
@@ -184,13 +188,17 @@ class FlashStrengthTest(its_base_test.ItsBaseTest):
       camera_properties_utils.skip_unless(
           camera_properties_utils.flash(props) and
           max_flash_strength > 1 and max_torch_strength > 1)
+
       # establish connection with lighting controller
-      arduino_serial_port = lighting_control_utils.lighting_control(
-          self.lighting_cntl, self.lighting_ch)
+      use_gen2 = (self.lighting_cntl ==
+                  gen2_rig_controller_utils.DEFAULT_GEN2_LIGHTS_NAME)
+      lighting_control_port = lighting_control_utils.lighting_control(
+          self.lighting_cntl, self.lighting_ch, use_gen2)
 
       # turn OFF lights to darken scene
       lighting_control_utils.set_lighting_state(
-          arduino_serial_port, self.lighting_ch, 'OFF')
+          lighting_control_port, self.lighting_ch,
+          lighting_control_utils.LIGHT_OFF, use_gen2)
 
       failure_messages = []
       # list with no flash (baseline), linear strength steps, max strength
@@ -240,9 +248,11 @@ class FlashStrengthTest(its_base_test.ItsBaseTest):
           failure_messages += _compare_means(formats_means,
                                              ae_mode, flash_strengths)
 
-    # turn the lights back on
-    lighting_control_utils.set_lighting_state(
-        arduino_serial_port, self.lighting_ch, 'ON')
+      # turn lights back ON
+      lighting_control_utils.set_lighting_state(
+          lighting_control_port, self.lighting_ch,
+          lighting_control_utils.LIGHT_ON, use_gen2)
+
     if failure_messages:
       raise AssertionError('\n'.join(failure_messages))
 

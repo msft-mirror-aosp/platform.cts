@@ -18,6 +18,7 @@ import os.path
 
 import camera_properties_utils
 import capture_request_utils
+import gen2_rig_controller_utils
 import image_processing_utils
 import its_base_test
 import its_session_utils
@@ -136,6 +137,9 @@ class LedSnapshotTest(its_base_test.ItsBaseTest):
   Failures will be reported if any of the measuremenet is out of range.
   """
 
+  def teardown_test(self):
+    if self.use_gen2: self.lighting_control_port.close()
+
   def test_led_snapshot(self):
     test_name = os.path.join(self.log_path, _TEST_NAME)
 
@@ -153,9 +157,13 @@ class LedSnapshotTest(its_base_test.ItsBaseTest):
           camera_properties_utils.flash(props) and
           first_api_level >= its_session_utils.ANDROID14_API_LEVEL)
       failure_messages = []
+
       # establish connection with lighting controller
-      arduino_serial_port = lighting_control_utils.lighting_control(
-          self.lighting_cntl, self.lighting_ch)
+      use_gen2 = (self.lighting_cntl ==
+                  gen2_rig_controller_utils.DEFAULT_GEN2_LIGHTS_NAME)
+      lighting_control_port = lighting_control_utils.lighting_control(
+          self.lighting_cntl, self.lighting_ch, use_gen2)
+
       for fmt_name in _FORMAT_NAMES:
         for size in _IMG_SIZES:
           width, height = size
@@ -186,7 +194,8 @@ class LedSnapshotTest(its_base_test.ItsBaseTest):
 
           # turn OFF lights to darken scene
           lighting_control_utils.set_lighting_state(
-              arduino_serial_port, self.lighting_ch, 'OFF')
+              lighting_control_port, self.lighting_ch,
+              lighting_control_utils.LIGHT_OFF, use_gen2)
 
           # take capture with no flash as baseline
           logging.debug(
@@ -255,9 +264,10 @@ class LedSnapshotTest(its_base_test.ItsBaseTest):
             raise AssertionError(
                 'Flash was not fired. Format:{fmt_name}, Size:{width}x{height}')
 
-          # turn the lights back on
+          # turn lights back ON
           lighting_control_utils.set_lighting_state(
-              arduino_serial_port, self.lighting_ch, 'ON')
+              lighting_control_port, self.lighting_ch,
+              lighting_control_utils.LIGHT_ON, use_gen2)
 
       # assert correct behavior for all formats
       if failure_messages:
