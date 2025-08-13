@@ -3,5 +3,10 @@
     {
       "name": "CtsWindowManagerDevicePip"
     }
+  ],
+  "desktop-presubmit": [
+    {
+      "name": "CtsWindowManagerDevicePip"
+    }
   ]
 }

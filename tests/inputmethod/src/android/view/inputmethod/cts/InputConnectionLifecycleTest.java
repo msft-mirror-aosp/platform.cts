@@ -27,13 +27,13 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
 import android.app.Instrumentation;
 import android.content.Context;
 import android.graphics.Color;
 import android.os.Process;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.system.Os;
 import android.text.InputType;
@@ -61,6 +61,7 @@ import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Objects;
@@ -74,13 +75,14 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 @LargeTest
 public final class InputConnectionLifecycleTest extends EndToEndImeTestBase {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
 
     private static final int TEST_VIEW_HEIGHT = 10;
 
     private static final int NUM_TEST_ITERATIONS = 50;
-
-    private final DeviceFlagsValueProvider mFlagsValueProvider = new DeviceFlagsValueProvider();
 
     private static final String SAMPLE_TEXT = "SAMPLE_TEXT";
 
@@ -339,7 +341,6 @@ public final class InputConnectionLifecycleTest extends EndToEndImeTestBase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_INVALIDATE_INPUT_CALLS_RESTART)
     public void verifyNoRaceBetweenInvalidateAndRestartInput() throws Exception {
-        assumeTrue(mFlagsValueProvider.getBoolean(Flags.FLAG_INVALIDATE_INPUT_CALLS_RESTART));
         final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         try (MockImeSession imeSession =
                 MockImeSession.create(

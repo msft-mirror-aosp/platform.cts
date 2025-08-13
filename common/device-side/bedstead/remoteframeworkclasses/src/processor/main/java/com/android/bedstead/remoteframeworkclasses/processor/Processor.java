@@ -36,6 +36,7 @@ import java.io.PrintWriter;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -82,20 +83,88 @@ public final class Processor extends AbstractProcessor {
     private static final ImmutableSet<String> FRAMEWORK_CLASSES =
             loadList("/apis/framework-classes.txt");
 
-    private static final String PARENT_PROFILE_INSTANCE =
-            "public android.app.admin.DevicePolicyManager getParentProfileInstance(android"
-                    + ".content.ComponentName)";
-    private static final String GET_CONTENT_RESOLVER =
-            "public android.content.ContentResolver getContentResolver()";
-    private static final String GET_ADAPTER =
-            "public android.bluetooth.BluetoothAdapter getAdapter()";
-    private static final String GET_DEFAULT_ADAPTER =
-            "public static android.bluetooth.BluetoothAdapter getDefaultAdapter()";
+    private static final MethodSignature PARENT_PROFILE_INSTANCE =
+            MethodSignature.forHardcoded(
+                    MethodSignature.Visibility.PUBLIC,
+                    "android.app.admin.DevicePolicyManager",
+                    "getParentProfileInstance",
+                    List.of("android.content.ComponentName"));
+    private static final MethodSignature GET_CONTENT_RESOLVER =
+            MethodSignature.forHardcoded(
+                    MethodSignature.Visibility.PUBLIC,
+                    "android.content.ContentResolver",
+                    "getContentResolver",
+                    List.of());
+    private static final MethodSignature GET_ADAPTER =
+            MethodSignature.forHardcoded(
+                    MethodSignature.Visibility.PUBLIC,
+                    "android.bluetooth.BluetoothAdapter",
+                    "getAdapter",
+                    List.of());
+    private static final MethodSignature GET_DEFAULT_ADAPTER =
+            MethodSignature.forHardcoded(
+                    MethodSignature.Visibility.PUBLIC,
+                    "android.bluetooth.BluetoothAdapter",
+                    "getDefaultAdapter",
+                    List.of());
 
     private static final ImmutableSet<String> BLOCKLISTED_TYPES =
             loadList("/apis/type-blocklist.txt");
-    private static final ImmutableSet<String> ALLOWLISTED_METHODS =
-            loadList("/apis/allowlisted-methods.txt");
+
+    // TODO(b/436548677): Remove once templates are supported.
+    private static final MethodSignature[] ALLOWLISTED_METHODS =
+            new MethodSignature[] {
+                MethodSignature.forHardcoded(
+                        MethodSignature.Visibility.PUBLIC,
+                        "android.accounts.AccountManagerFuture<V>",
+                        "addAccount",
+                        List.of(
+                                "java.lang.String",
+                                "java.lang.String",
+                                "java.lang.String[]",
+                                "android.os.Bundle",
+                                "android.app.Activity",
+                                "android.accounts.AccountManagerCallback<V>",
+                                "android.os.Handler")),
+                MethodSignature.forHardcoded(
+                        MethodSignature.Visibility.PUBLIC,
+                        "android.accounts.AccountManagerFuture<V>",
+                        "removeAccount",
+                        List.of(
+                                "android.accounts.Account",
+                                "android.app.Activity",
+                                "android.accounts.AccountManagerCallback<V>",
+                                "android.os.Handler")),
+                MethodSignature.forHardcoded(
+                        MethodSignature.Visibility.PUBLIC,
+                        "android.app.admin.DevicePolicyManager",
+                        "getParentProfileInstance",
+                        List.of("android.content.ComponentName")),
+                MethodSignature.forHardcoded(
+                        MethodSignature.Visibility.PUBLIC,
+                        "android.accounts.AccountManagerFuture<V>",
+                        "updateCredentials",
+                        List.of(
+                                "android.accounts.Account",
+                                "java.lang.String",
+                                "android.os.Bundle",
+                                "android.app.Activity",
+                                "android.accounts.AccountManagerCallback<V>",
+                                "android.os.Handler")),
+                MethodSignature.forHardcoded(
+                        MethodSignature.Visibility.PUBLIC,
+                        "android.content.ContentResolver",
+                        "getContentResolver",
+                        List.of()),
+                MethodSignature.forHardcoded(
+                        MethodSignature.Visibility.PUBLIC,
+                        "java.security.PrivateKey",
+                        "getPrivateKey",
+                        List.of("android.content.Context", "java.lang.String"),
+                        Set.of(
+                                "java.lang.InterruptedException",
+                                "android.security.KeyChainException"))
+            };
 
     /** A set of all classes listed in test-current.txt. */
     static final ImmutableSet<ClassSignature> CLASSES_LISTED_IN_TEST_CURRENT_FILE =
@@ -148,10 +217,8 @@ public final class Processor extends AbstractProcessor {
     public boolean process(Set<? extends TypeElement> annotations,
             RoundEnvironment roundEnv) {
         if (!roundEnv.getElementsAnnotatedWith(RemoteFrameworkClasses.class).isEmpty()) {
-            Set<MethodSignature> allowListedMethods = ALLOWLISTED_METHODS.stream()
-                    .map(i -> MethodSignature.forApiString(i, processingEnv.getTypeUtils(),
-                            processingEnv.getElementUtils()))
-                    .collect(Collectors.toUnmodifiableSet());
+            Set<MethodSignature> allowListedMethods =
+                    new HashSet<>(Arrays.asList(ALLOWLISTED_METHODS));
 
             for (String systemService : FRAMEWORK_CLASSES) {
                 TypeElement typeElement =
@@ -325,28 +392,16 @@ public final class Processor extends AbstractProcessor {
     }
 
     private void generateFrameworkInterface(TypeElement frameworkClass, Set<Api> apis) {
-        MethodSignature parentProfileInstanceSignature =
-                MethodSignature.forApiString(PARENT_PROFILE_INSTANCE, processingEnv.getTypeUtils(),
-                        processingEnv.getElementUtils());
-        MethodSignature getContentResolverSignature =
-                MethodSignature.forApiString(GET_CONTENT_RESOLVER, processingEnv.getTypeUtils(),
-                        processingEnv.getElementUtils());
-        MethodSignature getAdapterSignature =
-                MethodSignature.forApiString(GET_ADAPTER, processingEnv.getTypeUtils(),
-                        processingEnv.getElementUtils());
-        MethodSignature getDefaultAdapterSignature =
-                MethodSignature.forApiString(GET_DEFAULT_ADAPTER, processingEnv.getTypeUtils(),
-                        processingEnv.getElementUtils());
-
         Map<MethodSignature, ClassName> signatureReturnOverrides = new HashMap<>();
-        signatureReturnOverrides.put(parentProfileInstanceSignature,
+        signatureReturnOverrides.put(
+                PARENT_PROFILE_INSTANCE,
                 ClassName.get("android.app.admin", "RemoteDevicePolicyManager"));
-        signatureReturnOverrides.put(getContentResolverSignature,
-                ClassName.get("android.content", "RemoteContentResolver"));
-        signatureReturnOverrides.put(getAdapterSignature,
-                ClassName.get("android.bluetooth", "RemoteBluetoothAdapter"));
-        signatureReturnOverrides.put(getDefaultAdapterSignature,
-                ClassName.get("android.bluetooth", "RemoteBluetoothAdapter"));
+        signatureReturnOverrides.put(
+                GET_CONTENT_RESOLVER, ClassName.get("android.content", "RemoteContentResolver"));
+        signatureReturnOverrides.put(
+                GET_ADAPTER, ClassName.get("android.bluetooth", "RemoteBluetoothAdapter"));
+        signatureReturnOverrides.put(
+                GET_DEFAULT_ADAPTER, ClassName.get("android.bluetooth", "RemoteBluetoothAdapter"));
 
         String packageName = frameworkClass.getEnclosingElement().toString();
         ClassName className = ClassName.get(packageName,
@@ -429,25 +484,24 @@ public final class Processor extends AbstractProcessor {
     }
 
     private void generateDpmParent(TypeElement frameworkClass, Set<Api> apis) {
-        MethodSignature parentProfileInstanceSignature = MethodSignature.forApiString(
-                PARENT_PROFILE_INSTANCE, processingEnv.getTypeUtils(),
-                processingEnv.getElementUtils());
         String packageName = frameworkClass.getEnclosingElement().toString();
         ClassName className =
                 ClassName.get(packageName, "Remote" + frameworkClass.getSimpleName() + "Parent");
         TypeSpec.Builder classBuilder =
                 TypeSpec.classBuilder(className).addModifiers(Modifier.FINAL, Modifier.PUBLIC);
 
-        classBuilder.addAnnotation(AnnotationSpec.builder(CrossUser.class)
-                .addMember("parcelableWrappers",
-                        "{$T.class, $T.class, $T.class, $T.class, $T.class, $T.class}",
-                        NULL_PARCELABLE_REMOTE_DEVICE_POLICY_MANAGER_CLASSNAME,
-                        NULL_PARCELABLE_REMOTE_CONTENT_RESOLVER_CLASSNAME,
-                        NULL_PARCELABLE_REMOTE_BLUETOOTH_ADAPTER_CLASSNAME,
-                        NULL_PARCELABLE_ACTIVITY_CLASSNAME,
-                        NULL_PARCELABLE_ACCOUNT_MANAGER_CALLBACK_CLASSNAME,
-                        NULL_HANDLER_CALLBACK_CLASSNAME)
-                .build());
+        classBuilder.addAnnotation(
+                AnnotationSpec.builder(CrossUser.class)
+                        .addMember(
+                                "parcelableWrappers",
+                                "{$T.class, $T.class, $T.class, $T.class, $T.class, $T.class}",
+                                NULL_PARCELABLE_REMOTE_DEVICE_POLICY_MANAGER_CLASSNAME,
+                                NULL_PARCELABLE_REMOTE_CONTENT_RESOLVER_CLASSNAME,
+                                NULL_PARCELABLE_REMOTE_BLUETOOTH_ADAPTER_CLASSNAME,
+                                NULL_PARCELABLE_ACTIVITY_CLASSNAME,
+                                NULL_PARCELABLE_ACCOUNT_MANAGER_CALLBACK_CLASSNAME,
+                                NULL_HANDLER_CALLBACK_CLASSNAME)
+                        .build());
 
         classBuilder.addField(ClassName.get(frameworkClass),
                 "mFrameworkClass", Modifier.PRIVATE, Modifier.FINAL);
@@ -498,7 +552,7 @@ public final class Processor extends AbstractProcessor {
                 methodBuilder.addParameter(parameterSpec);
             }
 
-            if (signature.equals(parentProfileInstanceSignature)) {
+            if (signature.equals(PARENT_PROFILE_INSTANCE)) {
                 // Special case, we want to return a RemoteDevicePolicyManager instead
                 methodBuilder.returns(ClassName.get(
                         "android.app.admin", "RemoteDevicePolicyManager"));
@@ -562,28 +616,16 @@ public final class Processor extends AbstractProcessor {
     }
 
     private void generateFrameworkImpl(TypeElement frameworkClass, Set<Api> apis) {
-        MethodSignature parentProfileInstanceSignature =
-                MethodSignature.forApiString(PARENT_PROFILE_INSTANCE, processingEnv.getTypeUtils(),
-                        processingEnv.getElementUtils());
-        MethodSignature getContentResolverSignature =
-                MethodSignature.forApiString(GET_CONTENT_RESOLVER, processingEnv.getTypeUtils(),
-                        processingEnv.getElementUtils());
-        MethodSignature getAdapterSignature =
-                MethodSignature.forApiString(GET_ADAPTER, processingEnv.getTypeUtils(),
-                        processingEnv.getElementUtils());
-        MethodSignature getDefaultAdapterSignature =
-                MethodSignature.forApiString(GET_DEFAULT_ADAPTER, processingEnv.getTypeUtils(),
-                        processingEnv.getElementUtils());
-
         Map<MethodSignature, ClassName> signatureReturnOverrides = new HashMap<>();
-        signatureReturnOverrides.put(parentProfileInstanceSignature,
+        signatureReturnOverrides.put(
+                PARENT_PROFILE_INSTANCE,
                 ClassName.get("android.app.admin", "RemoteDevicePolicyManager"));
-        signatureReturnOverrides.put(getContentResolverSignature,
-                ClassName.get("android.content", "RemoteContentResolver"));
-        signatureReturnOverrides.put(getAdapterSignature,
-                ClassName.get("android.bluetooth", "RemoteBluetoothAdapter"));
-        signatureReturnOverrides.put(getDefaultAdapterSignature,
-                ClassName.get("android.bluetooth", "RemoteBluetoothAdapter"));
+        signatureReturnOverrides.put(
+                GET_CONTENT_RESOLVER, ClassName.get("android.content", "RemoteContentResolver"));
+        signatureReturnOverrides.put(
+                GET_ADAPTER, ClassName.get("android.bluetooth", "RemoteBluetoothAdapter"));
+        signatureReturnOverrides.put(
+                GET_DEFAULT_ADAPTER, ClassName.get("android.bluetooth", "RemoteBluetoothAdapter"));
 
         String packageName = frameworkClass.getEnclosingElement().toString();
         ClassName interfaceClassName = ClassName.get(packageName,
@@ -702,14 +744,16 @@ public final class Processor extends AbstractProcessor {
                     } else {
                         methodBuilder.addStatement(
                                 "return $L.$L($L, $L)",
-                                TEST_APIS_REFLECTION_FILE, method.getSimpleName(),
+                                TEST_APIS_REFLECTION_FILE,
+                                method.getSimpleName(),
                                 "mFrameworkClass",
                                 String.join(", ", paramNames));
                     }
                 } else {
                     methodBuilder.addStatement(
                             "return $L.$L($L)",
-                            frameworkClassName, method.getSimpleName(),
+                            frameworkClassName,
+                            method.getSimpleName(),
                             String.join(", ", paramNames));
                 }
             }
@@ -732,8 +776,6 @@ public final class Processor extends AbstractProcessor {
                 } else {
                     filteredMethods.add(new Api(method, /* isTestApi= */ false));
                 }
-            } else {
-                System.out.println("No matching public API for " + methodSignature);
             }
         }
 
@@ -757,15 +799,20 @@ public final class Processor extends AbstractProcessor {
         for (ExecutableElement method : testMethods) {
             MethodSignature methodSignature = MethodSignature.forMethod(method, elements);
 
-            if (!methodSignature.mParameterTypes.get(0).equals(
-                    frameworkClass.getQualifiedName().toString())) {
+            if (!methodSignature
+                    .getParameterTypes()
+                    .get(0)
+                    .equals(frameworkClass.getQualifiedName().toString())) {
                 continue;
             }
 
             Api testApi = new Api(method, /* isTestApi= */ true);
             if (filteredMethods.contains(testApi)) {
-                System.out.println("Api " + methodSignature.getName() + " is already added, "
-                        + "probably because it is marked as another type of Api as well.");
+                System.out.println(
+                        "Api "
+                                + methodSignature.getMName()
+                                + " is already added, "
+                                + "probably because it is marked as another type of Api as well.");
                 continue;
             }
 

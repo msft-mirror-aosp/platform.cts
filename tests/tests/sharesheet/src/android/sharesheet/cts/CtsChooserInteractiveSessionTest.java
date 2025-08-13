@@ -17,9 +17,10 @@
 package android.sharesheet.cts;
 
 import static android.Manifest.permission.START_ACTIVITIES_FROM_BACKGROUND;
+import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
 
 import static androidx.test.espresso.Espresso.onView;
-import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
@@ -35,6 +36,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.os.SystemClock;
@@ -42,7 +44,11 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.chooser.Flags;
+import android.util.TypedValue;
+import android.view.View;
 
+import androidx.test.espresso.UiController;
+import androidx.test.espresso.ViewAction;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.By;
@@ -54,6 +60,9 @@ import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.UserHelper;
 
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
 import org.junit.Rule;
@@ -70,6 +79,8 @@ import java.util.regex.Pattern;
 @RequiresFlagsEnabled(Flags.FLAG_INTERACTIVE_CHOOSER)
 public class CtsChooserInteractiveSessionTest {
     private static final int WAIT_AND_ASSERT_FOUND_TIMEOUT_MS = 5_000;
+    private static final int MIN_CHOOSER_HEIGHT_DP = 48;
+    private static final int MIN_TOP_SPACE_DP = 48;
 
     @Rule(order = 0)
     public CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -266,8 +277,81 @@ public class CtsChooserInteractiveSessionTest {
         mDevice.pressBack();
     }
 
+    @Test
+    public void test_minimalHeightAndTopSpace() {
+        InteractiveTestActivityController activityController =
+                launchTestActivity(SCREEN_ORIENTATION_LANDSCAPE);
+
+        clickLaunchChooser();
+        waitForChooserToAppear();
+        mDevice.waitForIdle();
+
+        InteractiveTestActivityReport report = activityController.getReport();
+        int minChooserHeight =
+                (int)
+                        TypedValue.applyDimension(
+                                TypedValue.COMPLEX_UNIT_DIP,
+                                MIN_CHOOSER_HEIGHT_DP,
+                                mContext.getResources().getDisplayMetrics());
+        int minRemainingTopSpace =
+                (int)
+                        TypedValue.applyDimension(
+                                TypedValue.COMPLEX_UNIT_DIP,
+                                MIN_TOP_SPACE_DP,
+                                mContext.getResources().getDisplayMetrics());
+        Rect chooserBounds = report.getChooserBounds();
+        assertThat(chooserBounds).isNotNull();
+        int bottomInsets = report.getWindowInsets() == null ? 0 : report.getWindowInsets().bottom;
+        int topInsets = report.getWindowInsets() == null ? 0 : report.getWindowInsets().top;
+        if (topInsets + bottomInsets + minChooserHeight > report.getWindowHeight()) {
+            return;
+        }
+        assertWithMessage(
+                        "The Chooser needs sufficient height to ensure users can interact with it.")
+                .that(chooserBounds.height() - bottomInsets >= minChooserHeight)
+                .isTrue();
+        if (topInsets + bottomInsets + minChooserHeight + minRemainingTopSpace
+                > report.getWindowHeight()) {
+            return;
+        }
+        assertWithMessage(
+                        "Chooser needs to left sufficient amount of space for the app when"
+                                + " collapsed.")
+                .that(chooserBounds.top - topInsets >= minRemainingTopSpace)
+                .isTrue();
+    }
+
     private void clickLaunchChooser() {
-        onView(withId(R.id.launch_chooser)).perform(click());
+        onView(withId(R.id.launch_chooser))
+                .perform(
+                        new ViewAction() {
+                            @Override
+                            public Matcher<View> getConstraints() {
+                                return new BaseMatcher<View>() {
+                                    @Override
+                                    public void describeTo(Description description) {
+                                        description.appendText("Launch button matcher");
+                                    }
+
+                                    @Override
+                                    public boolean matches(Object item) {
+                                        return item instanceof View view
+                                                && view.isEnabled()
+                                                && view.isClickable();
+                                    }
+                                };
+                            }
+
+                            @Override
+                            public String getDescription() {
+                                return "Test Action";
+                            }
+
+                            @Override
+                            public void perform(UiController uiController, View view) {
+                                view.callOnClick();
+                            }
+                        });
     }
 
     private void clickCloseChooser() {
@@ -318,12 +402,18 @@ public class CtsChooserInteractiveSessionTest {
     }
 
     private InteractiveTestActivityController launchTestActivity() {
+        return launchTestActivity(SCREEN_ORIENTATION_UNSPECIFIED);
+    }
+
+    private InteractiveTestActivityController launchTestActivity(int orientation) {
         Intent testActivityIntent = new Intent();
         testActivityIntent.setComponent(
                 new ComponentName(
                         mContext.getPackageName(),
                         CtsInteractiveChooserTestActivity.class.getName()));
         testActivityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        testActivityIntent.putExtra(
+                CtsInteractiveChooserTestActivity.PARAM_ORIENTATION, orientation);
         CountDownLatch cdl = new CountDownLatch(1);
         final AtomicReference<InteractiveTestActivityController> controllerRef =
                 new AtomicReference<>();

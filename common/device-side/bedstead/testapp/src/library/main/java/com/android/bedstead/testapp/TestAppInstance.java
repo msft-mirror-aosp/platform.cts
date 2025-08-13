@@ -517,6 +517,24 @@ public class TestAppInstance implements AutoCloseable, ConnectionListener {
         return testApp().pkg().appOps(mUser);
     }
 
+    // TODO(b/431996312) This method doesn't belong here, tests should instead use cross-profile
+    //     SDK directly when available.
+    /**
+     * Makes an HTTP request at the given address.
+     *
+     * @param url a HTTP[S] url valid according to {@link android.webkit.URLUtil#isNetworkUrl}
+     * @return {@code true} iff the request was made successfully.
+     * @throws IllegalArgumentException when {@code urlString} is not valid.
+     * @throws IllegalStateException when profile is not available.
+     */
+    public boolean makeHttpRequest(String url) {
+        try (ProfileConnectionHolder ignored = mConnector.connect()) {
+            return mTestAppController.other().makeHttpRequest(url);
+        } catch (UnavailableProfileException e) {
+            throw new IllegalStateException("Could not connect to test app", e);
+        }
+    }
+
     @Override
     public String toString() {
         return "TestAppInstance{"

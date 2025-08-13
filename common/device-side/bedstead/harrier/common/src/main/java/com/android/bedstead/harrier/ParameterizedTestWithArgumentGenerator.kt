@@ -33,5 +33,7 @@ interface ParameterizedTestWithArgumentGenerator {
     fun handleFrameworkMethod(
         frameworkMethod: FrameworkMethod,
         annotation: Annotation
-    ): List<FrameworkMethod>
+    ): List<FrameworkMethod> {
+        throw IllegalStateException("annotation $annotation isn't handled by ${this.javaClass}")
+    }
 }

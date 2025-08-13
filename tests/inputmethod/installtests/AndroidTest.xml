@@ -80,5 +80,20 @@
     <test class="com.android.tradefed.testtype.AndroidJUnitTest">
         <option name="package" value="android.view.inputmethod.cts.installtests" />
         <option name="runtime-hint" value="1m" />
+        <option name="device-listeners" value="android.tools.collectors.DefaultUITraceListener"/>
+        <option name="device-listeners" value="android.device.collectors.ScreenshotOnFailureCollector"/>
+        <!-- DefaultUITraceListener args -->
+        <option name="instrumentation-arg" key="skip_test_success_metrics" value="true"/>
+        <option name="instrumentation-arg" key="per_class" value="true"/>
     </test>
+
+    <!-- Collect the test artifacts. -->
+    <metrics_collector class="com.android.tradefed.device.metric.FilePullerLogCollector">
+        <option name="pull-pattern-keys" value="perfetto_file_path" />
+        <option name="directory-keys" value="/sdcard/DumpOnFailure" />
+        <!-- Collect the files generated on error -->
+        <option name="pull-pattern-keys" value="android.device.collectors.ScreenshotOnFailureCollector.*\.png" />
+        <option name="collect-on-run-ended-only" value="true" />
+        <option name="clean-up" value="true" />
+    </metrics_collector>
 </configuration>

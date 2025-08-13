@@ -70,7 +70,6 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     private static final String LOCK_TASK_APP_PKG = "com.android.cts.locktask";
     private static final String LOCK_TASK_APP_APK = "CtsLockTaskApp.apk";
 
-    private static final String ARG_NETWORK_LOGGING_BATCH_COUNT = "batchCount";
     private static final String ARG_PID_BEFORE_STOP = "pidOfSimpleapp";
 
     private static final int TYPE_NONE = 0;
@@ -376,53 +375,6 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     public void testUserSession() throws Exception {
         executeDeviceOwnerTest("UserSessionTest");
     }
-
-    @Test
-    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
-            + "user mode")
-    public void testNetworkLoggingWithTwoUsers() throws Exception {
-        assumeCanCreateAdditionalUsers(1);
-
-        final int userId = createUser();
-        try {
-            // The feature can be enabled, but in a "paused" state. Attempting to retrieve logs
-            // should throw security exception.
-            executeDeviceTestMethod(".NetworkLoggingTest",
-                    "testRetrievingNetworkLogsThrowsSecurityException");
-        } finally {
-            removeUser(userId);
-        }
-    }
-
-    @FlakyTest(bugId = 137092833)
-    @Test
-    public void testNetworkLoggingWithSingleUser() throws Exception {
-        executeDeviceTestMethod(".NetworkLoggingTest", "testProvidingWrongBatchTokenReturnsNull");
-        executeDeviceTestMethod(".NetworkLoggingTest", "testNetworkLoggingAndRetrieval",
-                Collections.singletonMap(ARG_NETWORK_LOGGING_BATCH_COUNT, Integer.toString(1)));
-    }
-
-    @Test
-    public void testNetworkLogging_multipleBatches() throws Exception {
-        executeDeviceTestMethod(".NetworkLoggingTest", "testNetworkLoggingAndRetrieval",
-                Collections.singletonMap(ARG_NETWORK_LOGGING_BATCH_COUNT, Integer.toString(2)));
-    }
-
-    @LargeTest
-    @Test
-    public void testNetworkLogging_rebootResetsId() throws Exception {
-        // First batch: retrieve and verify the events.
-        executeDeviceTestMethod(".NetworkLoggingTest", "testNetworkLoggingAndRetrieval",
-                Collections.singletonMap(ARG_NETWORK_LOGGING_BATCH_COUNT, Integer.toString(1)));
-        // Reboot the device, so the security event IDs are re-set.
-        rebootAndWaitUntilReady();
-        // Make sure BOOT_COMPLETED is completed before proceeding.
-        waitForBroadcastIdle();
-        // First batch after reboot: retrieve and verify the events.
-        executeDeviceTestMethod(".NetworkLoggingTest", "testNetworkLoggingAndRetrieval",
-                Collections.singletonMap(ARG_NETWORK_LOGGING_BATCH_COUNT, Integer.toString(1)));
-    }
-
 
     @Test
     @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "

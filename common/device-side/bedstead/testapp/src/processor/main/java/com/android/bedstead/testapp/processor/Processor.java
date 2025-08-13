@@ -175,19 +175,36 @@ public final class Processor extends AbstractProcessor {
             ClassName.get(
                     "com.android.bedstead.remoteframeworkclasses", "AccountManagerFutureWrapper");
 
-    private static final String PARENT_PROFILE_INSTANCE =
-            "public android.app.admin.DevicePolicyManager getParentProfileInstance(android"
-                    + ".content.ComponentName)";
-    private static final String GET_CONTENT_RESOLVER =
-            "public android.content.ContentResolver getContentResolver()";
-
-    private static final String GET_REMOTE_CONTENT_RESOLVER =
-            "public android.content.RemoteContentResolver getContentResolver()";
-    private static final String GET_ADAPTER =
-            "public android.bluetooth.BluetoothAdapter getAdapter()";
-    private static final String GET_DEFAULT_ADAPTER =
-            "public static android.bluetooth.BluetoothAdapter getDefaultAdapter()";
-
+    private static final MethodSignature PARENT_PROFILE_INSTANCE =
+            MethodSignature.forHardcoded(
+                    MethodSignature.Visibility.PUBLIC,
+                    "android.app.admin.DevicePolicyManager",
+                    "getParentProfileInstance",
+                    List.of("android.content.ComponentName"));
+    private static final MethodSignature GET_CONTENT_RESOLVER =
+            MethodSignature.forHardcoded(
+                    MethodSignature.Visibility.PUBLIC,
+                    "android.content.ContentResolver",
+                    "getContentResolver",
+                    List.of());
+    private static final MethodSignature GET_REMOTE_CONTENT_RESOLVER =
+            MethodSignature.forHardcoded(
+                    MethodSignature.Visibility.PUBLIC,
+                    "android.content.RemoteContentResolver",
+                    "getContentResolver",
+                    List.of());
+    private static final MethodSignature GET_ADAPTER =
+            MethodSignature.forHardcoded(
+                    MethodSignature.Visibility.PUBLIC,
+                    "android.bluetooth.BluetoothAdapter",
+                    "getAdapter",
+                    List.of());
+    private static final MethodSignature GET_DEFAULT_ADAPTER =
+            MethodSignature.forHardcoded(
+                    MethodSignature.Visibility.PUBLIC,
+                    "android.bluetooth.BluetoothAdapter",
+                    "getDefaultAdapter",
+                    List.of());
 
     /**
      * Extract classes provided in an annotation.
@@ -356,10 +373,13 @@ public final class Processor extends AbstractProcessor {
                 params.add(param.getSimpleName().toString());
             }
 
-
-            CodeBlock.Builder logicLambda = CodeBlock.builder()
-                    .add("() -> {\n").indent()
-                    .beginControlFlow("try ($T p = mConnector.connect())", PROFILE_CONNECTION_HOLDER_CLASSNAME);
+            CodeBlock.Builder logicLambda =
+                    CodeBlock.builder()
+                            .add("() -> {\n")
+                            .indent()
+                            .beginControlFlow(
+                                    "try ($T p = mConnector.connect())",
+                                    PROFILE_CONNECTION_HOLDER_CLASSNAME);
 
             if (method.getReturnType().toString().equals(
                     "android.app.admin.RemoteDevicePolicyManager")
@@ -409,10 +429,13 @@ public final class Processor extends AbstractProcessor {
                                     t -> CodeBlock.of("e instanceof $T", t)))
                     .map(CodeBlock::toString).collect(Collectors.joining(" || "));
 
-            CodeBlock runLogic = CodeBlock.of(
-                    "$1T.logic($2L).terminalException(e -> $3L).timeout(java.time.Duration.ofMinutes(5)).run()",
-                    RETRY_CLASSNAME,
-                    logicLambda.build().toString(), terminalExceptionCode);
+            CodeBlock runLogic =
+                    CodeBlock.of(
+                            "$1T.logic($2L).terminalException(e ->"
+                                    + " $3L).timeout(java.time.Duration.ofMinutes(5)).run()",
+                            RETRY_CLASSNAME,
+                            logicLambda.build().toString(),
+                            terminalExceptionCode);
 
             methodBuilder.beginControlFlow("try");
 
@@ -515,9 +538,13 @@ public final class Processor extends AbstractProcessor {
                 methodBuilder.addParameter(parameterSpec);
             }
 
-            CodeBlock.Builder logicLambda = CodeBlock.builder()
-                    .add("() -> {\n").indent()
-                    .beginControlFlow("try ($T p = mConnector.connect())", PROFILE_CONNECTION_HOLDER_CLASSNAME);
+            CodeBlock.Builder logicLambda =
+                    CodeBlock.builder()
+                            .add("() -> {\n")
+                            .indent()
+                            .beginControlFlow(
+                                    "try ($T p = mConnector.connect())",
+                                    PROFILE_CONNECTION_HOLDER_CLASSNAME);
 
             if (method.getReturnType().getKind().equals(TypeKind.VOID)) {
                 logicLambda.addStatement("mProfileClass.other().$L($L)", method.getSimpleName(),
@@ -535,10 +562,13 @@ public final class Processor extends AbstractProcessor {
                                     t -> CodeBlock.of("e instanceof $T", t)))
                     .map(CodeBlock::toString).collect(Collectors.joining(" || "));
 
-            CodeBlock runLogic = CodeBlock.of(
-                    "$1T.logic($2L).terminalException(e -> $3L).timeout(java.time.Duration.ofMinutes(5)).run()",
-                    RETRY_CLASSNAME,
-                    logicLambda.build().toString(), terminalExceptionCode);
+            CodeBlock runLogic =
+                    CodeBlock.of(
+                            "$1T.logic($2L).terminalException(e ->"
+                                    + " $3L).timeout(java.time.Duration.ofMinutes(5)).run()",
+                            RETRY_CLASSNAME,
+                            logicLambda.build().toString(),
+                            terminalExceptionCode);
 
             methodBuilder.beginControlFlow("try");
 
@@ -568,33 +598,19 @@ public final class Processor extends AbstractProcessor {
     }
 
     private void generateTargetedRemoteActivityImpl(TypeElement neneActivityInterface) {
-        MethodSignature parentProfileInstanceSignature =
-                MethodSignature.forApiString(PARENT_PROFILE_INSTANCE, processingEnv.getTypeUtils(),
-                        processingEnv.getElementUtils());
-        MethodSignature getContentResolverSignature =
-                MethodSignature.forApiString(GET_CONTENT_RESOLVER, processingEnv.getTypeUtils(),
-                        processingEnv.getElementUtils());
-        MethodSignature getRemoteContentResolverSignature =
-                MethodSignature.forApiString(GET_REMOTE_CONTENT_RESOLVER, processingEnv.getTypeUtils(),
-                        processingEnv.getElementUtils());
-        MethodSignature getAdapterSignature =
-                MethodSignature.forApiString(GET_ADAPTER, processingEnv.getTypeUtils(),
-                        processingEnv.getElementUtils());
-        MethodSignature getDefaultAdapterSignature =
-                MethodSignature.forApiString(GET_DEFAULT_ADAPTER, processingEnv.getTypeUtils(),
-                        processingEnv.getElementUtils());
-
         Map<MethodSignature, ClassName> signatureReturnOverrides = new HashMap<>();
-        signatureReturnOverrides.put(parentProfileInstanceSignature,
+        signatureReturnOverrides.put(
+                PARENT_PROFILE_INSTANCE,
                 ClassName.get("android.app.admin", "RemoteDevicePolicyManager"));
-        signatureReturnOverrides.put(getContentResolverSignature,
+        signatureReturnOverrides.put(
+                GET_CONTENT_RESOLVER, ClassName.get("android.content", "RemoteContentResolver"));
+        signatureReturnOverrides.put(
+                GET_REMOTE_CONTENT_RESOLVER,
                 ClassName.get("android.content", "RemoteContentResolver"));
-        signatureReturnOverrides.put(getRemoteContentResolverSignature,
-                ClassName.get("android.content", "RemoteContentResolver"));
-        signatureReturnOverrides.put(getAdapterSignature,
-                ClassName.get("android.bluetooth", "RemoteBluetoothAdapter"));
-        signatureReturnOverrides.put(getDefaultAdapterSignature,
-                ClassName.get("android.bluetooth", "RemoteBluetoothAdapter"));
+        signatureReturnOverrides.put(
+                GET_ADAPTER, ClassName.get("android.bluetooth", "RemoteBluetoothAdapter"));
+        signatureReturnOverrides.put(
+                GET_DEFAULT_ADAPTER, ClassName.get("android.bluetooth", "RemoteBluetoothAdapter"));
 
         TypeSpec.Builder classBuilder =
                 TypeSpec.classBuilder(
@@ -649,8 +665,10 @@ public final class Processor extends AbstractProcessor {
                     methodBuilder.addStatement("return null");
                 } else {
                     methodBuilder.addStatement(
-                            "return BaseTestAppActivity.findActivity(mContext, activityClassName).$L($L)",
-                            method.getSimpleName(), String.join(", ", paramNames));
+                            "return BaseTestAppActivity.findActivity(mContext,"
+                                    + " activityClassName).$L($L)",
+                            method.getSimpleName(),
+                            String.join(", ", paramNames));
                 }
             }
 
@@ -724,9 +742,13 @@ public final class Processor extends AbstractProcessor {
                 methodBuilder.addParameter(parameterSpec);
             }
 
-            CodeBlock.Builder logicLambda = CodeBlock.builder()
-                    .add("() -> {\n").indent()
-                    .beginControlFlow("try ($T p = mConnector.connect())", PROFILE_CONNECTION_HOLDER_CLASSNAME);
+            CodeBlock.Builder logicLambda =
+                    CodeBlock.builder()
+                            .add("() -> {\n")
+                            .indent()
+                            .beginControlFlow(
+                                    "try ($T p = mConnector.connect())",
+                                    PROFILE_CONNECTION_HOLDER_CLASSNAME);
 
             if (method.getReturnType().getKind().equals(TypeKind.VOID)) {
                 logicLambda.addStatement(
@@ -745,10 +767,13 @@ public final class Processor extends AbstractProcessor {
                                     t -> CodeBlock.of("e instanceof $T", t)))
                     .map(CodeBlock::toString).collect(Collectors.joining(" || "));
 
-            CodeBlock runLogic = CodeBlock.of(
-                    "$1T.logic($2L).terminalException(e -> $3L).timeout(java.time.Duration.ofMinutes(5)).run()",
-                    RETRY_CLASSNAME,
-                    logicLambda.build().toString(), terminalExceptionCode);
+            CodeBlock runLogic =
+                    CodeBlock.of(
+                            "$1T.logic($2L).terminalException(e ->"
+                                    + " $3L).timeout(java.time.Duration.ofMinutes(5)).run()",
+                            RETRY_CLASSNAME,
+                            logicLambda.build().toString(),
+                            terminalExceptionCode);
 
             methodBuilder.beginControlFlow("try");
 
@@ -758,10 +783,13 @@ public final class Processor extends AbstractProcessor {
                 methodBuilder.addStatement("return $L", runLogic);
             }
 
-            methodBuilder.nextControlFlow(
-                    "catch ($T e)", PROFILE_RUNTIME_EXCEPTION_CLASSNAME)
-                    .beginControlFlow("if (e.getCause().getMessage().contains(\"No existing activity named\"))")
-                    .addStatement("throw $T.dealWithNoExistingActivityException(activityClassName, e)",
+            methodBuilder
+                    .nextControlFlow("catch ($T e)", PROFILE_RUNTIME_EXCEPTION_CLASSNAME)
+                    .beginControlFlow(
+                            "if (e.getCause().getMessage().contains(\"No existing activity"
+                                    + " named\"))")
+                    .addStatement(
+                            "throw $T.dealWithNoExistingActivityException(activityClassName, e)",
                             TESTAPP_UTILS_CLASSNAME)
                     .endControlFlow()
                     .addStatement("throw ($T) e.getCause()", RuntimeException.class);
@@ -799,14 +827,14 @@ public final class Processor extends AbstractProcessor {
         classBuilder.addMethod(
                 MethodSpec.constructorBuilder()
                         .addParameter(TEST_APP_INSTANCE_CLASSNAME, "instance")
-                        .addParameter(
-                                COMPONENT_REFERENCE_CLASSNAME, "component")
+                        .addParameter(COMPONENT_REFERENCE_CLASSNAME, "component")
                         .addStatement("super(instance, component)")
                         .addStatement("mActivityClassName = component.className()")
-                        .addStatement("mTargetedRemoteActivity = new $T(mInstance.connector(), mInstance.user(), mInstance.testApp().pkg())",
+                        .addStatement(
+                                "mTargetedRemoteActivity = new $T(mInstance.connector(),"
+                                        + " mInstance.user(), mInstance.testApp().pkg())",
                                 TARGETED_REMOTE_ACTIVITY_WRAPPER_CLASSNAME)
                         .build());
-
 
         for (ExecutableElement method : getMethods(neneActivityInterface,
                 processingEnv.getElementUtils())) {

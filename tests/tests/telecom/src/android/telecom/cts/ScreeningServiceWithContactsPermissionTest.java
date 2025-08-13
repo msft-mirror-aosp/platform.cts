@@ -27,6 +27,7 @@ import android.telecom.TelecomManager;
 import android.telecom.cts.screeningtestapp.CtsCallScreeningService;
 
 import androidx.test.filters.FlakyTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 /**
  * Tests for third-party {@link android.telecom.CallScreeningService} implementations, focusing on
@@ -310,6 +311,9 @@ public class ScreeningServiceWithContactsPermissionTest
             waitOnAllHandlers(getInstrumentation());
 
             assertEquals(1, mInCallCallbacks.getService().getCallCount());
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity("android.permission.MODIFY_AUDIO_ROUTING",
+                    "android.permission.CAPTURE_AUDIO_OUTPUT");
             Call call = mInCallCallbacks.getService().getLastCall();
             call.enterBackgroundAudioProcessing();
 
@@ -317,6 +321,8 @@ public class ScreeningServiceWithContactsPermissionTest
             mInCallCallbacks.getService().disconnectAllCalls();
             assertFalse(mCallScreeningControl.waitForActivity());
         } finally {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .dropShellPermissionIdentity();
             restoreCallScreeningState();
         }
     }

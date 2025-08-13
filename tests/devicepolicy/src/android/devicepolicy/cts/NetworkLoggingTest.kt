@@ -15,40 +15,46 @@
  */
 package android.devicepolicy.cts
 
+import android.app.admin.ConnectEvent
 import android.app.admin.DnsEvent
 import android.app.admin.NetworkEvent
 import android.os.SystemClock
-import android.stats.devicepolicy.EventId
 import android.util.Log
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
+import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest
 import com.android.bedstead.enterprise.dpc
 import com.android.bedstead.enterprise.dpcOnly
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
+import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.UserType.ADDITIONAL_USER
 import com.android.bedstead.harrier.annotations.Postsubmit
+import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
 import com.android.bedstead.harrier.policies.GlobalNetworkLogging
 import com.android.bedstead.harrier.policies.NetworkLogging
-import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder
-import com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject
 import com.android.bedstead.multiuser.additionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser
+import com.android.bedstead.multiuser.annotations.RequireRunOnPrimaryUser
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.users.UserReference
-import com.android.bedstead.permissions.CommonPermissions
+import com.android.bedstead.permissions.CommonPermissions.INTERNET
+import com.android.bedstead.testapps.testApps
 import com.android.compatibility.common.util.ApiTest
 import com.google.common.truth.Truth
-import java.net.HttpURLConnection
-import java.net.URL
-import java.net.UnknownHostException
+import com.google.common.truth.Truth.assertWithMessage
+import java.net.InetAddress
 import java.time.Duration
+import java.util.concurrent.atomic.AtomicBoolean
+import org.junit.Assert.fail
 import org.junit.Assume
 import org.junit.ClassRule
 import org.junit.Rule
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.testng.Assert
 
@@ -62,75 +68,57 @@ class NetworkLoggingTest {
     @Postsubmit(reason = "new test")
     fun isNetworkLoggingEnabled_notAllowed_throwsException() {
         Assert.assertThrows(SecurityException::class.java) {
-            deviceState.dpc().devicePolicyManager()
-                .isNetworkLoggingEnabled(deviceState.dpc().componentName())
+            isNetworkLoggingEnabled()
         }
-    }
-
-    @ApiTest(apis = ["android.app.admin.DevicePolicyManager#isNetworkLoggingEnabled"])
-    @CanSetPolicyTest(policy = [NetworkLogging::class])
-    @Postsubmit(reason = "new test")
-    fun isNetworkLoggingEnabled_networkLoggingIsEnabled_returnsTrue() {
-        isNetworkLoggingEnabled_networkLoggingIsEnabled_returnsTrue_impl()
     }
 
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#isNetworkLoggingEnabled"])
     @EnsureHasNoAdditionalUser
-    @CanSetPolicyTest(policy = [GlobalNetworkLogging::class])
+    @CanSetPolicyTest(policy = [NetworkLogging::class, GlobalNetworkLogging::class])
     @Postsubmit(reason = "new test")
-    fun isNetworkLoggingEnabled_networkLoggingIsEnabled_returnsTrue_global() {
-        ensureNoUnaffiliatedAdditionalUsers()
-        isNetworkLoggingEnabled_networkLoggingIsEnabled_returnsTrue_impl()
+    fun isNetworkLoggingEnabled_networkLoggingIsEnabled_returnsTrue() {
+        removeUnaffiliatedUsersIfLoggingDeviceWide()
+
+        try {
+            setNetworkLoggingEnabled(true)
+
+            Truth.assertThat(isNetworkLoggingEnabled()).isTrue()
+        } finally {
+            setNetworkLoggingEnabled(false)
+        }
     }
 
-    private fun isNetworkLoggingEnabled_networkLoggingIsEnabled_returnsTrue_impl() {
+    @ApiTest(
+        apis = ["android.app.admin.DevicePolicyManager#isNetworkLoggingEnabled",
+        "android.app.admin.DevicePolicyManager#retrieveNetworkLogs"]
+    )
+    @CanSetPolicyTest(policy = [NetworkLogging::class, GlobalNetworkLogging::class])
+    @Postsubmit(reason = "new test")
+    fun retrieveNetworkLogs_withInvalidBatch_returnsNull() {
+        removeUnaffiliatedUsersIfLoggingDeviceWide()
+
         try {
-            deviceState.dpc().devicePolicyManager().setNetworkLoggingEnabled(
-                deviceState.dpc().componentName(),
-                true
-            )
-            Truth.assertThat(
-                deviceState.dpc().devicePolicyManager().isNetworkLoggingEnabled(
-                    deviceState.dpc().componentName()
-                )
-            ).isTrue()
+            setNetworkLoggingEnabled(true)
+
+            Truth.assertThat(retrieveNetworkLogs(-12345)).isNull()
         } finally {
-            deviceState.dpc().devicePolicyManager().setNetworkLoggingEnabled(
-                deviceState.dpc().componentName(),
-                false
-            )
+            setNetworkLoggingEnabled(false)
         }
     }
 
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#isNetworkLoggingEnabled"])
-    @CanSetPolicyTest(policy = [NetworkLogging::class])
+    @CanSetPolicyTest(policy = [NetworkLogging::class, GlobalNetworkLogging::class])
     @Postsubmit(reason = "new test")
     fun isNetworkLoggingEnabled_networkLoggingIsNotEnabled_returnsFalse() {
-        isNetworkLoggingEnabled_networkLoggingIsNotEnabled_returnsFalse_impl()
-    }
+        removeUnaffiliatedUsersIfLoggingDeviceWide()
 
-    @ApiTest(apis = ["android.app.admin.DevicePolicyManager#isNetworkLoggingEnabled"])
-    @CanSetPolicyTest(policy = [GlobalNetworkLogging::class])
-    @Postsubmit(reason = "new test")
-    fun isNetworkLoggingEnabled_networkLoggingIsNotEnabled_returnsFalse_global() {
-        ensureNoUnaffiliatedAdditionalUsers()
-        isNetworkLoggingEnabled_networkLoggingIsNotEnabled_returnsFalse_impl()
-    }
+        setNetworkLoggingEnabled(false)
 
-    private fun isNetworkLoggingEnabled_networkLoggingIsNotEnabled_returnsFalse_impl() {
-        deviceState.dpc().devicePolicyManager().setNetworkLoggingEnabled(
-            deviceState.dpc().componentName(),
-            false
-        )
-        Truth.assertThat(
-            deviceState.dpc().devicePolicyManager().isNetworkLoggingEnabled(
-                deviceState.dpc().componentName()
-            )
-        ).isFalse()
+        Truth.assertThat(isNetworkLoggingEnabled()).isFalse()
     }
 
     @Postsubmit(reason = "new test")
-    @PolicyAppliesTest(policy = [NetworkLogging::class])
+    @PolicyAppliesTest(policy = [NetworkLogging::class, GlobalNetworkLogging::class])
     @ApiTest(
         apis = ["android.app.admin.DevicePolicyManager#setNetworkLoggingEnabled",
             "android.app.admin.DeviceAdminReceiver#onNetworkLogsAvailable",
@@ -138,46 +126,239 @@ class NetworkLoggingTest {
             "android.app.admin.DevicePolicyManager#retrieveNetworkLogs"]
     )
     fun networkLogging_logsContainDnsEvents() {
-        networkLogging_logsContainDnsEvents_impl()
+        removeUnaffiliatedUsersIfLoggingDeviceWide()
+
+        try {
+            setNetworkLoggingEnabled(true)
+            Log.d(TAG, "Enabled logging")
+
+            val hostList = uniqueHostList(10)
+            testApp.install(TestApis.users().instrumented()).use { primaryApp ->
+                hostList.forEach { primaryApp.makeHttpRequest("https://$it") }
+            }
+
+            val logs = getLogs()
+
+            Truth.assertThat(logs).isNotEmpty()
+            Truth.assertThat(logs.filterIsInstance<DnsEvent>().map { it.hostname })
+                .containsAtLeastElementsIn(hostList)
+        } finally {
+            setNetworkLoggingEnabled(false)
+        }
     }
 
     @Postsubmit(reason = "new test")
-    @PolicyAppliesTest(policy = [GlobalNetworkLogging::class])
+    @PolicyAppliesTest(policy = [NetworkLogging::class, GlobalNetworkLogging::class])
     @ApiTest(
         apis = ["android.app.admin.DevicePolicyManager#setNetworkLoggingEnabled",
             "android.app.admin.DeviceAdminReceiver#onNetworkLogsAvailable",
             "android.app.admin.DelegatedAdminReceiver#onNetworkLogsAvailable",
             "android.app.admin.DevicePolicyManager#retrieveNetworkLogs"]
     )
-    fun networkLogging_logsContainDnsEvents_global() {
-        ensureNoUnaffiliatedAdditionalUsers()
-        networkLogging_logsContainDnsEvents_impl()
-    }
+    fun networkLogging_logsContainConnectEvents() {
+        removeUnaffiliatedUsersIfLoggingDeviceWide()
 
-    private fun networkLogging_logsContainDnsEvents_impl() {
         try {
-            deviceState.dpc().devicePolicyManager().setNetworkLoggingEnabled(
-                deviceState.dpc().componentName(),
-                true
-            )
+            setNetworkLoggingEnabled(true)
             Log.d(TAG, "Enabled logging")
 
-            val hostList = uniqueHostList()
-
-            for (host in hostList) {
-                connectToWebsite(host)
+            testApp.install(TestApis.users().instrumented()).use { primaryApp ->
+                REACHABLE_DOMAINS.forEach {
+                    Truth.assertWithMessage(
+                        "Failed to connect to $it, ensure the device has connectivity"
+                    ).that(primaryApp.makeHttpRequest("https://$it")).isTrue()
+                }
             }
 
             val logs = getLogs()
+            val connected = logs.filterIsInstance<ConnectEvent>().map{it.inetAddress}.toSet()
 
-            Truth.assertThat(logs).isNotEmpty()
-            Truth.assertThat(logs.filterIsInstance<DnsEvent>().map{it.hostname})
-                .containsAtLeastElementsIn(hostList)
+            REACHABLE_DOMAINS.forEach {
+                Truth.assertWithMessage("Can't find connect event for $it")
+                    .that(connected).containsAnyIn(InetAddress.getAllByName(it))
+            }
         } finally {
-            deviceState.dpc().devicePolicyManager().setNetworkLoggingEnabled(
-                deviceState.dpc().componentName(),
-                false
-            )
+            setNetworkLoggingEnabled(false)
+        }
+    }
+
+    @Test
+    @Postsubmit(reason = "new test")
+    @EnsureHasWorkProfile
+    @EnsureHasProfileOwner(onUser = UserType.WORK_PROFILE, isPrimary = true)
+    @RequireRunOnPrimaryUser
+    fun workProfileNetworkLogging_doesNotSeePersonalTraffic() {
+        try {
+            setNetworkLoggingEnabled(true)
+            Log.d(TAG, "Enabled logging")
+
+            // Access some hosts from the primary user.
+            val primaryHosts = uniqueHostList(10)
+            testApp.install(TestApis.users().instrumented()).use { primaryApp ->
+                primaryHosts.forEach { primaryApp.makeHttpRequest("https://$it") }
+            }
+
+            val logs = getLogs()
+            Truth.assertThat(logs).isNotEmpty()
+
+            Truth.assertThat(logs.filterIsInstance<DnsEvent>().map{it.hostname})
+                .containsNoneIn(primaryHosts)
+        } finally {
+            setNetworkLoggingEnabled(false)
+        }
+    }
+
+    @Postsubmit(reason = "new test")
+    @CannotSetPolicyTest(policy = [GlobalNetworkLogging::class, NetworkLogging::class])
+    @ApiTest(apis = ["android.app.admin.DevicePolicyManager#setNetworkLoggingEnabled"])
+    fun setNetworkLoggingEnabled_notAllowed_throwsException() {
+        Assert.assertThrows(SecurityException::class.java) {
+            setNetworkLoggingEnabled(true)
+        }
+    }
+
+    @Postsubmit(reason = "new test")
+    @CannotSetPolicyTest(policy = [GlobalNetworkLogging::class, NetworkLogging::class])
+    @ApiTest(apis = ["android.app.admin.DevicePolicyManager#retrieveNetworkLogs"])
+    fun retrieveNetworkLogs_notAllowed_throwsException() {
+        Assert.assertThrows(SecurityException::class.java) {
+            retrieveNetworkLogs(0)
+        }
+    }
+
+    @CanSetPolicyTest(policy = [GlobalNetworkLogging::class])
+    @EnsureHasAdditionalUser
+    @ApiTest(apis = ["android.app.admin.DevicePolicyManager#retrieveNetworkLogs"])
+    fun retrieveNetworkLogs_unaffiliatedAdditionalUser_throwsException() {
+        try {
+            setNetworkLoggingEnabled(true)
+
+            Assert.assertThrows(SecurityException::class.java) {
+                retrieveNetworkLogs(0)
+            }
+        } finally {
+            setNetworkLoggingEnabled(false)
+        }
+    }
+
+    @CanSetPolicyTest(policy = [GlobalNetworkLogging::class, NetworkLogging::class])
+    @EnsureHasAdditionalUser
+    @EnsureHasProfileOwner(onUser = ADDITIONAL_USER, affiliationIds = ["affiliated"])
+    @ApiTest(apis = ["android.app.admin.DevicePolicyManager#retrieveNetworkLogs"])
+    fun retrieveNetworkLogs_affiliatedAdditionalUser_doesNotThrowException() {
+        TestApis.users().ensureNoOtherUsersExcept {
+            u: UserReference -> u == deviceState.additionalUser()
+        }
+
+        val affiliationIds: MutableSet<String> = HashSet(
+            deviceState.dpcOnly().devicePolicyManager()
+                .getAffiliationIds(deviceState.dpcOnly().componentName())
+        )
+        affiliationIds.add("affiliated")
+        deviceState.dpcOnly().devicePolicyManager().setAffiliationIds(
+            deviceState.dpc().componentName(),
+            affiliationIds
+        )
+
+        try {
+            setNetworkLoggingEnabled(true)
+            retrieveNetworkLogs(0)
+        } finally {
+            setNetworkLoggingEnabled(false)
+        }
+    }
+
+    /**
+     * This test verifies network log collection when multiple batches of events are produced.
+     *
+     * The test is only running in DO configuration since batching logic isn't really dependent on
+     * management mode and the test may take quite some time.
+     */
+    @Postsubmit(reason = "new test")
+    @Test
+    @EnsureHasDeviceOwner
+    @RequireRunOnInitialUser
+    fun retrieveNetworkLogs_multipleBatches() {
+        ensureNoUnaffiliatedAdditionalUsers()
+
+        // Strictly speaking this may change and isn't part of public API. But we need to make some
+        // assumptions about batch size. If it is not too far off, it should work.
+        val batchSize = 1200
+        // This is arbitrary, but ATM the platform may keep up to 5 unfetched batches in the queue,
+        // so using a larger number has more chances of hitting a bug.
+        val numBatchesToVerify = 7
+        // We generate a few batches worth of padding events after those we care about. There are
+        // two reasons:
+        // 1. If the tail of the events we want to verify gets stuck in an incomplete batch, we'll
+        // have to wait a long time. Padding batches will ensure that all the batches with the
+        // events we care about are full.
+        // 2. If something else in the system makes DNS requests during the test (and it is almost
+        // certainly the case), the events we care about will be spread across more batches.
+        val numPaddingBatches = 4
+
+        val totalBatches = numBatchesToVerify + numPaddingBatches
+        val numEventsToVerify = batchSize * numBatchesToVerify
+        val numEventsToGenerate = numEventsToVerify + batchSize * numPaddingBatches
+
+        try {
+            setNetworkLoggingEnabled(true)
+            Log.d(TAG, "Enabled logging")
+
+            // Generate list of unique unresolvable (to avoid "connect" events) domains.
+            val hostsToConnect = generateSequence { addUniqueSubdomain("test.domain.invalid") }
+                .take(numEventsToGenerate)
+                .toList()
+
+            // Separate thread to make network request to all of these hosts.
+            val requestSenderCancelled = AtomicBoolean(false)
+            val requestSenderThread = Thread {
+                testApp.install(TestApis.users().instrumented()).use { app ->
+                    var counter = 0
+                    run loop@{
+                        hostsToConnect.forEach {
+                            if (requestSenderCancelled.get()) {
+                                Log.i(TAG, "Request sender thread cancelled.")
+                                return@loop
+                            }
+                            Log.i(TAG, "Making request #${++counter} to $it")
+                            app.makeHttpRequest("https://$it")
+                            // Sleep a tiny bit to make sure other processes and threads have time
+                            // to execute, so that the logs are collected in time.
+                            Thread.sleep(5)
+                        }
+                    }
+                    Log.i(TAG, "Request sender thread finishing.")
+                }
+            }
+
+            // We'll fetch logs continuously and verify that they contain each of the hosts.
+            val hostsToVerifyQueue = hostsToConnect.take(numEventsToVerify).toMutableSet()
+            requestSenderThread.start()
+            try {
+                var batchToken = -1L
+                while (!hostsToVerifyQueue.isEmpty() && batchToken < totalBatches) {
+                    batchToken = waitForNextBatchToken()
+                    Log.i(TAG, "New batch token: $batchToken")
+
+                    val batch = retrieveNetworkLogs(batchToken)!!
+                    run loop@{
+                        batch.filterIsInstance<DnsEvent>().map { it.hostname }.forEach {
+                            if (hostsToVerifyQueue.isEmpty()) {
+                                return@loop
+                            }
+                            hostsToVerifyQueue.remove(it)
+                        }
+                    }
+                }
+                // No events should remain in the queue.
+                assertWithMessage("${hostsToVerifyQueue.size} DNS events weren't found in logs")
+                    .that(hostsToVerifyQueue).isEmpty()
+            } finally {
+                requestSenderCancelled.set(true)
+                requestSenderThread.join(60_000)
+            }
+        } finally {
+            setNetworkLoggingEnabled(false)
         }
     }
 
@@ -186,31 +367,21 @@ class NetworkLoggingTest {
         // events have been fetched
         val markerHost = addUniqueSubdomain("example.com")
         Log.d(TAG, "Marker host: $markerHost")
-        connectToWebsite(markerHost)
 
-        var batchToken: Long = -1
+        deviceState.dpc().makeHttpRequest("https://$markerHost")
+
         val result = ArrayList<NetworkEvent>()
         val deadline = SystemClock.elapsedRealtime() + Duration.ofMinutes(2).toMillis()
 
         while (SystemClock.elapsedRealtime() < deadline) {
             Log.d(TAG, "Forcing network logs")
             TestApis.devicePolicy().forceNetworkLogs()
-            Log.d(TAG, "Waiting for batch token")
-            val nextBatchToken = waitForBatchToken()
 
-            if (nextBatchToken == batchToken) {
-                Log.d(TAG, "Got the same token $batchToken, waiting...")
-                Thread.sleep(5000)
-                continue
-            } else {
-                batchToken = nextBatchToken
-            }
+            Log.d(TAG, "Waiting for batch token")
+            val batchToken = waitForNextBatchToken()
 
             Log.d(TAG, "Retrieving batch with token: $batchToken")
-            val batch = deviceState.dpc().devicePolicyManager().retrieveNetworkLogs(
-                deviceState.dpc().componentName(),
-                batchToken
-            )
+            val batch = retrieveNetworkLogs(batchToken)
 
             if (batch != null) {
                 batch.forEach {
@@ -236,239 +407,70 @@ class NetworkLoggingTest {
         throw AssertionError("Timed out waiting for logs")
     }
 
-    private fun waitForBatchToken(): Long {
-        return try {
+    // Event queries for DPC and delegate have different types, but we only need tokens from either
+    // of them, so wrap them into a lambda for a single interface.
+    private var batchTokenQuery: (() -> Long)? = null
+    private var previousBatchToken: Long = 0
+
+    private fun waitForNextBatchToken(): Long {
+        if (batchTokenQuery == null) {
             if (deviceState.dpc().isDelegate) {
-                deviceState.dpc().events().delegateNetworkLogsAvailable()
-                    .waitForEvent().batchToken()
+                val query = deviceState.dpc().events().delegateNetworkLogsAvailable()
+                batchTokenQuery = { query.waitForEvent().batchToken() }
             } else {
-                deviceState.dpc().events().networkLogsAvailable().waitForEvent().batchToken()
+                val query = deviceState.dpc().events().networkLogsAvailable()
+                batchTokenQuery = { query.waitForEvent().batchToken() }
+            }
+        }
+        return try {
+            batchTokenQuery!!().also {
+                if (it != previousBatchToken + 1) {
+                    fail("Unexpected batch token: $it, previous: $previousBatchToken")
+                }
+                previousBatchToken = it
             }
         } catch (e: AssertionError) {
             // Collect relevant logs
             throw AssertionError(
                 "Error receiving batch token. Relevant logs: " +
                         TestApis.logcat().dump { l: String ->
-                    l.contains("NetworkLoggingHandler") ||
-                            l.contains("sendDeviceOwnerOrProfileOwnerCommand")
-                },
+                            l.contains("NetworkLoggingHandler") ||
+                                    l.contains("sendDeviceOwnerOrProfileOwnerCommand")
+                        },
                 e
             )
         }
     }
 
-    private fun connectToWebsite(server: String) {
-        TestApis.permissions().withPermission(CommonPermissions.INTERNET).use { p ->
-            val url = URL("http://$server")
-            val urlConnection = url.openConnection() as HttpURLConnection
-            try {
-                urlConnection.connectTimeout = 2000
-                urlConnection.readTimeout = 2000
-                Log.d(TAG, "Trying to connect to host: $server")
-                urlConnection.responseCode
-            } catch (_: UnknownHostException) {
-                // Ignored - we only need to make a DNS request, it doesn't have to succeed.
-            } finally {
-                urlConnection.disconnect()
-            }
-        }
-    }
-
-    @Postsubmit(reason = "new test")
-    @CannotSetPolicyTest(policy = [GlobalNetworkLogging::class, NetworkLogging::class])
-    @ApiTest(apis = ["android.app.admin.DevicePolicyManager#setNetworkLoggingEnabled"])
-    fun setNetworkLoggingEnabled_notAllowed_throwsException() {
-        Assert.assertThrows(SecurityException::class.java) {
-            deviceState.dpc().devicePolicyManager()
-                .setNetworkLoggingEnabled(deviceState.dpc().componentName(), true)
-        }
-    }
-
-    @Postsubmit(reason = "new test")
-    @CannotSetPolicyTest(policy = [GlobalNetworkLogging::class, NetworkLogging::class])
-    @ApiTest(apis = ["android.app.admin.DevicePolicyManager#retrieveNetworkLogs"])
-    fun retrieveNetworkLogs_notAllowed_throwsException() {
-        Assert.assertThrows(SecurityException::class.java) {
-            deviceState.dpc().devicePolicyManager()
-                .retrieveNetworkLogs(
-                    deviceState.dpc().componentName(),
-                    0 // batch token
-                )
-        }
-    }
-
-    @Postsubmit(reason = "new test")
-    @CanSetPolicyTest(policy = [GlobalNetworkLogging::class, NetworkLogging::class])
-    @ApiTest(apis = ["android.app.admin.DevicePolicyManager#setNetworkLoggingEnabled"])
-    fun setNetworkLoggingEnabled_true_logsMetrics() {
-        try {
-            EnterpriseMetricsRecorder.create().use { metrics ->
-                deviceState.dpc().devicePolicyManager().setNetworkLoggingEnabled(
-                    deviceState.dpc().componentName(),
-                    true
-                )
-
-                MetricQueryBuilderSubject.assertThat(
-                    metrics.query()
-                        .whereType().isEqualTo(EventId.SET_NETWORK_LOGGING_ENABLED_VALUE)
-                        .whereAdminPackageName().isEqualTo(
-                            deviceState.dpc().packageName()
-                        )
-                        .whereBoolean().isEqualTo(deviceState.dpc().isDelegate)
-                        .whereInteger().isEqualTo(1) // Enabled
-                ).wasLogged()
-            }
-        } finally {
-            deviceState.dpc().devicePolicyManager().setNetworkLoggingEnabled(
-                deviceState.dpc().componentName(),
-                false
-            )
-        }
-    }
-
-    @Postsubmit(reason = "new test")
-    @CanSetPolicyTest(policy = [GlobalNetworkLogging::class, NetworkLogging::class])
-    @ApiTest(apis = ["android.app.admin.DevicePolicyManager#setNetworkLoggingEnabled"])
-    fun setNetworkLoggingEnabled_false_logsMetrics() {
+    private fun setNetworkLoggingEnabled(enabled: Boolean) =
         deviceState.dpc().devicePolicyManager().setNetworkLoggingEnabled(
             deviceState.dpc().componentName(),
-            true
+            enabled
         )
 
-        EnterpriseMetricsRecorder.create().use { metrics ->
-            deviceState.dpc().devicePolicyManager().setNetworkLoggingEnabled(
-                deviceState.dpc().componentName(),
-                false
-            )
-
-            MetricQueryBuilderSubject.assertThat(
-                metrics.query()
-                    .whereType().isEqualTo(EventId.SET_NETWORK_LOGGING_ENABLED_VALUE)
-                    .whereAdminPackageName().isEqualTo(
-                        deviceState.dpc().packageName()
-                    )
-                    .whereBoolean().isEqualTo(deviceState.dpc().isDelegate)
-                    .whereInteger().isEqualTo(0) // Disabled
-            ).wasLogged()
-        }
-    }
-
-    @Postsubmit(reason = "new test")
-    @CanSetPolicyTest(policy = [NetworkLogging::class])
-    @ApiTest(
-        apis = ["android.app.admin.DevicePolicyManager#retrieveNetworkLogs",
-        "android.app.admin.DeviceAdminReceiver#onNetworkLogsAvailable",
-        "android.app.admin.DelegatedAdminReceiver#onNetworkLogsAvailable"]
-    )
-    fun retrieveNetworkLogs_logsMetrics() {
-        retrieveNetworkLogs_logsMetrics_impl()
-    }
-
-    @Postsubmit(reason = "new test")
-    @CanSetPolicyTest(policy = [GlobalNetworkLogging::class])
-    @ApiTest(
-        apis = ["android.app.admin.DevicePolicyManager#retrieveNetworkLogs",
-            "android.app.admin.DeviceAdminReceiver#onNetworkLogsAvailable",
-            "android.app.admin.DelegatedAdminReceiver#onNetworkLogsAvailable"]
-    )
-    fun retrieveNetworkLogs_logsMetrics_global() {
-        ensureNoUnaffiliatedAdditionalUsers()
-        retrieveNetworkLogs_logsMetrics_impl()
-    }
-
-    private fun retrieveNetworkLogs_logsMetrics_impl() {
-        try {
-            EnterpriseMetricsRecorder.create().use { metrics ->
-                deviceState.dpc().devicePolicyManager().setNetworkLoggingEnabled(
-                    deviceState.dpc().componentName(),
-                    true
-                )
-
-                val hostList = uniqueHostList()
-
-                for (host in hostList) {
-                    connectToWebsite(host)
-                }
-                TestApis.devicePolicy().forceNetworkLogs()
-                val batchToken = waitForBatchToken()
-                deviceState.dpc().devicePolicyManager().retrieveNetworkLogs(
-                    deviceState.dpc().componentName(),
-                    batchToken
-                )
-
-                MetricQueryBuilderSubject.assertThat(
-                    metrics.query()
-                        .whereType().isEqualTo(EventId.RETRIEVE_NETWORK_LOGS_VALUE)
-                        .whereAdminPackageName().isEqualTo(
-                            deviceState.dpc().packageName()
-                        )
-                        .whereBoolean().isEqualTo(deviceState.dpc().isDelegate)
-                ).wasLogged()
-            }
-        } finally {
-            deviceState.dpc().devicePolicyManager().setNetworkLoggingEnabled(
-                deviceState.dpc().componentName(),
-                false
-            )
-        }
-    }
-
-    @CanSetPolicyTest(policy = [GlobalNetworkLogging::class])
-    @EnsureHasAdditionalUser
-    @ApiTest(apis = ["android.app.admin.DevicePolicyManager#retrieveNetworkLogs"])
-    fun retrieveNetworkLogs_unaffiliatedAdditionalUser_throwsException() {
-        try {
-            deviceState.dpc().devicePolicyManager().setNetworkLoggingEnabled(
-                deviceState.dpc().componentName(),
-                true
-            )
-
-            Assert.assertThrows(SecurityException::class.java) {
-                deviceState.dpc().devicePolicyManager().retrieveNetworkLogs(
-                    deviceState.dpc().componentName(),
-                    0 // batch token
-                )
-            }
-        } finally {
-            deviceState.dpc().devicePolicyManager().setNetworkLoggingEnabled(
-                deviceState.dpc().componentName(),
-                false
-            )
-        }
-    }
-
-    @CanSetPolicyTest(policy = [GlobalNetworkLogging::class, NetworkLogging::class])
-    @EnsureHasAdditionalUser
-    @EnsureHasProfileOwner(onUser = ADDITIONAL_USER, affiliationIds = ["affiliated"])
-    @ApiTest(apis = ["android.app.admin.DevicePolicyManager#retrieveNetworkLogs"])
-    fun retrieveNetworkLogs_affiliatedAdditionalUser_doesNotThrowException() {
-        TestApis.users().ensureNoOtherUsersExcept {
-            u: UserReference -> u == deviceState.additionalUser()
-        }
-
-        val affiliationIds: MutableSet<String> = HashSet(
-            deviceState.dpcOnly().devicePolicyManager()
-                .getAffiliationIds(deviceState.dpcOnly().componentName())
+    private fun isNetworkLoggingEnabled(): Boolean =
+        deviceState.dpc().devicePolicyManager().isNetworkLoggingEnabled(
+            deviceState.dpc().componentName()
         )
-        affiliationIds.add("affiliated")
-        deviceState.dpcOnly().devicePolicyManager().setAffiliationIds(
+
+    private fun retrieveNetworkLogs(batchToken: Long): List<NetworkEvent>? =
+        deviceState.dpc().devicePolicyManager().retrieveNetworkLogs(
             deviceState.dpc().componentName(),
-            affiliationIds
+            batchToken
         )
-        try {
-            deviceState.dpc().devicePolicyManager().setNetworkLoggingEnabled(
-                deviceState.dpc().componentName(),
-                true
-            )
-            deviceState.dpc().devicePolicyManager().retrieveNetworkLogs(
-                deviceState.dpc().componentName(),
-                0 // batch token
-            )
-        } finally {
-            deviceState.dpc().devicePolicyManager().setNetworkLoggingEnabled(
-                deviceState.dpc().componentName(),
-                false
-            )
+
+    /**
+     * Remove unaffiliated users if logging is about to be enabled device wide.
+     *
+     * When logging is enabled by PO, only events from the same user are visible, and there is no
+     * requirement on other users. In all other cases logging is only allowed when there are no
+     * unaffiliated users.
+     */
+    private fun removeUnaffiliatedUsersIfLoggingDeviceWide() {
+        if (!deviceState.dpcOnly()
+                .devicePolicyManager()
+                .isProfileOwnerApp(deviceState.dpcOnly().packageName())) {
+            ensureNoUnaffiliatedAdditionalUsers()
         }
     }
 
@@ -490,21 +492,25 @@ class NetworkLoggingTest {
         @Rule
         val deviceState = DeviceState()
 
-        var counter: Int = 0
+        private val testApp = deviceState.testApps().query()
+            .wherePermissions().contains(INTERNET)
+            .get()
 
+        var counter: Int = 0
         private fun addUniqueSubdomain(host: String): String =
             "host${SystemClock.elapsedRealtimeNanos()}-${counter++}.$host"
 
-        private fun uniqueHostList(): List<String> = DOMAINS.map { addUniqueSubdomain(it) }
+        private fun uniqueHostList(n: Int): List<String> =
+            generateSequence { addUniqueSubdomain("test.domain.invalid") }
+                .take(n)
+                .toList()
 
-        private val DOMAINS = arrayOf(
+        // Domains to use when we need "connect events". Reserved by RFC 6761.
+        private val REACHABLE_DOMAINS = arrayOf(
+            "example.com",
             "example.edu",
-            "google.co.jp",
-            "google.fr",
-            "google.com.br",
-            "google.com.tr",
-            "google.co.uk",
-            "google.de"
+            "example.org",
+            "example.net"
         )
 
         const val TAG = "NetworkLoggingTest"

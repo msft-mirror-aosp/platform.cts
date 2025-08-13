@@ -403,6 +403,11 @@
       "name": "CtsUpdateOwnershipEnforcementTestCases"
     }
   ],
+  "desktop-presubmit": [
+    {
+      "name": "CtsPackageInstallTestCases"
+    }
+  ],
   "imports": [
     {
       "path": "cts/tests/tests/packageinstaller/atomicinstall"
