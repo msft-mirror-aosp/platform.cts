@@ -342,13 +342,6 @@ public class CameraIntentsActivity extends PassFailButtons.Activity
         // to test each camera/intents combination
         final int stageIndex = getIntent().getIntExtra(STAGE_INDEX_EXTRA, 0);
 
-        if (!com.android.providers.media.flags.Flags.motionPhotoIntent()
-                && (stageIndex == STAGE_INTENT_MOTION_PHOTO
-                        || stageIndex == STAGE_INTENT_MOTION_PHOTO_SECURE)) {
-            // Skip the motion photo stages if the flag is off.
-            navigateToNextStage(stageIndex);
-        }
-
         setContentView(R.layout.ci_main);
         setPassFailButtonClickListeners();
         setInfoResources(R.string.camera_intents, R.string.ci_info, -1);
