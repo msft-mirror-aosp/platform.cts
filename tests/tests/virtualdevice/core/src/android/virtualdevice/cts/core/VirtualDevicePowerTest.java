@@ -63,7 +63,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -119,12 +118,7 @@ public class VirtualDevicePowerTest {
     @Parameterized.Parameters(name = "aodEnabled={0}")
     @SuppressWarnings("unused")
     public static Collection<Integer> getAllAodStates() {
-        List<Integer> aodStates = new ArrayList<>();
-        aodStates.add(0);
-        if (Flags.virtualPowerGroupSleepNoDoze()) {
-            aodStates.add(1);
-        }
-        return aodStates;
+        return List.of(0, 1);
     }
 
     @Before
