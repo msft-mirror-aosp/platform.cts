@@ -82,15 +82,30 @@ public final class Processor extends AbstractProcessor {
     private static final ImmutableSet<String> FRAMEWORK_CLASSES =
             loadList("/apis/framework-classes.txt");
 
-    private static final String PARENT_PROFILE_INSTANCE =
-            "public android.app.admin.DevicePolicyManager getParentProfileInstance(android"
-                    + ".content.ComponentName)";
-    private static final String GET_CONTENT_RESOLVER =
-            "public android.content.ContentResolver getContentResolver()";
-    private static final String GET_ADAPTER =
-            "public android.bluetooth.BluetoothAdapter getAdapter()";
-    private static final String GET_DEFAULT_ADAPTER =
-            "public static android.bluetooth.BluetoothAdapter getDefaultAdapter()";
+    private static final MethodSignature PARENT_PROFILE_INSTANCE =
+            MethodSignature.forHardcoded(
+                    MethodSignature.Visibility.PUBLIC,
+                    "android.app.admin.DevicePolicyManager",
+                    "getParentProfileInstance",
+                    List.of("android.content.ComponentName"));
+    private static final MethodSignature GET_CONTENT_RESOLVER =
+            MethodSignature.forHardcoded(
+                    MethodSignature.Visibility.PUBLIC,
+                    "android.content.ContentResolver",
+                    "getContentResolver",
+                    List.of());
+    private static final MethodSignature GET_ADAPTER =
+            MethodSignature.forHardcoded(
+                    MethodSignature.Visibility.PUBLIC,
+                    "android.bluetooth.BluetoothAdapter",
+                    "getAdapter",
+                    List.of());
+    private static final MethodSignature GET_DEFAULT_ADAPTER =
+            MethodSignature.forHardcoded(
+                    MethodSignature.Visibility.PUBLIC,
+                    "android.bluetooth.BluetoothAdapter",
+                    "getDefaultAdapter",
+                    List.of());
 
     private static final ImmutableSet<String> BLOCKLISTED_TYPES =
             loadList("/apis/type-blocklist.txt");
@@ -325,28 +340,16 @@ public final class Processor extends AbstractProcessor {
     }
 
     private void generateFrameworkInterface(TypeElement frameworkClass, Set<Api> apis) {
-        MethodSignature parentProfileInstanceSignature =
-                MethodSignature.forApiString(PARENT_PROFILE_INSTANCE, processingEnv.getTypeUtils(),
-                        processingEnv.getElementUtils());
-        MethodSignature getContentResolverSignature =
-                MethodSignature.forApiString(GET_CONTENT_RESOLVER, processingEnv.getTypeUtils(),
-                        processingEnv.getElementUtils());
-        MethodSignature getAdapterSignature =
-                MethodSignature.forApiString(GET_ADAPTER, processingEnv.getTypeUtils(),
-                        processingEnv.getElementUtils());
-        MethodSignature getDefaultAdapterSignature =
-                MethodSignature.forApiString(GET_DEFAULT_ADAPTER, processingEnv.getTypeUtils(),
-                        processingEnv.getElementUtils());
-
         Map<MethodSignature, ClassName> signatureReturnOverrides = new HashMap<>();
-        signatureReturnOverrides.put(parentProfileInstanceSignature,
+        signatureReturnOverrides.put(
+                PARENT_PROFILE_INSTANCE,
                 ClassName.get("android.app.admin", "RemoteDevicePolicyManager"));
-        signatureReturnOverrides.put(getContentResolverSignature,
-                ClassName.get("android.content", "RemoteContentResolver"));
-        signatureReturnOverrides.put(getAdapterSignature,
-                ClassName.get("android.bluetooth", "RemoteBluetoothAdapter"));
-        signatureReturnOverrides.put(getDefaultAdapterSignature,
-                ClassName.get("android.bluetooth", "RemoteBluetoothAdapter"));
+        signatureReturnOverrides.put(
+                GET_CONTENT_RESOLVER, ClassName.get("android.content", "RemoteContentResolver"));
+        signatureReturnOverrides.put(
+                GET_ADAPTER, ClassName.get("android.bluetooth", "RemoteBluetoothAdapter"));
+        signatureReturnOverrides.put(
+                GET_DEFAULT_ADAPTER, ClassName.get("android.bluetooth", "RemoteBluetoothAdapter"));
 
         String packageName = frameworkClass.getEnclosingElement().toString();
         ClassName className = ClassName.get(packageName,
@@ -429,9 +432,6 @@ public final class Processor extends AbstractProcessor {
     }
 
     private void generateDpmParent(TypeElement frameworkClass, Set<Api> apis) {
-        MethodSignature parentProfileInstanceSignature = MethodSignature.forApiString(
-                PARENT_PROFILE_INSTANCE, processingEnv.getTypeUtils(),
-                processingEnv.getElementUtils());
         String packageName = frameworkClass.getEnclosingElement().toString();
         ClassName className =
                 ClassName.get(packageName, "Remote" + frameworkClass.getSimpleName() + "Parent");
@@ -498,7 +498,7 @@ public final class Processor extends AbstractProcessor {
                 methodBuilder.addParameter(parameterSpec);
             }
 
-            if (signature.equals(parentProfileInstanceSignature)) {
+            if (signature.equals(PARENT_PROFILE_INSTANCE)) {
                 // Special case, we want to return a RemoteDevicePolicyManager instead
                 methodBuilder.returns(ClassName.get(
                         "android.app.admin", "RemoteDevicePolicyManager"));
@@ -562,28 +562,16 @@ public final class Processor extends AbstractProcessor {
     }
 
     private void generateFrameworkImpl(TypeElement frameworkClass, Set<Api> apis) {
-        MethodSignature parentProfileInstanceSignature =
-                MethodSignature.forApiString(PARENT_PROFILE_INSTANCE, processingEnv.getTypeUtils(),
-                        processingEnv.getElementUtils());
-        MethodSignature getContentResolverSignature =
-                MethodSignature.forApiString(GET_CONTENT_RESOLVER, processingEnv.getTypeUtils(),
-                        processingEnv.getElementUtils());
-        MethodSignature getAdapterSignature =
-                MethodSignature.forApiString(GET_ADAPTER, processingEnv.getTypeUtils(),
-                        processingEnv.getElementUtils());
-        MethodSignature getDefaultAdapterSignature =
-                MethodSignature.forApiString(GET_DEFAULT_ADAPTER, processingEnv.getTypeUtils(),
-                        processingEnv.getElementUtils());
-
         Map<MethodSignature, ClassName> signatureReturnOverrides = new HashMap<>();
-        signatureReturnOverrides.put(parentProfileInstanceSignature,
+        signatureReturnOverrides.put(
+                PARENT_PROFILE_INSTANCE,
                 ClassName.get("android.app.admin", "RemoteDevicePolicyManager"));
-        signatureReturnOverrides.put(getContentResolverSignature,
-                ClassName.get("android.content", "RemoteContentResolver"));
-        signatureReturnOverrides.put(getAdapterSignature,
-                ClassName.get("android.bluetooth", "RemoteBluetoothAdapter"));
-        signatureReturnOverrides.put(getDefaultAdapterSignature,
-                ClassName.get("android.bluetooth", "RemoteBluetoothAdapter"));
+        signatureReturnOverrides.put(
+                GET_CONTENT_RESOLVER, ClassName.get("android.content", "RemoteContentResolver"));
+        signatureReturnOverrides.put(
+                GET_ADAPTER, ClassName.get("android.bluetooth", "RemoteBluetoothAdapter"));
+        signatureReturnOverrides.put(
+                GET_DEFAULT_ADAPTER, ClassName.get("android.bluetooth", "RemoteBluetoothAdapter"));
 
         String packageName = frameworkClass.getEnclosingElement().toString();
         ClassName interfaceClassName = ClassName.get(packageName,
@@ -757,15 +745,20 @@ public final class Processor extends AbstractProcessor {
         for (ExecutableElement method : testMethods) {
             MethodSignature methodSignature = MethodSignature.forMethod(method, elements);
 
-            if (!methodSignature.mParameterTypes.get(0).equals(
-                    frameworkClass.getQualifiedName().toString())) {
+            if (!methodSignature
+                    .getParameterTypes()
+                    .get(0)
+                    .equals(frameworkClass.getQualifiedName().toString())) {
                 continue;
             }
 
             Api testApi = new Api(method, /* isTestApi= */ true);
             if (filteredMethods.contains(testApi)) {
-                System.out.println("Api " + methodSignature.getName() + " is already added, "
-                        + "probably because it is marked as another type of Api as well.");
+                System.out.println(
+                        "Api "
+                                + methodSignature.getMName()
+                                + " is already added, "
+                                + "probably because it is marked as another type of Api as well.");
                 continue;
             }
 

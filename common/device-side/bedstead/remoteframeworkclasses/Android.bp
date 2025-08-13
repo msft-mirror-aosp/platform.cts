@@ -48,6 +48,7 @@ java_library_host {
         "ConnectedAppsSDK_Annotations",
         "TestApisReflection_Annotations",
         "bedstead-testapis-parser",
+        "metalava-signature-reader",
     ],
     java_resource_dirs: [
         "java/",

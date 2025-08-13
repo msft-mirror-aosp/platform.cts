@@ -16,13 +16,14 @@
 package com.android.bedstead.remoteframeworkclasses.processor
 
 import com.android.bedstead.testapis.parser.signatures.ClassSignature
-import com.google.common.collect.ImmutableList
-import com.google.common.collect.ImmutableSet
+import com.android.tools.metalava.model.ArrayTypeItem
+import com.android.tools.metalava.model.BaseTypeVisitor
+import com.android.tools.metalava.model.MethodItem
+import com.android.tools.metalava.model.TypeItem
 import java.util.Arrays
 import java.util.Locale
 import java.util.Objects
 import java.util.stream.Collectors
-import javax.lang.model.element.Element
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.Modifier
 import javax.lang.model.type.DeclaredType
@@ -35,47 +36,32 @@ import javax.lang.model.util.Types
  * Represents a minimal representation of a method for comparison purposes
  */
 class MethodSignature(
-    private val mVisibility: Visibility?,
-    returnType: TypeMirror,
-    val name: String,
-    parameterTypes: MutableList<TypeMirror?>,
-    exceptions: MutableSet<TypeMirror?>
+    private val mVisibility: Visibility,
+    private val mReturnType: String,
+    val mName: String,
+    private val mParameterTypes: List<String>,
+    private val mExceptions: Set<String>
 ) {
-    enum class Visibility {
-        PUBLIC, PROTECTED;
+    constructor(
+        visibility: Visibility,
+        returnType: TypeMirror,
+        name: String,
+        parameterTypes: List<TypeMirror>,
+        exceptions: Set<TypeMirror>
+    ) : this(
+        visibility,
+        returnType.toString(),
+        name,
+        parameterTypes.map { it.toString() },
+        exceptions.map { it.toString() }.toSet()
+    )
 
-        companion object {
-            fun ofMethod(method: ExecutableElement): Visibility {
-                if (method.getModifiers().contains(Modifier.PUBLIC)) {
-                    return Visibility.PUBLIC
-                } else if (method.getModifiers().contains(Modifier.PROTECTED)) {
-                    return Visibility.PROTECTED
-                }
-
-                throw IllegalArgumentException("Only public and protected are visible in APIs")
-            }
-        }
+    public enum class Visibility {
+        PUBLIC, PROTECTED
     }
 
-    val returnType: String
-
-    @JvmField
-    val mParameterTypes: ImmutableList<String?>
-    val mExceptions: ImmutableSet<String?>
-
-    init {
-        this.returnType = returnType.toString()
-        mParameterTypes = ImmutableList.copyOf<String?>(
-            parameterTypes.stream()
-            .map<String?> { obj: TypeMirror? -> obj.toString() }
-            .collect(Collectors.toList()))
-        mExceptions =
-            ImmutableSet.copyOf<String?>(
-                exceptions.stream()
-                    .map<String?> { obj: TypeMirror? -> obj.toString() }
-                    .collect(
-                        Collectors.toSet()
-                    ))
+    public fun getParameterTypes(): List<String> {
+        return mParameterTypes
     }
 
     override fun equals(o: Any?): Boolean {
@@ -83,8 +69,8 @@ class MethodSignature(
         if (o !is MethodSignature) return false
         val that = o
         return mVisibility == that.mVisibility &&
-                this.returnType == that.returnType &&
-                this.name == that.name &&
+                this.mReturnType == that.mReturnType &&
+                this.mName == that.mName &&
                 mParameterTypes == that.mParameterTypes &&
                 mExceptions == that.mExceptions
     }
@@ -92,8 +78,8 @@ class MethodSignature(
     override fun hashCode(): Int {
         return Objects.hash(
             mVisibility,
-            this.returnType,
-            this.name,
+            this.mReturnType,
+            this.mName,
             mParameterTypes,
             mExceptions
         )
@@ -102,60 +88,129 @@ class MethodSignature(
     override fun toString(): String {
         return ("MethodSignature{" +
                 "mVisibility=" + mVisibility +
-                ", mReturnType='" + this.returnType + '\'' +
-                ", mName='" + this.name + '\'' +
+                ", mReturnType='" + this.mReturnType + '\'' +
+                ", mName='" + this.mName + '\'' +
                 ", mParameterTypes=" + mParameterTypes +
                 ", mExceptions=" + mExceptions + '}')
     }
 
     companion object {
+        @JvmStatic
+        fun forHardcoded(
+            visibility: Visibility,
+            mReturnType: String,
+            mName: String,
+            mParameterTypes: List<String>,
+            mExceptions: Set<String>
+        ): MethodSignature {
+            return MethodSignature(visibility, mReturnType, mName, mParameterTypes, mExceptions)
+        }
+
+        @JvmStatic
+        fun forHardcoded(
+            visibility: Visibility,
+            mReturnType: String,
+            mName: String,
+            mParameterTypes: List<String>
+        ): MethodSignature {
+            return MethodSignature(visibility, mReturnType, mName, mParameterTypes, setOf())
+        }
+
         /** Create a [MethodSignature] for the given [ExecutableElement].  */
         @JvmStatic
         fun forMethod(method: ExecutableElement, elements: Elements): MethodSignature {
-            val parameters =
-                method.getParameters()
-                    .stream()
-                    .map<TypeMirror?> { obj: Element? -> obj!!.asType() }
-                    .map<TypeMirror?> { m: TypeMirror? -> rawType(m, elements) }
-                    .collect(Collectors.toList())
+            val parameters = method.parameters.map { it.asType() }.map { rawType(it, elements) }
 
-            val exceptions =
-                method.getThrownTypes()
-                    .stream()
-                    .map<TypeMirror?> { m: TypeMirror? -> rawType(m, elements) }
-                    .collect(Collectors.toSet())
+            val exceptions = method.thrownTypes.map { rawType(it, elements) }
+
+            val visibility = when {
+                method.modifiers.contains(Modifier.PUBLIC) -> Visibility.PUBLIC
+                method.modifiers.contains(Modifier.PROTECTED) -> Visibility.PROTECTED
+                else -> throw IllegalArgumentException("Method $method must be public or private")
+            }
+
+            val returnType = rawType(
+                method.returnType,
+                elements = elements
+            )
+
+            val name = method.simpleName.toString()
 
             return MethodSignature(
-                Visibility.Companion.ofMethod(method),
-                MethodSignature.Companion.rawType(
-                    method.getReturnType(),
-                    elements
-                )!!,
-                method.getSimpleName().toString(),
+                visibility,
+                returnType,
+                name,
                 parameters,
-                exceptions
+                exceptions.toSet()
             )
         }
 
-        private fun rawType(type: TypeMirror?, elements: Elements): TypeMirror? {
+        private fun rawType(type: TypeMirror?, elements: Elements): TypeMirror {
             var type = type
             if (type is DeclaredType) {
                 val t = type
-                if (!t.getTypeArguments().isEmpty()) {
+                if (!t.typeArguments.isEmpty()) {
                     type = elements.getTypeElement(
-                        t
-                                .toString()
-                                .split("<".toRegex(), limit = 2)
-                                .toTypedArray()[0]
+                        t.toString().split("<".toRegex(), limit = 2).toTypedArray()[0]
                     ).asType()
                 }
             }
-            return type
+            return type!!
+        }
+
+        private fun hasVarArgs(item: TypeItem): Boolean {
+            var foundVarArgs = false
+            val visitor = object : BaseTypeVisitor() {
+                override fun visitArrayType(arrayType: ArrayTypeItem) {
+                    if (arrayType.isVarargs) {
+                        foundVarArgs = true
+                    }
+                }
+            }
+            item.accept(visitor)
+
+            return foundVarArgs
+        }
+
+        @JvmStatic
+        fun forApi(
+            method: MethodItem,
+            types: Types,
+            elements: Elements
+        ): MethodSignature? {
+            // TODO(b/337769574): Add support for generic types.
+            if (method.typeParameterList.isNotEmpty()) {
+                return null
+            }
+
+            // TODO(b/337769574): Add support for var args.
+            if (method.parameters().any {hasVarArgs(it.type())}) {
+                return null
+            }
+
+            val visibility: Visibility = when {
+                method.modifiers.isPublic() -> Visibility.PUBLIC
+                method.modifiers.isProtected() -> Visibility.PROTECTED
+                else -> throw IllegalStateException("Method $method must be public or protected")
+            }
+
+            val name = method.name()
+
+            val returnType = typeForString(method.returnType().toTypeString(), types, elements)
+            val parameters = method.parameters().map {
+                typeForString(it.type().toTypeString(), types, elements)
+            }
+            val throws = method.throwsTypes().map {
+                typeForString(it.toTypeString(), types, elements)
+            }
+
+            return MethodSignature(visibility, returnType, name, parameters, throws.toSet())
         }
 
         /**
          * Create a [MethodSignature] for the given string from an API file.
          */
+        // TODO(b/436548677): Remove when allowlisted-methods.txt is handled differently.
         @JvmStatic
         fun forApiString(
             string: String,
@@ -169,7 +224,7 @@ class MethodSignature(
                 string = string.replace("@.+? ".toRegex(), "")
 
                 var parts = string.split(" ".toRegex(), limit = 2).toTypedArray()
-                val visibility: Visibility?
+                val visibility: Visibility
                 try {
                     visibility = Visibility.valueOf(parts[0].uppercase(Locale.getDefault()))
                 } catch (e: IllegalArgumentException) {
@@ -201,7 +256,7 @@ class MethodSignature(
                 var parametersString = parts[0].replace("<.*>".toRegex(), "")
                 // Remove varargs
                 parametersString = parametersString.replace("\\.\\.\\.".toRegex(), "")
-                val parameters: MutableList<TypeMirror?>?
+                val parameters: MutableList<TypeMirror>
                 try {
                     parameters = Arrays.stream<String?>(
                         parametersString.split(", ".toRegex())
@@ -222,7 +277,7 @@ class MethodSignature(
                     )
                 }
                 string = parts[1]
-                var exceptions: MutableSet<TypeMirror?> = HashSet<TypeMirror?>()
+                var exceptions: MutableSet<TypeMirror> = HashSet()
                 if (string.contains("throws")) {
                     exceptions = Arrays.stream<String?>(
                         string.split("throws ".toRegex(), limit = 2)
@@ -239,7 +294,13 @@ class MethodSignature(
                         .collect(Collectors.toSet())
                 }
 
-                return MethodSignature(visibility, returnType, methodName, parameters, exceptions)
+                return MethodSignature(
+                    visibility,
+                    returnType,
+                    methodName,
+                    parameters.toList(),
+                    exceptions.toSet()
+                )
             } catch (e: Exception) {
                 throw RuntimeException("TestApisReflection: unable to parse method: " + string, e)
             }
