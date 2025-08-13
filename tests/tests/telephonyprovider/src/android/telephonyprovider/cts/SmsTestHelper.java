@@ -51,11 +51,15 @@ class SmsTestHelper {
     public Uri insertTestOtpSmsAndWaitForOtpDetection(String testAddress, String testSmsBody,
             long createdTimeMillis) {
         return insertTestOtpSmsAndWaitForOtpDetection(
-                testAddress, testSmsBody, createdTimeMillis, -1);
+                testAddress, testSmsBody, createdTimeMillis, OTP_TYPE_CONTAINS_OTP, -1);
     }
 
     public Uri insertTestOtpSmsAndWaitForOtpDetection(
-            String testAddress, String testSmsBody, long createdTimeMillis, int threadId) {
+            String testAddress,
+            String testSmsBody,
+            long createdTimeMillis,
+            int expectedOtpResult,
+            int threadId) {
         mContentValues.put(Telephony.Sms.ADDRESS, testAddress);
         mContentValues.put(Telephony.Sms.BODY, testSmsBody);
         mContentValues.put(Telephony.Sms.DATE, createdTimeMillis);
@@ -63,18 +67,19 @@ class SmsTestHelper {
             mContentValues.put(Telephony.Sms.THREAD_ID, threadId);
         }
         Uri uri = mContentResolver.insert(Telephony.Sms.CONTENT_URI, mContentValues);
-        waitForOtpDetection(uri);
+        waitForOtpDetection(uri, expectedOtpResult);
         return uri;
     }
 
-    private void waitForOtpDetection(Uri uri) {
-        SystemUtil.eventually(() -> {
-            Cursor cursor = mContentResolver.query(uri, null, null, null);
-            assertThat(cursor.getCount()).isEqualTo(1);
-            cursor.moveToNext();
-            int actualSmsOtpColumn = cursor.getInt(cursor.getColumnIndex(CONTAINS_OTP));
-            assertThat(actualSmsOtpColumn).isEqualTo(OTP_TYPE_CONTAINS_OTP);
-        });
+    private void waitForOtpDetection(Uri uri, int expectedOtpResult) {
+        SystemUtil.eventually(
+                () -> {
+                    Cursor cursor = mContentResolver.query(uri, null, null, null);
+                    assertThat(cursor.getCount()).isEqualTo(1);
+                    cursor.moveToNext();
+                    int actualSmsOtpColumn = cursor.getInt(cursor.getColumnIndex(CONTAINS_OTP));
+                    assertThat(actualSmsOtpColumn).isEqualTo(expectedOtpResult);
+                });
     }
 
     public ContentValues createSmsValues(String messageBody) {
