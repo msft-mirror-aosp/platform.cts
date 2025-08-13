@@ -490,9 +490,6 @@ public class VirtualDeviceRule implements TestRule {
     public void assumeActivityLaunchSupported(int displayId) {
         if (displayId != Display.DEFAULT_DISPLAY) {
             assumeTrue(FeatureUtil.hasSystemFeature(FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS));
-            if (!android.companion.virtualdevice.flags.Flags.gwpcAwareWindowingMode()) {
-                assumeFalse(FeatureUtil.hasSystemFeature(FEATURE_PC));
-            }
         }
     }
 
