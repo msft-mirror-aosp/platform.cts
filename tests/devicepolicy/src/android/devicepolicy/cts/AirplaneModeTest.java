@@ -71,16 +71,13 @@ public final class AirplaneModeTest {
     @PolicyAppliesTest(policy = DisallowAirplaneMode.class)
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_AIRPLANE_MODE")
-    public void addUserRestriction_disallowAirplaneMode_isSet() {
-        try {
+    public void addUserRestriction_disallowAirplaneMode_isSet() throws Exception {
+        try (UserRestrictionResource rs = new UserRestrictionResource()) {
             dpc(sDeviceState).devicePolicyManager().addUserRestriction(
                     dpc(sDeviceState).componentName(), DISALLOW_AIRPLANE_MODE);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_AIRPLANE_MODE))
                     .isTrue();
-        } finally {
-            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
-                    dpc(sDeviceState).componentName(), DISALLOW_AIRPLANE_MODE);
         }
     }
 
@@ -103,27 +100,22 @@ public final class AirplaneModeTest {
     @CanSetPolicyTest(policy = DisallowAirplaneModePermissionBased.class)
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_AIRPLANE_MODE")
-    public void addUserRestrictionGlobally_disallowAirplaneMode_isSet() {
-        try {
+    public void addUserRestrictionGlobally_disallowAirplaneMode_isSet() throws Exception {
+        try (UserRestrictionResource rs = new UserRestrictionResource()) {
             dpc(sDeviceState)
                     .devicePolicyManager()
                     .addUserRestrictionGlobally(DISALLOW_AIRPLANE_MODE);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_AIRPLANE_MODE))
                     .isTrue();
-        } finally {
-            dpc(sDeviceState)
-                    .devicePolicyManager()
-                    .clearUserRestriction(
-                            dpc(sDeviceState).componentName(), DISALLOW_AIRPLANE_MODE);
         }
     }
 
     @CanSetPolicyTest(policy = DisallowAirplaneMode.class)
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_AIRPLANE_MODE")
-    public void clearUserRestriction_disallowAirplaneMode_isNotSet() {
-        try {
+    public void clearUserRestriction_disallowAirplaneMode_isNotSet() throws Exception {
+        try (UserRestrictionResource rs = new UserRestrictionResource()) {
             dpc(sDeviceState).devicePolicyManager().addUserRestriction(
                     dpc(sDeviceState).componentName(), DISALLOW_AIRPLANE_MODE);
 
@@ -132,9 +124,6 @@ public final class AirplaneModeTest {
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_AIRPLANE_MODE))
                     .isFalse();
-        } finally {
-            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
-                    dpc(sDeviceState).componentName(), DISALLOW_AIRPLANE_MODE);
         }
     }
 
@@ -194,4 +183,16 @@ public final class AirplaneModeTest {
                 .isTrue();
     }
 
+    private class UserRestrictionResource implements AutoCloseable {
+        @Override
+        public void close() throws Exception {
+            dpc(sDeviceState)
+                    .devicePolicyManager()
+                    .clearUserRestriction(
+                            dpc(sDeviceState).componentName(), DISALLOW_AIRPLANE_MODE);
+
+            assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_AIRPLANE_MODE))
+                    .isFalse();
+        }
+    }
 }
