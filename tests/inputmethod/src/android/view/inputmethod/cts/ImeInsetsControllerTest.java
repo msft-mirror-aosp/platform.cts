@@ -74,22 +74,27 @@ public class ImeInsetsControllerTest extends EndToEndImeTestBase {
     public Pair<EditText, Window> launchTestActivity() {
         final AtomicReference<EditText> editTextRef = new AtomicReference<>();
         final AtomicReference<Window> windowRef = new AtomicReference<>();
-        new TestActivity.Starter().withWindowingMode(
-                WindowConfiguration.WINDOWING_MODE_FULLSCREEN).startSync(activity -> {
-                    final LinearLayout layout = new LinearLayout(activity);
-                    layout.setOrientation(LinearLayout.VERTICAL);
+        // Making the activity fullscreen to ensure the activity has a control to ime insets.
+        new TestActivity.Starter()
+                .asNewTask()
+                .withWindowingMode(WindowConfiguration.WINDOWING_MODE_FULLSCREEN)
+                .startSync(
+                        activity -> {
+                            final LinearLayout layout = new LinearLayout(activity);
+                            layout.setOrientation(LinearLayout.VERTICAL);
 
-                    final EditText editText = new EditText(activity);
-                    editText.setPrivateImeOptions(TEST_MARKER);
-                    editText.setHint("editText");
-                    editText.requestFocus();
-                    editTextRef.set(editText);
+                            final EditText editText = new EditText(activity);
+                            editText.setPrivateImeOptions(TEST_MARKER);
+                            editText.setHint("editText");
+                            editText.requestFocus();
+                            editTextRef.set(editText);
 
-                    windowRef.set(activity.getWindow());
+                            windowRef.set(activity.getWindow());
 
-                    layout.addView(editText);
-                    return layout;
-                }, TestActivity.class);
+                            layout.addView(editText);
+                            return layout;
+                        },
+                        TestActivity.class);
         return new Pair<>(editTextRef.get(), windowRef.get());
     }
 
