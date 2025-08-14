@@ -173,7 +173,8 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
                                 "bbb_1280x720_1mbps_30fps_avc_nob.mp4",
                                 "bbb_640x360_512kbps_30fps_avc_2b.mp4",
                                 "bbb_1280x720_1mbps_30fps_avc_nob.mp4",
-                                "bbb_640x360_512kbps_30fps_avc_nob.mp4"}},
+                                "bbb_640x360_512kbps_30fps_avc_nob.mp4",
+                                "bbb_640x360_512kbps_30fps_avc_2b.mp4"}},
                         {MediaFormat.MIMETYPE_VIDEO_HEVC, new String[]{
                                 "bbb_800x640_768kbps_30fps_hevc_2b.mp4",
                                 "bbb_800x640_768kbps_30fps_hevc_nob.mp4",
