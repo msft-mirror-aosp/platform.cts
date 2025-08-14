@@ -22,6 +22,9 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Binder;
 import android.service.carrier.CarrierService;
+import android.telecom.PhoneAccount;
+import android.telecom.PhoneAccountHandle;
+import android.telecom.TelecomManager;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
@@ -78,6 +81,28 @@ public class ImsUtils {
                 .getPackageManager();
         return pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_IMS)
                 && pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING);
+    }
+
+    /**
+     * Determines if there is a call capable phone account configured on the device which has {@link
+     * PhoneAccount#CAPABILITY_PLACE_EMERGENCY_CALLS}.
+     *
+     * @return {@code true} if there is a call capable phone account which supports emergency calls,
+     *     {@code false} otherwise.
+     */
+    public static boolean hasEmergencyCallCapablePhoneAccount() {
+        TelecomManager tm =
+                InstrumentationRegistry.getInstrumentation()
+                        .getContext()
+                        .getSystemService(TelecomManager.class);
+        List<PhoneAccountHandle> phoneAccounts = tm.getCallCapablePhoneAccounts();
+        for (PhoneAccountHandle phoneAccountHandle : phoneAccounts) {
+            PhoneAccount phoneAccount = tm.getPhoneAccount(phoneAccountHandle);
+            if (phoneAccount.hasCapabilities(PhoneAccount.CAPABILITY_PLACE_EMERGENCY_CALLS)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static boolean shouldTestSms() {
