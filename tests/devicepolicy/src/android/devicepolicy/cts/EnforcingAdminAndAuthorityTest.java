@@ -50,8 +50,7 @@ public final class EnforcingAdminAndAuthorityTest {
     public static final DeviceState sDeviceState = new DeviceState();
 
     @Rule
-    public static final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String PACKAGE_NAME = "packageName";
 
