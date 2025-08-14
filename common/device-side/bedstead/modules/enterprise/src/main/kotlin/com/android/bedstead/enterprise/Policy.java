@@ -758,8 +758,10 @@ public final class Policy {
             Annotation[] existingAnnotations = filterAnnotations(
                     IncludeRunOnSystemDeviceOwnerUser.class.getAnnotations(), EnsureHasNoDelegate.class);
 
-            String[] validPermissions = Arrays.stream(enterprisePolicy.permissions())
-                    .map(p -> p.appliedWith()).toArray(String[]::new);
+            String[] validPermissions =
+                    Arrays.stream(enterprisePolicy.permissions())
+                            .flatMap(permission -> Arrays.stream(permission.appliedWith()))
+                            .toArray(String[]::new);
 
             if (BedsteadJUnit4.isDebug()) {
                 // Add a non-DPC with no delegate scopes
@@ -1043,7 +1045,7 @@ public final class Policy {
      */
     private static Annotation generateParameterizedPermissionAnnotation(Permission permission) {
         // TODO(b/219750042): Currently we only test that permissions apply to the current user
-        Annotation[] withPermissionAnnotations =
+        Annotation[] replacementPermissionAnnotations =
                 new Annotation[] {
                     ensureTestAppInstalledAsPrimaryDPC(
                             DELEGATE_KEY,
@@ -1053,20 +1055,25 @@ public final class Policy {
                                     .toAnnotation(),
                             INSTRUMENTED_USER),
                     ensureTestAppHasPermission(
-                            DELEGATE_KEY,
-                            new String[] {permission.appliedWith()},
-                            FailureMode.SKIP),
+                            DELEGATE_KEY, permission.appliedWith(), FailureMode.SKIP),
                     requireRootInstrumentation("Use of device policy permission", FailureMode.SKIP)
                 };
         return new DynamicParameterizedAnnotation(
-                "Permission_" + formatPermissionForTestName(permission.appliedWith()),
-                withPermissionAnnotations);
+                formatPermissionsForTestName(Arrays.asList(permission.appliedWith())),
+                replacementPermissionAnnotations);
     }
 
-    private static String formatPermissionForTestName(String permission) {
-        if (permission.startsWith("android.permission.")) {
-            return permission.substring(19);
-        }
-        return permission;
+    private static String formatPermissionsForTestName(List<String> permissions) {
+        return permissions.stream()
+                .map(
+                        permission -> {
+                            final String permissionNamePrefix = "Permission_";
+
+                            if (permission.startsWith("android.permission.")) {
+                                return permissionNamePrefix + permission.substring(19);
+                            }
+                            return permissionNamePrefix + permission;
+                        })
+                .collect(Collectors.joining(","));
     }
 }
