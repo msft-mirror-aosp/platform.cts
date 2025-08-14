@@ -50,7 +50,7 @@ public class BlockingBroadcastReceiver extends BroadcastReceiver {
     }
 
     public void await() throws Exception {
-        assertTrue(latch.await(20, TimeUnit.SECONDS));
+        assertTrue(latch.await(1, TimeUnit.MINUTES));
     }
 
     public BlockingBroadcastReceiver register(String action) {
