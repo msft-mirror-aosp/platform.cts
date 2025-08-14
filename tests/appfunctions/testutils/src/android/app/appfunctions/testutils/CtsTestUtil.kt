@@ -37,21 +37,25 @@ object CtsTestUtil {
 
     /** Retries an assertion with a delay between attempts. */
     @Throws(Throwable::class)
-    suspend fun retryAssert(runnable: ThrowRunnable) {
+    suspend fun retryAssert(
+        checkInterval: Long = RETRY_CHECK_INTERVAL_MILLIS,
+        maxIntervals: Long = RETRY_MAX_INTERVALS,
+        runnable: ThrowRunnable,
+    ) {
         var lastError: Throwable? = null
 
-        for (attempt in 0 until RETRY_MAX_INTERVALS) {
+        for (attempt in 0 until maxIntervals) {
             try {
                 runnable.run()
                 return
             } catch (e: Throwable) {
                 lastError = e
-                delay(RETRY_CHECK_INTERVAL_MILLIS)
+                delay(checkInterval)
             }
         }
         throw lastError!!
     }
 
-    private const val RETRY_CHECK_INTERVAL_MILLIS: Long = 500
+    private const val RETRY_CHECK_INTERVAL_MILLIS: Long = 1000
     private const val RETRY_MAX_INTERVALS: Long = 10
 }

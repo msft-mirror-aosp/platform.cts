@@ -71,7 +71,7 @@ import java.util.function.Supplier;
         "android.app.Activity#getWindowManager"})
 @RunWith(BedsteadJUnit4.class)
 public class WindowMetricsActivityTests extends WindowManagerTestBase {
-    private static final Rect WINDOW_BOUNDS = new Rect(100, 100, 900, 900);
+    private static final Rect WINDOW_BOUNDS = new Rect(400, 400, 900, 900);
     private static final int MOVE_OFFSET = 100;
 
     @ClassRule

@@ -26,6 +26,11 @@ import java.util.Collections;
  */
 public final class LauncherAppsMultiUserTest extends BaseLauncherAppsTest {
 
+    /**
+     * @deprecated TODO(b/435528858): most likely should use initial current user
+     */
+    @Deprecated private int mMainUserId;
+
     private int mSecondaryUserId;
     private String mSecondaryUserSerialNumber;
 
@@ -40,6 +45,8 @@ public final class LauncherAppsMultiUserTest extends BaseLauncherAppsTest {
     @Override
     public void setUp() throws Exception {
         super.setUp();
+
+        mMainUserId = getMainUser();
 
         removeTestUsers();
         uninstallTestApps();

@@ -37,12 +37,9 @@ public final class MixedProfileOwnerTest extends DeviceAndProfileOwnerTest {
     public void setUp() throws Exception {
         super.setUp();
 
-        mUserId = mMainUserId;
+        mUserId = getMainUser();
 
-        CLog.i(
-                "%s.setUp(): mUserId=%d, mPrimaryUserId=%d, mInitialUserId=%d, "
-                        + "mDeviceOwnerUserId=%d",
-                getClass(), mUserId, mMainUserId, mInitialUserId, mDeviceOwnerUserId);
+        CLog.i("%s.setUp(): mUserId=%d", getClass().getSimpleName(), mUserId);
 
         installAppAsUser(DEVICE_ADMIN_APK, mUserId);
         if (!setProfileOwner(

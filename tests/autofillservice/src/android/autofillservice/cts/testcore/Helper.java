@@ -111,6 +111,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -170,6 +171,9 @@ public final class Helper {
     public static final String DEVICE_CONFIG_AUTOFILL_DIALOG_HINTS = "autofill_dialog_hints";
 
     private static final UserSettings sUserSettings = new UserSettings();
+
+    private static final long TIME_SLICE = 50;
+    private static final long DEFAULT_TIMEOUT = 3_000;
 
     /**
      * Helper interface used to filter nodes.
@@ -2172,4 +2176,19 @@ public final class Helper {
     @Retention(RetentionPolicy.SOURCE)
     @Target(ElementType.METHOD)
     public static @interface AutofillCriticalInternal {}
+
+    /** Checks the given {@code condition} periodically until it meets or times out. */
+    public static void pollingWait(Callable<Boolean> condition) throws Exception {
+        pollingWait(DEFAULT_TIMEOUT, condition);
+    }
+
+    private static void pollingWait(long timeout, Callable<Boolean> condition) throws Exception {
+        while (timeout > 0) {
+            if (condition.call()) {
+                return;
+            }
+            Thread.sleep(TIME_SLICE);
+            timeout -= TIME_SLICE;
+        }
+    }
 }

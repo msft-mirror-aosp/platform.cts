@@ -13,42 +13,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package android.app.appsearch.cts.appsindexer;
 
-import static android.app.appsearch.testutil.AppsIndexerTestUtils.APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PRINT_APP_FUNCTION;
-import static android.app.appsearch.testutil.AppsIndexerTestUtils.APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_COMMON_SCHEMA_METADATA;
-import static android.app.appsearch.testutil.AppsIndexerTestUtils.APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_PRINT_APP_FUNCTION;
-import static android.app.appsearch.testutil.AppsIndexerTestUtils.APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION;
-import static android.app.appsearch.testutil.AppsIndexerTestUtils.APP_A_V2_PRINT_APP_FUNCTION;
-import static android.app.appsearch.testutil.AppsIndexerTestUtils.APP_B_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION;
-import static android.app.appsearch.testutil.AppsIndexerTestUtils.APP_B_PRINT_APP_FUNCTION;
-import static android.app.appsearch.testutil.AppsIndexerTestUtils.PROPERTY_DISPLAY_NAME_STRING_RES;
-import static android.app.appsearch.testutil.AppsIndexerTestUtils.PROPERTY_ENABLED_BY_DEFAULT;
-import static android.app.appsearch.testutil.AppsIndexerTestUtils.PROPERTY_FUNCTION_ID;
-import static android.app.appsearch.testutil.AppsIndexerTestUtils.PROPERTY_PACKAGE_NAME;
-import static android.app.appsearch.testutil.AppsIndexerTestUtils.PROPERTY_RESTRICT_CALLERS_WITH_EXECUTE_APP_FUNCTIONS;
-import static android.app.appsearch.testutil.AppsIndexerTestUtils.PROPERTY_SCHEMA_CATEGORY;
-import static android.app.appsearch.testutil.AppsIndexerTestUtils.PROPERTY_SCHEMA_NAME;
-import static android.app.appsearch.testutil.AppsIndexerTestUtils.PROPERTY_SCHEMA_VERSION;
-import static android.app.appsearch.testutil.AppsIndexerTestUtils.TEST_APP_A_APP_FUNCTION_SERVICE_DISABLED;
-import static android.app.appsearch.testutil.AppsIndexerTestUtils.TEST_APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PATH;
-import static android.app.appsearch.testutil.AppsIndexerTestUtils.TEST_APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_PATH;
-import static android.app.appsearch.testutil.AppsIndexerTestUtils.TEST_APP_A_DYNAMIC_SCHEMA_PATH;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PRINT_APP_FUNCTION;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_COMMON_SCHEMA_METADATA;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_PRINT_APP_FUNCTION;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.APP_A_V2_PRINT_APP_FUNCTION;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.APP_B_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.APP_B_PRINT_APP_FUNCTION;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.PROPERTY_DISPLAY_NAME_STRING_RES;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.PROPERTY_ENABLED_BY_DEFAULT;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.PROPERTY_FUNCTION_ID;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.PROPERTY_PACKAGE_NAME;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.PROPERTY_RESTRICT_CALLERS_WITH_EXECUTE_APP_FUNCTIONS;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.PROPERTY_SCHEMA_CATEGORY;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.PROPERTY_SCHEMA_NAME;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.PROPERTY_SCHEMA_VERSION;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_A_APP_FUNCTION_SERVICE_DISABLED;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PATH;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_PATH;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_A_DYNAMIC_SCHEMA_PATH;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_A_V3_PATH;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_B_DYNAMIC_SCHEMA_PATH;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_B_PKG;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_B_V1_PATH;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.clearTimestampsAndParentTypesInDocument;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.searchAppFunctionDocumentsIntoMap;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.searchAppFunctionsWithPackageName;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.updateAppFunctionServiceEnabledState;
 import static android.app.appsearch.testutil.AppsIndexerTestUtils.TEST_APP_A_PKG;
 import static android.app.appsearch.testutil.AppsIndexerTestUtils.TEST_APP_A_V1_PATH;
 import static android.app.appsearch.testutil.AppsIndexerTestUtils.TEST_APP_A_V2_PATH;
-import static android.app.appsearch.testutil.AppsIndexerTestUtils.TEST_APP_A_V3_PATH;
-import static android.app.appsearch.testutil.AppsIndexerTestUtils.TEST_APP_B_DYNAMIC_SCHEMA_PATH;
-import static android.app.appsearch.testutil.AppsIndexerTestUtils.TEST_APP_B_PKG;
-import static android.app.appsearch.testutil.AppsIndexerTestUtils.TEST_APP_B_V1_PATH;
-import static android.app.appsearch.testutil.AppsIndexerTestUtils.clearTimestampsAndParentTypesInDocument;
 import static android.app.appsearch.testutil.AppsIndexerTestUtils.installPackage;
 import static android.app.appsearch.testutil.AppsIndexerTestUtils.retryAssert;
-import static android.app.appsearch.testutil.AppsIndexerTestUtils.searchAppFunctionDocumentsIntoMap;
-import static android.app.appsearch.testutil.AppsIndexerTestUtils.searchAppFunctionsWithPackageName;
 import static android.app.appsearch.testutil.AppsIndexerTestUtils.searchMobileApplicationWithId;
 import static android.app.appsearch.testutil.AppsIndexerTestUtils.uninstallPackage;
-import static android.app.appsearch.testutil.AppsIndexerTestUtils.updateAppFunctionServiceEnabledState;
 
 import static com.google.common.truth.Truth.assertThat;
 

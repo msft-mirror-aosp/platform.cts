@@ -210,17 +210,15 @@ public class IntentFiltersTestHelper {
                     new Intent(MediaStore.ACTION_IMAGE_CAPTURE_SECURE),
                     new Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA_SECURE)));
 
-            if (com.android.providers.media.flags.Flags.motionPhotoIntent()) {
-                Intent motionPhotoIntent = new Intent(MediaStore.ACTION_MOTION_PHOTO_CAPTURE);
-                if (canResolveIntent(pm, motionPhotoIntent)) {
-                    forwardingOptionalIntentsFromManaged.add(motionPhotoIntent);
-                }
+            Intent motionPhotoIntent = new Intent(MediaStore.ACTION_MOTION_PHOTO_CAPTURE);
+            if (canResolveIntent(pm, motionPhotoIntent)) {
+                forwardingOptionalIntentsFromManaged.add(motionPhotoIntent);
+            }
 
-                Intent motionPhotoSecureIntent =
-                        new Intent(MediaStore.ACTION_MOTION_PHOTO_CAPTURE_SECURE);
-                if (canResolveIntent(pm, motionPhotoSecureIntent)) {
-                    forwardingOptionalIntentsFromManaged.add(motionPhotoSecureIntent);
-                }
+            Intent motionPhotoSecureIntent =
+                    new Intent(MediaStore.ACTION_MOTION_PHOTO_CAPTURE_SECURE);
+            if (canResolveIntent(pm, motionPhotoSecureIntent)) {
+                forwardingOptionalIntentsFromManaged.add(motionPhotoSecureIntent);
             }
         }
 

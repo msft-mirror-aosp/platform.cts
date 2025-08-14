@@ -31,6 +31,19 @@ public final class ManagedProfilePasswordTest extends BaseManagedProfileTest {
     // Password needs to be in sync with ResetPasswordWithTokenTest.PASSWORD1
     private static final String RESET_PASSWORD_TEST_DEFAULT_PASSWORD = "123456";
 
+    /**
+     * @deprecated TODO(b/435528858): should use proper method from DevicePolicyUsersPreparer
+     */
+    @Deprecated private int mMainUserId;
+
+    // TODO(b/435528858): remove once mMainUserId is gone
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+
+        mMainUserId = getMainUser();
+    }
+
     @FlakyTest
     @Test
     public void testResetPasswordWithTokenBeforeUnlock() throws Exception {

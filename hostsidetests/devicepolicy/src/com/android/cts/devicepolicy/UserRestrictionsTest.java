@@ -47,9 +47,16 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
 
     private boolean mRemoveOwnerInTearDown;
 
+    /**
+     * @deprecated TODO(b/435528858): should use proper method from DevicePolicyUsersPreparer
+     */
+    @Deprecated private int mMainUserId;
+
     @Override
     public void setUp() throws Exception {
         super.setUp();
+
+        mMainUserId = getMainUser();
 
         mRemoveOwnerInTearDown = false;
     }

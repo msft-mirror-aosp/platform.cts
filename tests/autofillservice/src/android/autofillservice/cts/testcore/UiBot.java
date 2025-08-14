@@ -508,7 +508,6 @@ public class UiBot {
 
     /**
      * Asserts a node with the given content description is shown.
-     *
      */
     public UiObject2 assertShownByContentDescription(String contentDescription) throws Exception {
         final UiObject2 object = waitForObject(By.desc(contentDescription));
@@ -1441,6 +1440,50 @@ public class UiBot {
             return scroller.scrollTextIntoView(text);
         } catch (UiObjectNotFoundException e) {
             return false;
+        }
+    }
+
+    /**
+     * Scrolls down until a view with the given resource id is roughly centered on the screen.
+     *
+     * @param id resource id of the view.
+     */
+    public void scrollDownTo(String id) throws Exception {
+        BySelector selector = By.res(mPackageName, id);
+
+        int screenHeight = mDevice.getDisplayHeight();
+
+        if (mDevice.hasObject(selector)) {
+            UiObject2 obj = mDevice.findObject(selector);
+            // Check if the object is roughly centered.
+            if (obj != null && obj.getVisibleBounds().centerY() < screenHeight / 2) {
+                return;
+            }
+        }
+
+        int screenWidth = mDevice.getDisplayWidth();
+        int x = screenWidth / 2;
+        int startY = (int) (screenHeight * 0.6);
+        int endY = (int) (screenHeight * 0.4);
+
+        for (int i = 0; i < 20; i++) {
+            if (mDevice.hasObject(selector)) {
+                UiObject2 obj = mDevice.findObject(selector);
+                if (obj != null && obj.getVisibleBounds().centerY() < screenHeight / 2) {
+                    return;
+                }
+            }
+
+            // TODO(b/280116881): update this command for secondary display.
+            String command = String.format("input swipe %d %d %d %d", x, startY, x, endY);
+            runShellCommand(command);
+            waitForIdle();
+        }
+
+        UiObject2 obj = mDevice.findObject(selector);
+        if (obj == null || obj.getVisibleBounds().height() == 0) {
+            dumpScreen("scrollDownTo(" + id + ") failed");
+            assertWithMessage("Could not scroll down to %s", id).fail();
         }
     }
 

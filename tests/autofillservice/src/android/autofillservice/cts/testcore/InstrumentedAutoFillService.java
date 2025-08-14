@@ -26,6 +26,7 @@ import static android.autofillservice.cts.testcore.Timeouts.FILL_EVENTS_TIMEOUT;
 import static android.autofillservice.cts.testcore.Timeouts.FILL_TIMEOUT;
 import static android.autofillservice.cts.testcore.Timeouts.IDLE_UNBIND_TIMEOUT;
 import static android.autofillservice.cts.testcore.Timeouts.SAVE_TIMEOUT;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import android.app.assist.AssistStructure;
@@ -48,11 +49,15 @@ import android.service.autofill.SaveCallback;
 import android.service.autofill.SavedDatasetsInfoCallback;
 import android.util.Log;
 import android.view.inputmethod.InlineSuggestionsRequest;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.RetryableException;
 import com.android.compatibility.common.util.TestNameUtils;
 import com.android.compatibility.common.util.Timeout;
+
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -155,7 +160,7 @@ public class InstrumentedAutoFillService extends AutofillService {
             // expected number of events is set.
             SystemClock.sleep(FILL_EVENTS_TIMEOUT.ms());
             final FillEventHistory history = service.getFillEventHistory();
-            assertThat(history.getEvents()).isNull();
+            PollingCheck.waitFor(() -> history.getEvents() == null);
             return history;
         }
 

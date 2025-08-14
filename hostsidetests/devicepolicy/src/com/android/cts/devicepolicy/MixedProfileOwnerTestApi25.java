@@ -32,7 +32,7 @@ public final class MixedProfileOwnerTestApi25 extends DeviceAndProfileOwnerTestA
     public void setUp() throws Exception {
         super.setUp();
 
-        mUserId = mMainUserId;
+        mUserId = getMainUser();
 
         installAppAsUser(DEVICE_ADMIN_APK, mUserId);
         if (!setProfileOwner(

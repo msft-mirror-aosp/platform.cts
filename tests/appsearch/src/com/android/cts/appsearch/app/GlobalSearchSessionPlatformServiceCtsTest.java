@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+// @exportToGMSCore:skipFile()
 package android.app.appsearch.cts.app;
 
 import android.app.appsearch.AppSearchManager;
@@ -31,7 +31,7 @@ import org.junit.runners.JUnit4;
 
 @AppModeFull(reason = "Can't bind to helper apps from instant mode")
 @RunWith(JUnit4.class)
-public class GlobalSearchSessionPlatformServiceCtsTest extends
+public final class GlobalSearchSessionPlatformServiceCtsTest extends
         GlobalSearchSessionServiceCtsTestBase {
     @Override
     protected AppSearchSessionShim createSearchSessionAsync(@NonNull String dbName)

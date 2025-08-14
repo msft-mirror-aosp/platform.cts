@@ -16,6 +16,8 @@
 
 package com.android.cts.devicepolicy;
 
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -26,10 +28,12 @@ import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
+import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.tradefed.config.Option;
 import com.android.tradefed.device.CollectingOutputReceiver;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
+import com.android.tradefed.device.UserInfo;
 import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
@@ -53,6 +57,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -99,9 +104,12 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
 
     private static final String RUNNER = "androidx.test.runner.AndroidJUnitRunner";
 
-    protected static final int USER_SYSTEM = 0; // From the UserHandle class.
+    protected static final int USER_SYSTEM = UserInfo.USER_SYSTEM;
 
-    protected static final int USER_OWNER = USER_SYSTEM;
+    /**
+     * @deprecated TODO(b/435528858) should use other user.
+     */
+    @Deprecated protected static final int USER_OWNER = USER_SYSTEM;
 
     private static final long TIMEOUT_USER_REMOVED_MILLIS = TimeUnit.SECONDS.toMillis(15);
     private static final long WAIT_SAMPLE_INTERVAL_MILLIS = 200;
@@ -118,11 +126,6 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
      * event of a test timeout it will log the results and proceed with executing the next test.
      */
     private static final long DEFAULT_TEST_TIMEOUT_MILLIS = TimeUnit.MINUTES.toMillis(10);
-
-    /**
-     * The amount of milliseconds to wait for the switch user calls in {@link #tearDown}.
-     */
-    private static final long USER_SWITCH_WAIT = TimeUnit.SECONDS.toMillis(1);
 
     // From the UserInfo class
     protected static final int FLAG_GUEST = 0x00000004;
@@ -141,11 +144,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
      */
     private static final int STAY_ON_WHILE_PLUGGED_IN_FLAGS = 7;
 
-    /**
-     * User ID for all users.
-     * The value is from the UserHandle class.
-     */
-    protected static final int USER_ALL = -1;
+    protected static final int USER_ALL = UserInfo.USER_ALL;
 
     private static final String TEST_UPDATE_LOCATION = "/data/local/tmp/cts/deviceowner";
 
@@ -161,20 +160,26 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     /** Packages installed as part of the tests */
     private Set<String> mFixedPackages;
 
-    protected int mDeviceOwnerUserId;
-    protected int mMainUserId;
+    /**
+     * @deprecated TODO(b/435528858): should be moved to subclasses that need it
+     */
+    @Deprecated protected int mDeviceOwnerUserId;
+
+    /**
+     * @deprecated TODO(b/435528858): should use proper method from {@code
+     *     DevicePolicyUsersPreparer}.
+     */
+    @Deprecated private int mMainUserId;
 
     /** Is test running on a watch */
     protected boolean mIsWatch;
 
-    /** Record the initial user ID. */
-    protected int mInitialUserId;
-
     /** Whether multi-user is supported. */
     private boolean mSupportsMultiUser;
 
+    // TODO(b/435528858): move to DevicePolicyUsersPreparer
     /** Users we shouldn't delete in the tests */
-    private final ArrayList<Integer> mFixedUsers = new ArrayList<>();
+    private final Set<Integer> mPreExistingUsers = new LinkedHashSet<>();
 
     protected boolean mHasAttestation;
 
@@ -214,35 +219,32 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         }
 
         // disable the package verifier to avoid the dialog when installing an app
-        mPackageVerifier = getDevice().executeShellCommand(
-                "settings get global verifier_verify_adb_installs");
+        mPackageVerifier =
+                getDevice().executeShellCommand("settings get global verifier_verify_adb_installs");
         getDevice().executeShellCommand("settings put global verifier_verify_adb_installs 0");
 
-        // Set the value of initial user ID calls in {@link #setUp}.
-        if(mSupportsMultiUser) {
-            mInitialUserId = getDevice().getCurrentUser();
-        }
+        // Gets the value of the initial user running these tests - it will be switched to (in
+        // a few lines) and won't be removed
+        int initialUserId = DevicePolicyUsersPreparer.getInitialCurrentUserId();
+        mPreExistingUsers.add(USER_SYSTEM);
+        mPreExistingUsers.add(mMainUserId);
+        mPreExistingUsers.add(initialUserId);
 
-        mFixedUsers.add(mMainUserId);
-        if (mMainUserId != USER_SYSTEM) {
-            mFixedUsers.add(USER_SYSTEM);
-        }
+        CLog.d(
+                "%s.setUp(): initialUserId=%d, mCurrentUser=%d, mMainUserId=%d, "
+                        + "mDeviceOwnerUserId=%s, mFixedUsers=%s",
+                getClass().getSimpleName(),
+                initialUserId,
+                getDevice().getCurrentUser(),
+                mMainUserId,
+                mDeviceOwnerUserId,
+                mPreExistingUsers);
 
-        if (mFeaturesCheckerRule.hasRequiredFeatures()) {
-            // Switching to primary is only needed when we're testing device admin features.
-            switchUser(mMainUserId);
-        } else {
-            // Otherwise, all the tests can be executed in any of the Android users, so remain in
-            // current user, and don't delete it. This enables testing in secondary users.
-            if (getDevice().getCurrentUser() != mMainUserId) {
-                mFixedUsers.add(getDevice().getCurrentUser());
-            }
-        }
         getDevice().executeShellCommand(" mkdir " + TEST_UPDATE_LOCATION);
 
         removeOwners();
 
-        switchUser(mMainUserId);
+        switchUser(initialUserId);
 
         removeTestUsers();
         // Unlock keyguard before test
@@ -282,11 +284,6 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
                 + mPackageVerifier);
         removeOwners();
 
-        // Switch back to initial user.
-        if (mSupportsMultiUser && getDevice().getCurrentUser() != mInitialUserId) {
-            switchUser(mInitialUserId);
-            waitForBroadcastIdle();
-        }
         removeTestUsers();
         removeTestPackages();
         getDevice().executeShellCommand(" rm -r " + TEST_UPDATE_LOCATION);
@@ -404,22 +401,11 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
      * as {@link #wakeupAndDismissKeyguard()}. Call {@link #waitForBroadcastIdle()} between this
      * method and those operations to ensure that switching the user has finished.
      */
-    protected void switchUser(int userId) throws Exception {
-        // TODO Move this logic to ITestDevice
-        int retries = 15;
+    protected final void switchUser(int userId) throws Exception {
         CLog.i("switching to user %d", userId);
-        executeShellCommand("am switch-user " + userId);
-        RunUtil.getDefault().sleep(USER_SWITCH_WAIT);
-        while (getDevice().getCurrentUser() != userId && (--retries) >= 0) {
-            // am switch-user can be ignored if a previous user-switching operation
-            // is still in progress. In this case, sleep a bit and then retry
-            RunUtil.getDefault().sleep(USER_SWITCH_WAIT);
-            executeShellCommand("am switch-user " + userId);
-        }
-        assertEquals(
-                "Failed to switch user after multiple retries",
-                userId,
-                getDevice().getCurrentUser());
+        // TODO(b/437419984): ITestDevice calls am switch-user -w, which uses a callback to block
+        // until the user switched. But ideally it should still get the current user to make sure
+        getDevice().switchUser(userId);
     }
 
     protected int getMaxNumberOfUsersSupported() throws DeviceNotAvailableException {
@@ -441,14 +427,15 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
             // Individual user is printed out like this:
             // \tUserInfo{$id$:$name$:$Integer.toHexString(flags)$} [running]
             String[] tokens = lines[i].split("\\{|\\}|:");
-            assertTrue(lines[i] + " doesn't contain 4 or 5 tokens",
+            assertTrue(
+                    lines[i] + " doesn't contain 4 or 5 tokens",
                     tokens.length == 4 || tokens.length == 5);
             // If the user IDs match, return the flags.
             if (Integer.parseInt(tokens[1]) == userId) {
                 return Integer.parseInt(tokens[3], 16);
             }
         }
-        fail("User not found");
+        fail("User " + userId + " not found");
         return 0;
     }
 
@@ -456,13 +443,14 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         return getDevice().listUsers();
     }
 
-    protected  ArrayList<Integer> listRunningUsers() throws DeviceNotAvailableException {
+    protected ArrayList<Integer> listRunningUsers() throws DeviceNotAvailableException {
         ArrayList<Integer> runningUsers = new ArrayList<>();
         for (int userId : listUsers()) {
             if (getDevice().isUserRunning(userId)) {
                 runningUsers.add(userId);
             }
         }
+        CLog.d("listRunningUsers(): returning %s", runningUsers);
         return runningUsers;
     }
 
@@ -508,17 +496,20 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
             // Don't log output, as tests sometimes set no debug user restriction, which
             // causes this to fail, we should still continue and remove the user.
             String stopUserCommand = "am stop-user -w -f " + userId;
-            CLog.d("stopping and removing user " + userId);
+            CLog.d("stopping and removing user %d", userId);
             getDevice().executeShellCommand(stopUserCommand);
             // Ephemeral users may have already been removed after being stopped.
             if (listUsers().contains(userId)) {
-                assertTrue("Couldn't remove user", getDevice().removeUser(userId));
+                assertWithMessage("user %s removed", userId)
+                        .that(getDevice().removeUser(userId))
+                        .isTrue();
             }
         }
     }
 
     protected void removeTestUsers() throws Exception {
         List<Integer> usersCreatedByTests = getUsersCreatedByTests();
+        CLog.d("removeTestUsers(): usersCreatedByTests=%s", usersCreatedByTests);
 
         // The time spent on stopUser is depend on how busy the broadcast queue is.
         // To optimize the time to remove multiple test users, we mark all users as
@@ -533,10 +524,11 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     }
 
     private void removeTestAddedUser(int userId) throws Exception  {
-        // Don't remove system user or initial user.
-        if (userId != USER_SYSTEM && userId != mInitialUserId) {
-            removeUser(userId);
+        if (mPreExistingUsers.contains(userId)) {
+            CLog.d("removeTestAddedUser(%d): ignoring as user existed before test");
+            return;
         }
+        removeUser(userId);
     }
 
     /**
@@ -544,7 +536,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
      */
     protected List<Integer> getUsersCreatedByTests() throws Exception {
         List<Integer> result = listUsers();
-        result.removeAll(mFixedUsers);
+        result.removeAll(mPreExistingUsers);
         return result;
     }
 
@@ -730,10 +722,15 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         assumeTrue("device doesn't support multiple users", mSupportsMultiUser);
     }
 
+    /**
+     * @deprecated TODO(b/435528858): tests should not depend on main user
+     */
+    @Deprecated
     protected final void assumeHasMainUser() throws DeviceNotAvailableException {
         Integer user = getDevice().getMainUserId();
         assumeTrue("device doesn't have a main user", user != null);
     }
+
     protected final void assumeHasWifiFeature() throws DeviceNotAvailableException {
         assumeHasDeviceFeature(FEATURE_WIFI);
     }
@@ -791,7 +788,11 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         return commandOutput;
     }
 
-    protected int getMainUser() throws DeviceNotAvailableException {
+    /**
+     * @deprecated TODO(b/435528858): should use proper method from upcoming TargetPreparer
+     */
+    @Deprecated
+    protected final int getMainUser() throws DeviceNotAvailableException {
         Integer user = getDevice().getMainUserId();
         if (user == null) {
             user = getDevice().getPrimaryUserId();
@@ -802,7 +803,13 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         return user;
     }
 
-    protected int getCurrentUser() throws DeviceNotAvailableException {
+    /**
+     * @deprecated TODO(b/435528858): callers should use {@code
+     *     DevicePolicyUsersPreparer#getInitialCurrentUserId()} or {@link
+     *     ITestDevice#getCurrentUser()}.
+     */
+    @Deprecated
+    protected final int getCurrentUser() throws DeviceNotAvailableException {
         return getDevice().getCurrentUser();
     }
 
