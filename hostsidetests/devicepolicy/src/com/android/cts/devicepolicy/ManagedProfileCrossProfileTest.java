@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 
 import android.app.admin.flags.Flags;
 import android.platform.test.annotations.FlakyTest;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil;
@@ -173,11 +174,8 @@ public final class ManagedProfileCrossProfileTest extends BaseManagedProfileTest
 
     @FlakyTest
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CROSS_PROFILE_WIDGET_PROVIDER_BULK_APIS)
     public void testCrossProfileWidgetsSet() throws Exception {
-        if (!Flags.crossProfileWidgetProviderBulkApis()) {
-            return;
-        }
-
         try {
             runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".CrossProfileWidgetTest",
                     "testCrossProfileWidgetProviderSet", mProfileUserId);
@@ -190,11 +188,8 @@ public final class ManagedProfileCrossProfileTest extends BaseManagedProfileTest
 
     @FlakyTest
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CROSS_PROFILE_WIDGET_PROVIDER_BULK_APIS)
     public void testCrossProfileWidgetsSetThenAdd() throws Exception {
-        if (!Flags.crossProfileWidgetProviderBulkApis()) {
-            return;
-        }
-
         try {
             runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".CrossProfileWidgetTest",
                     "testCrossProfileWidgetProviderSetThenAdd", mProfileUserId);
@@ -207,11 +202,8 @@ public final class ManagedProfileCrossProfileTest extends BaseManagedProfileTest
 
     @FlakyTest
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CROSS_PROFILE_WIDGET_PROVIDER_BULK_APIS)
     public void testCrossProfileWidgetsSetThenRemove() throws Exception {
-        if (!Flags.crossProfileWidgetProviderBulkApis()) {
-            return;
-        }
-
         try {
             runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".CrossProfileWidgetTest",
                     "testCrossProfileWidgetProviderSetThenRemove", mProfileUserId);
@@ -224,10 +216,8 @@ public final class ManagedProfileCrossProfileTest extends BaseManagedProfileTest
 
     @FlakyTest
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CROSS_PROFILE_WIDGET_PROVIDER_BULK_APIS)
     public void testCrossProfileWidgetsAddThenSet() throws Exception {
-        if (!Flags.crossProfileWidgetProviderBulkApis()) {
-            return;
-        }
 
         try {
             runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".CrossProfileWidgetTest",
