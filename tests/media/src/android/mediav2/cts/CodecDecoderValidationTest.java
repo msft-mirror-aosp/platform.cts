@@ -268,7 +268,7 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
 
                 // @CddTest(requirement="5.3.9/C-1-1")
                 {MEDIA_TYPE_AV1, new String[]{"cosmat_720x480_30fps_av1_10bit.mkv"}, null,
-                        -1.0f, 2380523095L, -1, -1, 720, 480, CODEC_ALL},
+                        -1.0f, 2880098496L, -1, -1, 720, 480, CODEC_ALL},
                 {MEDIA_TYPE_AV1, new String[]{"bbb_720x480_30fps_av1.mkv"}, null, -1.0f,
                         3229978305L, -1, -1, 720, 480, CODEC_ALL},
 
