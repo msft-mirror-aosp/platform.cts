@@ -27,6 +27,7 @@ java_library {
         "androidx.test.ext.junit",
         "appsearch_flags_java_lib",
         "compatibility-device-util-axt",
+        "error_prone_annotations",
         "framework-annotations-lib",
         "framework-appsearch.impl",
         "guava",
