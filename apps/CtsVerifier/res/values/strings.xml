@@ -2448,7 +2448,7 @@
          \n <b>Verification Instructions</b>:
          \n\u2022 <b>Exit the app</b>.
          \n\u2022 Confirm that <b>the chip</b> appears on <b>the status bar</b>.
-         \n\u2022 Confirm that the icon of the chip is \“S\”.
+         \n\u2022 Confirm that the icon of the chip is \“C\”.
          \n\u2022 Confirm the text on the chip is \“test\”.
          \n\u2022 Tap <b>the chip</b> on the status bar and observe that either of the following behaviors happens:
          \n\t\u2022 Option 1: <b>the app opens</b>.
