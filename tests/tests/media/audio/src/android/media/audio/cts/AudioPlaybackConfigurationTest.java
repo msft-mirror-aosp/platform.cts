@@ -94,7 +94,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 @FrameworkSpecificTest
 @RunWith(JUnit4.class)
@@ -199,10 +198,10 @@ public class AudioPlaybackConfigurationTest {
         final AudioAttributes aa = createTestAudioAttributes(session);
         List<AudioPlaybackConfiguration> configs;
         mMp = createPreparedMediaPlayer(R.raw.sine1khzs40dblong, aa, session);
-        startMediaPlayerWithCheck(am, mMp, aa, session, null);
+        startMediaPlayerWithCheck(am, mMp, aa, null);
         configs = am.getActivePlaybackConfigurations();
         assertTrue("No playback reported", configs.size() > 0);
-        stopMediaPlayerWithCheck(am, mMp, aa, session, null);
+        stopMediaPlayerWithCheck(am, mMp, aa, null);
 
         AudioPlaybackConfiguration configToParcel = null;
         for (AudioPlaybackConfiguration config : configs) {
@@ -252,11 +251,11 @@ public class AudioPlaybackConfigurationTest {
                 "inactive MediaPlayer, number of configs shouldn't have changed",
                 0,
                 getAddedPlayerConfigs(oldConfigs, newConfigs, session, aa).size());
-        startMediaPlayerWithCheck(am, mMp, aa, session, null /* callback */);
+        startMediaPlayerWithCheck(am, mMp, aa, null /* callback */);
         newConfigs = am.getActivePlaybackConfigurations();
         assertEquals("Expect at least one config after start", 1, newConfigs.size());
 
-        stopMediaPlayerWithCheck(am, mMp, aa, session, null /* callback */);
+        stopMediaPlayerWithCheck(am, mMp, aa, null /* callback */);
 
         // verify "privileged" fields aren't available through reflection
         final AudioPlaybackConfiguration config = newConfigs.get(0);
@@ -323,16 +322,16 @@ public class AudioPlaybackConfigurationTest {
             am.registerAudioPlaybackCallback(callback, h /*handler*/);
             registeredCallback = callback;
 
-            startMediaPlayerWithCheck(am, mMp, aa, sessionId, callback);
+            startMediaPlayerWithCheck(am, mMp, aa, callback);
 
-            pauseMediaPlayerWithCheck(am, mMp, aa, sessionId, callback);
+            pauseMediaPlayerWithCheck(am, mMp, aa, callback);
 
             // unregister callback and start playback again
             am.unregisterAudioPlaybackCallback(callback);
             registeredCallback = null;
 
-            startMediaPlayerWithCheck(am, mMp, aa, sessionId, null /* callback */);
-            stopMediaPlayerWithCheck(am, mMp, aa, sessionId, null /* callback */);
+            startMediaPlayerWithCheck(am, mMp, aa, null /* callback */);
+            stopMediaPlayerWithCheck(am, mMp, aa, null /* callback */);
         } finally {
             if (registeredCallback != null) {
                 am.unregisterAudioPlaybackCallback(registeredCallback);
@@ -367,7 +366,7 @@ public class AudioPlaybackConfigurationTest {
             am.registerAudioPlaybackCallback(callback, h /*handler*/);
             registeredCallback = callback;
 
-            startMediaPlayerWithCheck(am, mMp, aa, sessionId, callback);
+            startMediaPlayerWithCheck(am, mMp, aa, callback);
 
             // release the player without stopping or pausing it first
             callback.reset();
@@ -471,10 +470,10 @@ public class AudioPlaybackConfigurationTest {
         try {
             streamId = playSoundPool(mSp, mContext);
             callback.reset();
-            startMediaPlayerWithCheck(am, mMp, aa, mediaSessionId, callback);
+            startMediaPlayerWithCheck(am, mMp, aa, callback);
 
             mSp.autoPause();
-            stopMediaPlayerWithCheck(am, mMp, aa, mediaSessionId, callback);
+            stopMediaPlayerWithCheck(am, mMp, aa, callback);
         } finally {
             stopSoundPool(mSp, streamId);
             am.unregisterAudioPlaybackCallback(callback);
@@ -507,7 +506,7 @@ public class AudioPlaybackConfigurationTest {
             am.registerAudioPlaybackCallback(callback, h /*handler*/);
             registeredCallback = callback;
 
-            startMediaPlayerWithCheck(am, mMp, aa, sessionId, callback);
+            startMediaPlayerWithCheck(am, mMp, aa, callback);
             synchronized (mMediaPlayerLock) {
                 // wait for the new configuration to propagate
                 assertTrue(
@@ -520,7 +519,7 @@ public class AudioPlaybackConfigurationTest {
                                                 aa,
                                                 enableRoutedDeviceIdsFlag)));
             }
-            stopMediaPlayerWithCheck(am, mMp, aa, sessionId, callback);
+            stopMediaPlayerWithCheck(am, mMp, aa, callback);
         } finally {
             if (registeredCallback != null) {
                 am.unregisterAudioPlaybackCallback(registeredCallback);
@@ -671,8 +670,6 @@ public class AudioPlaybackConfigurationTest {
                     () -> am.getStreamVolume(TEST_STREAM_FOR_USAGE),
                     "AudioManager.getStreamVolume(" + TEST_STREAM_FOR_USAGE + ") should be 0");
 
-            mAt.play();
-            Log.i(TAG, "track started");
             // test predicate: the player is playing and is not muted
             Predicate<List<AudioPlaybackConfiguration>> verifyPlayerNotMuted = l -> {
                 int i = -1;
@@ -702,8 +699,12 @@ public class AudioPlaybackConfigurationTest {
                 Log.i(TAG, "predicate remained false");
                 return false;
             };
+            callback.setPredicate(verifyPlayerNotMuted);
+
+            mAt.play();
+            Log.i(TAG, "track started");
             assertTrue("onPlaybackConfigChanged predicate remained false",
-                    callback.waitForPredicate(verifyPlayerNotMuted,
+                    callback.waitForPredicate(
                             TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS));
         } finally {
             adjustUnMuteStreamVolume(am);
@@ -873,9 +874,6 @@ public class AudioPlaybackConfigurationTest {
             am.registerAudioPlaybackCallback(callback, null /*handler*/);
             registeredCallback = callback;
 
-            // start playing audio
-            start.run();
-
             Predicate<List<AudioPlaybackConfiguration>> verifyMediaPlayerStarted = l ->
             {
                 if (l.size() != 1) {
@@ -891,9 +889,15 @@ public class AudioPlaybackConfigurationTest {
                 return true;
             };
 
+            callback.setPredicate(verifyMediaPlayerStarted);
+
+            // start playing audio
+            start.run();
+
             if (muteChangesActiveState) {
-                assertTrue("onPlaybackConfigChanged predicate remained false",
-                        callback.waitForPredicate(verifyMediaPlayerStarted,
+                assertTrue(
+                        "onPlaybackConfigChanged predicate remained false",
+                        callback.waitForPredicate(
                                 TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS));
             }
 
@@ -1117,37 +1121,6 @@ public class AudioPlaybackConfigurationTest {
     }
 
     @GuardedBy("mMediaPlayerLock")
-    private void waitAddedPlayerInStateWithCallback(
-            @NonNull MyAudioPlaybackCallback callback, int playerNumber, int state) {
-        boolean waitSuccess =
-                mMediaPlayerLock.waitFor(
-                        TEST_TIMING_TOLERANCE_MS,
-                        () -> callback.getMediaPlayerConfigsNumberInState(state) == playerNumber);
-
-        assertTrue(
-                "Must got " + playerNumber + " active MediaPlayer. " + callback.debugString(),
-                waitSuccess);
-    }
-
-    @GuardedBy("mMediaPlayerLock")
-    private void waitAddedActivePlayerWithAudioManager(
-            @NonNull AudioManager am,
-            @NonNull AudioAttributes aa,
-            int sessionId,
-            final Set<AudioPlaybackConfiguration> oldConfigs,
-            int playerNumber) {
-        if (playerNumber > 0) {
-            boolean waitSuccess =
-                    mMediaPlayerLock.waitFor(
-                            TEST_TIMING_TOLERANCE_MS,
-                            () ->
-                                    getAddedPlayerConfigsNumber(am, oldConfigs, sessionId, aa)
-                                            == playerNumber);
-            assertTrue("Must got " + playerNumber + " active MediaPlayer.", waitSuccess);
-        }
-    }
-
-    @GuardedBy("mMediaPlayerLock")
     private boolean startMediaPlayer(final @NonNull MediaPlayer mp) {
         mp.start();
         return mMediaPlayerLock.waitFor(TEST_TIMING_TOLERANCE_MS, () -> mp.isPlaying());
@@ -1175,7 +1148,6 @@ public class AudioPlaybackConfigurationTest {
             @NonNull AudioManager am,
             @NonNull MediaPlayer mp,
             @NonNull AudioAttributes aa,
-            int sessionId,
             final MyAudioPlaybackCallback callback)
             throws Exception {
         synchronized (mMediaPlayerLock) {
@@ -1183,18 +1155,13 @@ public class AudioPlaybackConfigurationTest {
 
             final Set<AudioPlaybackConfiguration> oldConfigs =
                     new HashSet<AudioPlaybackConfiguration>(am.getActivePlaybackConfigurations());
-            if (callback != null) {
-                callback.reset();
-            }
-
-            assertTrue("MediaPlayer start failed", startMediaPlayer(mp));
             Predicate<List<AudioPlaybackConfiguration>> verifyMediaPlayerStarted = l ->
             {
                 if (l.size() != 1) {
                     return false;
                 }
                 AudioPlaybackConfiguration apc = l.get(0);
-                if (apc.getAudioAttributes().getTestId() != sessionId) {
+                if (apc.getAudioAttributes().getTestId() != aa.getTestId()) {
                     return false;
                 }
                 if (apc.getPlayerState() != AudioPlaybackConfiguration.PLAYER_STATE_STARTED) {
@@ -1204,16 +1171,17 @@ public class AudioPlaybackConfigurationTest {
             };
 
             if (callback != null) {
-                waitAddedPlayerInStateWithCallback(
-                        callback, 1, AudioPlaybackConfiguration.PLAYER_STATE_STARTED);
-                assertTrue("onPlaybackConfigChanged predicate remained false",
-                        callback.waitForPredicate(verifyMediaPlayerStarted,
-                                TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS));
+                callback.reset();
+                callback.setPredicate(verifyMediaPlayerStarted);
+            }
+
+            assertTrue("MediaPlayer start failed", startMediaPlayer(mp));
+
+            if (callback != null) {
                 assertTrue(
-                        "onPlaybackConfigChanged should have been called at least once",
-                        mMediaPlayerLock.waitFor(
-                                TEST_TIMING_TOLERANCE_MS,
-                                () -> callback.getCbInvocationNumber() >= 1));
+                        "onPlaybackConfigChanged predicate remained false",
+                        callback.waitForPredicate(
+                                TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS));
                 final List<AudioPlaybackConfiguration> configs = callback.getMediaPlayerConfigs();
                 if (configs.size() != 0) {
                     assertTrue(
@@ -1226,9 +1194,6 @@ public class AudioPlaybackConfigurationTest {
                             hasAttr(configs, aa));
                 }
             }
-
-            // active MediaPlayer, number of configs should increase by 1
-            waitAddedActivePlayerWithAudioManager(am, aa, sessionId, oldConfigs, 1);
         }
     }
 
@@ -1239,9 +1204,22 @@ public class AudioPlaybackConfigurationTest {
 
         if (callback != null) {
             assertNotNull("Callback must not be NULL", callback);
-            assertTrue("onPlaybackConfigChanged should have been called " + callback.debugString(),
-                    mMediaPlayerLock.waitFor(
-                            TEST_TIMING_TOLERANCE_MS, () -> callback.getCbInvocationNumber() >= 1));
+            assertTrue(
+                    "pauseOrStopMediaPlayerCheck predicate remained false",
+                    callback.waitForPredicate(
+                            TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS));
+        }
+    }
+
+    private void pauseMediaPlayerWithCheck(
+            @NonNull AudioManager am,
+            @NonNull MediaPlayer mp,
+            @NonNull AudioAttributes aa,
+            final MyAudioPlaybackCallback callback)
+            throws Exception {
+        synchronized (mMediaPlayerLock) {
+            assertTrue("MediaPlayer should have started", mp.isPlaying());
+
             // predicate checks that the testId in the AudioAttributes of the player, whose
             // state is to be checked, is either not found, or if found, that it's not in a
             // STARTED state
@@ -1259,23 +1237,9 @@ public class AudioPlaybackConfigurationTest {
                 }
                 return true;
             };
-            assertTrue("pauseOrStopMediaPlayerCheck predicate remained false",
-                        callback.waitForPredicate(verifyMediaPlayerNotStarted,
-                                TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS));
-        }
-    }
-
-    private void pauseMediaPlayerWithCheck(
-            @NonNull AudioManager am,
-            @NonNull MediaPlayer mp,
-            @NonNull AudioAttributes aa,
-            int sessionId,
-            final MyAudioPlaybackCallback callback)
-            throws Exception {
-        synchronized (mMediaPlayerLock) {
-            assertTrue("MediaPlayer should have started", mp.isPlaying());
             if (callback != null) {
                 callback.reset();
+                callback.setPredicate(verifyMediaPlayerNotStarted);
             }
             final Set<AudioPlaybackConfiguration> oldConfigs =
                     new HashSet<AudioPlaybackConfiguration>(am.getActivePlaybackConfigurations());
@@ -1288,13 +1252,31 @@ public class AudioPlaybackConfigurationTest {
             @NonNull AudioManager am,
             @NonNull MediaPlayer mp,
             @NonNull AudioAttributes aa,
-            int sessionId,
             final MyAudioPlaybackCallback callback)
             throws Exception {
         synchronized (mMediaPlayerLock) {
             assertTrue("MediaPlayer should have started", mp.isPlaying());
+
+            // predicate checks that the testId in the AudioAttributes of the player, whose
+            // state is to be checked, is either not found, or if found, that it's not in a
+            // STARTED state
+            Predicate<List<AudioPlaybackConfiguration>> verifyMediaPlayerNotStarted =
+                    l -> {
+                        if (l.size() == 0) {
+                            return true;
+                        }
+                        for (AudioPlaybackConfiguration apc : l) {
+                            if ((apc.getAudioAttributes().getTestId() == aa.getTestId())
+                                    && (apc.getPlayerState()
+                                            == AudioPlaybackConfiguration.PLAYER_STATE_STARTED)) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    };
             if (callback != null) {
                 callback.reset();
+                callback.setPredicate(verifyMediaPlayerNotStarted);
             }
             final Set<AudioPlaybackConfiguration> oldConfigs =
                     new HashSet<AudioPlaybackConfiguration>(am.getActivePlaybackConfigurations());
@@ -1318,12 +1300,21 @@ public class AudioPlaybackConfigurationTest {
         @GuardedBy("mCbLock")
         private AudioAttributes mAudioAttributes;
 
-        final ConfigMonitor mOnCalledMonitor = new ConfigMonitor();
+        @GuardedBy("mCbLock")
+        private Predicate<List<AudioPlaybackConfiguration>> mPredicate;
+
+        @GuardedBy("mCbLock")
+        private boolean mPredicateSatisfied;
+
+        final TestUtils.Monitor mOnCalledMonitor = new TestUtils.Monitor();
 
         void reset() {
             synchronized (mCbLock) {
                 mCalled = 0;
                 mConfigs = new ArrayList<AudioPlaybackConfiguration>();
+                mPredicate = null;
+                mPredicateSatisfied = false;
+                Log.i(TAG, "MyAudioPlaybackCallback reset");
             }
             mOnCalledMonitor.reset();
         }
@@ -1338,13 +1329,6 @@ public class AudioPlaybackConfigurationTest {
             synchronized (mCbLock) {
                 return mConfigs;
             }
-        }
-
-        int getMediaPlayerConfigsNumberInState(int state) {
-            return getMediaPlayerConfigs().stream()
-                    .filter(config -> config.getPlayerState() == state)
-                    .collect(Collectors.toList())
-                    .size();
         }
 
         MyAudioPlaybackCallback(int session, @NonNull AudioAttributes attributes) {
@@ -1373,55 +1357,56 @@ public class AudioPlaybackConfigurationTest {
         public void onPlaybackConfigChanged(List<AudioPlaybackConfiguration> configs) {
             synchronized (mCbLock) {
                 mConfigs = filterConfigsWithCurrentPlayer(configs);
-                Log.i(TAG, "onPlaybackConfigChanged cfg:" + mConfigs);
+                Log.i(
+                        TAG,
+                        "onPlaybackConfigChanged sessionId:" + mSessionId + " cfgs: " + mConfigs);
                 // add counter and signal when there is a matching AudioPlaybackConfiguration
                 if (!mIsPrivileged || mConfigs.size() != 0) {
                     mCalled++;
                     mOnCalledMonitor.signal();
                 }
+                Log.i(TAG, "onPlaybackConfigChanged predicate " + mPredicate);
+                if (!mPredicateSatisfied && mPredicate != null && mPredicate.test(mConfigs)) {
+                    Log.i(TAG, "onPlaybackConfigChanged predicateSatisfied");
+                    mPredicateSatisfied = true;
+                    mCbLock.notifyAll();
+                }
             }
         }
 
-        public boolean waitForCallbacks(int calledCount, long timeoutMs)
+        boolean waitForCallbacks(int calledCount, long timeoutMs)
                 throws InterruptedException {
             int signalsCounted = mOnCalledMonitor.waitForCountedSignals(calledCount, timeoutMs);
             return (signalsCounted >= calledCount);
         }
 
-        public boolean waitForPredicate(Predicate<List<AudioPlaybackConfiguration>> predicate,
-                long timeoutMs) throws InterruptedException {
-            return mOnCalledMonitor.waitForPredicate(predicate, timeoutMs);
-        }
-
-        public String debugString() {
+        void setPredicate(Predicate<List<AudioPlaybackConfiguration>> predicate) {
             synchronized (mCbLock) {
-                String debug = mIsPrivileged ? "Privileged" : "NonPrivileged";
-                debug += " SessionId: " + Integer.toString(mSessionId);
-                debug += " Configs: " + mConfigs.toString();
-                return debug;
+                mPredicate = predicate;
+                if (!mPredicateSatisfied && mPredicate != null && mPredicate.test(mConfigs)) {
+                    mPredicateSatisfied = true;
+                    mCbLock.notifyAll();
+                }
             }
         }
 
-        // adds to TestUtils.Monitor the ability to watch for a given Predictae to be assessed
-        // on the configurations passed in the callback
-        private class ConfigMonitor extends TestUtils.Monitor {
-            public synchronized boolean waitForPredicate(
-                    Predicate<List<AudioPlaybackConfiguration>> predicate, long timeoutMs)
-                    throws InterruptedException {
+        boolean waitForPredicate(long timeoutMs) throws InterruptedException {
+            synchronized (mCbLock) {
+                if (mPredicateSatisfied) {
+                    return true;
+                }
                 if (timeoutMs == 0) {
-                    return predicate.test(mConfigs);
+                    return false;
                 }
                 long deadline = System.currentTimeMillis() + timeoutMs;
-                boolean conditionFulfilled = false;
-                while (!conditionFulfilled) {
-                    long delay = deadline - System.currentTimeMillis();
-                    conditionFulfilled = predicate.test(mConfigs);
-                    if (delay <= 0) {
+                while (!mPredicateSatisfied) {
+                    long waitTime = deadline - System.currentTimeMillis();
+                    if (waitTime <= 0) {
                         break;
                     }
-                    wait(delay);
+                    mCbLock.wait(waitTime);
                 }
-                return conditionFulfilled;
+                return mPredicateSatisfied;
             }
         }
     }
@@ -1527,20 +1512,8 @@ public class AudioPlaybackConfigurationTest {
             return config.getSessionId() == sessionId;
         } else {
             final AudioAttributes newAa = config.getAudioAttributes();
-            return newAa.getUsage() == oldAa.getUsage()
-                    && newAa.getContentType() == oldAa.getContentType()
-                    && newAa.getFlags() == oldAa.getFlags();
+            return newAa.getTestId() == sessionId;
         }
-    }
-
-    private int getAddedPlayerConfigsNumber(
-            @NonNull AudioManager am,
-            final Set<AudioPlaybackConfiguration> oldConfigs,
-            int sessionId,
-            @NonNull AudioAttributes aa) {
-        return getAddedPlayerConfigs(
-                        oldConfigs, am.getActivePlaybackConfigurations(), sessionId, aa)
-                .size();
     }
 
     private List<AudioPlaybackConfiguration> getAddedPlayerConfigs(
