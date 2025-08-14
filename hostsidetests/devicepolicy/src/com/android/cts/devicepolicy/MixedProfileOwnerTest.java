@@ -37,7 +37,7 @@ public final class MixedProfileOwnerTest extends DeviceAndProfileOwnerTest {
     public void setUp() throws Exception {
         super.setUp();
 
-        mUserId = mMainUserId;
+        mUserId = getMainUser();
 
         CLog.i("%s.setUp(): mUserId=%d", getClass().getSimpleName(), mUserId);
 

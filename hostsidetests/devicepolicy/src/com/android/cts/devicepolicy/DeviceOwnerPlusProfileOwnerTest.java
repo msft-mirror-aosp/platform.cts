@@ -66,9 +66,16 @@ public final class DeviceOwnerPlusProfileOwnerTest extends BaseDevicePolicyTest 
     private static final String COMP_DPC_ADMIN2 =
             COMP_DPC_PKG2 + "/com.android.cts.comp.AdminReceiver";
 
+    /**
+     * @deprecated TODO(b/435528858): most likely should use mDeviceOwnerUserId
+     */
+    @Deprecated private int mMainUserId;
+
     @Override
     public void setUp() throws Exception {
         super.setUp();
+
+        mMainUserId = getMainUser();
 
         // Set device owner.
         installAppAsUser(COMP_DPC_APK, mDeviceOwnerUserId);

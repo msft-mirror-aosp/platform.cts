@@ -39,14 +39,22 @@ abstract class BaseDeviceOwnerTest extends BaseDevicePolicyTest {
 
     private boolean mDeviceOwnerSet;
 
+    /**
+     * @deprecated TODO(b/435528858): should use mDeviceOwnerUserId instead
+     */
+    @Deprecated protected int mMainUserId;
+
     @Override
     public void setUp() throws Exception {
         super.setUp();
 
         if (isHeadlessSystemUserMode()) {
-            assumeNotNull("Devices in headles system user mode require a main user to set a device "
-                    + "owner.", getDevice().getMainUserId());
+            assumeNotNull(
+                    "Devices in headless system user mode require a main user to set a device"
+                            + " owner.",
+                    getDevice().getMainUserId());
         }
+        mMainUserId = getMainUser();
         installDeviceOwnerApp(DEVICE_OWNER_APK);
 
         mDeviceOwnerSet = setDeviceOwner(DEVICE_OWNER_COMPONENT, mDeviceOwnerUserId,

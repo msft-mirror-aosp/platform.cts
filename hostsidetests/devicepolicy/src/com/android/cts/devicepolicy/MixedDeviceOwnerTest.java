@@ -56,7 +56,7 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
     public void setUp() throws Exception {
         super.setUp();
 
-        mUserId = mMainUserId;
+        mUserId = mDeviceOwnerUserId;
 
         CLog.i("%s.setUp(): mUserId=%d", getClass().getSimpleName(), mUserId);
 
@@ -420,7 +420,7 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
     private void setUserAsAffiliatedUserToPrimary(int userId) throws Exception {
         // Setting the same affiliation ids on both users
         runDeviceTestsAsUser(
-                DEVICE_ADMIN_PKG, ".AffiliationTest", "testSetAffiliationId1", mMainUserId);
+                DEVICE_ADMIN_PKG, ".AffiliationTest", "testSetAffiliationId1", mDeviceOwnerUserId);
         runDeviceTestsAsUser(
                 DEVICE_ADMIN_PKG, ".AffiliationTest", "testSetAffiliationId1", userId);
     }

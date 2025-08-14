@@ -43,6 +43,19 @@ public final class ManagedProfileTest extends BaseManagedProfileTest {
     private static final String DEVICE_OWNER_ADMIN =
             DEVICE_OWNER_PKG + ".BaseDeviceOwnerTest$BasicAdminReceiver";
 
+    /**
+     * @deprecated TODO(b/435528858): should use proper method from DevicePolicyUsersPreparer
+     */
+    @Deprecated private int mMainUserId;
+
+    // TODO(b/435528858): remove once mMainUserId is gone
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+
+        mMainUserId = getMainUser();
+    }
+
     @Test
     public void testManagedProfileSetup() throws Exception {
         runDeviceTestsAsUser(

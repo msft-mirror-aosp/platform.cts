@@ -45,11 +45,17 @@ public final class LauncherAppsProfileTest extends BaseLauncherAppsTest {
     private String mProfileSerialNumber;
     private String mMainUserSerialNumber;
 
+    /**
+     * @deprecated TODO(b/435528858): should use proper method from DevicePolicyUsersPreparer
+     */
+    @Deprecated private int mMainUserId;
+
     @Override
     public void setUp() throws Exception {
         super.setUp();
 
         removeTestUsers();
+        mMainUserId = getMainUser();
         // Create a managed profile
         mParentUserId = mMainUserId;
         mProfileUserId = createManagedProfile(mParentUserId);

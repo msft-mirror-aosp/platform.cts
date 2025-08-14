@@ -106,9 +106,10 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
 
     protected static final int USER_SYSTEM = UserInfo.USER_SYSTEM;
 
-    /** @deprecated TODO(b/435528858) should use other user. */
-    @Deprecated
-    protected static final int USER_OWNER = USER_SYSTEM;
+    /**
+     * @deprecated TODO(b/435528858) should use other user.
+     */
+    @Deprecated protected static final int USER_OWNER = USER_SYSTEM;
 
     private static final long TIMEOUT_USER_REMOVED_MILLIS = TimeUnit.SECONDS.toMillis(15);
     private static final long WAIT_SAMPLE_INTERVAL_MILLIS = 200;
@@ -159,8 +160,16 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     /** Packages installed as part of the tests */
     private Set<String> mFixedPackages;
 
-    protected int mDeviceOwnerUserId;
-    protected int mMainUserId;
+    /**
+     * @deprecated TODO(b/435528858): should be moved to subclasses that need it
+     */
+    @Deprecated protected int mDeviceOwnerUserId;
+
+    /**
+     * @deprecated TODO(b/435528858): should use proper method from {@code
+     *     DevicePolicyUsersPreparer}.
+     */
+    @Deprecated private int mMainUserId;
 
     /** Is test running on a watch */
     protected boolean mIsWatch;
@@ -210,8 +219,8 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         }
 
         // disable the package verifier to avoid the dialog when installing an app
-        mPackageVerifier = getDevice().executeShellCommand(
-                "settings get global verifier_verify_adb_installs");
+        mPackageVerifier =
+                getDevice().executeShellCommand("settings get global verifier_verify_adb_installs");
         getDevice().executeShellCommand("settings put global verifier_verify_adb_installs 0");
 
         // Gets the value of the initial user running these tests - it will be switched to (in
@@ -221,9 +230,14 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         mPreExistingUsers.add(mMainUserId);
         mPreExistingUsers.add(initialUserId);
 
-        CLog.d("%s.setUp(): initialUserId=%d, mCurrentUser=%d, mMainUserId=%d, "
-                + "mDeviceOwnerUserId=%s, mFixedUsers=%s", getClass().getSimpleName(),
-                initialUserId, getDevice().getCurrentUser(), mMainUserId, mDeviceOwnerUserId,
+        CLog.d(
+                "%s.setUp(): initialUserId=%d, mCurrentUser=%d, mMainUserId=%d, "
+                        + "mDeviceOwnerUserId=%s, mFixedUsers=%s",
+                getClass().getSimpleName(),
+                initialUserId,
+                getDevice().getCurrentUser(),
+                mMainUserId,
+                mDeviceOwnerUserId,
                 mPreExistingUsers);
 
         getDevice().executeShellCommand(" mkdir " + TEST_UPDATE_LOCATION);
@@ -413,7 +427,8 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
             // Individual user is printed out like this:
             // \tUserInfo{$id$:$name$:$Integer.toHexString(flags)$} [running]
             String[] tokens = lines[i].split("\\{|\\}|:");
-            assertTrue(lines[i] + " doesn't contain 4 or 5 tokens",
+            assertTrue(
+                    lines[i] + " doesn't contain 4 or 5 tokens",
                     tokens.length == 4 || tokens.length == 5);
             // If the user IDs match, return the flags.
             if (Integer.parseInt(tokens[1]) == userId) {
@@ -428,7 +443,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         return getDevice().listUsers();
     }
 
-    protected  ArrayList<Integer> listRunningUsers() throws DeviceNotAvailableException {
+    protected ArrayList<Integer> listRunningUsers() throws DeviceNotAvailableException {
         ArrayList<Integer> runningUsers = new ArrayList<>();
         for (int userId : listUsers()) {
             if (getDevice().isUserRunning(userId)) {
@@ -485,7 +500,8 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
             getDevice().executeShellCommand(stopUserCommand);
             // Ephemeral users may have already been removed after being stopped.
             if (listUsers().contains(userId)) {
-                assertWithMessage("user %s removed", userId).that(getDevice().removeUser(userId))
+                assertWithMessage("user %s removed", userId)
+                        .that(getDevice().removeUser(userId))
                         .isTrue();
             }
         }
@@ -706,10 +722,15 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         assumeTrue("device doesn't support multiple users", mSupportsMultiUser);
     }
 
+    /**
+     * @deprecated TODO(b/435528858): tests should not depend on main user
+     */
+    @Deprecated
     protected final void assumeHasMainUser() throws DeviceNotAvailableException {
         Integer user = getDevice().getMainUserId();
         assumeTrue("device doesn't have a main user", user != null);
     }
+
     protected final void assumeHasWifiFeature() throws DeviceNotAvailableException {
         assumeHasDeviceFeature(FEATURE_WIFI);
     }
@@ -767,7 +788,11 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         return commandOutput;
     }
 
-    protected int getMainUser() throws DeviceNotAvailableException {
+    /**
+     * @deprecated TODO(b/435528858): should use proper method from upcoming TargetPreparer
+     */
+    @Deprecated
+    protected final int getMainUser() throws DeviceNotAvailableException {
         Integer user = getDevice().getMainUserId();
         if (user == null) {
             user = getDevice().getPrimaryUserId();
@@ -778,7 +803,13 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         return user;
     }
 
-    protected int getCurrentUser() throws DeviceNotAvailableException {
+    /**
+     * @deprecated TODO(b/435528858): callers should use {@code
+     *     DevicePolicyUsersPreparer#getInitialCurrentUserId()} or {@link
+     *     ITestDevice#getCurrentUser()}.
+     */
+    @Deprecated
+    protected final int getCurrentUser() throws DeviceNotAvailableException {
         return getDevice().getCurrentUser();
     }
 
