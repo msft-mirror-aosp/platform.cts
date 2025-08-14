@@ -208,11 +208,11 @@ public class CompatChangeGatingTestCase extends DeviceTestCase implements IBuild
         } finally {
             // Cleanup compat overrides
             resetCompatConfig(pkgName, enabledChanges, disabledChanges);
-            // Validate statsd report
-            validatePostRunStatsdReport(configId, pkgName, reportedEnabledChanges,
-                                        reportedDisabledChanges);
         }
 
+        // Validate statsd report
+        validatePostRunStatsdReport(
+                configId, pkgName, reportedEnabledChanges, reportedDisabledChanges);
     }
 
     /**
