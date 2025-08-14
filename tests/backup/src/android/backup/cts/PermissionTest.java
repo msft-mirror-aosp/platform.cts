@@ -385,18 +385,21 @@ public class PermissionTest extends BaseBackupCtsTest {
     }
 
     private void install(String apk) {
-        ShellUtils.runShellCommand("pm install -r "
-                + (SdkLevel.isAtLeastU() ? "--bypass-low-target-sdk-block " : "")
-                + apk);
+        ShellUtils.runShellCommand(
+                "pm install -r --user %d %s %s",
+                sContext.getUserId(),
+                (SdkLevel.isAtLeastU() ? "--bypass-low-target-sdk-block" : ""),
+                apk);
     }
 
     private void uninstall(String packageName) {
-        ShellUtils.runShellCommand("pm uninstall " + packageName);
+        ShellUtils.runShellCommand("pm uninstall --user %d %s", sContext.getUserId(), packageName);
     }
 
     private void resetApp(String packageName) {
-        ShellUtils.runShellCommand("pm clear " + packageName);
-        ShellUtils.runShellCommand("appops reset " + packageName);
+        int userId = sContext.getUserId();
+        ShellUtils.runShellCommand("pm clear --user %d %s", userId, packageName);
+        ShellUtils.runShellCommand("appops reset --user %d %s", userId, packageName);
     }
 
     /**
