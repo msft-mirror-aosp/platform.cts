@@ -16,19 +16,27 @@
 
 package android.net.wifi.p2p.cts;
 
+import static org.junit.Assert.assertFalse;
+
+import android.net.wifi.cts.WifiJUnit4TestBase;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.test.AndroidTestCase;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.wifi.flags.Flags;
 
-public class WifiP2pDeviceTest extends AndroidTestCase {
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
-    public void testDefaultWpsMethodSupportCheck() {
+@RunWith(AndroidJUnit4.class)
+public class WifiP2pDeviceTest extends WifiJUnit4TestBase {
+
+    @Test
+    public void defaultWpsMethodSupportCheck() {
         WifiP2pDevice dev = new WifiP2pDevice();
 
         assertFalse(dev.wpsPbcSupported());
@@ -36,14 +44,16 @@ public class WifiP2pDeviceTest extends AndroidTestCase {
         assertFalse(dev.wpsKeypadSupported());
     }
 
-    public void testDefaultDeviceCapabilityCheck() {
+    @Test
+    public void defaultDeviceCapabilityCheck() {
         WifiP2pDevice dev = new WifiP2pDevice();
 
         assertFalse(dev.isServiceDiscoveryCapable());
     }
 
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
-    public void testGetVendorElements() {
+    @Test
+    public void getVendorElements() {
         WifiP2pDevice dev = new WifiP2pDevice();
         dev.getVendorElements();
     }
@@ -51,7 +61,8 @@ public class WifiP2pDeviceTest extends AndroidTestCase {
     @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
             codeName = "VanillaIceCream")
-    public void testGetIpAddress() {
+    @Test
+    public void getIpAddress() {
         WifiP2pDevice dev = new WifiP2pDevice();
         dev.getIpAddress();
     }
@@ -64,7 +75,8 @@ public class WifiP2pDeviceTest extends AndroidTestCase {
             "android.net.wifi.p2p.WifiP2pDevice#isPinCodeKeypadBootstrappingMethodSupported"})
     @RequiresFlagsEnabled(Flags.FLAG_WIFI_DIRECT_R2)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
-    public void testDefaultBootstrappingMethodSupportCheck() {
+    @Test
+    public void defaultBootstrappingMethodSupportCheck() {
         WifiP2pDevice dev = new WifiP2pDevice();
         dev.isOpportunisticBootstrappingMethodSupported();
         dev.isPassphraseDisplayBootstrappingMethodSupported();
