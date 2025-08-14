@@ -23,4 +23,5 @@
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
         android:targetPackage="android.media.audio.app" />
+    <uses-permission android:name="android.permission.MANAGE_NOTIFICATIONS"/>
 </manifest>
