@@ -161,6 +161,7 @@ public class DisplayEventOccurredStatsTests extends BaseHostJUnit4Test implement
                         .map(this::getDisplayEventCallbackOccurred)
                         .filter(x -> x.getEventType().equals(eventType))
                         .peek(x -> assertEquals(isListenerNotified, x.getUidList().contains(uid)))
+                        .peek(x -> assertEquals(x.getClientCount(), x.getUidCount()))
                         .toList();
 
         assertTrue(events.size() >= expectedEventCount);
