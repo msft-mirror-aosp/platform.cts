@@ -26,12 +26,9 @@ public class TapLatencyAnalyzer {
     float[] mHighPassBuffer;
 
     private float mDroop = 0.995f;
-    private static final float LOW_THRESHOLD = 0.01f;
-    private static final float HIGH_THRESHOLD = 0.03f;
+    private static final float EDGE_THRESHOLD = 0.01f;
+    private static final float LOW_FRACTION = 0.5f;
 
-    /**
-     * A class to hold "events" discovered by the TapLatencyAnalyser
-     */
     public static class TapLatencyEvent {
         public int type;
         public int sampleIndex;
@@ -43,17 +40,20 @@ public class TapLatencyAnalyzer {
 
     /**
      * Analyzes the provided audio data to find audio event "edges"
-     * @param buffer    Audio samples to analyze.
-     * @param offset    Offset within the provide buffer to start analysis.
-     * @param numSamples    Number of samples to analyze.
-     * @return
+     *
+     * @param buffer Audio samples to analyze.
+     * @param offset Offset within the provide buffer to start analysis.
+     * @param numSamples Number of samples to analyze.
+     * @return An array of TapLatencyEvent objects.
      */
     public TapLatencyEvent[] analyze(float[] buffer, int offset, int numSamples) {
         // Use high pass filter to remove rumble from air conditioners.
         mHighPassBuffer = new float[numSamples];
         highPassFilter(buffer, offset, numSamples, mHighPassBuffer);
+        // Apply envelope follower.
         float[] peakBuffer = new float[numSamples];
         fillPeakBuffer(mHighPassBuffer, 0, numSamples, peakBuffer);
+        // Look for two attacks.
         return scanForEdges(peakBuffer, numSamples);
     }
 
@@ -65,14 +65,20 @@ public class TapLatencyAnalyzer {
         return mHighPassBuffer;
     }
 
-    private void highPassFilter(float[] buffer, int offset, int numSamples,
-                                float[] highPassBuffer) {
+    // Based on https://en.wikipedia.org/wiki/High-pass_filter
+    private void highPassFilter(
+            float[] buffer, int offset, int numSamples, float[] highPassBuffer) {
         float xn1 = 0.0f;
         float yn1 = 0.0f;
-        final float alpha = 0.05f;
+        // This alpha value was chosen empirically to attenuate low-frequency rumble from air
+        // conditioners, etc. while still passing the high-frequency edges of the tap and blip.
+        // A higher value will attenuate lower frequencies more strongly.
+        // This is 400Hz at a 48kHz sample rate.
+        // fc = (1 - alpha) * fs / (2 * pi * alpha)
+        final float alpha = 0.95f;
         for (int i = 0; i < numSamples; i++) {
             float xn = buffer[i + offset];
-            float yn = alpha * yn1 + ((1.0f - alpha) * (xn - xn1));
+            float yn = alpha * (yn1 + xn - xn1);
             highPassBuffer[i] = yn;
             xn1 = xn;
             yn1 = yn;
@@ -83,19 +89,24 @@ public class TapLatencyAnalyzer {
         ArrayList<TapLatencyEvent> events = new ArrayList<TapLatencyEvent>();
         float slow = 0.0f;
         float fast = 0.0f;
-        float slowCoefficient = 0.01f;
-        float fastCoefficient = 0.10f;
+        final float slowCoefficient = 0.01f;
+        final float fastCoefficient = 0.10f;
+        float lowThreshold = EDGE_THRESHOLD;
         boolean armed = true;
         int sampleIndex = 0;
         for (float level : peakBuffer) {
             slow = slow + (level - slow) * slowCoefficient; // low pass filter
-            fast = fast + (level - fast) * fastCoefficient;
-            if (armed && (fast > HIGH_THRESHOLD) && (fast > (2.0 * slow))) {
+            fast = fast + (level - fast) * fastCoefficient; // low pass filter
+            if (armed && (fast > EDGE_THRESHOLD) && (fast > (2.0 * slow))) {
                 events.add(new TapLatencyEvent(TYPE_TAP, sampleIndex));
                 armed = false;
+                // Set a new, lower threshold based on the height of the detected peak.
+                // This allows us to detect a second, smaller peak, but not to trigger
+                // on the smaller variations that occur after the initial peak.
+                lowThreshold = fast * LOW_FRACTION;
             }
             // Use hysteresis when rearming.
-            if (!armed && (fast < LOW_THRESHOLD)) {
+            if (fast < lowThreshold) {
                 armed = true;
             }
             sampleIndex++;
@@ -103,10 +114,18 @@ public class TapLatencyAnalyzer {
         return events.toArray(new TapLatencyEvent[0]);
     }
 
+    /**
+     * Envelope follower that rides along the peaks of the waveforms and then decays exponentially.
+     *
+     * @param buffer Input buffer of samples.
+     * @param offset Offset into the input buffer.
+     * @param numSamples Number of samples to process.
+     * @param peakBuffer Output buffer of peak-following samples.
+     */
     private void fillPeakBuffer(float[] buffer, int offset, int numSamples, float[] peakBuffer) {
         float previous = 0.0f;
         for (int i = 0; i < numSamples; i++) {
-            float input = buffer[i + offset];
+            float input = Math.abs(buffer[i + offset]);
             float output = previous * mDroop;
             if (input > output) {
                 output = input;
