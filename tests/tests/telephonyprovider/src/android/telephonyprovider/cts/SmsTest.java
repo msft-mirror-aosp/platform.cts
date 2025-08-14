@@ -22,7 +22,6 @@ import static android.provider.Telephony.Sms.OTP_TYPE_CONTAINS_OTP;
 import static android.provider.Telephony.Sms.OTP_TYPE_NONE;
 import static android.telephony.cts.util.DefaultSmsAppHelper.assumeMessaging;
 import static android.telephony.cts.util.DefaultSmsAppHelper.assumeTelephony;
-import static android.telephony.cts.util.DefaultSmsAppHelper.stopBeingDefaultSmsApp;
 
 import static androidx.test.InstrumentationRegistry.getContext;
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
@@ -30,6 +29,7 @@ import static androidx.test.InstrumentationRegistry.getInstrumentation;
 import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
 import static com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity;
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
+import static com.android.internal.telephony.flags.Flags.FLAG_LIMIT_RAW_TABLE_VISIBILITY;
 import static com.android.internal.telephony.flags.Flags.FLAG_REDACT_OTP_SMS;
 import static com.android.internal.telephony.flags.Flags.FLAG_REDACT_OTP_SMS_API;
 
@@ -109,6 +109,11 @@ public class SmsTest {
         ContentResolver contentResolver = getInstrumentation().getContext().getContentResolver();
         contentResolver.delete(Telephony.Sms.CONTENT_URI, null, null);
         contentResolver.delete(Telephony.Threads.CONTENT_URI, null, null);
+    }
+
+    @AfterClass
+    public static void stopBeingDefaultSmsApp() {
+        DefaultSmsAppHelper.stopBeingDefaultSmsApp();
     }
 
     @Before
@@ -596,8 +601,21 @@ public class SmsTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_LIMIT_RAW_TABLE_VISIBILITY)
+    public void query_rawTable_cantQuery() {
+        Uri rawUri = Uri.withAppendedPath(Telephony.Sms.CONTENT_URI, "raw");
+        try {
+            stopBeingDefaultSmsApp();
+            Cursor cursor = mContentResolver.query(rawUri, null, null, null);
+            assertThat(cursor).isNull();
+        } finally {
+            ensureDefaultSmsApp();
+        }
+    }
+
+    @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
-    public void testOtpSms_DefaultSmsAppCanRead() {
+    public void testOtpSms_defaultSmsAppCanRead() {
         final String message = getSmsRetrieverOtpMessage();
         Uri inserted = mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(TEST_ADDRESS,
                 message, System.currentTimeMillis());
@@ -606,7 +624,7 @@ public class SmsTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
-    public void testOtpSms_RoleHoldingAppCanRead() throws Exception {
+    public void testOtpSms_roleHoldingAppCanRead() throws Exception {
         final String message = getSmsRetrieverOtpMessage();
         List<String> smsOtpReadingRoles =
                 List.of(RoleManager.ROLE_ASSISTANT, RoleManager.ROLE_DIALER);
@@ -633,7 +651,7 @@ public class SmsTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
-    public void testOtpSms_DefaultSmsAppCantUpdate() {
+    public void testOtpSms_defaultSmsAppCantUpdate() {
         Uri inserted = mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(TEST_ADDRESS,
                 getSmsRetrieverOtpMessage(), System.currentTimeMillis());
         ContentValues values = new ContentValues();
@@ -649,13 +667,17 @@ public class SmsTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
-    public void testOtpSms_StandardAppCantRead() {
+    public void testOtpSms_standardAppCantRead() {
         final String message = getSmsRetrieverOtpMessage();
-        Uri inserted = mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(TEST_ADDRESS,
-                message, System.currentTimeMillis());
+        Uri inserted =
+                mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(
+                        TEST_ADDRESS, message, System.currentTimeMillis(), TEST_THREAD_ID_1);
         try {
             stopBeingDefaultSmsApp();
-            assertSmsPresence(inserted, message, false);
+            // Message should be inaccessible when querying directly, or by conversation ID
+            assertSmsPresence(inserted, message, /* canRead */ false);
+            Uri threadUri = Uri.parse(Telephony.Sms.CONTENT_URI + "/conversations");
+            assertSmsPresence(threadUri, message, /* canRead */ false);
         } finally {
             ensureDefaultSmsApp();
         }
@@ -663,7 +685,7 @@ public class SmsTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
-    public void testOtpSms_StandardAppCanReadAfterOtpHidingTimeExpires() {
+    public void testOtpSms_standardAppCanReadAfterOtpHidingTimeExpires() {
         final String message = getSmsRetrieverOtpMessage();
         long expiredOtpHidingTime =
                 System.currentTimeMillis() - OTP_HIDING_TIME_MS - TimeUnit.SECONDS.toMillis(1);
@@ -679,7 +701,7 @@ public class SmsTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
-    public void testOtpSms_AppWithReadSensitiveNotificationsCanRead() {
+    public void testOtpSms_appWithReadSensitiveNotificationsCanRead() {
         final String message = getSmsRetrieverOtpMessage();
         Uri inserted = mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(TEST_ADDRESS,
                 message, System.currentTimeMillis());
@@ -695,7 +717,7 @@ public class SmsTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
-    public void testOtpSms_AppWithCdmAssociationCanRead() {
+    public void testOtpSms_appWithCdmAssociationCanRead() {
         final String message = getSmsRetrieverOtpMessage();
         Uri inserted =
                 mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(
@@ -712,7 +734,7 @@ public class SmsTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
-    public void testOtpSms_AppWithCarrierPrivilegeCanRead() throws Exception {
+    public void testOtpSms_appWithCarrierPrivilegeCanRead() throws Exception {
         final String message = getSmsRetrieverOtpMessage();
         assumeTrue(
                 mContext.getPackageManager()
@@ -734,14 +756,14 @@ public class SmsTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
-    public void testOtpSms_UpdatesFromOtpPending() {
+    public void testOtpSms_updatesFromOtpPending() {
         Uri inserted = mSmsTestHelper.insertTestSms(TEST_ADDRESS, getSmsRetrieverOtpMessage());
         SystemUtil.eventually(() -> assertSmsOtpColumn(inserted, OTP_TYPE_CONTAINS_OTP));
     }
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
-    public void testOtpSms_OtpFalsePositive() {
+    public void testOtpSms_otpFalsePositive() {
         Uri inserted = mSmsTestHelper.insertTestSms(TEST_ADDRESS, TEST_NOT_OTP_SMS_BODY);
         SystemUtil.eventually(() -> assertSmsOtpColumn(inserted, OTP_TYPE_NONE));
     }
@@ -760,21 +782,23 @@ public class SmsTest {
         return TEST_OTP_SMS_BODY + " " + getSmsRetrieverHash();
     }
 
-
     private void assertSmsPresence(Uri uri, String smsBody, boolean canRead) {
         Cursor cursor = mContentResolver.query(uri, null, null, null);
         if (!canRead) {
             assertThat(cursor.getCount()).isEqualTo(0);
             return;
         }
-        assertWithMessage("Expected to get a query result").that(cursor.getCount()).isEqualTo(1);
-        cursor.moveToNext();
+        assertWithMessage("Expected to get a query result")
+                .that(cursor.getCount())
+                .isGreaterThan(0);
 
-        String actualSmsBody = cursor.getString(cursor.getColumnIndex(Telephony.Sms.BODY));
-        if (canRead) {
-            assertThat(actualSmsBody).isEqualTo(smsBody);
-        } else {
-            assertThat(actualSmsBody).isNotEqualTo(smsBody);
+        while (cursor.moveToNext()) {
+            String actualSmsBody = cursor.getString(cursor.getColumnIndex(Telephony.Sms.BODY));
+            if (canRead) {
+                assertThat(actualSmsBody).isEqualTo(smsBody);
+            } else {
+                assertThat(actualSmsBody).isNotEqualTo(smsBody);
+            }
         }
     }
 

@@ -50,9 +50,18 @@ class SmsTestHelper {
 
     public Uri insertTestOtpSmsAndWaitForOtpDetection(String testAddress, String testSmsBody,
             long createdTimeMillis) {
+        return insertTestOtpSmsAndWaitForOtpDetection(
+                testAddress, testSmsBody, createdTimeMillis, -1);
+    }
+
+    public Uri insertTestOtpSmsAndWaitForOtpDetection(
+            String testAddress, String testSmsBody, long createdTimeMillis, int threadId) {
         mContentValues.put(Telephony.Sms.ADDRESS, testAddress);
         mContentValues.put(Telephony.Sms.BODY, testSmsBody);
         mContentValues.put(Telephony.Sms.DATE, createdTimeMillis);
+        if (threadId != -1) {
+            mContentValues.put(Telephony.Sms.THREAD_ID, threadId);
+        }
         Uri uri = mContentResolver.insert(Telephony.Sms.CONTENT_URI, mContentValues);
         waitForOtpDetection(uri);
         return uri;
