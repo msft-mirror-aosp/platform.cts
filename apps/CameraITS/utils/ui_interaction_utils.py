@@ -553,6 +553,14 @@ def switch_default_camera(dut, facing, log_path):
         logging.debug('Resource id: %s', resource_id)
         logging.debug('Flip camera content-desc: %s', content_desc)
         break
+      else:
+        if re.search(
+            flip_camera_pattern, content_desc, re.IGNORECASE
+        ):
+          logging.debug('Pattern matches')
+          logging.debug('Resource id: %s', resource_id)
+          logging.debug('Flip camera content-desc: %s', content_desc)
+          break
     else:
       if re.search(
           flip_camera_pattern, content_desc, re.IGNORECASE
@@ -573,7 +581,7 @@ def switch_default_camera(dut, facing, log_path):
 
   dut.take_screenshot(
       log_path, prefix=f'switched_to_{facing}_default_camera'
-  )
+      )
 
 
 def pull_img_files(device_id, input_path, output_path):
