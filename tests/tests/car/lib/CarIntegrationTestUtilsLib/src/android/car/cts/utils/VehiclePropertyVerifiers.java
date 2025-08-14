@@ -1121,14 +1121,17 @@ public class VehiclePropertyVerifiers {
     private static ImmutableSet<Integer> generateAllPossibleHvacFanDirections() {
         ImmutableSet.Builder<Integer> allPossibleFanDirectionsBuilder = ImmutableSet.builder();
         for (int i = 1; i <= SINGLE_HVAC_FAN_DIRECTIONS.size(); i++) {
-            allPossibleFanDirectionsBuilder.addAll(Sets.combinations(SINGLE_HVAC_FAN_DIRECTIONS,
-                    i).stream().map(hvacFanDirectionCombo -> {
-                        Integer possibleHvacFanDirection = 0;
-                        for (Integer hvacFanDirection : hvacFanDirectionCombo) {
-                            possibleHvacFanDirection |= hvacFanDirection;
-                        }
-                        return possibleHvacFanDirection;
-                    }).collect(Collectors.toList()));
+            allPossibleFanDirectionsBuilder.addAll(
+                    Sets.combinations(SINGLE_HVAC_FAN_DIRECTIONS, i).stream()
+                            .map(
+                                    hvacFanDirectionCombo -> {
+                                        Integer possibleHvacFanDirection = 0;
+                                        for (Integer hvacFanDirection : hvacFanDirectionCombo) {
+                                            possibleHvacFanDirection |= hvacFanDirection;
+                                        }
+                                        return possibleHvacFanDirection;
+                                    })
+                            .collect(Collectors.toList()));
         }
         return allPossibleFanDirectionsBuilder.build();
     }
