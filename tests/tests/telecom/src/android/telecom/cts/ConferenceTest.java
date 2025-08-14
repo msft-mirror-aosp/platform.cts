@@ -63,8 +63,8 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
             Connection.CAPABILITY_DISCONNECT_FROM_CONFERENCE | Connection.CAPABILITY_HOLD |
             Connection.CAPABILITY_MERGE_CONFERENCE | Connection.CAPABILITY_SWAP_CONFERENCE;
 
-    private Call mCall1, mCall2;
-    private MockConnection mConnection1, mConnection2;
+    private Call mCall1, mCall2, mCall3;
+    private MockConnection mConnection1, mConnection2, mConnection3;
     MockInCallService mInCallService;
     Conference mConferenceObject;
     MockConference mConferenceVerificationObject;
@@ -606,6 +606,67 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
         CallEndpoint endpoint = (CallEndpoint) mConferenceVerificationObject
                 .mCurrentCallEndpoint.getArgs(0)[0];
         assertEquals(endpoint, mConferenceObject.getCurrentCallEndpoint());
+    }
+
+    @ApiTest(apis = {"android.telecom.ConnectionService#addConferenceFromConnection"})
+    public void testAddConferenceFromConnection() {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        if (!Flags.reuseOriginalConnRemoteConfApi() &&
+                !com.android.internal.telephony.flags.Flags.reuseOriginalConnRemoteConfBehavior()) {
+            return;
+        }
+
+        // The existing method of telling a call was added to the ICS is not nice.  It is easier if
+        // we just track onCallAdded here.
+        final MockInCallService.InCallServiceCallbacks callbacks = createCallbacks();
+        MockInCallService.addCallbacks(callbacks);
+
+        // We already have a base conference ready to go from the setup method
+        final Call originalConf = mInCallService.getLastConferenceCall();
+        assertCallState(originalConf, Call.STATE_ACTIVE);
+
+        // Don't care about the `onCallAdded` for all the previous calls.
+        mAddedCalls.clear();
+
+        // Create the standalone call which will be converted into the second conference:
+        placeAndVerifyCall();
+        mConnection3 = verifyConnectionForOutgoingCall(2);
+        mCall3 = mInCallService.getLastCall();
+        assertCallState(mCall3, Call.STATE_DIALING);
+        mConnection3.setActive();
+        assertCallState(mCall3, Call.STATE_ACTIVE);
+        setAndVerifyConferenceablesForOutgoingConnection(2);
+
+        Call secondConf = null;
+        MockConference newConference = null;
+        try {
+            // Convert the standalone call 3 into a remotely hosted conference:
+            newConference = new MockConference(originalConf.getDetails().getAccountHandle());
+            CtsConnectionService.addConferenceFromConnectionToTelecom(newConference, mConnection3);
+
+            // Get the in-call version of that remotely hosted conference by waiting for onCallAdded
+            try {
+                secondConf =
+                        mAddedCalls.poll(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                assertNotNull("Expected second conference to be added", secondConf);
+            } catch (InterruptedException e) {
+                fail("Expected second conference to be added");
+            }
+
+            // Ensure the in-call version of that conference has PROPERTY_CONFERENCE:
+            assertCallProperties(secondConf, Call.Details.PROPERTY_CONFERENCE);
+
+            // Ensure that the mCall3 object was reused for the conf and thus is an ACTIVE conf:
+            assertCallState(mCall3, Call.STATE_ACTIVE);
+            assertCallProperties(mCall3, Call.Details.PROPERTY_CONFERENCE);
+        } finally {
+            if (secondConf != null) {
+                newConference.destroy();
+                assertCallState(secondConf, Call.STATE_DISCONNECTED);
+            }
+        }
     }
 
     private void verifyConferenceObject(Conference mConferenceObject, MockConnection connection1,
