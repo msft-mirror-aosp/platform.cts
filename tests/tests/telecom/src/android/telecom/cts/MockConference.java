@@ -134,6 +134,7 @@ public class MockConference extends Conference {
      */
     @Override
     public void onMerge(Conference mergeWith) {
+        super.onMerge(mergeWith);
         if (mOnMergeQueue != null) {
             mOnMergeQueue.offer(mergeWith);
         }
