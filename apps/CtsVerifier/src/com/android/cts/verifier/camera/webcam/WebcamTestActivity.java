@@ -21,12 +21,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.usb.UsbManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import android.widget.Toast;
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
 
@@ -206,6 +208,25 @@ public class WebcamTestActivity extends PassFailButtons.Activity {
         if (mReceiverRegistered) {
             unregisterReceiver(mResultsReceiver);
         }
+    }
+
+    @Override
+    public void setTestResultAndFinish(boolean passed) {
+        // This test was broken until 25Q2, and passed unconditionally. As we cannot change
+        // the test to fail in a minor version, pass the test unconditionally until 25Q4.
+        if (!passed && Build.VERSION.SDK_INT_FULL <= Build.VERSION_CODES_FULL.BAKLAVA) {
+            Log.w(TAG, "Webcam test failed, but passing unconditionally until API 36.0.");
+            Toast.makeText(
+                            this,
+                            "Test passes unconditionally until API 36. Passing the test for now,"
+                                + " but this will likely cause a failure starting API 36.1.",
+                            Toast.LENGTH_LONG)
+                    .show();
+            super.setTestResultAndFinish(true);
+            return;
+        }
+
+        super.setTestResultAndFinish(passed);
     }
 
     private void updateButtonsAndInstructions() {
