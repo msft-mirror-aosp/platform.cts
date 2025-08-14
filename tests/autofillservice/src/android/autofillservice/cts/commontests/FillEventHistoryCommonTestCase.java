@@ -57,6 +57,7 @@ import android.autofillservice.cts.activities.CheckoutActivity;
 import android.autofillservice.cts.inline.InlineFillEventHistoryTest;
 import android.autofillservice.cts.testcore.CannedFillResponse;
 import android.autofillservice.cts.testcore.CannedFillResponse.CannedDataset;
+import android.autofillservice.cts.testcore.Helper;
 import android.autofillservice.cts.testcore.InstrumentedAutoFillService;
 import android.autofillservice.cts.testcore.UiBot;
 import android.content.Intent;
@@ -86,7 +87,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 /**
@@ -422,18 +422,7 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
         mUiBot.selectByRelativeId("buy");
 
         // Now switch back to A...
-        final AtomicBoolean focusOnA = new AtomicBoolean();
-        int retries = 0;
-        do {
-            assertWithMessage("Did not go back to LoginActivity - did it die?")
-                    .that(retries < 10)
-                    .isTrue();
-            // Dismiss all Autofill UI until back to LoginActivity
-            // Do this in a loop because Inline/Dropdown have different number of UIs to dismiss
-            mUiBot.pressBack(); // dismiss task
-            mActivity.syncRunOnUiThread(() -> focusOnA.set(mActivity.hasWindowFocus()));
-            retries += 1;
-        } while (!focusOnA.get());
+        backToLoginActivity(/* minimumBackCount= */ 1);
 
         // Verify fill shown for Activity B
         int presentationType = isInlineMode() ? UI_TYPE_INLINE : UI_TYPE_MENU;
@@ -975,18 +964,7 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
                 .build());
 
         // Now switch back to A...
-        final AtomicBoolean focusOnA = new AtomicBoolean();
-        int retries = 0;
-        do {
-            assertWithMessage("Did not go back to LoginActivity - did it die?")
-                    .that(retries < 10)
-                    .isTrue();
-            // Dismiss all Autofill UI until back to LoginActivity
-            // Do this in a loop because Inline/Dropdown have different number of UIs to dismiss
-            mUiBot.pressBack(); // dismiss task
-            mActivity.syncRunOnUiThread(() -> focusOnA.set(mActivity.hasWindowFocus()));
-            retries += 1;
-        } while (!focusOnA.get());
+        backToLoginActivity(/* minimumBackCount= */ 3);
 
         mUiBot.assertShownByRelativeId(ID_USERNAME);
         assertWithMessage("root window has no focus")
@@ -1010,6 +988,28 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
         assertDeprecatedClientState(finalSelection, "activity", "A");
         assertFillEventForSaveShown(finalSelection.getEvents().get(1), NULL_DATASET_ID, "activity",
                 "A");
+    }
+
+    /**
+     * Dismiss all Autofill UI until back to LoginActivity. Do this in a loop because
+     * Inline/Dropdown have different number of UIs to dismiss. In addition, it may require extra
+     * back button event to dismiss the Notification if there is any.
+     */
+    private void backToLoginActivity(int minimumBackCount) throws Exception {
+        for (int i = 0; i < minimumBackCount; i++) {
+            mUiBot.pressBack(); // dismiss task
+        }
+        Helper.pollingWait(() -> mActivity.hasWindowFocus());
+
+        // In case it needs more back button event.
+        final int extraBackCount = 5;
+        int retries = 0;
+        while (!mActivity.hasWindowFocus() && retries < extraBackCount) {
+            mUiBot.pressBack(); // dismiss task
+            retries += 1;
+            Helper.pollingWait(() -> mActivity.hasWindowFocus());
+        }
+        assertThat(mActivity.hasWindowFocus()).isTrue();
     }
 
     @Test
