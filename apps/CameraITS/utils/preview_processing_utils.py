@@ -43,6 +43,7 @@ _RED_BLUE_TOL = 20  # 20 out of 255 Red or Blue value in RGB
 # TODO: b/431221553 - see if _SKIP_INITIAL_FRAMES can be removed
 _SKIP_INITIAL_FRAMES = 10
 _START_FRAME = 30  # give 3A some frames to warm up
+_GYRO_DELAY_TIME = 2.0 # seconds
 _VIDEO_DELAY_TIME = 5.5  # seconds
 _VIDEO_DURATION = 5.5  # seconds
 
@@ -171,9 +172,11 @@ def collect_data_with_surfaces(cam, tablet_device, output_surfaces,
     )
   p.start()
 
+  # Allow time for rig to move to starting position
+  time.sleep(_GYRO_DELAY_TIME)
   cam.start_sensor_events()
   # Allow time for rig to start moving
-  time.sleep(_VIDEO_DELAY_TIME)
+  time.sleep(_VIDEO_DELAY_TIME - _GYRO_DELAY_TIME)
 
   # Record video and return recording object
   min_fps = fps_range[0] if (fps_range is not None) else None
