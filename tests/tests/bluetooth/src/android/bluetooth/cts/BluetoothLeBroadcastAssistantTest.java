@@ -47,7 +47,6 @@ import android.bluetooth.BluetoothStatusCodes;
 import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.bluetooth.test_utils.Permissions;
 import android.content.Context;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.sysprop.BluetoothProperties;
@@ -56,7 +55,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.CddTest;
 import com.android.modules.utils.build.SdkLevel;
 
@@ -225,7 +223,6 @@ public class BluetoothLeBroadcastAssistantTest {
         assertThrows(NullPointerException.class, () -> mService.getMaximumSourceCapacity(null));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_BROADCAST_API_GET_LOCAL_METADATA)
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getSourceMetadata() {

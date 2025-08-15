@@ -30,14 +30,11 @@ import android.bluetooth.BluetoothQualityReport.BqrVsA2dpChoppy;
 import android.bluetooth.BluetoothQualityReport.BqrVsLsto;
 import android.bluetooth.BluetoothQualityReport.BqrVsScoChoppy;
 import android.os.Parcel;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-
-import com.android.bluetooth.flags.Flags;
 
 import com.google.common.truth.Expect;
 
@@ -433,7 +430,6 @@ public final class BluetoothQualityReportTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_BLUETOOTH_QUALITY_REPORT_V6)
     public void bqrEnergyMonitor() {
         BQRParameters bqrp = BQRParameters.getInstance();
         assertThat(bqrp).isNotNull();
@@ -501,7 +497,6 @@ public final class BluetoothQualityReportTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_BLUETOOTH_QUALITY_REPORT_V6)
     public void bqrRfStats() {
         BQRParameters bqrp = BQRParameters.getInstance();
         assertThat(bqrp).isNotNull();
@@ -704,7 +699,6 @@ public final class BluetoothQualityReportTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_BLUETOOTH_QUALITY_REPORT_V6)
     public void readWriteBqrParcelV6Flag() {
         BQRParameters bqrp = BQRParameters.getInstance();
         assertThat(bqrp).isNotNull();

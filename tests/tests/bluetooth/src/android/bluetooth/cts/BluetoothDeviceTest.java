@@ -749,7 +749,6 @@ public class BluetoothDeviceTest {
                 () -> l2capSocket.getL2capRemoteChannelId());
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_METADATA_API_MICROPHONE_FOR_CALL_ENABLED)
     @Test
     public void setMicrophonePreferredForCalls_isMicrophonePreferredForCalls() {
         // Skip the test if bluetooth or companion device are not present.
