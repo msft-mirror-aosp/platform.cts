@@ -27,13 +27,14 @@ from snippet_uiautomator import uiautomator
 
 
 ADAPTIVE_BRIGHTNESS_OFF = '0'
+CTS_VERIFIER_PKG = 'com.android.cts.verifier'
+FRONT_CAMERA_ID_PREFIX = '1'
+GEN2_RIG_SCENES = ['scene_ip', 'scene_gen2_chart']
+SCROLLER_TIMEOUT_MS = 3000
 TABLET_CMD_DELAY_SEC = 0.5  # found empirically
 TABLET_DIMMER_TIMEOUT_MS = 1800000  # this is max setting possible
-CTS_VERIFIER_PKG = 'com.android.cts.verifier'
-WAIT_TIME_SEC = 5
-SCROLLER_TIMEOUT_MS = 3000
 VALID_NUM_DEVICES = (1, 2)
-FRONT_CAMERA_ID_PREFIX = '1'
+WAIT_TIME_SEC = 5
 
 logging.getLogger('matplotlib.font_manager').disabled = True
 
@@ -120,14 +121,14 @@ class ItsBaseTest(base_test.BaseTestClass):
         self.rotator_ch = str(self.user_params['rotator_ch'])
       except KeyError:
         self.tablet = None
-        if self.scene == 'scene_ip':
+        if self.scene in GEN2_RIG_SCENES:
           logging.debug('Gen2 rig scene test run.')
         else:
           logging.debug('Not all arguments set. Manual run.')
 
     self._setup_devices(num_devices)
 
-    if self.scene != 'scene_ip':
+    if self.scene not in GEN2_RIG_SCENES:
       arduino_serial_port = lighting_control_utils.lighting_control(
           self.lighting_cntl, self.lighting_ch)
       if arduino_serial_port and self.scene != 'scene0':
