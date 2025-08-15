@@ -26,6 +26,7 @@ import static org.junit.Assert.fail;
 
 import android.platform.test.annotations.LargeTest;
 
+import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresAdditionalFeatures;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
@@ -76,7 +77,7 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
     public void setUp() throws Exception {
         super.setUp();
 
-        mParentUserId = getMainUser();
+        mParentUserId = DevicePolicyUsersPreparer.getProfileParentUserIds()[0];
 
         removeTestUsers();
         createManagedProfile();
