@@ -38,6 +38,7 @@ import android.platform.test.annotations.DisabledOnRavenwood;
 import android.system.ErrnoException;
 import android.system.Os;
 
+import androidx.test.filters.LargeTest;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Test;
@@ -399,7 +400,7 @@ public class MessageQueueTest {
     }
 
     @Test
-    @androidx.test.filters.LargeTest
+    @LargeTest
     public void testStressQuit() throws Throwable {
         final AtomicReference<Handler> stressedRef = new AtomicReference<>();
         final Runnable doNothing = () -> {};
@@ -465,6 +466,7 @@ public class MessageQueueTest {
     }
 
     @Test
+    @LargeTest
     public void testStressEnqueueRemoveHasOnLooperThread() throws Throwable {
         AssertableHandlerThread thread = new AssertableHandlerThread();
         thread.start();
