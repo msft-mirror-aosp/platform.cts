@@ -43,6 +43,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
@@ -78,7 +79,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.PollingCheck;
 import com.android.cts.input.UinputTouchScreen;
 import com.android.cts.mockime.ImeCommand;
 import com.android.cts.mockime.ImeEventStream;
@@ -105,6 +105,7 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
 
     private static final long NOT_EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+    private static final long PENDING_REQUESTS_TIMEOUT = TimeUnit.SECONDS.toMillis(3);
 
     @Before
     @Override
@@ -228,8 +229,11 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
             activitySession.runOnMainSyncAndWait(activity::showSoftInput);
 
             expectImeVisible(TIMEOUT);
-            PollingCheck.waitFor(() -> !imeSession.hasPendingImeVisibilityRequests(),
-                    "No pending requests should remain after the IME is visible");
+            try {
+                imeSession.waitUntilNoPendingRequests(PENDING_REQUESTS_TIMEOUT);
+            } catch (Exception e) {
+                fail("No pending requests should remain after the IME is visible" + e);
+            }
         }
     }
 
