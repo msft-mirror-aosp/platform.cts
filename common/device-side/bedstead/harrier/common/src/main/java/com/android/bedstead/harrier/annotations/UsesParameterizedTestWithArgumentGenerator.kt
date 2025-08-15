@@ -39,5 +39,6 @@ annotation class UsesParameterizedTestWithArgumentGenerator(
     companion object {
         const val SETTINGS = "com.android.bedstead.settings.SettingsParameterizedTestWithArgumentGenerator"
         const val ENTERPRISE = "com.android.bedstead.enterprise.EnterpriseParameterizedTestWithArgumentGenerator"
+        const val MAIN = "com.android.bedstead.harrier.MainParameterizedTestWithArgumentGenerator"
     }
 }
