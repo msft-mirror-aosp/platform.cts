@@ -21,6 +21,8 @@ import static android.cts.statsdatom.display.DisplayTestUtils.getCurrentBrightne
 import static android.cts.statsdatom.display.DisplayTestUtils.setAutoBrightnessMode;
 import static android.cts.statsdatom.display.DisplayTestUtils.setScreenBrightnessLevel;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -38,7 +40,9 @@ import com.android.os.StatsLog;
 import com.android.os.display.DisplayEventCallbackOccurred;
 import com.android.os.display.DisplayExtensionAtoms;
 import com.android.server.display.feature.flags.Flags;
+import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
+import com.android.tradefed.testtype.IBuildReceiver;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.RunUtil;
 
@@ -54,9 +58,10 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
-public class DisplayEventOccurredStatsTests extends BaseHostJUnit4Test {
+public class DisplayEventOccurredStatsTests extends BaseHostJUnit4Test implements IBuildReceiver {
 
     private static final String DISPLAY_TEST_PKG = "android.display.cts";
+    private static final String DISPLAY_TEST_APK = "CtsDisplayTestCases.apk";
     private static final String TEST_CLASS_DISPLAY_EVENT = "android.display.cts.DisplayEventTest";
     private static final long TIMEOUT_MS = TimeUnit.SECONDS.toMillis(10);
 
@@ -64,10 +69,15 @@ public class DisplayEventOccurredStatsTests extends BaseHostJUnit4Test {
     public final CheckFlagsRule mCheckFlagsRule =
             HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
 
+    private IBuildInfo mCtsBuild;
+
     @Before
     public void setUp() throws Exception {
+        assertThat(mCtsBuild).isNotNull();
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
+        DeviceUtils.installStatsdTestApp(getDevice(), mCtsBuild);
+        DeviceUtils.installTestApp(getDevice(), DISPLAY_TEST_APK, DISPLAY_TEST_PKG, mCtsBuild);
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         ConfigUtils.uploadConfigForPushedAtom(
@@ -80,7 +90,14 @@ public class DisplayEventOccurredStatsTests extends BaseHostJUnit4Test {
     public void tearDown() throws Exception {
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
+        DeviceUtils.uninstallTestApp(getDevice(), DISPLAY_TEST_PKG);
+        DeviceUtils.uninstallStatsdTestApp(getDevice());
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+    }
+
+    @Override
+    public void setBuild(IBuildInfo buildInfo) {
+        mCtsBuild = buildInfo;
     }
 
     @Test
