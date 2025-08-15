@@ -24,7 +24,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
@@ -700,15 +699,6 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         assumeTrue("device doesn't support multiple users", mSupportsMultiUser);
     }
 
-    /**
-     * @deprecated TODO(b/435528858): tests should not depend on main user
-     */
-    @Deprecated
-    protected final void assumeHasMainUser() throws DeviceNotAvailableException {
-        Integer user = getDevice().getMainUserId();
-        assumeTrue("device doesn't have a main user", user != null);
-    }
-
     protected final void assumeHasWifiFeature() throws DeviceNotAvailableException {
         assumeHasDeviceFeature(FEATURE_WIFI);
     }
@@ -764,36 +754,6 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         String commandOutput = getDevice().executeShellCommand(command);
         CLog.d("Output for command " + command + ": " + commandOutput);
         return commandOutput;
-    }
-
-    /**
-     * @deprecated TODO(b/435528858): should use proper method from upcoming TargetPreparer
-     */
-    @Deprecated
-    protected final int getMainUser() throws DeviceNotAvailableException {
-        if (isAutomotive()) {
-            // In Automotive, the main user is not defined.
-            // Use the current user instead of the main user.
-            return getDevice().getCurrentUser();
-        }
-        Integer user = getDevice().getMainUserId();
-        if (user == null) {
-            user = getDevice().getPrimaryUserId();
-            if (user == null) {
-                user = 0;
-            }
-        }
-        return user;
-    }
-
-    /**
-     * @deprecated TODO(b/435528858): callers should use {@code
-     *     DevicePolicyUsersPreparer#getInitialCurrentUserId()} or {@link
-     *     ITestDevice#getCurrentUser()}.
-     */
-    @Deprecated
-    protected final int getCurrentUser() throws DeviceNotAvailableException {
-        return getDevice().getCurrentUser();
     }
 
     protected int getUserSerialNumber(int userId) throws DeviceNotAvailableException{

@@ -32,6 +32,7 @@ import org.junit.Test;
 // We need managed users to be supported in order to create a profile of the user owner.
 @RequiresAdditionalFeatures({FEATURE_MANAGED_USERS})
 public final class MixedManagedProfileOwnerTestApi25 extends DeviceAndProfileOwnerTestApi25 {
+
     private int mParentUserId = UserInfo.USER_NULL;
 
     @Override
