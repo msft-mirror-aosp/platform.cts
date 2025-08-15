@@ -18,6 +18,7 @@ package com.android.cts.verifier.nfc;
 
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.nfc.NfcAdapter;
 import android.nfc.tech.MifareUltralight;
 import android.nfc.tech.Ndef;
 import android.nfc.tech.TagTechnology;
@@ -54,6 +55,7 @@ public class NfcTestActivity extends PassFailButtons.TestListActivity {
         setPassFailButtonClickListeners();
 
         ArrayTestListAdapter adapter = new ArrayTestListAdapter(this);
+        NfcAdapter nfcAdapter = NfcAdapter.getDefaultAdapter(this);
 
         if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC)) {
             adapter.add(TestListItem.newCategory(this, R.string.nfc_tag_verification));
@@ -66,6 +68,8 @@ public class NfcTestActivity extends PassFailButtons.TestListActivity {
         }
 
         if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC_HOST_CARD_EMULATION)
+                && nfcAdapter != null
+                && nfcAdapter.isObserveModeSupported()
                 && Build.VERSION.SDK_INT_FULL > Build.VERSION_CODES_FULL.BAKLAVA) {
             adapter.add(TestListItem.newCategory(this, R.string.nfc_hce));
             if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC)) {
