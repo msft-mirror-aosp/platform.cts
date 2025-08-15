@@ -46,6 +46,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Pair;
 
 import androidx.test.filters.LargeTest;
@@ -53,6 +55,7 @@ import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.ApiTest;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -81,6 +84,9 @@ import java.util.function.Predicate;
 @RequiresFlagsEnabled(FLAG_REGION_OF_INTEREST)
 @RunWith(Parameterized.class)
 public class VideoEncoderRoiTest extends VideoEncoderQualityRegressionTestBase {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final int[] FULLHD_BIT_RATES =
             {800000, 1500000, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000};
     private static final int FRAME_LIMIT = 10;
