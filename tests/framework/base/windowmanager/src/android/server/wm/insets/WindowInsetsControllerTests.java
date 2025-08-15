@@ -262,6 +262,7 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
         final Instrumentation instrumentation = getInstrumentation();
         assumeThat(MockImeSession.getUnavailabilityReason(instrumentation.getContext()),
                 nullValue());
+        assumeFalse(isCar() && remoteInsetsControllerControlsSystemBars());
         final Resources resources = instrumentation.getContext().getResources();
         final boolean isHideNavBarForKeyboardEnabled = resources.getBoolean(
                 resources.getIdentifier("config_hideNavBarForKeyboard", "bool", "android"));
