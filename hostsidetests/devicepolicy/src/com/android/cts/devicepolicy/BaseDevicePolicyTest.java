@@ -160,12 +160,6 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     /** Packages installed as part of the tests */
     private Set<String> mFixedPackages;
 
-    /**
-     * @deprecated TODO(b/435528858): should use proper method from {@code
-     *     DevicePolicyUsersPreparer}.
-     */
-    @Deprecated private int mMainUserId;
-
     private int mInitialUserId;
 
     /** Is test running on a watch */
@@ -194,21 +188,9 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     public final DeviceAdminFeaturesCheckerRule mFeaturesCheckerRule =
             new DeviceAdminFeaturesCheckerRule(this);
 
-    // TODO(b/435528858): remove this method once all classes are refactored
-    /**
-     * Returns {@code false} by default, but subclasses should override as they are refactored to
-     * not rely on {@code mMainUserId}.
-     */
-    protected boolean refactoredToNotRelyOnMainUser() {
-        return false;
-    }
-
     @Before
     public void setUp() throws Exception {
         assertNotNull(getBuild());  // ensure build has been set before test is run.
-
-        boolean refactoredToNotRelyOnMainUser = refactoredToNotRelyOnMainUser();
-        CLog.d("on setUp(), refactoredToNotRelyOnMainUser()=%b", refactoredToNotRelyOnMainUser);
 
         mSupportsMultiUser = getMaxNumberOfUsersSupported() > 1;
         mFixedPackages = getDevice().getInstalledPackageNames();
@@ -219,10 +201,6 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         if (propertyValue != null && !propertyValue.isEmpty()) {
             mHasAttestation = Integer.parseInt(propertyValue) >= 26;
         }
-
-        mMainUserId = refactoredToNotRelyOnMainUser
-                ? UserInfo.USER_NULL // Shouldn't be used anymore...
-                : getMainUser();
 
         if (hasDeviceFeature(FEATURE_SECURE_LOCK_SCREEN)) {
             ensureInitialUserHasNoPassword();
@@ -237,16 +215,15 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         // a few lines) and won't be removed
         mInitialUserId = DevicePolicyUsersPreparer.getInitialCurrentUserId();
         mPreExistingUsers.add(USER_SYSTEM);
-        mPreExistingUsers.add(mMainUserId);
         mPreExistingUsers.add(mInitialUserId);
 
         CLog.d(
-                "%s.setUp(): mInitialUserId=%d, currentUser=%d, mMainUserId=%d,"
+                "%s.setUp(): mInitialUserId=%d, currentUser=%d, mainUserId=%s,"
                     + " mPreExistingUsers=%s",
                 getClass().getSimpleName(),
                 mInitialUserId,
                 getDevice().getCurrentUser(),
-                mMainUserId,
+                getDevice().getMainUserId(),
                 mPreExistingUsers);
 
         getDevice().executeShellCommand(" mkdir " + TEST_UPDATE_LOCATION);
@@ -887,12 +864,6 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
             throws DeviceNotAvailableException {
         CLog.d("setDeviceOwner(componentName=%s, userId=%d, expectFailure=%b", componentName,
                 userId, expectFailure);
-        if (!refactoredToNotRelyOnMainUser()) {
-            if (isHeadlessSystemUserMode()) {
-                assumeNotNull("Devices in headless system user mode require a main user to set a "
-                        + "device owner.", getDevice().getMainUserId());
-            }
-        }
         String command = "dpm set-device-owner --user " + userId + " '" + componentName + "'";
         String commandOutput = getDevice().executeShellCommand(command);
         boolean success = commandOutput.startsWith("Success:");
