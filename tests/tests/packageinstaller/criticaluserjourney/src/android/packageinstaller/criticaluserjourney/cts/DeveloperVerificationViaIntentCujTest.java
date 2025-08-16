@@ -171,7 +171,7 @@ public class DeveloperVerificationViaIntentCujTest extends DeveloperVerification
         startInstallationViaIntent();
 
         grantPermissionAndRetryOnDeveloperVerificationDialog(
-                /* isAppUpdating= */ true, /* retryCount= */ 2);
+                /* isAppUpdating= */ false, /* retryCount= */ 2);
 
         assertTestPackageInstalled();
     }
