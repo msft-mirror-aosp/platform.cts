@@ -17,6 +17,7 @@ package android.app.appsearch.testutil;
 
 import android.annotation.Nullable;
 import android.annotation.UserIdInt;
+import android.os.Process;
 import android.os.UserHandle;
 import android.util.Log;
 
@@ -41,6 +42,11 @@ public final class UserAwareLogger {
     /** Creates a logger for the given {@code tag} and {@code user} */
     public UserAwareLogger(String tag, UserHandle user) {
         this(tag, Objects.requireNonNull(user, "user cannot be null").getIdentifier());
+    }
+
+    /** Creates a logger for the given {@code tag} and using the process' user */
+    public UserAwareLogger(String tag) {
+        this(tag, Process.myUserHandle());
     }
 
     /** Gets the user id. */
