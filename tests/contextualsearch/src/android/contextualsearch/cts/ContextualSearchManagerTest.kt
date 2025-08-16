@@ -17,13 +17,18 @@
 package android.contextualsearch.cts
 
 import android.app.contextualsearch.CallbackToken
+import android.app.contextualsearch.ContextualSearchConfig
 import android.app.contextualsearch.ContextualSearchManager
 import android.app.contextualsearch.ContextualSearchState
 import android.app.contextualsearch.flags.Flags
 import android.content.Context
 import android.content.Intent
+import android.contextualsearch.caller.BackgroundCallerActivity
+import android.contextualsearch.caller.CallerActivity
 import android.contextualsearch.caller.ContextualSearchMessage
 import android.graphics.Bitmap
+import android.graphics.Rect
+import android.os.Bundle
 import android.os.OutcomeReceiver
 import android.os.SystemClock
 import android.os.UserManager
@@ -46,7 +51,6 @@ import com.google.common.truth.Truth
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import kotlin.test.assertFailsWith
 import org.junit.After
 import org.junit.Assume
 import org.junit.Before
@@ -76,6 +80,7 @@ class ContextualSearchManagerTest {
         mWatcher = CtsContextualSearchActivity.Watcher()
         CtsContextualSearchActivity.WATCHER = mWatcher
         OverlayActivity.WATCHER = OverlayActivity.Watcher()
+        BackgroundCallerActivity.WATCHER = BackgroundCallerActivity.Watcher()
     }
 
     @After
@@ -87,57 +92,69 @@ class ContextualSearchManagerTest {
 
         CtsContextualSearchActivity.WATCHER?.instance?.finish()
         OverlayActivity.WATCHER?.instance?.finish()
+        BackgroundCallerActivity.WATCHER?.instance?.finish()
 
         CtsContextualSearchActivity.WATCHER = null
         OverlayActivity.WATCHER = null
+        BackgroundCallerActivity.WATCHER = null
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SELF_INVOCATION)
+    @RequiresFlagsEnabled(Flags.FLAG_CONFIG_PARAMETERS)
     fun testIsContextualSearchAvailable() {
         // The default test package should always be available.
         assertThat(mManager.isContextualSearchAvailable()).isTrue()
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SELF_INVOCATION)
+    @RequiresFlagsEnabled(Flags.FLAG_CONFIG_PARAMETERS)
     fun testIsContextualSearchAvailable_contextualSearchActivityNonexistent() {
         setTemporaryPackage("com.nonexistent.package")
         assertThat(mManager.isContextualSearchAvailable()).isFalse()
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SELF_INVOCATION)
+    @RequiresFlagsEnabled(Flags.FLAG_CONFIG_PARAMETERS)
     @Ignore("b/432842114: Failing on all branches")
     fun testIsContextualSearchAvailable_contextualSearchActivityDisabled() {
         setTemporaryPackage(TEMPORARY_PACKAGE)
         try {
-            runShellCommand("pm disable "
-                + "$TEMPORARY_PACKAGE/$TEMPORARY_PACKAGE.CtsContextualSearchActivity")
+            runShellCommand(
+                "pm disable " + "$TEMPORARY_PACKAGE/$TEMPORARY_PACKAGE.CtsContextualSearchActivity"
+            )
             assertThat(mManager.isContextualSearchAvailable()).isFalse()
+        } catch (e: Exception) {
+            throw RuntimeException("Failed to disable activity for test", e)
         } finally {
             // Re-enable the activity for subsequent tests
-            runShellCommand("pm enable "
-                + "$TEMPORARY_PACKAGE/$TEMPORARY_PACKAGE.CtsContextualSearchActivity")
+            runShellCommand(
+                "pm enable " + "$TEMPORARY_PACKAGE/$TEMPORARY_PACKAGE.CtsContextualSearchActivity"
+            )
         }
     }
 
     @Test
     fun testContextualSearchInvocation() {
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
-        await(
-            mWatcher?.created,
-            "Waiting for CtsContextualSearchActivity.onCreate to be called."
-        )
+        await(mWatcher?.created, "Waiting for CtsContextualSearchActivity.onCreate to be called.")
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SELF_INVOCATION)
-    fun testContextualSearchSelfInvocationWithoutForegroundActivity() {
-        // Without a foreground activity, this invocation method should fail.
-        assertFailsWith(SecurityException::class) {
-            mManager.startContextualSearch()
-        }
+    @RequiresFlagsEnabled(Flags.FLAG_CONFIG_PARAMETERS)
+    fun testContextualSearchInvocationWithConfig() {
+        val bounds = Rect(0, 0, 100, 100)
+        val intentExtras = Bundle()
+        intentExtras.putString("testKey", "testValue")
+        val config =
+            ContextualSearchConfig.Builder()
+                .setSourceBounds(bounds)
+                .setIntentExtras(intentExtras)
+                .build()
+        mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME, config)
+        await(mWatcher?.created, "Waiting for CtsContextualSearchActivity.onCreate to be called.")
+
+        assertThat(mWatcher!!.launchIntent!!.sourceBounds).isEqualTo(bounds)
+        assertThat(mWatcher!!.launchIntent!!.extras!!.getString("testKey")).isEqualTo("testValue")
     }
 
     @Test
@@ -145,48 +162,49 @@ class ContextualSearchManagerTest {
         UserType.SYSTEM_USER,
         UserType.INITIAL_USER,
         UserType.ADDITIONAL_USER,
-        UserType.WORK_PROFILE
+        UserType.WORK_PROFILE,
     )
     @EnsureHasProfileOwner(onUser = UserType.INITIAL_USER, isPrimary = true)
     @EnsureHasDeviceOwner
     fun testContextualSearchExtras() {
         // Launch an activity for the current user.
-        TestApis.activities().startActivity(
-            Intent(context, OverlayActivity::class.java)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        )
+        TestApis.activities()
+            .startActivity(
+                Intent(context, OverlayActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
         await(OverlayActivity.WATCHER?.resumed, "Waiting for OverlayActivity to be resumed.")
 
         val beforeMs = SystemClock.uptimeMillis()
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
-        await(
-            mWatcher?.created,
-            "Waiting for CtsContextualSearchActivity.onCreate to be called."
-        )
+        await(mWatcher?.created, "Waiting for CtsContextualSearchActivity.onCreate to be called.")
         // Now that the activity has launched, we can verify launch extras.
-        val extras = mWatcher!!.launchExtras!!
+        val extras = mWatcher!!.launchIntent!!.extras!!
         assertThat(extras.getInt(ContextualSearchManager.EXTRA_ENTRYPOINT))
             .isEqualTo(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
         // Setting the default to true to make sure that default is not being returned
         assertThat(extras.getBoolean(ContextualSearchManager.EXTRA_FLAG_SECURE_FOUND, true))
             .isFalse()
-        assertThat(extras.getParcelable(
-            ContextualSearchManager.EXTRA_SCREENSHOT,
-            Bitmap::class.java
-        )).isNotNull()
+        assertThat(
+                extras.getParcelable(ContextualSearchManager.EXTRA_SCREENSHOT, Bitmap::class.java)
+            )
+            .isNotNull()
         // The OverlayActivity should be visible and marked as managed profile or not accordingly.
         val isManagedProfile =
             (context.getSystemService(Context.USER_SERVICE) as UserManager).isManagedProfile
         assertThat(
-            extras.getBoolean(
-                ContextualSearchManager.EXTRA_IS_MANAGED_PROFILE_VISIBLE,
-                !isManagedProfile // ensure the default isn't being used.
+                extras.getBoolean(
+                    ContextualSearchManager.EXTRA_IS_MANAGED_PROFILE_VISIBLE,
+                    !isManagedProfile, // ensure the default isn't being used.
+                )
             )
-        ).isEqualTo(isManagedProfile)
-        assertThat(extras.getParcelableArrayList(
-            ContextualSearchManager.EXTRA_VISIBLE_PACKAGE_NAMES,
-            String::class.java
-        )).isNotEmpty()
+            .isEqualTo(isManagedProfile)
+        assertThat(
+                extras.getParcelableArrayList(
+                    ContextualSearchManager.EXTRA_VISIBLE_PACKAGE_NAMES,
+                    String::class.java,
+                )
+            )
+            .isNotEmpty()
         assertThat(extras.getLong(EXTRA_INVOCATION_TIME_MS))
             .isIn(Range.closed(beforeMs, SystemClock.uptimeMillis()))
         assertThat(extras.containsKey(ContextualSearchManager.EXTRA_TOKEN)).isTrue()
@@ -195,8 +213,7 @@ class ContextualSearchManagerTest {
     @Test
     fun testOwnSecureActivityCaptured() {
         context.startActivity(
-            Intent(context, OverlayActivity::class.java)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            Intent(context, OverlayActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         )
         await(OverlayActivity.WATCHER?.resumed, "Waiting for OverlayActivity to be resumed.")
         OverlayActivity.WATCHER!!.instance!!.addSecureFlag()
@@ -206,17 +223,18 @@ class ContextualSearchManagerTest {
         await(mWatcher?.created, "Waiting for CtsContextualSearchActivity to be created.")
 
         assertThat(
-            mWatcher!!.launchExtras!!
-                .getBoolean(ContextualSearchManager.EXTRA_FLAG_SECURE_FOUND, false)
-        )
-                .isTrue()
+                mWatcher!!
+                    .launchIntent!!
+                    .extras!!
+                    .getBoolean(ContextualSearchManager.EXTRA_FLAG_SECURE_FOUND, false)
+            )
+            .isTrue()
     }
 
     @Test
     fun testOwnSecureOverlayNotCaptured() {
         context.startActivity(
-            Intent(context, OverlayActivity::class.java)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            Intent(context, OverlayActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         )
         await(OverlayActivity.WATCHER?.resumed, "Waiting for OverlayActivity to be resumed.")
         OverlayActivity.WATCHER!!.instance!!.addSecureOverlay()
@@ -226,22 +244,24 @@ class ContextualSearchManagerTest {
         await(mWatcher?.created, "Waiting for CtsContextualSearchActivity to be created.")
 
         assertThat(
-            mWatcher!!.launchExtras!!
-                .getBoolean(ContextualSearchManager.EXTRA_FLAG_SECURE_FOUND, true)
-        )
-                .isFalse()
+                mWatcher!!
+                    .launchIntent!!
+                    .extras!!
+                    .getBoolean(ContextualSearchManager.EXTRA_FLAG_SECURE_FOUND, true)
+            )
+            .isFalse()
     }
 
     @Test
     @RequiresFlagsDisabled(Flags.FLAG_ENABLE_TOKEN_REFRESH)
     fun testRequestContextualSearchState() {
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
-        await(
-            mWatcher?.created,
-            "Waiting for CtsContextualSearchActivity.onCreate to be called."
-        )
+        await(mWatcher?.created, "Waiting for CtsContextualSearchActivity.onCreate to be called.")
         // Now that the activity has launched, we can get the token and register our callback.
-        val token = mWatcher!!.launchExtras!!
+        val token =
+            mWatcher!!
+                .launchIntent!!
+                .extras!!
                 .getParcelable(ContextualSearchManager.EXTRA_TOKEN, CallbackToken::class.java)!!
         val callback = TestOutcomeReceiver()
         token.getContextualSearchState(context.mainExecutor, callback)
@@ -257,12 +277,12 @@ class ContextualSearchManagerTest {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_TOKEN_REFRESH)
     fun testRequestContextualSearchStateWithTokenRefresh() {
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
-        await(
-            mWatcher?.created,
-            "Waiting for CtsContextualSearchActivity.onCreate to be called."
-        )
+        await(mWatcher?.created, "Waiting for CtsContextualSearchActivity.onCreate to be called.")
         // Now that the activity has launched, we can get the token and register our callback.
-        val token = mWatcher!!.launchExtras!!
+        val token =
+            mWatcher!!
+                .launchIntent!!
+                .extras!!
                 .getParcelable(ContextualSearchManager.EXTRA_TOKEN, CallbackToken::class.java)!!
         val callback = TestOutcomeReceiver(CountDownLatch(2))
         token.getContextualSearchState(context.mainExecutor, callback)
@@ -270,17 +290,19 @@ class ContextualSearchManagerTest {
         await(callback.resultLatch, "Waiting for the service to post data.")
         // Verifying that the data posted is as expected.
         assertThat(
-            callback.results.get(0).extras.getParcelable(
-                ContextualSearchManager.EXTRA_TOKEN,
-                CallbackToken::class.java
+                callback.results
+                    .get(0)
+                    .extras
+                    .getParcelable(ContextualSearchManager.EXTRA_TOKEN, CallbackToken::class.java)
             )
-        ).isNotNull()
+            .isNotNull()
         assertThat(
-            callback.results.get(0).extras.getParcelable(
-                ContextualSearchManager.EXTRA_SCREENSHOT,
-                Bitmap::class.java
+                callback.results
+                    .get(0)
+                    .extras
+                    .getParcelable(ContextualSearchManager.EXTRA_SCREENSHOT, Bitmap::class.java)
             )
-        ).isNotNull()
+            .isNotNull()
         assertThat(callback.results.get(1).structure).isNotNull()
         assertThat(callback.results.get(1).content).isNotNull()
         assertThat(callback.results.get(1).extras).isNotNull()
@@ -289,12 +311,12 @@ class ContextualSearchManagerTest {
     @Test
     fun testTokenWithinValidDuration() {
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
-        await(
-            mWatcher?.created,
-            "Waiting for CtsContextualSearchActivity.onCreate to be called."
-        )
+        await(mWatcher?.created, "Waiting for CtsContextualSearchActivity.onCreate to be called.")
         // Now that the activity has launched, we can get the token and register our callback.
-        val token = mWatcher!!.launchExtras!!
+        val token =
+            mWatcher!!
+                .launchIntent!!
+                .extras!!
                 .getParcelable(ContextualSearchManager.EXTRA_TOKEN, CallbackToken::class.java)!!
         val callback = TestOutcomeReceiver()
         token.getContextualSearchState(context.mainExecutor, callback)
@@ -311,12 +333,12 @@ class ContextualSearchManagerTest {
         // The token should expire immediately.
         setTokenDuration(1)
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
-        await(
-                mWatcher?.created,
-                "Waiting for CtsContextualSearchActivity.onCreate to be called."
-        )
+        await(mWatcher?.created, "Waiting for CtsContextualSearchActivity.onCreate to be called.")
         // Now that the activity has launched, we can get the token and register our callback.
-        val token = mWatcher!!.launchExtras!!
+        val token =
+            mWatcher!!
+                .launchIntent!!
+                .extras!!
                 .getParcelable(ContextualSearchManager.EXTRA_TOKEN, CallbackToken::class.java)!!
         val callback = TestOutcomeReceiver()
 
@@ -328,27 +350,45 @@ class ContextualSearchManagerTest {
         assertThat(callback.errorLatch.count).isEqualTo(0)
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SELF_INVOCATION)
     @Test
-    fun testContextualSearchFromOutOfProcessForegroundService() {
-        // Test startContextualSearch() from an out of process foreground service.
-        val ctx = TestApis.context().instrumentedContext()
-        // CallerFgService automatically calls startContextualSearch() upon onStartCommand().
-        ctx.startForegroundService(
-            Intent().apply {
-                setClassName(
-                    "android.contextualsearch.caller",
-                    "android.contextualsearch.caller.CallerFgService"
+    @UserTest(
+        UserType.SYSTEM_USER,
+        UserType.INITIAL_USER,
+        UserType.ADDITIONAL_USER,
+        UserType.WORK_PROFILE,
+    )
+    @EnsureHasProfileOwner(onUser = UserType.INITIAL_USER, isPrimary = true)
+    @EnsureHasDeviceOwner
+    @RequiresFlagsEnabled(Flags.FLAG_CONFIG_PARAMETERS)
+    fun testContextualSearchFromOutOfProcessForegroundActivity() {
+        // Test startContextualSearch() from an out of process foreground activity.
+        TestApis.context()
+            .instrumentedContext()
+            .startActivity(
+                Intent().apply {
+                    setClassName(
+                        "android.contextualsearch.caller",
+                        "android.contextualsearch.caller.CallerActivity",
+                    )
+                    setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+            )
+        // CallerActivity automatically calls startContextualSearch() upon onCreate(),
+        // which is what we are awaiting here.
+        await(mWatcher?.created, "Waiting for CtsContextualSearchActivity.onCreate to be called.")
+        // Now that the CallerActivity has launched, we can verify launch extras.
+        val extras = mWatcher!!.launchIntent!!.extras!!
+        assertThat(extras.getInt(ContextualSearchManager.EXTRA_ENTRYPOINT))
+            .isEqualTo(INTERNAL_ENTRYPOINT_APP)
+        val isManagedProfile =
+            (context.getSystemService(Context.USER_SERVICE) as UserManager).isManagedProfile
+        assertThat(
+                extras.getBoolean(
+                    ContextualSearchManager.EXTRA_IS_MANAGED_PROFILE_VISIBLE,
+                    !isManagedProfile, // ensure the default isn't being used.
                 )
-            }
-        )
-        // Verify starting contextual search from a foreground service throws a security exception
-        // to that process.
-        Receiver<ContextualSearchMessage>(ctx, ContextualSearchMessage.TAG).use {
-            val message: ContextualSearchMessage =
-                it.waitForNextMessage() as ContextualSearchMessage
-            assertThat(message.result).isEqualTo(ContextualSearchMessage.RESULT_EXCEPTION)
-        }
+            )
+            .isEqualTo(isManagedProfile)
     }
 
     @Test
@@ -356,40 +396,91 @@ class ContextualSearchManagerTest {
         UserType.SYSTEM_USER,
         UserType.INITIAL_USER,
         UserType.ADDITIONAL_USER,
-        UserType.WORK_PROFILE
+        UserType.WORK_PROFILE,
     )
     @EnsureHasProfileOwner(onUser = UserType.INITIAL_USER, isPrimary = true)
     @EnsureHasDeviceOwner
-    @RequiresFlagsEnabled(Flags.FLAG_SELF_INVOCATION)
-    fun testContextualSearchFromOutOfProcessForegroundActivity() {
+    @RequiresFlagsEnabled(Flags.FLAG_CONFIG_PARAMETERS)
+    fun testContextualSearchFromOutOfProcessForegroundActivityWithConfig() {
+        val bounds = Rect(0, 0, 100, 100)
+        val intentExtras = Bundle()
+        intentExtras.putString("testKey", "testValue")
+        val config =
+            ContextualSearchConfig.Builder()
+                .setSourceBounds(bounds)
+                .setIntentExtras(intentExtras)
+                .build()
+
         // Test startContextualSearch() from an out of process foreground activity.
-        TestApis.activities().startActivity(
-            Intent().apply {
-                setClassName(
-                    "android.contextualsearch.caller",
-                    "android.contextualsearch.caller.CallerActivity"
-                )
-                setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-        )
-        // CallerActivity automatically calls startContextualSearch() upon onCreate(), which is
-        // what we are awaiting here.
-        await(
-            mWatcher?.created,
-            "Waiting for CtsContextualSearchActivity.onCreate to be called."
-        )
+        TestApis.context()
+            .instrumentedContext()
+            .startActivity(
+                Intent().apply {
+                    setClassName(
+                        "android.contextualsearch.caller",
+                        "android.contextualsearch.caller.CallerActivity",
+                    )
+                    setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    putExtra(CallerActivity.EXTRA_CONTEXTUAL_SEARCH_CONFIG, config)
+                }
+            )
+        // CallerActivity automatically calls startContextualSearch() upon onCreate(),
+        // which is what we are awaiting here.
+        await(mWatcher?.created, "Waiting for CtsContextualSearchActivity.onCreate to be called.")
         // Now that the CallerActivity has launched, we can verify launch extras.
-        val extras = mWatcher!!.launchExtras!!
+        val extras = mWatcher!!.launchIntent!!.extras!!
         assertThat(extras.getInt(ContextualSearchManager.EXTRA_ENTRYPOINT))
             .isEqualTo(INTERNAL_ENTRYPOINT_APP)
-        val isManagedProfile =
-            (context.getSystemService(Context.USER_SERVICE) as UserManager).isManagedProfile
-        assertThat(
-            extras.getBoolean(
-                ContextualSearchManager.EXTRA_IS_MANAGED_PROFILE_VISIBLE,
-                !isManagedProfile // ensure the default isn't being used.
+        assertThat(mWatcher!!.launchIntent!!.sourceBounds).isEqualTo(bounds)
+        assertThat(mWatcher!!.launchIntent!!.extras!!.getString("testKey")).isEqualTo("testValue")
+    }
+
+    @Test
+    @UserTest(
+        UserType.SYSTEM_USER,
+        UserType.INITIAL_USER,
+        UserType.ADDITIONAL_USER,
+        UserType.WORK_PROFILE,
+    )
+    @EnsureHasProfileOwner(onUser = UserType.INITIAL_USER, isPrimary = true)
+    @EnsureHasDeviceOwner
+    @RequiresFlagsEnabled(Flags.FLAG_CONFIG_PARAMETERS)
+    fun testContextualSearchFromOutOfProcessActivity_backgroundActivity() {
+        val ctx = TestApis.context().instrumentedContext()
+        // Test startContextualSearch() from an out of process background activity.
+        ctx.startActivity(
+                Intent().apply {
+                    setClassName(
+                        "android.contextualsearch.caller",
+                        "android.contextualsearch.caller.BackgroundCallerActivity"
+                    )
+                    setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
             )
-        ).isEqualTo(isManagedProfile)
+        Receiver<ContextualSearchMessage>(ctx, BackgroundCallerActivity.RESUMED_TAG).use {
+            val message = it.waitForNextMessage(TEST_LIFECYCLE_TIMEOUT_MS)
+            Truth.assertWithMessage("Timeout waiting for BackgroundCallerActivity to be resumed.")
+                    .that(message).isNotNull()
+            assertThat((message as ContextualSearchMessage).result)
+                    .isEqualTo(ContextualSearchMessage.RESULT_OK)
+        }
+
+        // Start a second activity to push the first one to the background.
+        ctx.startActivity(
+                Intent(context, OverlayActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+        await(OverlayActivity.WATCHER?.resumed, "Waiting for OverlayActivity to be resumed.")
+
+        // BackgroundCallerActivity attempts to startContextualSearch() in onStop().
+
+        // Verify that the caller (BackgroundCallerActivity) received a security exception.
+        Receiver<ContextualSearchMessage>(ctx, ContextualSearchMessage.TAG).use {
+            val message: ContextualSearchMessage = it.waitForNextMessage()
+            assertThat(message.result).isEqualTo(ContextualSearchMessage.RESULT_EXCEPTION)
+        }
+
+        // And verify that the contextual search activity was not started.
+        assertThat(mWatcher?.created?.count).isEqualTo(1)
     }
 
     private class TestOutcomeReceiver(
@@ -397,7 +488,9 @@ class ContextualSearchManagerTest {
         val errorLatch: CountDownLatch = CountDownLatch(1),
     ) : OutcomeReceiver<ContextualSearchState, Throwable> {
         val results = mutableListOf<ContextualSearchState>()
-        val result get() = results.getOrElse(0) { null }
+        val result
+            get() = results.getOrElse(0) { null }
+
         override fun onResult(result: ContextualSearchState?) {
             result?.let { this.results.add(it) }
             resultLatch.countDown()
@@ -423,9 +516,7 @@ class ContextualSearchManagerTest {
 
         private fun setTemporaryPackage(packageName: String? = null) {
             if (packageName != null) {
-                runShellCommand(
-                    "cmd contextual_search set temporary-package $packageName 60000"
-                )
+                runShellCommand("cmd contextual_search set temporary-package $packageName 60000")
             } else {
                 runShellCommand("cmd contextual_search set")
             }
@@ -457,9 +548,9 @@ class ContextualSearchManagerTest {
                 throw java.lang.IllegalStateException("Latch null while: $message")
             }
             try {
-                Truth.assertWithMessage(message).that(
-                    latch.await(TEST_LIFECYCLE_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-                ).isTrue()
+                Truth.assertWithMessage(message)
+                    .that(latch.await(TEST_LIFECYCLE_TIMEOUT_MS, TimeUnit.MILLISECONDS))
+                    .isTrue()
             } catch (e: InterruptedException) {
                 Thread.currentThread().interrupt()
                 throw IllegalStateException("Interrupted while: $message")
