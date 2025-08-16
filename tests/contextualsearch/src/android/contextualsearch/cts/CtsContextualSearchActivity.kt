@@ -17,6 +17,7 @@
 package android.contextualsearch.cts
 
 import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import java.util.concurrent.CountDownLatch
@@ -33,14 +34,14 @@ open class CtsContextualSearchActivity : Activity() {
         }
         Log.d(TAG, "onCreate called. Counting down WATCHER.created")
         WATCHER?.instance = this
+        WATCHER?.launchIntent = intent
         WATCHER?.created?.countDown()
-        WATCHER?.launchExtras = intent.extras
     }
 
     class Watcher {
         val created: CountDownLatch = CountDownLatch(1)
         var verifier: CtsContextualSearchActivity? = null
-        var launchExtras: Bundle? = null
+        var launchIntent: Intent? = null
         var instance: CtsContextualSearchActivity? = null
     }
 

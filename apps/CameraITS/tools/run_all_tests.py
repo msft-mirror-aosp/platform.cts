@@ -114,8 +114,10 @@ _TELE_SCENES = (
     os.path.join('scene_tele', 'scene7_tele'),
 )
 _SCENE_IP_SCENES = ('scene_ip',)
+_SCENE_GEN2_CHART = ('scene_gen2_chart')
 _GEN2_RIG_SCENES = (
-    'scene_ip', 'sensor_fusion', 'scene_flash', 'feature_combination'
+    'scene_ip', 'sensor_fusion', 'scene_flash', 'feature_combination',
+    'scene_gen2_chart'
 )
 # All possible scenes
 _ALL_SCENES = (_TABLET_SCENES + _MANUAL_SCENES + _MOTION_SCENES +
@@ -191,6 +193,8 @@ _SCENE_REQ = types.MappingProxyType({
     'scene_ip': 'A chart with features such as QR code, color checker chart, '
                 'dead leaf patch, dynamic range chart used to analyze metrics '
                 'such as brightness, sharpness, color accuracy.',
+    'scene_gen2_chart': 'Same as scene_ip, '
+                        'but does not include image parity tests.'
 })
 
 # Made mutable to allow for test augmentation based on first API level
@@ -886,6 +890,8 @@ def main():
         possible_scenes = _TELE_SCENES
       elif 'scene_ip' in scenes:
         possible_scenes = _SCENE_IP_SCENES
+      elif 'scene_gen2_chart' in scenes:
+        possible_scenes = _SCENE_GEN2_CHART
       elif 'gen2_scenes' in scenes:
         possible_scenes = _GEN2_RIG_SCENES
       else:
@@ -968,8 +974,7 @@ def main():
           its_session_utils.copy_scenes_to_tablet(testing_scene, tablet_id)
       else:
         # Check manual scenes for correctness
-        if ('scene0' not in testing_scene and
-            'scene_ip' not in testing_scene and
+        if (testing_scene not in ['scene0', 'scene_ip', 'scene_gen2_chart'] and
             not testing_sensor_fusion_with_controller):
           check_manual_scenes(device_id, camera_id, testing_scene,
                               mobly_output_logs_path)

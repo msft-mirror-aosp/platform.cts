@@ -30,6 +30,7 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.media.AudioManager;
+import android.os.Vibrator;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
@@ -110,6 +111,9 @@ public class AudioServiceRebootTest {
     @Test
     public void testRingerModeImpliedMute_preReboot() throws Exception {
         validateAssumptions();
+        assumeTrue("DUT does not have vibrate mode",
+                mContext.getSystemService(Vibrator.class)
+                        .hasVibrator());
         assumeTrue(
                 "This device's ringer mode does not affect the streams of interest",
                 mAm.isStreamAffectedByRingerMode(STREAM_RING)

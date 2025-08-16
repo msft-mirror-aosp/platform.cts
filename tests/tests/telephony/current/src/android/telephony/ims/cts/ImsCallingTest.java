@@ -1625,9 +1625,21 @@ public class ImsCallingTest extends ImsCallingBase {
         mServiceCallBack = new ServiceCallBack();
         InCallServiceStateValidator.setCallbacks(mServiceCallBack);
 
-        // Place outgoing emergency call
         TelecomManager telecomManager = (TelecomManager) InstrumentationRegistry
                 .getInstrumentation().getContext().getSystemService(Context.TELECOM_SERVICE);
+
+        // It is possible on some devices (particularly wearables) that
+        // the packages/services/Telephony/res/values/config.xml value
+        // `config_pstnCanPlaceEmergencyCalls` is `FALSE`.  In this case, there will be no
+        // TelephonyConnectionService phone account registered with
+        // `CAPABILITY_PLACE_EMERGENCY_CALLS`; as a consequence this test would fail because Telecom
+        // will not be able to find a phone account capable of placing an emergency call, even
+        // though we're using a test ImsService.
+        assumeTrue(
+                "Device has `config_pstnCanPlaceEmergencyCalls` set `false`, skipping",
+                ImsUtils.hasEmergencyCallCapablePhoneAccount());
+
+        // Place outgoing emergency call
         telecomManager.placeCall(TEST_EMERGENCY_URI, new Bundle());
 
         assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));

@@ -1067,6 +1067,33 @@ def linear_tonemap(props):
            3 in props.get('android.tonemap.availableToneMapModes')))
 
 
+def tonemap_contrast_curve(props):
+  """Determines if camera supports CONTRAST_CURVE tonemap.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+    Boolean. True if android.tonemap.availableToneMapModes has
+             CONTRAST_CURVE (0).
+  """
+  return ('android.tonemap.availableToneMapModes' in props and
+          0 in props.get('android.tonemap.availableToneMapModes'))
+
+
+def max_curve_points(props):
+  """Determines if camera supports MAX_CURVE_POINTS in tonemap.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+    Boolean. True if android.tonemap.maxCurvePoints is not 0.
+  """
+  return 'android.tonemap.maxCurvePoints' in props and props[
+      'android.tonemap.maxCurvePoints'] != 0
+
+
 def get_reprocess_formats(props):
   """Retrieve the list of supported reprocess formats.
 

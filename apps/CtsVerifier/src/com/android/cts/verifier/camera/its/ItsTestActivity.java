@@ -285,7 +285,8 @@ public class ItsTestActivity extends DialogTestListActivity {
             "sensor_fusion",
             "feature_combination",
             "scene_flash",
-            "scene_ip");
+            "scene_ip",
+            "scene_gen2_chart");
 
     // This must match scenes of SUB_CAMERA_TESTS in tools/run_all_tests.py
     private static final List<String> mHiddenPhysicalCameraSceneIds = List.of(

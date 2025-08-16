@@ -18,8 +18,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="android.contextualsearch.caller">
 
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
-
     <application>
 
         <uses-library android:name="android.test.runner"/>
@@ -37,11 +35,9 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".CallerFgService"
-            android:foregroundServiceType="shortService|specialUse"
-            android:exported="true">
-            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="cts" />
-        </service>
+        <activity android:name=".BackgroundCallerActivity"
+            android:exported="true"/>
+
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
