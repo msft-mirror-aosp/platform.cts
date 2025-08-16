@@ -27,6 +27,9 @@ import static android.telecom.Call.STATE_DISCONNECTED;
 import static android.telecom.Call.STATE_HOLDING;
 import static android.telecom.Call.STATE_RINGING;
 import static android.telecom.Call.STATE_SIMULATED_RINGING;
+import static android.telecom.cts.apps.ShellCommandExecutor.COMMAND_WAIT_FOR_AUDIO_ACTIVE;
+import static android.telecom.cts.apps.ShellCommandExecutor.COMMAND_WAIT_FOR_AUDIO_OPS_COMPLETE;
+import static android.telecom.cts.apps.ShellCommandExecutor.executeShellCommand;
 import static android.telecom.cts.apps.TelecomTestApp.ConnectionServiceVoipAppClone;
 import static android.telecom.cts.apps.TelecomTestApp.ConnectionServiceVoipAppMain;
 import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceApp;
@@ -61,11 +64,14 @@ import android.telecom.cts.apps.AppControlWrapper;
 import android.telecom.cts.apps.TelecomTestApp;
 import android.telecom.cts.cuj.BaseAppVerifier;
 
+import androidx.test.platform.app.InstrumentationRegistry;
+
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.server.telecom.flags.Flags;
 
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -78,6 +84,11 @@ import java.util.concurrent.Executor;
  */
 @RunWith(JUnit4.class)
 public class SingleCallingTest extends BaseAppVerifier {
+    @After
+    public void waitOnHandlers() throws Exception {
+        executeShellCommand(
+                InstrumentationRegistry.getInstrumentation(), COMMAND_WAIT_FOR_AUDIO_OPS_COMPLETE);
+    }
 
     /*********************************************************************************************
      *                                ManagedConnectionServiceApp
@@ -476,6 +487,8 @@ public class SingleCallingTest extends BaseAppVerifier {
             String mo = addOutgoingCallAndVerify(managedApp);
             verifyCallIsInState(mo, STATE_DIALING);
             setCallStateAndVerify(managedApp, mo, STATE_ACTIVE);
+            executeShellCommand(
+                    InstrumentationRegistry.getInstrumentation(), COMMAND_WAIT_FOR_AUDIO_ACTIVE);
             enterBackgroundAudioProcessingViaInCallServiceAndVerify(mo,
                 AUDIO_PROCESSING_USE_CASE_ASK_TO_HOLD);
             exitBackgroundAudioProcessingViaInCallServiceAndVerify(mo, false, AUDIO_PROCESSING_USE_CASE_ASK_TO_HOLD);
@@ -1085,6 +1098,8 @@ public class SingleCallingTest extends BaseAppVerifier {
             String mt = addCallAndVerify(transactionalApp, incomingAttributes);
             verifyCallIsInState(mt, STATE_RINGING);
             setCallStateAndVerify(transactionalApp, mt, STATE_ACTIVE, CallAttributes.VIDEO_CALL);
+            executeShellCommand(
+                    InstrumentationRegistry.getInstrumentation(), COMMAND_WAIT_FOR_AUDIO_ACTIVE);
             setCallStateAndVerify(transactionalApp, mt, STATE_HOLDING);
             setCallStateAndVerify(transactionalApp, mt, STATE_DISCONNECTED, DisconnectCause.MISSED);
         } finally {
@@ -1318,6 +1333,8 @@ public class SingleCallingTest extends BaseAppVerifier {
         String mo = addOutgoingCallAndVerify(appControlWrapper);
         verifyCallIsInState(mo, STATE_DIALING);
         setCallStateAndVerify(appControlWrapper, mo, STATE_ACTIVE);
+        executeShellCommand(
+                InstrumentationRegistry.getInstrumentation(), COMMAND_WAIT_FOR_AUDIO_ACTIVE);
         if (audioFocusRequest != null) {
             AudioManager audioManager = mContext.getSystemService(AudioManager.class);
             // Try to get communication focus -- this emulates another communication app which does
@@ -1343,6 +1360,8 @@ public class SingleCallingTest extends BaseAppVerifier {
         String mt = addIncomingCallAndVerify(appControlWrapper);
         verifyCallIsInState(mt, STATE_RINGING);
         setCallStateAndVerify(appControlWrapper, mt, STATE_ACTIVE);
+        executeShellCommand(
+                InstrumentationRegistry.getInstrumentation(), COMMAND_WAIT_FOR_AUDIO_ACTIVE);
         setCallStateAndVerify(appControlWrapper, mt, STATE_HOLDING);
         setCallStateAndVerify(appControlWrapper, mt, STATE_DISCONNECTED);
     }
@@ -1350,6 +1369,8 @@ public class SingleCallingTest extends BaseAppVerifier {
     private void verifyToggleMute(AppControlWrapper appControlWrapper) throws Exception {
         String mo = addOutgoingCallAndVerify(appControlWrapper);
         setCallStateAndVerify(appControlWrapper, mo, STATE_ACTIVE);
+        executeShellCommand(
+                InstrumentationRegistry.getInstrumentation(), COMMAND_WAIT_FOR_AUDIO_ACTIVE);
         assertFalse(isMuted(appControlWrapper, mo));
         setMuteState(appControlWrapper, mo, true /* isMuted */);
         assertTrue(isMuted(appControlWrapper, mo));

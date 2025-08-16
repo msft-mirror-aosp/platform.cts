@@ -25,8 +25,14 @@ import static android.net.wifi.aware.Characteristics.WIFI_AWARE_CIPHER_SUITE_NCS
 import static android.net.wifi.aware.IdentityChangedListener.CLUSTER_CHANGE_EVENT_JOINED;
 import static android.net.wifi.aware.IdentityChangedListener.CLUSTER_CHANGE_EVENT_STARTED;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
 import android.annotation.NonNull;
@@ -66,7 +72,7 @@ import android.net.wifi.aware.WifiAwareManager;
 import android.net.wifi.aware.WifiAwareNetworkSpecifier;
 import android.net.wifi.aware.WifiAwareSession;
 import android.net.wifi.cts.WifiBuildCompat;
-import android.net.wifi.cts.WifiJUnit3TestBase;
+import android.net.wifi.cts.WifiJUnit4TestBase;
 import android.net.wifi.cts.WifiManagerTest;
 import android.net.wifi.rtt.RangingResult;
 import android.os.Build;
@@ -78,7 +84,14 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import androidx.test.filters.SdkSuppress;
+import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.runner.AndroidJUnit4;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.ApiTest;
@@ -107,7 +120,9 @@ import java.util.function.Consumer;
  * device to validate Wi-Fi Aware.
  */
 @AppModeFull(reason = "Cannot get WifiAwareManager in instant app mode")
-public class SingleDeviceTest extends WifiJUnit3TestBase {
+@SmallTest
+@RunWith(AndroidJUnit4.class)
+public class SingleDeviceTest extends WifiJUnit4TestBase {
     private static final String TAG = "WifiAwareCtsTests";
 
     // wait for Wi-Fi Aware state changes & network requests callbacks
@@ -137,6 +152,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     private WifiManager mWifiManager;
     private WifiManager.WifiLock mWifiLock;
     private ConnectivityManager mConnectivityManager;
+    private Context mContext;
 
     // used to store any WifiAwareSession allocated during tests - will clean-up after tests
     private final List<WifiAwareSession> mSessions = new ArrayList<>();
@@ -619,23 +635,21 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         }
     }
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void setUp() throws Exception {
+        mContext = InstrumentationRegistry.getInstrumentation().getContext();
 
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
 
         assertTrue("Wi-Fi Aware requires Location to be Enabled",
-                ((LocationManager) getContext().getSystemService(
-                        Context.LOCATION_SERVICE)).isLocationEnabled());
+                mContext.getSystemService(LocationManager.class).isLocationEnabled());
 
-        mWifiAwareManager = (WifiAwareManager) getContext().getSystemService(
-                Context.WIFI_AWARE_SERVICE);
+        mWifiAwareManager = mContext.getSystemService(WifiAwareManager.class);
         assertNotNull("Wi-Fi Aware Manager", mWifiAwareManager);
 
-        mWifiManager = (WifiManager) getContext().getSystemService(Context.WIFI_SERVICE);
+        mWifiManager = mContext.getSystemService(WifiManager.class);
         assertNotNull("Wi-Fi Manager", mWifiManager);
 
         // turn on verbose logging for tests
@@ -655,8 +669,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
             ShellIdentityUtils.invokeWithShellPermissions(() -> mWifiManager.setWifiEnabled(true));
         }
 
-        mConnectivityManager = (ConnectivityManager) getContext().getSystemService(
-                Context.CONNECTIVITY_SERVICE);
+        mConnectivityManager = mContext.getSystemService(ConnectivityManager.class);
         assertNotNull("Connectivity Manager", mConnectivityManager);
 
         IntentFilter intentFilter = new IntentFilter();
@@ -670,10 +683,9 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         }
     }
 
-    @Override
-    protected void tearDown() throws Exception {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
-            super.tearDown();
+    @After
+    public void tearDown() throws Exception {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
 
@@ -690,7 +702,6 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         ShellIdentityUtils.invokeWithShellPermissions(
                 () -> mWifiManager.allowAutojoinGlobal(true));
 
-        super.tearDown();
         Thread.sleep(INTERVAL_BETWEEN_TESTS_SECS * 1000);
     }
 
@@ -703,14 +714,15 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
      *       based on the Wi-Fi Aware protocol.
      * </ul>
      */
+    @Test
     @ApiTest(
             apis = {
                 "android.net.wifi.aware.Characteristics#isPeriodicRangingSupported",
                 "android.net.wifi.aware.Characteristics#getMaxSupportedRangingPacketBandwidth",
                 "android.net.wifi.aware.Characteristics#getMaxSupportedRxChains"
             })
-    public void testCharacteristics() throws InterruptedException {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    public void characteristics() throws InterruptedException {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
 
@@ -780,9 +792,10 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
      * - AwareResources values are legitimate. When no resources are used, the value should equal to
      *   the capability.
      */
-    public void testAvailableAwareResources() {
-        if (!(TestUtils.shouldTestWifiAware(getContext())
-                && WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(getContext()))) {
+    @Test
+    public void availableAwareResources() {
+        if (!(TestUtils.shouldTestWifiAware(mContext)
+                && WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(mContext))) {
             return;
         }
         AwareResources resources = mWifiAwareManager.getAvailableAwareResources();
@@ -796,8 +809,9 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
      * Validate that on Wi-Fi Aware availability change we get a broadcast + the API returns
      * correct status.
      */
-    public void testAvailabilityStatusChange() throws Exception {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    @Test
+    public void availabilityStatusChange() throws Exception {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
 
@@ -832,8 +846,9 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     /**
      * Validate that can attach to Wi-Fi Aware.
      */
-    public void testAttachNoIdentity() throws InterruptedException {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    @Test
+    public void attachNoIdentity() throws InterruptedException {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
 
@@ -841,7 +856,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         callback.getSession().close();
         callback.waitForAnyCallback();
         assertNull(callback.getSession());
-        if (WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(getContext())) {
+        if (WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(mContext)) {
             Thread.sleep(WAIT_FOR_AWARE_INTERFACE_CREATION_SEC * 1000);
             assertFalse(mWifiAwareManager.isDeviceAttached());
         }
@@ -851,11 +866,12 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
      * Verify that {@link WifiAwareManager#attach(ConfigRequest, Handler, AttachCallback,
      * IdentityChangedListener)} can be called successfully.
      */
+    @Test
     @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
             codeName = "VanillaIceCream")
-    public void testAttachDiscoveryWithConfigRequest() throws Exception {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    public void attachDiscoveryWithConfigRequest() throws Exception {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
 
@@ -889,8 +905,9 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
      * then the attach/destroy will not correspond to enable/disable and will not result in a new
      * MAC address being generated.
      */
-    public void testAttachDiscoveryAddressChanges() throws InterruptedException {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    @Test
+    public void attachDiscoveryAddressChanges() throws InterruptedException {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
 
@@ -932,8 +949,9 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     /**
      * Validate a successful publish discovery session lifetime: publish, update publish, destroy.
      */
-    public void testPublishDiscoverySuccess() throws Exception {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    @Test
+    public void publishDiscoverySuccess() throws Exception {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
         IntentFilter intentFilter = new IntentFilter();
@@ -1007,8 +1025,9 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
      * Validate that publish with a Time To Live (TTL) setting expires within the specified
      * time (and validates that the terminate callback is triggered).
      */
-    public void testPublishLimitedTtlSuccess() {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    @Test
+    public void publishLimitedTtlSuccess() {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
 
@@ -1046,8 +1065,9 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     /**
      * Validate successful publish session with security config.
      */
-    public void testPublishWithSecurityConfig() {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    @Test
+    public void publishWithSecurityConfig() {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
 
@@ -1113,9 +1133,10 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     /**
      * Validate success publish with instant communacation enabled.
      */
+    @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
-    public void testPublishWithInstantCommunicationModeSuccess() {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    public void publishWithInstantCommunicationModeSuccess() {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
         Characteristics characteristics = mWifiAwareManager.getCharacteristics();
@@ -1155,9 +1176,10 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     /**
      * Validate successful publish with a suspendable session when device supports suspension.
      */
+    @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-    public void testPublishSuccessWithSuspendableSession() {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    public void publishSuccessWithSuspendableSession() {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
         Characteristics characteristics = mWifiAwareManager.getCharacteristics();
@@ -1200,9 +1222,10 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
      * Validate failure to publish with a suspendable session when device doesn't support
      * suspension.
      */
+    @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-    public void testPublishFailureWithSuspendableSession() {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    public void publishFailureWithSuspendableSession() {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
         Characteristics characteristics = mWifiAwareManager.getCharacteristics();
@@ -1232,11 +1255,12 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     /**
      * Validate successful suspend/resume with a publish session.
      */
+    @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @ApiTest(apis = {"android.net.wifi.aware.DiscoverySession#suspend",
             "android.net.wifi.aware.DiscoverySession#resume"})
-    public void testSuspendResumeFailWithoutNdpOnPublishSession() {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    public void suspendResumeFailWithoutNdpOnPublishSession() {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
         Characteristics characteristics = mWifiAwareManager.getCharacteristics();
@@ -1291,6 +1315,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     }
 
     /** Validate Publish config with setRangingResultsEnabled and see if results are received. */
+    @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @RequiresFlagsEnabled(com.android.ranging.flags.Flags.FLAG_RANGING_RTT_ENABLED)
     @ApiTest(
@@ -1298,8 +1323,8 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                 "android.net.wifi.aware.PublishConfig.Builder#setPeriodicRangingResultsEnabled",
                 "android.net.wifi.aware.PublishConfig#isPeriodicRangingResultsEnabled"
             })
-    public void testPublishWithPeriodicRangingEnabled() {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    public void publishWithPeriodicRangingEnabled() {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
         Characteristics characteristics = mWifiAwareManager.getCharacteristics();
@@ -1360,8 +1385,9 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
      * Validate a successful subscribe discovery session lifetime: subscribe, update subscribe,
      * destroy.
      */
-    public void testSubscribeDiscoverySuccess() throws Exception {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    @Test
+    public void subscribeDiscoverySuccess() throws Exception {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
         IntentFilter intentFilter = new IntentFilter();
@@ -1396,7 +1422,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         }
 
         // 2. update-subscribe
-        boolean rttSupported = getContext().getPackageManager().hasSystemFeature(
+        boolean rttSupported = mContext.getPackageManager().hasSystemFeature(
                     PackageManager.FEATURE_WIFI_RTT);
         SubscribeConfig.Builder builder = new SubscribeConfig.Builder().setServiceName(
                     serviceName).setServiceSpecificInfo("extras".getBytes());
@@ -1442,9 +1468,10 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     /**
      * Validate success subscribe with instant communication enabled.
      */
+    @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
-    public void testSubscribeWithInstantCommunicationModeSuccess() {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    public void subscribeWithInstantCommunicationModeSuccess() {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
         Characteristics characteristics = mWifiAwareManager.getCharacteristics();
@@ -1486,8 +1513,9 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
      * Validate that subscribe with a Time To Live (TTL) setting expires within the specified
      * time (and validates that the terminate callback is triggered).
      */
-    public void testSubscribeLimitedTtlSuccess() {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    @Test
+    public void subscribeLimitedTtlSuccess() {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
 
@@ -1525,9 +1553,10 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     /**
      * Validate successful subscribe with a suspendable session when device supports suspension.
      */
+    @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-    public void testSubscribeSuccessWithSuspendableSession() {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    public void subscribeSuccessWithSuspendableSession() {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
         Characteristics characteristics = mWifiAwareManager.getCharacteristics();
@@ -1571,9 +1600,10 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
      * Validate failure to subscribe with a suspendable session when device doesn't support
      * suspension.
      */
+    @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-    public void testSubscribeFailureWithSuspendableSession() {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    public void subscribeFailureWithSuspendableSession() {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
         Characteristics characteristics = mWifiAwareManager.getCharacteristics();
@@ -1602,6 +1632,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     }
 
     /** Validate success subscribe with periodic ranging. */
+    @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @RequiresFlagsEnabled(com.android.ranging.flags.Flags.FLAG_RANGING_RTT_ENABLED)
     @ApiTest(
@@ -1625,8 +1656,8 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                 "android.net.wifi.aware.SubscribeConfig#getPreamble",
                 "android.net.wifi.aware.SubscribeConfig#getChannelWidth",
             })
-    public void testSubscribeWithPeriodicRanging() {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    public void subscribeWithPeriodicRanging() {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
         Characteristics characteristics = mWifiAwareManager.getCharacteristics();
@@ -1685,11 +1716,12 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     /**
      * Validate successful suspend/resume with a subscribe session.
      */
+    @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @ApiTest(apis = {"android.net.wifi.aware.DiscoverySession#suspend",
             "android.net.wifi.aware.DiscoverySession#resume"})
-    public void testSuspendResumeFailWithoutNdpOnSubscribeSession() {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    public void suspendResumeFailWithoutNdpOnSubscribeSession() {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
         Characteristics characteristics = mWifiAwareManager.getCharacteristics();
@@ -1748,8 +1780,9 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
      * Test the send message flow. Since testing single device cannot send to a real peer -
      * validate that sending to a bogus peer fails.
      */
-    public void testSendMessageFail() {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    @Test
+    public void sendMessageFail() {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
 
@@ -1782,8 +1815,9 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
      * Request an Aware data-path (open) as a Responder with an arbitrary peer MAC address. Validate
      * that receive an onUnavailable() callback.
      */
-    public void testDataPathOpenOutOfBandFail() throws InterruptedException {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    @Test
+    public void dataPathOpenOutOfBandFail() throws InterruptedException {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
         MacAddress mac = MacAddress.fromString("00:01:02:03:04:05");
@@ -1817,8 +1851,9 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
      * MAC address.
      * Validate that receive an onUnavailable() callback.
      */
-    public void testDataPathPassphraseOutOfBandFail() throws InterruptedException {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    @Test
+    public void dataPathPassphraseOutOfBandFail() throws InterruptedException {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
         MacAddress mac = MacAddress.fromString("00:01:02:03:04:05");
@@ -1852,8 +1887,9 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
      * address.
      * Validate that receive an onUnavailable() callback.
      */
-    public void testDataPathPmkOutOfBandFail() throws InterruptedException {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    @Test
+    public void dataPathPmkOutOfBandFail() throws InterruptedException {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
         MacAddress mac = MacAddress.fromString("00:01:02:03:04:05");
@@ -1885,7 +1921,8 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     /**
      * Test WifiAwareNetworkSpecifier.
      */
-    public void testWifiAwareNetworkSpecifier() {
+    @Test
+    public void wifiAwareNetworkSpecifier() {
         DiscoverySession session = mock(DiscoverySession.class);
         PeerHandle handle = mock(PeerHandle.class);
         WifiAwareNetworkSpecifier networkSpecifier =
@@ -1901,7 +1938,8 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     /**
      * Test ParcelablePeerHandle parcel.
      */
-    public void testParcelablePeerHandle() {
+    @Test
+    public void parcelablePeerHandle() {
         PeerHandle peerHandle = mock(PeerHandle.class);
         ParcelablePeerHandle parcelablePeerHandle = new ParcelablePeerHandle(peerHandle);
         Parcel parcelW = Parcel.obtain();
@@ -1922,7 +1960,8 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     /**
      * Test AwareResources constructor function.
      */
-    public void testAwareResourcesConstructor() {
+    @Test
+    public void awareResourcesConstructor() {
         AwareResources awareResources = new AwareResources(AVAILABLE_DATA_PATH_COUNT,
                 AVAILABLE_PUBLISH_SESSION_COUNT, AVAILABLE_SUBSCRIBE_SESSION_COUNT);
         assertEquals(AVAILABLE_DATA_PATH_COUNT, awareResources.getAvailableDataPathsCount());
@@ -1935,8 +1974,9 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     /**
      * Verify setAwareParams works when have permission
      */
-    public void testAwareParams() {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    @Test
+    public void awareParams() {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
         AwareParams params = new AwareParams();
@@ -1965,8 +2005,9 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     /**
      * Verify Aware pairing config class.
      */
-    public void testAwarePairingConfig() {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    @Test
+    public void awarePairingConfig() {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
         boolean pairingSupported = mWifiAwareManager.getCharacteristics().isAwarePairingSupported();
@@ -2028,8 +2069,9 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         }
     }
 
-    public void testAttachOffload() {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    @Test
+    public void attachOffload() {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
@@ -2067,8 +2109,9 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     /**
      * Verify setAwareParams throw exception without permission
      */
-    public void testAwareParamsWithoutPermission() {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    @Test
+    public void awareParamsWithoutPermission() {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
         assertThrows(SecurityException.class, () -> mWifiAwareManager.setAwareParams(null));
@@ -2078,8 +2121,9 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
      * Verify {@link WifiAwareManager#setOpportunisticModeEnabled(boolean)} and
      * {@link WifiAwareManager#isOpportunisticModeEnabled(Executor, Consumer)}
      */
-    public void testSetOpportunistic() throws InterruptedException {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    @Test
+    public void setOpportunistic() throws InterruptedException {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
         AtomicBoolean enabled = new AtomicBoolean(false);
@@ -2137,8 +2181,34 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         }
     }
 
-    public void testSetMasterPreference() throws InterruptedException  {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    /**
+     * Verify setAwareParams throw exception when the params is invalid
+     */
+    @Test
+    public void awareParamsInvalid() {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
+            return;
+        }
+        AwareParams params = new AwareParams();
+        params.setDiscoveryWindowWakeInterval24Ghz(-1);
+        assertThrows(IllegalArgumentException.class, () -> mWifiAwareManager.setAwareParams(params));
+        params.setDiscoveryWindowWakeInterval24Ghz(5);
+        params.setDiscoveryWindowWakeInterval5Ghz(-1);
+        assertThrows(IllegalArgumentException.class, () -> mWifiAwareManager.setAwareParams(params));
+        params.setDiscoveryWindowWakeInterval5Ghz(5);
+        params.setDiscoveryBeaconIntervalMillis(-1);
+        assertThrows(IllegalArgumentException.class, () -> mWifiAwareManager.setAwareParams(params));
+        params.setDiscoveryBeaconIntervalMillis(50);
+        params.setMacRandomizationIntervalSeconds(-1);
+        assertThrows(IllegalArgumentException.class, () -> mWifiAwareManager.setAwareParams(params));
+        params.setMacRandomizationIntervalSeconds(1000);
+        params.setNumSpatialStreamsInDiscovery(-1);
+        assertThrows(IllegalArgumentException.class, () -> mWifiAwareManager.setAwareParams(params));
+    }
+
+    @Test
+    public void setMasterPreference() throws InterruptedException  {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
@@ -2175,10 +2245,11 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         }
     }
 
+    @Test
     @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
-    public void testAwareWhenInfraStaDisabled() throws Exception {
-        if (!TestUtils.shouldTestWifiAware(getContext())) {
+    public void awareWhenInfraStaDisabled() throws Exception {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
             return;
         }
         if (!mWifiManager.isD2dSupportedWhenInfraStaDisabled()) {
@@ -2222,7 +2293,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
             mWifiManager.setWifiEnabled(false);
             mWifiManager.setD2dAllowedWhenInfraStaDisabled(true);
             // Run a test to make sure aware can be used.
-            testAttachNoIdentity();
+            attachNoIdentity();
             IntentFilter intentFilter = new IntentFilter();
             intentFilter.addAction(WifiAwareManager.ACTION_WIFI_AWARE_STATE_CHANGED);
             WifiAwareStateBroadcastReceiver receiver = new WifiAwareStateBroadcastReceiver();

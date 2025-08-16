@@ -28,76 +28,27 @@ import camera_properties_utils
 import error_util
 import its_device_utils
 
-
-_DIR_EXISTS_TXT = 'Directory exists'
-_PERMISSIONS_LIST = ('CAMERA', 'RECORD_AUDIO', 'ACCESS_FINE_LOCATION',
-                     'ACCESS_COARSE_LOCATION')
-
-ACTION_ITS_DO_JCA_CAPTURE = (
-    'com.android.cts.verifier.camera.its.ACTION_ITS_DO_JCA_CAPTURE'
-)
-ACTION_ITS_DO_JCA_VIDEO_CAPTURE = (
-    'com.android.cts.verifier.camera.its.ACTION_ITS_DO_JCA_VIDEO_CAPTURE'
-)
-ACTIVITY_WAIT_TIME_SECONDS = 5
-AGREE_BUTTON = 'Agree'
-AGREE_AND_CONTINUE_BUTTON = 'Agree and continue'
-CANCEL_BUTTON_TXT = 'Cancel'
-CAMERA_FILES_PATHS = ('/sdcard/DCIM/Camera',
-                      '/sdcard/DCIM',
-                      '/storage/emulated/0/Pictures',)
-CAPTURE_BUTTON_RESOURCE_ID = 'CaptureButton'
-DEFAULT_CAMERA_APP_DUMPSYS_PATH = '/sdcard/default_camera_dumpsys.txt'
-DEFAULT_CAMERA_CONTENT_DESC_SEPARATOR = ','
-DEFAULT_JCA_UI_DUMPSYS_PATH = '/sdcard/jca-ui-dumpsys.txt'
-DONE_BUTTON_TXT = 'Done'
-EMULATED_STORAGE_PATH = '/storage/emulated/0/Pictures'
-
-# TODO: b/383392277 - use resource IDs instead of content descriptions.
+# JCA_PATH ui/components/capture/src/main/res/values/strings.xml
 FLASH_MODE_ON_CONTENT_DESC = 'Flash on'
 FLASH_MODE_OFF_CONTENT_DESC = 'Flash off'
 FLASH_MODE_AUTO_CONTENT_DESC = 'Auto flash'
 FLASH_MODE_LOW_LIGHT_BOOST_CONTENT_DESC = 'Low Light Boost on'
-FLASH_MODES = (
-    FLASH_MODE_ON_CONTENT_DESC,
-    FLASH_MODE_OFF_CONTENT_DESC,
-    FLASH_MODE_AUTO_CONTENT_DESC,
-    FLASH_MODE_LOW_LIGHT_BOOST_CONTENT_DESC
-)
-IMG_CAPTURE_CMD = 'am start -a android.media.action.IMAGE_CAPTURE'
-ITS_ACTIVITY_TEXT = 'Camera ITS Test'
-JETPACK_CAMERA_APP_PACKAGE_NAME = 'com.google.jetpackcamera'
-JETPACK_CAMERA_APP_ZOOM_ATOL = 0.011  # to ensure a maximum diff of 0.01
-JPG_FORMAT_STR = '.jpg'
-LOCATION_ON_TXT = 'Turn on'
-OK_BUTTON_TXT = 'OK'
-TAKE_PHOTO_CMD = 'input keyevent KEYCODE_CAMERA'
-QUICK_SETTINGS_RESOURCE_ID = 'QuickSettingsDropDown'
-QUICK_SET_FLASH_RESOURCE_ID = 'QuickSettingsFlashButton'
-QUICK_SET_FLIP_CAMERA_RESOURCE_ID = 'QuickSettingsFlipCameraButton'
-QUICK_SET_RATIO_RESOURCE_ID = 'QuickSettingsRatioButton'
-RATIO_TO_UI_DESCRIPTION = {
-    '1 to 1 aspect ratio': 'QuickSettingsRatio1:1Button',
-    '3 to 4 aspect ratio': 'QuickSettingsRatio3:4Button',
-    '9 to 16 aspect ratio': 'QuickSettingsRatio9:16Button'
-}
-REMOVE_CAMERA_FILES_CMD = 'rm -rf'
-SETTINGS_BACK_BUTTON_RESOURCE_ID = 'BackButton'
-SETTINGS_BUTTON_RESOURCE_ID = 'SettingsButton'
-SETTINGS_CLOSE_TEXT = 'Close'
-SETTINGS_VIDEO_STABILIZATION_RESOURCE_ID = (
-    'btn_open_dialog_setting_video_stabilization_tag'
-)
-SETTINGS_VIDEO_STABILIZATION_AUTO_TEXT = 'Stabilization Auto'
-SETTINGS_MENU_STABILIZATION_HIGH_QUALITY_TEXT = 'Stabilization High Quality'
-SETTINGS_VIDEO_STABILIZATION_MODE_TEXT = 'Set Video Stabilization'
-SETTINGS_MENU_STABILIZATION_OFF_TEXT = 'Stabilization Off'
 THREE_TO_FOUR_ASPECT_RATIO_DESC = '3 to 4 aspect ratio'
 ONE_TO_ONE_ASPECT_RATIO_DESC = '1 to 1 aspect ratio'
 NINE_TO_SIXTEEN_ASPECT_RATIO_DESC = '9 to 16 aspect ratio'
 UI_DESCRIPTION_BACK_CAMERA = 'Back Camera'
 UI_DESCRIPTION_FRONT_CAMERA = 'Front Camera'
-UI_OBJECT_WAIT_TIME_SECONDS = datetime.timedelta(seconds=3)
+UI_IMAGE_CAPTURE_SUCCESS_TEXT = 'Image Capture Success'
+# JCA_PATH ui/components/capture/src/main/res/values/strings.xml
+
+# JCA_PATH ui/components/capture/src/main/java/com/google/jetpackcamera/ui/components/capture/TestTags.kt  pylint: disable=line-too-long
+QUICK_SETTINGS_RESOURCE_ID = 'QuickSettingsDropDown'
+QUICK_SET_FLASH_RESOURCE_ID = 'QuickSettingsFlashButton'
+QUICK_SET_FLIP_CAMERA_RESOURCE_ID = 'QuickSettingsFlipCameraButton'
+QUICK_SET_RATIO_RESOURCE_ID = 'QuickSettingsRatioButton'
+QUICK_SET_RATIO_3_4_RESOURCE_ID = 'QuickSettingsRatio3:4Button'
+QUICK_SET_RATIO_9_16_RESOURCE_ID = 'QuickSettingsRatio9:16Button'
+QUICK_SET_RATIO_1_1_RESOURCE_ID = 'QuickSettingsRatio1:1Button'
 UI_PHYSICAL_CAMERA_RESOURCE_ID = 'PhysicalCameraIdTag'
 UI_ZOOM_RATIO_TEXT_RESOURCE_ID = 'ZoomRatioTag'
 UI_DEBUG_OVERLAY_BUTTON_RESOURCE_ID = 'DebugOverlayButton'
@@ -110,29 +61,97 @@ UI_DEBUG_OVERLAY_SET_ZOOM_RATIO_TEXT_FIELD_RESOURCE_ID = (
 UI_DEBUG_OVERLAY_SET_ZOOM_RATIO_SET_BUTTON_RESOURCE_ID = (
     'DebugOverlaySetZoomRatioSetButton'
 )
-UI_IMAGE_CAPTURE_SUCCESS_TEXT = 'Image Capture Success'
-VIEWFINDER_NOT_VISIBLE_PREFIX = 'viewfinder_not_visible'
-VIEWFINDER_VISIBLE_PREFIX = 'viewfinder_visible'
-WAIT_INTERVAL_FIVE_SECONDS = datetime.timedelta(seconds=5)
-JCA_WATCH_DUMP_FILE = 'jca_watch_dump.txt'
-DEFAULT_CAMERA_WATCH_DUMP_FILE = 'default_camera_watch_dump.txt'
-WATCH_WAIT_TIME_SECONDS = 2
-_CONTROL_ZOOM_RATIO_KEY = 'android.control.zoomRatio'
-_REQ_STR_PATTERN = 'REQ'
-_RES_STR_PATTERN = 'RES'
-JCA_VIDEO_STABILIZATION_MODE_OFF = 0
+CAPTURE_BUTTON_RESOURCE_ID = 'CaptureButton'
+# JCA_PATH ui/components/capture/src/main/java/com/google/jetpackcamera/ui/components/capture/TestTags.kt  pylint: disable=line-too-long
+
+# JCA_PATH feature/settings/src/main/java/com/google/jetpackcamera/settings/ui/TestTags.kt  pylint: disable=line-too-long
+SETTINGS_BACK_BUTTON_RESOURCE_ID = 'BackButton'
+SETTINGS_VIDEO_STABILIZATION_RESOURCE_ID = (
+    'btn_open_dialog_setting_video_stabilization_tag'
+)
+# JCA_PATH feature/settings/src/main/java/com/google/jetpackcamera/settings/ui/TestTags.kt  pylint: disable=line-too-long
+
+# JCA_PATH feature/settings/src/main/res/values/strings.xml
+SETTINGS_VIDEO_STABILIZATION_AUTO_TEXT = 'Stabilization Auto'
+SETTINGS_MENU_STABILIZATION_HIGH_QUALITY_TEXT = 'Stabilization High Quality'
+SETTINGS_VIDEO_STABILIZATION_MODE_TEXT = 'Set Video Stabilization'
+SETTINGS_MENU_STABILIZATION_OFF_TEXT = 'Stabilization Off'
+STABILIZATION_DESC_OFF = 'Off'
+STABILIZATION_DESC_HIGH_QUALITY = 'High Quality'
+STABILIZATION_DESC_ON = 'On'
+STABILIZATION_DESC_OPTICAL = 'Optical'
+# JCA_PATH feature/settings/src/main/res/values/strings.xml
+
+# Module-specific JCA constants
+ACTION_ITS_DO_JCA_CAPTURE = (
+    'com.android.cts.verifier.camera.its.ACTION_ITS_DO_JCA_CAPTURE'
+)
+ACTION_ITS_DO_JCA_VIDEO_CAPTURE = (
+    'com.android.cts.verifier.camera.its.ACTION_ITS_DO_JCA_VIDEO_CAPTURE'
+)
+ACTIVITY_WAIT_TIME_SECONDS = 5
+FLASH_MODES = (
+    FLASH_MODE_ON_CONTENT_DESC,
+    FLASH_MODE_OFF_CONTENT_DESC,
+    FLASH_MODE_AUTO_CONTENT_DESC,
+    FLASH_MODE_LOW_LIGHT_BOOST_CONTENT_DESC
+)
+ITS_ACTIVITY_TEXT = 'Camera ITS Test'
+JCA_STABILIZATION_MODES = {
+    0: STABILIZATION_DESC_OFF,
+    1: STABILIZATION_DESC_HIGH_QUALITY,
+    2: STABILIZATION_DESC_ON,
+    3: STABILIZATION_DESC_OPTICAL,
+}
 JCA_VIDEO_STABILIZATION_MODE_HIGH_QUALITY = 1
+JCA_VIDEO_STABILIZATION_MODE_OFF = 0
 JCA_VIDEO_STABILIZATION_MODE_ON = 2
 JCA_VIDEO_STABILIZATION_MODE_OPTICAL = 3
-JCA_STABILIZATION_MODES = {
-    0: 'Off',
-    1: 'High Quality',
-    2: 'On',
-    3: 'Optical'
+JCA_WATCH_DUMP_FILE = 'jca_watch_dump.txt'
+JETPACK_CAMERA_APP_PACKAGE_NAME = 'com.google.jetpackcamera'
+JETPACK_CAMERA_APP_ZOOM_ATOL = 0.011  # to ensure a maximum diff of 0.01
+RATIO_TO_UI_DESCRIPTION = {
+    ONE_TO_ONE_ASPECT_RATIO_DESC: QUICK_SET_RATIO_1_1_RESOURCE_ID,
+    THREE_TO_FOUR_ASPECT_RATIO_DESC: QUICK_SET_RATIO_3_4_RESOURCE_ID,
+    NINE_TO_SIXTEEN_ASPECT_RATIO_DESC: QUICK_SET_RATIO_9_16_RESOURCE_ID,
 }
+SETTINGS_BUTTON_RESOURCE_ID = 'SettingsButton'
+SETTINGS_CLOSE_TEXT = 'Close'
+UI_OBJECT_WAIT_TIME_SECONDS = datetime.timedelta(seconds=3)
+VIEWFINDER_NOT_VISIBLE_PREFIX = 'viewfinder_not_visible'
+VIEWFINDER_VISIBLE_PREFIX = 'viewfinder_visible'
+
+# Default camera app constants
+_CONTROL_ZOOM_RATIO_KEY = 'android.control.zoomRatio'
+_DIR_EXISTS_TXT = 'Directory exists'
+_PERMISSIONS_LIST = (
+    'CAMERA', 'RECORD_AUDIO', 'ACCESS_FINE_LOCATION', 'ACCESS_COARSE_LOCATION'
+)
+_REQ_STR_PATTERN = 'REQ'
+_RES_STR_PATTERN = 'RES'
+AGREE_BUTTON = 'Agree'
+AGREE_AND_CONTINUE_BUTTON = 'Agree and continue'
 AUTO_STR = 'AUTO'
-ZOOM_RATIO_STR = 'zoomRatio'
+CAMERA_FILES_PATHS = ('/sdcard/DCIM/Camera',
+                      '/sdcard/DCIM',
+                      '/storage/emulated/0/Pictures',)
+CANCEL_BUTTON_TXT = 'Cancel'
 CROP_REGION_STR = 'cropRegion'
+DEFAULT_CAMERA_APP_DUMPSYS_PATH = '/sdcard/default_camera_dumpsys.txt'
+DEFAULT_CAMERA_CONTENT_DESC_SEPARATOR = ','
+DEFAULT_CAMERA_WATCH_DUMP_FILE = 'default_camera_watch_dump.txt'
+DEFAULT_JCA_UI_DUMPSYS_PATH = '/sdcard/jca-ui-dumpsys.txt'
+DONE_BUTTON_TXT = 'Done'
+EMULATED_STORAGE_PATH = '/storage/emulated/0/Pictures'
+IMG_CAPTURE_CMD = 'am start -a android.media.action.IMAGE_CAPTURE'
+JPG_FORMAT_STR = '.jpg'
+LOCATION_ON_TXT = 'Turn on'
+OK_BUTTON_TXT = 'OK'
+REMOVE_CAMERA_FILES_CMD = 'rm -rf'
+TAKE_PHOTO_CMD = 'input keyevent KEYCODE_CAMERA'
+WAIT_INTERVAL_FIVE_SECONDS = datetime.timedelta(seconds=5)
+WATCH_WAIT_TIME_SECONDS = 2
+ZOOM_RATIO_STR = 'zoomRatio'
 
 
 @dataclasses.dataclass(frozen=True)
@@ -553,6 +572,14 @@ def switch_default_camera(dut, facing, log_path):
         logging.debug('Resource id: %s', resource_id)
         logging.debug('Flip camera content-desc: %s', content_desc)
         break
+      else:
+        if re.search(
+            flip_camera_pattern, content_desc, re.IGNORECASE
+        ):
+          logging.debug('Pattern matches')
+          logging.debug('Resource id: %s', resource_id)
+          logging.debug('Flip camera content-desc: %s', content_desc)
+          break
     else:
       if re.search(
           flip_camera_pattern, content_desc, re.IGNORECASE
@@ -573,7 +600,7 @@ def switch_default_camera(dut, facing, log_path):
 
   dut.take_screenshot(
       log_path, prefix=f'switched_to_{facing}_default_camera'
-  )
+      )
 
 
 def pull_img_files(device_id, input_path, output_path):

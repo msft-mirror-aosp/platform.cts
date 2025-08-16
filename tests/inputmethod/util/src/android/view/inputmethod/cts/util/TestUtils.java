@@ -100,6 +100,7 @@ public final class TestUtils {
         try {
             wrapped.get();
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
@@ -155,7 +156,8 @@ public final class TestUtils {
             try {
                 Thread.sleep(TIME_SLICE);
             } catch (InterruptedException e) {
-                throw new IllegalStateException(e);
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
             }
             timeout -= TIME_SLICE;
         }

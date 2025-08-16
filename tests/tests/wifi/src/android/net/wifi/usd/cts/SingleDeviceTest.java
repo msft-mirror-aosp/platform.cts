@@ -17,11 +17,14 @@
 package android.net.wifi.usd.cts;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
 import android.net.wifi.WifiManager;
 import android.net.wifi.cts.WifiFeature;
-import android.net.wifi.cts.WifiJUnit3TestBase;
 import android.net.wifi.flags.Flags;
 import android.net.wifi.usd.Characteristics;
 import android.net.wifi.usd.DiscoveryResult;
@@ -39,11 +42,19 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.test.filters.SdkSuppress;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.ShellIdentityUtils;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -61,7 +72,8 @@ import java.util.function.Consumer;
 @AppModeFull(reason = "Cannot get WifiManager in instant app mode")
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
 @RequiresFlagsEnabled(Flags.FLAG_USD)
-public class SingleDeviceTest extends WifiJUnit3TestBase {
+@RunWith(AndroidJUnit4.class)
+public class SingleDeviceTest {
     private static final String USD_SERVICE_NAME = "USD_CTS_TEST";
     private static final int WAIT_FOR_USD_CALLBACK_SECS = 15;
     private static final int TEST_TIMEOUT_SECS = 1;
@@ -118,14 +130,14 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         return mCallbackStatus.get() != CALLBACK_STATUS_NOT_CALLED;
     }
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        if (!WifiFeature.isWifiSupported(getContext())) {
+    @Before
+    public void setUp() throws Exception {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        if (!WifiFeature.isWifiSupported(context)) {
             // skip the test if WiFi is not supported
             return;
         }
-        mWifiManager = (WifiManager) getContext().getSystemService(Context.WIFI_SERVICE);
+        mWifiManager = context.getSystemService(WifiManager.class);
         assertNotNull("Wi-Fi Manager", mWifiManager);
 
         // Enable Wi-Fi
@@ -137,7 +149,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                 android.Manifest.permission.MANAGE_WIFI_NETWORK_SELECTION)) {
             // Check whether Usd is supported or not
             if (mWifiManager.isUsdPublisherSupported() || mWifiManager.isUsdSubscriberSupported()) {
-                mUsdManager = (UsdManager) getContext().getSystemService(Context.WIFI_USD_SERVICE);
+                mUsdManager = context.getSystemService(UsdManager.class);
                 assertNotNull("Usd Manager", mUsdManager);
             }
         }
@@ -147,9 +159,9 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         mFilter.add(new byte[] {12, 13, 14});
     }
 
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
+    @After
+    public void tearDown() throws Exception {
+        // No-op
     }
 
     /** Test USD characteristics that are available. */
@@ -163,7 +175,8 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                 "android.net.wifi.usd.Characteristics#getMaxNumberOfSubscribeSessions",
                 "android.net.wifi.usd.Characteristics#getMaxServiceSpecificInfoLength"
             })
-    public void testCharacteristics() {
+    @Test
+    public void characteristics() {
         try (PermissionContext p =
                 TestApis.permissions()
                         .withPermission(
@@ -221,7 +234,8 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                 "android.net.wifi.usd.Config#getTxMatchFilter",
                 "android.net.wifi.usd.Config#getOperatingFrequenciesMhz"
             })
-    public void testPublishConfig() {
+    @Test
+    public void publishConfig() {
         PublishConfig publishConfig =
                 new PublishConfig.Builder(USD_SERVICE_NAME)
                         .setAnnouncementPeriodMillis(200)
@@ -390,7 +404,8 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                 "android.net.wifi.usd.PublishSession#sendMessage",
                 "android.net.wifi.usd.PublishSession#updatePublish",
             })
-    public void testPublish() throws Exception {
+    @Test
+    public void publish() throws Exception {
         try (PermissionContext p =
                 TestApis.permissions()
                         .withPermission(
@@ -401,13 +416,13 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
             assertNotNull(mUsdManager);
             ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
             mUsdManager.registerPublisherStatusListener(executor, getCallbackHandler());
-            // Make sure USD publisher is available
+            // Make sure USD publisher is available.
             assertTrue("Publisher is not available", isCallbackResultSuccess());
             mUsdManager.unregisterPublisherStatusListener(getCallbackHandler());
             Characteristics characteristics = mUsdManager.getCharacteristics();
             assertNotNull(characteristics);
             assertTrue(USD_SERVICE_NAME.length() <= characteristics.getMaxServiceNameLength());
-            // Set publish configuration
+            // Set publish configuration.
             PublishConfig.Builder builder =
                     new PublishConfig.Builder(USD_SERVICE_NAME)
                             .setAnnouncementPeriodMillis(200)
@@ -425,15 +440,15 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
             PublishConfig publishConfig = builder.build();
             PublishSessionCallbackTest publishSessionCallbackTest =
                     new PublishSessionCallbackTest();
-            // Publish
+            // Publish.
             mUsdManager.publish(publishConfig, executor, publishSessionCallbackTest);
-            // Check whether publish is started or not
+            // Check whether publish is started or not.
             assertTrue(
                     "Publish started",
                     publishSessionCallbackTest.waitForCallback(
                             PublishSessionCallbackTest.ON_PUBLISH_STARTED));
             assertNotNull(publishSessionCallbackTest.getPublishSession());
-            // Make sure no more callbacks are called for failure, replied or message received
+            // Make sure no more callbacks are called for failure, replied or message received.
             assertFalse(
                     "Publish failed",
                     publishSessionCallbackTest.waitForCallback(
@@ -446,7 +461,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                     "Message received",
                     publishSessionCallbackTest.waitForCallback(
                             PublishSessionCallbackTest.ON_PUBLISH_RECEIVED, TEST_TIMEOUT_SECS));
-            // Make sure session is not terminated
+            // Make sure session is not terminated.
             assertFalse(
                     "Publish terminated",
                     publishSessionCallbackTest.hasCallbackAlreadyHappened(
@@ -458,11 +473,11 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
             session.sendMessage(1, "some message".getBytes(), executor, getCallbackHandler());
             assertFalse("SendMessage cannot succeed", isCallbackResultSuccess());
             assertTrue("Callback was never called", isCallbackCalled());
-            // Update publish
+            // Update publish.
             session.updatePublish(new byte[] {1, 2, 3});
-            // Cancel Publish
+            // Cancel Publish.
             publishSessionCallbackTest.getPublishSession().cancel();
-            // Check whether publish is terminated or not
+            // Check whether publish is terminated or not.
             assertTrue(
                     "Publish terminated",
                     publishSessionCallbackTest.waitForCallback(
@@ -479,7 +494,8 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                 "android.net.wifi.usd.UsdManager.PublishConfig.Builder#setOperatingFrequenciesMhz",
                 "android.net.wifi.usd.UsdManager.PublishConfig.Builder#getOperatingFrequenciesMhz",
             })
-    public void testPublishWithOperatingFrequencies() throws Exception {
+    @Test
+    public void publishWithOperatingFrequencies() throws Exception {
         try (PermissionContext p =
                 TestApis.permissions()
                         .withPermission(
@@ -490,9 +506,10 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
             assertNotNull(mUsdManager);
             ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
             mUsdManager.registerPublisherStatusListener(executor, getCallbackHandler());
+            // Make sure publisher is available.
             assertTrue("Publisher is not available", isCallbackResultSuccess());
             mUsdManager.unregisterPublisherStatusListener(getCallbackHandler());
-            // Publish only on channels 1, 6 and 11
+            // Publish only on channels 1, 6 and 11.
             int[] operatingFrequencies = new int[] {2412, 2437, 2462};
             PublishConfig publishConfig =
                     new PublishConfig.Builder(USD_SERVICE_NAME)
@@ -502,15 +519,15 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
             PublishSessionCallbackTest publishSessionCallbackTest =
                     new PublishSessionCallbackTest();
             mUsdManager.publish(publishConfig, executor, publishSessionCallbackTest);
-            // Check whether publish is started or not
+            // Check whether publish is started or not.
             assertTrue(
                     "Publish started",
                     publishSessionCallbackTest.waitForCallback(
                             PublishSessionCallbackTest.ON_PUBLISH_STARTED));
             assertNotNull(publishSessionCallbackTest.getPublishSession());
-            // Cancel
+            // Cancel.
             publishSessionCallbackTest.getPublishSession().cancel();
-            // Check whether publish is terminated or not
+            // Check whether publish is terminated or not.
             assertTrue(
                     "Publish terminated",
                     publishSessionCallbackTest.waitForCallback(
@@ -546,7 +563,8 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                 "android.net.wifi.usd.SubscriberConfig#getTxMatchFilter",
                 "android.net.wifi.usd.SubscriberConfig#getOperatingFrequenciesMhz"
             })
-    public void testSubscribeConfig() {
+    @Test
+    public void subscribeConfig() {
         SubscribeConfig subscribeConfig =
                 new SubscribeConfig.Builder(USD_SERVICE_NAME)
                         .setQueryPeriodMillis(200)
@@ -711,7 +729,8 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                 "android.net.wifi.usd.SessionCallback#onMessageReceived",
                 "android.net.wifi.usd.SessionCallback#onSessionTerminated"
             })
-    public void testSubscribe() throws Exception {
+    @Test
+    public void subscribe() throws Exception {
         try (PermissionContext p = TestApis.permissions().withPermission(
                 android.Manifest.permission.MANAGE_WIFI_NETWORK_SELECTION)) {
             if (!mWifiManager.isUsdSubscriberSupported()) {
@@ -720,13 +739,13 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
             assertNotNull(mUsdManager);
             ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
             mUsdManager.registerSubscriberStatusListener(executor, getCallbackHandler());
-            // Make sure USD subscriber is available
+            // Make sure USD subscriber is available.
             assertTrue("Subscriber is not available", isCallbackResultSuccess());
             mUsdManager.unregisterSubscriberStatusListener(getCallbackHandler());
             Characteristics characteristics = mUsdManager.getCharacteristics();
             assertNotNull(characteristics);
             assertTrue(USD_SERVICE_NAME.length() <= characteristics.getMaxServiceNameLength());
-            // Set subscribe configuration
+            // Set subscribe configuration.
             SubscribeConfig.Builder builder =
                     new SubscribeConfig.Builder(USD_SERVICE_NAME)
                             .setQueryPeriodMillis(200)
@@ -741,18 +760,18 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                 builder.setTxMatchFilter(mFilter);
                 builder.setRxMatchFilter(mFilter);
             }
-            // Subscribe
+            // Subscribe.
             SubscribeConfig subscribeConfig = builder.build();
             SubscribeSessionCallbackTest subscribeSessionCallbackTest =
                     new SubscribeSessionCallbackTest();
             mUsdManager.subscribe(subscribeConfig, executor, subscribeSessionCallbackTest);
-            // Check whether subscribe operation is started or not
+            // Check whether subscribe operation is started or not.
             assertTrue(
                     "Subscribe started",
                     subscribeSessionCallbackTest.waitForCallback(
                             SubscribeSessionCallbackTest.ON_SUBSCRIBE_STARTED));
             assertNotNull(subscribeSessionCallbackTest.getSubscribeSession());
-            // Make sure no more callbacks are called for failure, discovery or message received
+            // Make sure no more callbacks are called for failure, discovery or message received.
             assertFalse(
                     "Subscribe failed",
                     subscribeSessionCallbackTest.waitForCallback(
@@ -765,21 +784,21 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                     "Message received",
                     subscribeSessionCallbackTest.waitForCallback(
                             SubscribeSessionCallbackTest.ON_MESSAGE_RECEIVED, TEST_TIMEOUT_SECS));
-            // Make sure session is not terminated
+            // Make sure session is not terminated.
             assertFalse(
                     "Subscribe terminated",
                     subscribeSessionCallbackTest.hasCallbackAlreadyHappened(
                             SubscribeSessionCallbackTest.ON_SESSION_TERMINATED));
             SubscribeSession session = subscribeSessionCallbackTest.getSubscribeSession();
             assertNotNull("Session is null", session);
-            // Send a message; this is expected to fail in case of single device test
+            // Send a message; this is expected to fail in case of single device test.
             resetCallback();
             session.sendMessage(1, "some message".getBytes(), executor, getCallbackHandler());
             assertFalse("SendMessage cannot succeed", isCallbackResultSuccess());
             assertTrue("Callback was never called", isCallbackCalled());
-            // Cancel Subscribe
+            // Cancel Subscribe.
             session.cancel();
-            // Make sure terminate notification is generated
+            // Make sure terminate notification is generated.
             assertTrue(
                     "Subscribe session terminated",
                     subscribeSessionCallbackTest.waitForCallback(
@@ -795,7 +814,8 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                 "android.net.wifi.usd.UsdManager.SubscribeConfig.Builder#setOperatingFrequenciesMhz",
                 "android.net.wifi.usd.UsdManager.SubscribeConfig.Builder#getOperatingFrequenciesMhz",
             })
-    public void testSubscribeWithOperatingFrequencies() throws Exception {
+    @Test
+    public void subscribeWithOperatingFrequencies() throws Exception {
         try (PermissionContext p = TestApis.permissions().withPermission(
                 android.Manifest.permission.MANAGE_WIFI_NETWORK_SELECTION)) {
             if (!mWifiManager.isUsdSubscriberSupported()) {
@@ -804,7 +824,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
             assertNotNull(mUsdManager);
             ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
             mUsdManager.registerSubscriberStatusListener(executor, getCallbackHandler());
-            // Make sure subscriber is available
+            // Make sure subscriber is available.
             assertTrue("Subscriber is not available", isCallbackResultSuccess());
             mUsdManager.unregisterSubscriberStatusListener(getCallbackHandler());
             SubscribeConfig subscribeConfig =
@@ -815,15 +835,15 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
             SubscribeSessionCallbackTest subscribeSessionCallbackTest =
                     new SubscribeSessionCallbackTest();
             mUsdManager.subscribe(subscribeConfig, executor, subscribeSessionCallbackTest);
-            // Check whether subscribe operation is started or not
+            // Check whether subscribe operation is started or not.
             assertTrue(
                     "Subscribe started",
                     subscribeSessionCallbackTest.waitForCallback(
                             SubscribeSessionCallbackTest.ON_SUBSCRIBE_STARTED));
             assertNotNull(subscribeSessionCallbackTest.getSubscribeSession());
-            // Cancel Subscribe
+            // Cancel Subscribe.
             subscribeSessionCallbackTest.getSubscribeSession().cancel();
-            // Make sure terminate notification is generated
+            // Make sure terminate notification is generated.
             assertTrue(
                     "Subscribe session terminated",
                     subscribeSessionCallbackTest.waitForCallback(
@@ -846,7 +866,8 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                 "android.net.wifi.usd.DiscoveryResult#getServiceProtoType",
                 "android.net.wifi.usd.DiscoveryResult#getServiceSpecificInfo",
             })
-    public void testDiscoveryResult() {
+    @Test
+    public void discoveryResult() {
         DiscoveryResult discoveryResult =
                 new DiscoveryResult.Builder(TEST_PEER_ID)
                         .setFsdEnabled(true)

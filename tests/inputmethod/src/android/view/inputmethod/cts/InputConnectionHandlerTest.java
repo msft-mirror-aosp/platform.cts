@@ -119,6 +119,7 @@ public final class InputConnectionHandlerTest extends EndToEndImeTestBase {
             try {
                 join(TIMEOUT);
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 fail("Failed to stop the thread: " + e);
             }
         }
@@ -617,25 +618,27 @@ public final class InputConnectionHandlerTest extends EndToEndImeTestBase {
             // "onStartInput" gets called for the EditText.
             expectEvent(stream, editorMatcher("onStartInput", editTextMarker), TIMEOUT);
 
-            runOnMainSyncWithRethrowing(() -> {
-                // Trigger layout.removeView(testEditor)
-                removeViewRef.getAndSet(null).run();
+            runOnMainSyncWithRethrowing(
+                    () -> {
+                        // Trigger layout.removeView(testEditor)
+                        removeViewRef.getAndSet(null).run();
 
-                // In this state, editText2 is scheduled to become the next IME focus target, but
-                // it's not yet completed until the next on-idle.
-                // IMEs' calling IMS#requestCursorUpdates() in this state should not **immediately**
-                // trigger startInput().
-                imeSession.callRequestCursorUpdates(0);
+                        // In this state, editText2 is scheduled to become the next IME focus
+                        // target, but it's not yet completed until the next on-idle.
+                        // IMEs' calling IMS#requestCursorUpdates() in this state should not
+                        // **immediately** trigger startInput().
+                        imeSession.callRequestCursorUpdates(0);
 
-                // Then issue fence command to verify that IC still receives commands.
-                imeSession.callPerformPrivateCommand(fenceMarker, null);
-                try {
-                    assertTrue(fenceCommandLatch.await(TIMEOUT, TimeUnit.MILLISECONDS));
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-                assertEquals(1, closeConnectionLatch.getCount());
-            });
+                        // Then issue fence command to verify that IC still receives commands.
+                        imeSession.callPerformPrivateCommand(fenceMarker, null);
+                        try {
+                            assertTrue(fenceCommandLatch.await(TIMEOUT, TimeUnit.MILLISECONDS));
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            throw new RuntimeException(e);
+                        }
+                        assertEquals(1, closeConnectionLatch.getCount());
+                    });
         }
     }
 
@@ -692,6 +695,7 @@ public final class InputConnectionHandlerTest extends EndToEndImeTestBase {
             try {
                 mHandler.getLooper().getThread().join(TIMEOUT);
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 fail("Failed to terminate the thread");
             }
         }

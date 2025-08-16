@@ -20,6 +20,7 @@ import android.Manifest
 import android.annotation.CallSuper
 import android.annotation.UserIdInt
 import android.app.Instrumentation
+import android.app.NotificationManager
 import android.app.UiAutomation
 import android.companion.AssociationInfo
 import android.companion.AssociationRequest
@@ -76,6 +77,10 @@ abstract class TestBase {
 
     protected val cdm: CompanionDeviceManager by lazy {
         context.getSystemService(CompanionDeviceManager::class.java)!!
+    }
+
+    protected val nm: NotificationManager by lazy {
+        context.getSystemService(NotificationManager::class.java)!!
     }
 
     private val locationManager = context.getSystemService(LocationManager::class.java)!!

@@ -46,7 +46,6 @@ import androidx.test.filters.LargeTest;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -109,7 +108,6 @@ public class BitmapTests extends ActivityTestBase {
      * red pixel.
      */
     @Test
-    @Ignore("b/433284314")
     public void testChangeDuringRtAnimation() {
         withAnimations(() -> {
             class RtOnlyFrameCounter implements Window.OnFrameMetricsAvailableListener {

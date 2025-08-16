@@ -23,34 +23,44 @@ import static android.net.wifi.p2p.WifiP2pConfig.PCC_MODE_CONNECTION_TYPE_LEGACY
 import static android.net.wifi.p2p.WifiP2pGroup.NETWORK_ID_PERSISTENT;
 import static android.net.wifi.p2p.WifiP2pGroup.NETWORK_ID_TEMPORARY;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 import android.net.MacAddress;
 import android.net.wifi.OuiKeyedData;
+import android.net.wifi.cts.WifiJUnit4TestBase;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pPairingBootstrappingConfig;
 import android.os.Build;
 import android.os.PersistableBundle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.test.AndroidTestCase;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.wifi.flags.Flags;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.util.Arrays;
 import java.util.List;
 
-public class WifiP2pConfigTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public class WifiP2pConfigTest extends WifiJUnit4TestBase {
     private static final String TEST_NETWORK_NAME = "DIRECT-xy-Hello";
     private static final String TEST_PASSPHRASE = "8etterW0r1d";
     private static final int TEST_OWNER_BAND = WifiP2pConfig.GROUP_OWNER_BAND_5GHZ;
     private static final int TEST_OWNER_FREQ = 2447;
     private static final String TEST_DEVICE_ADDRESS = "aa:bb:cc:dd:ee:ff";
 
-    public void testWifiP2pConfigCopyConstructor() {
+    @Test
+    public void wifiP2pConfigCopyConstructor() {
         WifiP2pConfig.Builder builder = new WifiP2pConfig.Builder()
                 .setNetworkName(TEST_NETWORK_NAME)
                 .setPassphrase(TEST_PASSPHRASE)
@@ -71,7 +81,8 @@ public class WifiP2pConfigTest extends AndroidTestCase {
                         : GROUP_CLIENT_IP_PROVISIONING_MODE_IPV4_DHCP);
     }
 
-    public void testWifiP2pConfigBuilderForPersist() {
+    @Test
+    public void wifiP2pConfigBuilderForPersist() {
         WifiP2pConfig config = new WifiP2pConfig.Builder()
                 .setNetworkName(TEST_NETWORK_NAME)
                 .setPassphrase(TEST_PASSPHRASE)
@@ -85,7 +96,8 @@ public class WifiP2pConfigTest extends AndroidTestCase {
                 GROUP_CLIENT_IP_PROVISIONING_MODE_IPV4_DHCP);
     }
 
-    public void testWifiP2pConfigBuilderForNonPersist() {
+    @Test
+    public void wifiP2pConfigBuilderForNonPersist() {
         WifiP2pConfig config = new WifiP2pConfig.Builder()
                 .setNetworkName(TEST_NETWORK_NAME)
                 .setPassphrase(TEST_PASSPHRASE)
@@ -99,7 +111,8 @@ public class WifiP2pConfigTest extends AndroidTestCase {
                 GROUP_CLIENT_IP_PROVISIONING_MODE_IPV4_DHCP);
     }
 
-    public void testWifiP2pConfigBuilderForGroupClientIpProvisioningModeDefault() {
+    @Test
+    public void wifiP2pConfigBuilderForGroupClientIpProvisioningModeDefault() {
         WifiP2pConfig config = new WifiP2pConfig.Builder()
                 .setNetworkName(TEST_NETWORK_NAME)
                 .setPassphrase(TEST_PASSPHRASE)
@@ -113,7 +126,8 @@ public class WifiP2pConfigTest extends AndroidTestCase {
     }
 
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
-    public void testWifiP2pConfigBuilderForGroupClientIpProvisioningModeIpv4Dhcp() {
+    @Test
+    public void wifiP2pConfigBuilderForGroupClientIpProvisioningModeIpv4Dhcp() {
         WifiP2pConfig config = new WifiP2pConfig.Builder()
                 .setNetworkName(TEST_NETWORK_NAME)
                 .setPassphrase(TEST_PASSPHRASE)
@@ -128,7 +142,8 @@ public class WifiP2pConfigTest extends AndroidTestCase {
     }
 
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
-    public void testWifiP2pConfigBuilderForGroupClientIpProvisioningModeIpv6LinkLocal() {
+    @Test
+    public void wifiP2pConfigBuilderForGroupClientIpProvisioningModeIpv6LinkLocal() {
         WifiP2pConfig config = new WifiP2pConfig.Builder()
                 .setNetworkName(TEST_NETWORK_NAME)
                 .setPassphrase(TEST_PASSPHRASE)
@@ -143,7 +158,8 @@ public class WifiP2pConfigTest extends AndroidTestCase {
     }
 
     @SdkSuppress(maxSdkVersion = Build.VERSION_CODES.S_V2)
-    public void testWifiP2pConfigBuilderForIpv6LinkLocalNotSupportedBelowTiramisu() {
+    @Test
+    public void wifiP2pConfigBuilderForIpv6LinkLocalNotSupportedBelowTiramisu() {
         assertThrows(UnsupportedOperationException.class, () ->
                 new WifiP2pConfig.Builder()
                         .setDeviceAddress(MacAddress.fromString("aa:bb:cc:dd:ee:ff"))
@@ -152,7 +168,8 @@ public class WifiP2pConfigTest extends AndroidTestCase {
                         .build());
     }
 
-    public void testWifiP2pConfigBuilderWithJoinExistingGroupSet() {
+    @Test
+    public void wifiP2pConfigBuilderWithJoinExistingGroupSet() {
         WifiP2pConfig config = new WifiP2pConfig.Builder()
                 .setDeviceAddress(MacAddress.fromString(TEST_DEVICE_ADDRESS))
                 .setJoinExistingGroup(true)
@@ -164,7 +181,8 @@ public class WifiP2pConfigTest extends AndroidTestCase {
     @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
             codeName = "VanillaIceCream")
-    public void testWifiP2pConfigBuilderWithVendorData() {
+    @Test
+    public void wifiP2pConfigBuilderWithVendorData() {
         OuiKeyedData vendorDataElement =
                 new OuiKeyedData.Builder(0x00aabbcc, new PersistableBundle()).build();
         List<OuiKeyedData> vendorData = Arrays.asList(vendorDataElement);
@@ -178,7 +196,8 @@ public class WifiP2pConfigTest extends AndroidTestCase {
     @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pConfig#getPccModeConnectionType"})
     @RequiresFlagsEnabled(Flags.FLAG_WIFI_DIRECT_R2)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
-    public void testWifiP2pConfigBuilderWithPccModeConnectionType() {
+    @Test
+    public void wifiP2pConfigBuilderWithPccModeConnectionType() {
         WifiP2pConfig config = new WifiP2pConfig.Builder()
                 .setNetworkName(TEST_NETWORK_NAME)
                 .setPassphrase(TEST_PASSPHRASE)
@@ -193,7 +212,8 @@ public class WifiP2pConfigTest extends AndroidTestCase {
             "android.net.wifi.p2p.WifiP2pConfig#setGroupOwnerVersion"})
     @RequiresFlagsEnabled(Flags.FLAG_WIFI_DIRECT_R2)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
-    public void testWifiP2pConfigSetGetGroupOwnerVersion() {
+    @Test
+    public void wifiP2pConfigSetGetGroupOwnerVersion() {
         WifiP2pConfig config = new WifiP2pConfig();
         config.setGroupOwnerVersion(P2P_VERSION_2);
         assertEquals(P2P_VERSION_2, config.getGroupOwnerVersion());
@@ -203,7 +223,8 @@ public class WifiP2pConfigTest extends AndroidTestCase {
             "android.net.wifi.p2p.WifiP2pConfig.Builder#setPairingBootstrappingConfig"})
     @RequiresFlagsEnabled(Flags.FLAG_WIFI_DIRECT_R2)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
-    public void testWifiP2pConfigBuilderWithWifiP2pPairingBootstrappingConfig() {
+    @Test
+    public void wifiP2pConfigBuilderWithWifiP2pPairingBootstrappingConfig() {
         WifiP2pPairingBootstrappingConfig pairingBootstrappingConfig =
                 new WifiP2pPairingBootstrappingConfig(WifiP2pPairingBootstrappingConfig
                         .PAIRING_BOOTSTRAPPING_METHOD_DISPLAY_PINCODE, "1234");
@@ -224,7 +245,8 @@ public class WifiP2pConfigTest extends AndroidTestCase {
             })
     @RequiresFlagsEnabled(Flags.FLAG_WIFI_DIRECT_R2)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
-    public void testWifiP2pConfigBuilderWithAuthorizeConnectionFromPeer() throws Exception {
+    @Test
+    public void wifiP2pConfigBuilderWithAuthorizeConnectionFromPeer() throws Exception {
         WifiP2pPairingBootstrappingConfig pairingBootstrappingConfig =
                 new WifiP2pPairingBootstrappingConfig(WifiP2pPairingBootstrappingConfig
                         .PAIRING_BOOTSTRAPPING_METHOD_OUT_OF_BAND, "1234");
@@ -252,7 +274,8 @@ public class WifiP2pConfigTest extends AndroidTestCase {
     @RequiresFlagsEnabled(
             Flags.FLAG_EXTERNAL_APPROVER_SUPPORT_FOR_WFDR2_PASSWORD_BASED_BOOTSTRAPPING)
     @SdkSuppress(minSdkVersion = 37)
-    public void testWifiP2pConfigGetPairingBootstrappingMethodAndPassword() {
+    @Test
+    public void wifiP2pConfigGetPairingBootstrappingMethodAndPassword() {
         WifiP2pPairingBootstrappingConfig pairingBootstrappingConfig =
                 new WifiP2pPairingBootstrappingConfig(
                         WifiP2pPairingBootstrappingConfig

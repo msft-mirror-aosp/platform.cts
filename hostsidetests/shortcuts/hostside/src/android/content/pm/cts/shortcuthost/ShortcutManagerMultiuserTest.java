@@ -41,15 +41,15 @@ public class ShortcutManagerMultiuserTest extends BaseShortcutManagerHostTest {
             return;
         }
         // First, create users
-        final int profileId = createProfile(getMainUserId());
+        final int profileId = createProfile(getBackupUserId());
 
-        installAppAsUser(TARGET_APK, getMainUserId());
+        installAppAsUser(TARGET_APK, getBackupUserId());
 
         runDeviceTestsAsUser(
                 TARGET_PKG,
                 ".ShortcutManagerManagedUserTest",
                 "test01_managedProfileNotStarted",
-                getMainUserId());
+                getBackupUserId());
 
         getDevice().startUser(profileId, /* wait */ true);
         installAppAsUser(TARGET_APK, profileId);
@@ -58,7 +58,7 @@ public class ShortcutManagerMultiuserTest extends BaseShortcutManagerHostTest {
                 TARGET_PKG,
                 ".ShortcutManagerManagedUserTest",
                 "test02_createShortuctsOnPrimaryUser",
-                getMainUserId());
+                getBackupUserId());
         runDeviceTestsAsUser(TARGET_PKG, ".ShortcutManagerManagedUserTest",
                 "test03_createShortuctsOnManagedProfile", profileId);
 
@@ -66,7 +66,7 @@ public class ShortcutManagerMultiuserTest extends BaseShortcutManagerHostTest {
                 TARGET_PKG,
                 ".ShortcutManagerManagedUserTest",
                 "test04_getAndLaunch_primary",
-                getMainUserId());
+                getBackupUserId());
     }
 
     @Ignore("b/288276271")

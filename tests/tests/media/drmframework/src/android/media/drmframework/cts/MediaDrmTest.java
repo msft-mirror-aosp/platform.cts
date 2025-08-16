@@ -73,12 +73,14 @@ public class MediaDrmTest {
     public void testGetLogMessages() throws Exception {
         List<UUID> supportedCryptoSchemes = MediaDrm.getSupportedCryptoSchemes();
         for (UUID scheme : supportedCryptoSchemes) {
+            // Open and close a session to generate some logs.
+            // Errors can be ignored.
             MediaDrm drm = new MediaDrm(scheme);
             try {
                 byte[] sid = drm.openSession();
                 drm.closeSession(sid);
-            } catch (NotProvisionedException e) {
-                Log.w(TAG, scheme.toString() + ": not provisioned", e);
+            } catch (Exception e) {
+                Log.w(TAG, scheme.toString() + ": error opening/closing session", e);
             }
 
             List<MediaDrm.LogMessage> logMessages;

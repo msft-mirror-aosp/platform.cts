@@ -171,6 +171,8 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
      */
     @Deprecated private int mMainUserId;
 
+    private int mInitialUserId;
+
     /** Is test running on a watch */
     protected boolean mIsWatch;
 
@@ -225,16 +227,16 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
 
         // Gets the value of the initial user running these tests - it will be switched to (in
         // a few lines) and won't be removed
-        int initialUserId = DevicePolicyUsersPreparer.getInitialCurrentUserId();
+        mInitialUserId = DevicePolicyUsersPreparer.getInitialCurrentUserId();
         mPreExistingUsers.add(USER_SYSTEM);
         mPreExistingUsers.add(mMainUserId);
-        mPreExistingUsers.add(initialUserId);
+        mPreExistingUsers.add(mInitialUserId);
 
         CLog.d(
-                "%s.setUp(): initialUserId=%d, mCurrentUser=%d, mMainUserId=%d, "
+                "%s.setUp(): mInitialUserId=%d, currentUserId=%d, mMainUserId=%d, "
                         + "mDeviceOwnerUserId=%s, mFixedUsers=%s",
                 getClass().getSimpleName(),
-                initialUserId,
+                mInitialUserId,
                 getDevice().getCurrentUser(),
                 mMainUserId,
                 mDeviceOwnerUserId,
@@ -244,7 +246,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
 
         removeOwners();
 
-        switchUser(initialUserId);
+        switchUser(mInitialUserId);
 
         removeTestUsers();
         // Unlock keyguard before test
@@ -279,14 +281,15 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
 
     @After
     public void tearDown() throws Exception {
+        var device = getDevice();
         // reset the package verifier setting to its original value
-        getDevice().executeShellCommand("settings put global verifier_verify_adb_installs "
+        device.executeShellCommand("settings put global verifier_verify_adb_installs "
                 + mPackageVerifier);
         removeOwners();
 
         removeTestUsers();
         removeTestPackages();
-        getDevice().executeShellCommand(" rm -r " + TEST_UPDATE_LOCATION);
+        device.executeShellCommand(" rm -r " + TEST_UPDATE_LOCATION);
     }
 
     protected void installAppAsUser(String appFileName, int userId) throws FileNotFoundException,
@@ -509,7 +512,12 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
 
     protected void removeTestUsers() throws Exception {
         List<Integer> usersCreatedByTests = getUsersCreatedByTests();
-        CLog.d("removeTestUsers(): usersCreatedByTests=%s", usersCreatedByTests);
+        CLog.d("removeTestUsers(): currentUserId=%d, usersCreatedByTests=%s",
+                getDevice().getCurrentUser(), usersCreatedByTests);
+
+        // TODO(b/435528858): it might be better to change removeTestAddedUser() to check if user
+        // is current and call pm remove-user --set-ephemeral-if-in-use instead
+        switchUser(mInitialUserId);
 
         // The time spent on stopUser is depend on how busy the broadcast queue is.
         // To optimize the time to remove multiple test users, we mark all users as

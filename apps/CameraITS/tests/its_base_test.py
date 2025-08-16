@@ -207,6 +207,7 @@ class ItsBaseTest(base_test.BaseTestClass):
     self.tablet.adb.shell('am force-stop com.android.gallery3d')
     self.tablet.adb.shell('am force-stop com.sec.android.gallery3d')
     self.tablet.adb.shell('am force-stop com.miui.gallery')
+    self.tablet.adb.shell('am force-stop com.hihonor.photos')
     self.tablet.adb.shell(
         'settings put global policy_control immersive.full=*')
 
