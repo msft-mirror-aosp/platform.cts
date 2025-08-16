@@ -54,6 +54,8 @@ public class ContactsContract_AccountAttributesTest {
     private static final Account ACCT_NOT_PRESENT =
             new Account(
                     "test for account attributes not signed in", StaticAccountAuthenticator.TYPE);
+    private static final Account ACCT_WITH_TYPE_UNAUTHENTICATED =
+            new Account("test for account attributes 3", "type.unauthenticated");
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -166,6 +168,26 @@ public class ContactsContract_AccountAttributesTest {
                 .isEqualTo(
                         AccountAttributes.ATTRIBUTE_SYNC_MODE_UP_SYNC
                                 | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC);
+    }
+
+    /**
+     * Verifies that an update resulting in a semantic conflict (e.g., multiple bits set in a
+     * single-choice category) throws an IllegalStateException.
+     */
+    @Test
+    @RequiresFlagsEnabled({FLAG_NEW_ACCOUNT_ATTRIBUTES_API_ENABLED})
+    public void testUpdateAccountAttributes_onNonAuthenticatedAccountTypes() {
+        // Conflict DATA_ORIGIN attributes.
+        assertThrows(
+                "setAccountAttributes on account types not authenticated by this package should"
+                        + " fail",
+                SecurityException.class,
+                () ->
+                        setAccountAttributesInternal(
+                                mResolver,
+                                ACCT_WITH_TYPE_UNAUTHENTICATED,
+                                null,
+                                AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD));
     }
 
     @Test
