@@ -42,6 +42,7 @@ import android.speech.RecognitionListener
 import android.speech.SpeechRecognizer
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.SystemUtil
+import com.google.common.truth.Truth.assertWithMessage
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -1023,7 +1024,19 @@ class RuntimePermissionsAppOpTrackingTest {
                 }
                 assertThat(opProxyInfo!!.uid).isEqualTo(attributionSource.uid)
                 assertThat(opProxyInfo.packageName).isEqualTo(attributionSource.packageName)
-                assertThat(opProxyInfo.attributionTag).isEqualTo(attributionSource.attributionTag)
+
+                /* Fix made to b/304983146 treats the attribution coming from shell as invalid
+                 because it will not exist in shell package. Hence this change is to
+                 validate them as null instead of actual values
+                */
+                if (attributionSource.packageName == SHELL_PACKAGE_NAME) {
+                    assertWithMessage("proxy attribution tag is expected to be null")
+                            .that(opProxyInfo.attributionTag).isNull()
+                } else {
+                    assertWithMessage("proxy attribution tag is not equal to expected")
+                            .that(opProxyInfo.attributionTag)
+                            .isEqualTo(attributionSource.attributionTag)
+                }
             }
         }
 
