@@ -19,6 +19,7 @@ import os.path
 from mobly import test_runner
 import camera_properties_utils
 import preview_processing_utils
+import gen2_rig_controller_utils
 import its_base_test
 import its_session_utils
 import lighting_control_utils
@@ -85,6 +86,9 @@ class NightModeIndicatorTest(its_base_test.ItsBaseTest):
   turned back on, the indicator should change to the "OFF" state.
   """
 
+  def teardown_test(self):
+    if self.use_gen2: self.lighting_control_port.close()
+
   def test_night_mode_indicator(self):
     with its_session_utils.ItsSession(
         device_id=self.dut.serial,
@@ -101,9 +105,11 @@ class NightModeIndicatorTest(its_base_test.ItsBaseTest):
       )
 
       # establish connection with lighting controller
-      arduino_serial_port = lighting_control_utils.lighting_control(
-          self.lighting_cntl, self.lighting_ch
-      )
+      use_gen2 = (self.lighting_cntl ==
+                  gen2_rig_controller_utils.DEFAULT_GEN2_LIGHTS_NAME)
+      lighting_control_port = lighting_control_utils.lighting_control(
+          self.lighting_cntl, self.lighting_ch, use_gen2
+          )
 
       for session_type in _CAMERA_SESSION_TYPES:
         logging.debug('scenario: %s', session_type)
@@ -126,8 +132,11 @@ class NightModeIndicatorTest(its_base_test.ItsBaseTest):
           logging.debug('Unknown scenario: %s', session_type)
           continue
 
+        # turn lights ON
         lighting_control_utils.set_lighting_state(
-            arduino_serial_port, self.lighting_ch, 'ON')
+            lighting_control_port, self.lighting_ch,
+            lighting_control_utils.LIGHT_ON, use_gen2
+            )
         result = _start_preview(
             cam, file_stem, self.camera_id, target_preview_size, session_type)
 
@@ -135,15 +144,16 @@ class NightModeIndicatorTest(its_base_test.ItsBaseTest):
           raise AssertionError('Lighting state ON did not result in Night Mode '
                                'Indicator state OFF.')
 
+        # turn OFF lights
         lighting_control_utils.set_lighting_state(
-            arduino_serial_port, self.lighting_ch, 'OFF')
+            lighting_control_port, self.lighting_ch,
+            lighting_control_utils.LIGHT_OFF, use_gen2)
 
         result = _start_preview(
             cam, file_stem, self.camera_id, target_preview_size, session_type)
         if (result != 'ON'):
           raise AssertionError('Lighting state OFF did not result in Night '
                                'Mode Indicator state ON.')
-
 
 if __name__ == '__main__':
   test_runner.main()

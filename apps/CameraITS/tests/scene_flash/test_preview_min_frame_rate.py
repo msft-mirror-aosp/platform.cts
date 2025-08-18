@@ -24,6 +24,7 @@ import numpy as np
 import its_base_test
 import camera_properties_utils
 import capture_request_utils
+import gen2_rig_controller_utils
 import image_processing_utils
 import its_session_utils
 import lighting_control_utils
@@ -46,6 +47,9 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
   recording's frame rate is at the minimum of the requested FPS range.
   """
 
+  def teardown_test(self):
+    if self.use_gen2: self.lighting_control_port.close()
+
   def test_preview_min_frame_rate(self):
     with its_session_utils.ItsSession(
         device_id=self.dut.serial,
@@ -65,12 +69,15 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
           fps_ranges)
 
       # establish connection with lighting controller
-      arduino_serial_port = lighting_control_utils.lighting_control(
-          self.lighting_cntl, self.lighting_ch)
+      use_gen2 = (self.lighting_cntl ==
+                  gen2_rig_controller_utils.DEFAULT_GEN2_LIGHTS_NAME)
+      lighting_control_port = lighting_control_utils.lighting_control(
+          self.lighting_cntl, self.lighting_ch, use_gen2)
 
       # turn OFF lights to darken scene
       lighting_control_utils.set_lighting_state(
-          arduino_serial_port, self.lighting_ch, 'OFF')
+          lighting_control_port, self.lighting_ch,
+          lighting_control_utils.LIGHT_OFF, use_gen2)
 
       # turn OFF DUT to reduce reflections
       lighting_control_utils.turn_off_device_screen(self.dut)
@@ -82,8 +89,8 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
       y_plane, _, _ = image_processing_utils.convert_capture_to_planes(cap)
       # In the sensor fusion rig, there is no tablet, so tablet_state is OFF.
       its_session_utils.validate_lighting(
-          y_plane, self.scene, state='OFF', tablet_state='OFF',
-          log_path=self.log_path)
+          y_plane, self.scene, state=lighting_control_utils.LIGHT_OFF,
+          tablet_state='OFF', log_path=self.log_path)
       # Check for flickering frequency
       scene_flicker_freq = cap['metadata']['android.statistics.sceneFlicker']
       logging.debug('Detected flickering frequency: %d', scene_flicker_freq)
@@ -119,7 +126,8 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
 
       # turn lights back ON
       lighting_control_utils.set_lighting_state(
-          arduino_serial_port, self.lighting_ch, 'ON')
+          lighting_control_port, self.lighting_ch,
+          lighting_control_utils.LIGHT_ON, use_gen2)
 
       # pull the video recording file from the device.
       self.dut.adb.pull([preview_recording_obj['recordedOutputPath'],

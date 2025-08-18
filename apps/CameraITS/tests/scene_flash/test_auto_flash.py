@@ -24,6 +24,7 @@ import numpy as np
 
 import its_base_test
 import camera_properties_utils
+import gen2_rig_controller_utils
 import image_processing_utils
 import its_session_utils
 import lighting_control_utils
@@ -54,6 +55,7 @@ class AutoFlashTest(its_base_test.UiAutomatorItsBaseTest):
 
   def teardown_test(self):
     ui_interaction_utils.force_stop_app(self.dut, self.ui_app)
+    if self.use_gen2: self.lighting_control_port.close()
 
   def test_auto_flash(self):
     with its_session_utils.ItsSession(
@@ -82,12 +84,15 @@ class AutoFlashTest(its_base_test.UiAutomatorItsBaseTest):
       camera_properties_utils.skip_unless(should_run_front or should_run_rear)
 
       # establish connection with lighting controller
-      arduino_serial_port = lighting_control_utils.lighting_control(
-          self.lighting_cntl, self.lighting_ch)
+      use_gen2 = (self.lighting_cntl ==
+                  gen2_rig_controller_utils.DEFAULT_GEN2_LIGHTS_NAME)
+      lighting_control_port = lighting_control_utils.lighting_control(
+          self.lighting_cntl, self.lighting_ch, use_gen2)
 
       # turn OFF lights to darken scene
       lighting_control_utils.set_lighting_state(
-          arduino_serial_port, self.lighting_ch, 'OFF')
+          lighting_control_port, self.lighting_ch,
+          lighting_control_utils.LIGHT_OFF, use_gen2)
 
       # take capture with no flash as baseline
       path = pathlib.Path(
@@ -147,7 +152,9 @@ class AutoFlashTest(its_base_test.UiAutomatorItsBaseTest):
 
       # turn lights back ON
       lighting_control_utils.set_lighting_state(
-          arduino_serial_port, self.lighting_ch, 'ON')
+          lighting_control_port, self.lighting_ch,
+          lighting_control_utils.LIGHT_ON, use_gen2)
+
 
 if __name__ == '__main__':
   test_runner.main()
