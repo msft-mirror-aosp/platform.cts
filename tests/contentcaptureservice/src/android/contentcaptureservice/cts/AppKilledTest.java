@@ -41,14 +41,17 @@ public class AppKilledTest extends AbstractContentCaptureIntegrationActivityLess
 
     @Test
     public void testDoIt() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         startOutOfProcessActivity();
         // wait Activity started
         mReceiver.awaitForBroadcast();
 
         OutOfProcessActivity.killOutOfProcessActivity();
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         Log.v(mTag, "session id: " + session.id);
         assertRightActivity(session, session.id, OutOfProcessActivity.COMPONENT_NAME);
         assertThat(getViewLevelEvents(session.getEvents())).isEmpty();

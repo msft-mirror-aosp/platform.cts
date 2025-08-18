@@ -111,7 +111,7 @@ public class ChildlessActivityTest
 
     @Test
     public void testDefaultLifecycle() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
 
         final ChildlessActivity activity = launchActivity();
@@ -120,7 +120,10 @@ public class ChildlessActivityTest
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         Log.v(TAG, "session id: " + session.id);
 
         activity.assertDefaultEvents(session);
@@ -288,7 +291,7 @@ public class ChildlessActivityTest
 
     @Test
     public void testAddAndRemoveImportantChild() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
 
         // TODO(b/120494182): Child must be created inside the lambda because it needs to use the
@@ -312,7 +315,10 @@ public class ChildlessActivityTest
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         final ContentCaptureSessionId sessionId = session.id;
         Log.v(TAG, "session id: " + sessionId);
 
@@ -347,7 +353,7 @@ public class ChildlessActivityTest
 
     @Test
     public void testAddImportantChildAfterSessionStarted() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
 
         final ChildlessActivity activity = launchActivity();
@@ -361,7 +367,10 @@ public class ChildlessActivityTest
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         final ContentCaptureSessionId sessionId = session.id;
         Log.v(TAG, "session id: " + sessionId);
 

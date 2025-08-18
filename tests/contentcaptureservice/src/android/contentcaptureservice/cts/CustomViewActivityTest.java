@@ -105,7 +105,7 @@ public class CustomViewActivityTest extends
      */
     @Test
     public void testSessionLifecycleEvents() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
         final AtomicReference<CustomView> customViewRef = new AtomicReference<>();
 
@@ -122,7 +122,10 @@ public class CustomViewActivityTest extends
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         Log.v(TAG, "session id: " + session.id);
 
         assertRightActivity(session, session.id, activity);
@@ -161,7 +164,7 @@ public class CustomViewActivityTest extends
      */
     @Test
     public void testVirtualView_wrongWay() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
 
         CustomViewActivity.setCustomViewDelegate((customView, structure) -> {
@@ -187,7 +190,10 @@ public class CustomViewActivityTest extends
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         Log.v(TAG, "session id: " + session.id);
 
         assertRightActivity(session, session.id, activity);
@@ -224,7 +230,7 @@ public class CustomViewActivityTest extends
      */
     @Test
     public void testVirtualView_oneLevel() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
 
         final AtomicReference<AutofillId> child2IdRef = new AtomicReference<>();
@@ -264,7 +270,10 @@ public class CustomViewActivityTest extends
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         Log.v(TAG, "session id: " + session.id);
 
         assertRightActivity(session, session.id, activity);
@@ -289,7 +298,7 @@ public class CustomViewActivityTest extends
      */
     @Test
     public void testVirtualView_multipleLevels() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
 
         final CountDownLatch asyncLatch = setAsyncDelegate((customView, structure) -> {
@@ -375,7 +384,10 @@ public class CustomViewActivityTest extends
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         Log.v(TAG, "session id: " + session.id);
 
         assertRightActivity(session, session.id, activity);
@@ -403,7 +415,7 @@ public class CustomViewActivityTest extends
 
     @Test
     public void testVirtualView_batchDisappear() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
 
         final CountDownLatch asyncLatch = setAsyncDelegate((customView, structure) -> {
@@ -437,7 +449,10 @@ public class CustomViewActivityTest extends
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         Log.v(TAG, "session id: " + session.id);
 
         assertRightActivity(session, session.id, activity);
@@ -461,7 +476,7 @@ public class CustomViewActivityTest extends
 
     @Test
     public void testVirtualView_batchAppear() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
 
         final CountDownLatch asyncLatch = setAsyncDelegate((customView, structure) -> {
@@ -492,7 +507,10 @@ public class CustomViewActivityTest extends
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         Log.v(TAG, "session id: " + session.id);
 
         assertRightActivity(session, session.id, activity);
@@ -513,7 +531,7 @@ public class CustomViewActivityTest extends
 
     @Test
     public void testVirtualView_flushEvents() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
 
         final CountDownLatch asyncLatch = setAsyncDelegate((customView, structure) -> {
@@ -543,7 +561,10 @@ public class CustomViewActivityTest extends
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         Log.v(TAG, "session id: " + session.id);
 
         assertRightActivity(session, session.id, activity);
@@ -632,7 +653,7 @@ public class CustomViewActivityTest extends
 
     @Test
     public void testDisabledByFlagSecure() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
 
         CustomViewActivity.onRootView((activity) -> {
@@ -648,7 +669,10 @@ public class CustomViewActivityTest extends
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         assertThat((session.context.getFlags()
                 & ContentCaptureContext.FLAG_DISABLED_BY_FLAG_SECURE) != 0).isTrue();
 
