@@ -43,19 +43,6 @@ public final class ManagedProfileTest extends BaseManagedProfileTest {
     private static final String DEVICE_OWNER_ADMIN =
             DEVICE_OWNER_PKG + ".BaseDeviceOwnerTest$BasicAdminReceiver";
 
-    /**
-     * @deprecated TODO(b/435528858): should use proper method from DevicePolicyUsersPreparer
-     */
-    @Deprecated private int mMainUserId;
-
-    // TODO(b/435528858): remove once mMainUserId is gone
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-
-        mMainUserId = getMainUser();
-    }
-
     @Test
     public void testManagedProfileSetup() throws Exception {
         runDeviceTestsAsUser(
@@ -342,7 +329,7 @@ public final class ManagedProfileTest extends BaseManagedProfileTest {
                     MANAGED_PROFILE_PKG,
                     ".LauncherAppsTest",
                     "shortcutIconDrawable_currentToOtherProfile_withUsersFullPermission_isNotNull",
-                    mMainUserId,
+                    mParentUserId,
                     params);
         } finally {
             runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".LauncherAppsTest",
@@ -354,10 +341,10 @@ public final class ManagedProfileTest extends BaseManagedProfileTest {
     public void testCanGetPersonalShortcutIconDrawableFromWorkProfile()
             throws DeviceNotAvailableException {
         runDeviceTestsAsUser(
-                MANAGED_PROFILE_PKG, ".LauncherAppsTest", "addDynamicShortcuts", mMainUserId);
+                MANAGED_PROFILE_PKG, ".LauncherAppsTest", "addDynamicShortcuts", mParentUserId);
         try {
             Map<String, String> params = new HashMap<>();
-            params.put("otherProfileUserId", String.valueOf(mMainUserId));
+            params.put("otherProfileUserId", String.valueOf(mParentUserId));
             runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".LauncherAppsTest",
                     "shortcutIconDrawable_currentToOtherProfile_withUsersFullPermission_isNotNull",
                     mProfileUserId, params);
@@ -369,7 +356,7 @@ public final class ManagedProfileTest extends BaseManagedProfileTest {
                     MANAGED_PROFILE_PKG,
                     ".LauncherAppsTest",
                     "removeAllDynamicShortcuts",
-                    mMainUserId);
+                    mParentUserId);
         }
     }
 
@@ -377,7 +364,7 @@ public final class ManagedProfileTest extends BaseManagedProfileTest {
     public void testCanGetProfiles() throws Exception {
         // getAllProfiles should contain both the primary and profile
         runDeviceTestsAsUser(
-                MANAGED_PROFILE_PKG, ".UserManagerTest", "testGetAllProfiles", mMainUserId);
+                MANAGED_PROFILE_PKG, ".UserManagerTest", "testGetAllProfiles", mParentUserId);
 
         runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".UserManagerTest",
                 "testGetAllProfiles", mProfileUserId);
@@ -386,7 +373,7 @@ public final class ManagedProfileTest extends BaseManagedProfileTest {
                 MANAGED_PROFILE_PKG,
                 ".UserManagerTest",
                 "testIsProfileReturnsFalse_runAsPrimary",
-                mMainUserId);
+                mParentUserId);
 
         runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".UserManagerTest",
                 "testIsProfileReturnsTrue_runAsProfile", mProfileUserId);
@@ -402,14 +389,14 @@ public final class ManagedProfileTest extends BaseManagedProfileTest {
                 MANAGED_PROFILE_PKG,
                 ".UserManagerTest",
                 "testCreateProfile_managedProfile",
-                mMainUserId);
+                mParentUserId);
     }
 
     @Test
     public void testResolverActivityLaunchedFromPersonalProfileWithSelectedWorkTab()
             throws Exception {
-        installAppAsUser(SHARING_APP_1_APK, mMainUserId);
-        installAppAsUser(SHARING_APP_2_APK, mMainUserId);
+        installAppAsUser(SHARING_APP_1_APK, mParentUserId);
+        installAppAsUser(SHARING_APP_2_APK, mParentUserId);
         installAppAsUser(SHARING_APP_1_APK, mProfileUserId);
         installAppAsUser(SHARING_APP_2_APK, mProfileUserId);
         try {
@@ -419,8 +406,8 @@ public final class ManagedProfileTest extends BaseManagedProfileTest {
                     MANAGED_PROFILE_PKG,
                     ".CrossProfileSharingTest",
                     "startSwitchToOtherProfileIntent",
-                    mMainUserId);
-            assertResolverActivityInForeground(mMainUserId);
+                    mParentUserId);
+            assertResolverActivityInForeground(mParentUserId);
         } finally {
             pressHome();
             runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".CrossProfileSharingTest",
@@ -431,8 +418,8 @@ public final class ManagedProfileTest extends BaseManagedProfileTest {
     @Test
     public void testResolverActivityLaunchedFromWorkProfileWithSelectedPersonalTab()
             throws Exception {
-        installAppAsUser(SHARING_APP_1_APK, mMainUserId);
-        installAppAsUser(SHARING_APP_2_APK, mMainUserId);
+        installAppAsUser(SHARING_APP_1_APK, mParentUserId);
+        installAppAsUser(SHARING_APP_2_APK, mParentUserId);
         installAppAsUser(SHARING_APP_1_APK, mProfileUserId);
         installAppAsUser(SHARING_APP_2_APK, mProfileUserId);
         try {
@@ -455,8 +442,8 @@ public final class ManagedProfileTest extends BaseManagedProfileTest {
     @Test
     public void testChooserActivityLaunchedFromPersonalProfileWithSelectedWorkTab()
             throws Exception {
-        installAppAsUser(SHARING_APP_1_APK, mMainUserId);
-        installAppAsUser(SHARING_APP_2_APK, mMainUserId);
+        installAppAsUser(SHARING_APP_1_APK, mParentUserId);
+        installAppAsUser(SHARING_APP_2_APK, mParentUserId);
         installAppAsUser(SHARING_APP_1_APK, mProfileUserId);
         installAppAsUser(SHARING_APP_2_APK, mProfileUserId);
         try {
@@ -466,8 +453,8 @@ public final class ManagedProfileTest extends BaseManagedProfileTest {
                     MANAGED_PROFILE_PKG,
                     ".CrossProfileSharingTest",
                     "startSwitchToOtherProfileIntent_chooser",
-                    mMainUserId);
-            assertChooserActivityInForeground(mMainUserId);
+                    mParentUserId);
+            assertChooserActivityInForeground(mParentUserId);
         } finally {
             pressHome();
             runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".CrossProfileSharingTest",
