@@ -147,7 +147,7 @@ public final class AppSearchSessionShimImpl implements AppSearchSessionShim {
         mLogger.logV("putAsync(%s)", FriendlyNeighborhoodStringerMan.toString(request));
         SettableFuture<AppSearchBatchResult<String, Void>> future = SettableFuture.create();
         mAppSearchSession.put(
-                request, mExecutor, new BatchResultCallbackAdapter<>(future));
+                request, mExecutor, new BatchResultCallbackAdapter<>("putAsync()", future));
         return future;
     }
 
@@ -159,7 +159,8 @@ public final class AppSearchSessionShimImpl implements AppSearchSessionShim {
         SettableFuture<AppSearchBatchResult<String, GenericDocument>> future =
                 SettableFuture.create();
         mAppSearchSession.getByDocumentId(
-                request, mExecutor, new BatchResultCallbackAdapter<>(future));
+                request, mExecutor,
+                new BatchResultCallbackAdapter<>("getByDocumentIdAsync()", future));
         return future;
     }
 
@@ -241,7 +242,8 @@ public final class AppSearchSessionShimImpl implements AppSearchSessionShim {
             @NonNull RemoveByDocumentIdRequest request) {
         mLogger.logV("removeAsync(%s)", request);
         SettableFuture<AppSearchBatchResult<String, Void>> future = SettableFuture.create();
-        mAppSearchSession.remove(request, mExecutor, new BatchResultCallbackAdapter<>(future));
+        mAppSearchSession.remove(request, mExecutor,
+                new BatchResultCallbackAdapter<>("removeAsync()", future));
         return future;
     }
 

@@ -100,7 +100,7 @@ public class EnterpriseGlobalSearchSessionShimImpl implements EnterpriseGlobalSe
                 SettableFuture.create();
         mEnterpriseGlobalSearchSession.getByDocumentId(
                 packageName, databaseName, request, mExecutor,
-                new BatchResultCallbackAdapter<>(future));
+                new BatchResultCallbackAdapter<>("getByDocumentId()", future));
         return future;
     }
 
