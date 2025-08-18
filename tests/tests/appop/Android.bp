@@ -133,6 +133,7 @@ android_test {
         ":AppWithAttributionInheritingFromSelf",
         ":AppWithAttributionInheritingFromExisting",
         ":AppThatExploitsAttributionTags",
+        ":CtsAppThatUsesAppOpApi29",
     ],
     per_testcase_directory: true,
 }
