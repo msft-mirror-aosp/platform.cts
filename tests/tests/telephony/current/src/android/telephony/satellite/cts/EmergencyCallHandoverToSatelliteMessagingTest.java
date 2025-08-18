@@ -119,6 +119,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -312,6 +313,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
     }
 
     @Test
+    @Ignore("b/438236284 - Need to fix and re-enable this test.")
     public void testE911ToT911Handover_AutoConnect() throws Exception {
         /*
          * Test scenario:

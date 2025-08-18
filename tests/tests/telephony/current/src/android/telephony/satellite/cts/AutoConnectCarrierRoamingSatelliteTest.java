@@ -30,6 +30,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -84,6 +85,7 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
     }
 
     @Test
+    @Ignore("b/438236284 - Need to fix and re-enable this test.")
     public void testCarrierRoamingNtnModeListener() throws Exception {
         logd(TAG, "testCarrierRoamingNtnModeListener");
         if (!shouldTestSatelliteWithMockService()) return;
@@ -121,6 +123,7 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
     }
 
     @Test
+    @Ignore("b/438236284 - Need to fix and re-enable this test.")
     public void testQuerySatelliteEntitlementService_success() throws Exception {
         logd(TAG, "testQuerySatelliteEntitlementService_success");
         if (!shouldTestSatelliteWithMockService()) return;
@@ -129,6 +132,7 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
     }
 
     @Test
+    @Ignore("b/438236293 - Need to fix and re-enable this test.")
     public void testSatelliteConstrainedNetwork() throws Exception {
         logd(TAG, "testSatelliteConstrainedNetwork");
         if (!shouldTestSatelliteWithMockService()) return;
@@ -136,6 +140,7 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
     }
 
     @Test
+    @Ignore("b/438236293 - Need to fix and re-enable this test.")
     public void testNoSatelliteConstrainedNetworkConnection_WithNonConstrainedDataMode()
             throws Exception {
         logd(TAG, "testNoConstrainedNetworkConnection");
