@@ -18,14 +18,11 @@ package android.server.wm.backnavigation;
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import android.app.Instrumentation;
-import android.content.Context;
 import android.graphics.Rect;
-import android.hardware.display.DisplayManager;
+import android.os.SystemClock;
 import android.server.wm.WindowManagerStateHelper;
-import android.view.Display;
-
-import com.android.cts.input.UinputTouchDevice;
-import com.android.cts.input.UinputTouchScreen;
+import android.view.InputDevice;
+import android.view.MotionEvent;
 
 /** Helper class for injecting a sequence of motion event to simulate a gesture swipe. */
 public class BackGestureTouchHelper implements AutoCloseable {
@@ -34,86 +31,115 @@ public class BackGestureTouchHelper implements AutoCloseable {
      * Do a back gesture and trigger a back event from it. Attempt to simulate human behavior, so
      * don't wait for animations.
      */
-    void triggerBackEventByGesture(WindowManagerStateHelper wmState) {
+    public void triggerBackEventByGesture(WindowManagerStateHelper wmState) {
+        if (mSwiping) return;
         final Rect bounds = wmState.getDisplay(mDisplayId).getDisplayRect();
         int midHeight = bounds.top + bounds.height() / 2;
         int midWidth = bounds.left + bounds.width() / 2;
         quickSwipe(0, midHeight, midWidth, midHeight);
     }
 
-    private static final int INJECT_INPUT_DELAY_MILLIS = 5;
+    private static final int GESTURE_DURATION_MS = 50;
+    private final Instrumentation mInstrumentation;
+    private final int mDisplayId;
+    private long mDownTime;
     private int mStartX;
     private int mStartY;
     private int mEndX;
     private int mEndY;
-    private final UinputTouchScreen mTouchScreen;
-    private UinputTouchDevice.Pointer mPointer;
-    final int mDisplayId;
+    private boolean mSwiping = false;
 
     public BackGestureTouchHelper(int displayId) {
-        final Instrumentation instrumentation = getInstrumentation();
-        final Context context = instrumentation.getContext();
-        final Display display =
-                context.getSystemService(DisplayManager.class).getDisplay(displayId);
-        mTouchScreen = new UinputTouchScreen(instrumentation, display);
+        mInstrumentation = getInstrumentation();
         mDisplayId = displayId;
     }
 
     @Override
     public void close() {
-        if (mTouchScreen != null) {
-            mTouchScreen.close();
+        if (mSwiping) {
+            cancelSwipe();
         }
     }
 
     public void beginSwipe(int startX, int startY) {
+        if (mSwiping) return;
         mStartX = startX;
         mStartY = startY;
-        mPointer = mTouchScreen.touchDown(startX, startY);
+        mDownTime = SystemClock.uptimeMillis();
+        sendPointer(mDownTime, mDownTime, MotionEvent.ACTION_DOWN, mStartX, mStartY);
+        mSwiping = true;
     }
 
     public void continueSwipe(int endX, int endY) {
+        if (!mSwiping) return;
         final int steps = 10;
-        if (mPointer == null) {
-            throw new RuntimeException("Haven't start");
-        }
+        final int stepDuration = GESTURE_DURATION_MS / steps;
+        long eventTime = mDownTime;
+
         mEndX = endX;
         mEndY = endY;
         final int stepGapX = (mEndX - mStartX) / steps;
         final int stepGapY = (mEndY - mStartY) / steps;
         for (int i = 0; i < steps; i++) {
-            mTouchScreen.delay(INJECT_INPUT_DELAY_MILLIS);
+            eventTime += stepDuration;
             final int nextX = mStartX + stepGapX * i;
             final int nextY = mStartY + stepGapY * i;
-            mPointer.moveTo(nextX, nextY);
+            sendPointer(mDownTime, eventTime, MotionEvent.ACTION_MOVE, nextX, nextY);
         }
     }
 
     public void finishSwipe() {
-        if (mPointer == null) {
-            return;
-        }
-        mPointer.moveTo(mEndX, mEndY);
-        mPointer.lift();
-        resetSwipe();
+        if (!mSwiping) return;
+        sendPointer(
+                mDownTime, mDownTime + GESTURE_DURATION_MS, MotionEvent.ACTION_UP, mEndX, mEndY);
+        mSwiping = false;
     }
 
     public void cancelSwipe() {
-        if (mPointer == null) {
-            return;
-        }
-        mPointer.close();
-        resetSwipe();
+        if (!mSwiping) return;
+        sendPointer(
+                mDownTime,
+                mDownTime + GESTURE_DURATION_MS,
+                MotionEvent.ACTION_CANCEL,
+                mEndX,
+                mEndY);
+        mSwiping = false;
     }
 
-    void quickSwipe(int startX, int startY, int endX, int endY) {
+    private void quickSwipe(int startX, int startY, int endX, int endY) {
         beginSwipe(startX, startY);
         continueSwipe(endX, endY);
-        mTouchScreen.delay(INJECT_INPUT_DELAY_MILLIS);
         finishSwipe();
     }
 
-    private void resetSwipe() {
-        mPointer = null;
+    private void sendPointer(long downTime, long eventTime, int action, float x, float y) {
+        final MotionEvent.PointerProperties[] pointerProperties = {
+            new MotionEvent.PointerProperties()
+        };
+        pointerProperties[0].id = 0;
+        pointerProperties[0].toolType = MotionEvent.TOOL_TYPE_FINGER;
+
+        final MotionEvent.PointerCoords[] pointerCoords = {new MotionEvent.PointerCoords()};
+        pointerCoords[0].x = x;
+        pointerCoords[0].y = y;
+
+        final MotionEvent event =
+                MotionEvent.obtain(
+                        downTime,
+                        eventTime,
+                        action,
+                        1, // pointerCount
+                        pointerProperties,
+                        pointerCoords,
+                        0, // metaState
+                        0, // buttonState
+                        1.0f, // xPrecision
+                        1.0f, // yPrecision
+                        mDisplayId + 1000, // deviceId
+                        0, // edgeFlags
+                        InputDevice.SOURCE_TOUCHSCREEN,
+                        mDisplayId);
+        event.setDisplayId(mDisplayId);
+        mInstrumentation.getUiAutomation().injectInputEvent(event, true);
     }
 }
