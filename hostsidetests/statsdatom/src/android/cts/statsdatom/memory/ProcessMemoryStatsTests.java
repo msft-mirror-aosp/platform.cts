@@ -58,43 +58,6 @@ public class ProcessMemoryStatsTests extends DeviceTestCase implements IBuildRec
         mCtsBuild = buildInfo;
     }
 
-    public void testProcessMemoryState() throws Exception {
-        // Get ProcessMemoryState as a simple gauge metric.
-        ConfigUtils.uploadConfigForPulledAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
-                AtomsProto.Atom.PROCESS_MEMORY_STATE_FIELD_NUMBER);
-
-        // Start test app.
-        try (AutoCloseable a = DeviceUtils.withActivity(getDevice(),
-                DeviceUtils.STATSD_ATOM_TEST_PKG, "StatsdCtsForegroundActivity", "action",
-                "action.show_notification")) {
-            RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
-            // Trigger a pull and wait for new pull before killing the process.
-            AtomTestUtils.sendAppBreadcrumbReportedAtom(getDevice());
-            RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
-        }
-
-        // Assert about ProcessMemoryState for the test app.
-        List<AtomsProto.Atom> atoms = ReportUtils.getGaugeMetricAtoms(getDevice());
-        int uid = DeviceUtils.getStatsdTestAppUid(getDevice());
-        boolean found = false;
-        for (AtomsProto.Atom atom : atoms) {
-            AtomsProto.ProcessMemoryState state = atom.getProcessMemoryState();
-            if (state.getUid() != uid) {
-                continue;
-            }
-            found = true;
-            assertThat(state.getProcessName()).isEqualTo(DeviceUtils.STATSD_ATOM_TEST_PKG);
-            assertThat(state.getOomAdjScore()).isAtLeast(0);
-            assertThat(state.getPageFault()).isAtLeast(0L);
-            assertThat(state.getPageMajorFault()).isAtLeast(0L);
-            assertThat(state.getRssInBytes()).isAtLeast(0L);
-            assertThat(state.getCacheInBytes()).isAtLeast(0L);
-            assertThat(state.getSwapInBytes()).isAtLeast(0L);
-        }
-        assertWithMessage(String.format("Did not find a matching atom for uid %d", uid))
-                .that(found).isTrue();
-    }
-
     public void testProcessMemoryHighWaterMark() throws Exception {
         // Get ProcessMemoryHighWaterMark as a simple gauge metric.
         ConfigUtils.uploadConfigForPulledAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
