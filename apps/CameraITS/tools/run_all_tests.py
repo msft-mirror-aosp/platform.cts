@@ -617,6 +617,8 @@ def get_config_file_contents_for_scenes(config_file_contents, scenes):
   )
   requested_tablet_scenes = (
       set(scenes).intersection(set(_TABLET_SCENES)) or
+      set(scenes).intersection(set(['scene_extensions'])) or
+      set(scenes).intersection(set(['scene_tele'])) or
       scenes == ['<scene-name>'] or not scenes
   )
   testbed_index = None
