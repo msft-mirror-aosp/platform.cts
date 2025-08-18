@@ -117,7 +117,8 @@ public class AutoRestoreHostSideTest extends BaseBackupHostSideTest {
     private void backupAndReinstallPackage() throws Exception {
         mBackupUtils.backupNowAndAssertSuccess(PACKAGE);
         uninstallPackage(PACKAGE);
-        installPackage(APK);
+        int userId = mBackupUtils.getCurrentUserId();
+        installPackageAsUser(APK, /* grantPermission= */ true, userId, "-d", "-r");
     }
 
     private boolean isAutoRestoreEnabled() throws Exception {
