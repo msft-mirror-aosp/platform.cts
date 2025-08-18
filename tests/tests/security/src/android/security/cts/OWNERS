@@ -1,0 +1,1 @@
+per-file Cert*,Conscrypt*,X509*  = file:/tests/tests/networksecurityconfig/OWNERS
