@@ -822,10 +822,12 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            // Launch a simple test activity
+            // Launch a simple test activity.
+            // The activity must be fullscreen to give the test activity the control of ime insets.
             final TestActivity testActivity =
                     new TestActivity.Starter()
                             .withWindowingMode(WINDOWING_MODE_FULLSCREEN)
+                            .asNewTask()
                             .startSync(LinearLayout::new, TestActivity.class);
 
             // Launch a dialog
@@ -975,10 +977,7 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
             // Launch a simple test activity
-            final TestActivity testActivity =
-                    new TestActivity.Starter()
-                            .withWindowingMode(WINDOWING_MODE_FULLSCREEN)
-                            .startSync(LinearLayout::new, TestActivity.class);
+            final TestActivity testActivity = TestActivity.startSync(LinearLayout::new);
 
             // Launch a dialog and show keyboard
             final String marker = getTestMarker();
@@ -1158,7 +1157,7 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
      * Test case for Bug 228766370.
      *
      * <p>This test ensures that IME will visible on an ime-focusable overlay window when another
-     * activity behind the overlay that requests to show IME. <p/>
+     * activity behind the overlay that requests to show IME.
      */
     @Test
     public void testImeVisibleOnImeFocusableOverlay() throws Exception {
@@ -1226,8 +1225,8 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             final String markerForActivity1 = getTestMarker(FIRST_EDIT_TEXT_TAG);
             final AtomicReference<EditText> editTextRef = new AtomicReference<>();
             // Launch a test activity with focusing editText to show keyboard
-            new TestActivity.Starter().withWindowingMode(
-                    WINDOWING_MODE_FULLSCREEN).startSync(activity -> {
+            TestActivity.startSync(
+                    activity -> {
                         final LinearLayout layout = new LinearLayout(activity);
                         final EditText editText = new EditText(activity);
                         editTextRef.set(editText);
@@ -1240,7 +1239,7 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                             activity.getWindow().setSoftInputMode(SOFT_INPUT_STATE_ALWAYS_HIDDEN);
                         }
                         return layout;
-                    }, TestActivity.class);
+                    });
 
             expectEvent(stream, editorMatcher("onStartInput", markerForActivity1), TIMEOUT);
             expectEvent(stream, editorMatcher("onStartInputView", markerForActivity1), TIMEOUT);
@@ -1249,8 +1248,7 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             expectImeVisible(TIMEOUT);
 
             // Launch another app task activity to hide keyboard
-            new TestActivity.Starter().asNewTask().withWindowingMode(
-                    WINDOWING_MODE_FULLSCREEN).startSync(activity -> {
+            new TestActivity.Starter().asNewTask().startSync(activity -> {
                         activity.getWindow().setSoftInputMode(SOFT_INPUT_STATE_ALWAYS_HIDDEN);
                         return new LinearLayout(activity);
                     }, TestActivity.class);
@@ -1263,8 +1261,7 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             if (mode == TestSoftInputMode.HIDDEN_WITH_FORWARD_NAV) {
                 // Start new TestActivity on the same task with STATE_HIDDEN softInputMode.
                 final String markerForActivity2 = getTestMarker(SECOND_EDIT_TEXT_TAG);
-                new TestActivity.Starter().asSameTaskAndClearTop().withWindowingMode(
-                        WINDOWING_MODE_FULLSCREEN).startSync(activity -> {
+                new TestActivity.Starter().asSameTaskAndClearTop().startSync(activity -> {
                             final LinearLayout layout = new LinearLayout(activity);
                             final EditText editText = new EditText(activity);
                             editText.setHint("focused editText");
@@ -1575,9 +1572,11 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
      */
     @Test
     public void testDialogPositionChangedAfterImeIsShown() throws Exception {
+        // Test activity is forced fullscreen so that only dialog position would be changed.
         final var testActivity =
                 new TestActivity.Starter()
                         .withWindowingMode(WINDOWING_MODE_FULLSCREEN)
+                        .asNewTask()
                         .startSync(
                                 activity -> {
                                     return new LinearLayout(activity);
