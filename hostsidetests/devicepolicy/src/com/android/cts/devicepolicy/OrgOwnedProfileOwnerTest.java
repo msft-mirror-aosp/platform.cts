@@ -67,7 +67,7 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
     /**
      * @deprecated TODO(b/435528858): should use proper method from DevicePolicyUsersPreparer
      */
-    @Deprecated private int mMainUserId;
+    @Deprecated private int mParentUserId;
 
     @Rule
     public DeviceJUnit4ClassRunner.TestLogData mLogger = new DeviceJUnit4ClassRunner.TestLogData();
@@ -76,15 +76,15 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
     public void setUp() throws Exception {
         super.setUp();
 
-        mMainUserId = getMainUser();
+        mParentUserId = getMainUser();
 
         removeTestUsers();
         createManagedProfile();
     }
 
     private void createManagedProfile() throws Exception {
-        mUserId = createManagedProfile(mMainUserId);
-        switchUser(mMainUserId);
+        mUserId = createManagedProfile(mParentUserId);
+        switchUser(mParentUserId);
         startUserAndWait(mUserId);
 
         installAppAsUser(DEVICE_ADMIN_APK, mUserId);
@@ -149,14 +149,14 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
     public void testUserRestrictionsSetOnParentAreNotPersisted() throws Exception {
         assumeCanCreateAdditionalUsers(1);
 
-        installAppAsUser(DEVICE_ADMIN_APK, mMainUserId);
+        installAppAsUser(DEVICE_ADMIN_APK, mParentUserId);
         runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".UserRestrictionsParentTest",
                 "testAddUserRestrictionDisallowConfigDateTime_onParent", mUserId);
         runDeviceTestsAsUser(
                 DEVICE_ADMIN_PKG,
                 ".UserRestrictionsParentTest",
                 "testHasUserRestrictionDisallowConfigDateTime",
-                mMainUserId);
+                mParentUserId);
         removeOrgOwnedProfile();
         assertHasNoUser(mUserId);
 
@@ -165,7 +165,7 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
                 DEVICE_ADMIN_PKG,
                 ".UserRestrictionsParentTest",
                 "testUserRestrictionDisallowConfigDateTimeIsNotPersisted",
-                mMainUserId);
+                mParentUserId);
     }
 
     @Test
@@ -182,7 +182,7 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
 
     @Test
     public void testCameraDisabledOnParentIsEnforced() throws Exception {
-        installAppAsUser(DEVICE_ADMIN_APK, mMainUserId);
+        installAppAsUser(DEVICE_ADMIN_APK, mParentUserId);
         try {
             runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".UserRestrictionsParentTest",
                     "testAddUserRestrictionCameraDisabled_onParent", mUserId);
@@ -190,7 +190,7 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
                     DEVICE_ADMIN_PKG,
                     ".UserRestrictionsParentTest",
                     "testCannotOpenCamera",
-                    mMainUserId);
+                    mParentUserId);
         } finally {
             runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".UserRestrictionsParentTest",
                     "testRemoveUserRestrictionCameraEnabled_onParent", mUserId);
@@ -198,20 +198,20 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
                     DEVICE_ADMIN_PKG,
                     ".UserRestrictionsParentTest",
                     "testCanOpenCamera",
-                    mMainUserId);
+                    mParentUserId);
         }
     }
 
     @Test
     public void testSecurityLogging() throws Exception {
-        installAppAsUser(DEVICE_ADMIN_APK, mMainUserId);
+        installAppAsUser(DEVICE_ADMIN_APK, mParentUserId);
         testSecurityLoggingOnWorkProfile(DEVICE_ADMIN_PKG, ".SecurityLoggingTest");
     }
 
     @Test
     public void testSecurityLoggingDelegate() throws Exception {
         installAppAsUser(DELEGATE_APP_APK, mUserId);
-        installAppAsUser(DEVICE_ADMIN_APK, mMainUserId);
+        installAppAsUser(DEVICE_ADMIN_APK, mParentUserId);
         try {
             runDeviceTestsAsUser(DELEGATE_APP_PKG, ".SecurityLoggingDelegateTest",
                     "testCannotAccessApis", mUserId);
@@ -298,12 +298,12 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
                 "testCallingIsOrganizationOwnedWithManagedProfileExpectingTrue",
                 mUserId);
 
-        installAppAsUser(DEVICE_ADMIN_APK, mMainUserId);
+        installAppAsUser(DEVICE_ADMIN_APK, mParentUserId);
         runDeviceTestsAsUser(
                 DEVICE_ADMIN_PKG,
                 ".DeviceOwnershipTest",
                 "testCallingIsOrganizationOwnedWithManagedProfileExpectingTrue",
-                mMainUserId);
+                mParentUserId);
     }
 
     @Test
@@ -330,8 +330,8 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
 
     @Test
     public void testPersonalAppsSuspensionIme() throws Exception {
-        installAppAsUser(TEST_IME_APK, mMainUserId);
-        setupIme(TEST_IME_COMPONENT, mMainUserId);
+        installAppAsUser(TEST_IME_APK, mParentUserId);
+        setupIme(TEST_IME_COMPONENT, mParentUserId);
         setPersonalAppsSuspended(true);
         // Active IME should not be suspended.
         assertCanStartPersonalApp(TEST_IME_PKG, true);
@@ -359,7 +359,7 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
                 packageName,
                 "com.android.cts.suspensionchecker.ActivityLaunchTest",
                 canStart ? "testCanStartActivity" : "testCannotStartActivity",
-                mMainUserId);
+                mParentUserId);
     }
 
     private void assertHasNoUser(int userId) throws DeviceNotAvailableException {
@@ -376,7 +376,7 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
     @Test
     public void testWorkProfileMaximumTimeOff_complianceRequiredBroadcastDefault()
             throws Exception {
-        installAppAsUser(DEVICE_ADMIN_APK, mMainUserId);
+        installAppAsUser(DEVICE_ADMIN_APK, mParentUserId);
         // Very long timeout, won't be triggered
         runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".PersonalAppsSuspensionTest",
                 "testSetManagedProfileMaximumTimeOff1Year", mUserId);
@@ -403,7 +403,7 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
     @Test
     public void testWorkProfileMaximumTimeOff_complianceRequiredBroadcastOverride()
             throws Exception {
-        installAppAsUser(DEVICE_ADMIN_APK, mMainUserId);
+        installAppAsUser(DEVICE_ADMIN_APK, mParentUserId);
         // Very long timeout, won't be triggered
         runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".PersonalAppsSuspensionTest",
                 "testSetManagedProfileMaximumTimeOff1Year", mUserId);
@@ -467,7 +467,7 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
                 DEVICE_ADMIN_PKG,
                 ".PersonalAppsSuspensionTest",
                 quietModeEnable ? "testEnableQuietMode" : "testDisableQuietMode",
-                mMainUserId);
+                mParentUserId);
 
         boolean keepProfilesRunning = executeShellCommand("dumpsys device_policy")
                 .contains("Keep profiles running: true");

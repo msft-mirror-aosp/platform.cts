@@ -47,16 +47,14 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
 
     private boolean mRemoveOwnerInTearDown;
 
-    /**
-     * @deprecated TODO(b/435528858): should use proper method from DevicePolicyUsersPreparer
-     */
-    @Deprecated private int mMainUserId;
+    private int mInitialUser;
 
     @Override
     public void setUp() throws Exception {
         super.setUp();
 
-        mMainUserId = getMainUser();
+        // TODO(b/435528858): get from DevicePolicyUsersPreparer
+        mInitialUser = getMainUser();
 
         mRemoveOwnerInTearDown = false;
     }
@@ -67,9 +65,9 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
             String componentName = DEVICE_ADMIN_PKG + "/" + ADMIN_RECEIVER_TEST_CLASS;
             assertTrue("Failed to clear owner", removeAdmin(componentName, mDeviceOwnerUserId));
             if (isHeadlessSystemUserMode()) {
-                boolean removed = removeAdmin(componentName, mMainUserId);
+                boolean removed = removeAdmin(componentName, mInitialUser);
                 if (!removed) {
-                    CLog.e("Failed to remove %s on user %d", componentName, mMainUserId);
+                    CLog.e("Failed to remove %s on user %d", componentName, mInitialUser);
                 }
             }
         }
@@ -85,11 +83,6 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
     private void runTests(@Nonnull String className,
             @Nullable String method, int userId) throws DeviceNotAvailableException {
         runDeviceTestsAsUser(DEVICE_ADMIN_PKG, "." + className, method, userId);
-    }
-
-    private void runTests(@Nonnull String className, int userId)
-            throws DeviceNotAvailableException {
-        runTests(className, null, userId);
     }
 
     @Test
@@ -113,27 +106,27 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
     @Test
     public void testUserRestrictions_primaryProfileOwnerOnly() throws Exception {
         assumeHasMainUser();
-        setPoAsUser(mMainUserId);
+        setPoAsUser(mInitialUser);
 
         try {
             runTests(
                     "userrestrictions.PrimaryProfileOwnerUserRestrictionsTest",
                     "testDefaultRestrictions",
-                    mMainUserId);
+                    mInitialUser);
             runTests(
                     "userrestrictions.PrimaryProfileOwnerUserRestrictionsTest",
                     "testSetAllRestrictions",
-                    mMainUserId);
+                    mInitialUser);
             runTests(
                     "userrestrictions.PrimaryProfileOwnerUserRestrictionsTest",
                     "testBroadcast",
-                    mMainUserId);
+                    mInitialUser);
         } finally {
-            // Clear all restrictions restrictions on the main user.
+            // Clear all restrictions restrictions on the initial user.
             runTests(
                     "userrestrictions.PrimaryProfileOwnerUserRestrictionsTest",
                     "testClearAllRestrictions",
-                    mMainUserId);
+                    mInitialUser);
         }
     }
 
@@ -166,7 +159,7 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
         assumeCanCreateOneManagedUser();
 
         // Create managed profile.
-        final int profileUserId = createManagedProfile(mMainUserId /* parentUserId */);
+        final int profileUserId = createManagedProfile(mInitialUser /* parentUserId */);
         // createManagedProfile doesn't start the user automatically.
         startUser(profileUserId);
         setPoAsUser(profileUserId);
@@ -246,8 +239,8 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
         assumeSupportsMultiUser();
         assumeHasMainUser();
 
-        // Set PO on the main user.
-        setPoAsUser(mMainUserId);
+        // Set PO on the initial user.
+        setPoAsUser(mInitialUser);
 
         // Create another user and set PO.
         final int secondaryUserId = createUserAndWaitStart();
@@ -258,17 +251,17 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
             runTests(
                     "userrestrictions.PrimaryProfileOwnerUserRestrictionsTest",
                     "testSetAllRestrictions",
-                    mMainUserId);
+                    mInitialUser);
 
             // Secondary users shouldn't see any of them. Leaky user restrictions are excluded.
             runTests("userrestrictions.SecondaryProfileOwnerUserRestrictionsTest",
                     "testDefaultAndLeakyRestrictions", secondaryUserId);
         } finally {
-            // Clear all restrictions restrictions on the main user.
+            // Clear all restrictions restrictions on the initial user.
             runTests(
                     "userrestrictions.PrimaryProfileOwnerUserRestrictionsTest",
                     "testClearAllRestrictions",
-                    mMainUserId);
+                    mInitialUser);
             // Clear all restrictions restrictions on secondary user.
             runTests("userrestrictions.SecondaryProfileOwnerUserRestrictionsTest",
                     "testClearAllRestrictions", secondaryUserId);
@@ -290,7 +283,7 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
             setPoAsUser(secondaryUserId);
         } else {
             // In headless system user mode, PO is set on primary user when DO is set.
-            secondaryUserId = mMainUserId;
+            secondaryUserId = mInitialUser;
         }
 
         final int[] usersToCheck = {mDeviceOwnerUserId, secondaryUserId};
@@ -308,17 +301,17 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
     public void testUserRestrictions_ProfileGlobalRestrictionsAsPo() throws Exception {
         assumeCanCreateOneManagedUser();
 
-        // Set PO on the main user.
-        setPoAsUser(mMainUserId);
+        // Set PO on the initial user.
+        setPoAsUser(mInitialUser);
 
         // Create another user with PO.
-        final int secondaryUserId = createManagedProfile(mMainUserId /* parentUserId */);
+        final int secondaryUserId = createManagedProfile(mInitialUser /* parentUserId */);
         setPoAsUser(secondaryUserId);
 
-        final int[] usersToCheck = {mMainUserId, secondaryUserId};
+        final int[] usersToCheck = {mInitialUser, secondaryUserId};
 
         // Check the case when primary user's PO sets the restriction.
-        setAndCheckProfileGlobalRestriction(mMainUserId, usersToCheck);
+        setAndCheckProfileGlobalRestriction(mInitialUser, usersToCheck);
 
         // Check the case when managed profile owner sets the restriction.
         setAndCheckProfileGlobalRestriction(secondaryUserId, usersToCheck);

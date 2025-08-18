@@ -45,19 +45,13 @@ public final class LauncherAppsProfileTest extends BaseLauncherAppsTest {
     private String mProfileSerialNumber;
     private String mMainUserSerialNumber;
 
-    /**
-     * @deprecated TODO(b/435528858): should use proper method from DevicePolicyUsersPreparer
-     */
-    @Deprecated private int mMainUserId;
-
     @Override
     public void setUp() throws Exception {
         super.setUp();
 
         removeTestUsers();
-        mMainUserId = getMainUser();
         // Create a managed profile
-        mParentUserId = mMainUserId;
+        mParentUserId = getMainUser(); // TODO(b/435528858): get from UsersOracle
         mProfileUserId = createManagedProfile(mParentUserId);
         installAppAsUser(MANAGED_PROFILE_APK, mProfileUserId);
         setProfileOwnerOrFail(MANAGED_PROFILE_PKG + "/" + ADMIN_RECEIVER_TEST_CLASS,
@@ -125,7 +119,7 @@ public final class LauncherAppsProfileTest extends BaseLauncherAppsTest {
     @FlakyTest
     @Test
     public void testLauncherCallbackPackageAddedProfile() throws Exception {
-        startCallbackService(mMainUserId);
+        startCallbackService(mParentUserId);
         installAppAsUser(SIMPLE_APP_APK, mProfileUserId);
         runDeviceTestsAsUser(LAUNCHER_TESTS_PKG,
                 LAUNCHER_TESTS_CLASS,
@@ -137,7 +131,7 @@ public final class LauncherAppsProfileTest extends BaseLauncherAppsTest {
     @Test
     public void testLauncherCallbackPackageRemovedProfile() throws Exception {
         installAppAsUser(SIMPLE_APP_APK, mProfileUserId);
-        startCallbackService(mMainUserId);
+        startCallbackService(mParentUserId);
         getDevice().uninstallPackage(SIMPLE_APP_PKG);
         runDeviceTestsAsUser(LAUNCHER_TESTS_PKG,
                 LAUNCHER_TESTS_CLASS,
@@ -149,7 +143,7 @@ public final class LauncherAppsProfileTest extends BaseLauncherAppsTest {
     @Test
     public void testLauncherCallbackPackageChangedProfile() throws Exception {
         installAppAsUser(SIMPLE_APP_APK, mProfileUserId);
-        startCallbackService(mMainUserId);
+        startCallbackService(mParentUserId);
         installAppAsUser(SIMPLE_APP_APK, /* grantPermissions */ true, /* dontKillApp */ true,
                 mProfileUserId);
         runDeviceTestsAsUser(LAUNCHER_TESTS_PKG,

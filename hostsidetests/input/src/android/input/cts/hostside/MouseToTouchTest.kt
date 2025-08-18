@@ -25,11 +25,11 @@ import com.google.common.collect.ImmutableSet
 class MouseToTouchTest : CompatChangeGatingTestCase() {
 
     fun testEnabled_clickToTouch() {
-        if (!aconfigFlagEnabled()) {
+        if (!checkAssumption()) {
             // CompatChangeGatingTestCase is JUnit3, which is incompatible with flag rule, and does
             // not have assumption failure neither (b/324474892).
             // As a workaround, manually invoke the check and return early.
-            CLog.w("aconfig flag is not enabled, skipping test")
+            CLog.w("skipping the test for assumption")
             return
         }
 
@@ -43,9 +43,9 @@ class MouseToTouchTest : CompatChangeGatingTestCase() {
     }
 
     fun testEnabled_rightClickAsIs() {
-        if (!aconfigFlagEnabled()) {
+        if (!checkAssumption()) {
             // Workaround for CompatChangeGatingTestCase being JUnit3 (b/324474892).
-            CLog.w("aconfig flag is not enabled, skipping test")
+            CLog.w("skipping the test for assumption")
             return
         }
 
@@ -59,9 +59,9 @@ class MouseToTouchTest : CompatChangeGatingTestCase() {
     }
 
     fun testDisabled_click() {
-        if (!aconfigFlagEnabled()) {
+        if (!checkAssumption()) {
             // Workaround for CompatChangeGatingTestCase being JUnit3 (b/324474892).
-            CLog.w("aconfig flag is not enabled, skipping test")
+            CLog.w("skipping the test for assumption")
             return
         }
 
@@ -74,6 +74,18 @@ class MouseToTouchTest : CompatChangeGatingTestCase() {
         )
     }
 
+    fun checkAssumption(): Boolean {
+        if (!device.hasFeature(FEATURE_COMPANION_DEVICE_SETUP)) {
+            CLog.w("Device does not support companion device")
+            return false
+        }
+        if (!aconfigFlagEnabled()) {
+            CLog.w("Aconfig flag is not enabled")
+            return false
+        }
+        return true
+    }
+
     fun aconfigFlagEnabled(): Boolean {
         val flags = DeviceFlags.createDeviceFlags(device)
         return flags.getFlagValue(Flags.FLAG_MOUSE_TO_TOUCH_PER_APP_COMPAT)?.toBoolean() ?: false
@@ -84,5 +96,6 @@ class MouseToTouchTest : CompatChangeGatingTestCase() {
         const val TEST_CLASS = ".MouseToTouchCompatChangeTest"
 
         const val MOUSE_TO_TOUCH_COMPAT_CHANGE_ID = 413207127L
+        const val FEATURE_COMPANION_DEVICE_SETUP = "android.software.companion_device_setup"
     }
 }

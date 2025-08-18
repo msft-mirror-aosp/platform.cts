@@ -10,9 +10,11 @@ epoll_create: 1
 epoll_wait: 1
 fchown32: return EPERM
 
-# fnctl64: restrict cmd
+# fcntl64: restrict cmd
 #   F_DUPFD_CLOEXEC=1030
-fcntl64: arg1 == F_GETFL || arg1 == F_GETFD || arg1 == F_SETFD || arg1 == F_SETLK || arg1 == F_SETLKW || arg1 == F_GETLK || arg1 == F_DUPFD || arg1 == 1030
+#   F_ADD_SEALS=1033
+#   F_GET_SEALS=1034
+fcntl64: arg1 == F_GETFL || arg1 == F_GETFD || arg1 == F_SETFD || arg1 == F_SETLK || arg1 == F_SETLKW || arg1 == F_GETLK || arg1 == F_DUPFD || arg1 == 1030 || arg1 == 1033 || arg1 == 1034
 
 fork: return EPERM
 fstat64: 1

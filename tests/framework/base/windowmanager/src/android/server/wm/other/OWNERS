@@ -10,6 +10,9 @@
 # Android > Android OS & Apps > System UI > Internal Only > Screensavers (Dreams)
 # Bug template url: https://b.corp.google.com/issues/new?component=66910&template=188786 = per-file DreamManagerService*
 
+# Android > Android OS & Apps > Framework (Java + Native) > Window Manager > Animations/Transitions > Layout
+# Bug template url: https://b.corp.google.com/issues/new?component=1517318&template=1946513 = per-file KeepClearRectsTests.java
+
 # Android > Android OS & Apps > TV > Framework
 # Bug template url: https://b.corp.google.com/issues/new?component=761894&template=1433482 = per-file TvMaxWindowSize*
 

@@ -546,6 +546,37 @@ public class MediaStore_FilesTest {
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OEM_METADATA_UPDATE)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
+    public void testBulkUpdateOemMetadataInNextScan_withPermission() {
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(MediaStore.UPDATE_OEM_METADATA_PERMISSION);
+
+        try {
+            // Verify that UPDATE_OEM_METADATA_PERMISSION is required to call this API
+            MediaStore.bulkUpdateOemMetadataInNextScan(mContext);
+        } finally {
+            InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation()
+                    .dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OEM_METADATA_UPDATE)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
+    public void testBulkUpdateOemMetadataInNextScan_withoutPermission_throwsSecurityException() {
+        try {
+            // Verify that UPDATE_OEM_METADATA_PERMISSION is required to call this API
+            MediaStore.bulkUpdateOemMetadataInNextScan(mContext);
+            fail("Should not be able to call bulkUpdateOemMetadataInNextScan without permission.");
+        } catch (SecurityException e) {
+            // expected
+        }
+    }
+
     private long queryLong(Uri uri, String columnName) {
         try (Cursor c = mResolver.query(uri, new String[] { columnName }, null, null, null)) {
             assertTrue(c.moveToFirst());

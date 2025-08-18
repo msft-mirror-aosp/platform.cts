@@ -49,13 +49,13 @@ import org.junit.runner.RunWith;
 public class ContactsContract_AccountAttributesTest {
     // Using unique account name and type because these tests may break or be broken by
     // other tests running. No other tests should use the following accounts.
-    private static final Account ACCT_1 =
-            new Account("test for account attributes 1", StaticAccountAuthenticator.TYPE);
-    private static final Account ACCT_2 =
-            new Account("test for account attributes 2", StaticAccountAuthenticator.TYPE);
+    private Account mAccount1;
+    private Account mAccount2;
     private static final Account ACCT_NOT_PRESENT =
             new Account(
                     "test for account attributes not signed in", StaticAccountAuthenticator.TYPE);
+    private static final Account ACCT_WITH_TYPE_UNAUTHENTICATED =
+            new Account("test for account attributes 3", "type.unauthenticated");
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -70,8 +70,17 @@ public class ContactsContract_AccountAttributesTest {
         mResolver = getContext().getContentResolver();
         mAccountManager = AccountManager.get(getContext());
 
-        mAccountManager.addAccountExplicitly(ACCT_1, null, null);
-        mAccountManager.addAccountExplicitly(ACCT_2, null, null);
+        mAccount1 =
+                new Account(
+                        "test for account attributes 1" + System.currentTimeMillis(),
+                        StaticAccountAuthenticator.TYPE);
+        mAccount2 =
+                new Account(
+                        "test for account attributes 2 " + System.currentTimeMillis(),
+                        StaticAccountAuthenticator.TYPE);
+
+        mAccountManager.addAccountExplicitly(mAccount1, null, null);
+        mAccountManager.addAccountExplicitly(mAccount2, null, null);
 
         // Waiting a short while so that accounts are arrived on the device.
         try {
@@ -83,8 +92,8 @@ public class ContactsContract_AccountAttributesTest {
 
     @After
     public void tearDown() throws Exception {
-        mAccountManager.removeAccount(ACCT_1, null, null);
-        mAccountManager.removeAccount(ACCT_2, null, null);
+        mAccountManager.removeAccount(mAccount1, null, null);
+        mAccountManager.removeAccount(mAccount2, null, null);
     }
 
     @Test
@@ -104,9 +113,9 @@ public class ContactsContract_AccountAttributesTest {
     @Test
     @RequiresFlagsEnabled({FLAG_NEW_ACCOUNT_ATTRIBUTES_API_ENABLED})
     public void testUpdateAccountAttributes_newAttributesSameAsPrevious_Ok() {
-        long previousAttributes = getAccountAttributesInternal(mResolver, ACCT_1, null);
-        setAccountAttributesInternal(mResolver, ACCT_1, null, previousAttributes);
-        assertThat(getAccountAttributesInternal(mResolver, ACCT_1, null))
+        long previousAttributes = getAccountAttributesInternal(mResolver, mAccount1, null);
+        setAccountAttributesInternal(mResolver, mAccount1, null, previousAttributes);
+        assertThat(getAccountAttributesInternal(mResolver, mAccount1, null))
                 .isEqualTo(previousAttributes);
     }
 
@@ -116,14 +125,14 @@ public class ContactsContract_AccountAttributesTest {
     public void testUpdateAccountAttributes_throwsExceptionOnUndefinedBit() {
         final long undefinedBit = 1L << 60; // Use a bit far outside the defined range.
 
-        long previousAttributes = getAccountAttributesInternal(mResolver, ACCT_1, null);
+        long previousAttributes = getAccountAttributesInternal(mResolver, mAccount1, null);
         // Expect an exception when trying to add an undefined bit.
         assertThrows(
                 "Adding an undefined attribute bit should be rejected",
                 IllegalArgumentException.class,
-                () -> setAccountAttributesInternal(mResolver, ACCT_1, null, undefinedBit));
+                () -> setAccountAttributesInternal(mResolver, mAccount1, null, undefinedBit));
 
-        assertThat(getAccountAttributesInternal(mResolver, ACCT_1, null))
+        assertThat(getAccountAttributesInternal(mResolver, mAccount1, null))
                 .isEqualTo(previousAttributes);
     }
 
@@ -134,7 +143,7 @@ public class ContactsContract_AccountAttributesTest {
     @Test
     @RequiresFlagsEnabled({FLAG_NEW_ACCOUNT_ATTRIBUTES_API_ENABLED})
     public void testUpdateAccountAttributes_throwsExceptionOnSemanticConflict() {
-        long previousAccountAttributes = getAccountAttributesInternal(mResolver, ACCT_1, null);
+        long previousAccountAttributes = getAccountAttributesInternal(mResolver, mAccount1, null);
 
         // Conflict DATA_ORIGIN attributes.
         assertThrows(
@@ -143,7 +152,7 @@ public class ContactsContract_AccountAttributesTest {
                 () ->
                         setAccountAttributesInternal(
                                 mResolver,
-                                ACCT_1,
+                                mAccount1,
                                 null,
                                 AccountAttributes.ATTRIBUTE_DATA_ORIGIN_SIM
                                         | AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD));
@@ -151,42 +160,62 @@ public class ContactsContract_AccountAttributesTest {
         // No conflict to have both SYNC_MODE.
         setAccountAttributesInternal(
                 mResolver,
-                ACCT_1,
+                mAccount1,
                 null,
                 AccountAttributes.ATTRIBUTE_SYNC_MODE_UP_SYNC
                         | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC);
-        assertThat(getAccountAttributesInternal(mResolver, ACCT_1, null))
+        assertThat(getAccountAttributesInternal(mResolver, mAccount1, null))
                 .isEqualTo(
                         AccountAttributes.ATTRIBUTE_SYNC_MODE_UP_SYNC
                                 | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC);
+    }
+
+    /**
+     * Verifies that an update resulting in a semantic conflict (e.g., multiple bits set in a
+     * single-choice category) throws an IllegalStateException.
+     */
+    @Test
+    @RequiresFlagsEnabled({FLAG_NEW_ACCOUNT_ATTRIBUTES_API_ENABLED})
+    public void testUpdateAccountAttributes_onNonAuthenticatedAccountTypes() {
+        // Conflict DATA_ORIGIN attributes.
+        assertThrows(
+                "setAccountAttributes on account types not authenticated by this package should"
+                        + " fail",
+                SecurityException.class,
+                () ->
+                        setAccountAttributesInternal(
+                                mResolver,
+                                ACCT_WITH_TYPE_UNAUTHENTICATED,
+                                null,
+                                AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD));
     }
 
     @Test
     @RequiresFlagsEnabled({FLAG_NEW_ACCOUNT_ATTRIBUTES_API_ENABLED})
     public void testSetAndGetAccountAttributes() {
         // Initially the account attributes is 0.
-        long initialAttributes1 = getAccountAttributesInternal(mResolver, ACCT_1, null);
-        long initialAttributes2 = getAccountAttributesInternal(mResolver, ACCT_2, null);
+        long initialAttributes1 = getAccountAttributesInternal(mResolver, mAccount1, null);
+        long initialAttributes2 = getAccountAttributesInternal(mResolver, mAccount2, null);
         setAccountAttributesInternal(
                 mResolver,
-                ACCT_1,
+                mAccount1,
                 null,
                 AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD
                         | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC);
 
         // ACCT_1's attributes should be updated.
-        assertThat(getAccountAttributesInternal(mResolver, ACCT_1, null))
+        assertThat(getAccountAttributesInternal(mResolver, mAccount1, null))
                 .isEqualTo(
                         AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD
                                 | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC);
 
         // ACCT_2's attributes should  not be updated.
-        assertThat(getAccountAttributesInternal(mResolver, ACCT_2, null))
+        assertThat(getAccountAttributesInternal(mResolver, mAccount2, null))
                 .isEqualTo(initialAttributes2);
 
         // Set ACCT_1's attributes to 0
-        setAccountAttributesInternal(mResolver, ACCT_1, null, 0L);
-        assertThat(getAccountAttributesInternal(mResolver, ACCT_1, null)).isEqualTo(0);
+        setAccountAttributesInternal(mResolver, mAccount1, null, 0L);
+        assertThat(getAccountAttributesInternal(mResolver, mAccount1, null)).isEqualTo(0);
     }
 
     private static long getAccountAttributesInternal(

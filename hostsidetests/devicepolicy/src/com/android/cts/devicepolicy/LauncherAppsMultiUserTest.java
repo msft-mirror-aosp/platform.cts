@@ -26,11 +26,7 @@ import java.util.Collections;
  */
 public final class LauncherAppsMultiUserTest extends BaseLauncherAppsTest {
 
-    /**
-     * @deprecated TODO(b/435528858): most likely should use initial current user
-     */
-    @Deprecated private int mMainUserId;
-
+    private int mInitialUser;
     private int mSecondaryUserId;
     private String mSecondaryUserSerialNumber;
 
@@ -46,11 +42,12 @@ public final class LauncherAppsMultiUserTest extends BaseLauncherAppsTest {
     public void setUp() throws Exception {
         super.setUp();
 
-        mMainUserId = getMainUser();
+        // TODO(b/435528858): get from DevicePolicyUsersPreparer
+        mInitialUser = getMainUser();
 
         removeTestUsers();
         uninstallTestApps();
-        installTestApps(mMainUserId);
+        installTestApps(mInitialUser);
         // Create a secondary user.
         mSecondaryUserId = createUser();
         mSecondaryUserSerialNumber = Integer.toString(getUserSerialNumber(mSecondaryUserId));
@@ -67,24 +64,24 @@ public final class LauncherAppsMultiUserTest extends BaseLauncherAppsTest {
 
     @Test
     public void testGetActivitiesForNonProfileFails() throws Exception {
-        installAppAsUser(SIMPLE_APP_APK, mMainUserId);
+        installAppAsUser(SIMPLE_APP_APK, mInitialUser);
         runDeviceTestsAsUser(
                 LAUNCHER_TESTS_PKG,
                 LAUNCHER_TESTS_CLASS,
                 "testGetActivitiesForUserFails",
-                mMainUserId,
+                mInitialUser,
                 Collections.singletonMap(PARAM_TEST_USER, mSecondaryUserSerialNumber));
     }
 
     @Test
     public void testNoLauncherCallbackPackageAddedSecondaryUser() throws Exception {
-        startCallbackService(mMainUserId);
-        installAppAsUser(SIMPLE_APP_APK, mMainUserId);
+        startCallbackService(mInitialUser);
+        installAppAsUser(SIMPLE_APP_APK, mInitialUser);
         runDeviceTestsAsUser(
                 LAUNCHER_TESTS_PKG,
                 LAUNCHER_TESTS_CLASS,
                 "testNoPackageAddedCallbackForUser",
-                mMainUserId,
+                mInitialUser,
                 Collections.singletonMap(PARAM_TEST_USER, mSecondaryUserSerialNumber));
     }
 }

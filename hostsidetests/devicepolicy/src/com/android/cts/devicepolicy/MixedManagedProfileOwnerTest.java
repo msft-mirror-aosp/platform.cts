@@ -24,6 +24,7 @@ import android.platform.test.annotations.LargeTest;
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresAdditionalFeatures;
 import com.android.cts.devicepolicy.annotations.LockSettingsTest;
 import com.android.cts.devicepolicy.annotations.PermissionsTest;
+import com.android.tradefed.device.UserInfo;
 
 import org.junit.Test;
 
@@ -38,20 +39,15 @@ public final class MixedManagedProfileOwnerTest extends DeviceAndProfileOwnerTes
     private static final String CLEAR_PROFILE_OWNER_NEGATIVE_TEST_CLASS =
             DEVICE_ADMIN_PKG + ".ClearProfileOwnerNegativeTest";
 
-    private int mParentUserId = -1;
-
-    /**
-     * @deprecated TODO(b/435528858): should use proper method from DevicePolicyUsersPreparer
-     */
-    @Deprecated private int mMainUserId;
+    private int mParentUserId = UserInfo.USER_NULL;
 
     @Override
     public void setUp() throws Exception {
         super.setUp();
 
         removeTestUsers();
-        mMainUserId = getMainUser();
-        mParentUserId = mMainUserId;
+        // TODO(b/435528858): should use proper method from UsersOracle
+        mParentUserId = getMainUser();
         createManagedProfile();
     }
 
@@ -95,7 +91,7 @@ public final class MixedManagedProfileOwnerTest extends DeviceAndProfileOwnerTes
                     DEVICE_ADMIN_PKG,
                     ".AssistScreenCaptureDisabledTest",
                     "testScreenCapturePossible_assist",
-                    mMainUserId);
+                    mParentUserId);
         } finally {
             // enable screen capture in profile
             executeDeviceTestMethod(

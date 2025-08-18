@@ -30,19 +30,6 @@ public final class ManagedProfileTimeoutTest extends BaseManagedProfileTest {
     // This should be sufficiently larger than ProfileTimeoutTestHelper.TIMEOUT_MS
     private static final int PROFILE_TIMEOUT_DELAY_MS = 60_000;
 
-    /**
-     * @deprecated TODO(b/435528858): should use proper method from DevicePolicyUsersPreparer
-     */
-    @Deprecated private int mMainUserId;
-
-    // TODO(b/435528858): remove once mMainUserId is gone
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-
-        mMainUserId = getMainUser();
-    }
-
     /** Profile should get locked if it is not in foreground no matter what. */
     @FlakyTest
     @Test
@@ -51,7 +38,7 @@ public final class ManagedProfileTimeoutTest extends BaseManagedProfileTest {
 
         setUpWorkProfileTimeout();
 
-        startTestActivity(mMainUserId, true);
+        startTestActivity(mParentUserId, true);
         simulateUserInteraction(PROFILE_TIMEOUT_DELAY_MS);
 
         verifyOnlyProfileLocked(true);
@@ -121,7 +108,7 @@ public final class ManagedProfileTimeoutTest extends BaseManagedProfileTest {
         final String expectedResultTest = locked ? "testDeviceLocked" : "testDeviceNotLocked";
         runProfileTimeoutTest(expectedResultTest, mProfileUserId);
         // Primary profile shouldn't be locked.
-        runProfileTimeoutTest("testDeviceNotLocked", mMainUserId);
+        runProfileTimeoutTest("testDeviceNotLocked", mParentUserId);
     }
 
     private void simulateUserInteraction(int timeMs) throws Exception {

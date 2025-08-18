@@ -83,7 +83,9 @@ public class UserAspectRatioStateStatsTests  extends DeviceTestCase implements I
         DeviceUtils.installTestApp(getDevice(), TEST_APK, TEST_PKG, mCtsBuild);
         DeviceUtils.turnScreenOn(getDevice());
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
-        ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
+        ConfigUtils.uploadConfigForPushedAtom(
+                getDevice(),
+                "com.android.settings",
                 AtomsProto.Atom.SETTINGS_UI_CHANGED_FIELD_NUMBER);
     }
 
