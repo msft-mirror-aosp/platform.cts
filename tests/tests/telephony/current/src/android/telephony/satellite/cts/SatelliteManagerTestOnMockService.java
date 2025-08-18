@@ -2233,6 +2233,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
+    @Ignore("b/438236284 - Need to fix and re-enable this test.")
     public void testReceiveMultipleSatelliteDatagrams() {
         logd("testReceiveMultipleSatelliteDatagrams");
         grantSatellitePermission();

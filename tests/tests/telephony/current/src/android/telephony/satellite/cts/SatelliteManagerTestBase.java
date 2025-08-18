@@ -245,6 +245,18 @@ public class SatelliteManagerTestBase {
             logd("Skipping tests because the device has no active subscription");
             return false;
         }
+
+        // Check if the device has a default SMS app.
+        String defaultSmsApp = null;
+        ComponentName defaultSmsAppComp =
+                SmsApplication.getDefaultSmsApplication(getContext(), false);
+        if (defaultSmsAppComp != null) {
+            defaultSmsApp = defaultSmsAppComp.getPackageName();
+        }
+        if (defaultSmsApp == null) {
+            logd("Skipping tests because the device has no default SMS app");
+            return false;
+        }
         return true;
     }
 
