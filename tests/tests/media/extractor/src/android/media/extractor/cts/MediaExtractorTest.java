@@ -16,9 +16,11 @@
 
 package android.media.extractor.cts;
 
+import static android.media.MediaFormat.MIMETYPE_AUDIO_IAMF;
 import static android.media.MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION;
 
 import static com.android.media.extractor.flags.Flags.FLAG_EXTRACTOR_MP4_ENABLE_APV;
+import static com.android.media.extractor.flags.Flags.FLAG_EXTRACTOR_MP4_ENABLE_IAMF;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -169,6 +171,98 @@ public class MediaExtractorTest {
 
         int level = trackFormat.getInteger(MediaFormat.KEY_LEVEL);
         assertEquals("Mismatched level", MediaCodecInfo.CodecProfileLevel.APVLevel2Band0, level);
+    }
+
+    @RequiresFlagsEnabled(FLAG_EXTRACTOR_MP4_ENABLE_IAMF)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @Test
+    public void testIamfAacMediaExtractor() throws Exception {
+        String testFileName = "7_1_4_IAMF_AAC.mp4";
+        Preconditions.assertTestFileExists(mInpPrefix + testFileName);
+
+        TestMediaDataSource dataSource = setDataSource(testFileName);
+        assertNotNull("Extractor failed to initialize", mExtractor);
+
+        MediaFormat trackFormat = mExtractor.getTrackFormat(0);
+        assertNotNull("expected to find a track", trackFormat);
+
+        final String mimeType = trackFormat.getString(MediaFormat.KEY_MIME);
+        assertEquals("Unexpected Mime type value", MIMETYPE_AUDIO_IAMF, mimeType);
+
+        int profile = trackFormat.getInteger(MediaFormat.KEY_PROFILE);
+        assertEquals(
+                "Mismatched profile",
+                MediaCodecInfo.CodecProfileLevel.IAMFProfileSimpleAac,
+                profile);
+    }
+
+    @RequiresFlagsEnabled(FLAG_EXTRACTOR_MP4_ENABLE_IAMF)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @Test
+    public void testIamfFlacMediaExtractor() throws Exception {
+        String testFileName = "7_1_4_IAMF_FLAC_48000.mp4";
+        Preconditions.assertTestFileExists(mInpPrefix + testFileName);
+
+        TestMediaDataSource dataSource = setDataSource(testFileName);
+        assertNotNull("Extractor failed to initialize", mExtractor);
+        // Test clip contains two tracks.
+        MediaFormat trackFormat = mExtractor.getTrackFormat(1);
+        assertNotNull("expected to find a track", trackFormat);
+
+        final String mimeType = trackFormat.getString(MediaFormat.KEY_MIME);
+        assertEquals("Unexpected Mime type value", MIMETYPE_AUDIO_IAMF, mimeType);
+
+        int profile = trackFormat.getInteger(MediaFormat.KEY_PROFILE);
+        assertEquals(
+                "Mismatched profile",
+                MediaCodecInfo.CodecProfileLevel.IAMFProfileSimpleFlac,
+                profile);
+    }
+
+    @RequiresFlagsEnabled(FLAG_EXTRACTOR_MP4_ENABLE_IAMF)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @Test
+    public void testIamfOpusMediaExtractor() throws Exception {
+        String testFileName = "7_1_4_IAMF_Opus_no_video.mp4";
+        Preconditions.assertTestFileExists(mInpPrefix + testFileName);
+
+        TestMediaDataSource dataSource = setDataSource(testFileName);
+        assertNotNull("Extractor failed to initialize", mExtractor);
+
+        MediaFormat trackFormat = mExtractor.getTrackFormat(0);
+        assertNotNull("expected to find a track", trackFormat);
+
+        final String mimeType = trackFormat.getString(MediaFormat.KEY_MIME);
+        assertEquals("Unexpected Mime type value", MIMETYPE_AUDIO_IAMF, mimeType);
+
+        int profile = trackFormat.getInteger(MediaFormat.KEY_PROFILE);
+        assertEquals(
+                "Mismatched profile",
+                MediaCodecInfo.CodecProfileLevel.IAMFProfileSimpleOpus,
+                profile);
+    }
+
+    @RequiresFlagsEnabled(FLAG_EXTRACTOR_MP4_ENABLE_IAMF)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @Test
+    public void testIamfPcmMediaExtractor() throws Exception {
+        String testFileName = "7_1_4_IAMF_PCM16_48000_no_video.mp4";
+        Preconditions.assertTestFileExists(mInpPrefix + testFileName);
+
+        TestMediaDataSource dataSource = setDataSource(testFileName);
+        assertNotNull("Extractor failed to initialize", mExtractor);
+
+        MediaFormat trackFormat = mExtractor.getTrackFormat(0);
+        assertNotNull("expected to find a track", trackFormat);
+
+        final String mimeType = trackFormat.getString(MediaFormat.KEY_MIME);
+        assertEquals("Unexpected Mime type value", MIMETYPE_AUDIO_IAMF, mimeType);
+
+        int profile = trackFormat.getInteger(MediaFormat.KEY_PROFILE);
+        assertEquals(
+                "Mismatched profile",
+                MediaCodecInfo.CodecProfileLevel.IAMFProfileSimplePcm,
+                profile);
     }
 
     private boolean advertisesDolbyVision() {
