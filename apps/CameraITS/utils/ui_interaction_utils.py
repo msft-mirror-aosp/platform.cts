@@ -200,11 +200,14 @@ def switch_default_camera(dut, facing, log_path):
       camera has been switched.
   """
   flip_camera_pattern = (
-      r'(switch to|flip camera|switch camera|camera switch|'
-      'switch|toggle_button|front_back_switcher)'
-    )
-  non_switch_pattern = (r'(flash|panorama|video|photo|portrait|'
-                        r'beauty|night|more)')
+      r'(switch to|flip camera|switch camera|camera switch|camera_switch|'
+      r'switch to front camera|switch_control_default_button_icon|'
+      r'toggle_button|front_back_switcher|switch_camera_button|'
+      r'camera_switch_button|switch to rear camera|capture_bar_camera_switch)'
+  )
+  non_switch_pattern = (r'(flash|panorama|video|photo|portrait|supermode|mode|'
+                        r'bg|fast_function_bar|beauty|night|more|exposure|'
+                        r'quick_switcher|mode_chip_text|add|hot_area)')
   default_ui_dump = dut.ui.dump()
   logging.debug('Default camera UI dump: %s', default_ui_dump)
   root = et.fromstring(default_ui_dump)
@@ -214,10 +217,10 @@ def switch_default_camera(dut, facing, log_path):
     # Ignore resource ids for flash on/off and other modes
     if (re.search(non_switch_pattern, content_desc, re.IGNORECASE) or
         re.search(non_switch_pattern, resource_id, re.IGNORECASE)):
-     continue
-    if content_desc:
+      continue
+    if resource_id:
       if re.search(
-          flip_camera_pattern, content_desc, re.IGNORECASE
+          flip_camera_pattern, resource_id, re.IGNORECASE
       ):
         logging.debug('Pattern matches')
         logging.debug('Resource id: %s', resource_id)
@@ -225,12 +228,20 @@ def switch_default_camera(dut, facing, log_path):
         break
       else:
         if re.search(
-            flip_camera_pattern, resource_id, re.IGNORECASE
+            flip_camera_pattern, content_desc, re.IGNORECASE
         ):
           logging.debug('Pattern matches')
           logging.debug('Resource id: %s', resource_id)
           logging.debug('Flip camera content-desc: %s', content_desc)
           break
+    else:
+      if re.search(
+          flip_camera_pattern, content_desc, re.IGNORECASE
+      ):
+        logging.debug('Pattern matches')
+        logging.debug('Resource id: %s', resource_id)
+        logging.debug('Flip camera content-desc: %s', content_desc)
+        break
   else:
     raise AssertionError('Flip camera resource not found.')
   if facing == _get_current_camera_facing(content_desc, resource_id):
@@ -243,7 +254,7 @@ def switch_default_camera(dut, facing, log_path):
 
   dut.take_screenshot(
       log_path, prefix=f'switched_to_{facing}_default_camera'
-  )
+      )
 
 
 def pull_img_files(device_id, input_path, output_path):
@@ -358,3 +369,4 @@ def default_camera_app_dut_setup(device_id, pkg_name):
   for path in CAMERA_FILES_PATHS:
     its_device_utils.run_adb_shell_command(
         device_id, f'{REMOVE_CAMERA_FILES_CMD}{path}/*')
+
