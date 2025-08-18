@@ -54,7 +54,7 @@ import java.util.stream.Collectors;
  * NOTE: Not all tests are executed in the subclasses. Sometimes, if a test is not applicable to
  * a subclass, they override it with an empty method.
  */
-public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
+public abstract class DeviceAndProfileOwnerTest extends BaseDeviceOwnerTest {
 
     public static final String DEVICE_ADMIN_PKG = "com.android.cts.deviceandprofileowner";
     public static final String DEVICE_ADMIN_APK = "CtsDeviceAndProfileOwnerApp.apk";
@@ -802,8 +802,9 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
         executeDeviceTestMethod(className, /* testName= */ null, userId);
     }
 
-    protected void executeDeviceTestMethod(String className, String testName) throws Exception {
-        executeDeviceTestMethod(className, testName, /* params= */ new HashMap<>());
+    protected final void executeDeviceTestMethod(String className, String testName)
+            throws Exception {
+        executeDeviceTestMethod(className, testName, mUserId);
     }
 
     protected void executeDeviceTestMethod(String className, String testName, int userId)

@@ -26,14 +26,16 @@ public final class DeviceAdminServiceDeviceOwnerTest extends BaseDeviceAdminServ
 
     @Override
     protected void installOwnerApp(String apk) throws Exception {
-        CLog.i("Installing owner app %s...", apk);
-        installDeviceOwnerApp(apk);
+        int deviceOwnerUserId = getUserId();
+        CLog.i("Installing owner app %s on user %s...", apk, deviceOwnerUserId);
+        installAppAsUser(apk, deviceOwnerUserId);
     }
 
     @Override
     protected void removeAdmin(String component) throws Exception {
-        CLog.i("Removing admin %s...", component);
-        removeDeviceOwnerAdmin(component);
+        int deviceOwnerUserId = getUserId();
+        CLog.i("Removing admin %s on user %s...", component, deviceOwnerUserId);
+        removeAdmin(component, deviceOwnerUserId);
     }
 
     @Override

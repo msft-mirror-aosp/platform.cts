@@ -18,6 +18,8 @@ package com.android.cts.devicepolicy;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.fail;
+
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil.CLog;
 
@@ -27,17 +29,22 @@ import java.util.Objects;
 
 import javax.annotation.Nullable;
 
-/**
- * Base class for {@link DeviceOwnerTest} and {@link HeadlessSystemUserDeviceOwnerTest} - it
- * provides the common infra, but doesn't have any test method.
- */
-abstract class BaseDeviceOwnerTest extends BaseDevicePolicyTest {
+/** Base class for all tests that need to set up a device owner. */
+public abstract class BaseDeviceOwnerTest extends BaseDevicePolicyTest {
 
     private static final String PROPERTY_STOP_BG_USERS_ON_SWITCH = "fw.stop_bg_users_on_switch";
 
+    protected int mDeviceOwnerUserId;
     private boolean mDeviceOwnerSet;
     private @Nullable String mDeviceOwnerComponent;
     private @Nullable String mDeviceOwnerPkg;
+
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+
+        mDeviceOwnerUserId = getMainUser();
+    }
 
     protected final void installDeviceOwnerApp(String apk) throws Exception {
         installAppAsUser(apk, mDeviceOwnerUserId);
@@ -53,10 +60,36 @@ abstract class BaseDeviceOwnerTest extends BaseDevicePolicyTest {
         return mDeviceOwnerSet;
     }
 
+    protected final boolean installAndSetDeviceOwner(String apk, String deviceOwnerPkg,
+            String adminReceiverClass) throws Exception {
+        installDeviceOwnerApp(apk);
+        if (!setDeviceOwner(deviceOwnerPkg, adminReceiverClass)) {
+            try {
+                uninstallPackage(apk);
+            } catch (Exception e) {
+                CLog.e("Failed to uninstall %s: %s", apk, e);
+            }
+            fail("Failed to set device owner on user " + mDeviceOwnerUserId);
+        }
+        return true;
+    }
+
+
     private String getDeviceOwnerPkg() {
         Preconditions.checkState(mDeviceOwnerPkg != null,
                 "test didn't call setDeviceOwner(String, String)");
         return mDeviceOwnerPkg;
+    }
+
+    protected final void removeAndUninstallDeviceOwnerIfSet() throws DeviceNotAvailableException {
+        removeDeviceOwnerIfSet();
+
+        if (mDeviceOwnerPkg != null) {
+            String status = uninstallPackage(mDeviceOwnerPkg);
+            if (status != null) {
+                CLog.e("Could not uninstall package %s: %s", mDeviceOwnerPkg, status);
+            }
+        }
     }
 
     protected final void removeDeviceOwnerIfSet() throws DeviceNotAvailableException {
