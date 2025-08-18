@@ -801,6 +801,11 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
      */
     @Deprecated
     protected final int getMainUser() throws DeviceNotAvailableException {
+        if (isAutomotive()) {
+            // In Automotive, the main user is not defined.
+            // Use the current user instead of the main user.
+            return getDevice().getCurrentUser();
+        }
         Integer user = getDevice().getMainUserId();
         if (user == null) {
             user = getDevice().getPrimaryUserId();
