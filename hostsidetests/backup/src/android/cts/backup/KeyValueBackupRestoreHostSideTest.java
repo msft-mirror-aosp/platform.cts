@@ -23,7 +23,6 @@ import static org.junit.Assert.assertNull;
 import android.platform.test.annotations.AppModeFull;
 
 import com.android.tradefed.device.DeviceNotAvailableException;
-import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
 import org.junit.After;
@@ -104,7 +103,9 @@ public class KeyValueBackupRestoreHostSideTest extends BaseBackupHostSideTest {
 
         assertNull(uninstallPackage(KEY_VALUE_RESTORE_APP_PACKAGE));
 
-        installPackage(KEY_VALUE_RESTORE_APP_APK);
+        int userId = getBackupUtils().getCurrentUserId();
+        installPackageAsUser(
+                KEY_VALUE_RESTORE_APP_APK, /* grantPermission= */ true, userId, "-d", "-r");
 
         // Shared preference should be restored
         checkDeviceTest("checkSharedPreferencesAreRestored");
