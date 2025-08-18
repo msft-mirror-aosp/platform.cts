@@ -17,9 +17,7 @@
 package com.android.compatibility.common.util;
 
 import android.os.Build;
-
 import androidx.test.InstrumentationRegistry;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -293,15 +291,19 @@ public class PropertyUtil {
         return (value == null) ? false : value.matches(regex);
     }
 
-    /**
-     * Retrieves the desired boolean property, returning false if not found.
-     */
+    /** Retrieves the desired boolean property, returning false if not found. */
     public static boolean getPropertyBoolean(String property) {
         String value = getProperty(property);
         if (value == null) {
             return false;
         }
-        return Boolean.parseBoolean(value);
+        // These are the "true" string values in various property helpers in AOSP. e.g.
+        // https://cs.android.com/android/platform/superproject/main/+/main:system/libbase/parsebool.cpp
+        return value.equals("1")
+                || value.equals("y")
+                || value.equals("yes")
+                || value.equals("on")
+                || value.equals("true");
     }
 
     /**
