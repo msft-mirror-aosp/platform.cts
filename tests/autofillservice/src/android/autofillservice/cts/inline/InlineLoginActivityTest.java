@@ -58,6 +58,7 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
 import android.service.autofill.FillContext;
 import android.util.Log;
+import android.view.Display;
 import android.view.accessibility.AccessibilityManager;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -201,6 +202,7 @@ public class InlineLoginActivityTest extends LoginActivityCommonTestCase {
         mUiBot.assertDatasets("The Username");
 
         mUiBot.pressHome();
+        Helper.waitForHomeActivity(Display.DEFAULT_DISPLAY);
 
         // Switch to another Activity
         startActivity(clazz);

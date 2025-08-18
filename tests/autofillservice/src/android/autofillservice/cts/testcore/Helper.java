@@ -49,6 +49,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.hardware.devicestate.DeviceState;
@@ -93,7 +94,9 @@ import androidx.test.runner.lifecycle.Stage;
 import com.android.compatibility.common.util.BitmapUtils;
 import com.android.compatibility.common.util.DeviceConfigStateManager;
 import com.android.compatibility.common.util.OneTimeSettingsListener;
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ShellUtils;
+import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.TestNameUtils;
 import com.android.compatibility.common.util.Timeout;
 import com.android.compatibility.common.util.UserSettings;
@@ -115,6 +118,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -174,6 +178,15 @@ public final class Helper {
 
     private static final long TIME_SLICE = 50;
     private static final long DEFAULT_TIMEOUT = 3_000;
+
+    // --- Patterns for parsing dumpsys window windows ---
+    private static final Pattern WINDOW_START_PATTERN =
+            Pattern.compile("^  Window #\\d+ (Window\\{[^}]+\\}):");
+    private static final Pattern PKG_FROM_TOKEN_PATTERN =
+            Pattern.compile("Window\\{[^ ]+ u\\d+ ([^/\\s]+)");
+    private static final Pattern IS_VISIBLE_PATTERN = Pattern.compile("\\s+isVisible=true");
+    // Generic pattern to find the display ID attribute
+    private static final Pattern DISPLAY_ID_ATTR_PATTERN = Pattern.compile("\\s+mDisplayId=(\\d+)");
 
     /**
      * Helper interface used to filter nodes.
@@ -2190,5 +2203,85 @@ public final class Helper {
             Thread.sleep(TIME_SLICE);
             timeout -= TIME_SLICE;
         }
+    }
+
+    /** Waits until the current foreground activity is the home activity. */
+    public static void waitForHomeActivity(int displayId) {
+        final String homeActivityPackageName = getDefaultLauncherPackageName();
+        PollingCheck.waitFor(() -> isPackageVisibleOnDisplay(homeActivityPackageName, displayId));
+    }
+
+    /** Gets the package name of the default HOME activity launcher. */
+    private static String getDefaultLauncherPackageName() {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.addCategory(Intent.CATEGORY_HOME);
+        ResolveInfo resolveInfo =
+                instrumentation
+                        .getContext()
+                        .getPackageManager()
+                        .resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY);
+        if (resolveInfo != null && resolveInfo.activityInfo != null) {
+            return resolveInfo.activityInfo.packageName;
+        }
+        return null;
+    }
+
+    private static boolean isPackageVisibleOnDisplay(String packageName, int displayId) {
+        String dumpsysOutput = SystemUtil.runShellCommand("dumpsys window windows");
+        if (dumpsysOutput == null || dumpsysOutput.isEmpty()) {
+            Log.e(TAG, "dumpsysOutput is null or empty");
+            return false;
+        }
+
+        String[] lines = dumpsysOutput.split("\\r?\\n");
+
+        for (int i = 0; i < lines.length; i++) {
+            String line = lines[i];
+
+            Matcher windowStartMatcher = WINDOW_START_PATTERN.matcher(line);
+            if (windowStartMatcher.find()) {
+                // Start of a new window block
+                String windowToken = windowStartMatcher.group(1);
+                String currentWindowPkg = null;
+                boolean currentWindowVisible = false;
+                boolean correctDisplay = false;
+
+                Matcher pkgTokenMatcher = PKG_FROM_TOKEN_PATTERN.matcher(windowToken);
+                if (pkgTokenMatcher.find()) {
+                    currentWindowPkg = pkgTokenMatcher.group(1);
+                }
+
+                // Iterate through the indented lines of this window block
+                int j = i + 1;
+                for (; j < lines.length; j++) {
+                    String windowLine = lines[j];
+                    if (!windowLine.startsWith("    ")) { // Indentation ends
+                        break;
+                    }
+
+                    Matcher displayIdMatcher = DISPLAY_ID_ATTR_PATTERN.matcher(windowLine);
+                    if (displayIdMatcher.find()) {
+                        try {
+                            int foundDisplayId = Integer.parseInt(displayIdMatcher.group(1));
+                            if (foundDisplayId == displayId) {
+                                correctDisplay = true;
+                            }
+                        } catch (NumberFormatException e) {
+                            // Should not happen based on pattern
+                        }
+                    }
+                    if (IS_VISIBLE_PATTERN.matcher(windowLine).find()) currentWindowVisible = true;
+                }
+                i = j - 1; // Adjust outer loop index
+
+                if (correctDisplay
+                        && packageName.equals(currentWindowPkg)
+                        && currentWindowVisible) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
