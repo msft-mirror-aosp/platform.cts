@@ -33,6 +33,12 @@ public class FrameworkAppSearchTestEnvironment implements AppSearchTestEnvironme
 
     @Override
     @NonNull
+    public String getIndexerPackageName() {
+        return "android";
+    }
+
+    @Override
+    @NonNull
     public String getTestAppRootFolder() {
         return "/data/local/tmp/cts/appsearch/";
     }
