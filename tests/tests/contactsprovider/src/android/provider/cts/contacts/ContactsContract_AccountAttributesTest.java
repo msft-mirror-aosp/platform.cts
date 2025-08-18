@@ -143,8 +143,6 @@ public class ContactsContract_AccountAttributesTest {
     @Test
     @RequiresFlagsEnabled({FLAG_NEW_ACCOUNT_ATTRIBUTES_API_ENABLED})
     public void testUpdateAccountAttributes_throwsExceptionOnSemanticConflict() {
-        long previousAccountAttributes = getAccountAttributesInternal(mResolver, mAccount1, null);
-
         // Conflict DATA_ORIGIN attributes.
         assertThrows(
                 "Adding a conflicting DATA_ORIGIN should fail",
@@ -188,6 +186,14 @@ public class ContactsContract_AccountAttributesTest {
                                 ACCT_WITH_TYPE_UNAUTHENTICATED,
                                 null,
                                 AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD));
+
+        assertThrows(
+                "resetAccountAttributes on account types not authenticated by this package should"
+                        + " fail",
+                SecurityException.class,
+                () ->
+                        resetAccountAttributesInternal(
+                                mResolver, ACCT_WITH_TYPE_UNAUTHENTICATED, null));
     }
 
     @Test
@@ -218,6 +224,29 @@ public class ContactsContract_AccountAttributesTest {
         assertThat(getAccountAttributesInternal(mResolver, mAccount1, null)).isEqualTo(0);
     }
 
+    @Test
+    @RequiresFlagsEnabled({FLAG_NEW_ACCOUNT_ATTRIBUTES_API_ENABLED})
+    public void testResetAccountAttributes_revertsToDefault() {
+        // Verify initial state is the default (cloud-based).
+        assertThat(getAccountAttributesInternal(mResolver, mAccount1, null))
+                .isEqualTo(AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD);
+
+        // Set a non-default attribute.
+        setAccountAttributesInternal(
+                mResolver, mAccount1, null, AccountAttributes.ATTRIBUTE_DATA_ORIGIN_LOCAL);
+
+        // Verify the attribute was set.
+        assertThat(getAccountAttributesInternal(mResolver, mAccount1, null))
+                .isEqualTo(AccountAttributes.ATTRIBUTE_DATA_ORIGIN_LOCAL);
+
+        // Now, reset the attributes.
+        resetAccountAttributesInternal(mResolver, mAccount1, null);
+
+        // Verify the attributes have been reverted to the system-evaluated default.
+        assertThat(getAccountAttributesInternal(mResolver, mAccount1, null))
+                .isEqualTo(AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD);
+    }
+
     private static long getAccountAttributesInternal(
             ContentResolver resolver, Account account, String dataSet) {
         return ContactsContract.Settings.getAccountAttributes(resolver, account, dataSet);
@@ -226,6 +255,11 @@ public class ContactsContract_AccountAttributesTest {
     private static void setAccountAttributesInternal(
             ContentResolver resolver, Account account, String dataSet, long attributes) {
         ContactsContract.Settings.setAccountAttributes(resolver, account, dataSet, attributes);
+    }
+
+    private static void resetAccountAttributesInternal(
+            ContentResolver resolver, Account account, String dataSet) {
+        ContactsContract.Settings.resetAccountAttributes(resolver, account, dataSet);
     }
 
     private Context getContext() {
