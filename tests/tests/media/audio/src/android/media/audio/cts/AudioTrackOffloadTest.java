@@ -162,7 +162,6 @@ public class AudioTrackOffloadTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DIRECT_TRACK_REPRIORITIZATION)
     public void testMultipleAudioTrackOffloadPreemption() throws Exception {
         final int bitRateInkbps = 192;
         final var audioFormat = getAudioFormatWithEncoding(AudioFormat.ENCODING_MP3);
