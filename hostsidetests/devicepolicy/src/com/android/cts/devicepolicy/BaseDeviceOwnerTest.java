@@ -16,10 +16,16 @@
 
 package com.android.cts.devicepolicy;
 
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeNotNull;
+import static com.google.common.truth.Truth.assertWithMessage;
 
+import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil.CLog;
+
+import com.google.common.base.Preconditions;
+
+import java.util.Objects;
+
+import javax.annotation.Nullable;
 
 /**
  * Base class for {@link DeviceOwnerTest} and {@link HeadlessSystemUserDeviceOwnerTest} - it
@@ -29,54 +35,53 @@ abstract class BaseDeviceOwnerTest extends BaseDevicePolicyTest {
 
     private static final String PROPERTY_STOP_BG_USERS_ON_SWITCH = "fw.stop_bg_users_on_switch";
 
-    protected static final String DEVICE_OWNER_PKG = "com.android.cts.deviceowner";
-    protected static final String DEVICE_OWNER_APK = "CtsDeviceOwnerApp.apk";
-
-    protected static final String ADMIN_RECEIVER_TEST_CLASS =
-            DEVICE_OWNER_PKG + ".BasicAdminReceiver";
-    protected static final String DEVICE_OWNER_COMPONENT = DEVICE_OWNER_PKG + "/"
-            + ADMIN_RECEIVER_TEST_CLASS;
-
     private boolean mDeviceOwnerSet;
+    private @Nullable String mDeviceOwnerComponent;
+    private @Nullable String mDeviceOwnerPkg;
 
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-
-        if (isHeadlessSystemUserMode()) {
-            assumeNotNull(
-                    "Devices in headless system user mode require a main user to set a device"
-                            + " owner.",
-                    getDevice().getMainUserId());
-        }
-        installDeviceOwnerApp(DEVICE_OWNER_APK);
-
-        mDeviceOwnerSet = setDeviceOwner(DEVICE_OWNER_COMPONENT, mDeviceOwnerUserId,
-                /*expectFailure= */ false);
-
-        if (!mDeviceOwnerSet) {
-            removeAdmin(DEVICE_OWNER_COMPONENT, mDeviceOwnerUserId);
-            getDevice().uninstallPackage(DEVICE_OWNER_PKG);
-            fail("Failed to set device owner on user " + mDeviceOwnerUserId);
-        }
-
-        // Enable the notification listener
-        executeShellCommand("cmd notification allow_listener com.android.cts."
-                + "deviceowner/com.android.cts.deviceowner.NotificationListener");
+    protected final void installDeviceOwnerApp(String apk) throws Exception {
+        installAppAsUser(apk, mDeviceOwnerUserId);
     }
 
-    @Override
-    public void tearDown() throws Exception {
-        if (mDeviceOwnerSet) {
-            removeDeviceOwnerAdmin(DEVICE_OWNER_COMPONENT);
-        }
+    protected final boolean setDeviceOwner(String deviceOwnerPkg, String adminReceiverClass)
+            throws DeviceNotAvailableException {
+        mDeviceOwnerPkg = Objects.requireNonNull(deviceOwnerPkg, "deviceOwnerPkg cannot be null");
+        Objects.requireNonNull(adminReceiverClass, "adminReceiverClass cannot be null");
+        mDeviceOwnerComponent = deviceOwnerPkg + "/" + adminReceiverClass;
+        mDeviceOwnerSet = setDeviceOwner(mDeviceOwnerComponent, mDeviceOwnerUserId,
+                /*expectFailure= */ false);
+        return mDeviceOwnerSet;
+    }
 
-        String status = getDevice().uninstallPackage(DEVICE_OWNER_PKG);
-        if (status != null) {
-            CLog.e("Could not uninstall package %s: %s", DEVICE_OWNER_PKG, status);
-        }
+    private String getDeviceOwnerPkg() {
+        Preconditions.checkState(mDeviceOwnerPkg != null,
+                "test didn't call setDeviceOwner(String, String)");
+        return mDeviceOwnerPkg;
+    }
 
-        super.tearDown();
+    protected final void removeDeviceOwnerIfSet() throws DeviceNotAvailableException {
+        removeDeviceOwnerIfSet(/* optionallySet= */ true);
+    }
+
+    protected final void removeDeviceOwner() throws DeviceNotAvailableException {
+        removeDeviceOwnerIfSet(/* optionallySet= */ false);
+    }
+
+    protected final void removeDeviceOwnerIfSet(boolean optionallySet)
+            throws DeviceNotAvailableException {
+        if (optionallySet) {
+            if (!mDeviceOwnerSet) {
+                CLog.d("removeDeviceOwnerIfSet(%s): ignoring as DO was not set)",
+                        mDeviceOwnerComponent);
+                return;
+            }
+        } else {
+            assertWithMessage("device owner not set").that(mDeviceOwnerSet).isTrue();
+        }
+        assertWithMessage("Removed device owner %s on user %s", mDeviceOwnerComponent,
+                mDeviceOwnerUserId)
+                        .that(removeAdmin(mDeviceOwnerComponent, mDeviceOwnerUserId)).isTrue();
+        mDeviceOwnerSet = false;
     }
 
     protected final void executeDeviceOwnerTest(String testClassName) throws Exception {
@@ -90,16 +95,12 @@ abstract class BaseDeviceOwnerTest extends BaseDevicePolicyTest {
 
     private void executeDeviceOwnerTestOnSpecificUser(String testClassName, int userId)
             throws Exception {
-        String testClass = DEVICE_OWNER_PKG + "." + testClassName;
-        runDeviceTestsAsUser(DEVICE_OWNER_PKG, testClass, userId);
+        String pkg = getDeviceOwnerPkg();
+        String testClass = pkg + "." + testClassName;
+        runDeviceTestsAsUser(pkg, testClass, userId);
     }
 
     protected final void executeDeviceOwnerTestMethod(String className, String testName)
-            throws Exception {
-        executeDeviceOwnerPackageTestMethod(className, testName, mDeviceOwnerUserId);
-    }
-
-    protected final void executeDeviceTestMethod(String className, String testName)
             throws Exception {
         executeDeviceOwnerPackageTestMethod(className, testName, mDeviceOwnerUserId);
     }
@@ -114,13 +115,8 @@ abstract class BaseDeviceOwnerTest extends BaseDevicePolicyTest {
         executeShellCommand("setprop %s '%s'", PROPERTY_STOP_BG_USERS_ON_SWITCH, value);
     }
 
-    protected boolean isPackageInstalledForUser(String packageName, int userId) throws Exception {
-        String result = executeShellCommand("pm list packages --user %d %s", userId, packageName);
-        return result != null && !result.isEmpty();
-    }
-
     private void executeDeviceOwnerPackageTestMethod(String className, String testName,
             int userId) throws Exception {
-        runDeviceTestsAsUser(DEVICE_OWNER_PKG, className, testName, userId);
+        runDeviceTestsAsUser(getDeviceOwnerPkg(), className, testName, userId);
     }
 }
