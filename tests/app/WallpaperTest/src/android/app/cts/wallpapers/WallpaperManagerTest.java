@@ -18,9 +18,7 @@ package android.app.cts.wallpapers;
 
 import static android.Manifest.permission.ALWAYS_UPDATE_WALLPAPER;
 import static android.Manifest.permission.READ_WALLPAPER_INTERNAL;
-import static android.app.Flags.FLAG_LIVE_WALLPAPER_CONTENT_HANDLING;
 import static android.app.Flags.fixGetBitmapCrops;
-import static android.app.Flags.liveWallpaperContentHandling;
 import static android.app.WallpaperManager.FLAG_LOCK;
 import static android.app.WallpaperManager.FLAG_SYSTEM;
 import static android.app.WallpaperManager.ORIENTATION_LANDSCAPE;
@@ -87,7 +85,6 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.ParcelFileDescriptor;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -1489,28 +1486,35 @@ public class WallpaperManagerTest {
                 mContext.getPackageManager().hasSystemFeature(FEATURE_LIVE_WALLPAPER));
         try (LockScreenSession lockScreenSession =
                      new LockScreenSession(mInstrumentation, sWindowManagerStateHelper)) {
-            runWithShellPermissionIdentity(() -> {
-                WallpaperWindowsTestUtils.WallpaperWindowsHelper wallpaperWindowsHelper =
-                        new WallpaperWindowsTestUtils.WallpaperWindowsHelper(
-                                sWindowManagerStateHelper);
-                lockScreenSession.disableLockScreen().unlockDevice();
+            runWithShellPermissionIdentity(
+                    () -> {
+                        WallpaperWindowsTestUtils.WallpaperWindowsHelper wallpaperWindowsHelper =
+                                new WallpaperWindowsTestUtils.WallpaperWindowsHelper(
+                                        sWindowManagerStateHelper);
+                        lockScreenSession.disableLockScreen().unlockDevice();
 
-                // Launch an activity that shows the wallpaper to make sure it is not behind
-                // opaque activities
-                startAndWaitActivity();
+                        // Launch an activity that shows the wallpaper to make sure it is not behind
+                        // opaque activities
+                        startAndWaitActivity();
 
-                // Two independent wallpapers
-                WallpaperManagerTestUtils.goToState(mWallpaperManager,
-                        WallpaperState.LIVE_DIFF_MULTI);
-                assertWallpaperIsShown(wallpaperWindowsHelper, FLAG_SYSTEM,
-                        true /* shouldBeShown */, "System wallpaper should be shown on home screen");
+                        // Two independent wallpapers
+                        WallpaperManagerTestUtils.goToState(
+                                mWallpaperManager, WallpaperState.LIVE_DIFF_MULTI);
+                        assertWallpaperIsShown(
+                                wallpaperWindowsHelper,
+                                FLAG_SYSTEM,
+                                true /* shouldBeShown */,
+                                "System wallpaper should be shown on home screen");
 
-                // Shared wallpaper
-                WallpaperManagerTestUtils.goToState(
-                        mWallpaperManager, WallpaperState.LIVE_SAME_SINGLE);
-                assertWallpaperIsShown(wallpaperWindowsHelper, FLAG_SYSTEM | FLAG_LOCK,
-                        true /* shouldBeShown */, "Shared wallpaper should be shown on home screen");
-            });
+                        // Shared wallpaper
+                        WallpaperManagerTestUtils.goToState(
+                                mWallpaperManager, WallpaperState.LIVE_SAME_SINGLE);
+                        assertWallpaperIsShown(
+                                wallpaperWindowsHelper,
+                                FLAG_SYSTEM | FLAG_LOCK,
+                                true /* shouldBeShown */,
+                                "Shared wallpaper should be shown on home screen");
+                    });
         }
     }
 
@@ -1529,28 +1533,37 @@ public class WallpaperManagerTest {
                 mContext.getPackageManager().hasSystemFeature(FEATURE_LIVE_WALLPAPER));
         try (LockScreenSession lockScreenSession =
                      new LockScreenSession(mInstrumentation, sWindowManagerStateHelper)) {
-            runWithShellPermissionIdentity(() -> {
-                WallpaperWindowsTestUtils.WallpaperWindowsHelper wallpaperWindowsHelper =
-                        new WallpaperWindowsTestUtils.WallpaperWindowsHelper(
-                                sWindowManagerStateHelper);
+            runWithShellPermissionIdentity(
+                    () -> {
+                        WallpaperWindowsTestUtils.WallpaperWindowsHelper wallpaperWindowsHelper =
+                                new WallpaperWindowsTestUtils.WallpaperWindowsHelper(
+                                        sWindowManagerStateHelper);
 
-                // Two independent wallpapers
-                WallpaperManagerTestUtils.goToState(mWallpaperManager,
-                        WallpaperState.LIVE_DIFF_MULTI);
+                        // Two independent wallpapers
+                        WallpaperManagerTestUtils.goToState(
+                                mWallpaperManager, WallpaperState.LIVE_DIFF_MULTI);
 
-                lockScreenSession.gotoKeyguard();
-                assertWallpaperIsShown(wallpaperWindowsHelper, FLAG_SYSTEM,
-                        false /* shouldBeShown */,
-                        "System wallpaper should be hidden on lock screen");
-                assertWallpaperIsShown(wallpaperWindowsHelper, FLAG_LOCK, true /* shouldBeShown */,
-                        "Lock wallpaper should be shown on lock screen");
+                        lockScreenSession.gotoKeyguard();
+                        assertWallpaperIsShown(
+                                wallpaperWindowsHelper,
+                                FLAG_SYSTEM,
+                                false /* shouldBeShown */,
+                                "System wallpaper should be hidden on lock screen");
+                        assertWallpaperIsShown(
+                                wallpaperWindowsHelper,
+                                FLAG_LOCK,
+                                true /* shouldBeShown */,
+                                "Lock wallpaper should be shown on lock screen");
 
-                // Shared wallpaper
-                WallpaperManagerTestUtils.goToState(
-                        mWallpaperManager, WallpaperState.LIVE_SAME_SINGLE);
-                assertWallpaperIsShown(wallpaperWindowsHelper, FLAG_SYSTEM | FLAG_LOCK,
-                        true /* shouldBeShown */, "Shared wallpaper should be shown on lock screen");
-            });
+                        // Shared wallpaper
+                        WallpaperManagerTestUtils.goToState(
+                                mWallpaperManager, WallpaperState.LIVE_SAME_SINGLE);
+                        assertWallpaperIsShown(
+                                wallpaperWindowsHelper,
+                                FLAG_SYSTEM | FLAG_LOCK,
+                                true /* shouldBeShown */,
+                                "Shared wallpaper should be shown on lock screen");
+                    });
         }
     }
 
@@ -1803,24 +1816,7 @@ public class WallpaperManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_MULTI_CROP})
-    @RequiresFlagsDisabled(FLAG_LIVE_WALLPAPER_CONTENT_HANDLING)
-    public void testSetWallpaperWithCrops_singleCrop() {
-        Point displaySize = getScreenSize();
-
-        Point bitmapSize = new Point(100, 100);
-        Bitmap bitmap = Bitmap.createBitmap(bitmapSize.x, bitmapSize.y, Bitmap.Config.ARGB_8888);
-
-        float scale = Math.max((float) displaySize.x / bitmapSize.x,
-                (float) displaySize.y / bitmapSize.y);
-        Rect crop = new Rect(0, 0, (int) (displaySize.x / scale), (int) (displaySize.y / scale));
-        Map<Point, Rect> cropHints = Map.of(displaySize, crop);
-
-        assertCorrectCrop(bitmap, cropHints, false);
-    }
-
-    @Test
-    @RequiresFlagsEnabled({FLAG_MULTI_CROP, FLAG_LIVE_WALLPAPER_CONTENT_HANDLING})
+    @RequiresFlagsEnabled(FLAG_MULTI_CROP)
     public void testSetWallpaperWithCrops_description_singleCrop() {
         Point displaySize = getScreenSize();
 
@@ -1832,38 +1828,11 @@ public class WallpaperManagerTest {
         Rect crop = new Rect(0, 0, (int) (displaySize.x / scale), (int) (displaySize.y / scale));
         Map<Point, Rect> cropHints = Map.of(displaySize, crop);
 
-        assertCorrectCrop(bitmap, cropHints, true);
+        assertCorrectCrop(bitmap, cropHints);
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_MULTI_CROP})
-    @RequiresFlagsDisabled(FLAG_LIVE_WALLPAPER_CONTENT_HANDLING)
-    public void testSetWallpaperWithCrops_twoCrops() {
-        Point displaySize = getScreenSize();
-        assumeFalse(displaySize.x == displaySize.y);
-        Point rotatedDisplaySize = new Point(displaySize.y, displaySize.x);
-
-        Point bitmapSize = new Point(300, 800);
-        Bitmap bitmap = Bitmap.createBitmap(bitmapSize.x, bitmapSize.y, Bitmap.Config.ARGB_8888);
-
-        float scale = Math.max((float) displaySize.x / bitmapSize.x,
-                (float) displaySize.y / bitmapSize.y);
-        Rect crop = new Rect(
-                bitmapSize.x - (int) (displaySize.x / scale),
-                bitmapSize.y - (int) (displaySize.y / scale),
-                bitmapSize.x, bitmapSize.y);
-        float rotatedScale = Math.max((float) rotatedDisplaySize.x / bitmapSize.x,
-                (float) rotatedDisplaySize.y / bitmapSize.y);
-        Rect rotatedCrop = new Rect(0, 0,
-                (int) (rotatedDisplaySize.x / rotatedScale),
-                (int) (rotatedDisplaySize.y / rotatedScale));
-        Map<Point, Rect> cropHints = Map.of(displaySize, crop, rotatedDisplaySize, rotatedCrop);
-
-        assertCorrectCrop(bitmap, cropHints, false);
-    }
-
-    @Test
-    @RequiresFlagsEnabled({FLAG_MULTI_CROP, FLAG_LIVE_WALLPAPER_CONTENT_HANDLING})
+    @RequiresFlagsEnabled(FLAG_MULTI_CROP)
     public void testSetWallpaperWithCrops_description_twoCrops() {
         Point displaySize = getScreenSize();
         assumeFalse(displaySize.x == displaySize.y);
@@ -1885,14 +1854,13 @@ public class WallpaperManagerTest {
                 (int) (rotatedDisplaySize.y / rotatedScale));
         Map<Point, Rect> cropHints = Map.of(displaySize, crop, rotatedDisplaySize, rotatedCrop);
 
-        assertCorrectCrop(bitmap, cropHints, true);
+        assertCorrectCrop(bitmap, cropHints);
     }
 
     //// Tests specific to live wallpaper content handling
 
     @Test
     @Ignore("b/393392368")
-    @RequiresFlagsEnabled(FLAG_LIVE_WALLPAPER_CONTENT_HANDLING)
     public void setWallpaperComponentWithDescription_succeeds() {
         int origHomeWallpaperId = mWallpaperManager.getWallpaperId(FLAG_SYSTEM);
         // TODO(b/393392368) Add component
@@ -1907,7 +1875,6 @@ public class WallpaperManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_LIVE_WALLPAPER_CONTENT_HANDLING)
     public void getWallpaperInstance_liveWallpaper_both_succeeds() {
         String id = "id_1";
         // TODO(b/393392368) Use setWallpaperDescriptionAndWait
@@ -1924,7 +1891,6 @@ public class WallpaperManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_LIVE_WALLPAPER_CONTENT_HANDLING)
     public void getWallpaperInstance_liveWallpaper_lockOnly_succeeds() {
         int origHomeWallpaperId = mWallpaperManager.getWallpaperId(FLAG_SYSTEM);
         String id = "id_1";
@@ -1947,7 +1913,6 @@ public class WallpaperManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_LIVE_WALLPAPER_CONTENT_HANDLING)
     public void setBitmapWithDescription_both_succeeds() throws IOException {
         // based on setBitmap_both_lockScreenSet_changesHomeAndClearsLock()
         Bitmap tmpWallpaper = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888);
@@ -1977,7 +1942,6 @@ public class WallpaperManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_LIVE_WALLPAPER_CONTENT_HANDLING)
     public void setStreamWithDescription_both_succeeds() throws IOException {
         Bitmap tmpWallpaper = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -2006,8 +1970,7 @@ public class WallpaperManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_ENABLE_CROSS_PLATFORM_TRANSFER,
-            FLAG_LIVE_WALLPAPER_CONTENT_HANDLING})
+    @RequiresFlagsEnabled(FLAG_ENABLE_CROSS_PLATFORM_TRANSFER)
     public void allowBackup_propagatesFalse() throws IOException {
         Bitmap tmpWallpaper = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(tmpWallpaper);
@@ -2025,8 +1988,7 @@ public class WallpaperManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_ENABLE_CROSS_PLATFORM_TRANSFER,
-            FLAG_LIVE_WALLPAPER_CONTENT_HANDLING})
+    @RequiresFlagsEnabled(FLAG_ENABLE_CROSS_PLATFORM_TRANSFER)
     public void allowBackup_propagatesTrue() throws IOException {
         Bitmap tmpWallpaper = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(tmpWallpaper);
@@ -2063,16 +2025,8 @@ public class WallpaperManagerTest {
      * </ul>
      *
      * In such a case, the suggested crops should not be modified or adjusted.
-     *
-     * <p>This function can use either the older set functions that take crop hints directly or the
-     * newer functions that use {@link WallpaperDescription}. Specify useDescription=true for the
-     * latter. This value must match the flag state or an exception will be thrown.
      */
-    private void assertCorrectCrop(
-            Bitmap bitmap, Map<Point, Rect> cropHints, boolean useDescription) {
-        if (useDescription ^ liveWallpaperContentHandling()) {
-            throw new IllegalArgumentException("useDescription does not match flag value");
-        }
+    private void assertCorrectCrop(Bitmap bitmap, Map<Point, Rect> cropHints) {
         Point currentScreenSize = getScreenSize();
         Rect currentScreenCrop = cropHints.get(currentScreenSize);
         if (currentScreenCrop == null) throw new IllegalArgumentException();
@@ -2101,94 +2055,99 @@ public class WallpaperManagerTest {
             if (crop != null) assertAlmostEqual(crop, expectedBitmapCrops.get(i));
         }
 
-        Consumer<Integer> setStreamUtil = which -> {
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
-            ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
-            try {
-                if (useDescription) {
-                    WallpaperDescription description = new WallpaperDescription.Builder()
-                            .setCropHints(cropHints).build();
-                    mWallpaperManager.setStreamWithDescription(inputStream, description, true,
-                            which);
-                } else {
-                    mWallpaperManager.setStreamWithCrops(inputStream, cropHints, true, which);
-                }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        };
+        Consumer<Integer> setStreamUtil =
+                which -> {
+                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
+                    ByteArrayInputStream inputStream =
+                            new ByteArrayInputStream(outputStream.toByteArray());
+                    try {
+                        WallpaperDescription description =
+                                new WallpaperDescription.Builder().setCropHints(cropHints).build();
+                        mWallpaperManager.setStreamWithDescription(
+                                inputStream, description, true, which);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                };
 
-        Consumer<Integer> setBitmapUtil = which -> {
-            try {
-                if (useDescription) {
-                    WallpaperDescription description = new WallpaperDescription.Builder()
-                            .setCropHints(cropHints).build();
-                    mWallpaperManager.setBitmapWithDescription(bitmap, description, true, which);
-                } else {
-                    mWallpaperManager.setBitmapWithCrops(bitmap, cropHints, true, which);
-                }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        };
+        Consumer<Integer> setBitmapUtil =
+                which -> {
+                    try {
+                        WallpaperDescription description =
+                                new WallpaperDescription.Builder().setCropHints(cropHints).build();
+                        mWallpaperManager.setBitmapWithDescription(
+                                bitmap, description, true, which);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                };
 
-        runWithShellPermissionIdentity(() -> {
-            for (int which : List.of(FLAG_SYSTEM, FLAG_LOCK, FLAG_SYSTEM | FLAG_LOCK)) {
-                for (Consumer<Integer> setWallpaperUtil : List.of(setStreamUtil, setBitmapUtil)) {
-                    setWallpaperUtil.accept(which);
+        runWithShellPermissionIdentity(
+                () -> {
+                    for (int which : List.of(FLAG_SYSTEM, FLAG_LOCK, FLAG_SYSTEM | FLAG_LOCK)) {
+                        for (Consumer<Integer> setWallpaperUtil :
+                                List.of(setStreamUtil, setBitmapUtil)) {
+                            setWallpaperUtil.accept(which);
 
-                    int sourceFlag = which == FLAG_LOCK ? FLAG_LOCK : FLAG_SYSTEM;
+                            int sourceFlag = which == FLAG_LOCK ? FLAG_LOCK : FLAG_SYSTEM;
 
-                    if (useDescription) {
-                        // TODO(b/380245309) Update this check when description crop logic updated.
-                        WallpaperInstance instance = mWallpaperManager.getWallpaperInstance(
-                                sourceFlag);
-                        if (instance != null) {
-                            assertThat(instance.getDescription()).isNotNull();
-                            SparseArray<Rect> descCropHints =
-                                    instance.getDescription().getCropHints();
-                            assertThat(descCropHints).isNotNull();
-                            assertThat(descCropHints.size()).isEqualTo(cropHintsSparseArray.size());
-                            for (int i = 0; i < descCropHints.size(); i++) {
-                                int key = descCropHints.keyAt(i);
-                                Rect crop = descCropHints.get(key);
-                                if (fixGetBitmapCrops()) assertWithinBitmap(crop, bitmapSize);
-                                assertAlmostEqual(cropHintsSparseArray.get(key), crop);
+                            // TODO(b/380245309) Update this check when description crop logic
+                            // updated.
+                            WallpaperInstance instance =
+                                    mWallpaperManager.getWallpaperInstance(sourceFlag);
+                            if (instance != null) {
+                                assertThat(instance.getDescription()).isNotNull();
+                                SparseArray<Rect> descCropHints =
+                                        instance.getDescription().getCropHints();
+                                assertThat(descCropHints).isNotNull();
+                                assertThat(descCropHints.size())
+                                        .isEqualTo(cropHintsSparseArray.size());
+                                for (int i = 0; i < descCropHints.size(); i++) {
+                                    int key = descCropHints.keyAt(i);
+                                    Rect crop = descCropHints.get(key);
+                                    if (fixGetBitmapCrops()) assertWithinBitmap(crop, bitmapSize);
+                                    assertAlmostEqual(cropHintsSparseArray.get(key), crop);
+                                }
                             }
+
+                            SparseArray<Rect> outCropHints =
+                                    mWallpaperManager.getBitmapCrops(sourceFlag);
+                            assertThat(outCropHints.size()).isEqualTo(cropHintsSparseArray.size());
+                            for (int i = 0; i < outCropHints.size(); i++) {
+                                int key = outCropHints.keyAt(i);
+                                assertAlmostEqual(
+                                        cropHintsSparseArray.get(key), outCropHints.get(key));
+                            }
+
+                            List<Rect> actualBitmapCrops =
+                                    mWallpaperManager.getBitmapCrops(
+                                            displaySizes, sourceFlag, true);
+
+                            for (int i = 0; i < actualBitmapCrops.size(); i++) {
+                                Rect actualCrop = actualBitmapCrops.get(i);
+                                if (fixGetBitmapCrops()) assertWithinBitmap(actualCrop, bitmapSize);
+                                assertAlmostEqual(expectedBitmapCrops.get(i), actualCrop);
+                            }
+
+                            Bitmap croppedBitmap =
+                                    mWallpaperManager.getBitmapAsUser(
+                                            mContext.getUserId(), false, sourceFlag);
+                            assertNotNull(croppedBitmap);
+                            Point croppedBitmapSize =
+                                    new Point(croppedBitmap.getWidth(), croppedBitmap.getHeight());
+                            Rect actualScreenCrop =
+                                    mWallpaperManager
+                                            .getBitmapCrops(
+                                                    List.of(currentScreenSize), sourceFlag, false)
+                                            .getFirst();
+                            if (fixGetBitmapCrops()) {
+                                assertWithinBitmap(actualScreenCrop, croppedBitmapSize);
+                            }
+                            assertAlmostGreen(croppedBitmap, actualScreenCrop);
                         }
                     }
-
-                    SparseArray<Rect> outCropHints = mWallpaperManager.getBitmapCrops(sourceFlag);
-                    assertThat(outCropHints.size()).isEqualTo(cropHintsSparseArray.size());
-                    for (int i = 0; i < outCropHints.size(); i++) {
-                        int key = outCropHints.keyAt(i);
-                        assertAlmostEqual(cropHintsSparseArray.get(key), outCropHints.get(key));
-                    }
-
-                    List<Rect> actualBitmapCrops = mWallpaperManager.getBitmapCrops(
-                            displaySizes, sourceFlag, true);
-
-                    for (int i = 0; i < actualBitmapCrops.size(); i++) {
-                        Rect actualCrop = actualBitmapCrops.get(i);
-                        if (fixGetBitmapCrops()) assertWithinBitmap(actualCrop, bitmapSize);
-                        assertAlmostEqual(expectedBitmapCrops.get(i), actualCrop);
-                    }
-
-                    Bitmap croppedBitmap = mWallpaperManager.getBitmapAsUser(
-                            mContext.getUserId(), false, sourceFlag);
-                    assertNotNull(croppedBitmap);
-                    Point croppedBitmapSize = new Point(
-                            croppedBitmap.getWidth(), croppedBitmap.getHeight());
-                    Rect actualScreenCrop = mWallpaperManager.getBitmapCrops(
-                            List.of(currentScreenSize), sourceFlag, false).getFirst();
-                    if (fixGetBitmapCrops()) {
-                        assertWithinBitmap(actualScreenCrop, croppedBitmapSize);
-                    }
-                    assertAlmostGreen(croppedBitmap, actualScreenCrop);
-                }
-            }
-        });
+                });
     }
 
     private void assertWithinBitmap(Rect crop, Point bitmapSize) {
