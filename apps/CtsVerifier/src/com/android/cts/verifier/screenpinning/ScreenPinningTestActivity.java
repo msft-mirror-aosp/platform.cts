@@ -19,6 +19,8 @@ import android.app.ActivityManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.TextView;
+import android.window.OnBackInvokedCallback;
+import android.window.OnBackInvokedDispatcher;
 
 import com.android.cts.verifier.OrderedTestActivity;
 import com.android.cts.verifier.R;
@@ -31,10 +33,25 @@ public class ScreenPinningTestActivity extends OrderedTestActivity {
 
     private ActivityManager mActivityManager;
 
+    private final OnBackInvokedCallback mOnBackInvokedCallback =
+            () -> {
+                // Block back button so we can test screen pinning exit functionality.
+                // Users can still leave by pressing fail (or when done the pass) button.
+            };
+
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         mActivityManager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
+        getOnBackInvokedDispatcher()
+                .registerOnBackInvokedCallback(
+                        OnBackInvokedDispatcher.PRIORITY_DEFAULT, mOnBackInvokedCallback);
+    }
+
+    @Override
+    protected void onDestroy() {
+        getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(mOnBackInvokedCallback);
+        super.onDestroy();
     }
 
     @Override
