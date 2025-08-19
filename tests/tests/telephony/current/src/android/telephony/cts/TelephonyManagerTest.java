@@ -6494,64 +6494,112 @@ public class TelephonyManagerTest {
     }
 
     /**
-     * Verifies that {@link TelephonyManager#requestUiccIari()} does not cause SecurityException
-     * when granted with READ_PRIVILEGED_PHONE_STATE permission.
+     * Verifies that {@link TelephonyManager#requestUiccIari} does not cause SecurityException when
+     * granted with READ_PRIVILEGED_PHONE_STATE permission.
      */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_IMS_REGISTRATION_EVENT_DOWNLOAD)
     public void requestIari_WithReadPrivilegedPermission() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         // make sure not to face any permission problem while calling the API
-        OutcomeReceiver<Set<String>, Exception> callback =
-                new OutcomeReceiver<>() {
-                    @Override
-                    public void onResult(Set<String> iari) {}
+        CompletableFuture<Pair<Set<String>, Exception>> pendingResult = new CompletableFuture<>();
+        OutcomeReceiver<Set<String>, Exception> callback = createOutcomeReceiver(pendingResult);
 
-                    @Override
-                    public void onError(@NonNull Exception ex) {
-                        if (ex instanceof SecurityException) {
-                            fail();
-                        } else if (ex instanceof IllegalStateException) {
-                            assumeNoException("Skipping test in case SIM do not support ISIM", ex);
-                        } else {
-                            Log.i(TAG, "Skipping test", ex);
-                        }
-                    }
-                };
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
                 mTelephonyManager,
                 tm -> tm.requestUiccIari(getContext().getMainExecutor(), callback),
                 Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+        Pair<Set<String>, Exception> result = getResultOrFail("requestUiccIari", pendingResult);
+
+        Set<String> iari = result.first;
+        Exception ex = result.second;
+
+        if (ex != null) {
+            if (ex instanceof SecurityException) {
+                fail("requestUiccIari should not throw SecurityException with permission");
+            } else if (ex instanceof IllegalStateException) {
+                assumeNoException("Skipping test because ISIM is not supported", ex);
+            } else {
+                // Other exceptions might be valid device states, so we log and pass.
+                Log.i(TAG, "requestUiccIari returned exception, passing without verification", ex);
+            }
+            return;
+        }
+
+        assertNotNull("On success, the IARI set should not be null", iari);
     }
 
     /**
-     * Verifies that {@link TelephonyManager#requestUiccIari()} cause SecurityException when called
+     * Verifies that {@link TelephonyManager#requestUiccIari} cause SecurityException when called
      * without any permissions granted.
      */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_IMS_REGISTRATION_EVENT_DOWNLOAD)
     public void requestIari_NoPermissionGranted() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        CompletableFuture<Pair<Set<String>, Exception>> pendingResult = new CompletableFuture<>();
+        OutcomeReceiver<Set<String>, Exception> callback = createOutcomeReceiver(pendingResult);
 
-        OutcomeReceiver<Set<String>, Exception> callback =
-                new OutcomeReceiver<>() {
-                    @Override
-                    public void onResult(Set<String> iari) {
-                        fail(); // if no SecurityException then it fails()
-                    }
-
-                    @Override
-                    public void onError(@NonNull Exception ex) {
-                        if (ex instanceof SecurityException) {
-                            // SecurityException is expected
-                        } else if (ex instanceof IllegalStateException) {
-                            assumeNoException("Skipping test in case SIM do not support ISIM", ex);
-                        } else {
-                            Log.i(TAG, "Skipping test", ex);
-                        }
-                    }
-                };
         mTelephonyManager.requestUiccIari(getContext().getMainExecutor(), callback);
+        Pair<Set<String>, Exception> result = getResultOrFail("requestUiccIari", pendingResult);
+
+        Exception ex = result.second;
+
+        if (ex instanceof SecurityException) {
+            // This is the expected outcome.
+            return;
+        }
+
+        if (ex instanceof IllegalStateException) {
+            assumeNoException("Skipping test because ISIM is not supported", ex);
+        }
+
+        // If we get here, we either received a success response (ex == null)
+        // or an unexpected exception. Both are test failures.
+        fail("Expected SecurityException, but got " + (ex != null ? ex : "a success response"));
+    }
+
+    /**
+     * Creates an OutcomeReceiver that completes a CompletableFuture.
+     *
+     * @param pendingResult The CompletableFuture to complete.
+     * @return A pair where the left hand side is non-null if there was a successful result or the
+     *     right hand side is non-null if there was a RuntimeException thrown.
+     * @param <U> The successful result type
+     * @param <V> The RuntimeException thrown when there was a failure.
+     */
+    private <U, V extends Exception> OutcomeReceiver<U, V> createOutcomeReceiver(
+            CompletableFuture<Pair<U, V>> pendingResult) {
+        return new OutcomeReceiver<>() {
+            @Override
+            public void onResult(U result) {
+                pendingResult.complete(Pair.create(result, null));
+            }
+
+            @Override
+            public void onError(@NonNull V ex) {
+                pendingResult.complete(Pair.create(null, ex));
+            }
+        };
+    }
+
+    /**
+     * Waits {@link #TIMEOUT} time for a result from the given CompletableFuture and calls fail() if
+     * the timeout is hit.
+     *
+     * @param apiName API name used in the failure message if the timeout or error is hit.
+     * @param pendingResult Pending CompletableFuture.
+     * @return The successful result of the pending operation.
+     * @param <T> The Type of the result
+     */
+    private <T> T getResultOrFail(String apiName, CompletableFuture<T> pendingResult) {
+        try {
+            return pendingResult.get(TIMEOUT, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            fail("Failed getting result of " + apiName + ", ex=" + e);
+        }
+        // We should never hit this part, but java wants a return statement, so throwing an IAE.
+        throw new IllegalStateException("getResultOrFail: unexpected path hit");
     }
 
     @Test
