@@ -1182,6 +1182,7 @@ class AppFunctionManagerTest {
             assertProcessState(isBfgs = false)
         } finally {
             cancellationSignal.cancel()
+            assertServiceDestroyed()
         }
     }
 
@@ -1207,6 +1208,7 @@ class AppFunctionManagerTest {
                 assertProcessState(isBfgs = true)
             } finally {
                 cancellationSignal.cancel()
+                assertServiceDestroyed()
             }
         }
     }
