@@ -96,22 +96,21 @@ genrule {
     ],
     out: ["AndroidManifest.xml"],
     cmd: "$(location :compatibility-manifest-generator) " +
-        " -r android.permission.READ_PHONE_STATE " +
-        " -r android.permission.WRITE_EXTERNAL_STORAGE " +
         " -r android.permission.ACCESS_FINE_LOCATION " +
         " -r android.permission.QUERY_ALL_PACKAGES" +
-        " -a com.android.compatibility.common.deviceinfo.GlesStubActivity " +
+        " -r android.permission.READ_PHONE_STATE " +
+        " -r android.permission.WRITE_EXTERNAL_STORAGE " +
         " -a com.android.cts.deviceinfo.CameraDeviceInfo " +
         " -a com.android.cts.deviceinfo.DisplayDeviceInfo " +
         " -a com.android.cts.deviceinfo.SensorDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.AppStandbyDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.BiometricsDeviceInfo " +
-        " -a com.android.compatibility.common.deviceinfo.DeviceIdleDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.ClientIdDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.ConfigurationDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.ConnectivityDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.CpuDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.DefaultAppDeviceInfo " +
+        " -a com.android.compatibility.common.deviceinfo.DeviceIdleDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.FeatureDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.GenericDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.GlesStubActivity " +
