@@ -339,6 +339,10 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         assertEquals("Success\n", installResult);
     }
 
+    /**
+     * @deprecated TODO(b/435528858): should be moved to subclasses that need it
+     */
+    @Deprecated
     protected void installDeviceOwnerApp(String apk) throws Exception {
         installAppAsUser(apk, mDeviceOwnerUserId);
     }
@@ -890,6 +894,8 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
 
     protected boolean setDeviceOwner(String componentName, int userId, boolean expectFailure)
             throws DeviceNotAvailableException {
+        CLog.d("setDeviceOwner(componentName=%s, userId=%d, expectFailure=%b", componentName,
+                userId, expectFailure);
         if (isHeadlessSystemUserMode()) {
             assumeNotNull("Devices in headles system user mode require a main user to set a device "
                     + "owner.", getDevice().getMainUserId());
