@@ -113,9 +113,12 @@ public class DeviceOwnerPositiveTestActivity extends PassFailButtons.TestListAct
         new ByodFlowTestHelper(this).tearDown();
 
         if (ACTION_CHECK_DEVICE_OWNER.equals(getIntent().getAction())) {
-            DevicePolicyManager dpm = TestAppSystemServiceFactory.getDevicePolicyManager(this,
-                    DeviceAdminTestReceiver.class, /* forDeviceOwner= */ true,
-                    /* isSingleUser = */ false);
+            DevicePolicyManager dpm =
+                    TestAppSystemServiceFactory.getDevicePolicyManager(
+                            this,
+                            DeviceAdminTestReceiver.class,
+                            /* forDeviceOwner= */ true,
+                            /* isSingleUser= */ true);
             if (dpm.isDeviceOwnerApp(getPackageName())) {
                 // Set DISALLOW_ADD_USER on behalf of ManagedProvisioning.
                 dpm.addUserRestriction(DeviceAdminTestReceiver.getReceiverComponentName(),

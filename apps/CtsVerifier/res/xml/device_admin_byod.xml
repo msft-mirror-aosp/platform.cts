@@ -16,7 +16,7 @@
 
 <!-- BEGIN_INCLUDE(meta_data) -->
 <device-admin xmlns:android="http://schemas.android.com/apk/res/android">
-    <headless-system-user device-owner-mode="affiliated" />
+    <headless-system-user device-owner-mode="single_user" />
     <support-transfer-ownership/>
     <uses-policies>
         <limit-password />
