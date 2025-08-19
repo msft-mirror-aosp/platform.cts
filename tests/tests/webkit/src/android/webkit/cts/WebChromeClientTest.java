@@ -62,6 +62,7 @@ import org.junit.runner.RunWith;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 @AppModeFull
 @MediumTest
@@ -78,8 +79,8 @@ public class WebChromeClientTest extends SharedWebViewTest {
     private static final String TOUCH_RECEIVED = "touch received";
 
     @Rule
-    public ActivityScenarioRule mActivityScenarioRule =
-            new ActivityScenarioRule(WebViewCtsActivity.class);
+    public ActivityScenarioRule<WebViewCtsActivity> mActivityScenarioRule =
+            new ActivityScenarioRule<>(WebViewCtsActivity.class);
 
     private SharedSdkWebServer mWebServer;
     private WebIconDatabase mIconDb;
@@ -138,16 +139,10 @@ public class WebChromeClientTest extends SharedWebViewTest {
         final MockWebChromeClient webChromeClient = new MockWebChromeClient();
         mOnUiThread.setWebChromeClient(webChromeClient);
 
-        assertFalse(webChromeClient.hadOnProgressChanged());
+        assertFalse(webChromeClient.hasOnProgressChanged());
         String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
         mOnUiThread.loadUrlAndWaitForCompletion(url);
-
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return webChromeClient.hadOnProgressChanged();
-            }
-        }.run();
+        assertNotNull(webChromeClient.waitForOnProgressChanged());
     }
 
     @Test
@@ -155,18 +150,10 @@ public class WebChromeClientTest extends SharedWebViewTest {
         final MockWebChromeClient webChromeClient = new MockWebChromeClient();
         mOnUiThread.setWebChromeClient(webChromeClient);
 
-        assertFalse(webChromeClient.hadOnReceivedTitle());
+        assertFalse(webChromeClient.hasOnReceivedTitle());
         String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
         mOnUiThread.loadUrlAndWaitForCompletion(url);
-
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return webChromeClient.hadOnReceivedTitle();
-            }
-        }.run();
-        assertTrue(webChromeClient.hadOnReceivedTitle());
-        assertEquals(TestHtmlConstants.HELLO_WORLD_TITLE, webChromeClient.getPageTitle());
+        assertEquals(TestHtmlConstants.HELLO_WORLD_TITLE, webChromeClient.waitForOnReceivedTitle());
     }
 
     @Test
@@ -183,18 +170,12 @@ public class WebChromeClientTest extends SharedWebViewTest {
         getTestEnvironment().waitForIdleSync();
         Thread.sleep(100); // Wait for open to be received on the icon db thread.
 
-        assertFalse(webChromeClient.hadOnReceivedIcon());
+        assertFalse(webChromeClient.hasOnReceivedIcon());
         assertNull(mOnUiThread.getFavicon());
 
         String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
         mOnUiThread.loadUrlAndWaitForCompletion(url);
-
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return webChromeClient.hadOnReceivedIcon();
-            }
-        }.run();
+        assertNotNull(webChromeClient.waitForOnReceivedIcon());
         assertNotNull(mOnUiThread.getFavicon());
     }
 
@@ -207,29 +188,16 @@ public class WebChromeClientTest extends SharedWebViewTest {
         settings.setJavaScriptCanOpenWindowsAutomatically(true);
         settings.setSupportMultipleWindows(true);
 
-        assertFalse(webChromeClient.hadOnCreateWindow());
+        assertFalse(webChromeClient.hasOnCreateWindow());
 
         // Load a page that opens a child window and sets a timeout after which the child
         // will be closed.
         mOnUiThread.loadUrlAndWaitForCompletion(mWebServer.
                 getAssetUrl(TestHtmlConstants.JS_WINDOW_URL));
-
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return webChromeClient.hadOnCreateWindow();
-            }
-        }.run();
+        assertTrue(webChromeClient.waitForOnCreateWindow());
 
         if (expectWindowClose) {
-            new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-                @Override
-                protected boolean check() {
-                    return webChromeClient.hadOnCloseWindow();
-                }
-            }.run();
-        } else {
-            assertFalse(webChromeClient.hadOnCloseWindow());
+            assertTrue(webChromeClient.waitForOnCloseWindow());
         }
     }
     @Test
@@ -256,39 +224,23 @@ public class WebChromeClientTest extends SharedWebViewTest {
         settings.setJavaScriptEnabled(true);
         settings.setJavaScriptCanOpenWindowsAutomatically(true);
 
-        final BlockingQueue<String> pageTitleQueue = new ArrayBlockingQueue<>(3);
-        final SettableFuture<Void> onJsBeforeUnloadFuture = SettableFuture.create();
-        final MockWebChromeClient webChromeClientWaitTitle = new MockWebChromeClient() {
-            @Override
-            public void onReceivedTitle(WebView view, String title) {
-                super.onReceivedTitle(view, title);
-                pageTitleQueue.add(title);
-            }
-
-            @Override
-            public boolean onJsBeforeUnload(
-                WebView view, String url, String message, JsResult result) {
-                boolean ret = super.onJsBeforeUnload(view, url, message, result);
-                onJsBeforeUnloadFuture.set(null);
-                return ret;
-            }
-        };
-        mOnUiThread.setWebChromeClient(webChromeClientWaitTitle);
+        final MockWebChromeClient webChromeClient = new MockWebChromeClient();
+        mOnUiThread.setWebChromeClient(webChromeClient);
 
         mOnUiThread.loadUrlAndWaitForCompletion(
             mWebServer.getAssetUrl(TestHtmlConstants.JS_UNLOAD_URL));
 
-        assertEquals(JAVASCRIPT_UNLOAD, WebkitUtils.waitForNextQueueElement(pageTitleQueue));
-        assertEquals(LISTENER_ADDED, WebkitUtils.waitForNextQueueElement(pageTitleQueue));
+        assertEquals(JAVASCRIPT_UNLOAD, webChromeClient.waitForOnReceivedTitle());
+        assertEquals(LISTENER_ADDED, webChromeClient.waitForOnReceivedTitle());
         // Send a user gesture, required for unload to execute since WebView version 60.
         tapWebView();
-        assertEquals(TOUCH_RECEIVED, WebkitUtils.waitForNextQueueElement(pageTitleQueue));
+        assertEquals(TOUCH_RECEIVED, webChromeClient.waitForOnReceivedTitle());
 
         // unload should trigger when we try to navigate away
         mOnUiThread.loadUrlAndWaitForCompletion(
             mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL));
 
-        WebkitUtils.waitForFuture(onJsBeforeUnloadFuture);
+        assertNotNull(webChromeClient.waitForOnJsBeforeUnload());
     }
 
     @Test
@@ -300,18 +252,10 @@ public class WebChromeClientTest extends SharedWebViewTest {
         settings.setJavaScriptEnabled(true);
         settings.setJavaScriptCanOpenWindowsAutomatically(true);
 
-        assertFalse(webChromeClient.hadOnJsAlert());
-
+        assertFalse(webChromeClient.hasOnJsAlert());
         String url = mWebServer.getAssetUrl(TestHtmlConstants.JS_ALERT_URL);
         mOnUiThread.loadUrlAndWaitForCompletion(url);
-
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return webChromeClient.hadOnJsAlert();
-            }
-        }.run();
-        assertEquals(webChromeClient.getMessage(), "testOnJsAlert");
+        assertEquals("testOnJsAlert", webChromeClient.waitForOnJsAlert());
     }
 
     @Test
@@ -323,18 +267,10 @@ public class WebChromeClientTest extends SharedWebViewTest {
         settings.setJavaScriptEnabled(true);
         settings.setJavaScriptCanOpenWindowsAutomatically(true);
 
-        assertFalse(webChromeClient.hadOnJsConfirm());
-
+        assertFalse(webChromeClient.hasOnJsConfirm());
         String url = mWebServer.getAssetUrl(TestHtmlConstants.JS_CONFIRM_URL);
         mOnUiThread.loadUrlAndWaitForCompletion(url);
-
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return webChromeClient.hadOnJsConfirm();
-            }
-        }.run();
-        assertEquals(webChromeClient.getMessage(), "testOnJsConfirm");
+        assertEquals("testOnJsConfirm", webChromeClient.waitForOnJsConfirm());
     }
 
     @Test
@@ -346,19 +282,14 @@ public class WebChromeClientTest extends SharedWebViewTest {
         settings.setJavaScriptEnabled(true);
         settings.setJavaScriptCanOpenWindowsAutomatically(true);
 
-        assertFalse(webChromeClient.hadOnJsPrompt());
+        assertFalse(webChromeClient.hasOnJsPrompt());
 
         final String promptResult = "CTS";
         webChromeClient.setPromptResult(promptResult);
         String url = mWebServer.getAssetUrl(TestHtmlConstants.JS_PROMPT_URL);
         mOnUiThread.loadUrlAndWaitForCompletion(url);
 
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return webChromeClient.hadOnJsPrompt();
-            }
-        }.run();
+        assertEquals("testOnJsPrompt", webChromeClient.waitForOnJsPrompt());
         // the result returned by the client gets set as the page title
         new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
             @Override
@@ -366,7 +297,6 @@ public class WebChromeClientTest extends SharedWebViewTest {
                 return mOnUiThread.getTitle().equals(promptResult);
             }
         }.run();
-        assertEquals(webChromeClient.getMessage(), "testOnJsPrompt");
     }
 
     @Test
@@ -440,19 +370,14 @@ public class WebChromeClientTest extends SharedWebViewTest {
                     }
                 });
 
-        assertFalse(webChromeClient.hadOnShowFileChooser());
+        assertFalse(webChromeClient.hasOnShowFileChooser());
         String url = mWebServer.getAssetUrl(TestHtmlConstants.INPUT_FILE_URL);
         mOnUiThread.loadUrlAndWaitForCompletion(url);
         WebkitUtils.waitForFuture(pageCommitVisibleFuture);
         tapWebView();
 
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return webChromeClient.hadOnShowFileChooser();
-            }
-        }.run();
-        FileChooserParams params = webChromeClient.getFileChooserParams();
+        FileChooserParams params = webChromeClient.waitForOnShowFileChooser();
+        assertNotNull(params);
         assertEquals(params.getMode(), FileChooserParams.MODE_OPEN);
         if (Flags.fileSystemAccess()) {
             assertEquals(params.getPermissionMode(), FileChooserParams.PERMISSION_MODE_READ);
@@ -471,19 +396,14 @@ public class WebChromeClientTest extends SharedWebViewTest {
                     }
                 });
 
-        assertFalse(webChromeClient.hadOnShowFileChooser());
+        assertFalse(webChromeClient.hasOnShowFileChooser());
         String url = mWebServer.getAssetUrl(TestHtmlConstants.INPUT_FILE_MULTIPLE_URL);
         mOnUiThread.loadUrlAndWaitForCompletion(url);
         WebkitUtils.waitForFuture(pageCommitVisibleFuture);
         tapWebView();
 
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return webChromeClient.hadOnShowFileChooser();
-            }
-        }.run();
-        FileChooserParams params = webChromeClient.getFileChooserParams();
+        FileChooserParams params = webChromeClient.waitForOnShowFileChooser();
+        assertNotNull(params);
         assertEquals(params.getMode(), FileChooserParams.MODE_OPEN_MULTIPLE);
         if (Flags.fileSystemAccess()) {
             assertEquals(params.getPermissionMode(), FileChooserParams.PERMISSION_MODE_READ);
@@ -506,19 +426,14 @@ public class WebChromeClientTest extends SharedWebViewTest {
                     }
                 });
 
-        assertFalse(webChromeClient.hadOnShowFileChooser());
+        assertFalse(webChromeClient.hasOnShowFileChooser());
         String url = mWebServer.getAssetUrl(TestHtmlConstants.SHOW_OPEN_FILE_PICKER_URL);
         mOnUiThread.loadUrlAndWaitForCompletion(url);
         WebkitUtils.waitForFuture(pageCommitVisibleFuture);
         tapWebView();
 
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return webChromeClient.hadOnShowFileChooser();
-            }
-        }.run();
-        FileChooserParams params = webChromeClient.getFileChooserParams();
+        FileChooserParams params = webChromeClient.waitForOnShowFileChooser();
+        assertNotNull(params);
         assertEquals(params.getMode(), FileChooserParams.MODE_OPEN);
         assertEquals(params.getPermissionMode(), FileChooserParams.PERMISSION_MODE_READ_WRITE);
     }
@@ -539,19 +454,14 @@ public class WebChromeClientTest extends SharedWebViewTest {
                     }
                 });
 
-        assertFalse(webChromeClient.hadOnShowFileChooser());
+        assertFalse(webChromeClient.hasOnShowFileChooser());
         String url = mWebServer.getAssetUrl(TestHtmlConstants.SHOW_DIRECTORY_PICKER_URL);
         mOnUiThread.loadUrlAndWaitForCompletion(url);
         WebkitUtils.waitForFuture(pageCommitVisibleFuture);
         tapWebView();
 
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return webChromeClient.hadOnShowFileChooser();
-            }
-        }.run();
-        FileChooserParams params = webChromeClient.getFileChooserParams();
+        FileChooserParams params = webChromeClient.waitForOnShowFileChooser();
+        assertNotNull(params);
         assertEquals(params.getMode(), FileChooserParams.MODE_OPEN_FOLDER);
         assertEquals(params.getPermissionMode(), FileChooserParams.PERMISSION_MODE_READ_WRITE);
     }
@@ -572,19 +482,14 @@ public class WebChromeClientTest extends SharedWebViewTest {
                     }
                 });
 
-        assertFalse(webChromeClient.hadOnShowFileChooser());
+        assertFalse(webChromeClient.hasOnShowFileChooser());
         String url = mWebServer.getAssetUrl(TestHtmlConstants.SHOW_SAVE_FILE_PICKER_URL);
         mOnUiThread.loadUrlAndWaitForCompletion(url);
         WebkitUtils.waitForFuture(pageCommitVisibleFuture);
         tapWebView();
 
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return webChromeClient.hadOnShowFileChooser();
-            }
-        }.run();
-        FileChooserParams params = webChromeClient.getFileChooserParams();
+        FileChooserParams params = webChromeClient.waitForOnShowFileChooser();
+        assertNotNull(params);
         assertEquals(params.getMode(), FileChooserParams.MODE_SAVE);
         assertEquals(params.getPermissionMode(), FileChooserParams.PERMISSION_MODE_READ_WRITE);
     }
@@ -601,105 +506,118 @@ public class WebChromeClientTest extends SharedWebViewTest {
     }
 
     private class MockWebChromeClient extends WaitForProgressClient {
-        private boolean mHadOnProgressChanged;
-        private boolean mHadOnReceivedTitle;
-        private String mPageTitle;
-        private boolean mHadOnJsAlert;
-        private boolean mHadOnJsConfirm;
-        private boolean mHadOnJsPrompt;
-        private boolean mHadOnJsBeforeUnload;
-        private String mMessage;
-        private String mPromptResult;
-        private boolean mHadOnCloseWindow;
-        private boolean mHadOnCreateWindow;
-        private boolean mHadOnRequestFocus;
-        private boolean mHadOnReceivedIcon;
         private WebView mChildWebView;
-        private boolean mHadOnShowFileChooser;
-        private FileChooserParams mFileChooserParams;
 
-        public MockWebChromeClient() {
+        private String mPromptResult;
+
+        private final BlockingQueue<Integer> mOnProgressChangedQueue = new LinkedBlockingQueue<>();
+        private final BlockingQueue<String> mOnReceivedTitleQueue = new LinkedBlockingQueue<>();
+        private final BlockingQueue<Bitmap> mOnReceivedIconQueue = new LinkedBlockingQueue<>();
+        private final BlockingQueue<Boolean> mOnCreateWindowQueue = new LinkedBlockingQueue<>();
+        private final BlockingQueue<Boolean> mOnCloseWindowQueue = new LinkedBlockingQueue<>();
+        private final BlockingQueue<String> mOnJsAlertQueue = new LinkedBlockingQueue<>();
+        private final BlockingQueue<String> mOnJsConfirmQueue = new LinkedBlockingQueue<>();
+        private final BlockingQueue<String> mOnJsPromptQueue = new LinkedBlockingQueue<>();
+        private final BlockingQueue<FileChooserParams> mOnShowFileChooserQueue =
+                new LinkedBlockingQueue<>();
+        private final BlockingQueue<String> mOnJsBeforeUnloadQueue = new LinkedBlockingQueue<>();
+
+        MockWebChromeClient() {
             super(mOnUiThread);
         }
 
-        public void setPromptResult(String promptResult) {
+        void setPromptResult(String promptResult) {
             mPromptResult = promptResult;
         }
 
-        public boolean hadOnProgressChanged() {
-            return mHadOnProgressChanged;
+        boolean hasOnProgressChanged() {
+            return !mOnProgressChangedQueue.isEmpty();
         }
 
-        public boolean hadOnReceivedTitle() {
-            return mHadOnReceivedTitle;
+        Integer waitForOnProgressChanged() {
+            return WebkitUtils.waitForNextQueueElement(mOnProgressChangedQueue);
         }
 
-        public String getPageTitle() {
-            return mPageTitle;
+        boolean hasOnReceivedTitle() {
+            return !mOnReceivedTitleQueue.isEmpty();
         }
 
-        public boolean hadOnJsAlert() {
-            return mHadOnJsAlert;
+        String waitForOnReceivedTitle() {
+            return WebkitUtils.waitForNextQueueElement(mOnReceivedTitleQueue);
         }
 
-        public boolean hadOnJsConfirm() {
-            return mHadOnJsConfirm;
+        boolean hasOnJsAlert() {
+            return !mOnJsAlertQueue.isEmpty();
         }
 
-        public boolean hadOnJsPrompt() {
-            return mHadOnJsPrompt;
+        String waitForOnJsAlert() {
+            return WebkitUtils.waitForNextQueueElement(mOnJsAlertQueue);
         }
 
-        public boolean hadOnJsBeforeUnload() {
-            return mHadOnJsBeforeUnload;
+        boolean hasOnJsConfirm() {
+            return !mOnJsConfirmQueue.isEmpty();
         }
 
-        public boolean hadOnCreateWindow() {
-            return mHadOnCreateWindow;
+        String waitForOnJsConfirm() {
+            return WebkitUtils.waitForNextQueueElement(mOnJsConfirmQueue);
         }
 
-        public boolean hadOnCloseWindow() {
-            return mHadOnCloseWindow;
+        boolean hasOnJsPrompt() {
+            return !mOnJsPromptQueue.isEmpty();
         }
 
-        public boolean hadOnRequestFocus() {
-            return mHadOnRequestFocus;
+        String waitForOnJsPrompt() {
+            return WebkitUtils.waitForNextQueueElement(mOnJsPromptQueue);
         }
 
-        public boolean hadOnReceivedIcon() {
-            return mHadOnReceivedIcon;
+        boolean hasOnCreateWindow() {
+            return !mOnCreateWindowQueue.isEmpty();
         }
 
-        public String getMessage() {
-            return mMessage;
+        Boolean waitForOnCreateWindow() {
+            return WebkitUtils.waitForNextQueueElement(mOnCreateWindowQueue);
         }
 
-        public boolean hadOnShowFileChooser() {
-            return mHadOnShowFileChooser;
+        Boolean waitForOnCloseWindow() {
+            return WebkitUtils.waitForNextQueueElement(mOnCloseWindowQueue);
         }
 
-        public FileChooserParams getFileChooserParams() {
-            return mFileChooserParams;
+        boolean hasOnReceivedIcon() {
+            return !mOnReceivedIconQueue.isEmpty();
+        }
+
+        Bitmap waitForOnReceivedIcon() {
+            return WebkitUtils.waitForNextQueueElement(mOnReceivedIconQueue);
+        }
+
+        boolean hasOnShowFileChooser() {
+            return !mOnShowFileChooserQueue.isEmpty();
+        }
+
+        FileChooserParams waitForOnShowFileChooser() {
+            return WebkitUtils.waitForNextQueueElement(mOnShowFileChooserQueue);
+        }
+
+        String waitForOnJsBeforeUnload() {
+            return WebkitUtils.waitForNextQueueElement(mOnJsBeforeUnloadQueue);
         }
 
         @Override
         public void onProgressChanged(WebView view, int newProgress) {
             super.onProgressChanged(view, newProgress);
-            mHadOnProgressChanged = true;
+            mOnProgressChangedQueue.add(newProgress);
         }
 
         @Override
         public void onReceivedTitle(WebView view, String title) {
             super.onReceivedTitle(view, title);
-            mPageTitle = title;
-            mHadOnReceivedTitle = true;
+            mOnReceivedTitleQueue.add(title);
         }
 
         @Override
         public boolean onJsAlert(WebView view, String url, String message, JsResult result) {
             super.onJsAlert(view, url, message, result);
-            mHadOnJsAlert = true;
-            mMessage = message;
+            mOnJsAlertQueue.add(message);
             result.confirm();
             return true;
         }
@@ -707,8 +625,7 @@ public class WebChromeClientTest extends SharedWebViewTest {
         @Override
         public boolean onJsConfirm(WebView view, String url, String message, JsResult result) {
             super.onJsConfirm(view, url, message, result);
-            mHadOnJsConfirm = true;
-            mMessage = message;
+            mOnJsConfirmQueue.add(message);
             result.confirm();
             return true;
         }
@@ -717,8 +634,7 @@ public class WebChromeClientTest extends SharedWebViewTest {
         public boolean onJsPrompt(WebView view, String url, String message,
                 String defaultValue, JsPromptResult result) {
             super.onJsPrompt(view, url, message, defaultValue, result);
-            mHadOnJsPrompt = true;
-            mMessage = message;
+            mOnJsPromptQueue.add(message);
             result.confirm(mPromptResult);
             return true;
         }
@@ -726,16 +642,15 @@ public class WebChromeClientTest extends SharedWebViewTest {
         @Override
         public boolean onJsBeforeUnload(WebView view, String url, String message, JsResult result) {
             super.onJsBeforeUnload(view, url, message, result);
-            mHadOnJsBeforeUnload = true;
-            mMessage = message;
+            mOnJsBeforeUnloadQueue.add(message);
             result.confirm();
             return true;
         }
 
         @Override
         public void onCloseWindow(WebView window) {
+            mOnCloseWindowQueue.add(true);
             super.onCloseWindow(window);
-            mHadOnCloseWindow = true;
 
             if (mChildWebView != null) {
                 ViewParent parent =  mChildWebView.getParent();
@@ -750,7 +665,7 @@ public class WebChromeClientTest extends SharedWebViewTest {
         @Override
         public boolean onCreateWindow(WebView view, boolean dialog, boolean userGesture,
                 Message resultMsg) {
-            mHadOnCreateWindow = true;
+            mOnCreateWindowQueue.add(true);
             if (mBlockWindowCreationSync) {
                 return false;
             }
@@ -771,13 +686,8 @@ public class WebChromeClientTest extends SharedWebViewTest {
         }
 
         @Override
-        public void onRequestFocus(WebView view) {
-            mHadOnRequestFocus = true;
-        }
-
-        @Override
         public void onReceivedIcon(WebView view, Bitmap icon) {
-            mHadOnReceivedIcon = true;
+            mOnReceivedIconQueue.add(icon);
         }
 
         @Override
@@ -785,8 +695,7 @@ public class WebChromeClientTest extends SharedWebViewTest {
                 WebView webView,
                 ValueCallback<Uri[]> filePathCallback,
                 FileChooserParams fileChooserParams) {
-            mHadOnShowFileChooser = true;
-            mFileChooserParams = fileChooserParams;
+            mOnShowFileChooserQueue.add(fileChooserParams);
             return false;
         }
     }
