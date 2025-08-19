@@ -2186,24 +2186,17 @@ public class SingleDeviceTest extends WifiJUnit4TestBase {
      */
     @Test
     public void awareParamsInvalid() {
-        if (!TestUtils.shouldTestWifiAware(mContext)) {
-            return;
-        }
         AwareParams params = new AwareParams();
-        params.setDiscoveryWindowWakeInterval24Ghz(-1);
-        assertThrows(IllegalArgumentException.class, () -> mWifiAwareManager.setAwareParams(params));
-        params.setDiscoveryWindowWakeInterval24Ghz(5);
-        params.setDiscoveryWindowWakeInterval5Ghz(-1);
-        assertThrows(IllegalArgumentException.class, () -> mWifiAwareManager.setAwareParams(params));
-        params.setDiscoveryWindowWakeInterval5Ghz(5);
-        params.setDiscoveryBeaconIntervalMillis(-1);
-        assertThrows(IllegalArgumentException.class, () -> mWifiAwareManager.setAwareParams(params));
-        params.setDiscoveryBeaconIntervalMillis(50);
-        params.setMacRandomizationIntervalSeconds(-1);
-        assertThrows(IllegalArgumentException.class, () -> mWifiAwareManager.setAwareParams(params));
-        params.setMacRandomizationIntervalSeconds(1000);
-        params.setNumSpatialStreamsInDiscovery(-1);
-        assertThrows(IllegalArgumentException.class, () -> mWifiAwareManager.setAwareParams(params));
+        assertThrows(IllegalArgumentException.class,
+            () -> params.setDiscoveryWindowWakeInterval24Ghz(-1));
+        assertThrows(IllegalArgumentException.class,
+            () -> params.setDiscoveryWindowWakeInterval5Ghz(-1));
+        assertThrows(IllegalArgumentException.class,
+            () -> params.setDiscoveryBeaconIntervalMillis(-1));
+        assertThrows(IllegalArgumentException.class,
+            () -> params.setMacRandomizationIntervalSeconds(-1));
+        assertThrows(IllegalArgumentException.class,
+            () -> params.setNumSpatialStreamsInDiscovery(-1));
     }
 
     @Test
