@@ -48,7 +48,7 @@ public class BlankWithTitleActivityTest
 
     @Test
     public void testSimpleSessionLifecycle() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
 
         final BlankWithTitleActivity activity = launchActivity();
@@ -57,7 +57,10 @@ public class BlankWithTitleActivityTest
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         Log.v(TAG, "session id: " + session.id);
 
         activity.assertDefaultEvents(session);
@@ -66,7 +69,7 @@ public class BlankWithTitleActivityTest
     @AppModeFull(reason = "testSimpleSessionLifecycle() is enough")
     @Test
     public void testSimpleSessionLifecycle_noAnimation() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
 
         final BlankWithTitleActivity activity = launchActivity(
@@ -77,7 +80,10 @@ public class BlankWithTitleActivityTest
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         Log.v(TAG, "session id: " + session.id);
 
         activity.assertDefaultEvents(session);

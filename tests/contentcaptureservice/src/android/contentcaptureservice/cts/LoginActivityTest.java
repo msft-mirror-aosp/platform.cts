@@ -109,7 +109,7 @@ public class LoginActivityTest
 
     @Test
     public void testSimpleLifecycle_defaultSession() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        CtsContentCaptureService service = enableService();
         final ActivityWatcher watcher = startWatcher();
 
         final LoginActivity activity = launchActivity();
@@ -119,7 +119,10 @@ public class LoginActivityTest
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         Log.v(TAG, "session id: " + session.id);
 
         activity.assertDefaultEvents(session);
@@ -289,7 +292,7 @@ public class LoginActivityTest
 
     @Test
     public void testSimpleLifecycle_changeContextAfterCreate() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
 
         final LoginActivity activity = launchActivity();
@@ -311,7 +314,10 @@ public class LoginActivityTest
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         Log.v(TAG, "session id: " + session.id);
 
         final EventsAssertor assertor = activity.assertInitialViewsAppeared(session);
@@ -331,7 +337,7 @@ public class LoginActivityTest
 
     @Test
     public void testSimpleLifecycle_changeContextOnCreate() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
 
         final ContentCaptureContext newContext = newContentCaptureContext();
@@ -349,7 +355,10 @@ public class LoginActivityTest
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         Log.v(TAG, "session id: " + session.id);
         final ContentCaptureSessionId sessionId = session.id;
         assertRightActivity(session, sessionId, activity);
@@ -391,7 +400,7 @@ public class LoginActivityTest
 
     @Test
     public void testTextChanged() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
 
         LoginActivity.onRootView((activity, rootView) -> ((LoginActivity) activity).mUsername
@@ -410,7 +419,10 @@ public class LoginActivityTest
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
 
         final EventsAssertor assertor = activity.assertInitialViewsAppeared(session);
 
@@ -478,7 +490,7 @@ public class LoginActivityTest
 
     @Test
     public void testComposingSpan_mergedEvent() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
 
         LoginActivity.onRootView((activity, rootView) -> ((LoginActivity) activity).mUsername
@@ -503,7 +515,10 @@ public class LoginActivityTest
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
 
         final EventsAssertor assertor = activity.assertInitialViewsAppeared(session);
 
@@ -515,7 +530,7 @@ public class LoginActivityTest
 
     @Test
     public void testComposingSpan_notMergedWithoutComposing() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
 
         LoginActivity.onRootView((activity, rootView) -> ((LoginActivity) activity).mUsername
@@ -544,7 +559,10 @@ public class LoginActivityTest
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
 
         final EventsAssertor assertor = activity.assertInitialViewsAppeared(session);
 
@@ -560,7 +578,7 @@ public class LoginActivityTest
 
     @Test
     public void testComposingSpan_differentEditText() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
 
         LoginActivity.onRootView((activity, rootView) -> ((LoginActivity) activity).mUsername
@@ -584,7 +602,10 @@ public class LoginActivityTest
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
 
         final EventsAssertor assertor = activity.assertInitialViewsAppeared(session);
 
@@ -597,7 +618,7 @@ public class LoginActivityTest
 
     @Test
     public void testComposingSpan_eventsForSpanChanges() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
 
         LoginActivity.onRootView((activity, rootView) -> ((LoginActivity) activity).mUsername
@@ -625,7 +646,10 @@ public class LoginActivityTest
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
 
         final EventsAssertor assertor = activity.assertInitialViewsAppeared(session);
 
@@ -660,7 +684,7 @@ public class LoginActivityTest
 
     @Test
     public void testDisabledByFlagSecure() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
 
         LoginActivity.onRootView((activity, rootView) -> activity.getWindow()
@@ -672,7 +696,10 @@ public class LoginActivityTest
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         assertThat((session.context.getFlags()
                 & ContentCaptureContext.FLAG_DISABLED_BY_FLAG_SECURE) != 0).isTrue();
         final ContentCaptureSessionId sessionId = session.id;
@@ -686,7 +713,7 @@ public class LoginActivityTest
 
     @Test
     public void testDisabledByApp() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
 
         LoginActivity.onRootView((activity, rootView) -> activity.getContentCaptureManager()
@@ -702,7 +729,10 @@ public class LoginActivityTest
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         assertThat((session.context.getFlags()
                 & ContentCaptureContext.FLAG_DISABLED_BY_APP) != 0).isTrue();
         final ContentCaptureSessionId sessionId = session.id;
@@ -716,7 +746,7 @@ public class LoginActivityTest
 
     @Test
     public void testDisabledFlagSecureAndByApp() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
 
         LoginActivity.onRootView((activity, rootView) -> {
@@ -733,7 +763,10 @@ public class LoginActivityTest
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         assertThat((session.context.getFlags()
                 & ContentCaptureContext.FLAG_DISABLED_BY_APP) != 0).isTrue();
         assertThat((session.context.getFlags()
@@ -839,7 +872,7 @@ public class LoginActivityTest
 
     @Test
     public void testAddChildren_rightAway() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
         final View[] children = new View[2];
 
@@ -862,7 +895,10 @@ public class LoginActivityTest
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         Log.v(TAG, "session id: " + session.id);
 
         final ContentCaptureSessionId sessionId = session.id;
@@ -881,7 +917,7 @@ public class LoginActivityTest
 
     @Test
     public void testViewAppeared_withNewContext() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
 
         final LoginActivity activity = launchActivity();
@@ -898,7 +934,10 @@ public class LoginActivityTest
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         final ContentCaptureSessionId sessionId = session.id;
         Log.v(TAG, "session id: " + sessionId);
         final AutofillId rootId = activity.getRootView().getAutofillId();
@@ -913,7 +952,7 @@ public class LoginActivityTest
 
     @Test
     public void testAddChildren_afterAnimation() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
         final View[] children = new View[2];
 
@@ -939,7 +978,10 @@ public class LoginActivityTest
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         Log.v(TAG, "session id: " + session.id);
         final ContentCaptureSessionId sessionId = session.id;
         final View decorView = activity.getDecorView();

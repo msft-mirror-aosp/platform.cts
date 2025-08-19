@@ -79,10 +79,10 @@ public class ResizingEditActivityTest
         ResizingEditActivity.onRootView(null);
     }
 
-    @FlakyTest(bugId = 162372863)
+    @FlakyTest(bugId = 162372863) // TODO check if still flaky
     @Test
     public void testInsetsChangedOnImeAction() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
 
         final ResizingEditActivity activity = launchActivity();
@@ -103,7 +103,10 @@ public class ResizingEditActivityTest
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         final ContentCaptureSessionId sessionId = session.id;
 
         assertRightActivity(session, sessionId, activity);
