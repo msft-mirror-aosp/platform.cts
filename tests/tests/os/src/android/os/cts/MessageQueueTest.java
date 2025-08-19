@@ -18,6 +18,7 @@ package android.os.cts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -1240,6 +1241,53 @@ public class MessageQueueTest {
         } catch (IllegalStateException ex) {
             // expected
         }
+    }
+
+    @Test
+    public void testBarrierWithEarlierSyncMessage() throws Throwable {
+        final CountDownLatch latch = new CountDownLatch(1);
+        AssertableHandlerThread thread = new AssertableHandlerThread();
+        thread.start();
+
+        Handler handler = new Handler(thread.getLooper());
+        MessageQueue queue = thread.getLooper().getQueue();
+
+        long now = SystemClock.uptimeMillis();
+        int token = queue.postSyncBarrier();
+        assertNotEquals(-1, token);
+        handler.postAtTime(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        latch.countDown();
+                    }
+                },
+                now - 100);
+        assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
+        thread.quitAndRethrow();
+    }
+
+    @Test
+    public void testBarrierWithEarlierSyncMessageAtFrontOfQueue() throws Throwable {
+        final CountDownLatch latch = new CountDownLatch(1);
+        AssertableHandlerThread thread = new AssertableHandlerThread();
+        thread.start();
+
+        Handler handler = new Handler(thread.getLooper());
+        MessageQueue queue = thread.getLooper().getQueue();
+
+        long now = SystemClock.uptimeMillis();
+        int token = queue.postSyncBarrier();
+        assertNotEquals(-1, token);
+        handler.postAtFrontOfQueue(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        latch.countDown();
+                    }
+                });
+        assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
+        thread.quitAndRethrow();
     }
 
     private void syncWait(Handler handler) throws InterruptedException {
