@@ -26,34 +26,41 @@ import java.util.List;
 /** A class for collecting jar files. */
 public final class FileUtils {
 
-    private static final List<String> JAR_DIRS = new ArrayList<>(
-            List.of("withres", "combined", "javac"));
+    private static final List<String> JAR_DIRS =
+            new ArrayList<>(List.of("withres", "combined", "javac", "jarjar"));
 
     /**
      * Returns a jar file based on the given file path. Returns null if the jar file doesn't exist.
      */
     public static Path getJarFile(String inputFile) {
         Path filePath = Paths.get(inputFile);
-        if (inputFile.endsWith(".jar")) {
+        boolean isJarFile = inputFile.endsWith(".jar");
+        boolean isDexJarFile = isJarFile && inputFile.contains("/android_common/dex/");
+        if (isJarFile && !isDexJarFile) {
             if (Files.exists(filePath)) {
                 return filePath;
             }
             return null;
-        } else if (inputFile.endsWith(".apk")) {
-            // Search for the corresponding jar file for the given apk file. This only works for apk
-            // packages installed under out/soong/.intermediate. For example, if the apk file path
-            // is out/soong/.intermediate/.../Module/android_common/Module.apk, then search for
-            // the jar file under
-            // out/soong/.intermediate/.../Module/android_common/withres(combines, javac)/.
-            String[] arrOsStr = inputFile.split("/");
-            if (arrOsStr.length < 3) {
+        } else if (inputFile.endsWith(".apk") || isDexJarFile) {
+            // Search for the corresponding jar file for the given apk file or dex jar file. This
+            // only works for apk packages or dex jar packages installed under
+            // out/soong/.intermediate. For example, if the apk file path is
+            // out/soong/.intermediate/.../Module/android_common/Module.apk, then search for the jar
+            // file under
+            // out/soong/.intermediate/.../Module/android_common/withres(combines, javac, jarjar)/.
+            int moduleDirEndPos = inputFile.indexOf("android_common");
+            if (moduleDirEndPos < 0) {
                 return null;
             }
-            String moduleName = arrOsStr[arrOsStr.length - 3];
-            // Search for the jar file under withres, combined and javac directories in order.
+            String moduleDir = inputFile.substring(0, moduleDirEndPos - 1);
+            String moduleName = moduleDir.substring(moduleDir.lastIndexOf('/') + 1);
+            // Search for the jar file under withres, combined, javac, jarjar directories in order.
             for (String jarDir : JAR_DIRS) {
-                Path jarFile = Paths.get(String.format(
-                        "%s/%s/%s.jar", filePath.getParent(), jarDir, moduleName));
+                Path jarFile =
+                        Paths.get(
+                                String.format(
+                                        "%s/android_common/%s/%s.jar",
+                                        moduleDir, jarDir, moduleName));
                 if (Files.exists(jarFile)) {
                     return jarFile;
                 }
