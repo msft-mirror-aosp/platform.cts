@@ -27,8 +27,6 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
-import android.media.cts.InputSurface;
-import android.media.cts.OutputSurface;
 import android.mediapc.cts.common.CodecMetrics;
 import android.util.Log;
 import android.util.Pair;

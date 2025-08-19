@@ -56,7 +56,7 @@ java_defaults {
     ],
     static_libs: [
         "android.media.extractor.flags-aconfig-java",
-        "ctsmediav2common",
+        "cts-media-common",
         "ctstestrunner-axt",
         "ctstestserver",
     ],

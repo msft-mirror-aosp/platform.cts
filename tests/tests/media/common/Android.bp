@@ -97,6 +97,24 @@ cc_test_library {
     sdk_version: "29",
 }
 
+// packaged separately so ctsmediav2common can use this routine
+// without including cts-media-common
+// since cts-media-common depends on ctsmediav2common, resulting in a dependency loop.
+
+java_library {
+    name: "ctsmediaTestUtils",
+    srcs: [
+        "src/android/media/cts/TestUtils.java",
+    ],
+    static_libs: [
+        "compatibility-device-util-axt",
+        "platform-test-annotations",
+    ],
+    sdk_version: "test_current",
+    min_sdk_version: "29",
+    target_sdk_version: "31",
+}
+
 android_library {
     name: "cts-media-common",
     srcs: [
@@ -107,6 +125,7 @@ android_library {
         "androidx.test.core",
         "androidx.test.ext.junit",
         "compatibility-device-util-axt",
+        "ctsmediav2common",
         "junit",
         "platform-test-annotations",
     ],
