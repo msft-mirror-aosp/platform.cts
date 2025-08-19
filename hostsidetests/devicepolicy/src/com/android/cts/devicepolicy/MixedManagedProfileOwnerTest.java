@@ -21,6 +21,7 @@ import static com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.FEATUR
 import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.LargeTest;
 
+import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresAdditionalFeatures;
 import com.android.cts.devicepolicy.annotations.LockSettingsTest;
 import com.android.cts.devicepolicy.annotations.PermissionsTest;
@@ -46,8 +47,7 @@ public final class MixedManagedProfileOwnerTest extends DeviceAndProfileOwnerTes
         super.setUp();
 
         removeTestUsers();
-        // TODO(b/435528858): should use proper method from UsersOracle
-        mParentUserId = getMainUser();
+        mParentUserId = DevicePolicyUsersPreparer.getProfileParentUserIds()[0];
         createManagedProfile();
     }
 
