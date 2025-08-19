@@ -55,6 +55,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import javax.annotation.concurrent.GuardedBy;
+
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class MessageQueueTest {
@@ -1286,10 +1288,17 @@ public class MessageQueueTest {
         Handler mHandler;
         int mLastMessage;
         int mCount;
-        private boolean mSuccess;
-        private RuntimeException mFailure;
-        private boolean mDone;
+
         private Looper mLooper;
+
+        // The following fields may be accessed from both the test thread and the looper thread,
+        // so they require synchronization.
+        @GuardedBy("this")
+        private boolean mSuccess;
+        @GuardedBy("this")
+        private boolean mDone;
+        @GuardedBy("this")
+        private RuntimeException mFailure;
 
         public void init() {
             mHandler = new Handler() {
@@ -1329,11 +1338,13 @@ public class MessageQueueTest {
 
             mLooper.quit();
 
-            if (!mDone) {
-                throw new RuntimeException("test timed out");
-            }
-            if (!mSuccess) {
-                throw mFailure;
+            synchronized (this) {
+                if (!mDone) {
+                    throw new RuntimeException("test timed out");
+                }
+                if (!mSuccess) {
+                    throw mFailure;
+                }
             }
         }
 
