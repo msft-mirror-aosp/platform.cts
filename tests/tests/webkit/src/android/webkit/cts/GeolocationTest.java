@@ -16,7 +16,6 @@
 
 package android.webkit.cts;
 
-import static org.junit.Assert.assertFalse;
 
 import android.content.Context;
 import android.location.Criteria;
@@ -27,11 +26,13 @@ import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.webkit.GeolocationPermissions;
 import android.webkit.JavascriptInterface;
+import android.webkit.ValueCallback;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import android.webkit.cts.WebViewSyncLoader.WaitForLoadedClient;
 import android.webkit.cts.WebViewSyncLoader.WaitForProgressClient;
 
+import androidx.annotation.IntDef;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
@@ -39,9 +40,11 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.LocationUtils;
 import com.android.compatibility.common.util.NullWebViewUtils;
-import com.android.compatibility.common.util.PollingCheck;
+
+import com.google.common.util.concurrent.SettableFuture;
 
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
@@ -50,11 +53,14 @@ import org.junit.runner.RunWith;
 
 import java.io.ByteArrayInputStream;
 import java.io.UnsupportedEncodingException;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.Callable;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 @AppModeFull(reason = "Instant apps do not have access to location information")
 @MediumTest
@@ -72,7 +78,6 @@ public class GeolocationTest {
     private static final String URL_INSECURE = "http://www.example.org";
 
     private static final String JS_INTERFACE_NAME = "Android";
-    private static final int POLLING_TIMEOUT = 60 * 1000;
     private static final int LOCATION_THREAD_UPDATE_WAIT_MS = 250;
 
     // static HTML page always injected instead of the url loaded
@@ -109,8 +114,8 @@ public class GeolocationTest {
             "</html>";
 
     @Rule
-    public ActivityScenarioRule mActivityScenarioRule =
-            new ActivityScenarioRule(WebViewCtsActivity.class);
+    public ActivityScenarioRule<WebViewCtsActivity> mActivityScenarioRule =
+            new ActivityScenarioRule<>(WebViewCtsActivity.class);
 
     private JavascriptStatusReceiver mJavascriptStatusReceiver;
     private LocationManager mLocationManager;
@@ -320,9 +325,9 @@ public class GeolocationTest {
     // WebViewOnUiThread to detect when the page is loaded, so subclassing the one used there.
     private static class TestSimpleGeolocationRequestWebChromeClient
                 extends WaitForProgressClient {
-        private boolean mReceivedRequest = false;
         private final boolean mAccept;
         private final boolean mRetain;
+        private final BlockingQueue<Boolean> mReceivedRequests = new LinkedBlockingQueue<Boolean>();
 
         public TestSimpleGeolocationRequestWebChromeClient(
                 WebViewOnUiThread webViewOnUiThread, boolean accept, boolean retain) {
@@ -334,8 +339,16 @@ public class GeolocationTest {
         @Override
         public void onGeolocationPermissionsShowPrompt(
                 String origin, GeolocationPermissions.Callback callback) {
-            mReceivedRequest = true;
+            mReceivedRequests.add(true);
             callback.invoke(origin, mAccept, mRetain);
+        }
+
+        boolean hasPrompt() {
+            return !mReceivedRequests.isEmpty();
+        }
+
+        boolean waitForPrompt() {
+            return WebkitUtils.waitForNextQueueElement(mReceivedRequests);
         }
     }
 
@@ -346,89 +359,71 @@ public class GeolocationTest {
                 new TestSimpleGeolocationRequestWebChromeClient(mOnUiThread, true, false);
         mOnUiThread.setWebChromeClient(chromeClientAcceptOnce);
         loadUrlAndUpdateLocation(URL_1);
-        Callable<Boolean> receivedRequest = new Callable<Boolean>() {
-            @Override
-            public Boolean call() {
-                return chromeClientAcceptOnce.mReceivedRequest;
-            }
-        };
-        PollingCheck.check("Geolocation prompt not called", POLLING_TIMEOUT, receivedRequest);
-        Callable<Boolean> receivedLocation = new Callable<Boolean>() {
-            @Override
-            public Boolean call() {
-                return mJavascriptStatusReceiver.mHasPosition;
-            }
-        };
-        PollingCheck.check("JS didn't get position", POLLING_TIMEOUT, receivedLocation);
-        chromeClientAcceptOnce.mReceivedRequest = false;
+        Assert.assertTrue("Geolocation prompt not called", chromeClientAcceptOnce.waitForPrompt());
+        Assert.assertEquals(
+                "JS didn't get position",
+                JavascriptStatusReceiver.Outcome.GOT_LOCATION,
+                mJavascriptStatusReceiver.waitForOutcome());
         // Load URL again, should receive callback again
         loadUrlAndUpdateLocation(URL_1);
-        PollingCheck.check("Geolocation prompt not called", POLLING_TIMEOUT, receivedRequest);
-        PollingCheck.check("JS didn't get position", POLLING_TIMEOUT, receivedLocation);
+        Assert.assertTrue("Geolocation prompt not called", chromeClientAcceptOnce.waitForPrompt());
+        Assert.assertEquals(
+                "JS didn't get position",
+                JavascriptStatusReceiver.Outcome.GOT_LOCATION,
+                mJavascriptStatusReceiver.waitForOutcome());
     }
 
-    private static class OriginCheck extends PollingCheck implements
-            android.webkit.ValueCallback<Set<String>> {
+    /**
+     * Waits for a callback result and checks if the returned set of strings match the provided set
+     * of strings, ignoring any potential trailing {@code "/"} characters.
+     */
+    private static class OriginCheck implements ValueCallback<Set<String>> {
 
-        private boolean mReceived = false;
+        private final SettableFuture<Set<String>> mFuture = SettableFuture.create();
         private final Set<String> mExpectedValue;
-        private Set<String> mReceivedValue = null;
 
-        public OriginCheck(Set<String> val) {
+        OriginCheck(Set<String> val) {
             mExpectedValue = val;
         }
 
-        @Override
-        protected boolean check() {
-            if (!mReceived) return false;
-            if (mExpectedValue.equals(mReceivedValue)) return true;
-            if (mExpectedValue.size() != mReceivedValue.size()) return false;
-            // Origins can have different strings even if they represent the same origin,
-            // for example http://www.example.com is the same origin as http://www.example.com/
-            // and they are both valid representations
-            for (String origin : mReceivedValue) {
-                if (mExpectedValue.contains(origin)) continue;
-                if (origin.endsWith("/")) {
-                    if (mExpectedValue.contains(origin.substring(0, origin.length() - 1))) {
-                        continue;
-                    }
-                } else {
-                    if (mExpectedValue.contains(origin + "/")) continue;
-                }
-                return false;
-            }
-            return true;
-        }
         @Override
         public void onReceiveValue(Set<String> value) {
-            mReceived = true;
-            mReceivedValue = value;
+            mFuture.set(value);
+        }
+
+        void run() {
+            Set<String> actual = WebkitUtils.waitForFuture(mFuture);
+            Assert.assertEquals(mExpectedValue.size(), actual.size());
+            boolean equal = true;
+            for (String origin : actual) {
+                equal &= expectsOrigin(origin);
+                if (!equal) break;
+            }
+            if (!equal) {
+                // Use an assertion to take advantage of pretty printing.
+                Assert.assertEquals("Failed origin check", mExpectedValue, actual);
+            }
+        }
+
+        private boolean expectsOrigin(String origin) {
+            if (mExpectedValue.contains(origin)) {
+                return true;
+            }
+
+            // Try removing or adding a "/"
+            if (origin.endsWith("/")) {
+                if (mExpectedValue.contains(origin.substring(0, origin.length() - 1))) {
+                    return true;
+                }
+            } else {
+                if (mExpectedValue.contains(origin + "/")) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
-    // Class that waits and checks for a particular value being received
-    private static class BooleanCheck extends PollingCheck implements
-            android.webkit.ValueCallback<Boolean> {
-
-        private boolean mReceived = false;
-        private final boolean mExpectedValue;
-        private boolean mReceivedValue;
-
-        public BooleanCheck(boolean val) {
-            mExpectedValue = val;
-        }
-
-        @Override
-        protected boolean check() {
-            return mReceived && mReceivedValue == mExpectedValue;
-        }
-
-        @Override
-        public void onReceiveValue(Boolean value) {
-            mReceived = true;
-            mReceivedValue = value;
-        }
-    }
 
     // Test loading a page and retaining the domain forever
     @Test
@@ -438,31 +433,28 @@ public class GeolocationTest {
         mOnUiThread.setWebChromeClient(chromeClientAcceptAlways);
         // Load url once, and the callback should accept the domain for all future loads
         loadUrlAndUpdateLocation(URL_1);
-        Callable<Boolean> receivedRequest = new Callable<Boolean>() {
-            @Override
-            public Boolean call() {
-                return chromeClientAcceptAlways.mReceivedRequest;
-            }
-        };
-        PollingCheck.check("Geolocation prompt not called", POLLING_TIMEOUT, receivedRequest);
-        Callable<Boolean> receivedLocation = new Callable<Boolean>() {
-            @Override
-            public Boolean call() {
-                return mJavascriptStatusReceiver.mHasPosition;
-            }
-        };
-        PollingCheck.check("JS didn't get position", POLLING_TIMEOUT, receivedLocation);
-        chromeClientAcceptAlways.mReceivedRequest = false;
+        Assert.assertTrue(
+                "Geolocation prompt not called", chromeClientAcceptAlways.waitForPrompt());
+        Assert.assertEquals(
+                "JS didn't get position",
+                JavascriptStatusReceiver.Outcome.GOT_LOCATION,
+                mJavascriptStatusReceiver.waitForOutcome());
         mJavascriptStatusReceiver.clearState();
         // Load the same URL again
         loadUrlAndUpdateLocation(URL_1);
-        PollingCheck.check("JS didn't get position", POLLING_TIMEOUT, receivedLocation);
-        assertFalse("Prompt for geolocation permission should not be called the second time",
-                chromeClientAcceptAlways.mReceivedRequest);
+        Assert.assertEquals(
+                "JS didn't get position",
+                JavascriptStatusReceiver.Outcome.GOT_LOCATION,
+                mJavascriptStatusReceiver.waitForOutcome());
+        // JS already responded with an outcome, so we should not wait for the ChromeClient.
+        Assert.assertFalse(
+                "Prompt for geolocation permission should not be called the second time",
+                chromeClientAcceptAlways.hasPrompt());
         // Check that the permission is in GeolocationPermissions
-        BooleanCheck trueCheck = new BooleanCheck(true);
-        GeolocationPermissions.getInstance().getAllowed(URL_1, trueCheck);
-        trueCheck.run();
+        SettableFuture<Boolean> allowedFuture = SettableFuture.create();
+        GeolocationPermissions.getInstance().getAllowed(URL_1, allowedFuture::set);
+        Assert.assertTrue(WebkitUtils.waitForFuture(allowedFuture));
+
         Set<String> acceptedOrigins = new TreeSet<String>();
         acceptedOrigins.add(URL_1);
         OriginCheck originCheck = new OriginCheck(acceptedOrigins);
@@ -470,11 +462,14 @@ public class GeolocationTest {
         originCheck.run();
 
         // URL_2 should get a prompt
-        chromeClientAcceptAlways.mReceivedRequest = false;
         loadUrlAndUpdateLocation(URL_2);
         // Checking the callback for geolocation permission prompt is called
-        PollingCheck.check("Geolocation prompt not called", POLLING_TIMEOUT, receivedRequest);
-        PollingCheck.check("JS didn't get position", POLLING_TIMEOUT, receivedLocation);
+        Assert.assertTrue(
+                "Geolocation prompt not called", chromeClientAcceptAlways.waitForPrompt());
+        Assert.assertEquals(
+                "JS didn't get position",
+                JavascriptStatusReceiver.Outcome.GOT_LOCATION,
+                mJavascriptStatusReceiver.waitForOutcome());
         acceptedOrigins.add(URL_2);
         originCheck = new OriginCheck(acceptedOrigins);
         GeolocationPermissions.getInstance().getOrigins(originCheck);
@@ -491,9 +486,10 @@ public class GeolocationTest {
     @Test
     public void testGeolocationPermissions() {
         Set<String> acceptedOrigins = new TreeSet<String>();
-        BooleanCheck falseCheck = new BooleanCheck(false);
-        GeolocationPermissions.getInstance().getAllowed(URL_2, falseCheck);
-        falseCheck.run();
+        SettableFuture<Boolean> initialValueFuture = SettableFuture.create();
+        GeolocationPermissions.getInstance().getAllowed(URL_2, initialValueFuture::set);
+        Assert.assertFalse(WebkitUtils.waitForFuture(initialValueFuture));
+
         OriginCheck originCheck = new OriginCheck(acceptedOrigins);
         GeolocationPermissions.getInstance().getOrigins(originCheck);
         originCheck.run();
@@ -511,9 +507,9 @@ public class GeolocationTest {
         originCheck = new OriginCheck(acceptedOrigins);
         GeolocationPermissions.getInstance().getOrigins(originCheck);
         originCheck.run();
-        BooleanCheck trueCheck = new BooleanCheck(true);
-        GeolocationPermissions.getInstance().getAllowed(URL_2, trueCheck);
-        trueCheck.run();
+        SettableFuture<Boolean> domainAllowedFuture = SettableFuture.create();
+        GeolocationPermissions.getInstance().getAllowed(URL_2, domainAllowedFuture::set);
+        Assert.assertTrue(WebkitUtils.waitForFuture(domainAllowedFuture));
 
         // Add a domain
         acceptedOrigins.add(URL_1);
@@ -528,9 +524,9 @@ public class GeolocationTest {
         originCheck = new OriginCheck(acceptedOrigins);
         GeolocationPermissions.getInstance().getOrigins(originCheck);
         originCheck.run();
-        falseCheck = new BooleanCheck(false);
-        GeolocationPermissions.getInstance().getAllowed(URL_2, falseCheck);
-        falseCheck.run();
+        SettableFuture<Boolean> url2AllowedFuture = SettableFuture.create();
+        GeolocationPermissions.getInstance().getAllowed(URL_2, url2AllowedFuture::set);
+        Assert.assertFalse(WebkitUtils.waitForFuture(url2AllowedFuture));
 
         // Try to clear all domains
         GeolocationPermissions.getInstance().clearAll();
@@ -555,38 +551,40 @@ public class GeolocationTest {
         mOnUiThread.setWebChromeClient(chromeClientRejectOnce);
         // Load url once, and the callback should reject it once
         mOnUiThread.loadUrlAndWaitForCompletion(URL_1);
-        Callable<Boolean> receivedRequest = new Callable<Boolean>() {
-            @Override
-            public Boolean call() {
-                return chromeClientRejectOnce.mReceivedRequest;
-            }
-        };
-        PollingCheck.check("Geolocation prompt not called", POLLING_TIMEOUT, receivedRequest);
-        Callable<Boolean> locationDenied = new Callable<Boolean>() {
-            @Override
-            public Boolean call() {
-                return mJavascriptStatusReceiver.mDenied;
-            }
-        };
-        PollingCheck.check("JS got position", POLLING_TIMEOUT, locationDenied);
+        Assert.assertTrue("Geolocation prompt not called", chromeClientRejectOnce.waitForPrompt());
+        Assert.assertEquals(
+                "JS got position",
+                JavascriptStatusReceiver.Outcome.DENIED,
+                mJavascriptStatusReceiver.waitForOutcome());
         // Same result should happen on next run
-        chromeClientRejectOnce.mReceivedRequest = false;
         mOnUiThread.loadUrlAndWaitForCompletion(URL_1);
-        PollingCheck.check("Geolocation prompt not called", POLLING_TIMEOUT, receivedRequest);
-        PollingCheck.check("JS got position", POLLING_TIMEOUT, locationDenied);
+
+        Assert.assertTrue("Geolocation prompt not called", chromeClientRejectOnce.waitForPrompt());
+        Assert.assertEquals(
+                "JS got position",
+                JavascriptStatusReceiver.Outcome.DENIED,
+                mJavascriptStatusReceiver.waitForOutcome());
 
         // Try to reject forever
         final TestSimpleGeolocationRequestWebChromeClient chromeClientRejectAlways =
             new TestSimpleGeolocationRequestWebChromeClient(mOnUiThread, false, true);
         mOnUiThread.setWebChromeClient(chromeClientRejectAlways);
         mOnUiThread.loadUrlAndWaitForCompletion(URL_2);
-        PollingCheck.check("Geolocation prompt not called", POLLING_TIMEOUT, receivedRequest);
-        PollingCheck.check("JS didn't get position", POLLING_TIMEOUT, locationDenied);
+        Assert.assertTrue(
+                "Geolocation prompt not called", chromeClientRejectAlways.waitForPrompt());
+        Assert.assertEquals(
+                "JS got position",
+                JavascriptStatusReceiver.Outcome.DENIED,
+                mJavascriptStatusReceiver.waitForOutcome());
+
         // second load should now not get a prompt
-        chromeClientRejectAlways.mReceivedRequest = false;
         mOnUiThread.loadUrlAndWaitForCompletion(URL_2);
-        PollingCheck.check("JS didn't get position", POLLING_TIMEOUT, locationDenied);
-        PollingCheck.check("Geolocation prompt not called", POLLING_TIMEOUT, receivedRequest);
+        Assert.assertEquals(
+                "JS got position",
+                JavascriptStatusReceiver.Outcome.DENIED,
+                mJavascriptStatusReceiver.waitForOutcome());
+        // JS responded, so check if we saw a prompt or not.
+        Assert.assertFalse("Geolocation prompt was called", chromeClientRejectAlways.hasPrompt());
 
         // Test if it gets added to origins
         Set<String> acceptedOrigins = new TreeSet<String>();
@@ -595,9 +593,9 @@ public class GeolocationTest {
         GeolocationPermissions.getInstance().getOrigins(domainCheck);
         domainCheck.run();
         // And now check that getAllowed returns false
-        BooleanCheck falseCheck = new BooleanCheck(false);
-        GeolocationPermissions.getInstance().getAllowed(URL_1, falseCheck);
-        falseCheck.run();
+        SettableFuture<Boolean> url1AllowedFuture = SettableFuture.create();
+        GeolocationPermissions.getInstance().getAllowed(URL_1, url1AllowedFuture::set);
+        Assert.assertFalse(WebkitUtils.waitForFuture(url1AllowedFuture));
     }
 
     // Test deny geolocation on insecure origins
@@ -607,50 +605,56 @@ public class GeolocationTest {
                 new TestSimpleGeolocationRequestWebChromeClient(mOnUiThread, true, true);
         mOnUiThread.setWebChromeClient(chromeClientAcceptAlways);
         loadUrlAndUpdateLocation(URL_INSECURE);
-        Callable<Boolean> locationDenied = new Callable<Boolean>() {
-            @Override
-            public Boolean call() {
-                return mJavascriptStatusReceiver.mDenied;
-            }
-        };
-        PollingCheck.check("JS got position", POLLING_TIMEOUT, locationDenied);
-        assertFalse("The geolocation permission prompt should not be called",
-                chromeClientAcceptAlways.mReceivedRequest);
+        Assert.assertEquals(
+                "JS got position",
+                JavascriptStatusReceiver.Outcome.DENIED,
+                mJavascriptStatusReceiver.waitForOutcome());
+        Assert.assertFalse(
+                "The geolocation permission prompt should not be called",
+                chromeClientAcceptAlways.hasPrompt());
     }
 
     // Object added to the page via AddJavascriptInterface() that is used by the test Javascript to
     // notify back to Java when a location or error is received.
     public final static class JavascriptStatusReceiver {
-        public volatile boolean mHasPosition = false;
-        public volatile boolean mDenied = false;
-        public volatile boolean mUnavailable = false;
-        public volatile boolean mTimeout = false;
+        @IntDef({Outcome.GOT_LOCATION, Outcome.DENIED, Outcome.UNAVAILABLE, Outcome.TIMEOUT})
+        @Retention(RetentionPolicy.SOURCE)
+        @interface Outcome {
+            int GOT_LOCATION = 1;
+            int DENIED = 2;
+            int UNAVAILABLE = 3;
+            int TIMEOUT = 4;
+        }
 
-        public void clearState() {
-            mHasPosition = false;
-            mDenied = false;
-            mUnavailable = false;
-            mTimeout = false;
+        private final BlockingQueue<Integer> mOutcomes = new LinkedBlockingQueue<Integer>();
+
+        void clearState() {
+            mOutcomes.clear();
+        }
+
+        @Outcome
+        int waitForOutcome() {
+            return WebkitUtils.waitForNextQueueElement(mOutcomes);
         }
 
         @JavascriptInterface
         public void errorDenied() {
-            mDenied = true;
+            mOutcomes.add(Outcome.DENIED);
         }
 
         @JavascriptInterface
         public void errorUnavailable() {
-            mUnavailable = true;
+            mOutcomes.add(Outcome.UNAVAILABLE);
         }
 
         @JavascriptInterface
         public void errorTimeout() {
-            mTimeout = true;
+            mOutcomes.add(Outcome.TIMEOUT);
         }
 
         @JavascriptInterface
         public void gotLocation() {
-            mHasPosition = true;
+            mOutcomes.add(Outcome.GOT_LOCATION);
         }
     }
 }
