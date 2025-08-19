@@ -20,6 +20,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -190,7 +191,8 @@ public class TracingControllerTest {
         WebkitUtils.onMainThreadSync(() -> {
             runTracingTestWithCallbacks(tracingReceiver, mSingleThreadExecutor);
         });
-        PollingCheck.check("Tracing did not complete", POLLING_TIMEOUT, tracingReceiver.getCompleteCallable());
+        PollingCheck.check(
+                "Tracing did not complete", POLLING_TIMEOUT, tracingReceiver.getCompleteCallable());
         assertThat(tracingReceiver.getNbChunks(), greaterThan(0));
         assertThat(tracingReceiver.getOutputStream().size(), greaterThan(0));
         // currently the output is json (as of April 2018), but this could change in the future
@@ -204,7 +206,8 @@ public class TracingControllerTest {
     public void testTracingControllerCallbacks() throws Throwable {
         final TracingReceiver tracingReceiver = new TracingReceiver();
         runTracingTestWithCallbacks(tracingReceiver, mSingleThreadExecutor);
-        PollingCheck.check("Tracing did not complete", POLLING_TIMEOUT, tracingReceiver.getCompleteCallable());
+        PollingCheck.check(
+                "Tracing did not complete", POLLING_TIMEOUT, tracingReceiver.getCompleteCallable());
         assertThat(tracingReceiver.getNbChunks(), greaterThan(0));
         assertThat(tracingReceiver.getOutputStream().size(), greaterThan(0));
     }
@@ -225,14 +228,12 @@ public class TracingControllerTest {
 
         tracingController.start(config);
         assertTrue(tracingController.isTracing());
-        try {
-            tracingController.start(config);
-        } catch (IllegalStateException e) {
-            // as expected
-            return;
-        }
+        assertThrows(
+                "Tracing start should throw an exception when attempting to start while already"
+                    + " tracing",
+                IllegalStateException.class,
+                () -> tracingController.start(config));
         assertTrue(tracingController.stop(null, mSingleThreadExecutor));
-        fail("Tracing start should throw an exception when attempting to start while already tracing");
     }
 
     // Test that tracing cannot be invoked with excluded categories.
@@ -242,15 +243,11 @@ public class TracingControllerTest {
         TracingConfig config = new TracingConfig.Builder()
                 .addCategories("android_webview","-blink")
                 .build();
-        try {
-            tracingController.start(config);
-        } catch (IllegalArgumentException e) {
-            // as expected;
-            assertFalse("TracingController should not be tracing", tracingController.isTracing());
-            return;
-        }
-
-        fail("Tracing start should throw an exception due to invalid category pattern");
+        assertThrows(
+                "Tracing start should throw an exception due to invalid category pattern",
+                IllegalArgumentException.class,
+                () -> tracingController.start(config));
+        assertFalse("TracingController should not be tracing", tracingController.isTracing());
     }
 
     // Test that tracing cannot be invoked with categories containing commas.
@@ -260,29 +257,22 @@ public class TracingControllerTest {
         TracingConfig config = new TracingConfig.Builder()
                 .addCategories("android_webview, blink")
                 .build();
-        try {
-            tracingController.start(config);
-        } catch (IllegalArgumentException e) {
-            // as expected;
-            assertFalse("TracingController should not be tracing", tracingController.isTracing());
-            return;
-        }
-
-        fail("Tracing start should throw an exception due to invalid category pattern");
+        assertThrows(
+                "Tracing start should throw an exception due to invalid category pattern",
+                IllegalArgumentException.class,
+                () -> tracingController.start(config));
+        assertFalse("TracingController should not be tracing", tracingController.isTracing());
     }
 
     // Test that tracing cannot start with a configuration that is null.
     @Test
     public void testTracingWithNullConfig() {
         TracingController tracingController = TracingController.getInstance();
-        try {
-            tracingController.start(null);
-        } catch (IllegalArgumentException e) {
-            // as expected
-            assertFalse("TracingController should not be tracing", tracingController.isTracing());
-            return;
-        }
-        fail("Tracing start should throw exception if TracingConfig is null");
+        assertThrows(
+                "Tracing start should throw an exception due to invalid category pattern",
+                IllegalArgumentException.class,
+                () -> tracingController.start(null));
+        assertFalse("TracingController should not be tracing", tracingController.isTracing());
     }
 
     // Generic helper function for running tracing.
