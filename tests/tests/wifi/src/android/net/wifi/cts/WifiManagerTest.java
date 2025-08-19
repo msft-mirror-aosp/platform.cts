@@ -2253,6 +2253,8 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         Thread.sleep(TEST_WAIT_DURATION_MS);
         boolean wifiEnabled = sWifiManager.isWifiEnabled();
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        TestLocalOnlyHotspotCallback callback = null;
+        boolean isLohsDisabled = true;
         try {
             uiAutomation.adoptShellPermissionIdentity();
             verifyLohsRegisterSoftApCallback(executor, lohsSoftApCallback);
@@ -2272,7 +2274,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 Log.e(TAG, "Country Code is not available - Skip 5GHz and 6GHz test");
             }
             for (int i = 0; i < testBandsAndChannels.size(); i++) {
-                TestLocalOnlyHotspotCallback callback = new TestLocalOnlyHotspotCallback(mLock);
+                callback = new TestLocalOnlyHotspotCallback(mLock);
                 int testBand = testBandsAndChannels.keyAt(i);
                 if (lohsSoftApCallback
                                 .getCurrentSoftApCapability()
@@ -2308,6 +2310,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                             customConfigBuilder.build(), executor, callback);
                     uiAutomation.adoptShellPermissionIdentity();
                 }
+                isLohsDisabled = false;
                 // now wait for callback
                 Thread.sleep(DURATION_SOFTAP_START_MS);
 
@@ -2334,9 +2337,12 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                     assertTrue(lohsSoftApCallback.getCurrentSoftApInfo().getFrequency() > 0);
                 }
                 stopLocalOnlyHotspot(callback, wifiEnabled);
+                isLohsDisabled = true;
             }
         } finally {
-            // clean up
+            if (!isLohsDisabled && callback != null) {
+                stopLocalOnlyHotspot(callback, wifiEnabled);
+            }
             sWifiManager.unregisterSoftApCallback(lohsSoftApCallback);
             uiAutomation.dropShellPermissionIdentity();
         }
