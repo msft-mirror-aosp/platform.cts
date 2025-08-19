@@ -29,7 +29,6 @@ import android.graphics.Color;
 import android.os.Binder;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.CtsWindowInfoUtils;
@@ -43,8 +42,6 @@ import android.window.TrustedPresentationThresholds;
 
 import androidx.annotation.NonNull;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
-
-import com.android.window.flags.Flags;
 
 import junit.framework.Assert;
 
@@ -137,7 +134,6 @@ public class TrustedPresentationListenerTest {
     private Listener mDefaultListener;
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_TRUSTED_PRESENTATION_LISTENER_FOR_WINDOW)
     public void testAddTrustedPresentationListenerOnWindow() {
         WindowManager windowManager = mActivity.getSystemService(WindowManager.class);
         windowManager.registerTrustedPresentationListener(
@@ -147,7 +143,6 @@ public class TrustedPresentationListenerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_TRUSTED_PRESENTATION_LISTENER_FOR_WINDOW)
     public void testRemoveTrustedPresentationListenerOnWindow() throws InterruptedException {
         WindowManager windowManager = mActivity.getSystemService(WindowManager.class);
         windowManager.registerTrustedPresentationListener(
@@ -170,7 +165,6 @@ public class TrustedPresentationListenerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_TRUSTED_PRESENTATION_LISTENER_FOR_WINDOW)
     public void testRemovingUnknownListenerIsANoop() {
         WindowManager windowManager = mActivity.getSystemService(WindowManager.class);
         assertNotNull(windowManager);
@@ -178,7 +172,6 @@ public class TrustedPresentationListenerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_TRUSTED_PRESENTATION_LISTENER_FOR_WINDOW)
     public void testAddDuplicateListenerUpdatesThresholds() throws InterruptedException {
         Binder nonExistentWindow = new Binder();
         WindowManager windowManager = mActivity.getSystemService(WindowManager.class);
@@ -199,7 +192,6 @@ public class TrustedPresentationListenerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_TRUSTED_PRESENTATION_LISTENER_FOR_WINDOW)
     public void testAddDuplicateThresholds() {
         var listener1 = new Listener(1 /*numExpectedResults*/);
         WindowManager windowManager = mActivity.getSystemService(WindowManager.class);
@@ -244,7 +236,6 @@ public class TrustedPresentationListenerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_TRUSTED_PRESENTATION_LISTENER_FOR_WINDOW)
     public void testAddListenerToScvh() {
         WindowManager windowManager = mActivity.getSystemService(WindowManager.class);
         var hostSurfaceView = new SurfaceView(mActivity);
@@ -269,7 +260,6 @@ public class TrustedPresentationListenerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_TRUSTED_PRESENTATION_LISTENER_FOR_WINDOW)
     public void testTrustedPresentationThresholdGetters() {
         float alpha = 0.5f;
         float fractionRendered = 0.9f;
@@ -282,7 +272,6 @@ public class TrustedPresentationListenerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_TRUSTED_PRESENTATION_LISTENER_FOR_WINDOW)
     public void testEquals() {
         float alpha = 0.5f;
         float fractionRendered = 0.9f;
@@ -295,7 +284,6 @@ public class TrustedPresentationListenerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_TRUSTED_PRESENTATION_LISTENER_FOR_WINDOW)
     public void testInvisibleWindowsDoesNotOcclude() {
         WindowManager windowManager = mActivity.getSystemService(WindowManager.class);
         var hostSurfaceView = new SurfaceView(mActivity);
