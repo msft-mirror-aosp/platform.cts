@@ -35,7 +35,7 @@ import android.media.MediaFormat;
 import android.media.cts.MediaCodecAsyncHelper;
 import android.media.cts.MediaCodecBlockModelHelper;
 import android.media.cts.TestArgs;
-import android.media.cts.TestUtils;
+import android.mediav2.common.cts.OutputManager;
 import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
@@ -174,7 +174,7 @@ public class EncoderBlockModelTest {
                                     false /* graphic */, outputTimestampList));
             if (result == MediaCodecBlockModelHelper.Result.SUCCESS) {
                 StringBuilder msg = new StringBuilder();
-                boolean isOk = TestUtils.isPtsStrictlyIncreasing(
+                boolean isOk = OutputManager.isPtsStrictlyIncreasing(
                         new ArrayList<Long>(outputTimestampList), -1L, msg);
                 assertTrue(msg.toString(), isOk);
             }
