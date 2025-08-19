@@ -28,6 +28,7 @@ java_defaults {
     compile_multilib: "both",
     static_libs: [
         "cts-media-common",
+        "ctsmediav2common",
         "ctstestrunner-axt",
         "android.media.extractor.flags-aconfig-java",
     ],
