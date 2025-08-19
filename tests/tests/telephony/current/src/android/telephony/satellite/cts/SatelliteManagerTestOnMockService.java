@@ -3799,6 +3799,9 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                         getContext().getMainExecutor(), satelliteCapabilitiesCallbackTest);
         assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerError);
 
+        assertTrue(satelliteCapabilitiesCallbackTest.waitUntilResult(1));
+        assertNotNull(satelliteCapabilitiesCallbackTest.mSatelliteCapabilities);
+
         /* Verify whether capability changed event has received */
         sendOnSatelliteCapabilitiesChanged(capabilities);
         assertTrue(satelliteCapabilitiesCallbackTest.waitUntilResult(1));
