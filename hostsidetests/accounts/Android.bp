@@ -31,6 +31,7 @@ java_test_host {
     ],
     static_libs: [
         "compatibility-host-util-axt",
+        "device-policy-users-preparer",
     ],
     // tag this module as a cts test artifact
     test_suites: [

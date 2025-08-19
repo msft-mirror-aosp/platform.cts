@@ -22,11 +22,8 @@ import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest;
 import com.android.bedstead.enterprise.annotations.MostRestrictiveCoexistenceTest;
 import com.android.bedstead.harrier.annotations.AnnotationCostRunPrecedence;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
-import com.android.bedstead.harrier.annotations.EnumTestParameter;
 import com.android.bedstead.harrier.annotations.HiddenApiTest;
-import com.android.bedstead.harrier.annotations.IntTestParameter;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
-import com.android.bedstead.harrier.annotations.StringTestParameter;
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestGenerator;
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestWithArgumentGenerator;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
@@ -508,61 +505,25 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
             boolean hasParameterised = false;
 
             for (Annotation annotation : annotations) {
+                var generatorAnnotation = annotation.annotationType()
+                        .getAnnotation(UsesParameterizedTestWithArgumentGenerator.class);
+                if (generatorAnnotation != null) {
 
-                if (annotation instanceof StringTestParameter) {
                     if (hasParameterised) {
                         throw new IllegalStateException(
-                                "Each parameter can only have a single parameterised annotation");
-                    }
-                    hasParameterised = true;
-
-                    StringTestParameter stringTestParameter = (StringTestParameter) annotation;
-
-                    expandedMethods = expandedMethods.flatMap(
-                            i -> applyStringTestParameter(i, stringTestParameter));
-                } else if (annotation instanceof IntTestParameter) {
-                    if (hasParameterised) {
-                        throw new IllegalStateException(
-                                "Each parameter can only have a single parameterised annotation");
-                    }
-                    hasParameterised = true;
-
-                    IntTestParameter intTestParameter = (IntTestParameter) annotation;
-
-                    expandedMethods = expandedMethods.flatMap(
-                            i -> applyIntTestParameter(i, intTestParameter));
-                } else if (annotation instanceof EnumTestParameter) {
-                    if (hasParameterised) {
-                        throw new IllegalStateException(
-                                "Each parameter can only have a single parameterised annotation");
-                    }
-                    hasParameterised = true;
-
-                    EnumTestParameter enumTestParameter = (EnumTestParameter) annotation;
-
-                    expandedMethods = expandedMethods.flatMap(
-                            i -> applyEnumTestParameter(i, enumTestParameter));
-                } else {
-                    var generatorAnnotation = annotation.annotationType()
-                            .getAnnotation(UsesParameterizedTestWithArgumentGenerator.class);
-                    if (generatorAnnotation != null) {
-
-                        if (hasParameterised) {
-                            throw new IllegalStateException(
-                                    "Each parameter can only have a single parameterised annotation"
-                            );
-                        }
-                        hasParameterised = true;
-
-                        ParameterizedTestWithArgumentGenerator generator =
-                                mLocator.get(generatorAnnotation.value());
-
-                        var list = new ArrayList<FrameworkMethod>();
-                        expandedMethods.forEach(item ->
-                                list.addAll(generator.handleFrameworkMethod(item, annotation))
+                                "Each parameter can only have a single parameterised annotation"
                         );
-                        expandedMethods = list.stream();
                     }
+                    hasParameterised = true;
+
+                    ParameterizedTestWithArgumentGenerator generator =
+                            mLocator.get(generatorAnnotation.value());
+
+                    var list = new ArrayList<FrameworkMethod>();
+                    expandedMethods.forEach(item ->
+                            list.addAll(generator.handleFrameworkMethod(item, annotation))
+                    );
+                    expandedMethods = list.stream();
                 }
             }
 
@@ -573,27 +534,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         }
 
         return expandedMethods;
-    }
-
-    private static Stream<FrameworkMethod> applyStringTestParameter(FrameworkMethod frameworkMethod,
-            StringTestParameter stringTestParameter) {
-        return Stream.of(stringTestParameter.value()).map(
-                (i) -> new FrameworkMethodWithParameter(frameworkMethod, i)
-        );
-    }
-
-    private static Stream<FrameworkMethod> applyIntTestParameter(FrameworkMethod frameworkMethod,
-            IntTestParameter intTestParameter) {
-        return Arrays.stream(intTestParameter.value()).mapToObj(
-                (i) -> new FrameworkMethodWithParameter(frameworkMethod, i)
-        );
-    }
-
-    private static Stream<FrameworkMethod> applyEnumTestParameter(FrameworkMethod frameworkMethod,
-            EnumTestParameter enumTestParameter) {
-        return Arrays.stream(enumTestParameter.value().getEnumConstants()).map(
-                (i) -> new FrameworkMethodWithParameter(frameworkMethod, i)
-        );
     }
 
     /**

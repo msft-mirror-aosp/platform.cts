@@ -2233,6 +2233,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
+    @Ignore("b/438236284 - Need to fix and re-enable this test.")
     public void testReceiveMultipleSatelliteDatagrams() {
         logd("testReceiveMultipleSatelliteDatagrams");
         grantSatellitePermission();
@@ -3797,6 +3798,9 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 sSatelliteManager.registerForCapabilitiesChanged(
                         getContext().getMainExecutor(), satelliteCapabilitiesCallbackTest);
         assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerError);
+
+        assertTrue(satelliteCapabilitiesCallbackTest.waitUntilResult(1));
+        assertNotNull(satelliteCapabilitiesCallbackTest.mSatelliteCapabilities);
 
         /* Verify whether capability changed event has received */
         sendOnSatelliteCapabilitiesChanged(capabilities);

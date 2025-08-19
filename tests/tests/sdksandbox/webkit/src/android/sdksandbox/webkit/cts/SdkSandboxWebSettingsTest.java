@@ -16,23 +16,40 @@
 
 package android.sdksandbox.webkit.cts;
 
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.webkit.Flags;
+
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @MediumTest
 @RunWith(AndroidJUnit4.class)
 public class SdkSandboxWebSettingsTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @ClassRule
     public static final WebViewSandboxTestRule sSdkTestSuiteSetup =
             new WebViewSandboxTestRule("android.webkit.cts.WebSettingsTest");
 
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_USER_AGENT_REDUCTION)
     public void testUserAgentString_default() throws Throwable {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testUserAgentString_default");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_USER_AGENT_REDUCTION)
+    public void testReducedUserAgentString_default() throws Throwable {
+        sSdkTestSuiteSetup.assertSdkTestRunPasses("testReducedUserAgentString_default");
     }
 
     @Test

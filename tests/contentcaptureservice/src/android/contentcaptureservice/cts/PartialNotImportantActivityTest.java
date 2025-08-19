@@ -69,7 +69,7 @@ public class PartialNotImportantActivityTest extends
 
     @Test
     public void testAddAndRemoveNoImportantChild() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
 
         // Child must be created inside the lambda because it needs to use the Activity context.
         final AtomicReference<TextView> childRef = new AtomicReference<>();
@@ -97,7 +97,10 @@ public class PartialNotImportantActivityTest extends
         // for the empty activity.
         mScenario.onActivity((activity) -> activity.finish());
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         final ContentCaptureSessionId sessionId = session.id;
         Log.v(TAG, "session id: " + sessionId);
 
@@ -113,7 +116,7 @@ public class PartialNotImportantActivityTest extends
 
     @Test
     public void testAddAndRemoveImportantChild() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
 
         // Child must be created inside the lambda because it needs to use the Activity context.
         final AtomicReference<TextView> childRef = new AtomicReference<>();
@@ -134,7 +137,10 @@ public class PartialNotImportantActivityTest extends
 
         mScenario.onActivity((activity) -> activity.finish());
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         final ContentCaptureSessionId sessionId = session.id;
         Log.v(TAG, "session id: " + sessionId);
 

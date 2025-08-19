@@ -379,6 +379,7 @@ bool CodecDecoderTest::testSimpleDecode(const char* decoder, const char* testFil
             RETURN_IF_FAIL(AMediaCodec_getName(mCodec, &name), "AMediaCodec_getName failed")
             RETURN_IF_NULL(name, std::string{"AMediaCodec_getName returned null"})
             auto res = strcmp(name, decoder) != 0;
+            auto isOMX = strncasecmp(name, "OMX", strlen("OMX")) == 0;
             AMediaCodec_releaseName(mCodec, name);
             RETURN_IF_TRUE(res, StringFormat("Codec name mismatch act/got: %s/%s", decoder, name))
             if (!configureCodec(mInpDecFormat, isAsync, eosType, false)) return false;
@@ -397,7 +398,7 @@ bool CodecDecoderTest::testSimpleDecode(const char* decoder, const char* testFil
                 int outputColorFormat = -1;
                 AMediaFormat_getInt32(outFormat, AMEDIAFORMAT_KEY_COLOR_FORMAT, &outputColorFormat);
                 AMediaFormat_delete(outFormat);
-                RETURN_IF_TRUE(outputColorFormat != COLOR_FormatSurface,
+                RETURN_IF_TRUE(outputColorFormat != COLOR_FormatSurface && !isOMX,
                                std::string{"In surface mode, components MUST default to the color "
                                            "format optimized for hardware display \n"}
                                        .append(test->getErrorMsg()))

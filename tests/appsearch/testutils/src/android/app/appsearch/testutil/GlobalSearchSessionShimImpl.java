@@ -102,9 +102,9 @@ public final class GlobalSearchSessionShimImpl implements GlobalSearchSessionShi
                 packageName, databaseName, FriendlyNeighborhoodStringerMan.toString(request));
         SettableFuture<AppSearchBatchResult<String, GenericDocument>> future =
                 SettableFuture.create();
-        mGlobalSearchSession.getByDocumentId(
-                packageName, databaseName, request, mExecutor,
-                new BatchResultCallbackAdapter<>("getByDocumentIdAsync()", future));
+        mGlobalSearchSession.getByDocumentId(packageName, databaseName, request, mExecutor,
+                new BatchResultCallbackAdapter<>(
+                        "GlobalSearchSessionShimImpl.getByDocumentIdAsync()", future));
         return future;
     }
 
@@ -188,10 +188,7 @@ public final class GlobalSearchSessionShimImpl implements GlobalSearchSessionShi
 
     private <T> ListenableFuture<T> transformResult(
             @NonNull AppSearchResult<T> result) throws AppSearchException {
-        if (!result.isSuccess()) {
-            throw new AppSearchException(result.getResultCode(), result.getErrorMessage());
-        }
-        return Futures.immediateFuture(result.getResultValue());
+        return AppSearchFrameworkTestUtils.transformResult(mLogger, result);
     }
 }
 

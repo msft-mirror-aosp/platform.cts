@@ -17,10 +17,14 @@
 package android.app.appsearch.testutil;
 
 import android.annotation.NonNull;
+import android.app.appsearch.AppSearchResult;
 import android.app.appsearch.SearchResult;
 import android.app.appsearch.exceptions.AppSearchException;
 
 import com.android.server.appsearch.sync.SyncSearchResults;
+
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,5 +44,20 @@ public final class AppSearchFrameworkTestUtils {
             page = searchResults.getNextPage();
         }
         return results;
+    }
+
+    /** Transforms - and logs - the given result */
+    public static <T> ListenableFuture<T> transformResult(@NonNull UserAwareLogger logger,
+            @NonNull AppSearchResult<T> result) throws AppSearchException {
+        if (!result.isSuccess()) {
+            int resultCode = result.getResultCode();
+            String errorMessage = result.getErrorMessage();
+            logger.logE("transformResult(%s) failed (resultCode=%s, errorMessage=%s)",
+                    result, resultCode, errorMessage);
+            throw new AppSearchException(resultCode, errorMessage);
+        }
+        T resultValue = result.getResultValue();
+        logger.logD("transformResult(%s): success (%s)", result, resultValue);
+        return Futures.immediateFuture(resultValue);
     }
 }

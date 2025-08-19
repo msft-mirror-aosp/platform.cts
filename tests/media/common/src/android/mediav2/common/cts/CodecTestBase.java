@@ -1097,6 +1097,8 @@ public abstract class CodecTestBase {
             }
         } else {
             mediaTypes = compileRequestedMediaTypeList();
+            mediaTypes.removeIf(
+                    mediaType -> selectCodecs(mediaType, null, null, isEncoder).isEmpty());
         }
         return mediaTypes;
     }

@@ -61,8 +61,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * This test class adapts the AppSearch Framework API to ListenableFuture, so it can be tested via
- * a consistent interface.
+ * This test class adapts the AppSearch Framework API to ListenableFuture, so it can be tested via a
+ * consistent interface.
+ *
  * @hide
  */
 public final class AppSearchSessionShimImpl implements AppSearchSessionShim {
@@ -70,7 +71,6 @@ public final class AppSearchSessionShimImpl implements AppSearchSessionShim {
 
     private final AppSearchSession mAppSearchSession;
     private final ExecutorService mExecutor;
-
     private final UserAwareLogger mLogger;
 
     /** Creates the SearchSessionShim with given SearchContext. */
@@ -146,8 +146,8 @@ public final class AppSearchSessionShimImpl implements AppSearchSessionShim {
             @NonNull PutDocumentsRequest request) {
         mLogger.logV("putAsync(%s)", FriendlyNeighborhoodStringerMan.toString(request));
         SettableFuture<AppSearchBatchResult<String, Void>> future = SettableFuture.create();
-        mAppSearchSession.put(
-                request, mExecutor, new BatchResultCallbackAdapter<>("putAsync()", future));
+        mAppSearchSession.put(request, mExecutor,
+                new BatchResultCallbackAdapter<>("AppSearchSessionShimImpl.putAsync()", future));
         return future;
     }
 
@@ -158,9 +158,8 @@ public final class AppSearchSessionShimImpl implements AppSearchSessionShim {
         mLogger.logV("getByDocumentIdAsync(%s)", request);
         SettableFuture<AppSearchBatchResult<String, GenericDocument>> future =
                 SettableFuture.create();
-        mAppSearchSession.getByDocumentId(
-                request, mExecutor,
-                new BatchResultCallbackAdapter<>("getByDocumentIdAsync()", future));
+        mAppSearchSession.getByDocumentId(request, mExecutor, new BatchResultCallbackAdapter<>(
+                "AppSearchSessionShimImpl.getByDocumentIdAsync()", future));
         return future;
     }
 
@@ -243,7 +242,7 @@ public final class AppSearchSessionShimImpl implements AppSearchSessionShim {
         mLogger.logV("removeAsync(%s)", request);
         SettableFuture<AppSearchBatchResult<String, Void>> future = SettableFuture.create();
         mAppSearchSession.remove(request, mExecutor,
-                new BatchResultCallbackAdapter<>("removeAsync()", future));
+                new BatchResultCallbackAdapter<>("AppSearchSessionShimImpl.removeAsync()", future));
         return future;
     }
 
@@ -313,9 +312,6 @@ public final class AppSearchSessionShimImpl implements AppSearchSessionShim {
 
     private <T> ListenableFuture<T> transformResult(
             @NonNull AppSearchResult<T> result) throws AppSearchException {
-        if (!result.isSuccess()) {
-            throw new AppSearchException(result.getResultCode(), result.getErrorMessage());
-        }
-        return Futures.immediateFuture(result.getResultValue());
+        return AppSearchFrameworkTestUtils.transformResult(mLogger, result);
     }
 }

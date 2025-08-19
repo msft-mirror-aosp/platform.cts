@@ -44,7 +44,6 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
 import android.support.test.uiautomator.UiDevice;
 import android.util.Log;
-import android.view.contentcapture.ContentCaptureManager;
 import android.view.contentcapture.flags.Flags;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -97,7 +96,7 @@ public class BlankActivityTest
 
     @Test
     public void testSimpleSessionLifecycle() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
 
         final BlankActivity activity = launchActivity();
@@ -106,7 +105,10 @@ public class BlankActivityTest
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         Log.v(TAG, "session id: " + session.id);
 
         activity.assertDefaultEvents(session);

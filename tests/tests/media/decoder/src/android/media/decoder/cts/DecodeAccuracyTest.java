@@ -197,23 +197,9 @@ public class DecodeAccuracyTest extends DecodeAccuracyTestBase {
                     continue;
                 }
 
-                // we only test the first codec that supports the format.
-                // if that codec is not tested in this mode, we do NOT proceed to
-                // later codecs in the list.
-                //
-                // this means:
-                // in CTS, we'll test the HW codec.
-                // in MCTS/MTS, we'll see the HW codec, skip testing it, but NOT fall through
-                // to test any of the module-homed codecs.
-
                 if (!TestArgs.shouldSkipCodec(componentName)) {
                     testParams.add(new Object[] {componentName, file, testName});
                 }
-
-                // ignore any further codes that might handle this mediatype, even if we
-                // chose not to test this first one.
-                // NB: remove this break to change from "test first codec" to "test all codecs"
-                break;
             }
         }
         return testParams;

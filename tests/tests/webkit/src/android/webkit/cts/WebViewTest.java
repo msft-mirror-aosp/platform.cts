@@ -217,13 +217,9 @@ public class WebViewTest extends SharedWebViewTest {
         WebkitUtils.onMainThreadSync(
                 () -> {
                     Context deviceEncryptedContext = mContext.createDeviceProtectedStorageContext();
-                    try {
-                        new WebView(deviceEncryptedContext);
-                        fail(
-                                "WebView should have thrown exception when creating with a device "
-                                        + "protected storage context");
-                    } catch (IllegalArgumentException e) {
-                    }
+                    assertThrows(
+                            IllegalArgumentException.class,
+                            () -> new WebView(deviceEncryptedContext));
                 });
     }
 
@@ -241,13 +237,9 @@ public class WebViewTest extends SharedWebViewTest {
                     WebView webView = new WebView(credentialEncryptedContext);
                     webView.destroy();
 
-                    try {
-                        new WebView(deviceEncryptedContext);
-                        fail(
-                                "WebView should have thrown exception when creating with a device "
-                                        + "protected storage context");
-                    } catch (IllegalArgumentException e) {
-                    }
+                    assertThrows(
+                            IllegalArgumentException.class,
+                            () -> new WebView(deviceEncryptedContext));
                 });
     }
 

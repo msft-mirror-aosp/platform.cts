@@ -20,6 +20,8 @@ import static com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.FEATUR
 
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresAdditionalFeatures;
 import com.android.cts.devicepolicy.annotations.PermissionsTest;
+import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
+import com.android.tradefed.device.UserInfo;
 
 import org.junit.Test;
 
@@ -30,14 +32,14 @@ import org.junit.Test;
 // We need managed users to be supported in order to create a profile of the user owner.
 @RequiresAdditionalFeatures({FEATURE_MANAGED_USERS})
 public final class MixedManagedProfileOwnerTestApi25 extends DeviceAndProfileOwnerTestApi25 {
-    private int mParentUserId = -1;
+    private int mParentUserId = UserInfo.USER_NULL;
 
     @Override
     public void setUp() throws Exception {
         super.setUp();
 
         removeTestUsers();
-        mParentUserId = getMainUser();
+        mParentUserId = DevicePolicyUsersPreparer.getProfileParentUserIds()[0];
         createManagedProfile();
     }
 

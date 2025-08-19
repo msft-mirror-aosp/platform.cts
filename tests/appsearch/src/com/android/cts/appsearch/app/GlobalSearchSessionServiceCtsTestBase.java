@@ -26,6 +26,7 @@ import static android.app.appsearch.testutil.AppSearchTestUtils.checkIsBatchResu
 import static android.app.appsearch.testutil.AppSearchTestUtils.generateRandomBytes;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -71,7 +72,6 @@ import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.util.Log;
 
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.filters.SdkSuppress;
@@ -207,10 +207,12 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
     }
 
     private void cleanup() throws Exception {
+        mLogger.logV("cleanup() started");
         mDb.setSchemaAsync(new SetSchemaRequest.Builder().setForceOverride(true).build()).get();
 
         clearData(PKG_A, DB_NAME);
         clearData(PKG_B, DB_NAME);
+        mLogger.logV("cleanup() finished");
     }
 
     // We could add a third package, PKG_C, that the cts package cannot query. However, this does
@@ -717,7 +719,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                                     new GetByDocumentIdRequest.Builder("namespace")
                                             .addIds("id1")
                                             .build()).get();
-                    assertThat(result.getSuccesses()).hasSize(1);
+                    assertWithMessage("successes of %s", result).that(result.getSuccesses())
+                            .hasSize(1);
                 },
                 READ_SMS);
     }
@@ -876,8 +879,10 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                             .getByDocumentIdAsync(PKG_A, "database",
                                     new GetByDocumentIdRequest.Builder("namespace")
                                             .addIds("id1")
-                                            .build()).get();
-                    assertThat(result.getSuccesses()).isEmpty();
+                                            .build())
+                            .get();
+                    assertWithMessage("successes of %s (with READ_SMS)", result)
+                            .that(result.getSuccesses()).isEmpty();
                 },
                 READ_SMS);
 
@@ -892,7 +897,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                                     new GetByDocumentIdRequest.Builder("namespace")
                                             .addIds("id1")
                                             .build()).get();
-                    assertThat(result.getSuccesses()).hasSize(1);
+                    assertWithMessage("successes of %s (with READ_CALENDAR)", result)
+                            .that(result.getSuccesses()).hasSize(1);
                 },
                 READ_SMS, READ_CALENDAR);
 
@@ -907,7 +913,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                                     new GetByDocumentIdRequest.Builder("namespace")
                                             .addIds("id1")
                                             .build()).get();
-                    assertThat(result.getSuccesses()).hasSize(1);
+                    assertWithMessage("successes of %s", result).that(result.getSuccesses())
+                            .hasSize(1);
                 },
                 READ_CONTACTS);
 
@@ -922,7 +929,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                                     new GetByDocumentIdRequest.Builder("namespace")
                                             .addIds("id1")
                                             .build()).get();
-                    assertThat(result.getSuccesses()).hasSize(1);
+                    assertWithMessage("successes of %s", result).that(result.getSuccesses())
+                            .hasSize(1);
                 },
                 READ_EXTERNAL_STORAGE);
     }
@@ -975,7 +983,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                                             .addIds("id1")
                                             .build()).get();
 
-                    assertThat(result.getSuccesses()).hasSize(1);
+                    assertWithMessage("successes of %s", result).that(result.getSuccesses())
+                            .hasSize(1);
 
                     // Can't get non existent document
                     AppSearchBatchResult<String, GenericDocument> nonExistent = mGlobalSearchSession
@@ -1005,7 +1014,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                                             .addIds("id1")
                                             .build()).get();
                     assertThat(result.isSuccess()).isFalse();
-                    assertThat(result.getSuccesses()).isEmpty();
+                    assertWithMessage("successes of %s", result).that(result.getSuccesses())
+                            .isEmpty();
                     assertThat(result.getFailures()).containsKey("id1");
                 },
                 READ_GLOBAL_APP_SEARCH_DATA);
@@ -1105,7 +1115,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                                     new GetByDocumentIdRequest.Builder("namespace")
                                             .addIds("id")
                                             .build()).get();
-                    assertThat(result.getSuccesses()).hasSize(1);
+                    assertWithMessage("successes of %s (when usin READ_SMS)", result)
+                            .that(result.getSuccesses())
+                            .hasSize(1);
                 },
                 READ_SMS);
 
@@ -1121,7 +1133,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                                 new GetByDocumentIdRequest.Builder("namespace")
                                     .addIds("id")
                                     .build()).get();
-                    assertThat(result.getSuccesses()).isEmpty();
+                    assertWithMessage("successes of %s (when using READ_CALENDAR)", result)
+                            .that(result.getSuccesses())
+                            .isEmpty();
                 },
                 READ_CALENDAR);
 
@@ -1142,7 +1156,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                                 new GetByDocumentIdRequest.Builder("namespace")
                                     .addIds("id")
                                     .build()).get();
-                    assertThat(result.getSuccesses()).isEmpty();
+                    assertWithMessage("successes of %s", result).that(result.getSuccesses())
+                            .isEmpty();
                 },
                 READ_SMS);
     }
@@ -1171,7 +1186,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                                 new GetByDocumentIdRequest.Builder("namespace")
                                     .addIds("id")
                                     .build()).get();
-                    assertThat(result.getSuccesses()).hasSize(1);
+                    assertWithMessage("successes of %s", result).that(result.getSuccesses())
+                            .hasSize(1);
                 },
                 READ_SMS);
 
@@ -1180,14 +1196,15 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                 () -> {
                     mGlobalSearchSession = createAndLogGlobalSearchSessionAsync(mContext);
 
-                    // Can't get the document, even if we are while list package, but we don't
+                    // Can't get the document, even i f we are while list package, but we don't
                     // hold required permission.
                     AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
                             .getByDocumentIdAsync(PKG_A, "database",
                                 new GetByDocumentIdRequest.Builder("namespace")
                                     .addIds("id")
                                     .build()).get();
-                    assertThat(result.getSuccesses()).isEmpty();
+                    assertWithMessage("successes of %s", result).that(result.getSuccesses())
+                            .isEmpty();
                 },
                 READ_CALENDAR);
 
@@ -1210,7 +1227,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                                 new GetByDocumentIdRequest.Builder("namespace")
                                     .addIds("id")
                                     .build()).get();
-                    assertThat(result.getSuccesses()).isEmpty();
+                    assertWithMessage("successes of %s", result).that(result.getSuccesses())
+                            .isEmpty();
                 },
                 READ_SMS);
     }
@@ -1244,7 +1262,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                                 new GetByDocumentIdRequest.Builder("namespace")
                                     .addIds("id")
                                     .build()).get();
-                    assertThat(result.getSuccesses()).hasSize(1);
+                    assertWithMessage("successes of %s", result).that(result.getSuccesses())
+                            .hasSize(1);
                 },
                 READ_SMS);
 
@@ -1260,7 +1279,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                                 new GetByDocumentIdRequest.Builder("namespace")
                                     .addIds("id1")
                                     .build()).get();
-                    assertThat(result.getSuccesses()).isEmpty();
+                    assertWithMessage("successes of %s", result).that(result.getSuccesses())
+                            .isEmpty();
                 },
                 READ_CALENDAR);
 
@@ -1282,7 +1302,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                                 new GetByDocumentIdRequest.Builder("namespace")
                                     .addIds("id")
                                     .build()).get();
-                    assertThat(result.getSuccesses()).isEmpty();
+                    assertWithMessage("successes of %s", result).that(result.getSuccesses())
+                            .isEmpty();
                 },
                 READ_SMS);
 
@@ -1305,7 +1326,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                                 new GetByDocumentIdRequest.Builder("namespace")
                                     .addIds("id")
                                     .build()).get();
-                    assertThat(result.getSuccesses()).isEmpty();
+                    assertWithMessage("successes of %s", result).that(result.getSuccesses())
+                            .isEmpty();
                 },
                 READ_SMS);
     }
@@ -1330,7 +1352,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                                     new GetByDocumentIdRequest.Builder("namespace")
                                             .addIds("id")
                                             .build()).get();
-                    assertThat(result.getSuccesses()).isEmpty();
+                    assertWithMessage("successes of %s", result).that(result.getSuccesses())
+                            .isEmpty();
                 },
                 READ_SMS);
     }
@@ -1958,7 +1981,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                                 .openBlobForReadAsync(ImmutableSet.of(handle)).get()) {
                             AppSearchBatchResult<AppSearchBlobHandle, ParcelFileDescriptor>
                                     readResult = readResponse.getResult();
-                            assertTrue(readResult.isSuccess());
+                            assertWithMessage("Result (%s) of openBlobForReadAsync() with READ_SMS",
+                                    readResult).that(readResult.isSuccess()).isTrue();
 
                             byte[] readBytes = new byte[10]; // 10 Bytes
                             ParcelFileDescriptor readPfd = readResult.getSuccesses().get(handle);
@@ -1980,12 +2004,22 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                                 .openBlobForReadAsync(ImmutableSet.of(handle)).get()) {
                             AppSearchBatchResult<AppSearchBlobHandle, ParcelFileDescriptor>
                                     readResult = readResponse.getResult();
-                            assertFalse(readResult.isSuccess());
+                            assertWithMessage(
+                                    "Result (%s) of openBlobForReadAsync() with READ_CALENDAR",
+                                    readResult).that(readResult.isSuccess()).isFalse();
 
-                            assertThat(readResult.getFailures().keySet()).containsExactly(handle);
-                            assertThat(readResult.getFailures().get(handle).getResultCode())
+                            var failures = readResult.getFailures();
+                            assertWithMessage("failures").that(failures).isNotNull();
+                            assertWithMessage("failures keys").that(failures.keySet())
+                                    .containsExactly(handle);
+                            var failure = failures.get(handle);
+                            assertWithMessage("failure for handle %s", handle).that(failure)
+                                    .isNotNull();
+                            assertWithMessage("result code for failure of handle %s", handle)
+                                    .that(failure.getResultCode())
                                     .isEqualTo(AppSearchResult.RESULT_NOT_FOUND);
-                            assertThat(readResult.getFailures().get(handle).getErrorMessage())
+                            assertWithMessage("error message failure of handle %s", handle)
+                                    .that(failure.getErrorMessage())
                                     .contains("Cannot find the blob for handle");
                         }
                     },
@@ -2237,6 +2271,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
 
     private void indexGloballySearchableDocument(String pkg, String databaseName, String namespace,
             String id, Set<Set<Integer>> visibleToPermissions) throws Exception {
+        mLogger.logD("indexGloballySearchableDocument(): pkg=%s, databaseName=%s, namespace=%s, "
+                + "id=%s, visibleToPermissions=%s", pkg, databaseName, namespace, id,
+                visibleToPermissions);
         // binder won't accept Set or Integer, we need to convert to List<Bundle>.
         List<Bundle> permissionBundles = new ArrayList<>(visibleToPermissions.size());
         for (Set<Integer> allRequiredPermissions : visibleToPermissions) {
@@ -2260,6 +2297,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
             String namespace, String id, Set<PackageIdentifier> visibleToPackages,
             Set<Set<Integer>> visibleToPermissions, PackageIdentifier publicAclPackage)
             throws Exception {
+        mLogger.logD("indexGloballySearchableDocumentVisibleToConfig(): pkg=%s, databaseName=%s, "
+                + "namespace=%s, id=%s, visibleToPackages=%s",
+                pkg, databaseName, namespace, id, visibleToPackages);
         // PackageIdentifierParcel is hidden, we need to use bundle to pass PackageIdentifier.
         List<Bundle> packagesBundles = new ArrayList<>(visibleToPackages.size());
         for (PackageIdentifier visibleToPackage: visibleToPackages) {
@@ -2300,6 +2340,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
             String namespace, byte[] data, Set<PackageIdentifier> visibleToPackages,
             Set<Set<Integer>> visibleToPermissions, PackageIdentifier publicAclPackage)
             throws Exception {
+        mLogger.logD("writeGloballySearchableBlobVisibleToConfig(): pkg=%s, databaseName=%s, "
+                + "namespace=%s, data.length=%d, visibleToPackages=%s",
+                pkg, databaseName, namespace, data.length, visibleToPackages);
         // PackageIdentifierParcel is hidden, we need to use bundle to pass PackageIdentifier.
         List<Bundle> packagesBundles = new ArrayList<>(visibleToPackages.size());
         for (PackageIdentifier visibleToPackage: visibleToPackages) {
@@ -2339,6 +2382,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
     private void writeGloballyNotSearchableBlob(String pkg, String databaseName,
             String namespace, byte[] data)
             throws Exception {
+        mLogger.logD("writeGloballyNotSearchableBlob(): pkg=%s, databaseName=%s, namespace=%s, "
+                + "data.length=%d", pkg, databaseName, namespace, data.length);
 
         GlobalSearchSessionServiceCtsTestBase.TestServiceConnection serviceConnection =
                 bindToHelperService(pkg);
@@ -2353,6 +2398,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
 
     private void removeBlob(String pkg, String databaseName, String namespace, byte[] data)
             throws Exception {
+        mLogger.logD("removeBlob(): pkg=%s, databaseName=%s, namespace=%s, "
+                + "data.length=%d", pkg, databaseName, namespace, data.length);
         GlobalSearchSessionServiceCtsTestBase.TestServiceConnection serviceConnection =
                 bindToHelperService(pkg);
         try {
@@ -2365,6 +2412,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
 
     private void indexNotGloballySearchableDocument(
             String pkg, String databaseName, String namespace, String id) throws Exception {
+        mLogger.logD("indexNotGloballySearchableDocument(): pkg=%s, databaseName=%s, namespace=%s, "
+                + "id=%s", pkg, databaseName, namespace, id);
         GlobalSearchSessionServiceCtsTestBase.TestServiceConnection serviceConnection =
                 bindToHelperService(pkg);
         try {
@@ -2380,7 +2429,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
             String pkg, String databaseName, String namespace, String id, String entityId,
             boolean globallySearchable)
             throws Exception {
-
+        mLogger.logD("indexActionDocument(): pkg=%s, databaseName=%s, namespace=%s, id=%s, "
+                + "entityId=%s, globallySearchable=%b", pkg, databaseName, namespace, id, entityId,
+                globallySearchable);
         GlobalSearchSessionServiceCtsTestBase.TestServiceConnection serviceConnection =
                 bindToHelperService(pkg);
         try {
@@ -2394,18 +2445,22 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
     }
 
     private void clearData(String pkg, String databaseName) throws Exception {
+        mLogger.logD("clearData(): pkg=%s, databaseName=%s", pkg, databaseName);
         GlobalSearchSessionServiceCtsTestBase.TestServiceConnection serviceConnection =
                 bindToHelperService(pkg);
         try {
             ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
-            assertThat(commandReceiver.clearData(databaseName)).isTrue();
+            assertWithMessage("commandReceiver.clearData(%s) (on pkg %s)", databaseName, pkg)
+                    .that(commandReceiver.clearData(databaseName)).isTrue();
         } finally {
+            mLogger.logD("clearData(): unbinding %s", serviceConnection);
             serviceConnection.unbind();
         }
     }
 
     private GlobalSearchSessionServiceCtsTestBase.TestServiceConnection bindToHelperService(
             String pkg) {
+        mLogger.logD("bindToHelperService(): pkg=%s", pkg);
         GlobalSearchSessionServiceCtsTestBase.TestServiceConnection serviceConnection =
                 new GlobalSearchSessionServiceCtsTestBase.TestServiceConnection(mContext);
         Intent intent = new Intent().setComponent(new ComponentName(pkg, HELPER_SERVICE));
@@ -2413,27 +2468,30 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         return serviceConnection;
     }
 
-    protected static class TestServiceConnection implements ServiceConnection {
+    private static final class TestServiceConnection implements ServiceConnection {
         private final Context mContext;
         private final BlockingQueue<IBinder> mBlockingQueue = new LinkedBlockingQueue<>();
         private ICommandReceiver mCommandReceiver;
+        private final UserAwareLogger mLogger;
 
         TestServiceConnection(Context context) {
             mContext = context;
+            mLogger = new UserAwareLogger(TAG, context.getUser());
         }
 
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder service) {
-            Log.i(TAG, "Service got connected: " + componentName);
+            mLogger.logI("Service got connected: %s", componentName);
             mBlockingQueue.offer(service);
         }
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
-            Log.e(TAG, "Service got disconnected: " + componentName);
+            mLogger.logE("Service got disconnected: %s", componentName);
         }
 
         private IBinder getService() throws Exception {
+            mLogger.logD("getService(): polling for %ds", TIMEOUT_BIND_SERVICE_SEC);
             return mBlockingQueue.poll(TIMEOUT_BIND_SERVICE_SEC, TimeUnit.SECONDS);
         }
 
@@ -2442,14 +2500,14 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                 mCommandReceiver = ICommandReceiver.Stub.asInterface(getService());
             }
             if (mCommandReceiver == null) {
-                Log.e(TAG, "Cannot bind to a service in " + TIMEOUT_BIND_SERVICE_SEC + " second.");
+                mLogger.logE("Cannot bind to a service in %ds", TIMEOUT_BIND_SERVICE_SEC);
             }
             return mCommandReceiver;
         }
 
         public void unbind() {
             mCommandReceiver = null;
-            Log.i(TAG, "Service got unbinded.");
+            mLogger.logI("Service got unbinded.");
             mContext.unbindService(this);
         }
     }

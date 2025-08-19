@@ -15,6 +15,7 @@
 
 import logging
 import os.path
+import time
 
 from mobly import test_runner
 import camera_properties_utils
@@ -41,6 +42,9 @@ _CAPTURE_REQUEST = {
         _CONTROL_VIDEO_STABILIZATION_MODE_OFF,
 }
 _CAPTURE_RESULT_KEY_NIGHT_MODE_INDICATOR = 'android.extension.nightModeIndicator'
+_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC = 5  # Seconds
+_NIGHT_MODE_INDICATOR_OFF = 1
+_NIGHT_MODE_INDICATOR_ON = 2
 
 
 def _start_preview(cam, file_stem, camera_id, target_preview_size,
@@ -137,10 +141,11 @@ class NightModeIndicatorTest(its_base_test.ItsBaseTest):
             lighting_control_port, self.lighting_ch,
             lighting_control_utils.LIGHT_ON, use_gen2
             )
+        time.sleep(_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC)
         result = _start_preview(
             cam, file_stem, self.camera_id, target_preview_size, session_type)
 
-        if (result != 'OFF'):
+        if (result != _NIGHT_MODE_INDICATOR_OFF):
           raise AssertionError('Lighting state ON did not result in Night Mode '
                                'Indicator state OFF.')
 
@@ -148,10 +153,10 @@ class NightModeIndicatorTest(its_base_test.ItsBaseTest):
         lighting_control_utils.set_lighting_state(
             lighting_control_port, self.lighting_ch,
             lighting_control_utils.LIGHT_OFF, use_gen2)
-
+        time.sleep(_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC)
         result = _start_preview(
             cam, file_stem, self.camera_id, target_preview_size, session_type)
-        if (result != 'ON'):
+        if (result != _NIGHT_MODE_INDICATOR_ON):
           raise AssertionError('Lighting state OFF did not result in Night '
                                'Mode Indicator state ON.')
 

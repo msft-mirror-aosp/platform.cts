@@ -15,8 +15,6 @@
  */
 package android.app.cts.wallpapers;
 
-import static android.app.Flags.FLAG_LIVE_WALLPAPER_CONTENT_HANDLING;
-
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -24,7 +22,6 @@ import android.app.wallpaper.WallpaperDescription;
 import android.net.Uri;
 import android.os.Parcel;
 import android.os.PersistableBundle;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
@@ -45,7 +42,6 @@ public class WallpaperDescriptionTest {
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
-    @RequiresFlagsEnabled(FLAG_LIVE_WALLPAPER_CONTENT_HANDLING)
     public void equals_ignoresIrrelevantFields() {
         String id = "fakeId";
         WallpaperDescription desc1 =
@@ -57,7 +53,6 @@ public class WallpaperDescriptionTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_LIVE_WALLPAPER_CONTENT_HANDLING)
     public void hash_ignoresIrrelevantFields() {
         String id = "fakeId";
         WallpaperDescription desc1 =
@@ -69,7 +64,6 @@ public class WallpaperDescriptionTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_LIVE_WALLPAPER_CONTENT_HANDLING)
     public void parcel_roundTripSucceeds() {
         final Uri thumbnail = Uri.parse("http://www.bogus.com/thumbnail");
         final List<CharSequence> description = List.of("line1", "line2");
@@ -120,7 +114,6 @@ public class WallpaperDescriptionTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_LIVE_WALLPAPER_CONTENT_HANDLING)
     public void parcel_roundTripSucceeds_withNulls() {
         WallpaperDescription source = new WallpaperDescription.Builder().build();
 
@@ -144,7 +137,6 @@ public class WallpaperDescriptionTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_LIVE_WALLPAPER_CONTENT_HANDLING)
     public void toBuilder_succeeds() {
         final String sourceId = "sourceId";
         final Uri thumbnail = Uri.parse("http://www.bogus.com/thumbnail");

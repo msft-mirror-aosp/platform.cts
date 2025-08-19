@@ -2629,6 +2629,61 @@ public final class ServiceTest {
         }
     }
 
+    /** Test rebindService(). */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_UPDATE_SERVICE_BINDINGS)
+    public void testRebindService() throws Exception {
+        long flags = Context.BIND_AUTO_CREATE | Context.BIND_WAIVE_PRIORITY;
+        final CountDownLatch latch = new CountDownLatch(1);
+        final LatchedConnection conn = new LatchedConnection(latch);
+        try {
+            assertThat(
+                            mContext.bindService(
+                                    mLocalService, conn, Context.BindServiceFlags.of(flags)))
+                    .isTrue();
+            assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+
+            // BIND_IMPORTANT can be added.
+            // BIND_WAIVE_PRIORITY can be removed.
+            flags = Context.BIND_AUTO_CREATE | Context.BIND_IMPORTANT;
+            mContext.rebindService(conn, Context.BindServiceFlags.of(flags));
+
+            assertThat(findServiceFlags(flags)).isTrue();
+        } finally {
+            mContext.unbindService(conn);
+        }
+    }
+
+    /** Test rebindService() with invalid updated flags. */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_UPDATE_SERVICE_BINDINGS)
+    public void testRebindService_invalidFlags() throws Exception {
+        long flags = Context.BIND_AUTO_CREATE | Context.BIND_WAIVE_PRIORITY;
+        final CountDownLatch latch = new CountDownLatch(1);
+        final LatchedConnection conn = new LatchedConnection(latch);
+        try {
+            assertThat(
+                            mContext.bindService(
+                                    mLocalService, conn, Context.BindServiceFlags.of(flags)))
+                    .isTrue();
+            assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+
+            // BIND_IMPORTANT can be added.
+            // BIND_WAIVE_PRIORITY can be removed.
+            // BIND_SHARED_ISOLATED_PROCESS cannot be added.
+            // BIND_AUTO_CREATE cannot be removed.
+            flags = Context.BIND_SHARED_ISOLATED_PROCESS | Context.BIND_IMPORTANT;
+            try {
+                mContext.rebindService(conn, Context.BindServiceFlags.of(flags));
+                assertWithMessage("No exception thrown on invalid flags").fail();
+            } catch (IllegalArgumentException e) {
+                // expected
+            }
+        } finally {
+            mContext.unbindService(conn);
+        }
+    }
+
     @Test
     public void testLruWhenSwitchingBetweenAppsInFreeFormWindows() {
         assumeTrue("Multi window is not supported",
