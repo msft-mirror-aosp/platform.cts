@@ -271,6 +271,7 @@ public class WebViewSyncLoader {
                 + "may not be mixed with load* calls directly on WebView "
                 + "without calling waitForLoadCompletion after the load",
                 !isLoaded());
+        assertCorrectClientInstances();
         clearLoad(); // clear any extraneous signals from a previous load.
         if (isUiThread()) {
             call.run();
@@ -442,6 +443,31 @@ public class WebViewSyncLoader {
         @CallSuper
         public void onNewPicture(WebView view, Picture picture) {
             mWebViewSyncLoader.onNewPicture();
+        }
+    }
+
+    /*
+     * Asserts that the WebChromeClient and WebViewClient are instances of WaitForProgressClient and
+     * WaitForLoadedClient respectively, which is required to prevent hanging on WaitForCompletion
+     * calls.
+     *
+     * Note: Not checking the PictureListener because there's no getter for it, and since it's
+     * deprecated, no new tests would be using it anyway.
+     */
+    private void assertCorrectClientInstances() {
+        Runnable assertCorrectClientInstances =
+                () -> {
+                    Assert.assertTrue(
+                            "WebChromeClient should be an instance of WaitForProgressClient",
+                            mWebView.getWebChromeClient() instanceof WaitForProgressClient);
+                    Assert.assertTrue(
+                            "WebViewClient should be an instance of WaitForLoadedClient",
+                            mWebView.getWebViewClient() instanceof WaitForLoadedClient);
+                };
+        if (isUiThread()) {
+            assertCorrectClientInstances.run();
+        } else {
+            WebkitUtils.onMainThreadSync(assertCorrectClientInstances);
         }
     }
 }
