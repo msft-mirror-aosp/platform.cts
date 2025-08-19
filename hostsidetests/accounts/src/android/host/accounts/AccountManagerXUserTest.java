@@ -16,15 +16,13 @@
 
 package android.host.accounts;
 
-import static com.google.common.truth.Truth.assertThat;
-
 import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.SystemUserOnly;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
-import com.android.compatibility.common.util.UserUtil;
+import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.ddmlib.testrunner.RemoteAndroidTestRunner;
 import com.android.ddmlib.testrunner.TestResult.TestStatus;
 import com.android.tradefed.build.IBuildInfo;
@@ -54,7 +52,7 @@ import java.util.concurrent.TimeUnit;
 @RunWith(DeviceJUnit4ClassRunner.class)
 @SystemUserOnly
 @AppModeFull(reason = "instant applications cannot see any other application")
-public class AccountManagerXUserTest extends BaseMultiUserTest implements IBuildReceiver {
+public final class AccountManagerXUserTest extends BaseMultiUserTest implements IBuildReceiver {
 
     private static final String TEST_WITH_PERMISSION_APK =
             "CtsAccountManagerCrossUserApp.apk";
@@ -82,14 +80,7 @@ public class AccountManagerXUserTest extends BaseMultiUserTest implements IBuild
                 device.executeShellCommand("settings get global package_verifier_enable");
         device.executeShellCommand("settings put global package_verifier_enable 0");
 
-        mParentUserId = device.getCurrentUser();
-        Integer mainUserId = device.getMainUserId();
-        if (mainUserId != null) {
-            assertThat(mParentUserId).isEqualTo(mainUserId);
-        } else {
-            boolean supportsMainlessUser = new UserUtil(device).isProfilesOnNonMainUserSupported();
-            assumeTrue("device doesn't have main user", supportsMainlessUser);
-        }
+        mParentUserId = DevicePolicyUsersPreparer.getProfileParentUserIds()[0];
 
         CompatibilityBuildHelper buildHelper = new CompatibilityBuildHelper(mCtsBuild);
         File apkFile = buildHelper.getTestFile(TEST_WITH_PERMISSION_APK);

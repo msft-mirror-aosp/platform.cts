@@ -22,7 +22,7 @@ java_test_host {
     defaults: ["cts_defaults"],
     static_libs: [
         "cts-statsd-atom-host-test-utils",
-        "compatibility-host-util-axt",
+        "device-policy-users-preparer",
     ],
     srcs: [
         "src/**/*.java",
