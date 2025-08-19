@@ -21,10 +21,10 @@ import static com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.FEATUR
 import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.LargeTest;
 
-import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresAdditionalFeatures;
 import com.android.cts.devicepolicy.annotations.LockSettingsTest;
 import com.android.cts.devicepolicy.annotations.PermissionsTest;
+import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.tradefed.device.UserInfo;
 
 import org.junit.Test;
@@ -47,7 +47,7 @@ public final class MixedManagedProfileOwnerTest extends DeviceAndProfileOwnerTes
         super.setUp();
 
         removeTestUsers();
-        mParentUserId = DevicePolicyUsersPreparer.getProfileParentUserIds()[0];
+        mParentUserId = DevicePolicyUsersPreparer.getProfileParentUserIds().getFirst();
         createManagedProfile();
     }
 

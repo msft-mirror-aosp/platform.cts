@@ -65,7 +65,7 @@ public final class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase
         ITestDevice device = testInfo.getDevice();
         assumeTrue("Multi-user is not supported on this device", device.isMultiUserSupported());
 
-        sParentUserId = DevicePolicyUsersPreparer.getProfileParentUserIds()[0];
+        sParentUserId = DevicePolicyUsersPreparer.getProfileParentUserIds().getFirst();
 
         sSecondaryUserId = createSecondaryUser(device);
         assumeTrue("Could not find or create an enterprise profile on this device",
