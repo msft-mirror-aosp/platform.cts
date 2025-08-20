@@ -28,6 +28,7 @@ import static org.junit.Assume.assumeTrue;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.hardware.display.DisplayManager;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.os.Build;
@@ -104,6 +105,10 @@ public class WifiLocationInfoBackgroundTest extends WifiJUnit4TestBase{
         }
         // TODO(b/290671748): re-enable the test when we havea solution on wear devices
         if (isWearDevice() || isAutomotiveDevice()) {
+            return;
+        }
+        DisplayManager displayManager = sContext.getSystemService(DisplayManager.class);
+        if (displayManager.getDisplays().length > 1) {
             return;
         }
         sShouldRunTest = true;
