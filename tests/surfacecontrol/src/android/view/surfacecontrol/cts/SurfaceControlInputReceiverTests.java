@@ -47,7 +47,6 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.IBinder;
 import android.os.RemoteException;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
@@ -73,7 +72,6 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.cts.input.inputeventmatchers.InputEventMatchersKt;
-import com.android.window.flags.Flags;
 
 import org.junit.Before;
 import org.junit.Ignore;
@@ -113,7 +111,6 @@ public class SurfaceControlInputReceiverTests {
         mDisplayId = mActivity.getDisplayId();
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
     @Test
     @Ignore("Need to update platform because the test relies on incorrect information "
             + "from WindowInfoListener.")
@@ -177,7 +174,6 @@ public class SurfaceControlInputReceiverTests {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
     @Test
     public void testRemoteSurfaceControlReceivesInput()
             throws InterruptedException, RemoteException {
@@ -249,7 +245,6 @@ public class SurfaceControlInputReceiverTests {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
     @Test
     @Ignore("Need to update platform because the test relies on incorrect information "
             + "from WindowInfoListener.")
@@ -309,7 +304,6 @@ public class SurfaceControlInputReceiverTests {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
     @Test
     public void testTransferGestureFromHostToEmbedded() throws InterruptedException {
         LocalSurfaceControlInputReceiverHelper helper = new LocalSurfaceControlInputReceiverHelper(
@@ -362,7 +356,6 @@ public class SurfaceControlInputReceiverTests {
                 withCoords(coordRelativeToWindow, InputEventMatchersKt.EPSILON)));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
     @Test
     public void testTransferGestureFromHostToEmbeddedRemote()
             throws InterruptedException, RemoteException {
@@ -416,7 +409,6 @@ public class SurfaceControlInputReceiverTests {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
     @Test
     public void testTransferGestureFromEmbeddedToHost() throws InterruptedException {
         LocalSurfaceControlInputReceiverHelper helper = new LocalSurfaceControlInputReceiverHelper(
@@ -454,7 +446,6 @@ public class SurfaceControlInputReceiverTests {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
     @Test
     public void testTransferGestureFromEmbeddedToHostRemote()
             throws InterruptedException, RemoteException {

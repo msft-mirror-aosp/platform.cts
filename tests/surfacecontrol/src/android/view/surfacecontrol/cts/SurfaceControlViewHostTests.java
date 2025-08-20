@@ -77,7 +77,6 @@ import android.os.RemoteException;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresDevice;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
@@ -118,7 +117,6 @@ import com.android.cts.input.UinputTouchDevice;
 import com.android.cts.input.UinputTouchScreen;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.MockImeSession;
-import com.android.window.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -1965,7 +1963,6 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         testEmbeddedWindowCanTransferTouchGestureToHost(false);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
     @Test
     public void testEmbeddedWindowCanTransferTouchGestureToHost_transferTouchGesture()
             throws Throwable {
@@ -2109,7 +2106,6 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         assertNotEquals(FLAG_KEEP_SCREEN_ON, (windowState.getFlags() & FLAG_KEEP_SCREEN_ON));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
     @Test
     public void testTransferHostTouchGestureToEmbedded() throws Throwable {
         mEmbeddedView = new Button(mActivity);
