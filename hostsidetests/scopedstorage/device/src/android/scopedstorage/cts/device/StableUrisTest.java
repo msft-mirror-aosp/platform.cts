@@ -27,6 +27,7 @@ import static android.scopedstorage.cts.lib.TestUtils.waitForMountedAndIdleState
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
@@ -40,7 +41,9 @@ import android.content.pm.ProviderInfo;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.platform.test.annotations.FlakyTest;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.MediaStore;
 import android.scopedstorage.cts.lib.ScopedStorageBaseDeviceTest;
 import android.util.Log;
@@ -50,6 +53,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.cts.install.lib.TestApp;
+import com.android.providers.media.flags.Flags;
 
 import com.google.common.io.Files;
 
@@ -155,6 +159,94 @@ public final class StableUrisTest extends ScopedStorageBaseDeviceTest {
     public void testUrisMapToNewIds_withNextRowIdBackup() throws Exception {
         assumeTrue(getBoolean("persist.sys.fuse.backup.nextrowid_enabled", false));
         testScenario(/* nextRowIdBackupEnabled */ true);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NEXT_GENERATION_NUMBER)
+    public void testGenerationModifiedIsMonotonicallyIncreasing() throws Exception {
+        assumeTrue(Flags.enableNextGenerationNumber());
+        List<File> createdFiles = new ArrayList<>();
+        try {
+            List<File> batch1 = generateTestFiles(3);
+            createdFiles.addAll(batch1);
+
+            long maxGen1 = getMaxGenerationModified(batch1);
+            assertTrue(maxGen1 > 0);
+
+            clearMediaProvider();
+
+            List<File> batch2 = generateTestFiles(3);
+            createdFiles.addAll(batch2);
+
+            long minGen2 = getMinGenerationModified(batch2);
+            assertTrue(minGen2 > maxGen1);
+        } finally {
+            for (File f : createdFiles) {
+                f.delete();
+            }
+        }
+    }
+
+    private List<File> generateTestFiles(int count) throws Exception {
+        List<File> files = new ArrayList<>();
+        File downloads =
+                new File(
+                        Environment.getExternalStorageDirectory(), Environment.DIRECTORY_DOWNLOADS);
+        for (int i = 0; i < count; i++) {
+            File f = new File(downloads, "test_" + i + "_" + System.nanoTime());
+            f.createNewFile();
+            MediaStore.scanFile(mContentResolver, f);
+            files.add(f);
+        }
+        return files;
+    }
+
+    private long getMaxGenerationModified(List<File> files) {
+        ContentResolver resolver = mContext.getContentResolver();
+        long max = -1;
+        for (File f : files) {
+            Uri uri = MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL);
+            try (Cursor c =
+                    resolver.query(
+                            uri,
+                            new String[] {MediaStore.MediaColumns.GENERATION_MODIFIED},
+                            MediaStore.MediaColumns.DATA + "=?",
+                            new String[] {f.getAbsolutePath()},
+                            null)) {
+                if (c != null && c.moveToFirst()) {
+                    long gen = c.getLong(0);
+                    max = Math.max(max, gen);
+                }
+            }
+        }
+        return max;
+    }
+
+    private long getMinGenerationModified(List<File> files) {
+        ContentResolver resolver = mContext.getContentResolver();
+        long min = Long.MAX_VALUE;
+        for (File f : files) {
+            Uri uri = MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL);
+            try (Cursor c =
+                    resolver.query(
+                            uri,
+                            new String[] {MediaStore.MediaColumns.GENERATION_MODIFIED},
+                            MediaStore.MediaColumns.DATA + "=?",
+                            new String[] {f.getAbsolutePath()},
+                            null)) {
+                if (c != null && c.moveToFirst()) {
+                    long gen = c.getLong(0);
+                    min = Math.min(min, gen);
+                }
+            }
+        }
+        return min;
+    }
+
+    private void clearMediaProvider() throws Exception {
+        mDevice.executeShellCommand("pm clear " + getMediaProviderPackageName());
+        waitForMountedAndIdleState(mContentResolver);
+        MediaStore.scanVolume(mContentResolver, mVolumeName);
     }
 
     private void testScenario(boolean nextRowIdBackupEnabled) throws Exception {
