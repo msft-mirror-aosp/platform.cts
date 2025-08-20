@@ -93,13 +93,18 @@ public class PackageInstallerCujTestBase {
     public static final String TEST_APK_LOCATION = "/data/local/tmp/cts/packageinstaller/cuj";
     public static final String TEST_APK_NAME = "CtsInstallerCujTestApp.apk";
     public static final String TEST_APK_V2_NAME = "CtsInstallerCujTestAppV2.apk";
+    public static final String EMPTY_TEST_APK_NAME = "CtsEmptyTestApp.apk";
+    public static final String EMPTY_TEST_APK_V2_NAME = "CtsEmptyTestAppV2.apk";
     public static final String TEST_APP_LABEL = "Installer CUJ Test App";
+    public static final String EMPTY_TEST_APP_LABEL = "Empty Test App";
     public static final String TEST_APP_PACKAGE_NAME =
             "android.packageinstaller.cts.cuj.app";
     public static final String TEST_NO_LAUNCHER_ACTIVITY_APK_NAME =
             "CtsInstallerCujTestNoLauncherActivityApp.apk";
     public static final String TEST_NO_LAUNCHER_ACTIVITY_APK_V2_NAME =
             "CtsInstallerCujTestNoLauncherActivityAppV2.apk";
+    public static final String EMPTY_TEST_APP_PACKAGE_NAME =
+            "android.packageinstaller.emptytestapp.cts";
 
     public static final String APP_INSTALLED_LABEL = "App installed";
     public static final String APP_UPDATED_LABEL = "App updated";
@@ -202,19 +207,28 @@ public class PackageInstallerCujTestBase {
         pressBack();
     }
 
+    /** Assert the target package that is the version 1 is installed. */
+    public static void assertPackageInstalled(String packageName) {
+        assertThat(isInstalledAndVerifyVersionCode(packageName, TEST_APK_VERSION)).isTrue();
+    }
+
     /**
      * Assert the test package that is the version 1 is installed.
      */
     public static void assertTestPackageInstalled() {
-        assertThat(isInstalledAndVerifyVersionCode(
-                TEST_APP_PACKAGE_NAME, TEST_APK_VERSION)).isTrue();
+        assertPackageInstalled(TEST_APP_PACKAGE_NAME);
+    }
+
+    /** Assert the target package that is the version 2 is installed. */
+    public static void assertPackageVersion2Installed(String packageName) {
+        assertThat(isPackageVersion2Installed(packageName)).isTrue();
     }
 
     /**
      * Assert the test package that is the version 2 is installed.
      */
     public static void assertTestPackageVersion2Installed() {
-        assertThat(isTestPackageVersion2Installed()).isTrue();
+        assertPackageVersion2Installed(TEST_APP_PACKAGE_NAME);
     }
 
     /**
@@ -584,6 +598,12 @@ public class PackageInstallerCujTestBase {
         assertTestPackageInstalled();
     }
 
+    /** Install the test apk {@link #EMPTY_TEST_APK_NAME}. */
+    public static void installEmptyTestPackage() throws IOException {
+        installPackage(EMPTY_TEST_APK_NAME);
+        assertPackageInstalled(EMPTY_TEST_APP_PACKAGE_NAME);
+    }
+
     /**
      * Install the test apk {@link #TEST_APK_NAME}.
      */
@@ -697,11 +717,19 @@ public class PackageInstallerCujTestBase {
     }
 
     /**
+     * If the target package with version {@link #TEST_APK_V2_VERSION} is installed, return true.
+     * Otherwise, return false.
+     */
+    private static boolean isPackageVersion2Installed(String packageName) {
+        return isInstalledAndVerifyVersionCode(packageName, TEST_APK_V2_VERSION);
+    }
+
+    /**
      * If the test package {@link #TEST_APP_PACKAGE_NAME} with version {@link #TEST_APK_V2_VERSION}
      * is installed, return true. Otherwise, return false.
      */
     public static boolean isTestPackageVersion2Installed() {
-        return isInstalledAndVerifyVersionCode(TEST_APP_PACKAGE_NAME, TEST_APK_V2_VERSION);
+        return isPackageVersion2Installed(TEST_APP_PACKAGE_NAME);
     }
 
     /**
