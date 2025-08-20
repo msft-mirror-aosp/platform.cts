@@ -57,6 +57,9 @@ public class KeyStoreExceptionTest {
         List<Integer> excludedErrorCodes = new ArrayList<Integer>();
         excludedErrorCodes.add(-62); // -62 is KEY_REQUIRES_UPGRADE and is handled by Keystore.
         excludedErrorCodes.add(-86); // -86 is MODULE_HASH_ALREADY_SET and is internal to Keystore.
+
+        // TODO(b/395069628): remove this exception when KeyMint v5 is frozen
+        excludedErrorCodes.add(-87); // -87 is UNSUPPORTED_ML_DSA_VARIANT
         for (Field code : errorFields) {
             final int codeVal = code.getInt(null);
             if (excludedErrorCodes.contains(codeVal)) {
