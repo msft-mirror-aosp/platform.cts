@@ -21,7 +21,6 @@ import static android.view.Display.DEFAULT_DISPLAY;
 import static android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT;
 import static android.window.OnBackInvokedDispatcher.PRIORITY_SYSTEM_NAVIGATION_OBSERVER;
 
-import static com.android.window.flags.Flags.FLAG_PREDICTIVE_BACK_PRIORITY_SYSTEM_NAVIGATION_OBSERVER;
 import static com.android.window.flags.Flags.FLAG_PREDICTIVE_BACK_SYSTEM_OVERRIDE_CALLBACK;
 import static com.android.window.flags.Flags.FLAG_PREDICTIVE_BACK_TIMESTAMP_API;
 
@@ -265,7 +264,6 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_PREDICTIVE_BACK_PRIORITY_SYSTEM_NAVIGATION_OBSERVER)
     public void invokesObserverCallback_invoked() throws InterruptedException {
         registerBackCallback(mActivity, mAnimationCallback, PRIORITY_SYSTEM_NAVIGATION_OBSERVER);
         int midHeight = mUiDevice.getDisplayHeight() / 2;
@@ -287,7 +285,6 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_PREDICTIVE_BACK_PRIORITY_SYSTEM_NAVIGATION_OBSERVER)
     public void invokesObserverCallbackInButtonsNav_invoked() throws InterruptedException {
         registerBackCallback(mActivity, mAnimationCallback, PRIORITY_SYSTEM_NAVIGATION_OBSERVER);
         long downTime = TouchHelper.injectKeyActionDown(KeyEvent.KEYCODE_BACK,
@@ -313,10 +310,8 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_PREDICTIVE_BACK_PRIORITY_SYSTEM_NAVIGATION_OBSERVER,
-            FLAG_PREDICTIVE_BACK_SYSTEM_OVERRIDE_CALLBACK})
-    public void invokesSystemOverrideObserverCallback_invoked()
-            throws InterruptedException {
+    @RequiresFlagsEnabled(FLAG_PREDICTIVE_BACK_SYSTEM_OVERRIDE_CALLBACK)
+    public void invokesSystemOverrideObserverCallback_invoked() throws InterruptedException {
         registerBackCallback(mActivity, mAnimationCallback, PRIORITY_SYSTEM_NAVIGATION_OBSERVER);
         // The override system callback can trigger navigation observer.
         registerBackCallback(mActivity, SystemOnBackInvokedCallbacks
