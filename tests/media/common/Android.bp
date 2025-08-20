@@ -24,7 +24,7 @@ android_library {
         "android.media.codec-aconfig-java",
         "androidx.test.core",
         "compatibility-device-util-axt",
-        "ctsmediaTestUtils", // split from cts-media-common to avoid circular dependency
+        "cts-media-common",
     ],
     srcs: ["src/**/*.java"],
     sdk_version: "test_current",

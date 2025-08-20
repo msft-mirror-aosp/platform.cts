@@ -52,11 +52,12 @@ java_defaults {
     // include both the 32 and 64 bit versions
     compile_multilib: "both",
     static_libs: [
-        "cts-media-common",
-        "ctstestrunner-axt",
-        "ctstestserver",
         "android.media.codec-aconfig-java",
         "android.media.extractor.flags-aconfig-java",
+        "cts-media-common",
+        "ctsmediav2common",
+        "ctstestrunner-axt",
+        "ctstestserver",
     ],
     jni_libs: [
         "libctscodecutils_jni",
