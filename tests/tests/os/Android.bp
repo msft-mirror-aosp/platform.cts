@@ -40,6 +40,7 @@ java_defaults {
         "device-time-shell-utils",
         "flag-junit",
         "ravenwood-junit",
+        "android.location.flags-aconfig-java",
         "android.os.flags-aconfig-java",
         "android.crashrecovery.flags-aconfig-java",
         "android.permission.flags-aconfig-java",
