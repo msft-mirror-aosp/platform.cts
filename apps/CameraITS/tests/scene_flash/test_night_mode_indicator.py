@@ -75,6 +75,7 @@ def _start_preview(cam, file_stem, camera_id, target_preview_size,
     raise AssertionError('No Night Mode Indicator value in metadata')
   result = metadata[_CAPTURE_RESULT_KEY_NIGHT_MODE_INDICATOR]
   logging.debug('Night Mode Indicator value: %s', result)
+  return result
 
 
 class NightModeIndicatorTest(its_base_test.ItsBaseTest):
