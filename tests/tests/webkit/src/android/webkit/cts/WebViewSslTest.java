@@ -43,6 +43,8 @@ import androidx.test.filters.MediumTest;
 import com.android.compatibility.common.util.NullWebViewUtils;
 import com.android.compatibility.common.util.PollingCheck;
 
+import com.google.common.util.concurrent.SettableFuture;
+
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
@@ -59,7 +61,6 @@ import java.security.PrivateKey;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @AppModeFull(reason = "Instant apps cannot bind sockets")
 @MediumTest
@@ -442,8 +443,8 @@ public class WebViewSslTest extends SharedWebViewTest {
     };
 
     @Rule
-    public ActivityScenarioRule mActivityScenarioRule =
-            new ActivityScenarioRule(WebViewCtsActivity.class);
+    public ActivityScenarioRule<WebViewCtsActivity> mActivityScenarioRule =
+            new ActivityScenarioRule<>(WebViewCtsActivity.class);
 
     private WebViewCtsActivity mActivity;
 
@@ -478,7 +479,7 @@ public class WebViewSslTest extends SharedWebViewTest {
                 .getScenario()
                 .onActivity(
                         activity -> {
-                            mActivity = (WebViewCtsActivity) activity;
+                            mActivity = activity;
 
                             WebView webView = mActivity.getWebView();
                             builder.setHostAppInvoker(
@@ -933,21 +934,9 @@ public class WebViewSslTest extends SharedWebViewTest {
     }
 
     private void clearClientCertPreferences() {
-        final AtomicBoolean cleared = new AtomicBoolean(false);
-        WebView.clearClientCertPreferences(new Runnable() {
-            @Override
-            public void run() {
-                cleared.set(true);
-            }
-        });
-        // Wait until clearclientcertpreferences clears the preferences. Generally this is just a
-        // thread hopping.
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return cleared.get();
-            }
-        }.run();
+        final SettableFuture<Void> clearedFuture = SettableFuture.create();
+        WebView.clearClientCertPreferences(() -> clearedFuture.set(null));
+        WebkitUtils.waitForFuture(clearedFuture);
     }
 
     // Note that this class is not thread-safe.
