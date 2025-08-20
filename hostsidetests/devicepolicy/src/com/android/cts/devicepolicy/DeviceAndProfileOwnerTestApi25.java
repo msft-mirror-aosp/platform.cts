@@ -22,7 +22,7 @@ import org.junit.Test;
  * Set of tests for use cases that apply to profile and device owner with DPC
  * targeting API level 25.
  */
-public abstract class DeviceAndProfileOwnerTestApi25 extends BaseDevicePolicyTest {
+public abstract class DeviceAndProfileOwnerTestApi25 extends BaseDeviceOwnerTest {
 
     protected static final String DEVICE_ADMIN_PKG = "com.android.cts.deviceandprofileowner";
     protected static final String DEVICE_ADMIN_APK = "CtsDeviceAndProfileOwnerApp25.apk";
@@ -54,10 +54,8 @@ public abstract class DeviceAndProfileOwnerTestApi25 extends BaseDevicePolicyTes
     // (in this case targeting preQ)
     public void testPermissionGrantPreMApp() throws Exception {
         installAppAsUser(SIMPLE_PRE_M_APP_APK, mUserId);
-        executeDeviceTestMethod(".PermissionsTest", "testPermissionGrantState_preMApp_preQDeviceAdmin");
-    }
 
-    protected void executeDeviceTestMethod(String className, String testName) throws Exception {
-        runDeviceTestsAsUser(DEVICE_ADMIN_PKG, className, testName, mUserId);
+        runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".PermissionsTest",
+                "testPermissionGrantState_preMApp_preQDeviceAdmin", mUserId);
     }
 }

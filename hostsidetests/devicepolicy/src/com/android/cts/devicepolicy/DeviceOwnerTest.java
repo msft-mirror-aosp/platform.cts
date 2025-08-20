@@ -19,7 +19,6 @@ package com.android.cts.devicepolicy;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNotNull;
 
@@ -109,12 +108,7 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
                             + " owner.",
                     getDevice().getMainUserId());
         }
-        installDeviceOwnerApp(DEVICE_OWNER_APK);
-
-        if (!setDeviceOwner(DEVICE_OWNER_PKG, ADMIN_RECEIVER_TEST_CLASS)) {
-            getDevice().uninstallPackage(DEVICE_OWNER_PKG);
-            fail("Failed to set device owner on user " + mDeviceOwnerUserId);
-        }
+        installAndSetDeviceOwner(DEVICE_OWNER_APK, DEVICE_OWNER_PKG, ADMIN_RECEIVER_TEST_CLASS);
 
         // Enable the notification listener
         executeShellCommand("cmd notification allow_listener com.android.cts."
@@ -123,11 +117,7 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
 
     @Override
     public void tearDown() throws Exception {
-        removeDeviceOwnerIfSet();
-        String status = getDevice().uninstallPackage(DEVICE_OWNER_PKG);
-        if (status != null) {
-            CLog.e("Could not uninstall package %s: %s", DEVICE_OWNER_PKG, status);
-        }
+        removeAndUninstallDeviceOwnerIfSet();
 
         super.tearDown();
     }
