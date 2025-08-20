@@ -67,6 +67,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
@@ -726,6 +727,7 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     @RequiresFlagsDisabled(Flags.FLAG_ENABLE_APP_FUNCTION_AGENT_ALLOWLIST_CHECK)
     public void testRequireExecuteAppFunctionPermission_withoutPermission_cannotAccess()
             throws Exception {
@@ -755,6 +757,7 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     @RequiresFlagsDisabled(Flags.FLAG_ENABLE_APP_FUNCTION_AGENT_ALLOWLIST_CHECK)
     public void testRequireExecuteAppFunctionPermission_withPermission_canAccess()
             throws Exception {
@@ -788,6 +791,7 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_AGENT_ALLOWLIST_CHECK)
     @Ignore("b/420892441 - Enable the test once allowlist enforcement is ready")
     public void testRequireExecuteAppFunctionPermission_invalidAgent_cannotAccess()
@@ -822,6 +826,7 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_AGENT_ALLOWLIST_CHECK)
     @Ignore("b/420892441 - Enable the test once allowlist enforcement is ready")
     public void testRequireExecuteAppFunctionPermission_validAgent_canAccess() throws Exception {
