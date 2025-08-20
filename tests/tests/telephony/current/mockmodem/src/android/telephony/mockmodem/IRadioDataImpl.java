@@ -253,6 +253,7 @@ public class IRadioDataImpl extends IRadioData.Stub {
 
         RadioResponseInfo rsp;
         SetupDataCallResult dc = new SetupDataCallResult();
+        dc.suggestedRetryTime = -1;
         rsp = mService.makeSolRsp(serial);
         synchronized (sCacheUpdateMutex) {
             if (sServiceState == null || !sServiceState.isPsInService()) {
