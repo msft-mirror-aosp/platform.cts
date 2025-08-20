@@ -87,7 +87,10 @@ class TonemapSequenceTest(its_base_test.ItsBaseTest):
         hidden_physical_id=self.hidden_physical_id) as cam:
       props = cam.get_camera_properties()
       props = cam.override_with_hidden_physical_camera_props(props)
+      first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
       camera_properties_utils.skip_unless(
+          # test_tonemap_sequence will run on the gen2 rig for Android 17+
+          first_api_level < its_session_utils.ANDROID17_API_LEVEL and
           not camera_properties_utils.mono_camera(props) and
           camera_properties_utils.linear_tonemap(props))
       log_path = self.log_path
