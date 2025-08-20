@@ -49,6 +49,7 @@ import android.bluetooth.BluetoothSinkAudioPolicy;
 import android.bluetooth.BluetoothSocket;
 import android.bluetooth.BluetoothSocketException;
 import android.bluetooth.BluetoothStatusCodes;
+import android.bluetooth.EncryptionStatus;
 import android.bluetooth.OobData;
 import android.bluetooth.test_utils.Permissions;
 import android.content.AttributionSource;
@@ -97,6 +98,7 @@ public class BluetoothDeviceTest {
     private BluetoothDevice mFakeDevice;
     private int mFakePsm = 100;
     private UUID mFakeUuid = UUID.fromString("0000111E-0000-1000-8000-00805F9B34FB");
+    private int mFakeKeySize = 16;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -848,5 +850,13 @@ public class BluetoothDeviceTest {
                 SecurityException.class,
                 () -> mFakeDevice.getEncryptionStatus(BluetoothDevice.TRANSPORT_BREDR));
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
+
+        // Create a fake encryption status and verify the values, mocking the values is not possible
+        // as the BluetoothDevice class is final.
+        EncryptionStatus encryptionStatus =
+                new EncryptionStatus(mFakeKeySize, BluetoothDevice.ENCRYPTION_ALGORITHM_AES);
+        assertThat(encryptionStatus.getAlgorithm())
+                .isEqualTo(BluetoothDevice.ENCRYPTION_ALGORITHM_AES);
+        assertThat(encryptionStatus.getKeySize()).isEqualTo(mFakeKeySize);
     }
 }
