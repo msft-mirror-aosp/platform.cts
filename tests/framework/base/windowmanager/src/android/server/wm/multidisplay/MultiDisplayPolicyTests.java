@@ -629,9 +629,11 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
         assumeFalse(perDisplayFocusEnabled());
         assumeTrue(supportsLockScreen());
 
+        final int mainDisplayId = getMainDisplayId();
+
         // Launch something on the primary display so we know there is a resumed activity there
         launchActivity(RESIZEABLE_ACTIVITY);
-        waitAndAssertResumedAndFocusedActivityOnDisplay(RESIZEABLE_ACTIVITY, DEFAULT_DISPLAY,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(RESIZEABLE_ACTIVITY, mainDisplayId,
                 "Activity launched on primary display must be resumed");
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
@@ -640,8 +642,10 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
         // Make sure there is no resumed activity when the primary display is off
         waitAndAssertActivityState(RESIZEABLE_ACTIVITY, STATE_STOPPED,
                 "Activity launched on primary display must be stopped after turning off");
-        assertEquals("Unexpected resumed activity",
-                0, mWmState.getResumedActivitiesCount());
+        assertEquals(
+                "Unexpected resumed activity",
+                0,
+                mWmState.getResumedActivitiesCountOnDisplay(mainDisplayId));
 
         final DisplayContent newDisplay = createManagedExternalDisplaySession()
                 .setCanShowWithInsecureKeyguard(true).createVirtualDisplay();
@@ -657,7 +661,7 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
         // Check that the test activity is resumed on the external display and is on top
         waitAndAssertActivityStateOnDisplay(TEST_ACTIVITY, STATE_RESUMED, newDisplay.mId,
                 "Activity on external display must be resumed");
-        assertBothDisplaysHaveResumedActivities(pair(DEFAULT_DISPLAY, RESIZEABLE_ACTIVITY),
+        assertBothDisplaysHaveResumedActivities(pair(mainDisplayId, RESIZEABLE_ACTIVITY),
                 pair(newDisplay.mId, TEST_ACTIVITY));
 
         // Tap on task center to switch focus between displays. Using task center instead of
@@ -665,9 +669,9 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
         tapOnTaskCenter(mWmState.getTaskByActivity(RESIZEABLE_ACTIVITY));
 
         // Check that the activity on the primary display is the topmost resumed
-        waitAndAssertResumedAndFocusedActivityOnDisplay(RESIZEABLE_ACTIVITY, DEFAULT_DISPLAY,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(RESIZEABLE_ACTIVITY, mainDisplayId,
                 "Activity on primary display must be resumed and on top");
-        assertBothDisplaysHaveResumedActivities(pair(DEFAULT_DISPLAY, RESIZEABLE_ACTIVITY),
+        assertBothDisplaysHaveResumedActivities(pair(mainDisplayId, RESIZEABLE_ACTIVITY),
                 pair(newDisplay.mId, TEST_ACTIVITY));
     }
 
