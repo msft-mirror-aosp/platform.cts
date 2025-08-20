@@ -37,7 +37,8 @@ import java.util.concurrent.ExecutionException;
 
 /** Utility class providing constants and helper methods for AppFunction tests. */
 public final class AppFunctionTestUtils {
-    private static final String INDEXER_PACKAGE_NAME = "android";
+    private static final String INDEXER_PACKAGE_NAME =
+            AppSearchTestEnvironmentFactory.getEnvironmentInstance().getIndexerPackageName();
     private static final String TEST_APP_ROOT_FOLDER =
             AppSearchTestEnvironmentFactory.getEnvironmentInstance().getTestAppRootFolder();
     private static final String NAMESPACE_APP_FUNCTIONS = "app_functions";

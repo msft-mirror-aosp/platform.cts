@@ -18,6 +18,7 @@ package com.android.cts.devicepolicy;
 
 import static com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.FEATURE_MANAGED_USERS;
 import static com.android.cts.devicepolicy.DeviceAndProfileOwnerTest.DEVICE_ADMIN_COMPONENT_FLATTENED;
+import static com.android.tradefed.device.UserInfo.USER_SYSTEM;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -26,8 +27,8 @@ import static org.junit.Assert.fail;
 
 import android.platform.test.annotations.LargeTest;
 
-import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresAdditionalFeatures;
+import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.util.RunUtil;
@@ -117,14 +118,15 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
         removeOrgOwnedProfile();
         assertHasNoUser(mUserId);
 
+        // TODO(b/435528858): most likely should use mDeviceOwnerUserId below
         try {
-            installAppAsUser(DEVICE_ADMIN_APK, /* userId= */ 0);
+            installAppAsUser(DEVICE_ADMIN_APK, USER_SYSTEM);
             assertTrue(setDeviceOwner(DEVICE_ADMIN_COMPONENT_FLATTENED,
-                    /* userId= */ 0, /*expectFailure*/false));
+                    USER_SYSTEM, /*expectFailure= */ false));
             runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".LockScreenInfoTest", "testLockInfoIsNull",
-                    /* userId= */ 0);
+                    USER_SYSTEM);
         } finally {
-            removeAdmin(DEVICE_ADMIN_COMPONENT_FLATTENED, /* userId= */ 0);
+            removeAdmin(DEVICE_ADMIN_COMPONENT_FLATTENED, USER_SYSTEM);
             getDevice().uninstallPackage(DEVICE_ADMIN_PKG);
         }
     }

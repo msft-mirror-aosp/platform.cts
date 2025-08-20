@@ -43,7 +43,7 @@ import java.util.List;
  */
 // We need managed user to be supported in order to create a profile of the user owner.
 @RequiresAdditionalFeatures({FEATURE_MANAGED_USERS})
-public final class DeviceOwnerPlusProfileOwnerTest extends BaseDevicePolicyTest {
+public final class DeviceOwnerPlusProfileOwnerTest extends BaseDeviceOwnerTest {
     private static final String BIND_DEVICE_ADMIN_SERVICE_GOOD_SETUP_TEST =
             "com.android.cts.comp.BindDeviceAdminServiceGoodSetupTest";
     private static final String MANAGED_PROFILE_PROVISIONING_TEST =

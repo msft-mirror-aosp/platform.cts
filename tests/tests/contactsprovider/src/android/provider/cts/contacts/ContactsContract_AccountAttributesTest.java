@@ -22,6 +22,8 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static junit.framework.Assert.assertFalse;
+
 import static org.junit.Assert.assertThrows;
 
 import android.accounts.Account;
@@ -38,6 +40,8 @@ import android.provider.cts.contacts.account.StaticAccountAuthenticator;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 
+import com.android.compatibility.common.util.SystemUtil;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -51,6 +55,8 @@ public class ContactsContract_AccountAttributesTest {
     // other tests running. No other tests should use the following accounts.
     private Account mAccount1;
     private Account mAccount2;
+
+    private Account mSimAccount1;
     private static final Account ACCT_NOT_PRESENT =
             new Account(
                     "test for account attributes not signed in", StaticAccountAuthenticator.TYPE);
@@ -82,6 +88,21 @@ public class ContactsContract_AccountAttributesTest {
         mAccountManager.addAccountExplicitly(mAccount1, null, null);
         mAccountManager.addAccountExplicitly(mAccount2, null, null);
 
+        mSimAccount1 =
+                new Account(
+                        "ContactsContract_AccountAttributesTest SIM name "
+                                + System.currentTimeMillis(),
+                        "ContactsContract_AccountAttributesTest SIM type");
+
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    ContactsContract.SimContacts.addSimAccount(
+                            mResolver,
+                            mSimAccount1.name,
+                            mSimAccount1.type,
+                            0,
+                            ContactsContract.SimAccount.ADN_EF_TYPE);
+                });
         // Waiting a short while so that accounts are arrived on the device.
         try {
             Thread.sleep(2000);
@@ -94,6 +115,11 @@ public class ContactsContract_AccountAttributesTest {
     public void tearDown() throws Exception {
         mAccountManager.removeAccount(mAccount1, null, null);
         mAccountManager.removeAccount(mAccount2, null, null);
+
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    ContactsContract.SimContacts.removeSimAccounts(mResolver, 0);
+                });
     }
 
     @Test
@@ -107,6 +133,28 @@ public class ContactsContract_AccountAttributesTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> getAccountAttributesInternal(mResolver, ACCT_NOT_PRESENT, "preload"));
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_NEW_ACCOUNT_ATTRIBUTES_API_ENABLED})
+    public void testSetAndGetAccountAttributes_localAndSimAccount() {
+        assertThat(getAccountAttributesInternal(mResolver, getLocalAccount(), null))
+                .isEqualTo(AccountAttributes.ATTRIBUTE_DATA_ORIGIN_LOCAL);
+
+        assertThat(getAccountAttributesInternal(mResolver, mSimAccount1, null))
+                .isEqualTo(AccountAttributes.ATTRIBUTE_DATA_ORIGIN_SIM);
+    }
+
+    private Account getLocalAccount() {
+        String accountName = ContactsContract.RawContacts.getLocalAccountName(mContext);
+        String accountType = ContactsContract.RawContacts.getLocalAccountType(mContext);
+
+        assertFalse(accountName != null ^ accountType != null);
+        if (accountName == null) {
+            return null;
+        } else {
+            return new Account(accountName, accountType);
+        }
     }
 
     /** Verifies that updating attributes with no changes is accepted. */
@@ -143,8 +191,6 @@ public class ContactsContract_AccountAttributesTest {
     @Test
     @RequiresFlagsEnabled({FLAG_NEW_ACCOUNT_ATTRIBUTES_API_ENABLED})
     public void testUpdateAccountAttributes_throwsExceptionOnSemanticConflict() {
-        long previousAccountAttributes = getAccountAttributesInternal(mResolver, mAccount1, null);
-
         // Conflict DATA_ORIGIN attributes.
         assertThrows(
                 "Adding a conflicting DATA_ORIGIN should fail",
@@ -188,6 +234,14 @@ public class ContactsContract_AccountAttributesTest {
                                 ACCT_WITH_TYPE_UNAUTHENTICATED,
                                 null,
                                 AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD));
+
+        assertThrows(
+                "resetAccountAttributes on account types not authenticated by this package should"
+                        + " fail",
+                SecurityException.class,
+                () ->
+                        resetAccountAttributesInternal(
+                                mResolver, ACCT_WITH_TYPE_UNAUTHENTICATED, null));
     }
 
     @Test
@@ -218,6 +272,29 @@ public class ContactsContract_AccountAttributesTest {
         assertThat(getAccountAttributesInternal(mResolver, mAccount1, null)).isEqualTo(0);
     }
 
+    @Test
+    @RequiresFlagsEnabled({FLAG_NEW_ACCOUNT_ATTRIBUTES_API_ENABLED})
+    public void testResetAccountAttributes_revertsToDefault() {
+        // Verify initial state is the default (cloud-based).
+        assertThat(getAccountAttributesInternal(mResolver, mAccount1, null))
+                .isEqualTo(AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD);
+
+        // Set a non-default attribute.
+        setAccountAttributesInternal(
+                mResolver, mAccount1, null, AccountAttributes.ATTRIBUTE_DATA_ORIGIN_LOCAL);
+
+        // Verify the attribute was set.
+        assertThat(getAccountAttributesInternal(mResolver, mAccount1, null))
+                .isEqualTo(AccountAttributes.ATTRIBUTE_DATA_ORIGIN_LOCAL);
+
+        // Now, reset the attributes.
+        resetAccountAttributesInternal(mResolver, mAccount1, null);
+
+        // Verify the attributes have been reverted to the system-evaluated default.
+        assertThat(getAccountAttributesInternal(mResolver, mAccount1, null))
+                .isEqualTo(AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD);
+    }
+
     private static long getAccountAttributesInternal(
             ContentResolver resolver, Account account, String dataSet) {
         return ContactsContract.Settings.getAccountAttributes(resolver, account, dataSet);
@@ -226,6 +303,11 @@ public class ContactsContract_AccountAttributesTest {
     private static void setAccountAttributesInternal(
             ContentResolver resolver, Account account, String dataSet, long attributes) {
         ContactsContract.Settings.setAccountAttributes(resolver, account, dataSet, attributes);
+    }
+
+    private static void resetAccountAttributesInternal(
+            ContentResolver resolver, Account account, String dataSet) {
+        ContactsContract.Settings.resetAccountAttributes(resolver, account, dataSet);
     }
 
     private Context getContext() {

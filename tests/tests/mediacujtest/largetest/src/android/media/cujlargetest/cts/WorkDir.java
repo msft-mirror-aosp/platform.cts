@@ -16,7 +16,7 @@
 
 package android.media.cujlargetest.cts;
 
-import android.media.cts.WorkDirBase;
+import android.mediav2.common.cts.WorkDirBase;
 
 /**
  * Return the primary shared/external storage directory used by the tests

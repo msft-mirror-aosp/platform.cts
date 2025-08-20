@@ -18,7 +18,9 @@ package android.telephony.cts;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeTrue;
 
+import android.content.pm.PackageManager;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.TelephonyServiceManager;
@@ -27,6 +29,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
+import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.internal.telephony.flags.Flags;
@@ -51,8 +54,14 @@ public class TelephonyServiceManagerTest {
     /** Tests that we can get an instance of TelephonyServiceManager and call its methods. */
     private TelephonyServiceManager mTelephonyServiceManager;
 
+    private PackageManager mPackageManager;
+
     @Before
     public void setUp() {
+        mPackageManager =
+                InstrumentationRegistry.getInstrumentation().getContext().getPackageManager();
+        // This test requires the telephony feature. Skips the test if it is not available.
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
         mTelephonyServiceManager = new TelephonyServiceManager();
     }
 

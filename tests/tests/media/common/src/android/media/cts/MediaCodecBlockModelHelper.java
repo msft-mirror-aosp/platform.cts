@@ -25,6 +25,7 @@ import android.media.MediaCodec.CodecException;
 import android.media.MediaCrypto;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
+import android.mediav2.common.cts.OutputManager;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.AppModeFull;
@@ -447,7 +448,7 @@ public class MediaCodecBlockModelHelper {
                     new SurfaceOutputSlotListener(outputSurface, outputTimestampList, events));
             if (result == Result.SUCCESS) {
                 StringBuilder msg = new StringBuilder();
-                boolean isEqual = TestUtils.arePtsListsIdentical(
+                boolean isEqual = OutputManager.isOutPtsListIdenticalToInpPtsList(
                         new ArrayList<Long>(inputTimestampList),
                         new ArrayList<Long>(outputTimestampList), false, msg);
                 assertTrue(msg.toString(), isEqual);

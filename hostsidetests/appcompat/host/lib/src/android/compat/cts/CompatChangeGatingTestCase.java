@@ -191,20 +191,32 @@ public class CompatChangeGatingTestCase extends DeviceTestCase implements IBuild
                     .that(result.isRunFailure()).isFalse();
             assertWithMessage("Should run only exactly one test method!")
                     .that(result.getNumTests()).isEqualTo(1);
-            if (result.hasFailedTests()) {
-                // build a meaningful error message
-                StringBuilder errorBuilder = new StringBuilder("On-device test failed:\n");
-                for (Map.Entry<TestDescription, TestResult> resultEntry :
-                        result.getTestResults().entrySet()) {
-                    if (!resultEntry.getValue().getStatus().equals(TestStatus.PASSED)) {
-                        errorBuilder.append(resultEntry.getKey().toString());
-                        errorBuilder.append(":\n");
-                        errorBuilder.append(resultEntry.getValue().getStackTrace());
-                    }
+            final Map.Entry<TestDescription, TestResult> resultEntry =
+                    result.getTestResults().entrySet().iterator().next();
+            final TestStatus testStatus = resultEntry.getValue().getStatus();
+            switch (testStatus) {
+                case PASSED -> {
+                    /* Do nothing. */
                 }
-                throw new AssertionError(errorBuilder.toString());
+                case FAILURE, INCOMPLETE, IGNORED -> {
+                    throw new AssertionError(
+                            "On-device test failed:\n"
+                                    + resultEntry.getKey().toString()
+                                    + ":\n"
+                                    + resultEntry.getValue().getStackTrace());
+                }
+                case ASSUMPTION_FAILURE -> {
+                    // JUnit3 doesn't support assumption failure. Make the test passing.
+                    // Also skips validatePostRunStatsdReport because device test may not be
+                    // executed.
+                    CLog.w(
+                            "Assumption failed in the test:\n"
+                                    + resultEntry.getKey().toString()
+                                    + ":\n"
+                                    + resultEntry.getValue().getStackTrace());
+                    return;
+                }
             }
-
         } finally {
             // Cleanup compat overrides
             resetCompatConfig(pkgName, enabledChanges, disabledChanges);

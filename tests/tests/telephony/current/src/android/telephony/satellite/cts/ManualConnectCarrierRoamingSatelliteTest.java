@@ -63,6 +63,8 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatelliteTestBase {
@@ -116,6 +118,7 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
         setUpEsosSubscription(true);
         enableCarrierRoamingSatelliteConfigs(
                 ESOS_SLOT_ID, CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_MANUAL);
+        addCtsPackageToSupportedSmsApps(sEsosSubId);
 
         moveSimToInService(ESOS_SLOT_ID, ESOS_SIM_PROFILE_ID);
         assertTrue(sMockSatelliteServiceManager.setSatelliteIgnoreCellularServiceState(true));
@@ -706,5 +709,41 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
         Intent sendIntent = new Intent(SMS_SEND_ACTION).setPackage(getContext().getPackageName());
         return PendingIntent.getBroadcast(getContext(), 0,
                 sendIntent, PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_MUTABLE);
+    }
+
+    /**
+     * This helper method adds "android.telephony.cts" to the list of supported apps for the
+     * duration of the tests in this class.
+     */
+    private void addCtsPackageToSupportedSmsApps(int subId) {
+        final String ctsPackageName = "android.telephony.cts";
+
+        // Get the current list of supported messaging apps from the carrier config.
+        String[] originalSupportedMsgApps =
+                getConfigForSubId(
+                                getContext(),
+                                subId,
+                                CarrierConfigManager.KEY_SATELLITE_SUPPORTED_MSG_APPS_STRING_ARRAY)
+                        .getStringArray(
+                                CarrierConfigManager.KEY_SATELLITE_SUPPORTED_MSG_APPS_STRING_ARRAY);
+
+        ArrayList<String> newAppsList = new ArrayList<>();
+        if (originalSupportedMsgApps != null) {
+            newAppsList.addAll(Arrays.asList(originalSupportedMsgApps));
+        }
+
+        // Add the CTS package only if it's not in the list.
+        if (!newAppsList.contains(ctsPackageName)) {
+            newAppsList.add(ctsPackageName);
+
+            PersistableBundle bundle = new PersistableBundle();
+            bundle.putStringArray(
+                    CarrierConfigManager.KEY_SATELLITE_SUPPORTED_MSG_APPS_STRING_ARRAY,
+                    newAppsList.toArray(new String[0]));
+            // Override the carrier config for this test run.
+            overrideCarrierConfig(subId, bundle);
+
+            logd(TAG, "Added " + ctsPackageName + " to supported SMS apps.");
+        }
     }
 }

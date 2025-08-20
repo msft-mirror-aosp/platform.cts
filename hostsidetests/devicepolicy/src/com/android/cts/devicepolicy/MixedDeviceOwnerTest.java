@@ -16,8 +16,6 @@
 
 package com.android.cts.devicepolicy;
 
-import static org.junit.Assert.fail;
-
 import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.LargeTest;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -46,8 +44,6 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
     private static final String ARG_SECURITY_LOGGING_BATCH_NUMBER = "batchNumber";
     private static final int SECURITY_EVENTS_BATCH_SIZE = 100;
 
-    private boolean mDeviceOwnerSet;
-
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
             HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
@@ -60,22 +56,12 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
 
         CLog.i("%s.setUp(): mUserId=%d", getClass().getSimpleName(), mUserId);
 
-        installDeviceOwnerApp(DEVICE_ADMIN_APK);
-        mDeviceOwnerSet = setDeviceOwner(DEVICE_ADMIN_COMPONENT_FLATTENED, mDeviceOwnerUserId,
-                /*expectFailure= */ false);
-
-        if (!mDeviceOwnerSet) {
-            removeDeviceOwnerAdmin(DEVICE_ADMIN_COMPONENT_FLATTENED);
-            getDevice().uninstallPackage(DEVICE_ADMIN_PKG);
-            fail("Failed to set device owner on user " + mDeviceOwnerUserId);
-        }
+        installAndSetDeviceOwner(DEVICE_ADMIN_APK, DEVICE_ADMIN_PKG, ADMIN_RECEIVER_TEST_CLASS);
     }
 
     @Override
     public void tearDown() throws Exception {
-        if (mDeviceOwnerSet) {
-            removeDeviceOwnerAdmin(DEVICE_ADMIN_COMPONENT_FLATTENED);
-        }
+        removeAndUninstallDeviceOwnerIfSet();
 
         super.tearDown();
     }

@@ -18,6 +18,7 @@ package android.os.cts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -54,6 +55,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+
+import javax.annotation.concurrent.GuardedBy;
 
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
@@ -1240,6 +1243,53 @@ public class MessageQueueTest {
         }
     }
 
+    @Test
+    public void testBarrierWithEarlierSyncMessage() throws Throwable {
+        final CountDownLatch latch = new CountDownLatch(1);
+        AssertableHandlerThread thread = new AssertableHandlerThread();
+        thread.start();
+
+        Handler handler = new Handler(thread.getLooper());
+        MessageQueue queue = thread.getLooper().getQueue();
+
+        long now = SystemClock.uptimeMillis();
+        int token = queue.postSyncBarrier();
+        assertNotEquals(-1, token);
+        handler.postAtTime(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        latch.countDown();
+                    }
+                },
+                now - 100);
+        assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
+        thread.quitAndRethrow();
+    }
+
+    @Test
+    public void testBarrierWithEarlierSyncMessageAtFrontOfQueue() throws Throwable {
+        final CountDownLatch latch = new CountDownLatch(1);
+        AssertableHandlerThread thread = new AssertableHandlerThread();
+        thread.start();
+
+        Handler handler = new Handler(thread.getLooper());
+        MessageQueue queue = thread.getLooper().getQueue();
+
+        long now = SystemClock.uptimeMillis();
+        int token = queue.postSyncBarrier();
+        assertNotEquals(-1, token);
+        handler.postAtFrontOfQueue(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        latch.countDown();
+                    }
+                });
+        assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
+        thread.quitAndRethrow();
+    }
+
     private void syncWait(Handler handler) throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
         handler.post(new Runnable() {
@@ -1286,10 +1336,17 @@ public class MessageQueueTest {
         Handler mHandler;
         int mLastMessage;
         int mCount;
-        private boolean mSuccess;
-        private RuntimeException mFailure;
-        private boolean mDone;
+
         private Looper mLooper;
+
+        // The following fields may be accessed from both the test thread and the looper thread,
+        // so they require synchronization.
+        @GuardedBy("this")
+        private boolean mSuccess;
+        @GuardedBy("this")
+        private boolean mDone;
+        @GuardedBy("this")
+        private RuntimeException mFailure;
 
         public void init() {
             mHandler = new Handler() {
@@ -1329,11 +1386,13 @@ public class MessageQueueTest {
 
             mLooper.quit();
 
-            if (!mDone) {
-                throw new RuntimeException("test timed out");
-            }
-            if (!mSuccess) {
-                throw mFailure;
+            synchronized (this) {
+                if (!mDone) {
+                    throw new RuntimeException("test timed out");
+                }
+                if (!mSuccess) {
+                    throw mFailure;
+                }
             }
         }
 

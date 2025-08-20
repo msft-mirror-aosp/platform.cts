@@ -17,7 +17,7 @@ package com.android.cts.devicepolicy;
 
 import static com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.FEATURE_MANAGED_USERS;
 
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresAdditionalFeatures;
 import com.android.tradefed.device.DeviceNotAvailableException;
@@ -28,7 +28,7 @@ import org.junit.Test;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public final class UserRestrictionsTest extends BaseDevicePolicyTest {
+public final class UserRestrictionsTest extends BaseDeviceOwnerTest {
     private static final String DEVICE_ADMIN_PKG = "com.android.cts.deviceandprofileowner";
     private static final String DEVICE_ADMIN_APK = "CtsDeviceAndProfileOwnerApp.apk";
     private static final String ADMIN_RECEIVER_TEST_CLASS
@@ -63,7 +63,8 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
     public void tearDown() throws Exception {
         if (mRemoveOwnerInTearDown) {
             String componentName = DEVICE_ADMIN_PKG + "/" + ADMIN_RECEIVER_TEST_CLASS;
-            assertTrue("Failed to clear owner", removeAdmin(componentName, mDeviceOwnerUserId));
+            assertWithMessage("removeAdmin(%s, %s)", componentName, mDeviceOwnerUserId)
+                    .that(removeAdmin(componentName, mDeviceOwnerUserId)).isTrue();
             if (isHeadlessSystemUserMode()) {
                 boolean removed = removeAdmin(componentName, mInitialUser);
                 if (!removed) {
@@ -321,9 +322,10 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
     private void setPoAsUser(int userId) throws Exception {
         installAppAsUser(DEVICE_ADMIN_APK, /* grantPermssions= */true,
                 /* dontKillApp= */ true, userId);
-        assertTrue("Failed to set profile owner",
-                setProfileOwner(DEVICE_ADMIN_PKG + "/" + ADMIN_RECEIVER_TEST_CLASS,
-                        userId, /* expectFailure */ false));
+        String componentName = DEVICE_ADMIN_PKG + "/" + ADMIN_RECEIVER_TEST_CLASS;
+        assertWithMessage("Set profile owner %s on user %s", componentName, userId)
+                .that(setProfileOwner(componentName, userId, /* expectFailure= */ false))
+                .isTrue();
         // If PO is not in primary user, it will be removed with the user.
         if (userId == mDeviceOwnerUserId) {
             mRemoveOwnerInTearDown = true;
@@ -334,9 +336,10 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
     private void setDo() throws Exception {
         installDeviceOwnerApp(DEVICE_ADMIN_APK);
 
-        assertTrue("Failed to set device owner",
-                setDeviceOwner(DEVICE_ADMIN_PKG + "/" + ADMIN_RECEIVER_TEST_CLASS,
-                        mDeviceOwnerUserId, /*expectFailure*/ false));
+        String componentName = DEVICE_ADMIN_PKG + "/" + ADMIN_RECEIVER_TEST_CLASS;
+        assertWithMessage("set device owner %s on user %s", componentName, mDeviceOwnerUserId)
+                .that(setDeviceOwner(DEVICE_ADMIN_PKG + "/" + ADMIN_RECEIVER_TEST_CLASS,
+                        mDeviceOwnerUserId, /* expectFailure= */ false)).isTrue();
         mRemoveOwnerInTearDown = true;
     }
 

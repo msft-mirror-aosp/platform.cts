@@ -27,6 +27,10 @@ import androidx.annotation.NonNull;
  */
 public interface AppSearchTestEnvironment {
 
+    /** Returns the package name of the process that runs the built-in indexers. */
+    @NonNull
+    String getIndexerPackageName();
+
     /** Returns the root folder where test apps can be installed. */
     @NonNull
     String getTestAppRootFolder();

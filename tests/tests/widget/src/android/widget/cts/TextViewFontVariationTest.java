@@ -19,14 +19,19 @@ package android.widget.cts;
 import static org.junit.Assert.assertEquals;
 
 import android.content.Context;
+import android.graphics.fonts.FontVariationAxis;
+import android.graphics.text.PositionedGlyphs;
+import android.graphics.text.TextRunShaper;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -45,8 +50,26 @@ public final class TextViewFontVariationTest {
         return ((TextView) container.findViewById(id)).getFontVariationSettings();
     }
 
+    private void assumeNoAdjustment() {
+        final Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        final LayoutInflater inflater = LayoutInflater.from(context);
+        final ViewGroup container =
+                (ViewGroup) inflater.inflate(R.layout.textview_fontvariation_test_layout, null);
+        TextView tv = (TextView) container.findViewById(R.id.plainVanillaTextView);
+        PositionedGlyphs glyphs =
+                TextRunShaper.shapeTextRun("a", 0, 1, 0, 1, 0f, 0f, false, tv.getPaint());
+        assertEquals(1, glyphs.glyphCount());
+        FontVariationAxis[] axes = glyphs.getFont(0).getAxes();
+        for (FontVariationAxis axis : axes) {
+            if (TextUtils.equals("wght", axis.getTag())) {
+                Assume.assumeTrue(axis.getStyleValue() == 400f);
+            }
+        }
+    }
+
     @Test
     public void testFontVariation() {
+        assumeNoAdjustment();
         assertEquals("'wdth' 25",
                 getTextViewFontVariationSettings(R.id.textView_fontVariation_wdth25));
         assertEquals("'wdth' 50",
@@ -67,6 +90,7 @@ public final class TextViewFontVariationTest {
 
     @Test
     public void testTextAppearance() {
+        assumeNoAdjustment();
         assertEquals("'wdth' 25",
                 getTextViewFontVariationSettings(R.id.textAppearance_fontVariation_wdth25));
         assertEquals("'wdth' 50",

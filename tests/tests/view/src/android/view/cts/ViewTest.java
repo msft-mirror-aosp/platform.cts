@@ -2238,13 +2238,21 @@ public class ViewTest {
     }
 
     @Test
-    public void testGetDrawingTime() {
+    public void testGetDrawingTime() throws InterruptedException {
         View view = new View(mActivity);
         // mAttachInfo is null
         assertEquals(0, view.getDrawingTime());
 
-        // mAttachInfo is not null
-        view = mActivity.findViewById(R.id.fit_windows);
+        CountDownLatch latch = new CountDownLatch(1);
+        view.getViewTreeObserver().addOnDrawListener(latch::countDown);
+        mActivity.runOnUiThread(
+                () ->
+                        mActivity.addContentView(
+                                view,
+                                new ViewGroup.LayoutParams(
+                                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                                        ViewGroup.LayoutParams.WRAP_CONTENT)));
+        latch.await(1000, TimeUnit.MILLISECONDS);
         assertEquals(SystemClock.uptimeMillis(), view.getDrawingTime(), 1000);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 The Android Open Source Project
+ * Copyright (C) 2021 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package android.media.cts;
+package android.mediav2.common.cts;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
 import android.graphics.SurfaceTexture;
@@ -24,10 +25,9 @@ import android.opengl.EGLConfig;
 import android.opengl.EGLContext;
 import android.opengl.EGLDisplay;
 import android.opengl.EGLSurface;
+import android.opengl.GLES20;
 import android.util.Log;
 import android.view.Surface;
-
-import org.junit.Assume;
 
 
 /**
@@ -49,11 +49,6 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
     private static final String TAG = "OutputSurface";
     private static final boolean VERBOSE = false;
 
-    public static int EGL_PROTECTED_CONTENT_EXT = 0x32C0;
-
-    // https://www.khronos.org/registry/EGL/extensions/EXT/EGL_EXT_protected_content.txt
-    private static final String EXTENSION_PROTECTED_CONTENT = "EGL_EXT_protected_content";
-
     private EGLDisplay mEGLDisplay = EGL14.EGL_NO_DISPLAY;
     private EGLContext mEGLContext = EGL14.EGL_NO_CONTEXT;
     private EGLSurface mEGLSurface = EGL14.EGL_NO_SURFACE;
@@ -63,33 +58,34 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
 
     private Object mFrameSyncObject = new Object();     // guards mFrameAvailable
     private boolean mFrameAvailable;
-    private boolean mSecureMode = false;
 
     private TextureRender mTextureRender;
+    private int mEGLESVersion;
+    private boolean mEXTYuvTargetSupported = false;
 
     /**
-     * Creates an OutputSurface backed by a pbuffer with the specifed dimensions.  The new
+     * Creates an OutputSurface backed by a pbuffer with the specified dimensions.  The new
      * EGL context and surface will be made current.  Creates a Surface that can be passed
      * to MediaCodec.configure().
      */
-    public OutputSurface(int width, int height) {
-        this(width, height, false, false);
-    }
-
     public OutputSurface(int width, int height, boolean useHighBitDepth) {
-        this(width, height, useHighBitDepth, false);
+        this(width, height, useHighBitDepth, /* useYuvSampling */ false);
     }
 
-    public OutputSurface(int width, int height, boolean useHighBitDepth, boolean secure) {
+    public OutputSurface(int width, int height, boolean useHighBitDepth, boolean useYuvSampling) {
         if (width <= 0 || height <= 0) {
             throw new IllegalArgumentException();
         }
-        mSecureMode = secure;
 
-        eglSetup(width, height, useHighBitDepth);
+        eglSetup(width, height, useHighBitDepth, useYuvSampling);
         makeCurrent();
 
-        setup(this);
+        if (mEGLESVersion > 2) {
+            String extensionList = GLES20.glGetString(GLES20.GL_EXTENSIONS);
+            mEXTYuvTargetSupported = extensionList.contains("GL_EXT_YUV_target");
+        }
+
+        setup(this, useYuvSampling);
     }
 
     /**
@@ -97,25 +93,31 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
      * new one).  Creates a Surface that can be passed to MediaCodec.configure().
      */
     public OutputSurface() {
-        setup(this);
+        setup(this, /* useYuvSampling */ false);
     }
 
     public OutputSurface(final SurfaceTexture.OnFrameAvailableListener listener) {
-        setup(listener);
+        setup(listener, /* useYuvSampling */ false);
     }
 
-    private boolean isSecureSurfaceSupported() {
-        EGLDisplay display = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY);
-        String eglExtensions = EGL14.eglQueryString(display, EGL14.EGL_EXTENSIONS);
-        return eglExtensions != null && eglExtensions.contains(EXTENSION_PROTECTED_CONTENT);
+    /**
+     * Returns if the device support GL_EXT_YUV_target extension
+     */
+    public boolean getEXTYuvTargetSupported() {
+        return mEXTYuvTargetSupported;
     }
 
     /**
      * Creates instances of TextureRender and SurfaceTexture, and a Surface associated
      * with the SurfaceTexture.
      */
-    private void setup(SurfaceTexture.OnFrameAvailableListener listener) {
-        mTextureRender = new TextureRender(mSecureMode);
+    private void setup(SurfaceTexture.OnFrameAvailableListener listener, boolean useYuvSampling) {
+        assertTrue(EGL14.eglGetCurrentContext() != EGL14.EGL_NO_CONTEXT);
+        assertTrue(EGL14.eglGetCurrentDisplay() != EGL14.EGL_NO_DISPLAY);
+        assertTrue(EGL14.eglGetCurrentSurface(EGL14.EGL_DRAW) != EGL14.EGL_NO_SURFACE);
+        assertTrue(EGL14.eglGetCurrentSurface(EGL14.EGL_READ) != EGL14.EGL_NO_SURFACE);
+        mTextureRender = new TextureRender();
+        mTextureRender.setUseYuvSampling(mEXTYuvTargetSupported && useYuvSampling);
         mTextureRender.surfaceCreated();
 
         // Even if we don't access the SurfaceTexture after the constructor returns, we
@@ -144,7 +146,7 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
     /**
      * Prepares EGL.  We want a GLES 2.0 context and a surface that supports pbuffer.
      */
-    private void eglSetup(int width, int height, boolean useHighBitDepth) {
+    private void eglSetup(int width, int height, boolean useHighBitDepth, boolean useYuvSampling) {
         mEGLDisplay = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY);
         if (mEGLDisplay == EGL14.EGL_NO_DISPLAY) {
             throw new RuntimeException("unable to get EGL14 display");
@@ -154,17 +156,12 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
             mEGLDisplay = null;
             throw new RuntimeException("unable to initialize EGL14");
         }
-        if (mSecureMode) {
-            Assume.assumeTrue("EGL_PROTECTED_CONTENT_EXT not supported",
-                    isSecureSurfaceSupported());
-            checkEglError("EGL_PROTECTED_CONTENT_EXT not supported");
-        }
 
         // Configure EGL for pbuffer and OpenGL ES 2.0.  We want enough RGB bits
         // to be able to tell if the frame is reasonable.
         int eglColorSize = useHighBitDepth ? 10 : 8;
         int eglAlphaSize = useHighBitDepth ? 2 : 0;
-        int[] configAttribList = {
+        int[] attribList = {
                 EGL14.EGL_RED_SIZE, eglColorSize,
                 EGL14.EGL_GREEN_SIZE, eglColorSize,
                 EGL14.EGL_BLUE_SIZE, eglColorSize,
@@ -175,7 +172,7 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
         };
         EGLConfig[] configs = new EGLConfig[1];
         int[] numConfigs = new int[1];
-        if (!EGL14.eglChooseConfig(mEGLDisplay, configAttribList, 0, configs, 0, configs.length,
+        if (!EGL14.eglChooseConfig(mEGLDisplay, attribList, 0, configs, 0, configs.length,
                 numConfigs, 0) || numConfigs[0] == 0) {
             String message = "Unable to find EGL config supporting renderable-type:ES2 "
                     + "surface-type:pbuffer r:" + eglColorSize + " g:" + eglColorSize
@@ -186,22 +183,23 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
             throw new RuntimeException(message);
         }
 
-        // Configure context for OpenGL ES 2.0.
-        int[] contextAttribList;
-        if (!mSecureMode) {
-            contextAttribList =  new int [] {
-                    EGL14.EGL_CONTEXT_CLIENT_VERSION, 2,
+        // Configure context for OpenGL ES 3.0/2.0.
+        mEGLESVersion = useYuvSampling ? 3 : 2;
+        do {
+            int[] attrib_list = {
+                    EGL14.EGL_CONTEXT_CLIENT_VERSION, mEGLESVersion,
                     EGL14.EGL_NONE
             };
-        } else {
-            contextAttribList =  new int [] {
-                    EGL14.EGL_CONTEXT_CLIENT_VERSION, 2,
-                    EGL_PROTECTED_CONTENT_EXT, EGL14.EGL_TRUE,
-                    EGL14.EGL_NONE
-            };
-        }
-        mEGLContext = EGL14.eglCreateContext(mEGLDisplay, configs[0], EGL14.EGL_NO_CONTEXT,
-                contextAttribList, 0);
+            mEGLContext = EGL14.eglCreateContext(mEGLDisplay, configs[0], EGL14.EGL_NO_CONTEXT,
+                    attrib_list, 0);
+            // if OpenGL ES 3.0 isn't supported, attempt to create OpenGL ES 2.0 context
+            if (mEGLContext == EGL14.EGL_NO_CONTEXT && useYuvSampling) {
+                mEGLESVersion--;
+            } else {
+                break;
+            }
+        } while (mEGLESVersion > 1);
+
         checkEglError("eglCreateContext");
         if (mEGLContext == null) {
             throw new RuntimeException("null context");
@@ -209,22 +207,11 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
 
         // Create a pbuffer surface.  By using this for output, we can use glReadPixels
         // to test values in the output.
-        int[] surfaceAttribs;
-
-        if (!mSecureMode) {
-            surfaceAttribs = new int[] {
-                    EGL14.EGL_WIDTH, width,
-                    EGL14.EGL_HEIGHT, height,
-                    EGL14.EGL_NONE
-            };
-        } else {
-            surfaceAttribs = new int[] {
-                    EGL14.EGL_WIDTH, width,
-                    EGL14.EGL_HEIGHT, height,
-                    EGL_PROTECTED_CONTENT_EXT, EGL14.EGL_TRUE,
-                    EGL14.EGL_NONE
-            };
-        }
+        int[] surfaceAttribs = {
+                EGL14.EGL_WIDTH, width,
+                EGL14.EGL_HEIGHT, height,
+                EGL14.EGL_NONE
+        };
         mEGLSurface = EGL14.eglCreatePbufferSurface(mEGLDisplay, configs[0], surfaceAttribs, 0);
         checkEglError("eglCreatePbufferSurface");
         if (mEGLSurface == null) {
@@ -245,9 +232,7 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
 
         mSurface.release();
 
-        // this causes a bunch of warnings that appear harmless but might confuse someone:
-        //  W BufferQueue: [unnamed-3997-2] cancelBuffer: BufferQueue has been abandoned!
-        //mSurfaceTexture.release();
+        mSurfaceTexture.release();
 
         mEGLDisplay = EGL14.EGL_NO_DISPLAY;
         mEGLContext = EGL14.EGL_NO_CONTEXT;
@@ -287,14 +272,14 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
      * data is available.
      */
     public void awaitNewImage() {
-        final int TIMEOUT_MS = 2000;
+        final int timeOutMS = 2000;
 
         synchronized (mFrameSyncObject) {
             while (!mFrameAvailable) {
                 try {
                     // Wait for onFrameAvailable() to signal us.  Use a timeout to avoid
                     // stalling the test if it doesn't arrive.
-                    mFrameSyncObject.wait(TIMEOUT_MS);
+                    mFrameSyncObject.wait(timeOutMS);
                     if (!mFrameAvailable) {
                         // TODO: if "spurious wakeup", continue while loop
                         throw new RuntimeException("Surface frame wait timed out");
@@ -313,7 +298,7 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
     }
 
     /**
-     * Wait up to given timeout until new image become available.
+     * Wait for new image to become available or until timeout, whichever comes first.
      * @param timeoutMs
      * @return true if new image is available. false for no new image until timeout.
      */
@@ -369,8 +354,8 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
      * Checks for EGL errors.
      */
     private void checkEglError(String msg) {
-        int error;
-        if ((error = EGL14.eglGetError()) != EGL14.EGL_SUCCESS) {
+        int error = EGL14.eglGetError();
+        if (error != EGL14.EGL_SUCCESS) {
             throw new RuntimeException(msg + ": EGL error: 0x" + Integer.toHexString(error));
         }
     }

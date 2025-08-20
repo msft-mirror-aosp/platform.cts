@@ -161,11 +161,6 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     private Set<String> mFixedPackages;
 
     /**
-     * @deprecated TODO(b/435528858): should be moved to subclasses that need it
-     */
-    @Deprecated protected int mDeviceOwnerUserId;
-
-    /**
      * @deprecated TODO(b/435528858): should use proper method from {@code
      *     DevicePolicyUsersPreparer}.
      */
@@ -214,7 +209,6 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         }
 
         mMainUserId = getMainUser();
-        mDeviceOwnerUserId = mMainUserId;
 
         if (hasDeviceFeature(FEATURE_SECURE_LOCK_SCREEN)) {
             ensureMainUserHasNoPassword();
@@ -233,13 +227,12 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         mPreExistingUsers.add(mInitialUserId);
 
         CLog.d(
-                "%s.setUp(): mInitialUserId=%d, currentUserId=%d, mMainUserId=%d, "
-                        + "mDeviceOwnerUserId=%s, mFixedUsers=%s",
+                "%s.setUp(): mInitialUserId=%d, currentUser=%d, mMainUserId=%d,"
+                    + " mPreExistingUsers=%s",
                 getClass().getSimpleName(),
                 mInitialUserId,
                 getDevice().getCurrentUser(),
                 mMainUserId,
-                mDeviceOwnerUserId,
                 mPreExistingUsers);
 
         getDevice().executeShellCommand(" mkdir " + TEST_UPDATE_LOCATION);
@@ -337,25 +330,6 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         String installResult = getDevice().executeShellCommand(
                 "pm install-incremental -t -g " + remoteApkPath);
         assertEquals("Success\n", installResult);
-    }
-
-    /**
-     * @deprecated TODO(b/435528858): should be moved to subclasses that need it
-     */
-    @Deprecated
-    protected void installDeviceOwnerApp(String apk) throws Exception {
-        installAppAsUser(apk, mDeviceOwnerUserId);
-    }
-
-    protected void removeDeviceOwnerAdmin(String componentName) throws DeviceNotAvailableException {
-        // Don't fail as it could hide the real failure from the test method
-        if (!removeAdmin(componentName, mDeviceOwnerUserId)) {
-            CLog.e("Failed to remove device owner %s on user %d", componentName,
-                    mDeviceOwnerUserId);
-        }
-        if (isHeadlessSystemUserMode() && !removeAdmin(componentName, mMainUserId)) {
-            CLog.e("Failed to remove profile owner %s on user %d", componentName, mMainUserId);
-        }
     }
 
     protected void forceStopPackageForUser(String packageName, int userId) throws Exception {
@@ -892,7 +866,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         }
     }
 
-    protected boolean setDeviceOwner(String componentName, int userId, boolean expectFailure)
+    protected final boolean setDeviceOwner(String componentName, int userId, boolean expectFailure)
             throws DeviceNotAvailableException {
         CLog.d("setDeviceOwner(componentName=%s, userId=%d, expectFailure=%b", componentName,
                 userId, expectFailure);
@@ -913,7 +887,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         return success;
     }
 
-    protected void setDeviceOwnerOrFail(String componentName, int userId)
+    protected final void setDeviceOwnerOrFail(String componentName, int userId)
             throws Exception {
         assertTrue(setDeviceOwner(componentName, userId, /* expectFailure =*/ false));
     }
