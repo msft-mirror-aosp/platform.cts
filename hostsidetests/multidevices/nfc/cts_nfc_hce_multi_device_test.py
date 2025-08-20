@@ -916,8 +916,9 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         #Tests APDU exchange with screen on.
         screen_on_handler = self.emulator.nfc_emulator.asyncWaitForScreenOn(
             'ScreenOn')
-        screen_on_handler.waitAndGet('ScreenOn', _NFC_TIMEOUT_SEC)
+        self.emulator.nfc_emulator.turnScreenOn()
         self.emulator.nfc_emulator.pressMenu()
+        screen_on_handler.waitAndGet('ScreenOn', _NFC_TIMEOUT_SEC)
 
         self._set_up_reader_and_assert_transaction(
             expected_service=_SCREEN_ON_ONLY_OFF_HOST_SERVICE,
