@@ -20,14 +20,13 @@ import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
 import static com.android.internal.telephony.SmsConstants.ENCODING_8BIT;
 
-import static junit.framework.Assert.assertNotNull;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNoException;
+import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
@@ -129,13 +128,13 @@ public class VisualVoicemailServiceTest {
         TelecomManager telecomManager = mContext.getSystemService(TelecomManager.class);
         mPhoneAccountHandle = telecomManager
                 .getDefaultOutgoingPhoneAccount(PhoneAccount.SCHEME_TEL);
-        assertNotNull(mPhoneAccountHandle);
+        assumeNotNull(mPhoneAccountHandle);
 
         mTelephonyManager = mContext.getSystemService(TelephonyManager.class)
                 .createForPhoneAccountHandle(mPhoneAccountHandle);
         // If we get null here it means that mPhoneAccountHandle was likely the "E" phone account,
         // which means there was no valid sim present.
-        assertNotNull("This test requires a valid in service SIM.", mTelephonyManager);
+        assumeNotNull("This test requires a valid in service SIM.", mTelephonyManager);
         try {
             mTelephonyManager.getHalVersion(TelephonyManager.HAL_SERVICE_RADIO);
         } catch (IllegalStateException e) {
@@ -149,8 +148,9 @@ public class VisualVoicemailServiceTest {
             SubscriptionManager subscriptionManager = mContext
                     .getSystemService(SubscriptionManager.class);
             mPhoneNumber = subscriptionManager.getPhoneNumber(subId);
-            assertNotNull(mPhoneNumber, "Tests require a line1 number for the active SIM.");
-            assertFalse("[RERUN] SIM card does not provide phone number. Use a suitable SIM Card.",
+            assumeNotNull(mPhoneNumber, "Tests require a line1 number for the active SIM.");
+            assumeFalse(
+                    "[RERUN] SIM card does not provide phone number. Use a suitable SIM Card.",
                     TextUtils.isEmpty(mPhoneNumber));
             Log.d(TAG, "mPhoneNumber:" + mPhoneNumber);
         } finally {
