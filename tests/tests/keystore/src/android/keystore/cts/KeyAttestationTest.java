@@ -1707,10 +1707,18 @@ public class KeyAttestationTest {
 
     @SuppressWarnings("unchecked")
     private void checkAttestationSecurityLevelDependentParams(Attestation attestation) {
-        assertThat("Attestation version must be one of: {1, 2, 3, 4, 100, 200, 300, 400}",
+        assertThat(
+                "Attestation version must be one of: {1, 2, 3, 4, 100, 200, 300, 400, 500}",
                 attestation.getAttestationVersion(),
-                either(is(1)).or(is(2)).or(is(3)).or(is(4))
-                        .or(is(100)).or(is(200)).or(is(300)).or(is(400)));
+                either(is(1))
+                        .or(is(2))
+                        .or(is(3))
+                        .or(is(4))
+                        .or(is(100))
+                        .or(is(200))
+                        .or(is(300))
+                        .or(is(400))
+                        .or(is(500)));
 
         AuthorizationList teeEnforced = attestation.getTeeEnforced();
         AuthorizationList softwareEnforced = attestation.getSoftwareEnforced();
@@ -1723,9 +1731,18 @@ public class KeyAttestationTest {
                 assertThat("TEE attestation can only come from TEE keymaster",
                         attestation.getKeymasterSecurityLevel(),
                         is(KM_SECURITY_LEVEL_TRUSTED_ENVIRONMENT));
-                assertThat("KeyMaster version is not valid.", attestation.getKeymasterVersion(),
-                        either(is(2)).or(is(3)).or(is(4)).or(is(41))
-                                .or(is(100)).or(is(200)).or(is(300)).or(is(400)));
+                assertThat(
+                        "KeyMaster version is not valid.",
+                        attestation.getKeymasterVersion(),
+                        either(is(2))
+                                .or(is(3))
+                                .or(is(4))
+                                .or(is(41))
+                                .or(is(100))
+                                .or(is(200))
+                                .or(is(300))
+                                .or(is(400))
+                                .or(is(500)));
 
                 checkRootOfTrust(attestation, false /* requireLocked */);
                 checkModuleHash(attestation);
@@ -1740,9 +1757,18 @@ public class KeyAttestationTest {
                 assertThat("StrongBox attestation can only come from StrongBox keymaster",
                         attestation.getKeymasterSecurityLevel(),
                         is(KM_SECURITY_LEVEL_STRONG_BOX));
-                assertThat("KeyMaster version is not valid.", attestation.getKeymasterVersion(),
-                        either(is(2)).or(is(3)).or(is(4)).or(is(41))
-                                .or(is(100)).or(is(200)).or(is(300)).or(is(400)));
+                assertThat(
+                        "KeyMaster version is not valid.",
+                        attestation.getKeymasterVersion(),
+                        either(is(2))
+                                .or(is(3))
+                                .or(is(4))
+                                .or(is(41))
+                                .or(is(100))
+                                .or(is(200))
+                                .or(is(300))
+                                .or(is(400))
+                                .or(is(500)));
 
                 checkRootOfTrust(attestation, false /* requireLocked */);
                 checkModuleHash(attestation);
