@@ -17,6 +17,7 @@
 package android.webkit.cts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import android.webkit.JavascriptInterface;
 import android.webkit.ServiceWorkerClient;
@@ -31,7 +32,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 
 import com.android.compatibility.common.util.NullWebViewUtils;
-import com.android.compatibility.common.util.PollingCheck;
 
 import org.junit.After;
 import org.junit.Assume;
@@ -41,9 +41,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 @MediumTest
 @RunWith(AndroidJUnit4.class)
@@ -57,36 +59,42 @@ public class ServiceWorkerClientTest extends SharedWebViewTest {
     private static final String FETCH_URL = BASE_URL + "fetch.html";
 
     private static final String JS_INTERFACE_NAME = "Android";
-    private static final int POLLING_TIMEOUT = 60 * 1000;
 
     // static HTML page always injected instead of the url loaded.
     private static final String INDEX_RAW_HTML =
             "<!DOCTYPE html>\n"
-            + "<html>\n"
-            + "  <body>\n"
-            + "    <script>\n"
-            + "      navigator.serviceWorker.register('sw.js').then(function(reg) {\n"
-            + "         " + JS_INTERFACE_NAME + ".registrationSuccess();\n"
-            + "      }).catch(function(err) {\n"
-            + "         console.error(err);\n"
-            + "      });\n"
-            + "    </script>\n"
-            + "  </body>\n"
-            + "</html>\n";
+                    + "<html>\n"
+                    + "  <body>\n"
+                    + "    <script>\n"
+                    + "      navigator.serviceWorker.register('sw.js').then(function(reg) {\n"
+                    + "         "
+                    + JS_INTERFACE_NAME
+                    + ".registrationSuccess();\n"
+                    + "      }).catch(function(err) {\n"
+                    + "         "
+                    + JS_INTERFACE_NAME
+                    + ".registrationError();\n"
+                    + "         console.error(err);\n"
+                    + "      });\n"
+                    + "    </script>\n"
+                    + "  </body>\n"
+                    + "</html>\n";
     private static final String SW_RAW_HTML = "fetch('fetch.html');";
     private static final String SW_UNREGISTER_RAW_JS =
             "navigator.serviceWorker.getRegistration().then(function(r) {"
-            + "  r.unregister().then(function(success) {"
-            + "    if (success) " + JS_INTERFACE_NAME + ".unregisterSuccess();"
-            + "    else console.error('unregister() was not successful');"
-            + "  });"
-            + "}).catch(function(err) {"
-            + "   console.error(err);"
-            + "});";
+                    + "  r.unregister().then(function(success) {"
+                    + "    if (success) "
+                    + JS_INTERFACE_NAME
+                    + ".unregisterSuccess();"
+                    + "    else console.error('unregister() was not successful');"
+                    + "  });"
+                    + "}).catch(function(err) {"
+                    + "   console.error(err);"
+                    + "});";
 
     @Rule
-    public ActivityScenarioRule mActivityScenarioRule =
-            new ActivityScenarioRule(WebViewCtsActivity.class);
+    public ActivityScenarioRule<WebViewCtsActivity> mActivityScenarioRule =
+            new ActivityScenarioRule<>(WebViewCtsActivity.class);
 
     private JavascriptStatusReceiver mJavascriptStatusReceiver;
     private WebViewOnUiThread mOnUiThread;
@@ -103,34 +111,41 @@ public class ServiceWorkerClientTest extends SharedWebViewTest {
         public WebResourceResponse shouldInterceptRequest(WebView view,
                 WebResourceRequest request) {
             // Only return content for INDEX_URL, deny all other requests.
-            try {
-                if (request.getUrl().toString().equals(INDEX_URL)) {
-                    return new WebResourceResponse("text/html", "utf-8",
-                        new ByteArrayInputStream(INDEX_RAW_HTML.getBytes("UTF-8")));
-                }
-            } catch(java.io.UnsupportedEncodingException e) {}
+            if (request.getUrl().toString().equals(INDEX_URL)) {
+                return new WebResourceResponse(
+                        "text/html",
+                        "utf-8",
+                        new ByteArrayInputStream(INDEX_RAW_HTML.getBytes(StandardCharsets.UTF_8)));
+            }
             return new WebResourceResponse("text/html", "UTF-8", null);
         }
     }
 
     public static class InterceptServiceWorkerClient extends ServiceWorkerClient {
-        private List<WebResourceRequest> mInterceptedRequests = new ArrayList<WebResourceRequest>();
+        private final BlockingQueue<WebResourceRequest> mInterceptedRequests =
+                new LinkedBlockingQueue<>();
 
         @Override
         public WebResourceResponse shouldInterceptRequest(WebResourceRequest request) {
             // Records intercepted requests and only return content for SW_URL.
             mInterceptedRequests.add(request);
-            try {
-                if (request.getUrl().toString().equals(SW_URL)) {
-                    return new WebResourceResponse("application/javascript", "utf-8",
-                        new ByteArrayInputStream(SW_RAW_HTML.getBytes("UTF-8")));
-                }
-            } catch(java.io.UnsupportedEncodingException e) {}
+            if (request.getUrl().toString().equals(SW_URL)) {
+                return new WebResourceResponse(
+                        "application/javascript",
+                        "utf-8",
+                        new ByteArrayInputStream(SW_RAW_HTML.getBytes(StandardCharsets.UTF_8)));
+            }
             return new WebResourceResponse("text/html", "UTF-8", null);
         }
 
-        List<WebResourceRequest> getInterceptedRequests() {
-            return mInterceptedRequests;
+        List<WebResourceRequest> waitForInterceptedRequests(int elementsToWaitFor) {
+            List<WebResourceRequest> requests = new ArrayList<>(elementsToWaitFor);
+            for (int i = 0; i < elementsToWaitFor; i++) {
+                WebResourceRequest request =
+                        WebkitUtils.waitForNextQueueElement(mInterceptedRequests);
+                requests.add(request);
+            }
+            return requests;
         }
     }
 
@@ -164,7 +179,7 @@ public class ServiceWorkerClientTest extends SharedWebViewTest {
                 .getScenario()
                 .onActivity(
                         activity -> {
-                            WebView webView = ((WebViewCtsActivity) activity).getWebView();
+                            WebView webView = activity.getWebView();
                             builder.setHostAppInvoker(
                                             WebViewTestEnvironment.createHostAppInvoker(activity))
                                     .setContext(activity)
@@ -190,39 +205,21 @@ public class ServiceWorkerClientTest extends SharedWebViewTest {
 
         mOnUiThread.loadUrlAndWaitForCompletion(INDEX_URL);
 
-        Callable<Boolean> registrationSuccess = new Callable<Boolean>() {
-            @Override
-            public Boolean call() {
-                return mJavascriptStatusReceiver.mRegistrationSuccess;
-            }
-        };
-        PollingCheck.check("JS could not register Service Worker", POLLING_TIMEOUT,
-                registrationSuccess);
+        assertTrue(
+                "JS could not register Service Worker",
+                mJavascriptStatusReceiver.waitForRegistrationSuccess());
 
-        Callable<Boolean> receivedRequest = new Callable<Boolean>() {
-            @Override
-            public Boolean call() {
-                return mInterceptServiceWorkerClient.getInterceptedRequests().size() >= 2;
-            }
-        };
-        PollingCheck.check("Service Worker intercept callbacks not invoked", POLLING_TIMEOUT,
-                receivedRequest);
-
-        List<WebResourceRequest> requests = mInterceptServiceWorkerClient.getInterceptedRequests();
+        List<WebResourceRequest> requests =
+                mInterceptServiceWorkerClient.waitForInterceptedRequests(2);
         assertEquals(2, requests.size());
         assertEquals(SW_URL, requests.get(0).getUrl().toString());
         assertEquals(FETCH_URL, requests.get(1).getUrl().toString());
 
         // Clean-up, make sure to unregister the Service Worker.
         mOnUiThread.evaluateJavascript(SW_UNREGISTER_RAW_JS, null);
-        Callable<Boolean> unregisterSuccess = new Callable<Boolean>() {
-            @Override
-            public Boolean call() {
-                return mJavascriptStatusReceiver.mUnregisterSuccess;
-            }
-        };
-        PollingCheck.check("JS could not unregister Service Worker", POLLING_TIMEOUT,
-                unregisterSuccess);
+        assertTrue(
+                "JS could not unregister Service Worker",
+                mJavascriptStatusReceiver.waitForUnregisterSuccess());
     }
 
     /**
@@ -238,26 +235,49 @@ public class ServiceWorkerClientTest extends SharedWebViewTest {
         swController.setServiceWorkerClient(null);
         mOnUiThread.loadUrlAndWaitForCompletion(INDEX_URL);
 
-        Callable<Boolean> registrationFailure =
-                () -> !mJavascriptStatusReceiver.mRegistrationSuccess;
-        PollingCheck.check("JS unexpectedly registered the Service Worker", POLLING_TIMEOUT,
-                registrationFailure);
+        // With a null ServiceWorkerClient, we won't be intercepting the request for the service
+        // worker JS file, so registration should fail.
+        assertTrue(
+                "JS unexpectedly registered the Service Worker",
+                mJavascriptStatusReceiver.waitForRegistrationError());
     }
 
     // Object added to the page via AddJavascriptInterface() that is used by the test Javascript to
     // notify back to Java if the Service Worker registration was successful.
     public final static class JavascriptStatusReceiver {
-        public volatile boolean mRegistrationSuccess = false;
-        public volatile boolean mUnregisterSuccess = false;
+        private final BlockingQueue<Boolean> mRegistrationSuccessQueue =
+                new LinkedBlockingQueue<>();
+        private final BlockingQueue<Boolean> mUnregisterSuccessQueue = new LinkedBlockingQueue<>();
+        private final BlockingQueue<Boolean> mRegistrationErrorQueue = new LinkedBlockingQueue<>();
 
-        @JavascriptInterface
-        public void registrationSuccess() {
-            mRegistrationSuccess = true;
+        Boolean waitForRegistrationSuccess() {
+            return WebkitUtils.waitForNextQueueElement(mRegistrationSuccessQueue);
         }
 
+        Boolean waitForRegistrationError() {
+            return WebkitUtils.waitForNextQueueElement(mRegistrationErrorQueue);
+        }
+
+        Boolean waitForUnregisterSuccess() {
+            return WebkitUtils.waitForNextQueueElement(mUnregisterSuccessQueue);
+        }
+
+        /** Called by test JavaScript when service worker registration succeeds. */
+        @JavascriptInterface
+        public void registrationSuccess() {
+            mRegistrationSuccessQueue.add(true);
+        }
+
+        /** Called by test JavaScript when service worker registration fails. */
+        @JavascriptInterface
+        public void registrationError() {
+            mRegistrationErrorQueue.add(true);
+        }
+
+        /** Called by test JavaScript when service worker unregistration succeeds. */
         @JavascriptInterface
         public void unregisterSuccess() {
-            mUnregisterSuccess = true;
+            mUnregisterSuccessQueue.add(true);
         }
     }
 }
