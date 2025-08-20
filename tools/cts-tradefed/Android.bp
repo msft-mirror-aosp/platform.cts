@@ -38,3 +38,16 @@ tradefed_binary_host {
     static_libs: ["cts-tradefed-harness"],
     required: ["compatibility-host-util"],
 }
+
+compatibility_test_suite_package {
+    name: "cts",
+    tradefed: "cts-tradefed",
+    dynamic_config: "DynamicConfig.xml",
+    readme: "README",
+    tools: [
+        "ats_console_deploy",
+        "ats_olc_server_local_mode_deploy",
+    ],
+    build_test_list: true,
+    build_metadata: true,
+}
