@@ -17,6 +17,10 @@
 package android.server.wm.activity;
 
 import static android.view.Display.DEFAULT_DISPLAY;
+import static android.view.Surface.ROTATION_0;
+import static android.view.Surface.ROTATION_180;
+import static android.view.Surface.ROTATION_270;
+import static android.view.Surface.ROTATION_90;
 
 import static junit.framework.Assert.assertFalse;
 
@@ -40,7 +44,6 @@ import android.server.wm.RotationSession;
 import android.server.wm.WindowManagerTestBase;
 import android.util.Log;
 import android.util.Size;
-import android.view.Display;
 
 import androidx.annotation.NonNull;
 
@@ -145,11 +148,13 @@ public class ConfigurationCallbacksTest extends WindowManagerTestBase {
                 "Display rotation not supported for visible background user");
 
         final RotationSession rotationSession = createManagedRotationSession();
-        int rotation = rotationSession.get();
-        for (int i = 0; i < 4; i++) {
-            rotation = (rotation + 1) % 4;
+        rotationSession.set(ROTATION_0);
+        final int[] rotations = {ROTATION_270, ROTATION_180, ROTATION_90, ROTATION_0};
+        for (final int rotation : rotations) {
             initTrackers();
             rotationSession.set(rotation);
+            assertEquals("The rotation should be set to " + rotation, rotation,
+                    mWmState.getRotation());
             waitAndAssertRotationInCallbacks(rotation);
         }
     }
