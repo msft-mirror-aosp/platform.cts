@@ -88,7 +88,7 @@ import java.util.function.Function;
 @Presubmit
 public class ActivityTransitionTests extends ActivityManagerTestBase {
     // Duration of the R.anim.alpha animation.
-    private static final long CUSTOM_ANIMATION_DURATION = 2000L;
+    private static final long CUSTOM_ANIMATION_DURATION = 1500L;
 
     // Allowable range with error error for the R.anim.alpha animation duration.
     private static final Range<Long> CUSTOM_ANIMATION_DURATION_RANGE = new Range<>(
