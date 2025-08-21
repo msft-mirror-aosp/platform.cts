@@ -257,55 +257,55 @@ public class NotificationMetricStyleTest {
     public void newTimeDifference_forStopwatch_constructs() {
         TimeDifference timeDifference =
                 TimeDifference.forStopwatch(
-                        Instant.ofEpochMilli(200), TimeDifference.FORMAT_AUTOMATIC);
+                        Instant.ofEpochMilli(200), TimeDifference.FORMAT_CHRONOMETER);
 
         assertThat(timeDifference.getZeroTime()).isEqualTo(Instant.ofEpochMilli(200));
         assertThat(timeDifference.getZeroElapsedRealtime()).isNull();
         assertThat(timeDifference.getPausedDuration()).isNull();
         assertThat(timeDifference.isStopwatch()).isTrue();
         assertThat(timeDifference.isTimer()).isFalse();
-        assertThat(timeDifference.getFormat()).isEqualTo(TimeDifference.FORMAT_AUTOMATIC);
+        assertThat(timeDifference.getFormat()).isEqualTo(TimeDifference.FORMAT_CHRONOMETER);
     }
 
     @Test
     public void newTimeDifference_forElapsedRealtimeStopwatch_constructs() {
         TimeDifference timeDifference =
-                TimeDifference.forStopwatch(30_000, TimeDifference.FORMAT_AUTOMATIC);
+                TimeDifference.forStopwatch(30_000, TimeDifference.FORMAT_CHRONOMETER);
 
         assertThat(timeDifference.getZeroTime()).isNull();
         assertThat(timeDifference.getZeroElapsedRealtime()).isEqualTo(30_000);
         assertThat(timeDifference.getPausedDuration()).isNull();
         assertThat(timeDifference.isStopwatch()).isTrue();
         assertThat(timeDifference.isTimer()).isFalse();
-        assertThat(timeDifference.getFormat()).isEqualTo(TimeDifference.FORMAT_AUTOMATIC);
+        assertThat(timeDifference.getFormat()).isEqualTo(TimeDifference.FORMAT_CHRONOMETER);
     }
 
     @Test
     public void newTimeDifference_forPausedTimer_constructs() {
         TimeDifference timeDifference =
                 TimeDifference.forPausedTimer(
-                        Duration.ofSeconds(90), TimeDifference.FORMAT_CHRONOMETER);
+                        Duration.ofSeconds(90), TimeDifference.FORMAT_ADAPTIVE);
 
         assertThat(timeDifference.getZeroTime()).isNull();
         assertThat(timeDifference.getZeroElapsedRealtime()).isNull();
         assertThat(timeDifference.getPausedDuration()).isEqualTo(Duration.ofSeconds(90));
         assertThat(timeDifference.isTimer()).isTrue();
         assertThat(timeDifference.isStopwatch()).isFalse();
-        assertThat(timeDifference.getFormat()).isEqualTo(TimeDifference.FORMAT_CHRONOMETER);
+        assertThat(timeDifference.getFormat()).isEqualTo(TimeDifference.FORMAT_ADAPTIVE);
     }
 
     @Test
     public void newTimeDifference_forPausedStopwatch_constructs() {
         TimeDifference timeDifference =
                 TimeDifference.forPausedStopwatch(
-                        Duration.ofMinutes(2), TimeDifference.FORMAT_CHRONOMETER);
+                        Duration.ofMinutes(2), TimeDifference.FORMAT_ADAPTIVE);
 
         assertThat(timeDifference.getZeroTime()).isNull();
         assertThat(timeDifference.getZeroElapsedRealtime()).isNull();
         assertThat(timeDifference.getPausedDuration()).isEqualTo(Duration.ofMinutes(2));
         assertThat(timeDifference.isStopwatch()).isTrue();
         assertThat(timeDifference.isTimer()).isFalse();
-        assertThat(timeDifference.getFormat()).isEqualTo(TimeDifference.FORMAT_CHRONOMETER);
+        assertThat(timeDifference.getFormat()).isEqualTo(TimeDifference.FORMAT_ADAPTIVE);
     }
 
     @Test
