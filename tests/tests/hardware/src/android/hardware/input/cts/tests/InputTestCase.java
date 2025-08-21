@@ -355,7 +355,9 @@ public abstract class InputTestCase {
         DebugInputRule.dumpInputStateToLogcat();
 
         if (mTestName.getMethodName().equals("testLights")) {
-            DebugInputRule.dumpSonyLightNodes();
+            DebugInputRule.dumpSonySysfsNode("leds");
+        } else if (mTestName.getMethodName().equals("testBattery")) {
+            DebugInputRule.dumpSonySysfsNode("power_supply");
         }
         if (mEvents.isEmpty()) {
             Log.i(TAG, "The events queue is empty");
