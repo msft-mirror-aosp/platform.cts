@@ -234,13 +234,13 @@ public class EmbeddedPhotoPickerTest {
         // 1. Launch the embedded session
         launchEmbeddedSession();
         assertThat(mActivity.getSession()).isNotNull();
-        assertThat(getMediaItem(sDevice).exists()).isTrue();
+        assertThat(getMediaItem(sDevice).waitForExists(1000)).isTrue();
 
         // 2. Close the session
         mActivity.getSession().close();
 
         // 3. Assert the embedded ui (surface package) is released
-        assertThat(getMediaItem(sDevice).exists()).isFalse();
+        assertThat(getMediaItem(sDevice).waitForExists(1000)).isFalse();
     }
 
     @Test
