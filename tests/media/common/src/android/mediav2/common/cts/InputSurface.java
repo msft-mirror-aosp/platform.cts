@@ -16,6 +16,8 @@
 
 package android.mediav2.common.cts;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.media.MediaCodec;
 import android.opengl.EGL14;
 import android.opengl.EGLConfig;
@@ -73,13 +75,13 @@ public class InputSurface {
             throw new RuntimeException("unable to initialize EGL14");
         }
 
+        boolean eglChooseConfigOk = false;
+        boolean eglCreateContextOk = false;
         // Configure EGL for recordable and OpenGL ES 2.0.  We want enough RGB bits
         // to minimize artifacts from possible YUV conversion.
         int eglColorSize = useHighBitDepth ? 10 : 8;
         int eglAlphaSize = useHighBitDepth ? 2 : 0;
         int[] recordableList = useHighBitDepth ? new int[]{0, 1} : new int[]{1};
-        String formatStr = useHighBitDepth ? "RGBA1010102" : "RGB888+recordable";
-
         for (int recordable : recordableList) {
             int[] configAttribList = {
                     EGL14.EGL_RED_SIZE, eglColorSize,
@@ -93,8 +95,14 @@ public class InputSurface {
             int[] numConfigs = new int[1];
             if (!EGL14.eglChooseConfig(mEGLDisplay, configAttribList, 0, mConfigs, 0,
                     mConfigs.length, numConfigs, 0) || numConfigs[0] == 0) {
+                String message = "Unable to find EGL config supporting renderable-type: ES2"
+                        + " surface-type:pbuffer r:" + eglColorSize + " g:" + eglColorSize + " b:"
+                        + eglColorSize + " a:" + eglAlphaSize + " recordable:" + recordable;
+                Log.d(TAG, message);
                 continue;
             }
+
+            eglChooseConfigOk = true;
 
             // Configure context for OpenGL ES 2.0.
             int[] contextAttribList = {
@@ -105,12 +113,18 @@ public class InputSurface {
                     contextAttribList, 0);
             checkEglError("eglCreateContext");
             if (mEGLContext != EGL14.EGL_NO_CONTEXT && EGL14.EGL_SUCCESS == EGL14.eglGetError()) {
+                eglCreateContextOk = true;
                 break;
             }
         }
-
-        if (mEGLContext == EGL14.EGL_NO_CONTEXT) {
-            throw new RuntimeException("unable to find " + formatStr + " ES2 EGL config");
+        if (!eglChooseConfigOk) {
+            // when eglChooseConfig fails for RGBA1010102, skip high bit depth testing as it is
+            // not mandatory for devices to support this configuration
+            assumeFalse("GPU Driver does not support RGBA1010102, skipping HBD testing",
+                    useHighBitDepth);
+        }
+        if (!eglCreateContextOk) {
+            throw new RuntimeException("null context");
         }
 
         // Create a window surface, and attach it to the Surface we received.
