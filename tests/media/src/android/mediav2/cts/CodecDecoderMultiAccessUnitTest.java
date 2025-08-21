@@ -17,10 +17,12 @@
 package android.mediav2.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_MultipleFrames;
+import static android.media.audio.Flags.iamfDefinitionsApi;
 import static android.media.codec.Flags.FLAG_LARGE_AUDIO_FRAME_FINISH;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
 
 import static com.android.media.codec.flags.Flags.FLAG_LARGE_AUDIO_FRAME;
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableIamf;
 
 import static org.junit.Assert.fail;
 
@@ -109,6 +111,8 @@ public class CodecDecoderMultiAccessUnitTest extends CodecDecoderMultiAccessUnit
                 "audio/ac4_200_48kHz_48.mp4");
         RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_EAC3,
                 "audio/eac3_200_48kHz_128.mp4");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_IAMF,
+                "audio/7_1_4_PCM16_48000_no_video.mp4");
     }
 
     static final List<Object[]> exhaustiveArgsList = new ArrayList<>(Arrays.asList(new Object[][]{
@@ -178,6 +182,10 @@ public class CodecDecoderMultiAccessUnitTest extends CodecDecoderMultiAccessUnit
                     {MediaFormat.MIMETYPE_AUDIO_EAC3, "audio/eac3_200_48kHz_256.mp4"},
                     {MediaFormat.MIMETYPE_AUDIO_EAC3, "audio/eac3_510_48kHz_256.mp4"},
             }));
+        }
+        if (IS_AFTER_B && iamfDefinitionsApi() && extractorMp4EnableIamf()) {
+            exhaustiveArgsList.add(new Object[] {
+                    MediaFormat.MIMETYPE_AUDIO_IAMF, "audio/7_1_4_Opus_no_video.mp4"});
         }
     }
 

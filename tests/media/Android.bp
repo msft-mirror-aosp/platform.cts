@@ -24,6 +24,7 @@ java_defaults {
     static_libs: [
         "aconfig_mediacodec_flags_java_lib",
         "android.media.codec-aconfig-java",
+        "android.media.audio-aconfig-java",
         "android.media.extractor.flags-aconfig-java",
         "android.media.tv.flags-aconfig-java",
         "androidx.test.core",

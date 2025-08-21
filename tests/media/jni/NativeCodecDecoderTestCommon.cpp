@@ -294,16 +294,23 @@ bool CodecDecoderTest::isOutputFormatOk(AMediaFormat* configFormat) {
                                        : !mSignalledOutFormatChanged,
                    std::string{"Input test file format is not same as default format of component, "
                                "but test did not receive INFO_OUTPUT_FORMAT_CHANGED signal.\n"})
-    RETURN_IF_TRUE(!isFormatSimilar(configFormat,
-                                    mIsCodecInAsyncMode ? mAsyncHandle.getOutputFormat()
-                                                        : mOutFormat),
-                   StringFormat("Configured input format and received output format are not "
-                                "similar. \nConfigured Input format is :- %s \nReceived Output "
-                                "format is :- %s \n",
-                                AMediaFormat_toString(configFormat),
-                                AMediaFormat_toString(mIsCodecInAsyncMode
-                                                              ? mAsyncHandle.getOutputFormat()
-                                                              : mOutFormat)))
+    // As per (https://aomediacodec.github.io/iamf/#iasampleentry-section) iamf specification,
+    // channel-count and sample-rate shall be set to 0 and must be ignored. The actual sample-rate
+    // and channel-count information is present in Descriptor OBUs. The extractor may not be parsing
+    // descriptor OBUs but sending 0, 0 as sample-rate and channel-count (as per the stream header).
+    // So skip comparing channel-count and sample-rate against format used for configure.
+    if (strcmp(mMediaType, AMEDIA_MIMETYPE_AUDIO_IAMF) != 0) {
+        RETURN_IF_TRUE(!isFormatSimilar(configFormat,
+                                        mIsCodecInAsyncMode ? mAsyncHandle.getOutputFormat()
+                                                            : mOutFormat),
+                       StringFormat("Configured input format and received output format are not "
+                                    "similar. \nConfigured Input format is :- %s \nReceived Output "
+                                    "format is :- %s \n",
+                                    AMediaFormat_toString(configFormat),
+                                    AMediaFormat_toString(mIsCodecInAsyncMode
+                                                                  ? mAsyncHandle.getOutputFormat()
+                                                                  : mOutFormat)))
+    }
     return true;
 }
 

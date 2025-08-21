@@ -16,11 +16,14 @@
 
 package android.mediav2.cts;
 
+import static android.media.audio.Flags.iamfDefinitionsApi;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ANY;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_DEFAULT;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_HW;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
+
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableIamf;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -85,6 +88,7 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
     private static final String MEDIA_TYPE_AMRWB = MediaFormat.MIMETYPE_AUDIO_AMR_WB;
     private static final String MEDIA_TYPE_MP3 = MediaFormat.MIMETYPE_AUDIO_MPEG;
     private static final String MEDIA_TYPE_AAC = MediaFormat.MIMETYPE_AUDIO_AAC;
+    private static final String MEDIA_TYPE_IAMF = MediaFormat.MIMETYPE_AUDIO_IAMF;
     private static final String MEDIA_TYPE_FLAC = MediaFormat.MIMETYPE_AUDIO_FLAC;
     private static final String MEDIA_TYPE_VORBIS = MediaFormat.MIMETYPE_AUDIO_VORBIS;
     private static final String MEDIA_TYPE_OPUS = MediaFormat.MIMETYPE_AUDIO_OPUS;
@@ -778,6 +782,20 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
                     {MEDIA_TYPE_EAC3, new String[]{"audio/eac3_200_48kHz_128.mp4"},
                             null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
                     {MEDIA_TYPE_EAC3, new String[]{"audio/eac3_200_48kHz_256.mp4"},
+                            null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
+            }));
+        }
+
+        // iamf
+        if (IS_AFTER_B && iamfDefinitionsApi() && extractorMp4EnableIamf()) {
+            exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
+                    {MEDIA_TYPE_IAMF, new String[]{"audio/7_1_4_Opus_no_video.mp4"},
+                            null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
+                    {MEDIA_TYPE_IAMF, new String[]{"audio/7_1_4_AAC.mp4"},
+                            null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
+                    {MEDIA_TYPE_IAMF, new String[]{"audio/7_1_4_FLAC_48000.mp4"},
+                            null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
+                    {MEDIA_TYPE_IAMF, new String[]{"audio/7_1_4_PCM16_48000_no_video.mp4"},
                             null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
             }));
         }

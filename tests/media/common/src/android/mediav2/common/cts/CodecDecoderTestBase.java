@@ -170,12 +170,21 @@ public class CodecDecoderTestBase extends CodecTestBase {
                 mIsCodecInAsyncMode ? mAsyncHandle.hasOutputFormatChanged() :
                 mSignalledOutFormatChanged);
 
-        MediaFormat outputFormat =
-                mIsCodecInAsyncMode ? mAsyncHandle.getOutputFormat() : mOutFormat;
-        msg = String.format("Configured input format and received output format are "
-            + "not similar. \nConfigured Input format is :- %s \nReceived Output "
-            + "format is :- %s \n", configuredFormat, outputFormat);
-        assertTrue(msg + mTestConfig + mTestEnv, isFormatSimilar(configuredFormat, outputFormat));
+        // As per (https://aomediacodec.github.io/iamf/#iasampleentry-section) iamf specification,
+        // channel-count and sample-rate shall be set to 0 and must be ignored. The actual
+        // sample-rate and channel-count information is present in Descriptor OBUs. The extractor
+        // may not be parsing descriptor OBUs but sending 0, 0 as sample-rate and channel-count (as
+        // per the stream header). So skip comparing channel-count and sample-rate against format
+        // used for configure.
+        if (!mMediaType.equalsIgnoreCase(MediaFormat.MIMETYPE_AUDIO_IAMF)) {
+            MediaFormat outputFormat =
+                    mIsCodecInAsyncMode ? mAsyncHandle.getOutputFormat() : mOutFormat;
+            msg = String.format("Configured input format and received output format are "
+                    + "not similar. \nConfigured Input format is :- %s \nReceived Output "
+                    + "format is :- %s \n", configuredFormat, outputFormat);
+            assertTrue(msg + mTestConfig + mTestEnv,
+                    isFormatSimilar(configuredFormat, outputFormat));
+        }
     }
 
     int getColorFormat(String name, String mediaType, boolean surfaceMode, boolean hbdMode) {
