@@ -477,12 +477,13 @@ public final class DeviceState extends HarrierRule {
 
     private void printDevicePolicyDumpDifference(@Nonnull String devicePolicyDumpBeforeTests) {
         String currentDump = DevicePolicy.INSTANCE.dump();
-        // TODO (b/348162683) replace StringLinesDiff with a proper diff
         StringLinesDiff diff = new StringLinesDiff(devicePolicyDumpBeforeTests, currentDump);
         if (diff.countLinesDifference() > DEVICE_POLICY_STANDARD_LINES_DIFFERENCE) {
             Log.w(LOG_TAG, "device_policy dump:\n" + currentDump);
-            String message = "device_policy state has changed, probably a " +
-                    "state leak, these are the new lines:\n" + diff.extraLinesString();
+            String message =
+                    "device_policy state has changed, probably a "
+                            + "state leak, these are the new lines:\n"
+                            + diff.diffString();
             if (THROW_ON_DEVICE_POLICY_LEAKS) {
                 throw new NeneException(message);
             } else {
