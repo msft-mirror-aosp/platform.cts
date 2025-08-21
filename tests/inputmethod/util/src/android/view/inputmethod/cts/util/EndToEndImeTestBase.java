@@ -192,11 +192,16 @@ public abstract class EndToEndImeTestBase {
     public void clearLaunchParams() {
         final Context context = InstrumentationRegistry.getInstrumentation().getContext();
         final ActivityTaskManager atm = context.getSystemService(ActivityTaskManager.class);
-        SystemUtil.runWithShellPermissionIdentity(() -> {
-            // Clear launch params for all test packages to make sure each test is run in a clean
-            // state.
-            atm.clearLaunchParamsForPackages(List.of(context.getPackageName()));
-        }, Manifest.permission.MANAGE_ACTIVITY_TASKS);
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    // Clear launch params for test packages to make sure each test is run in a
+                    // clean state.
+                    atm.clearLaunchParamsForPackages(
+                            List.of(
+                                    context.getPackageName(),
+                                    "android.view.inputmethod.ctstestapp"));
+                },
+                Manifest.permission.MANAGE_ACTIVITY_TASKS);
     }
 
     protected static boolean isPreventImeStartup() {
