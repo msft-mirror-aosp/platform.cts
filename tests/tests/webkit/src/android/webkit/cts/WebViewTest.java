@@ -739,9 +739,8 @@ public class WebViewTest extends SharedWebViewTest {
         assertEquals("false", mOnUiThread.evaluateJavascriptSync("'custom_property' in interface"));
     }
 
-    @Ignore("b/171702662")
     @Test
-    public void testJavascriptInterfaceForClientPopup() throws Exception {
+    public void testJavascriptInterfaceForClientPopup() {
         mOnUiThread.getSettings().setJavaScriptEnabled(true);
         mOnUiThread.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
         mOnUiThread.getSettings().setSupportMultipleWindows(true);
@@ -797,13 +796,14 @@ public class WebViewTest extends SharedWebViewTest {
                     "42",
                     childOnUiThread.evaluateJavascriptSync("interface.test()"));
         } finally {
-            WebkitUtils.onMainThreadSync(() -> {
-                ViewParent parent = childWebView.getParent();
-                if (parent instanceof ViewGroup) {
-                    ((ViewGroup) parent).removeView(childWebView);
-                }
-                childWebView.destroy();
-            });
+            WebkitUtils.onMainThreadSync(
+                    () -> {
+                        ViewParent parent = childWebView.getParent();
+                        if (parent instanceof ViewGroup viewGroup) {
+                            viewGroup.removeView(childWebView);
+                        }
+                        childWebView.destroy();
+                    });
         }
     }
 
