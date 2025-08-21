@@ -80,6 +80,12 @@ public final class ConfigUtils {
                 .addWhitelistedAtomIds(Atom.APP_BREADCRUMB_REPORTED_FIELD_NUMBER);
     }
 
+    private static void addAllowedLogSources(StatsdConfig.Builder config, String[] pkgNames) {
+        for (final String pkgName : pkgNames) {
+            config.addAllowedLogSource(pkgName);
+        }
+    }
+
     /**
      * Adds an event metric for the specified atom. The atom should contain a uid either within
      * an attribution chain or as a standalone field. Only those atoms which contain the uid of
@@ -303,7 +309,20 @@ public final class ConfigUtils {
     public static void uploadConfigForPushedAtomWithUid(ITestDevice device, String pkgName,
             int atomId,
             boolean useUidAttributionChain) throws Exception {
+        uploadConfigForPushedAtomWithUid(
+                device, pkgName, new String[] {}, atomId, useUidAttributionChain);
+    }
+
+    /** Uploads config for pushed atom with UID. */
+    public static void uploadConfigForPushedAtomWithUid(
+            ITestDevice device,
+            String pkgName,
+            String[] extraAllowedLogSources,
+            int atomId,
+            boolean useUidAttributionChain)
+            throws Exception {
         StatsdConfig.Builder config = createConfigBuilder(pkgName);
+        addAllowedLogSources(config, extraAllowedLogSources);
         addEventMetricForUidAtom(config, atomId, useUidAttributionChain, pkgName);
         uploadConfig(device, config);
     }
