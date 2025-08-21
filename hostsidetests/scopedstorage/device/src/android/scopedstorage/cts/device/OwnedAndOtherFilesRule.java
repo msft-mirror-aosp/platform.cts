@@ -17,9 +17,6 @@
 package android.scopedstorage.cts.device;
 
 import android.content.ContentResolver;
-import android.database.Cursor;
-import android.os.Bundle;
-import android.provider.MediaStore;
 
 import org.junit.rules.ExternalResource;
 
@@ -51,12 +48,4 @@ public class OwnedAndOtherFilesRule extends ExternalResource {
         mOtherAppFilesRule.after();
     }
 
-    protected static Cursor getResultForFilesQuery(ContentResolver contentResolver,
-            Bundle queryArgs) {
-        return contentResolver.query(
-                MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY),
-                null,
-                queryArgs,
-                null);
-    }
 }
