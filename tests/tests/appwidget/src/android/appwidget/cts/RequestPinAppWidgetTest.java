@@ -17,7 +17,6 @@
 package android.appwidget.cts;
 
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
-import static android.server.wm.UiDeviceUtils.pressHomeButton;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -215,7 +214,26 @@ public class RequestPinAppWidgetTest extends AppWidgetTestCase {
     }
 
     @Test
-    public void testRequestPinAppWidgetNotAllowBal() throws Exception {
+    public void testRequestPinAppWidgetNotAllowBal_indirectLaunch() throws Exception {
+        runBalTest(/* directActivityLaunch= */ false, /* isBalAllowed= */ false);
+    }
+
+    @Test
+    public void testRequestPinAppWidgetAllowBal_directLaunch() throws Exception {
+        runBalTest(/* directActivityLaunch= */ true, /* isBalAllowed= */ true);
+    }
+
+    /**
+     * Runs the background activity launch test by calling requestPinAppWidget with a PendingIntent
+     * that causes an activity to be launched.
+     *
+     * @param directActivityLaunch If true, the PendingIntent callback given to requestPinAppWidget
+     *     will directly launch an activity. If false, the PendingIntent will launch a background
+     *     service that which launches an activity.
+     * @param isBalAllowed If true, verifies that the background app launch was allowed. If false,
+     *     verifies that the launch was blocked.
+     */
+    private void runBalTest(boolean directActivityLaunch, boolean isBalAllowed) throws Exception {
         String launcherPkg = "android.appwidget.cts.packages.launcher1";
         setLauncher(launcherPkg + "/" + LAUNCHER_CLASS);
         Context context = getInstrumentation().getContext();
@@ -227,6 +245,7 @@ public class RequestPinAppWidgetTest extends AppWidgetTestCase {
         context.startActivity(
                 new Intent(Intent.ACTION_MAIN)
                         .setPackage(APPBAL_PACKAGE)
+                        .putExtra(Constants.EXTRA_DIRECT_LAUNCH, directActivityLaunch)
                         .addFlags(FLAG_ACTIVITY_NEW_TASK));
 
         setupReceiver.await();
@@ -237,13 +256,6 @@ public class RequestPinAppWidgetTest extends AppWidgetTestCase {
         context.sendBroadcast(new Intent(Constants.ACTION_CONFIRM_PIN)
                 .setPackage(launcherPkg));
 
-        // Press home key to ensure stopAppSwitches is called because the last-stop-app-switch-time
-        // is a criteria of allowing background start.
-        pressHomeButton();
-        SystemUtil.runWithShellPermissionIdentity(ActivityManager::resumeAppSwitches);
-        mWmState.waitForHomeActivityVisible();
-        SystemUtil.runWithShellPermissionIdentity(ActivityManager::resumeAppSwitches);
-
         boolean result = false;
         // The background activity will be launched 11s after the BalService starts. The
         // waitForFocusedActivity only waits for 5s. So put it in a for loop.
@@ -252,7 +264,11 @@ public class RequestPinAppWidgetTest extends AppWidgetTestCase {
                     "Empty Activity is launched", new ComponentName(context, EmptyActivity.class));
             if (result) break;
         }
-        assertFalse("Should not able to launch background activity", result);
+        if (isBalAllowed) {
+            assertTrue("Should be able to launch background activity", result);
+        } else {
+            assertFalse("Should not able to launch background activity", result);
+        }
     }
 
 }
