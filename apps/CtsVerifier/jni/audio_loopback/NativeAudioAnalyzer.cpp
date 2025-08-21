@@ -24,6 +24,7 @@ static bool (*aaudioStream_isMMap)(AAudioStream *stream) = nullptr;
 
 #include "WavFileCapture.h"
 
+#include <chrono>
 #include <memory>
 #include <set>
 
@@ -531,13 +532,25 @@ double NativeAudioAnalyzer::measureTimestampLatencyMillis() {
     result = AAudioStream_getTimestamp(mInputStream, CLOCK_MONOTONIC, &inputPosition,
                                        &inputTimeNanos);
     if (result != AAUDIO_OK) {
-        return -1.0; // Stream is closed.
+        if (!mIsLowLatencyStream[STREAM_INPUT] || mIsMMap[STREAM_INPUT]) {
+            return -1.0; // Stream is closed.
+        }
+        // The input stream is using low latency mode and it is not mmap stream. It is using
+        // fast capture. Fast capture doesn't expose timestamp as the buffer is small so that
+        // there is almost no latency. The read position and current timestamp should be good
+        // enough to use here.
+        inputPosition = AAudioStream_getFramesRead(mInputStream);
+        struct timespec ts;
+        clock_gettime(CLOCK_MONOTONIC, &ts);
+        inputTimeNanos = ts.tv_sec * 1'000'000'000LL + ts.tv_nsec;
     }
     result = AAudioStream_getTimestamp(mOutputStream, CLOCK_MONOTONIC, &outputPosition,
                                        &outputTimeNanos);
     if (result != AAUDIO_OK) {
         return -1.0; // Stream is closed.
     }
+    ALOGI("outPos:%jd, outTs:%jd, inPos:%jd inTs:%jd, writeReadDelta:%jd",
+          outputPosition, outputTimeNanos, inputPosition, inputTimeNanos, writeReadDelta);
 
     // Map input frame position to the corresponding output frame.
     int64_t mappedPosition = inputPosition + writeReadDelta;
