@@ -29,6 +29,7 @@ import android.app.appfunctions.AppFunctionManager.ACCESS_REQUEST_STATE_GRANTED
 import android.app.appfunctions.AppFunctionManager.ACCESS_REQUEST_STATE_UNREQUESTABLE
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
 import android.content.Context
+import android.content.Intent
 import android.permission.flags.Flags
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
@@ -442,6 +443,27 @@ class AppFunctionAccessTest {
                 .that(targets)
                 .contains(ANDROID_PKG_NAME)
         }
+    }
+
+    @ApiTest(
+        apis = ["android.app.appfunctions.AppFunctionManager#createRequestAppFunctionAccessIntent"]
+    )
+    @RequiresFlagsEnabled(Flags.FLAG_APP_FUNCTION_ACCESS_UI_ENABLED)
+    @Test
+    fun testCreateRequestAppFunctionAccessIntent() {
+        val testPkgName = "com.android.test"
+        val intent = appFunctionManager.createRequestAccessIntent(testPkgName)
+        assertWithMessage(
+            "Expected intent action to be ${AppFunctionManager.ACTION_REQUEST_APP_FUNCTION_ACCESS}"
+        )
+            .that(intent.action)
+            .isEqualTo(AppFunctionManager.ACTION_REQUEST_APP_FUNCTION_ACCESS)
+        assertWithMessage("Expected targetPackage to be included in intent")
+            .that(intent.getStringExtra(Intent.EXTRA_PACKAGE_NAME))
+            .isEqualTo(testPkgName)
+        assertWithMessage("Expected intent to be directed to PermissionController")
+            .that(intent.getPackage())
+            .isEqualTo(context.packageManager.permissionControllerPackageName)
     }
 
     private fun getAppFunctionFlags(
