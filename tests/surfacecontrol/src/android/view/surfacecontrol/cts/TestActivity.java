@@ -69,7 +69,9 @@ public class TestActivity extends Activity {
         view.setBackgroundColor(Color.BLUE);
         FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(100, 100);
         getParentLayout().addView(view, layoutParams);
-
+        // Workaround because on devices with multiple displays, the app might render using the
+        // higher refresh rate even though its presented on a display with lower refresh rate.
+        getParentLayout().setRequestedFrameRate(60);
         ValueAnimator anim = ValueAnimator.ofFloat(0, 1);
         boolean[] causedJank = new boolean[] { false };
         anim.addUpdateListener($ -> {
