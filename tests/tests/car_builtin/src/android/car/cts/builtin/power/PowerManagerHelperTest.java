@@ -18,22 +18,22 @@ package android.car.cts.builtin.power;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.Instrumentation;
 import android.app.UiAutomation;
-import android.car.builtin.os.UserManagerHelper;
 import android.car.builtin.power.PowerManagerHelper;
 import android.content.Context;
 import android.hardware.display.DisplayManager;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.os.SystemClock;
-import android.os.UserManager;
 import android.view.Display;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
 import org.junit.Before;
@@ -63,10 +63,10 @@ public final class PowerManagerHelperTest {
 
     @Test
     public void testSetDisplayState() {
-        UserManager userManager = mContext.getSystemService(UserManager.class);
-        assumeFalse(
-                "This test is intended for non MUMD devices",
-                UserManagerHelper.isVisibleBackgroundUsersSupported(userManager));
+        UserHelper userHelper = new UserHelper(mContext);
+        assumeTrue(
+                "This test is intended for the default display",
+                userHelper.getMainDisplayId() == Display.DEFAULT_DISPLAY);
 
         PowerManager powerManager = mContext.getSystemService(PowerManager.class);
 
