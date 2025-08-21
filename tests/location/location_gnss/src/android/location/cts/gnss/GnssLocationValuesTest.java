@@ -16,14 +16,29 @@
 
 package android.location.cts.gnss;
 
+import static android.Manifest.permission.WRITE_SECURE_SETTINGS;
+
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
+import static com.google.common.truth.Truth.assertThat;
+
+import android.content.Context;
 import android.location.Location;
-import android.location.cts.common.GnssTestCase;
+import android.location.LocationManager;
 import android.location.cts.common.SoftAssert;
 import android.location.cts.common.TestLocationListener;
 import android.location.cts.common.TestLocationManager;
 import android.location.cts.common.TestMeasurementUtil;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.util.Log;
+
+import androidx.test.core.app.ApplicationProvider;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * Test the {@link Location} values.
@@ -32,35 +47,39 @@ import android.util.Log;
  * locations. 2.1 Confirm locations have been found. 3. Get LastKnownLocation, verified all fields
  * are in the correct range.
  */
+@RunWith(AndroidJUnit4.class)
 @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
-public class GnssLocationValuesTest extends GnssTestCase {
+public class GnssLocationValuesTest {
 
     private static final String TAG = "GnssLocationValuesTest";
     private static final int LOCATION_TO_COLLECT_COUNT = 5;
-    private TestLocationListener mLocationListener;
+    private static final boolean YEAR_2017_CAPABILITY_ENFORCED = false;
     private static final boolean EXTENDED_LOCATION_ACCURACY_EXPECTED = false;
+    private TestLocationManager mTestLocationManager;
+    private TestLocationListener mLocationListener;
+    private Context mContext;
     // TODO(b/65458848): Re-tighten the limit to 0.001 when sufficient devices in the market comply
     private static final double MINIMUM_SPEED_FOR_BEARING = 1.000;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        mTestLocationManager = new TestLocationManager(getContext());
+    @Before
+    public void setUp() throws Exception {
+        mContext = ApplicationProvider.getApplicationContext();
+        mTestLocationManager = new TestLocationManager(mContext);
         mLocationListener = new TestLocationListener(LOCATION_TO_COLLECT_COUNT);
     }
 
-    @Override
-    protected void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         // Unregister listeners
         if (mLocationListener != null) {
             mTestLocationManager.removeLocationUpdates(mLocationListener);
         }
-        super.tearDown();
     }
 
     /**
      * Those accuracy fields are new O-features, only test them if the hardware is later than 2017
      */
+    @Test
     public void testAccuracyFields() throws Exception {
         // Checks if GPS hardware feature is present, skips test (pass) if not
         if (!TestMeasurementUtil.canTestRunOnCurrentDevice(mTestLocationManager, TAG)) {
@@ -81,6 +100,80 @@ public class GnssLocationValuesTest extends GnssTestCase {
         }
 
         softAssert.assertAll();
+    }
+
+    /** Get the location info from the device check whether all fields' value make sense */
+    @Test
+    public void testLocationRegularFields() throws Exception {
+        // Checks if GPS hardware feature is present, skips test (pass) if not
+        if (!TestMeasurementUtil.canTestRunOnCurrentDevice(mTestLocationManager, TAG)) {
+            return;
+        }
+
+        SoftAssert softAssert = new SoftAssert(TAG);
+        mTestLocationManager.requestLocationUpdates(mLocationListener);
+        boolean success = mLocationListener.await();
+        softAssert.assertTrue(
+                "Time elapsed without getting the GNSS locations."
+                        + " Possibly, the test has been run deep indoors."
+                        + " Consider retrying test outdoors.",
+                success);
+
+        // don't check speed of first GNSS location - it may not be ready in some cases
+        boolean checkSpeed = false;
+        for (Location location : mLocationListener.getReceivedLocationList()) {
+            checkLocationRegularFields(softAssert, location, checkSpeed);
+            checkSpeed = true;
+        }
+
+        softAssert.assertAll();
+    }
+
+    /**
+     * 1. Set location setting off 2. Request gps location 3. Set location setting on 4. Verify gps
+     * locations are received
+     */
+    @Test
+    public void testRequestWhenLocationSettingOff() throws Exception {
+        getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(WRITE_SECURE_SETTINGS);
+        LocationManager locationManager = mTestLocationManager.getLocationManager();
+        boolean wasEnabled = locationManager.isLocationEnabled();
+        try {
+            // Set location setting off
+            if (wasEnabled) {
+                locationManager.setLocationEnabledForUser(false, mContext.getUser());
+            }
+            assertThat(locationManager.isLocationEnabled()).isFalse();
+
+            SoftAssert softAssert = new SoftAssert(TAG);
+            // Request gps location
+            mTestLocationManager.requestLocationUpdates(mLocationListener);
+
+            // Set location settings on
+            locationManager.setLocationEnabledForUser(true, mContext.getUser());
+            assertThat(locationManager.isLocationEnabled()).isTrue();
+
+            boolean success = mLocationListener.await();
+            softAssert.assertTrue(
+                    "Time elapsed without getting the GNSS locations."
+                            + " Possibly, the test has been run deep indoors."
+                            + " Consider retrying test outdoors.",
+                    success);
+
+            // don't check speed of first GNSS location - it may not be ready in some cases
+            boolean checkSpeed = false;
+            for (Location location : mLocationListener.getReceivedLocationList()) {
+                checkLocationRegularFields(softAssert, location, checkSpeed);
+                checkSpeed = true;
+            }
+
+            softAssert.assertAll();
+        } finally {
+            if (locationManager.isLocationEnabled() != wasEnabled) {
+                locationManager.setLocationEnabledForUser(wasEnabled, mContext.getUser());
+            }
+            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+        }
     }
 
     private void checkLocationAccuracyFields(
@@ -117,7 +210,7 @@ public class GnssLocationValuesTest extends GnssTestCase {
                 "All GNSS locations generated by the LocationManager "
                         + "must have a speed accuracy.",
                 location.hasSpeedAccuracy());
-        boolean isAutomotiveDevice = TestMeasurementUtil.isAutomotiveDevice(getContext());
+        boolean isAutomotiveDevice = TestMeasurementUtil.isAutomotiveDevice(mContext);
         // Automotive devices can with confidence (i.e. location.speedAccuracyMetersPerSecond() ==
         // 0) determine that the device is in stand-still (i.e. location.getSpeed() == 0).
         // Thus, for automotive: test for location.speedAccuracyMetersPerSecond() > 0 only if
@@ -139,32 +232,6 @@ public class GnssLocationValuesTest extends GnssTestCase {
                     "Vertical Accuracy should be greater than 0.",
                     location.getVerticalAccuracyMeters() > 0);
         }
-    }
-
-    /** Get the location info from the device check whether all fields' value make sense */
-    public void testLocationRegularFields() throws Exception {
-        // Checks if GPS hardware feature is present, skips test (pass) if not
-        if (!TestMeasurementUtil.canTestRunOnCurrentDevice(mTestLocationManager, TAG)) {
-            return;
-        }
-
-        SoftAssert softAssert = new SoftAssert(TAG);
-        mTestLocationManager.requestLocationUpdates(mLocationListener);
-        boolean success = mLocationListener.await();
-        softAssert.assertTrue(
-                "Time elapsed without getting the GNSS locations."
-                        + " Possibly, the test has been run deep indoors."
-                        + " Consider retrying test outdoors.",
-                success);
-
-        // don't check speed of first GNSS location - it may not be ready in some cases
-        boolean checkSpeed = false;
-        for (Location location : mLocationListener.getReceivedLocationList()) {
-            checkLocationRegularFields(softAssert, location, checkSpeed);
-            checkSpeed = true;
-        }
-
-        softAssert.assertAll();
     }
 
     private static void checkLocationRegularFields(
@@ -201,8 +268,8 @@ public class GnssLocationValuesTest extends GnssTestCase {
                 "ElapsedRaltimeNanos should be great than 0.",
                 location.getElapsedRealtimeNanos() > 0);
 
-        assertEquals("gps", location.getProvider());
-        assertTrue(location.getTime() > 0);
+        assertThat(location.getProvider()).isEqualTo("gps");
+        assertThat(location.getTime()).isGreaterThan(0);
 
         softAssert.assertTrue(
                 "Longitude should be in the range of [-180.0, 180.0] degrees",
