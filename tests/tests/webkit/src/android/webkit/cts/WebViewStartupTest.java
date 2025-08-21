@@ -37,7 +37,6 @@ import com.android.compatibility.common.util.NullWebViewUtils;
 import com.google.common.util.concurrent.SettableFuture;
 
 import org.junit.Assume;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -47,9 +46,6 @@ import org.junit.runner.RunWith;
  * <p>Each test method in this class has to run in a freshly created process to ensure we don't run
  * the tests in the same process (since we can only load WebView into a process once - after that we
  * will reuse the same webview provider).
- *
- * <p>Tests in this class are moved from {@link com.android.cts.webkit.WebViewHostSideStartupTest},
- * see http://b/72376996 for the migration of these tests.
  */
 @MediumTest
 @RunWith(AndroidJUnit4.class)
@@ -68,6 +64,7 @@ public class WebViewStartupTest {
             PackageInfo webViewPackage = WebView.getCurrentWebViewPackage();
             // Ensure that getCurrentWebViewPackage returns a package recognized by the package
             // manager.
+            assertNotNull(webViewPackage);
             assertPackageEquals(pm.getPackageInfo(webViewPackage.packageName, 0), webViewPackage);
 
             // Create WebView on the app's main thread
@@ -75,10 +72,11 @@ public class WebViewStartupTest {
                 WebView webView = new WebView(ctx);
                 webView.destroy();
             } else {
-                WebkitUtils.onMainThreadSync(() -> {
-                  WebView webView = new WebView(ctx);
-                  webView.destroy();
-                });
+                WebkitUtils.onMainThreadSync(
+                        () -> {
+                            WebView webView = new WebView(ctx);
+                            webView.destroy();
+                        });
             }
 
             // Ensure we are still using the same WebView package.
@@ -89,91 +87,55 @@ public class WebViewStartupTest {
         }
     }
 
+    @SuppressWarnings("deprecation") // versionCode field is deprecated
     private static void assertPackageEquals(PackageInfo expected, PackageInfo actual) {
-        if (expected == null)
+        if (expected == null) {
             assertNull(actual);
+            return;
+        }
         assertEquals(expected.packageName, actual.packageName);
         assertEquals(expected.versionCode, actual.versionCode);
         assertEquals(expected.versionName, actual.versionName);
         assertEquals(expected.lastUpdateTime, actual.lastUpdateTime);
     }
 
-    static class TestGetCurrentWebViewPackageOnUiThread
-            extends TestProcessClient.UiThreadTestRunnable {
-        @Override
-        protected void runOnUiThread(Context ctx) throws Throwable {
-            runCurrentWebViewPackageTest(ctx, true /* alreadyOnMainThread */);
-        }
-    }
-
     @Test
-    @Ignore("b/413081350")
     public void testGetCurrentWebViewPackageOnUiThread() throws Throwable {
         // runCurrentWebViewPackageTest handles the case where WebView is not supported on device,
         // so we don't need to check NullWebViewUtils.
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
-        try (TestProcessClient process = TestProcessClient.createProcessA(context)) {
-            process.run(TestGetCurrentWebViewPackageOnUiThread.class);
-        }
-    }
-
-    static class TestGetCurrentWebViewPackageOnBackgroundThread
-            extends TestProcessClient.TestRunnable {
-        @Override
-        public void run(Context ctx) throws Throwable {
-            runCurrentWebViewPackageTest(ctx, false /* alreadyOnMainThread */);
-        }
+        WebkitUtils.onMainThreadSync(
+                () -> {
+                    try {
+                        runCurrentWebViewPackageTest(context, true /* alreadyOnMainThread */);
+                    } catch (Throwable t) {
+                        throw new RuntimeException(t);
+                    }
+                });
     }
 
     @Test
-    @Ignore("b/413081350")
     public void testGetCurrentWebViewPackageOnBackgroundThread() throws Throwable {
         // runCurrentWebViewPackageTest handles the case where WebView is not supported on device,
         // so we don't need to check NullWebViewUtils.
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
-        try (TestProcessClient process = TestProcessClient.createProcessA(context)) {
-            process.run(TestGetCurrentWebViewPackageOnBackgroundThread.class);
-        }
-    }
-
-    static class TestGetWebViewLooperOnUiThread extends TestProcessClient.UiThreadTestRunnable {
-        @Override
-        protected void runOnUiThread(Context ctx) {
-            // Have to set data dir suffix because this runs in a new process, and WebView might
-            // already be used in other processes.
-            WebView.setDataDirectorySuffix(TEST_PROCESS_DATA_DIR_SUFFIX);
-
-            WebView webView = createAndCheckWebViewLooper(ctx);
-            webView.destroy();
-        }
+        runCurrentWebViewPackageTest(context, false /* alreadyOnMainThread */);
     }
 
     @Test
-    @Ignore("b/413081350")
     public void testGetWebViewLooperOnUiThread() throws Throwable {
         Assume.assumeTrue("WebView is not available", NullWebViewUtils.isWebViewAvailable());
 
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
-        try (TestProcessClient process = TestProcessClient.createProcessA(context)) {
-            process.run(TestGetWebViewLooperOnUiThread.class);
-        }
-    }
+        WebkitUtils.onMainThreadSync(
+                () -> {
+                    // Have to set data dir suffix because this runs in a new process, and WebView
+                    // might already be used in other processes.
+                    WebView.setDataDirectorySuffix(TEST_PROCESS_DATA_DIR_SUFFIX);
 
-    static class TestGetWebViewLooperCreatedOnUiThreadFromInstrThread
-            extends TestProcessClient.TestRunnable {
-        @Override
-        public void run(Context ctx) {
-            // Have to set data dir suffix because this runs in a new process, and WebView might
-            // already be used in other processes.
-            WebView.setDataDirectorySuffix(TEST_PROCESS_DATA_DIR_SUFFIX);
-
-            // Create the WebView on the UI thread and then ensure webview.getWebViewLooper()
-            // returns the UI thread.
-            WebView webView =
-                    WebkitUtils.onMainThreadSync(() -> createAndCheckWebViewLooper(ctx));
-            assertEquals(Looper.getMainLooper(), webView.getWebViewLooper());
-            WebkitUtils.onMainThreadSync(() -> webView.destroy());
-        }
+                    WebView webView = createAndCheckWebViewLooper(context);
+                    webView.destroy();
+                });
     }
 
     /**
@@ -181,41 +143,20 @@ public class WebViewStartupTest {
      * This ensures WebView.getWebViewLooper() is not implemented as 'return Looper.myLooper();'.
      */
     @Test
-    @Ignore("b/413081350")
     public void testGetWebViewLooperCreatedOnUiThreadFromInstrThread() throws Throwable {
         Assume.assumeTrue("WebView is not available", NullWebViewUtils.isWebViewAvailable());
 
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
-        try (TestProcessClient process = TestProcessClient.createProcessA(context)) {
-            process.run(TestGetWebViewLooperCreatedOnUiThreadFromInstrThread.class);
-        }
-    }
 
-    static class TestGetWebViewLooperCreatedOnBackgroundThreadFromInstThread
-            extends TestProcessClient.TestRunnable {
-        @Override
-        public void run(Context ctx) throws InterruptedException {
-            // Have to set data dir suffix because this runs in a new process, and WebView might
-            // already be used in other processes.
-            WebView.setDataDirectorySuffix(TEST_PROCESS_DATA_DIR_SUFFIX);
+        // Have to set data dir suffix because this runs in a new process, and WebView might
+        // already be used in other processes.
+        WebView.setDataDirectorySuffix(TEST_PROCESS_DATA_DIR_SUFFIX);
 
-            // Use a HandlerThread, because such a thread owns a Looper.
-            HandlerThread backgroundThread = new HandlerThread("WebViewLooperCtsHandlerThread");
-            backgroundThread.start();
-            Handler backgroundHandler = new Handler(backgroundThread.getLooper());
-
-            final SettableFuture<WebView> webViewFuture = SettableFuture.create();
-            backgroundHandler.post(() -> {
-                try {
-                    webViewFuture.set(createAndCheckWebViewLooper(ctx));
-                } catch (RuntimeException e) {
-                    webViewFuture.setException(e);
-                }
-            });
-            final WebView webview = WebkitUtils.waitForFuture(webViewFuture);
-            assertEquals(backgroundThread.getLooper(), webview.getWebViewLooper());
-            backgroundHandler.post(() -> { webview.destroy(); });
-        }
+        // Create the WebView on the UI thread and then ensure webview.getWebViewLooper()
+        // returns the UI thread.
+        WebView webView = WebkitUtils.onMainThreadSync(() -> createAndCheckWebViewLooper(context));
+        assertEquals(Looper.getMainLooper(), webView.getWebViewLooper());
+        WebkitUtils.onMainThreadSync(webView::destroy);
     }
 
     /**
@@ -224,13 +165,35 @@ public class WebViewStartupTest {
      * the thread it is created on..
      */
     @Test
-    @Ignore("b/413081350")
     public void testGetWebViewLooperCreatedOnBackgroundThreadFromInstThread() throws Throwable {
         Assume.assumeTrue("WebView is not available", NullWebViewUtils.isWebViewAvailable());
 
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
-        try (TestProcessClient process = TestProcessClient.createProcessA(context)) {
-            process.run(TestGetWebViewLooperCreatedOnBackgroundThreadFromInstThread.class);
+
+        // Have to set data dir suffix because this runs in a new process, and WebView might
+        // already be used in other processes.
+        WebView.setDataDirectorySuffix(TEST_PROCESS_DATA_DIR_SUFFIX);
+
+        // Use a HandlerThread, because such a thread owns a Looper.
+        HandlerThread backgroundThread = new HandlerThread("WebViewLooperCtsHandlerThread");
+        try {
+            backgroundThread.start();
+            Handler backgroundHandler = new Handler(backgroundThread.getLooper());
+
+            final SettableFuture<WebView> webViewFuture = SettableFuture.create();
+            backgroundHandler.post(
+                    () -> {
+                        try {
+                            webViewFuture.set(createAndCheckWebViewLooper(context));
+                        } catch (RuntimeException e) {
+                            webViewFuture.setException(e);
+                        }
+                    });
+            final WebView webview = WebkitUtils.waitForFuture(webViewFuture);
+            assertEquals(backgroundThread.getLooper(), webview.getWebViewLooper());
+            backgroundHandler.post(webview::destroy);
+        } finally {
+            backgroundThread.quitSafely();
         }
     }
 
