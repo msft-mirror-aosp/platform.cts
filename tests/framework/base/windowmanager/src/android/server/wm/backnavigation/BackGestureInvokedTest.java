@@ -37,9 +37,6 @@ import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.CliIntentExtra;
 import android.server.wm.ComponentNameUtils;
@@ -55,10 +52,7 @@ import android.window.SystemOnBackInvokedCallbacks;
 
 import androidx.annotation.Nullable;
 
-import com.android.window.flags.Flags;
-
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -70,8 +64,6 @@ import org.junit.Test;
 @Presubmit
 @android.server.wm.annotation.Group1
 public class BackGestureInvokedTest extends ActivityManagerTestBase {
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private TestActivitySession<BackInvokedActivity> mActivitySession;
     private BackInvokedActivity mActivity;
@@ -163,7 +155,6 @@ public class BackGestureInvokedTest extends ActivityManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_PREDICTIVE_BACK_SYSTEM_OVERRIDE_CALLBACK)
     public void testUnregisterSystemOverrideCallback() {
         final ComponentName componentName = mActivity.getComponentName();
         // Register callback to base activity
@@ -184,21 +175,18 @@ public class BackGestureInvokedTest extends ActivityManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_PREDICTIVE_BACK_SYSTEM_OVERRIDE_CALLBACK)
     public void testSystemOverride_FinishAndRemoveTask_RootActivity() {
         testSystemOverrideMethod(null, false,
                 OVERRIDE_FINISH_AND_REMOVE_TASK, TYPE_RETURN_TO_HOME);
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_PREDICTIVE_BACK_SYSTEM_OVERRIDE_CALLBACK)
     public void testSystemOverride_MoveTaskToBack_RootActivity() {
         testSystemOverrideMethod(null, false,
                 OVERRIDE_MOVE_TASK_TO_BACK, TYPE_RETURN_TO_HOME);
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_PREDICTIVE_BACK_SYSTEM_OVERRIDE_CALLBACK)
     public void testSystemOverride_MoveTaskToBack_Task() {
         final ComponentName componentName = new ComponentName(mContext, NewTaskActivity.class);
         testSystemOverrideMethod(componentName, true,
@@ -206,7 +194,6 @@ public class BackGestureInvokedTest extends ActivityManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_PREDICTIVE_BACK_SYSTEM_OVERRIDE_CALLBACK)
     public void testSystemOverride_FinishAndRemoveTask_Task() {
         final ComponentName componentName = new ComponentName(mContext, NewTaskActivity.class);
         testSystemOverrideMethod(componentName, true,
@@ -214,14 +201,12 @@ public class BackGestureInvokedTest extends ActivityManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_PREDICTIVE_BACK_SYSTEM_OVERRIDE_CALLBACK)
     public void testSystemOverride_MoveTaskToBack_TopActivity() {
         final ComponentName componentName = new ComponentName(mContext, SecondActivity.class);
         testSystemOverrideMethod(componentName, false,
                 OVERRIDE_MOVE_TASK_TO_BACK, TYPE_RETURN_TO_HOME);
     }
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_PREDICTIVE_BACK_SYSTEM_OVERRIDE_CALLBACK)
     public void testSystemOverride_FinishAndRemoveTask_TopActivity() {
         final ComponentName componentName = new ComponentName(mContext, SecondActivity.class);
         testSystemOverrideMethod(componentName, false,
