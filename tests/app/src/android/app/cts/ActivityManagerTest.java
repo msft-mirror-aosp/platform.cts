@@ -22,6 +22,8 @@ import static android.app.ActivityManager.PROCESS_CAPABILITY_FOREGROUND_LOCATION
 import static android.app.ActivityManager.PROCESS_CAPABILITY_FOREGROUND_MICROPHONE;
 import static android.app.ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK;
 import static android.app.ActivityManager.PROCESS_CAPABILITY_USER_RESTRICTED_NETWORK;
+import static android.app.ActivityManager.STOP_USER_ON_SWITCH_DEFAULT;
+import static android.app.ActivityManager.STOP_USER_ON_SWITCH_FALSE;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.app.usage.UsageStatsManager.STANDBY_BUCKET_RESTRICTED;
 import static android.content.ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN;
@@ -97,7 +99,6 @@ import android.os.Process;
 import android.os.RemoteCallback;
 import android.os.RemoteException;
 import android.os.SystemClock;
-import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.permission.cts.PermissionUtils;
@@ -111,7 +112,6 @@ import android.provider.Settings;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerStateHelper;
 import android.server.wm.settings.SettingsSession;
-import android.text.TextUtils;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -145,7 +145,6 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -557,20 +556,6 @@ public final class ActivityManagerTest {
     private String executeShellCommand(String cmd) throws IOException {
         final UiDevice uiDevice = UiDevice.getInstance(mInstrumentation);
         return uiDevice.executeShellCommand(cmd).trim();
-    }
-
-    private void setSystemProperty(String name, String value) throws IOException {
-        Log.d(TAG, "setSystemProperty(" + name + ", " + value + ")");
-
-        // TODO(b/294414609): should call SystemProperties.set() instead, but it's not visible
-        if (TextUtils.isEmpty(value)) {
-            // TODO(b/293132368): currently, it's not possible to pass empty value to Shell through
-            // UiAutomation
-            Log.w(TAG, "Cannot set system property " + name + " to empty value");
-            return;
-        }
-
-        executeAndLogShellCommand("setprop %s %s", name, value);
     }
 
     private void setForcedAppStandby(String packageName, boolean enabled)
@@ -2238,12 +2223,12 @@ public final class ActivityManagerTest {
         runWithShellPermissionIdentity(
                 () -> {
                     int currentUser = ActivityManager.getCurrentUser();
-                    var modeBefore = setStopBgUsersOnSwitchMode(StopBgUsersOnSwitchMode.DISABLED);
+                    mActivityManager.setStopUserOnSwitch(STOP_USER_ON_SWITCH_FALSE);
                     try {
                         assumeTrue(mActivityManager.switchUser(UserHandle.SYSTEM));
                         assertThat(switchUser(currentUser)).isTrue();
                     } finally {
-                        setStopBgUsersOnSwitchMode(modeBefore);
+                        mActivityManager.setStopUserOnSwitch(STOP_USER_ON_SWITCH_DEFAULT);
                     }
                 });
     }
@@ -2799,54 +2784,4 @@ public final class ActivityManagerTest {
             return result == null ? RESULT_TIMEOUT : result;
         }
     }
-
-    // TODO(b/427366258): move logic below to UserHelper or move test to host-side
-
-    private static final String SYS_PROP_STOP_BG_USERS_ON_SWITCH = "fw.stop_bg_users_on_switch";
-
-    enum StopBgUsersOnSwitchMode {
-        DEFAULT(""), // SystemProperty cannot be removed or set to null, but empty
-        ENABLED("1"),
-        DISABLED("0");
-
-        private final String mPropValue;
-
-        StopBgUsersOnSwitchMode(String propValue) {
-            mPropValue = propValue;
-        }
-    }
-
-    /**
-     * Overrides value of {@link #SYS_PROP_STOP_BG_USERS_ON_SWITCH}.
-     *
-     * @return current value
-     */
-    private StopBgUsersOnSwitchMode setStopBgUsersOnSwitchMode(StopBgUsersOnSwitchMode value)
-            throws IOException {
-        String newValue = value.mPropValue;
-        String currentValue = SystemProperties.get(SYS_PROP_STOP_BG_USERS_ON_SWITCH);
-        if (Objects.equals(newValue, currentValue)) {
-            Log.d(TAG, "setStopBgUsersOnSwitchMode(" + value + "): ignoring as value of "
-                    + SYS_PROP_STOP_BG_USERS_ON_SWITCH + " before it's already " + currentValue);
-            return value;
-        }
-
-        Log.d(TAG, "setStopBgUsersOnSwitchMode(" + value + "): changing value of "
-                + SYS_PROP_STOP_BG_USERS_ON_SWITCH + " from '" + currentValue + "' to '"
-                + newValue + "'");
-        setSystemProperty(SYS_PROP_STOP_BG_USERS_ON_SWITCH, newValue);
-
-        StopBgUsersOnSwitchMode returnValue;
-        if (TextUtils.isEmpty(currentValue)) {
-            returnValue = StopBgUsersOnSwitchMode.DEFAULT;
-        } else  if (currentValue.equals("1")) {
-            returnValue = StopBgUsersOnSwitchMode.ENABLED;
-        } else {
-            returnValue = StopBgUsersOnSwitchMode.DISABLED;
-        }
-
-        Log.d(TAG, "setStopBgUsersOnSwitchMode(" + value + "): returning " + returnValue);
-        return returnValue;
-    }
-
 }

@@ -26,10 +26,8 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.NullWebViewUtils;
 
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -37,70 +35,33 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public final class PacProcessorTest {
 
-    private TestProcessClient mProcess;
-
-    @Before
-    public void setUp() throws Throwable {
-        Context context = InstrumentationRegistry.getInstrumentation().getContext();
-        mProcess = TestProcessClient.createProcessB(context);
-    }
-
-    @After
-    public void tearDown() throws Throwable {
-        // mProcess might be null if TestProcessClient.createProcessB() threw an exception.
-        if (mProcess != null) {
-            mProcess.close();
-        }
-    }
-
-    static class TestCreatePacProcessor extends TestProcessClient.TestRunnable {
-        @Override
-        public void run(Context ctx) {
-            PacProcessor pacProcessor = PacProcessor.createInstance();
-            PacProcessor otherPacProcessor = PacProcessor.createInstance();
-
-            Assert.assertNotNull("createPacProcessor must not return null", pacProcessor);
-            Assert.assertNotNull("createPacProcessor must not return null", otherPacProcessor);
-
-            Assert.assertFalse(
-                    "createPacProcessor must return different objects",
-                    pacProcessor == otherPacProcessor);
-
-            pacProcessor.setProxyScript(
-                    "function FindProxyForURL(url, host) {"
-                            + "return \"PROXY 1.2.3.4:8080\";"
-                            + "}");
-            otherPacProcessor.setProxyScript(
-                    "function FindProxyForURL(url, host) {"
-                            + "return \"PROXY 5.6.7.8:8080\";"
-                            + "}");
-
-            Assert.assertEquals("PROXY 1.2.3.4:8080", pacProcessor.findProxyForUrl("test.url"));
-            Assert.assertEquals(
-                    "PROXY 5.6.7.8:8080", otherPacProcessor.findProxyForUrl("test.url"));
-
-            pacProcessor.release();
-            otherPacProcessor.release();
-        }
-    }
-
     /**
      * Test that each {@link PacProcessor#createInstance} call returns a new not null instance.
      */
     @Test
     public void testCreatePacProcessor() throws Throwable {
         Assume.assumeTrue("WebView is not available", NullWebViewUtils.isWebViewAvailable());
-        mProcess.run(TestCreatePacProcessor.class);
-    }
+        PacProcessor pacProcessor = PacProcessor.createInstance();
+        PacProcessor otherPacProcessor = PacProcessor.createInstance();
 
-    static class TestDefaultNetworkIsNull extends TestProcessClient.TestRunnable {
-        @Override
-        public void run(Context ctx) {
-            PacProcessor pacProcessor = PacProcessor.createInstance();
-            Assert.assertNull("PacProcessor must not have Network set", pacProcessor.getNetwork());
+        Assert.assertNotNull("createPacProcessor must not return null", pacProcessor);
+        Assert.assertNotNull("createPacProcessor must not return null", otherPacProcessor);
 
-            pacProcessor.release();
-        }
+        Assert.assertNotSame(
+                "createPacProcessor must return different objects",
+                pacProcessor,
+                otherPacProcessor);
+
+        pacProcessor.setProxyScript(
+                "function FindProxyForURL(url, host) { return 'PROXY 1.2.3.4:8080'; }");
+        otherPacProcessor.setProxyScript(
+                "function FindProxyForURL(url, host) { return 'PROXY 5.6.7.8:8080'; }");
+
+        Assert.assertEquals("PROXY 1.2.3.4:8080", pacProcessor.findProxyForUrl("test.url"));
+        Assert.assertEquals("PROXY 5.6.7.8:8080", otherPacProcessor.findProxyForUrl("test.url"));
+
+        pacProcessor.release();
+        otherPacProcessor.release();
     }
 
     /**
@@ -109,29 +70,10 @@ public final class PacProcessorTest {
     @Test
     public void testDefaultNetworkIsNull() throws Throwable {
         Assume.assumeTrue("WebView is not available", NullWebViewUtils.isWebViewAvailable());
-        mProcess.run(TestDefaultNetworkIsNull.class);
-    }
+        PacProcessor pacProcessor = PacProcessor.createInstance();
+        Assert.assertNull("PacProcessor must not have Network set", pacProcessor.getNetwork());
 
-    static class TestSetNetwork extends TestProcessClient.TestRunnable {
-        @Override
-        public void run(Context ctx) {
-            Network[] networks = WebkitUtils.checkNetworkAvailable(ctx);
-
-            PacProcessor pacProcessor = PacProcessor.createInstance();
-            PacProcessor otherPacProcessor = PacProcessor.createInstance();
-
-            pacProcessor.setNetwork(networks[0]);
-            Assert.assertEquals("Network is not set", networks[0], pacProcessor.getNetwork());
-            Assert.assertNull(
-                    "setNetwork must not affect other PacProcessors",
-                    otherPacProcessor.getNetwork());
-
-            pacProcessor.setNetwork(null);
-            Assert.assertNull("Network is not unset", pacProcessor.getNetwork());
-
-            pacProcessor.release();
-            otherPacProcessor.release();
-        }
+        pacProcessor.release();
     }
 
     /**
@@ -140,6 +82,21 @@ public final class PacProcessorTest {
     @Test
     public void testSetNetwork() throws Throwable {
         Assume.assumeTrue("WebView is not available", NullWebViewUtils.isWebViewAvailable());
-        mProcess.run(TestSetNetwork.class);
+        Context ctx = InstrumentationRegistry.getInstrumentation().getContext();
+        Network[] networks = WebkitUtils.checkNetworkAvailable(ctx);
+
+        PacProcessor pacProcessor = PacProcessor.createInstance();
+        PacProcessor otherPacProcessor = PacProcessor.createInstance();
+
+        pacProcessor.setNetwork(networks[0]);
+        Assert.assertEquals("Network is not set", networks[0], pacProcessor.getNetwork());
+        Assert.assertNull(
+                "setNetwork must not affect other PacProcessors", otherPacProcessor.getNetwork());
+
+        pacProcessor.setNetwork(null);
+        Assert.assertNull("Network is not unset", pacProcessor.getNetwork());
+
+        pacProcessor.release();
+        otherPacProcessor.release();
     }
 }

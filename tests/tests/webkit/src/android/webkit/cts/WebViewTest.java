@@ -19,7 +19,15 @@ package android.webkit.cts;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import android.app.Activity;
 import android.content.ContentResolver;
@@ -51,7 +59,6 @@ import android.webkit.CookieSyncManager;
 import android.webkit.DownloadListener;
 import android.webkit.JavascriptInterface;
 import android.webkit.SafeBrowsingResponse;
-import android.webkit.ValueCallback;
 import android.webkit.WebBackForwardList;
 import android.webkit.WebChromeClient;
 import android.webkit.WebIconDatabase;
@@ -98,11 +105,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 @AppModeFull
 @MediumTest
@@ -122,12 +130,6 @@ public class WebViewTest extends SharedWebViewTest {
     private static final long MIN_SCROLL_WAIT_MS = 1000;
 
     /**
-     * This is the minimum number of milliseconds to wait for findAll to find all the matches. If
-     * matches are not found, the Listener would call findAll again until it times out.
-     */
-    private static final long MIN_FIND_WAIT_MS = 3000;
-
-    /**
      * Once scrolling has started, this is the interval that scrolling is checked to see if there is
      * a change. If no scrolling change has happened in the given time then it is assumed that
      * scrolling has stopped.
@@ -135,8 +137,8 @@ public class WebViewTest extends SharedWebViewTest {
     private static final long SCROLL_WAIT_INTERVAL_MS = 200;
 
     @Rule
-    public ActivityScenarioRule mActivityScenarioRule =
-            new ActivityScenarioRule(WebViewCtsActivity.class);
+    public ActivityScenarioRule<WebViewCtsActivity> mActivityScenarioRule =
+            new ActivityScenarioRule<>(WebViewCtsActivity.class);
 
     private Context mContext;
     private SharedSdkWebServer mWebServer;
@@ -176,12 +178,12 @@ public class WebViewTest extends SharedWebViewTest {
                 .getScenario()
                 .onActivity(
                         activity -> {
-                            WebView webView = ((WebViewCtsActivity) activity).getWebView();
+                            WebView webView = activity.getWebView();
                             builder.setHostAppInvoker(
                                             WebViewTestEnvironment.createHostAppInvoker(activity))
                                     .setContext(activity)
                                     .setWebView(webView)
-                                    .setRootLayout(((WebViewCtsActivity) activity).getRootLayout());
+                                    .setRootLayout(activity.getRootLayout());
                         });
 
         WebViewTestEnvironment environment = builder.build();
@@ -664,24 +666,15 @@ public class WebViewTest extends SharedWebViewTest {
             }
         }
         class ResultObject {
-            private String mResult;
-            private boolean mIsResultAvailable;
+            private final SettableFuture<String> mResultFuture = SettableFuture.create();
 
             @JavascriptInterface
-            public synchronized void setResult(String result) {
-                mResult = result;
-                mIsResultAvailable = true;
-                notify();
+            public void setResult(String result) {
+                mResultFuture.set(result);
             }
 
-            public synchronized String getResult() {
-                while (!mIsResultAvailable) {
-                    try {
-                        wait();
-                    } catch (InterruptedException e) {
-                    }
-                }
-                return mResult;
+            String waitForResult() {
+                return WebkitUtils.waitForFuture(mResultFuture);
             }
         }
         final ResultObject resultObject = new ResultObject();
@@ -697,7 +690,7 @@ public class WebViewTest extends SharedWebViewTest {
                         + "resultObject.setResult(removedObject.toString());\"></body></html>",
                 "text/html",
                 null);
-        assertEquals("removedObject", resultObject.getResult());
+        assertEquals("removedObject", resultObject.waitForResult());
     }
 
     @Test
@@ -746,9 +739,8 @@ public class WebViewTest extends SharedWebViewTest {
         assertEquals("false", mOnUiThread.evaluateJavascriptSync("'custom_property' in interface"));
     }
 
-    @Ignore("b/171702662")
     @Test
-    public void testJavascriptInterfaceForClientPopup() throws Exception {
+    public void testJavascriptInterfaceForClientPopup() {
         mOnUiThread.getSettings().setJavaScriptEnabled(true);
         mOnUiThread.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
         mOnUiThread.getSettings().setSupportMultipleWindows(true);
@@ -804,52 +796,48 @@ public class WebViewTest extends SharedWebViewTest {
                     "42",
                     childOnUiThread.evaluateJavascriptSync("interface.test()"));
         } finally {
-            WebkitUtils.onMainThreadSync(() -> {
-                ViewParent parent = childWebView.getParent();
-                if (parent instanceof ViewGroup) {
-                    ((ViewGroup) parent).removeView(childWebView);
-                }
-                childWebView.destroy();
-            });
+            WebkitUtils.onMainThreadSync(
+                    () -> {
+                        ViewParent parent = childWebView.getParent();
+                        if (parent instanceof ViewGroup viewGroup) {
+                            viewGroup.removeView(childWebView);
+                        }
+                        childWebView.destroy();
+                    });
         }
     }
 
-    private final class TestPictureListener implements PictureListener {
-        public int callCount;
+    private class WaitablePictureListener implements PictureListener {
+
+        private final BlockingQueue<Boolean> mCalledQueue = new LinkedBlockingQueue<>();
 
         @Override
         public void onNewPicture(WebView view, Picture picture) {
             // Need to inform the listener tracking new picture
             // for the "page loaded" knowledge since it has been replaced.
             mOnUiThread.onNewPicture();
-            this.callCount += 1;
+            mCalledQueue.add(true);
+        }
+
+        void waitForNextCall() {
+            WebkitUtils.waitForNextQueueElement(mCalledQueue);
         }
     }
 
-    private Picture waitForPictureToHaveColor(int color, final TestPictureListener listener)
-            throws Throwable {
+    private Picture waitForPictureToHaveColor(int color, final WaitablePictureListener listener) {
         final int MAX_ON_NEW_PICTURE_ITERATIONS = 5;
-        final AtomicReference<Picture> pictureRef = new AtomicReference<Picture>();
+        Picture picture = null;
         for (int i = 0; i < MAX_ON_NEW_PICTURE_ITERATIONS; i++) {
-            final int oldCallCount = listener.callCount;
-            WebkitUtils.onMainThreadSync(
-                    () -> {
-                        pictureRef.set(mWebView.capturePicture());
-                    });
-            if (isPictureFilledWithColor(pictureRef.get(), color)) break;
-            new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-                @Override
-                protected boolean check() {
-                    return listener.callCount > oldCallCount;
-                }
-            }.run();
+            picture = WebkitUtils.onMainThreadSync(mWebView::capturePicture);
+            if (isPictureFilledWithColor(picture, color)) break;
+            listener.waitForNextCall();
         }
-        return pictureRef.get();
+        return picture;
     }
 
     @Test
-    public void testCapturePicture() throws Exception, Throwable {
-        final TestPictureListener listener = new TestPictureListener();
+    public void testCapturePicture() throws Throwable {
+        final WaitablePictureListener listener = new WaitablePictureListener();
 
         mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         final String url = mWebServer.getAssetUrl(TestHtmlConstants.BLANK_PAGE_URL);
@@ -859,10 +847,7 @@ public class WebViewTest extends SharedWebViewTest {
         // The default background color is white.
         Picture oldPicture = waitForPictureToHaveColor(Color.WHITE, listener);
 
-        WebkitUtils.onMainThread(
-                () -> {
-                    mWebView.setBackgroundColor(Color.CYAN);
-                });
+        WebkitUtils.onMainThread(() -> mWebView.setBackgroundColor(Color.CYAN));
         mOnUiThread.reloadAndWaitForCompletion();
         waitForPictureToHaveColor(Color.CYAN, listener);
 
@@ -872,18 +857,14 @@ public class WebViewTest extends SharedWebViewTest {
     }
 
     @Test
-    public void testSetPictureListener() throws Exception, Throwable {
-        final class MyPictureListener implements PictureListener {
-            public int callCount;
+    public void testSetPictureListener() {
+        final class MyPictureListener extends WaitablePictureListener {
             public WebView webView;
             public Picture picture;
 
             @Override
             public void onNewPicture(WebView view, Picture picture) {
-                // Need to inform the listener tracking new picture
-                // for the "page loaded" knowledge since it has been replaced.
-                mOnUiThread.onNewPicture();
-                this.callCount += 1;
+                super.onNewPicture(view, picture);
                 this.webView = view;
                 this.picture = picture;
             }
@@ -894,24 +875,13 @@ public class WebViewTest extends SharedWebViewTest {
         final String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
         mOnUiThread.setPictureListener(listener);
         mOnUiThread.loadUrlAndWaitForCompletion(url);
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return listener.callCount > 0;
-            }
-        }.run();
+        listener.waitForNextCall();
         assertEquals(mWebView, listener.webView);
         assertNull(listener.picture);
 
-        final int oldCallCount = listener.callCount;
         final String newUrl = mWebServer.getAssetUrl(TestHtmlConstants.SMALL_IMG_URL);
         mOnUiThread.loadUrlAndWaitForCompletion(newUrl);
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return listener.callCount > oldCallCount;
-            }
-        }.run();
+        listener.waitForNextCall();
     }
 
     @Test
@@ -1210,18 +1180,10 @@ public class WebViewTest extends SharedWebViewTest {
 
     private void doSaveWebArchive(String baseName, boolean autoName, final String expectName)
             throws Throwable {
-        final Semaphore saving = new Semaphore(0);
-        ValueCallback<String> callback =
-                new ValueCallback<String>() {
-                    @Override
-                    public void onReceiveValue(String savedName) {
-                        assertEquals(expectName, savedName);
-                        saving.release();
-                    }
-                };
-
-        mOnUiThread.saveWebArchive(baseName, autoName, callback);
-        assertTrue(saving.tryAcquire(WebkitUtils.TEST_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+        final SettableFuture<String> nameFuture = SettableFuture.create();
+        mOnUiThread.saveWebArchive(baseName, autoName, nameFuture::set);
+        String savedName = WebkitUtils.waitForFuture(nameFuture);
+        assertEquals(expectName, savedName);
     }
 
     @Test
@@ -1491,7 +1453,7 @@ public class WebViewTest extends SharedWebViewTest {
         mOnUiThread.loadDataAndWaitForCompletion(
                 "<html><body>" + p + p + "</body></html>", "text/html", null);
 
-        // Wait for UI thread to settle and receive page dimentions from renderer
+        // Wait for UI thread to settle and receive page dimensions from renderer
         // such that we can invoke page down.
         new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
             @Override
@@ -1654,13 +1616,13 @@ public class WebViewTest extends SharedWebViewTest {
     }
 
     @Test
-    public void testRequestFocusNodeHref() throws Throwable {
-        mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
-
-        final String url1 = mWebServer.getAssetUrl(TestHtmlConstants.HTML_URL1);
-        final String url2 = mWebServer.getAssetUrl(TestHtmlConstants.HTML_URL2);
+    public void testRequestFocusNodeHref() {
+        final String url1 = "http://example.com/page_1.html";
+        final String url2 = "http://example.com/page_2.html";
+        // Put a few line breaks at the top to ensure the content renders on screen even with
+        // edge to edge rendering enabled.
         final String links =
-                "<DL><p><DT><A HREF=\""
+                "<br><br><br><br><br><br><DL><p><DT><A HREF=\""
                         + url1
                         + "\">HTML_URL1</A><DT><A HREF=\""
                         + url2
@@ -1670,71 +1632,31 @@ public class WebViewTest extends SharedWebViewTest {
         getTestEnvironment().waitForIdleSync();
 
         final HrefCheckHandler handler = new HrefCheckHandler(mWebView.getHandler().getLooper());
-        final Message hrefMsg = new Message();
-        hrefMsg.setTarget(handler);
 
         // focus on first link
-        handler.reset();
-        getTestEnvironment().sendKeyDownUpSync(KeyEvent.KEYCODE_TAB);
-        mOnUiThread.requestFocusNodeHref(hrefMsg);
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                boolean done = false;
-                if (handler.hasCalledHandleMessage()) {
-                    if (handler.mResultUrl != null) {
-                        done = true;
-                    } else {
-                        handler.reset();
-                        Message newMsg = new Message();
-                        newMsg.setTarget(handler);
-                        mOnUiThread.requestFocusNodeHref(newMsg);
-                    }
-                }
-                return done;
-            }
-        }.run();
-        assertEquals(url1, handler.getResultUrl());
+        moveFocusDown();
+        mOnUiThread.requestFocusNodeHref(handler.obtainMessage());
+        assertEquals(url1, handler.waitForResultUrl());
 
         // focus on second link
-        handler.reset();
-        final Message hrefMsg2 = new Message();
-        hrefMsg2.setTarget(handler);
-        getTestEnvironment().sendKeyDownUpSync(KeyEvent.KEYCODE_TAB);
-        mOnUiThread.requestFocusNodeHref(hrefMsg2);
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                boolean done = false;
-                if (handler.hasCalledHandleMessage()) {
-                    if (handler.mResultUrl != null && handler.mResultUrl.equals(url2)) {
-                        done = true;
-                    } else {
-                        handler.reset();
-                        Message newMsg = new Message();
-                        newMsg.setTarget(handler);
-                        mOnUiThread.requestFocusNodeHref(newMsg);
-                    }
-                }
-                return done;
-            }
-        }.run();
-        assertEquals(url2, handler.getResultUrl());
+        moveFocusDown();
+        mOnUiThread.requestFocusNodeHref(handler.obtainMessage());
+        assertEquals(url2, handler.waitForResultUrl());
 
         mOnUiThread.requestFocusNodeHref(null);
     }
 
     @Test
-    public void testRequestImageRef() throws Exception, Throwable {
+    public void testRequestImageRef() {
         final class ImageLoaded {
-            public SettableFuture<Void> mImageLoaded = SettableFuture.create();
+            private final SettableFuture<Void> mImageLoaded = SettableFuture.create();
 
             @JavascriptInterface
             public void loaded() {
                 mImageLoaded.set(null);
             }
 
-            public Future<Void> future() {
+            Future<Void> future() {
                 return mImageLoaded;
             }
         }
@@ -1768,7 +1690,6 @@ public class WebViewTest extends SharedWebViewTest {
         msg.setTarget(handler);
 
         // touch the image
-        handler.reset();
         int[] location = mOnUiThread.getLocationOnScreen();
         int middleX = location[0] + mOnUiThread.getWebView().getWidth() / 2;
         int middleY = location[1] + mOnUiThread.getWebView().getHeight() / 2;
@@ -1776,24 +1697,7 @@ public class WebViewTest extends SharedWebViewTest {
 
         getTestEnvironment().waitForIdleSync();
         mOnUiThread.requestImageRef(msg);
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                boolean done = false;
-                if (handler.hasCalledHandleMessage()) {
-                    if (handler.mResultUrl != null) {
-                        done = true;
-                    } else {
-                        handler.reset();
-                        Message newMsg = new Message();
-                        newMsg.setTarget(handler);
-                        mOnUiThread.requestImageRef(newMsg);
-                    }
-                }
-                return done;
-            }
-        }.run();
-        assertEquals(imgUrl, handler.mResultUrl);
+        assertEquals(imgUrl, handler.waitForResultUrl());
     }
 
     @Test
@@ -2175,29 +2079,24 @@ public class WebViewTest extends SharedWebViewTest {
     @Test
     public void testPauseResumeTimers() throws Throwable {
         class Monitor {
-            private boolean mIsUpdated;
+            private final BlockingQueue<Boolean> mUpdateQueue = new LinkedBlockingQueue<>();
 
             @JavascriptInterface
-            public synchronized void update() {
-                mIsUpdated = true;
-                notify();
+            public void update() {
+                mUpdateQueue.add(true);
             }
 
-            public synchronized boolean waitForUpdate() {
-                while (!mIsUpdated) {
-                    try {
-                        // This is slightly flaky, as we can't guarantee that
-                        // this is a sufficient time limit, but there's no way
-                        // around this.
-                        wait(1000);
-                        if (!mIsUpdated) {
-                            return false;
-                        }
-                    } catch (InterruptedException e) {
-                    }
+            boolean waitForUpdate() {
+                try {
+                    // Only wait for one second. The tests that use this method want to ensure that
+                    // delayed functions are not invoked, when timers are paused, and while there
+                    // is a slight probability that they could get invoked after the fact, 1
+                    // second is much longer than the expected delay.
+                    Boolean value = mUpdateQueue.poll(1, TimeUnit.SECONDS);
+                    return Objects.requireNonNullElse(value, false);
+                } catch (InterruptedException e) {
+                    throw new AssertionError("Interrupted wait", e);
                 }
-                mIsUpdated = false;
-                return true;
             }
         }
 
@@ -2297,14 +2196,7 @@ public class WebViewTest extends SharedWebViewTest {
 
     private static boolean setSafeBrowsingAllowlistSync(List<String> allowlist) {
         final SettableFuture<Boolean> safeBrowsingAllowlistFuture = SettableFuture.create();
-        WebView.setSafeBrowsingWhitelist(
-                allowlist,
-                new ValueCallback<Boolean>() {
-                    @Override
-                    public void onReceiveValue(Boolean success) {
-                        safeBrowsingAllowlistFuture.set(success);
-                    }
-                });
+        WebView.setSafeBrowsingWhitelist(allowlist, safeBrowsingAllowlistFuture::set);
         return WebkitUtils.waitForFuture(safeBrowsingAllowlistFuture);
     }
 
@@ -2316,7 +2208,7 @@ public class WebViewTest extends SharedWebViewTest {
      */
     @Test
     public void testSetSafeBrowsingAllowlistWithMalformedList() throws Exception {
-        List allowlist = new ArrayList<String>();
+        List<String> allowlist = new ArrayList<>();
         // Protocols are not supported in the allowlist
         allowlist.add("http://google.com");
         assertFalse("Malformed list entry should fail", setSafeBrowsingAllowlistSync(allowlist));
@@ -2329,7 +2221,7 @@ public class WebViewTest extends SharedWebViewTest {
      */
     @Test
     public void testSetSafeBrowsingAllowlistWithValidList() throws Exception {
-        List allowlist = new ArrayList<String>();
+        List<String> allowlist = new ArrayList<>();
         allowlist.add("safe-browsing");
         assertTrue("Valid allowlist should be successful", setSafeBrowsingAllowlistSync(allowlist));
 
@@ -2464,14 +2356,7 @@ public class WebViewTest extends SharedWebViewTest {
                         ApplicationProvider.getApplicationContext().getApplicationContext());
         final SettableFuture<Boolean> startSafeBrowsingFuture = SettableFuture.create();
         WebView.startSafeBrowsing(
-                ctx,
-                new ValueCallback<Boolean>() {
-                    @Override
-                    public void onReceiveValue(Boolean value) {
-                        startSafeBrowsingFuture.set(ctx.wasGetApplicationContextCalled());
-                        return;
-                    }
-                });
+                ctx, value -> startSafeBrowsingFuture.set(ctx.wasGetApplicationContextCalled()));
         assertTrue(WebkitUtils.waitForFuture(startSafeBrowsingFuture));
     }
 
@@ -2497,50 +2382,43 @@ public class WebViewTest extends SharedWebViewTest {
         final SettableFuture<Boolean> startSafeBrowsingFuture = SettableFuture.create();
         WebView.startSafeBrowsing(
                 ApplicationProvider.getApplicationContext().getApplicationContext(),
-                new ValueCallback<Boolean>() {
-                    @Override
-                    public void onReceiveValue(Boolean value) {
-                        startSafeBrowsingFuture.set(Looper.getMainLooper().isCurrentThread());
-                        return;
-                    }
-                });
+                value -> startSafeBrowsingFuture.set(Looper.getMainLooper().isCurrentThread()));
         assertTrue(WebkitUtils.waitForFuture(startSafeBrowsingFuture));
     }
 
     private static class HrefCheckHandler extends Handler {
-        private boolean mHadRecieved;
+        private final BlockingQueue<String> mUrlQueue = new LinkedBlockingQueue<>();
 
-        private String mResultUrl;
-
-        public HrefCheckHandler(Looper looper) {
+        HrefCheckHandler(Looper looper) {
             super(looper);
         }
 
-        public boolean hasCalledHandleMessage() {
-            return mHadRecieved;
-        }
-
-        public String getResultUrl() {
-            return mResultUrl;
-        }
-
-        public void reset() {
-            mResultUrl = null;
-            mHadRecieved = false;
+        String waitForResultUrl() {
+            return WebkitUtils.waitForNextQueueElement(mUrlQueue);
         }
 
         @Override
         public void handleMessage(Message msg) {
-            mResultUrl = msg.getData().getString("url");
-            mHadRecieved = true;
+            String url = msg.getData().getString("url");
+            if (url != null) {
+                mUrlQueue.add(url);
+            }
         }
     }
 
-    private void moveFocusDown() throws Throwable {
+    /**
+     * Moves focus down by sending a {@link KeyEvent#KEYCODE_TAB} and waiting 500 ms for the UI to
+     * settle.
+     */
+    private void moveFocusDown() {
         // send down key and wait for idle
         getTestEnvironment().sendKeyDownUpSync(KeyEvent.KEYCODE_TAB);
         // waiting for idle isn't always sufficient for the key to be fully processed
-        Thread.sleep(500);
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            throw new AssertionError("Interrupted while sleeping", e);
+        }
     }
 
     private void pollingCheckWebBackForwardList(

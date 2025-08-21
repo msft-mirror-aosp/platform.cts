@@ -16,7 +16,8 @@
 
 package android.media.audio.cts;
 
-import static android.media.Utils.VIBRATION_URI_PARAM;
+import static android.media.VibrationUtils.SYNCHRONIZED_VIBRATION;
+import static android.media.VibrationUtils.VIBRATION_URI_PARAM;
 import static android.media.cts.Utils.RINGTONE_TEST_URI;
 import static android.media.cts.Utils.getTestVibrationFile;
 
@@ -25,6 +26,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.media.Utils;
+import android.media.VibrationUtils;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -94,12 +96,26 @@ public class UtilsTest {
     }
 
     @Test
-    @ApiTest(apis = {"android.media.Utils#hasVibrationParameter"})
+    @ApiTest(
+            apis = {
+                "android.media.VibrationUtils#hasVibrationParameter",
+                "android.media.VibrationUtils#VIBRATION_URI_PARAM",
+                "android.media.VibrationUtils#SYNCHRONIZED_VIBRATION"
+            })
     public void testHasVibrationParameter() throws IOException {
         Uri ringtoneUri;
         ringtoneUri = RINGTONE_TEST_URI;
 
-        assertFalse(Utils.hasVibrationParameter(ringtoneUri));
+        assertFalse(VibrationUtils.hasVibrationParameter(ringtoneUri));
+
+        // Append vibration uri parameter with synchronized vibration value.
+        final Uri ringtoneUriWithSynchronized =
+                RINGTONE_TEST_URI
+                        .buildUpon()
+                        .appendQueryParameter(VIBRATION_URI_PARAM, SYNCHRONIZED_VIBRATION)
+                        .build();
+
+        assertTrue(VibrationUtils.hasVibrationParameter(ringtoneUriWithSynchronized));
 
         // Make sure we have vibration uri
         String vibrationUriString = getTestVibrationFile().toURI().toString();

@@ -18,8 +18,8 @@ package android.webkit.cts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
@@ -64,6 +64,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 @AppModeFull
 @MediumTest
@@ -72,8 +74,8 @@ public class WebViewClientTest extends SharedWebViewTest {
     private static final String TEST_URL = "http://www.example.com/";
 
     @Rule
-    public ActivityScenarioRule mActivityScenarioRule =
-            new ActivityScenarioRule(WebViewCtsActivity.class);
+    public ActivityScenarioRule<WebViewCtsActivity> mActivityScenarioRule =
+            new ActivityScenarioRule<>(WebViewCtsActivity.class);
 
     private WebViewOnUiThread mOnUiThread;
     private SharedSdkWebServer mWebServer;
@@ -137,9 +139,8 @@ public class WebViewClientTest extends SharedWebViewTest {
 
     /**
      * This should remain functionally equivalent to
-     * androidx.webkit.WebViewClientCompatTest#testShouldOverrideUrlLoadingDefault. Modifications
-     * to this test should be reflected in that test as necessary. See
-     * http://go/modifying-webview-cts.
+     * androidx.webkit.WebViewClientCompatTest#testShouldOverrideUrlLoadingDefault. Modifications to
+     * this test should be reflected in that test as necessary. See http://go/modifying-webview-cts.
      */
     // Verify that the shouldoverrideurlloading is false by default
     @Test
@@ -159,16 +160,22 @@ public class WebViewClientTest extends SharedWebViewTest {
         final MockWebViewClient webViewClient = new MockWebViewClient();
         mOnUiThread.setWebViewClient(webViewClient);
         mOnUiThread.getSettings().setJavaScriptEnabled(true);
-        String data = "<html><body>" +
-                "<a href=\"" + TEST_URL + "\" id=\"link\">new page</a>" +
-                "</body></html>";
+        String data =
+                "<html><body>"
+                        + "<a href=\""
+                        + TEST_URL
+                        + "\" id=\"link\">new page</a>"
+                        + "</body></html>";
         mOnUiThread.loadDataAndWaitForCompletion(data, "text/html", null);
         clickOnLinkUsingJs("link", mOnUiThread);
-        assertEquals(TEST_URL, webViewClient.getLastShouldOverrideUrl());
-        assertNotNull(webViewClient.getLastShouldOverrideResourceRequest());
-        assertTrue(webViewClient.getLastShouldOverrideResourceRequest().isForMainFrame());
-        assertFalse(webViewClient.getLastShouldOverrideResourceRequest().isRedirect());
-        assertFalse(webViewClient.getLastShouldOverrideResourceRequest().hasGesture());
+        ShouldOverrideUrlLoadingRequest overrideRequest =
+                webViewClient.waitForShouldOverrideUrlLoading();
+        assertNotNull(overrideRequest);
+        assertEquals(TEST_URL, overrideRequest.mUrl);
+        assertNotNull(overrideRequest.mRequest);
+        assertTrue(overrideRequest.mRequest.isForMainFrame());
+        assertFalse(overrideRequest.mRequest.isRedirect());
+        assertFalse(overrideRequest.mRequest.hasGesture());
     }
 
     // Verify shouldoverrideurlloading called on webview called via onCreateWindow
@@ -189,74 +196,71 @@ public class WebViewClientTest extends SharedWebViewTest {
 
         try {
             WebViewOnUiThread childWebViewOnUiThread = new WebViewOnUiThread(childWebView);
-            mOnUiThread.setWebChromeClient(new WebChromeClient() {
-                @Override
-                public boolean onCreateWindow(
-                        WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
-                    WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
-                    childWebView.setWebViewClient(childWebViewClient);
-                    childWebView.getSettings().setJavaScriptEnabled(true);
-                    transport.setWebView(childWebView);
-                    getTestEnvironment().addContentView(childWebView, new ViewGroup.LayoutParams(
-                                ViewGroup.LayoutParams.FILL_PARENT,
-                                ViewGroup.LayoutParams.WRAP_CONTENT));
-                    resultMsg.sendToTarget();
-                    return true;
-                }
-            });
+            mOnUiThread.setWebChromeClient(
+                    new WebChromeClient() {
+                        @Override
+                        public boolean onCreateWindow(
+                                WebView view,
+                                boolean isDialog,
+                                boolean isUserGesture,
+                                Message resultMsg) {
+                            WebView.WebViewTransport transport =
+                                    (WebView.WebViewTransport) resultMsg.obj;
+                            childWebView.setWebViewClient(childWebViewClient);
+                            childWebView.getSettings().setJavaScriptEnabled(true);
+                            transport.setWebView(childWebView);
+                            getTestEnvironment()
+                                    .addContentView(
+                                            childWebView,
+                                            new ViewGroup.LayoutParams(
+                                                    ViewGroup.LayoutParams.FILL_PARENT,
+                                                    ViewGroup.LayoutParams.WRAP_CONTENT));
+                            resultMsg.sendToTarget();
+                            return true;
+                        }
+                    });
             {
-                final int childCallCount = childWebViewClient
-                        .getShouldOverrideUrlLoadingCallCount();
                 mOnUiThread.loadUrl(mWebServer.getAssetUrl(TestHtmlConstants.BLANK_TAG_URL));
 
-                new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-                    @Override
-                    protected boolean check() {
-                        return childWebViewClient.hasOnPageFinishedCalled();
-                    }
-                }.run();
-                new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-                    @Override
-                    protected boolean check() {
-                        return childWebViewClient
-                                .getShouldOverrideUrlLoadingCallCount() > childCallCount;
-                    }
-                }.run();
-                assertEquals(mWebServer.getAssetUrl(TestHtmlConstants.PAGE_WITH_LINK_URL),
-                        childWebViewClient.getLastShouldOverrideUrl());
+                assertNotNull(childWebViewClient.waitForOnPageFinished());
+                ShouldOverrideUrlLoadingRequest overrideRequest =
+                        childWebViewClient.waitForShouldOverrideUrlLoading();
+                assertEquals(
+                        mWebServer.getAssetUrl(TestHtmlConstants.PAGE_WITH_LINK_URL),
+                        overrideRequest.mUrl);
             }
 
-            final int childCallCount = childWebViewClient.getShouldOverrideUrlLoadingCallCount();
-            final int mainCallCount = mainWebViewClient.getShouldOverrideUrlLoadingCallCount();
             clickOnLinkUsingJs("link", childWebViewOnUiThread);
-            new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-                @Override
-                protected boolean check() {
-                    return childWebViewClient
-                            .getShouldOverrideUrlLoadingCallCount() > childCallCount;
-                }
-            }.run();
-            assertEquals(mainCallCount, mainWebViewClient.getShouldOverrideUrlLoadingCallCount());
+            ShouldOverrideUrlLoadingRequest overrideRequest =
+                    childWebViewClient.waitForShouldOverrideUrlLoading();
+            assertTrue(mainWebViewClient.isShouldOverrideUrlLoadingQueueEmpty());
             // PAGE_WITH_LINK_URL has a link to BLANK_PAGE_URL (an arbitrary page
             // also controlled by the test server)
-            assertEquals(mWebServer.getAssetUrl(TestHtmlConstants.BLANK_PAGE_URL),
-                    childWebViewClient.getLastShouldOverrideUrl());
+            assertEquals(
+                    mWebServer.getAssetUrl(TestHtmlConstants.BLANK_PAGE_URL), overrideRequest.mUrl);
 
         } finally {
-            WebkitUtils.onMainThreadSync(() -> {
-                ViewParent parent = childWebView.getParent();
-                if (parent instanceof ViewGroup) {
-                    ((ViewGroup) parent).removeView(childWebView);
-                }
-                childWebView.destroy();
-            });
+            WebkitUtils.onMainThreadSync(
+                    () -> {
+                        ViewParent parent = childWebView.getParent();
+                        if (parent instanceof ViewGroup) {
+                            ((ViewGroup) parent).removeView(childWebView);
+                        }
+                        childWebView.destroy();
+                    });
         }
     }
 
     private void clickOnLinkUsingJs(final String linkId, WebViewOnUiThread webViewOnUiThread) {
-        assertEquals("null", webViewOnUiThread.evaluateJavascriptSync(
-                        "document.getElementById('" + linkId + "').click();" +
-                        "console.log('element with id [" + linkId + "] clicked');"));
+        assertEquals(
+                "null",
+                webViewOnUiThread.evaluateJavascriptSync(
+                        "document.getElementById('"
+                                + linkId
+                                + "').click();"
+                                + "console.log('element with id ["
+                                + linkId
+                                + "] clicked');"));
     }
 
     @Test
@@ -271,26 +275,9 @@ public class WebViewClientTest extends SharedWebViewTest {
         assertFalse(webViewClient.hasOnPageFinishedCalled());
         mOnUiThread.loadUrlAndWaitForCompletion(url);
 
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return webViewClient.hasOnPageStartedCalled();
-            }
-        }.run();
-
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return webViewClient.hasOnLoadResourceCalled();
-            }
-        }.run();
-
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return webViewClient.hasOnPageFinishedCalled();
-            }
-        }.run();
+        assertNotNull(webViewClient.waitForOnPageStart());
+        assertNotNull(webViewClient.waitForOnLoadResource());
+        assertNotNull(webViewClient.waitForOnPageFinished());
     }
 
     @Test
@@ -298,7 +285,7 @@ public class WebViewClientTest extends SharedWebViewTest {
         final MockWebViewClient webViewClient = new MockWebViewClient();
         mOnUiThread.setWebViewClient(webViewClient);
 
-        //set the url and html
+        // set the url and html
         final String path = "/main";
         final String page = "<head></head><body>test onReceivedLoginRequest</body>";
         final String headerName = "x-auto-login";
@@ -310,17 +297,13 @@ public class WebViewClientTest extends SharedWebViewTest {
         String url = mWebServer.setResponse(path, page, headers);
         assertFalse(webViewClient.hasOnReceivedLoginRequest());
         mOnUiThread.loadUrlAndWaitForCompletion(url);
-        assertTrue(webViewClient.hasOnReceivedLoginRequest());
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return webViewClient.hasOnReceivedLoginRequest();
-            }
-        }.run();
-        assertEquals("com.google", webViewClient.getLoginRequestRealm());
-        assertEquals("foo@bar.com", webViewClient.getLoginRequestAccount());
-        assertEquals("random_string", webViewClient.getLoginRequestArgs());
+
+        LoginRequest request = webViewClient.waitForLoginRequest();
+        assertEquals("com.google", request.mRealm);
+        assertEquals("foo@bar.com", request.mAccount);
+        assertEquals("random_string", request.mArgs);
     }
+
     /**
      * This should remain functionally equivalent to
      * androidx.webkit.WebViewClientCompatTest#testOnReceivedError. Modifications to this test
@@ -332,10 +315,11 @@ public class WebViewClientTest extends SharedWebViewTest {
         mOnUiThread.setWebViewClient(webViewClient);
 
         String wrongUri = "invalidscheme://some/resource";
-        assertEquals(0, webViewClient.hasOnReceivedErrorCode());
+        assertFalse(webViewClient.hasOnReceivedError());
         mOnUiThread.loadUrlAndWaitForCompletion(wrongUri);
-        assertEquals(WebViewClient.ERROR_UNSUPPORTED_SCHEME,
-                webViewClient.hasOnReceivedErrorCode());
+        assertEquals(
+                Integer.valueOf(WebViewClient.ERROR_UNSUPPORTED_SCHEME),
+                webViewClient.waitForOnReceivedError());
     }
 
     /**
@@ -350,12 +334,12 @@ public class WebViewClientTest extends SharedWebViewTest {
         final MockWebViewClient webViewClient = new MockWebViewClient();
         mOnUiThread.setWebViewClient(webViewClient);
 
-        assertNull(webViewClient.hasOnReceivedResourceError());
+        assertFalse(webViewClient.hasOnReceivedResourceError());
         String url = mWebServer.getAssetUrl(TestHtmlConstants.BAD_IMAGE_PAGE_URL);
         mOnUiThread.loadUrlAndWaitForCompletion(url);
-        assertNotNull(webViewClient.hasOnReceivedResourceError());
-        assertEquals(WebViewClient.ERROR_UNSUPPORTED_SCHEME,
-                webViewClient.hasOnReceivedResourceError().getErrorCode());
+        WebResourceError error = webViewClient.waitForOnReceivedResourceError();
+        assertNotNull(error);
+        assertEquals(WebViewClient.ERROR_UNSUPPORTED_SCHEME, error.getErrorCode());
     }
 
     @Test
@@ -363,12 +347,12 @@ public class WebViewClientTest extends SharedWebViewTest {
         mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         final MockWebViewClient webViewClient = new MockWebViewClient();
         mOnUiThread.setWebViewClient(webViewClient);
-
-        assertNull(webViewClient.hasOnReceivedHttpError());
+        assertFalse(webViewClient.hasOnReceivedHttpError());
         String url = mWebServer.getAssetUrl(TestHtmlConstants.NON_EXISTENT_PAGE_URL);
         mOnUiThread.loadUrlAndWaitForCompletion(url);
-        assertNotNull(webViewClient.hasOnReceivedHttpError());
-        assertEquals(404, webViewClient.hasOnReceivedHttpError().getStatusCode());
+        WebResourceResponse errorResponse = webViewClient.waitForOnReceivedHttpError();
+        assertNotNull(errorResponse);
+        assertEquals(404, errorResponse.getStatusCode());
     }
 
     @Test
@@ -385,16 +369,11 @@ public class WebViewClientTest extends SharedWebViewTest {
         mOnUiThread.loadUrlAndWaitForCompletion(url);
         // wait for JavaScript to post the form
         mOnUiThread.waitForLoadCompletion();
-        assertFalse("The URL should have changed when the form was posted",
-                url.equals(mOnUiThread.getUrl()));
+        assertNotEquals(
+                "The URL should have changed when the form was posted", url, mOnUiThread.getUrl());
         // reloading the current URL should trigger the callback
         mOnUiThread.reload();
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return webViewClient.hasOnFormResubmissionCalled();
-            }
-        }.run();
+        assertNotNull(webViewClient.waitForOnFormResubmission());
     }
 
     @Test
@@ -408,12 +387,7 @@ public class WebViewClientTest extends SharedWebViewTest {
         String url2 = mWebServer.getAssetUrl(TestHtmlConstants.BR_TAG_URL);
         mOnUiThread.loadUrlAndWaitForCompletion(url1);
         mOnUiThread.loadUrlAndWaitForCompletion(url2);
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return webViewClient.hasDoUpdateVisitedHistoryCalled();
-            }
-        }.run();
+        assertNotNull(webViewClient.waitForDoUpdateVisitedHistory());
     }
 
     @Test
@@ -425,7 +399,7 @@ public class WebViewClientTest extends SharedWebViewTest {
         assertFalse(webViewClient.hasOnReceivedHttpAuthRequestCalled());
         String url = mWebServer.getAuthAssetUrl(TestHtmlConstants.EMBEDDED_IMG_URL);
         mOnUiThread.loadUrlAndWaitForCompletion(url);
-        assertTrue(webViewClient.hasOnReceivedHttpAuthRequestCalled());
+        assertNotNull(webViewClient.waitForOnReceivedHttpAuthRequest());
     }
 
     @Test
@@ -448,12 +422,7 @@ public class WebViewClientTest extends SharedWebViewTest {
         assertFalse(webViewClient.hasOnUnhandledKeyEventCalled());
         getTestEnvironment().sendKeyDownUpSync(KeyEvent.KEYCODE_1);
 
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return webViewClient.hasOnUnhandledKeyEventCalled();
-            }
-        }.run();
+        assertNotNull(webViewClient.waitForOnUnhandledKeyEvent());
     }
 
     @Test
@@ -474,12 +443,7 @@ public class WebViewClientTest extends SharedWebViewTest {
         }.run();
 
         assertTrue(mOnUiThread.zoomIn());
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return webViewClient.hasOnScaleChangedCalled();
-            }
-        }.run();
+        assertNotNull(webViewClient.waitForOnScaleChanged());
     }
 
     // Test that shouldInterceptRequest is called with the correct parameters
@@ -494,13 +458,16 @@ public class WebViewClientTest extends SharedWebViewTest {
 
         // A client which saves the WebResourceRequest as interceptRequest
         final class TestClient extends WaitForLoadedClient {
-            public TestClient() {
+            TestClient() {
                 super(mOnUiThread);
             }
 
+            private final SettableFuture<WebResourceRequest> mRequestFuture =
+                    SettableFuture.create();
+
             @Override
-            public WebResourceResponse shouldInterceptRequest(WebView view,
-                    WebResourceRequest request) {
+            public WebResourceResponse shouldInterceptRequest(
+                    WebView view, WebResourceRequest request) {
                 assertNotNull(view);
                 assertNotNull(request);
 
@@ -508,14 +475,11 @@ public class WebViewClientTest extends SharedWebViewTest {
 
                 // Save the main page request; discard any other requests (e.g. for favicon.ico)
                 if (request.getUrl().getPath().equals(mainPath)) {
-                    assertNull(interceptRequest);
-                    interceptRequest = request;
+                    mRequestFuture.set(request);
                 }
 
                 return null;
             }
-
-            public volatile WebResourceRequest interceptRequest;
         }
 
         TestClient client = new TestClient();
@@ -525,15 +489,15 @@ public class WebViewClientTest extends SharedWebViewTest {
         String mainUrl = mWebServer.setResponse(mainPath, mainPage, null);
         mOnUiThread.loadUrlAndWaitForCompletion(mainUrl, headers);
         // Inspect the fields of the saved WebResourceRequest
-        assertNotNull(client.interceptRequest);
-        assertEquals(mainUrl, client.interceptRequest.getUrl().toString());
-        assertTrue(client.interceptRequest.isForMainFrame());
-        assertEquals(mWebServer.getLastRequest(mainPath).getMethod(),
-            client.interceptRequest.getMethod());
+        WebResourceRequest interceptRequest = WebkitUtils.waitForFuture(client.mRequestFuture);
+        assertNotNull(interceptRequest);
+        assertEquals(mainUrl, interceptRequest.getUrl().toString());
+        assertTrue(interceptRequest.isForMainFrame());
+        assertEquals(mWebServer.getLastRequest(mainPath).getMethod(), interceptRequest.getMethod());
         // Web request headers are case-insensitive. We provided lower-case headerName and
         // headerValue. This will pass implementations which either do not mangle case,
         // convert to lowercase, or convert to uppercase but return a case-insensitive map.
-        Map<String, String> interceptHeaders = client.interceptRequest.getRequestHeaders();
+        Map<String, String> interceptHeaders = interceptRequest.getRequestHeaders();
         assertTrue(interceptHeaders.containsKey(headerName));
         assertEquals(headerValue, interceptHeaders.get(headerName));
     }
@@ -552,17 +516,17 @@ public class WebViewClientTest extends SharedWebViewTest {
             }
 
             @Override
-            public WebResourceResponse shouldInterceptRequest(WebView view,
-                    WebResourceRequest request) {
+            public WebResourceResponse shouldInterceptRequest(
+                    WebView view, WebResourceRequest request) {
                 if (request.getUrl().toString().contains(interceptPath)) {
-                    assertNotNull(interceptResponse);
-                    return interceptResponse;
+                    assertNotNull(mInterceptresponse);
+                    return mInterceptresponse;
                 }
 
                 return null;
             }
 
-            volatile public WebResourceResponse interceptResponse;
+            volatile WebResourceResponse mInterceptresponse;
         }
 
         mOnUiThread.getSettings().setJavaScriptEnabled(true);
@@ -574,27 +538,35 @@ public class WebViewClientTest extends SharedWebViewTest {
         String interceptUrl = mWebServer.getAbsoluteUrl(interceptPath);
         // JavaScript which makes a synchronous AJAX request and logs and returns the status
         String js =
-            "(function() {" +
-            "  var xhr = new XMLHttpRequest();" +
-            "  xhr.open('GET', '" + interceptUrl + "', false);" +
-            "  xhr.send(null);" +
-            "  console.info('xhr.status = ' + xhr.status);" +
-            "  console.info('xhr.statusText = ' + xhr.statusText);" +
-            "  return '[' + xhr.status + '][' + xhr.statusText + ']';" +
-            "})();";
+                "(function() {"
+                        + "  var xhr = new XMLHttpRequest();"
+                        + "  xhr.open('GET', '"
+                        + interceptUrl
+                        + "', false);"
+                        + "  xhr.send(null);"
+                        + "  console.info('xhr.status = ' + xhr.status);"
+                        + "  console.info('xhr.statusText = ' + xhr.statusText);"
+                        + "  return '[' + xhr.status + '][' + xhr.statusText + ']';"
+                        + "})();";
         String mainUrl = mWebServer.setResponse(mainPath, mainPage, null);
         mOnUiThread.loadUrlAndWaitForCompletion(mainUrl, null);
         // Test a nonexistent page
-        client.interceptResponse = new WebResourceResponse("text/html", "UTF-8", null);
+        client.mInterceptresponse = new WebResourceResponse("text/html", "UTF-8", null);
         assertEquals("\"[404][Not Found]\"", mOnUiThread.evaluateJavascriptSync(js));
         // Test an empty page
-        client.interceptResponse = new WebResourceResponse("text/html", "UTF-8",
-            new ByteArrayInputStream(new byte[0]));
+        client.mInterceptresponse =
+                new WebResourceResponse(
+                        "text/html", "UTF-8", new ByteArrayInputStream(new byte[0]));
         assertEquals("\"[200][OK]\"", mOnUiThread.evaluateJavascriptSync(js));
         // Test a nonempty page with unusual response code/text
-        client.interceptResponse =
-            new WebResourceResponse("text/html", "UTF-8", 123, "unusual", null,
-                new ByteArrayInputStream("nonempty page".getBytes(StandardCharsets.UTF_8)));
+        client.mInterceptresponse =
+                new WebResourceResponse(
+                        "text/html",
+                        "UTF-8",
+                        123,
+                        "unusual",
+                        null,
+                        new ByteArrayInputStream("nonempty page".getBytes(StandardCharsets.UTF_8)));
         assertEquals("\"[123][unusual]\"", mOnUiThread.evaluateJavascriptSync(js));
     }
 
@@ -610,20 +582,15 @@ public class WebViewClientTest extends SharedWebViewTest {
         final MockWebViewClient webViewClient = new MockWebViewClient();
         mOnUiThread.setWebViewClient(webViewClient);
         mOnUiThread.loadUrl("chrome://kill");
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return webViewClient.hasRenderProcessGoneCalled();
-            }
-        }.run();
-        assertFalse(webViewClient.didRenderProcessCrash());
+        RenderProcessGoneDetail detail = webViewClient.waitForOnRenderProcessGone();
+        assertNotNull(detail);
+        assertFalse(detail.didCrash()); // Render process does not crash on chrome://kill
     }
 
     /**
      * This should remain functionally equivalent to
-     * androidx.webkit.WebViewClientCompatTest#testOnSafeBrowsingHitBackToSafety.
-     * Modifications to this test should be reflected in that test as necessary. See
-     * http://go/modifying-webview-cts.
+     * androidx.webkit.WebViewClientCompatTest#testOnSafeBrowsingHitBackToSafety. Modifications to
+     * this test should be reflected in that test as necessary. See http://go/modifying-webview-cts.
      */
     @Test
     @Ignore("b/40196091")
@@ -640,26 +607,24 @@ public class WebViewClientTest extends SharedWebViewTest {
 
         // Note: Safe Browsing is enabled by default, and will work on chrome://safe-browsing/ URLs
         // regardless of user opt-in or GMS state (because this URL will never be sent to GMS Core).
-        assertEquals(0, backToSafetyWebViewClient.hasOnReceivedErrorCode());
+        assertFalse(backToSafetyWebViewClient.hasOnReceivedError());
         mOnUiThread.loadUrlAndWaitForCompletion(TEST_SAFE_BROWSING_MALWARE_URL);
 
-        assertEquals(TEST_SAFE_BROWSING_MALWARE_URL,
+        assertEquals(
+                TEST_SAFE_BROWSING_MALWARE_URL,
                 backToSafetyWebViewClient.getOnSafeBrowsingHitRequest().getUrl().toString());
         assertTrue(backToSafetyWebViewClient.getOnSafeBrowsingHitRequest().isForMainFrame());
-
-        assertEquals("Back to safety should produce a network error",
-                WebViewClient.ERROR_UNSAFE_RESOURCE,
-                backToSafetyWebViewClient.hasOnReceivedErrorCode());
-
-        assertEquals("Back to safety should navigate backward", ORIGINAL_URL,
-                mOnUiThread.getUrl());
+        assertEquals(
+                "Back to safety should produce a network error",
+                Integer.valueOf(WebViewClient.ERROR_UNSAFE_RESOURCE),
+                backToSafetyWebViewClient.waitForOnReceivedError());
+        assertEquals("Back to safety should navigate backward", ORIGINAL_URL, mOnUiThread.getUrl());
     }
 
     /**
      * This should remain functionally equivalent to
-     * androidx.webkit.WebViewClientCompatTest#testOnSafeBrowsingHitProceed.
-     * Modifications to this test should be reflected in that test as necessary. See
-     * http://go/modifying-webview-cts.
+     * androidx.webkit.WebViewClientCompatTest#testOnSafeBrowsingHitProceed. Modifications to this
+     * test should be reflected in that test as necessary. See http://go/modifying-webview-cts.
      */
     @Test
     @Ignore("b/40196091")
@@ -669,21 +634,23 @@ public class WebViewClientTest extends SharedWebViewTest {
         mOnUiThread.loadUrlAndWaitForCompletion(url);
         final String ORIGINAL_URL = mOnUiThread.getUrl();
 
-        final SafeBrowsingProceedClient proceedWebViewClient =
-                new SafeBrowsingProceedClient();
+        final SafeBrowsingProceedClient proceedWebViewClient = new SafeBrowsingProceedClient();
         mOnUiThread.setWebViewClient(proceedWebViewClient);
 
         // Note: Safe Browsing is enabled by default, and will work on chrome://safe-browsing/ URLs
         // regardless of user opt-in or GMS state (because this URL will never be sent to GMS Core).
-        assertEquals(0, proceedWebViewClient.hasOnReceivedErrorCode());
+        assertFalse(proceedWebViewClient.hasOnReceivedError());
         mOnUiThread.loadUrlAndWaitForCompletion(TEST_SAFE_BROWSING_MALWARE_URL);
 
-        assertEquals(TEST_SAFE_BROWSING_MALWARE_URL,
+        assertEquals(
+                TEST_SAFE_BROWSING_MALWARE_URL,
                 proceedWebViewClient.getOnSafeBrowsingHitRequest().getUrl().toString());
         assertTrue(proceedWebViewClient.getOnSafeBrowsingHitRequest().isForMainFrame());
 
-        assertEquals("Proceed button should navigate to the page",
-                TEST_SAFE_BROWSING_MALWARE_URL, mOnUiThread.getUrl());
+        assertEquals(
+                "Proceed button should navigate to the page",
+                TEST_SAFE_BROWSING_MALWARE_URL,
+                mOnUiThread.getUrl());
     }
 
     private void testOnSafeBrowsingCode(String expectedUrl, int expectedThreatType)
@@ -691,7 +658,6 @@ public class WebViewClientTest extends SharedWebViewTest {
         mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
         mOnUiThread.loadUrlAndWaitForCompletion(url);
-        final String ORIGINAL_URL = mOnUiThread.getUrl();
 
         final SafeBrowsingBackToSafetyClient backToSafetyWebViewClient =
                 new SafeBrowsingBackToSafetyClient();
@@ -701,65 +667,65 @@ public class WebViewClientTest extends SharedWebViewTest {
         // regardless of user opt-in or GMS state (because this URL will never be sent to GMS Core).
         mOnUiThread.loadUrlAndWaitForCompletion(expectedUrl);
 
-        assertEquals("Safe Browsing hit is for unexpected URL",
+        assertEquals(
+                "Safe Browsing hit is for unexpected URL",
                 expectedUrl,
                 backToSafetyWebViewClient.getOnSafeBrowsingHitRequest().getUrl().toString());
 
-        assertEquals("Safe Browsing hit has unexpected threat type",
+        assertEquals(
+                "Safe Browsing hit has unexpected threat type",
                 expectedThreatType,
                 backToSafetyWebViewClient.getOnSafeBrowsingHitThreatType());
     }
 
     /**
      * This should remain functionally equivalent to
-     * androidx.webkit.WebViewClientCompatTest#testOnSafeBrowsingMalwareCode.
-     * Modifications to this test should be reflected in that test as necessary. See
-     * http://go/modifying-webview-cts.
+     * androidx.webkit.WebViewClientCompatTest#testOnSafeBrowsingMalwareCode. Modifications to this
+     * test should be reflected in that test as necessary. See http://go/modifying-webview-cts.
      */
     @Test
     @Ignore("b/40196091")
     public void testOnSafeBrowsingMalwareCode() throws Throwable {
-        testOnSafeBrowsingCode(TEST_SAFE_BROWSING_MALWARE_URL,
-                WebViewClient.SAFE_BROWSING_THREAT_MALWARE);
+        testOnSafeBrowsingCode(
+                TEST_SAFE_BROWSING_MALWARE_URL, WebViewClient.SAFE_BROWSING_THREAT_MALWARE);
     }
 
     /**
      * This should remain functionally equivalent to
-     * androidx.webkit.WebViewClientCompatTest#testOnSafeBrowsingPhishingCode.
-     * Modifications to this test should be reflected in that test as necessary. See
-     * http://go/modifying-webview-cts.
+     * androidx.webkit.WebViewClientCompatTest#testOnSafeBrowsingPhishingCode. Modifications to this
+     * test should be reflected in that test as necessary. See http://go/modifying-webview-cts.
      */
     @Test
     @Ignore("b/40196091")
     public void testOnSafeBrowsingPhishingCode() throws Throwable {
-        testOnSafeBrowsingCode(TEST_SAFE_BROWSING_PHISHING_URL,
-                WebViewClient.SAFE_BROWSING_THREAT_PHISHING);
+        testOnSafeBrowsingCode(
+                TEST_SAFE_BROWSING_PHISHING_URL, WebViewClient.SAFE_BROWSING_THREAT_PHISHING);
     }
 
     /**
      * This should remain functionally equivalent to
-     * androidx.webkit.WebViewClientCompatTest#testOnSafeBrowsingUnwantedSoftwareCode.
-     * Modifications to this test should be reflected in that test as necessary. See
+     * androidx.webkit.WebViewClientCompatTest#testOnSafeBrowsingUnwantedSoftwareCode. Modifications
+     * to this test should be reflected in that test as necessary. See
      * http://go/modifying-webview-cts.
      */
     @Test
     @Ignore("b/40196091")
     public void testOnSafeBrowsingUnwantedSoftwareCode() throws Throwable {
-        testOnSafeBrowsingCode(TEST_SAFE_BROWSING_UNWANTED_SOFTWARE_URL,
+        testOnSafeBrowsingCode(
+                TEST_SAFE_BROWSING_UNWANTED_SOFTWARE_URL,
                 WebViewClient.SAFE_BROWSING_THREAT_UNWANTED_SOFTWARE);
     }
 
     /**
      * This should remain functionally equivalent to
-     * androidx.webkit.WebViewClientCompatTest#testOnSafeBrowsingBillingCode.
-     * Modifications to this test should be reflected in that test as necessary. See
-     * http://go/modifying-webview-cts.
+     * androidx.webkit.WebViewClientCompatTest#testOnSafeBrowsingBillingCode. Modifications to this
+     * test should be reflected in that test as necessary. See http://go/modifying-webview-cts.
      */
     @Test
     @Ignore("b/40196091")
     public void testOnSafeBrowsingBillingCode() throws Throwable {
-        testOnSafeBrowsingCode(TEST_SAFE_BROWSING_BILLING_URL,
-                WebViewClient.SAFE_BROWSING_THREAT_BILLING);
+        testOnSafeBrowsingCode(
+                TEST_SAFE_BROWSING_BILLING_URL, WebViewClient.SAFE_BROWSING_THREAT_BILLING);
     }
 
     private void requireLoadedPage() throws Throwable {
@@ -768,282 +734,330 @@ public class WebViewClientTest extends SharedWebViewTest {
 
     /**
      * This should remain functionally equivalent to
-     * androidx.webkit.WebViewClientCompatTest#testOnPageCommitVisibleCalled.
-     * Modifications to this test should be reflected in that test as necessary. See
-     * http://go/modifying-webview-cts.
+     * androidx.webkit.WebViewClientCompatTest#testOnPageCommitVisibleCalled. Modifications to this
+     * test should be reflected in that test as necessary. See http://go/modifying-webview-cts.
      */
     @Test
     public void testOnPageCommitVisibleCalled() throws Exception {
         // Check that the onPageCommitVisible callback is called
         // correctly.
         final SettableFuture<String> pageCommitVisibleFuture = SettableFuture.create();
-        mOnUiThread.setWebViewClient(new WebViewClient() {
-            public void onPageCommitVisible(WebView view, String url) {
-                pageCommitVisibleFuture.set(url);
-            }
-        });
+        mOnUiThread.setWebViewClient(
+                new WebViewClient() {
+                    public void onPageCommitVisible(WebView view, String url) {
+                        pageCommitVisibleFuture.set(url);
+                    }
+                });
 
         final String url = "about:blank";
         mOnUiThread.loadUrl(url);
         assertEquals(url, WebkitUtils.waitForFuture(pageCommitVisibleFuture));
     }
 
-    private class MockWebViewClient extends WaitForLoadedClient {
-        private boolean mOnPageStartedCalled;
-        private boolean mOnPageFinishedCalled;
-        private boolean mOnLoadResourceCalled;
-        private int mOnReceivedErrorCode;
-        private WebResourceError mOnReceivedResourceError;
-        private WebResourceResponse mOnReceivedHttpError;
-        private boolean mOnFormResubmissionCalled;
-        private boolean mDoUpdateVisitedHistoryCalled;
-        private boolean mOnReceivedHttpAuthRequestCalled;
-        private boolean mOnReceivedLoginRequest;
-        private String mOnReceivedLoginAccount;
-        private String mOnReceivedLoginArgs;
-        private String mOnReceivedLoginRealm;
-        private boolean mOnUnhandledKeyEventCalled;
-        private boolean mOnScaleChangedCalled;
-        private int mShouldOverrideUrlLoadingCallCount;
-        private String mLastShouldOverrideUrl;
-        private WebResourceRequest mLastShouldOverrideResourceRequest;
-        private boolean mOnRenderProcessGoneCalled;
-        private boolean mRenderProcessCrashed;
+    private static class ShouldOverrideUrlLoadingRequest {
+        final String mUrl;
+        final WebResourceRequest mRequest;
 
-        public MockWebViewClient() {
+        ShouldOverrideUrlLoadingRequest(String url, WebResourceRequest request) {
+            mUrl = url;
+            mRequest = request;
+        }
+    }
+
+    private static class LoginRequest {
+        final String mRealm;
+        final String mAccount;
+        final String mArgs;
+
+        LoginRequest(String realm, String account, String args) {
+            mRealm = realm;
+            mAccount = account;
+            mArgs = args;
+        }
+    }
+
+    private class MockWebViewClient extends WaitForLoadedClient {
+        private final BlockingQueue<Integer> mOnReceivedErrorQueue = new LinkedBlockingQueue<>();
+        private final BlockingQueue<WebResourceError> mOnReceivedResourceErrorQueue =
+                new LinkedBlockingQueue<>();
+        private final BlockingQueue<WebResourceResponse> mOnReceivedHttpErrorQueue =
+                new LinkedBlockingQueue<>();
+        private final BlockingQueue<ShouldOverrideUrlLoadingRequest>
+                mShouldOverrideUrlLoadingQueue = new LinkedBlockingQueue<>();
+        private final BlockingQueue<Boolean> mOnPageFinishedQueue = new LinkedBlockingQueue<>();
+        private final BlockingQueue<Boolean> mOnPageStartQueue = new LinkedBlockingQueue<>();
+        private final BlockingQueue<Boolean> mOnLoadResourceQueue = new LinkedBlockingQueue<>();
+        private final BlockingQueue<LoginRequest> mOnLoginRequestQueue =
+                new LinkedBlockingQueue<>();
+        private final BlockingQueue<Boolean> mDoUpdateVisitedHistoryQueue =
+                new LinkedBlockingQueue<>();
+        private final BlockingQueue<Boolean> mOnReceivedHttpAuthRequestQueue =
+                new LinkedBlockingQueue<>();
+        private final BlockingQueue<Boolean> mOnUnhandledKeyEventQueue =
+                new LinkedBlockingQueue<>();
+        private final BlockingQueue<Boolean> mOnScaleChangedQueue = new LinkedBlockingQueue<>();
+        private final BlockingQueue<Boolean> mOnFormResubmissionQueue = new LinkedBlockingQueue<>();
+        private final BlockingQueue<RenderProcessGoneDetail> mOnRenderProcessGoneQueue =
+                new LinkedBlockingQueue<>();
+
+        MockWebViewClient() {
             super(mOnUiThread);
         }
 
-        public boolean hasOnPageStartedCalled() {
-            return mOnPageStartedCalled;
+        boolean hasOnPageStartedCalled() {
+            return !mOnPageStartQueue.isEmpty();
         }
 
-        public boolean hasOnPageFinishedCalled() {
-            return mOnPageFinishedCalled;
+        Boolean waitForOnPageStart() {
+            return WebkitUtils.waitForNextQueueElement(mOnPageStartQueue);
         }
 
-        public boolean hasOnLoadResourceCalled() {
-            return mOnLoadResourceCalled;
+        boolean hasOnPageFinishedCalled() {
+            return !mOnPageFinishedQueue.isEmpty();
         }
 
-        public int hasOnReceivedErrorCode() {
-            return mOnReceivedErrorCode;
+        Boolean waitForOnPageFinished() {
+            return WebkitUtils.waitForNextQueueElement(mOnPageFinishedQueue);
         }
 
-        public boolean hasOnReceivedLoginRequest() {
-            return mOnReceivedLoginRequest;
+        boolean hasOnLoadResourceCalled() {
+            return !mOnLoadResourceQueue.isEmpty();
         }
 
-        public WebResourceError hasOnReceivedResourceError() {
-            return mOnReceivedResourceError;
+        Boolean waitForOnLoadResource() {
+            return WebkitUtils.waitForNextQueueElement(mOnLoadResourceQueue);
         }
 
-        public WebResourceResponse hasOnReceivedHttpError() {
-            return mOnReceivedHttpError;
+        boolean hasOnReceivedError() {
+            return !mOnReceivedErrorQueue.isEmpty();
         }
 
-        public boolean hasOnFormResubmissionCalled() {
-            return mOnFormResubmissionCalled;
+        Integer waitForOnReceivedError() {
+            return WebkitUtils.waitForNextQueueElement(mOnReceivedErrorQueue);
         }
 
-        public boolean hasDoUpdateVisitedHistoryCalled() {
-            return mDoUpdateVisitedHistoryCalled;
+        boolean hasOnReceivedLoginRequest() {
+            return !mOnLoginRequestQueue.isEmpty();
         }
 
-        public boolean hasOnReceivedHttpAuthRequestCalled() {
-            return mOnReceivedHttpAuthRequestCalled;
+        LoginRequest waitForLoginRequest() {
+            return WebkitUtils.waitForNextQueueElement(mOnLoginRequestQueue);
         }
 
-        public boolean hasOnUnhandledKeyEventCalled() {
-            return mOnUnhandledKeyEventCalled;
+        boolean hasOnReceivedResourceError() {
+            return !mOnReceivedResourceErrorQueue.isEmpty();
         }
 
-        public boolean hasOnScaleChangedCalled() {
-            return mOnScaleChangedCalled;
+        WebResourceError waitForOnReceivedResourceError() {
+            return WebkitUtils.waitForNextQueueElement(mOnReceivedResourceErrorQueue);
         }
 
-        public int getShouldOverrideUrlLoadingCallCount() {
-            return mShouldOverrideUrlLoadingCallCount;
+        boolean hasOnReceivedHttpError() {
+            return !mOnReceivedHttpErrorQueue.isEmpty();
         }
 
-        public String getLastShouldOverrideUrl() {
-            return mLastShouldOverrideUrl;
+        WebResourceResponse waitForOnReceivedHttpError() {
+            return WebkitUtils.waitForNextQueueElement(mOnReceivedHttpErrorQueue);
         }
 
-        public WebResourceRequest getLastShouldOverrideResourceRequest() {
-            return mLastShouldOverrideResourceRequest;
+        boolean hasOnFormResubmissionCalled() {
+            return !mOnFormResubmissionQueue.isEmpty();
         }
 
-        public String getLoginRequestRealm() {
-            return mOnReceivedLoginRealm;
+        Boolean waitForOnFormResubmission() {
+            return WebkitUtils.waitForNextQueueElement(mOnFormResubmissionQueue);
         }
 
-        public String getLoginRequestAccount() {
-            return mOnReceivedLoginAccount;
+        boolean hasDoUpdateVisitedHistoryCalled() {
+            return !mDoUpdateVisitedHistoryQueue.isEmpty();
         }
 
-        public String getLoginRequestArgs() {
-            return mOnReceivedLoginArgs;
+        Boolean waitForDoUpdateVisitedHistory() {
+            return WebkitUtils.waitForNextQueueElement(mDoUpdateVisitedHistoryQueue);
         }
 
-        public boolean hasRenderProcessGoneCalled() {
-            return mOnRenderProcessGoneCalled;
+        boolean hasOnReceivedHttpAuthRequestCalled() {
+            return !mOnReceivedHttpAuthRequestQueue.isEmpty();
         }
 
-        public boolean didRenderProcessCrash() {
-            return mRenderProcessCrashed;
+        Boolean waitForOnReceivedHttpAuthRequest() {
+            return WebkitUtils.waitForNextQueueElement(mOnReceivedHttpAuthRequestQueue);
+        }
+
+        boolean hasOnUnhandledKeyEventCalled() {
+            return !mOnUnhandledKeyEventQueue.isEmpty();
+        }
+
+        Boolean waitForOnUnhandledKeyEvent() {
+            return WebkitUtils.waitForNextQueueElement(mOnUnhandledKeyEventQueue);
+        }
+
+        boolean hasOnScaleChangedCalled() {
+            return !mOnScaleChangedQueue.isEmpty();
+        }
+
+        Boolean waitForOnScaleChanged() {
+            return WebkitUtils.waitForNextQueueElement(mOnScaleChangedQueue);
+        }
+
+        ShouldOverrideUrlLoadingRequest waitForShouldOverrideUrlLoading() {
+            return WebkitUtils.waitForNextQueueElement(mShouldOverrideUrlLoadingQueue);
+        }
+
+        boolean isShouldOverrideUrlLoadingQueueEmpty() {
+            return mShouldOverrideUrlLoadingQueue.isEmpty();
+        }
+
+        RenderProcessGoneDetail waitForOnRenderProcessGone() {
+            return WebkitUtils.waitForNextQueueElement(mOnRenderProcessGoneQueue);
         }
 
         @Override
         public void onPageStarted(WebView view, String url, Bitmap favicon) {
             super.onPageStarted(view, url, favicon);
-            mOnPageStartedCalled = true;
+            mOnPageStartQueue.add(true);
         }
 
         @Override
         public void onPageFinished(WebView view, String url) {
             super.onPageFinished(view, url);
             // TODO(ntfschr): propagate these exceptions to the instrumentation thread.
-            assertTrue("Expected onPageStarted to be called before onPageFinished",
-                    mOnPageStartedCalled);
+            assertTrue(
+                    "Expected onPageStarted to be called before onPageFinished",
+                    hasOnPageStartedCalled());
             assertTrue(
                     "Expected onLoadResource or onReceivedError to be called before onPageFinished",
-                    mOnLoadResourceCalled || mOnReceivedResourceError != null);
-            mOnPageFinishedCalled = true;
+                    hasOnLoadResourceCalled() || hasOnReceivedError());
+            mOnPageFinishedQueue.add(true);
         }
 
         @Override
         public void onLoadResource(WebView view, String url) {
             super.onLoadResource(view, url);
-            mOnLoadResourceCalled = true;
+            mOnLoadResourceQueue.add(true);
         }
 
         @Override
-        public void onReceivedError(WebView view, int errorCode,
-                String description, String failingUrl) {
+        public void onReceivedError(
+                WebView view, int errorCode, String description, String failingUrl) {
             super.onReceivedError(view, errorCode, description, failingUrl);
-            mOnReceivedErrorCode = errorCode;
+            mOnReceivedErrorQueue.add(errorCode);
         }
 
         @Override
-        public void onReceivedError(WebView view, WebResourceRequest request,
-                WebResourceError error) {
+        public void onReceivedError(
+                WebView view, WebResourceRequest request, WebResourceError error) {
             super.onReceivedError(view, request, error);
-            mOnReceivedResourceError = error;
+            mOnReceivedResourceErrorQueue.add(error);
         }
 
         @Override
-        public void onReceivedHttpError(WebView view,  WebResourceRequest request,
-                WebResourceResponse errorResponse) {
+        public void onReceivedHttpError(
+                WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
             super.onReceivedHttpError(view, request, errorResponse);
-            mOnReceivedHttpError = errorResponse;
+            mOnReceivedHttpErrorQueue.add(errorResponse);
         }
 
         @Override
-        public void onReceivedLoginRequest(WebView view, String realm, String account,
-                String args) {
+        public void onReceivedLoginRequest(
+                WebView view, String realm, String account, String args) {
             super.onReceivedLoginRequest(view, realm, account, args);
-            mOnReceivedLoginRequest = true;
-            mOnReceivedLoginRealm = realm;
-            mOnReceivedLoginAccount = account;
-            mOnReceivedLoginArgs = args;
-       }
+            mOnLoginRequestQueue.add(new LoginRequest(realm, account, args));
+        }
 
         @Override
         public void onFormResubmission(WebView view, Message dontResend, Message resend) {
-            mOnFormResubmissionCalled = true;
+            mOnFormResubmissionQueue.add(true);
             dontResend.sendToTarget();
         }
 
         @Override
         public void doUpdateVisitedHistory(WebView view, String url, boolean isReload) {
             super.doUpdateVisitedHistory(view, url, isReload);
-            mDoUpdateVisitedHistoryCalled = true;
+            mDoUpdateVisitedHistoryQueue.add(true);
         }
 
         @Override
-        public void onReceivedHttpAuthRequest(WebView view,
-                HttpAuthHandler handler, String host, String realm) {
+        public void onReceivedHttpAuthRequest(
+                WebView view, HttpAuthHandler handler, String host, String realm) {
             super.onReceivedHttpAuthRequest(view, handler, host, realm);
-            mOnReceivedHttpAuthRequestCalled = true;
+            mOnReceivedHttpAuthRequestQueue.add(true);
         }
 
         @Override
         public void onUnhandledKeyEvent(WebView view, KeyEvent event) {
             super.onUnhandledKeyEvent(view, event);
-            mOnUnhandledKeyEventCalled = true;
+            mOnUnhandledKeyEventQueue.add(true);
         }
 
         @Override
         public void onScaleChanged(WebView view, float oldScale, float newScale) {
             super.onScaleChanged(view, oldScale, newScale);
-            mOnScaleChangedCalled = true;
+            mOnScaleChangedQueue.add(true);
         }
 
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
-            mLastShouldOverrideUrl = url;
-            mLastShouldOverrideResourceRequest = null;
-            mShouldOverrideUrlLoadingCallCount++;
+            mShouldOverrideUrlLoadingQueue.add(new ShouldOverrideUrlLoadingRequest(url, null));
             return false;
         }
 
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-            mLastShouldOverrideUrl = request.getUrl().toString();
-            mLastShouldOverrideResourceRequest = request;
-            mShouldOverrideUrlLoadingCallCount++;
+            mShouldOverrideUrlLoadingQueue.add(
+                    new ShouldOverrideUrlLoadingRequest(request.getUrl().toString(), request));
             return false;
         }
 
         @Override
-        public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail  detail) {
-            mOnRenderProcessGoneCalled = true;
-            mRenderProcessCrashed = detail.didCrash();
+        public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+            mOnRenderProcessGoneQueue.add(detail);
             return true;
         }
     }
 
     private class SafeBrowsingBackToSafetyClient extends MockWebViewClient {
-        private WebResourceRequest mOnSafeBrowsingHitRequest;
-        private int mOnSafeBrowsingHitThreatType;
+        private final SettableFuture<WebResourceRequest> mOnSafeBrowsingHitRequestFuture =
+                SettableFuture.create();
+        private volatile int mOnSafeBrowsingHitThreatType;
 
-        public WebResourceRequest getOnSafeBrowsingHitRequest() {
-            return mOnSafeBrowsingHitRequest;
+        WebResourceRequest getOnSafeBrowsingHitRequest() {
+            return WebkitUtils.waitForFuture(mOnSafeBrowsingHitRequestFuture);
         }
 
-        public int getOnSafeBrowsingHitThreatType() {
+        int getOnSafeBrowsingHitThreatType() {
             return mOnSafeBrowsingHitThreatType;
         }
 
         @Override
-        public void onSafeBrowsingHit(WebView view, WebResourceRequest request,
-                int threatType, SafeBrowsingResponse response) {
+        public void onSafeBrowsingHit(
+                WebView view,
+                WebResourceRequest request,
+                int threatType,
+                SafeBrowsingResponse response) {
             // Immediately go back to safety to return the network error code
-            mOnSafeBrowsingHitRequest = request;
+            mOnSafeBrowsingHitRequestFuture.set(request);
             mOnSafeBrowsingHitThreatType = threatType;
             response.backToSafety(/* report */ true);
         }
     }
 
     private class SafeBrowsingProceedClient extends MockWebViewClient {
-        private WebResourceRequest mOnSafeBrowsingHitRequest;
-        private int mOnSafeBrowsingHitThreatType;
+        private final SettableFuture<WebResourceRequest> mOnSafeBrowsingHitRequestFuture =
+                SettableFuture.create();
 
-        public WebResourceRequest getOnSafeBrowsingHitRequest() {
-            return mOnSafeBrowsingHitRequest;
-        }
-
-        public int getOnSafeBrowsingHitThreatType() {
-            return mOnSafeBrowsingHitThreatType;
+        WebResourceRequest getOnSafeBrowsingHitRequest() {
+            return WebkitUtils.waitForFuture(mOnSafeBrowsingHitRequestFuture);
         }
 
         @Override
-        public void onSafeBrowsingHit(WebView view, WebResourceRequest request,
-                int threatType, SafeBrowsingResponse response) {
+        public void onSafeBrowsingHit(
+                WebView view,
+                WebResourceRequest request,
+                int threatType,
+                SafeBrowsingResponse response) {
             // Proceed through Safe Browsing warnings
-            mOnSafeBrowsingHitRequest = request;
-            mOnSafeBrowsingHitThreatType = threatType;
+            mOnSafeBrowsingHitRequestFuture.set(request);
             response.proceed(/* report */ true);
         }
     }
