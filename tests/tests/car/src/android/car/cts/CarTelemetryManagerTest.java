@@ -126,9 +126,13 @@ public final class CarTelemetryManagerTest extends AbstractCarTestCase {
     @After
     public void tearDown() throws Exception {
         // end in a clean state
-        mCarTelemetryManager.clearReportReadyListener();
-        mCarTelemetryManager.removeAllMetricsConfigs();
-        mUiAutomation.dropShellPermissionIdentity();
+        if (mCarTelemetryManager != null) {
+            mCarTelemetryManager.clearReportReadyListener();
+            mCarTelemetryManager.removeAllMetricsConfigs();
+        }
+        if (mUiAutomation != null) {
+            mUiAutomation.dropShellPermissionIdentity();
+        }
     }
 
     @Test
