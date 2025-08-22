@@ -36,6 +36,8 @@ java_test_host {
     static_libs: [
         "truth",
         "platformprotos",
+        "flag-junit-host",
+        "android.multiuser.flags-aconfig-java-host",
     ],
     device_common_data: [
         ":AdbBackupApp",
