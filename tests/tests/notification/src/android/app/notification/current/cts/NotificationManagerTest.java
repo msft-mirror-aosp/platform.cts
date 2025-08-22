@@ -2594,6 +2594,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testNotificationAssistant_cancelNotifications() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         mAssistant = mNotificationHelper.enableAssistant(STUB_PACKAGE_NAME);
         assertNotNull(mAssistant);
         final int notificationId = 1006;
