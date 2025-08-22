@@ -254,7 +254,7 @@
 
     <!-- b/194146521 -->
     <option name="compatibility:exclude-filter" value="CtsPermission3TestCases android.permission3.cts.PermissionTest23#testNoResidualPermissionsOnUninstall" />
- 
+
     <!-- b/198992105 -->
     <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
     <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
@@ -316,6 +316,10 @@
 
     <!-- b/320761239 -->
     <option name="compatibility:exclude-filter" value="CtsAppOpsTestCases android.app.appops.cts.AttributionTest#cannotUseTooManyAttributions" />
+    <option name="compatibility:exclude-filter" value="CtsAppOpsTestCases android.app.appops.cts.AttributionTest#noteProxyOpDoesNotPersistInvalidAttribution" />
+    <option name="compatibility:exclude-filter" value="CtsAppOpsTestCases android.app.appops.cts.AttributionTest#noteProxyOpPersistsValidAttribution" />
+    <option name="compatibility:exclude-filter" value="CtsAppOpsTestCases android.app.appops.cts.AttributionTest#startProxyOpDoesNotPersistInvalidAttribution" />
+    <option name="compatibility:exclude-filter" value="CtsAppOpsTestCases android.app.appops.cts.AttributionTest#startProxyOpPersistsValidAttribution" />
     <option name="compatibility:exclude-filter" value="CtsAppOpsTestCases android.app.appops.cts.AppOpEventCollectionTest#noteFromTwoProxiesAndVerifyProxyInfo" />
     <option name="compatibility:exclude-filter" value="CtsAppOpsTestCases android.app.appops.cts.AppOpEventCollectionTest#startStopTrustedProxyVerifyRunningAndTime" />
     <option name="compatibility:exclude-filter" value="CtsAppOpsTestCases android.app.appops.cts.AppOpEventCollectionTest#startStopTrustedAndUntrustedProxyVerifyProxyInfo" />
