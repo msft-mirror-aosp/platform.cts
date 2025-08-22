@@ -54,6 +54,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -360,7 +362,20 @@ public class IncrementalInstallTest extends BaseHostJUnit4Test {
         if (filenames.length > 1) {
             adbCmd.add("install-multiple");
         }
-        adbCmd.addAll(getFilePathsFromBuildInfo(filenames));
+
+        for (String apkFileName : filenames) {
+            File tmpApkFile = FileUtil.createTempFile("app", ".apk");
+            tmpApkFile.deleteOnExit();
+            Files.copy(mBuildHelper.getTestFile(apkFileName).toPath(), tmpApkFile.toPath(),
+                    StandardCopyOption.REPLACE_EXISTING);
+
+            File tmpIdsigFile = new File(tmpApkFile.getAbsolutePath() + ".idsig");
+            tmpIdsigFile.deleteOnExit();
+            Files.copy(mBuildHelper.getTestFile(apkFileName + ".idsig").toPath(),
+                    tmpIdsigFile.toPath());
+
+            adbCmd.add(tmpApkFile.getAbsolutePath());
+        }
 
         // Using runUtil instead of executeAdbCommand() because the latter doesn't provide the
         // option to get stderr or redirect stderr to stdout.
@@ -371,14 +386,6 @@ public class IncrementalInstallTest extends BaseHostJUnit4Test {
         runUtil.runTimedCmd(DEFAULT_TEST_TIMEOUT_MS, stdout, /* stderr= */ null,
                 adbCmd.toArray(new String[adbCmd.size()]));
         return FileUtil.readStringFromFile(outFile);
-    }
-
-    private List<String> getFilePathsFromBuildInfo(String... filenames) throws IOException {
-        List<String> filePaths = new ArrayList<>();
-        for (String filename : filenames) {
-            filePaths.add(getFilePathFromBuildInfo(filename));
-        }
-        return filePaths;
     }
 
     private String getFilePathFromBuildInfo(String filename) throws IOException {
