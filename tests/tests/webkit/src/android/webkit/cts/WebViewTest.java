@@ -345,67 +345,56 @@ public class WebViewTest extends SharedWebViewTest {
 
     @Test
     public void testLoadUrlDoesNotStripParamsWhenLoadingContentUrls() throws Exception {
-        WebkitUtils.onMainThreadSync(
-                () -> {
-                    Uri.Builder uriBuilder =
-                            new Uri.Builder()
-                                    .scheme(ContentResolver.SCHEME_CONTENT)
-                                    .authority(MockContentProvider.AUTHORITY);
-                    uriBuilder.appendPath("foo.html").appendQueryParameter("param", "bar");
-                    String url = uriBuilder.build().toString();
-                    mOnUiThread.loadUrlAndWaitForCompletion(url);
-                    // verify the parameter is not stripped.
-                    Uri uri = Uri.parse(mWebView.getTitle());
-                    assertEquals("bar", uri.getQueryParameter("param"));
-                });
+        Uri.Builder uriBuilder =
+                new Uri.Builder()
+                        .scheme(ContentResolver.SCHEME_CONTENT)
+                        .authority(MockContentProvider.AUTHORITY);
+        uriBuilder.appendPath("foo.html").appendQueryParameter("param", "bar");
+        String url = uriBuilder.build().toString();
+        mOnUiThread.loadUrlAndWaitForCompletion(url);
+        // verify the parameter is not stripped.
+        Uri uri = Uri.parse(mOnUiThread.getTitle());
+        assertEquals("bar", uri.getQueryParameter("param"));
     }
 
     @Test
     public void testAppInjectedXRequestedWithHeaderIsNotOverwritten() throws Exception {
         mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
 
-        WebkitUtils.onMainThreadSync(
-                () -> {
-                    String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
-                    HashMap<String, String> map = new HashMap<String, String>();
-                    final String requester = "foo";
-                    map.put(X_REQUESTED_WITH, requester);
-                    mOnUiThread.loadUrlAndWaitForCompletion(url, map);
+        String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
+        HashMap<String, String> map = new HashMap<String, String>();
+        final String requester = "foo";
+        map.put(X_REQUESTED_WITH, requester);
+        mOnUiThread.loadUrlAndWaitForCompletion(url, map);
 
-                    // verify that the request also includes X-Requested-With header
-                    // but is not overwritten by the webview
-                    HttpRequest request =
-                            mWebServer.getLastAssetRequest(TestHtmlConstants.HELLO_WORLD_URL);
-                    String[] matchingHeaders = request.getHeaders(X_REQUESTED_WITH);
-                    assertEquals(1, matchingHeaders.length);
+        // verify that the request also includes X-Requested-With header
+        // but is not overwritten by the webview
+        HttpRequest request = mWebServer.getLastAssetRequest(TestHtmlConstants.HELLO_WORLD_URL);
+        String[] matchingHeaders = request.getHeaders(X_REQUESTED_WITH);
+        assertEquals(1, matchingHeaders.length);
 
-                    String header = matchingHeaders[0];
-                    assertEquals(requester, header);
-                });
+        String header = matchingHeaders[0];
+        assertEquals(requester, header);
     }
 
     @Test
     public void testAppCanInjectHeadersViaImmutableMap() throws Exception {
         mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
 
-        WebkitUtils.onMainThreadSync(
-                () -> {
-                    String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
-                    HashMap<String, String> map = new HashMap<String, String>();
-                    final String requester = "foo";
-                    map.put(X_REQUESTED_WITH, requester);
-                    mOnUiThread.loadUrlAndWaitForCompletion(url, Collections.unmodifiableMap(map));
+        String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
+        HashMap<String, String> map = new HashMap<String, String>();
+        final String requester = "foo";
+        map.put(X_REQUESTED_WITH, requester);
+        mOnUiThread.loadUrlAndWaitForCompletion(url, Collections.unmodifiableMap(map));
 
-                    // verify that the request also includes X-Requested-With header
-                    // but is not overwritten by the webview
-                    HttpRequest request =
-                            mWebServer.getLastAssetRequest(TestHtmlConstants.HELLO_WORLD_URL);
-                    String[] matchingHeaders = request.getHeaders(X_REQUESTED_WITH);
-                    assertEquals(1, matchingHeaders.length);
+        // verify that the request also includes X-Requested-With header
+        // but is not overwritten by the webview
+        HttpRequest request = mWebServer.getLastAssetRequest(TestHtmlConstants.HELLO_WORLD_URL);
+        String[] matchingHeaders = request.getHeaders(X_REQUESTED_WITH);
+        assertEquals(1, matchingHeaders.length);
 
-                    String header = matchingHeaders[0];
-                    assertEquals(requester, header);
-                });
+        String header = matchingHeaders[0];
+        assertEquals(requester, header);
     }
 
     @Test
