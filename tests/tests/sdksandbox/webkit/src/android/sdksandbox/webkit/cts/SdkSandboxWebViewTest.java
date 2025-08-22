@@ -336,7 +336,6 @@ public class SdkSandboxWebViewTest {
     }
 
     @Test
-    @Ignore("b/415129329")
     public void testSaveAndRestoreState() throws Throwable {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testSaveAndRestoreState");
     }
