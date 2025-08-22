@@ -51,7 +51,6 @@ import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 
-import com.android.compatibility.common.util.PollingCheck;
 import com.android.cts.input.UinputTouchScreen;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
@@ -81,6 +80,8 @@ public final class InputMethodStatsTest extends EndToEndImeTestBase {
 
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
 
+    private static final long PENDING_REQUESTS_TIMEOUT = TimeUnit.SECONDS.toMillis(3);
+
     /** Time to wait for statsd to setup. */
     private static final long WAIT_TIME_LONG = 1000;
 
@@ -99,9 +100,7 @@ public final class InputMethodStatsTest extends EndToEndImeTestBase {
 
         // Finish tracking any pending IME visibility requests from previous tests to avoid issues.
         final var imm = mInstrumentation.getContext().getSystemService(InputMethodManager.class);
-        runWithShellPermissionIdentity(() -> {
-            imm.finishTrackingPendingImeVisibilityRequests();
-        });
+        runWithShellPermissionIdentity(imm::finishTrackingPendingRequests);
 
         MetricsRecorder.removeConfig();
         MetricsRecorder.clearReports();
@@ -458,9 +457,12 @@ public final class InputMethodStatsTest extends EndToEndImeTestBase {
                 mInstrumentation.getUiAutomation(),
                 new ImeSettings.Builder())) {
             // Wait for any outstanding IME requests to finish, to not interfere with test.
-            PollingCheck.waitFor(() -> !imeSession.hasPendingImeVisibilityRequests(),
-                    "Test Setup Failed: There should be no pending IME requests present when the "
-                            + "test starts.");
+            try {
+                imeSession.waitUntilNoPendingRequests(PENDING_REQUESTS_TIMEOUT);
+            } catch (Exception e) {
+                fail("Test Setup Failed: There should be no pending IME requests present when the "
+                        + "test starts: " + e);
+            }
 
             final TestActivity activity;
             if (show) {
@@ -472,8 +474,11 @@ public final class InputMethodStatsTest extends EndToEndImeTestBase {
                 activity = createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
                 expectImeVisible(TIMEOUT);
                 // Wait for any outstanding IME requests to finish, to capture all atoms.
-                PollingCheck.waitFor(() -> !imeSession.hasPendingImeVisibilityRequests(),
-                        "Test Error: Pending IME requests took too long, likely timing out.");
+                try {
+                    imeSession.waitUntilNoPendingRequests(PENDING_REQUESTS_TIMEOUT);
+                } catch (Exception e) {
+                    fail("Test Error: Pending IME requests took too long, likely timing out." + e);
+                }
             }
 
             // Wait for any atoms from activity start to be sent.
@@ -490,8 +495,11 @@ public final class InputMethodStatsTest extends EndToEndImeTestBase {
             runnable.run(imeSession, activity);
 
             // Wait for any outstanding IME requests to finish, to capture all atoms.
-            PollingCheck.waitFor(() -> !imeSession.hasPendingImeVisibilityRequests(),
-                    "Test Error: Pending IME requests took too long, likely timing out.");
+            try {
+                imeSession.waitUntilNoPendingRequests(PENDING_REQUESTS_TIMEOUT);
+            } catch (Exception e) {
+                fail("Test Error: Pending IME requests took too long, likely timing out." + e);
+            }
 
             // Wait for any atoms from the test runnable to be sent.
             // TODO(b/330143218): Add a proper fence for statsd
