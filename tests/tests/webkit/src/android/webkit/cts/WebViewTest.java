@@ -886,135 +886,127 @@ public class WebViewTest extends SharedWebViewTest {
 
     @Test
     public void testAccessHttpAuthUsernamePassword() {
-        WebkitUtils.onMainThreadSync(
-                () -> {
-                    try {
-                        WebViewDatabase.getInstance(mContext).clearHttpAuthUsernamePassword();
+        try {
+            WebViewDatabase.getInstance(mContext).clearHttpAuthUsernamePassword();
 
-                        String host = "http://localhost:8080";
-                        String realm = "testrealm";
-                        String userName = "user";
-                        String password = "password";
+            String host = "http://localhost:8080";
+            String realm = "testrealm";
+            String userName = "user";
+            String password = "password";
 
-                        String[] result = mWebView.getHttpAuthUsernamePassword(host, realm);
-                        assertNull(result);
+            String[] result = mOnUiThread.getHttpAuthUsernamePassword(host, realm);
+            assertNull(result);
 
-                        mWebView.setHttpAuthUsernamePassword(host, realm, userName, password);
-                        result = mWebView.getHttpAuthUsernamePassword(host, realm);
-                        assertNotNull(result);
-                        assertEquals(userName, result[0]);
-                        assertEquals(password, result[1]);
+            mOnUiThread.setHttpAuthUsernamePassword(host, realm, userName, password);
+            result = mOnUiThread.getHttpAuthUsernamePassword(host, realm);
+            assertNotNull(result);
+            assertEquals(userName, result[0]);
+            assertEquals(password, result[1]);
 
-                        String newPassword = "newpassword";
-                        mWebView.setHttpAuthUsernamePassword(host, realm, userName, newPassword);
-                        result = mWebView.getHttpAuthUsernamePassword(host, realm);
-                        assertNotNull(result);
-                        assertEquals(userName, result[0]);
-                        assertEquals(newPassword, result[1]);
+            String newPassword = "newpassword";
+            mOnUiThread.setHttpAuthUsernamePassword(host, realm, userName, newPassword);
+            result = mOnUiThread.getHttpAuthUsernamePassword(host, realm);
+            assertNotNull(result);
+            assertEquals(userName, result[0]);
+            assertEquals(newPassword, result[1]);
 
-                        String newUserName = "newuser";
-                        mWebView.setHttpAuthUsernamePassword(host, realm, newUserName, newPassword);
-                        result = mWebView.getHttpAuthUsernamePassword(host, realm);
-                        assertNotNull(result);
-                        assertEquals(newUserName, result[0]);
-                        assertEquals(newPassword, result[1]);
+            String newUserName = "newuser";
+            mOnUiThread.setHttpAuthUsernamePassword(host, realm, newUserName, newPassword);
+            result = mOnUiThread.getHttpAuthUsernamePassword(host, realm);
+            assertNotNull(result);
+            assertEquals(newUserName, result[0]);
+            assertEquals(newPassword, result[1]);
 
-                        // the user is set to null, can not change any thing in the future
-                        mWebView.setHttpAuthUsernamePassword(host, realm, null, password);
-                        result = mWebView.getHttpAuthUsernamePassword(host, realm);
-                        assertNotNull(result);
-                        assertNull(result[0]);
-                        assertEquals(password, result[1]);
+            // the user is set to null, can not change any thing in the future
+            mOnUiThread.setHttpAuthUsernamePassword(host, realm, null, password);
+            result = mOnUiThread.getHttpAuthUsernamePassword(host, realm);
+            assertNotNull(result);
+            assertNull(result[0]);
+            assertEquals(password, result[1]);
 
-                        mWebView.setHttpAuthUsernamePassword(host, realm, userName, null);
-                        result = mWebView.getHttpAuthUsernamePassword(host, realm);
-                        assertNotNull(result);
-                        assertEquals(userName, result[0]);
-                        assertNull(result[1]);
+            mOnUiThread.setHttpAuthUsernamePassword(host, realm, userName, null);
+            result = mOnUiThread.getHttpAuthUsernamePassword(host, realm);
+            assertNotNull(result);
+            assertEquals(userName, result[0]);
+            assertNull(result[1]);
 
-                        mWebView.setHttpAuthUsernamePassword(host, realm, null, null);
-                        result = mWebView.getHttpAuthUsernamePassword(host, realm);
-                        assertNotNull(result);
-                        assertNull(result[0]);
-                        assertNull(result[1]);
+            mOnUiThread.setHttpAuthUsernamePassword(host, realm, null, null);
+            result = mOnUiThread.getHttpAuthUsernamePassword(host, realm);
+            assertNotNull(result);
+            assertNull(result[0]);
+            assertNull(result[1]);
 
-                        mWebView.setHttpAuthUsernamePassword(host, realm, newUserName, newPassword);
-                        result = mWebView.getHttpAuthUsernamePassword(host, realm);
-                        assertNotNull(result);
-                        assertEquals(newUserName, result[0]);
-                        assertEquals(newPassword, result[1]);
-                    } finally {
-                        WebViewDatabase.getInstance(mContext).clearHttpAuthUsernamePassword();
-                    }
-                });
+            mOnUiThread.setHttpAuthUsernamePassword(host, realm, newUserName, newPassword);
+            result = mOnUiThread.getHttpAuthUsernamePassword(host, realm);
+            assertNotNull(result);
+            assertEquals(newUserName, result[0]);
+            assertEquals(newPassword, result[1]);
+        } finally {
+            WebViewDatabase.getInstance(mContext).clearHttpAuthUsernamePassword();
+        }
     }
 
     @Test
     public void testWebViewDatabaseAccessHttpAuthUsernamePassword() {
-        WebkitUtils.onMainThreadSync(
-                () -> {
-                    WebViewDatabase webViewDb = WebViewDatabase.getInstance(mContext);
-                    try {
-                        webViewDb.clearHttpAuthUsernamePassword();
+        WebViewDatabase webViewDb = WebViewDatabase.getInstance(mContext);
+        try {
+            webViewDb.clearHttpAuthUsernamePassword();
 
-                        String host = "http://localhost:8080";
-                        String realm = "testrealm";
-                        String userName = "user";
-                        String password = "password";
+            String host = "http://localhost:8080";
+            String realm = "testrealm";
+            String userName = "user";
+            String password = "password";
 
-                        String[] result = mWebView.getHttpAuthUsernamePassword(host, realm);
-                        assertNull(result);
+            String[] result = mOnUiThread.getHttpAuthUsernamePassword(host, realm);
+            assertNull(result);
 
-                        webViewDb.setHttpAuthUsernamePassword(host, realm, userName, password);
-                        result = webViewDb.getHttpAuthUsernamePassword(host, realm);
-                        assertNotNull(result);
-                        assertEquals(userName, result[0]);
-                        assertEquals(password, result[1]);
+            webViewDb.setHttpAuthUsernamePassword(host, realm, userName, password);
+            result = webViewDb.getHttpAuthUsernamePassword(host, realm);
+            assertNotNull(result);
+            assertEquals(userName, result[0]);
+            assertEquals(password, result[1]);
 
-                        String newPassword = "newpassword";
-                        webViewDb.setHttpAuthUsernamePassword(host, realm, userName, newPassword);
-                        result = webViewDb.getHttpAuthUsernamePassword(host, realm);
-                        assertNotNull(result);
-                        assertEquals(userName, result[0]);
-                        assertEquals(newPassword, result[1]);
+            String newPassword = "newpassword";
+            webViewDb.setHttpAuthUsernamePassword(host, realm, userName, newPassword);
+            result = webViewDb.getHttpAuthUsernamePassword(host, realm);
+            assertNotNull(result);
+            assertEquals(userName, result[0]);
+            assertEquals(newPassword, result[1]);
 
-                        String newUserName = "newuser";
-                        webViewDb.setHttpAuthUsernamePassword(
-                                host, realm, newUserName, newPassword);
-                        result = webViewDb.getHttpAuthUsernamePassword(host, realm);
-                        assertNotNull(result);
-                        assertEquals(newUserName, result[0]);
-                        assertEquals(newPassword, result[1]);
+            String newUserName = "newuser";
+            webViewDb.setHttpAuthUsernamePassword(host, realm, newUserName, newPassword);
+            result = webViewDb.getHttpAuthUsernamePassword(host, realm);
+            assertNotNull(result);
+            assertEquals(newUserName, result[0]);
+            assertEquals(newPassword, result[1]);
 
-                        // the user is set to null, can not change any thing in the future
-                        webViewDb.setHttpAuthUsernamePassword(host, realm, null, password);
-                        result = webViewDb.getHttpAuthUsernamePassword(host, realm);
-                        assertNotNull(result);
-                        assertNull(result[0]);
-                        assertEquals(password, result[1]);
+            // the user is set to null, can not change any thing in the future
+            webViewDb.setHttpAuthUsernamePassword(host, realm, null, password);
+            result = webViewDb.getHttpAuthUsernamePassword(host, realm);
+            assertNotNull(result);
+            assertNull(result[0]);
+            assertEquals(password, result[1]);
 
-                        webViewDb.setHttpAuthUsernamePassword(host, realm, userName, null);
-                        result = webViewDb.getHttpAuthUsernamePassword(host, realm);
-                        assertNotNull(result);
-                        assertEquals(userName, result[0]);
-                        assertNull(result[1]);
+            webViewDb.setHttpAuthUsernamePassword(host, realm, userName, null);
+            result = webViewDb.getHttpAuthUsernamePassword(host, realm);
+            assertNotNull(result);
+            assertEquals(userName, result[0]);
+            assertNull(result[1]);
 
-                        webViewDb.setHttpAuthUsernamePassword(host, realm, null, null);
-                        result = webViewDb.getHttpAuthUsernamePassword(host, realm);
-                        assertNotNull(result);
-                        assertNull(result[0]);
-                        assertNull(result[1]);
+            webViewDb.setHttpAuthUsernamePassword(host, realm, null, null);
+            result = webViewDb.getHttpAuthUsernamePassword(host, realm);
+            assertNotNull(result);
+            assertNull(result[0]);
+            assertNull(result[1]);
 
-                        webViewDb.setHttpAuthUsernamePassword(
-                                host, realm, newUserName, newPassword);
-                        result = webViewDb.getHttpAuthUsernamePassword(host, realm);
-                        assertNotNull(result);
-                        assertEquals(newUserName, result[0]);
-                        assertEquals(newPassword, result[1]);
-                    } finally {
-                        webViewDb.clearHttpAuthUsernamePassword();
-                    }
-                });
+            webViewDb.setHttpAuthUsernamePassword(host, realm, newUserName, newPassword);
+            result = webViewDb.getHttpAuthUsernamePassword(host, realm);
+            assertNotNull(result);
+            assertEquals(newUserName, result[0]);
+            assertEquals(newPassword, result[1]);
+        } finally {
+            webViewDb.clearHttpAuthUsernamePassword();
+        }
     }
 
     @Test
