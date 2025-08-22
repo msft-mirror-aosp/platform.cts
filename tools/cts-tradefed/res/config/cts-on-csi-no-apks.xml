@@ -190,6 +190,7 @@
     <option name="compatibility:exclude-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.LayerTests#testWebViewWithUnclippedLayer" />
     <option name="compatibility:exclude-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.LayerTests#testWebViewWithUnclippedLayerAndComplexClip" />
     <option name="compatibility:exclude-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.PathClippingTests#testWebViewClipWithCircle" />
+    <option name="compatibility:exclude-filter" value="CtsWebkitMultiuserTestCases" />
     <option name="compatibility:exclude-filter" value="CtsWebkitTestCases" />
 
 </configuration>

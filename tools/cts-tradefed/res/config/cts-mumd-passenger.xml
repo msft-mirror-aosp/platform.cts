@@ -318,6 +318,7 @@
     <option name="compatibility:include-filter" value="CtsViewTestCases" />
     <option name="compatibility:include-filter" value="CtsViewTestCasesSdk28" />
     <option name="compatibility:include-filter" value="CtsVirtualDevicesTestCases" />
+    <option name="compatibility:include-filter" value="CtsWebkitMultiuserTestCases" />
     <option name="compatibility:include-filter" value="CtsWebkitTestCases" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases29" />
