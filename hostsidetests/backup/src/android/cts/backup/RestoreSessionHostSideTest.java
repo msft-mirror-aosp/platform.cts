@@ -32,6 +32,8 @@ import com.android.tradefed.util.RunUtil;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -226,13 +228,22 @@ public class RestoreSessionHostSideTest extends BaseBackupHostSideTest {
 
         CompatibilityBuildHelper buildHelper = new CompatibilityBuildHelper(getBuild());
 
+        File tmpApkFile = FileUtil.createTempFile("app", ".apk");
+        tmpApkFile.deleteOnExit();
+        Files.copy(buildHelper.getTestFile(apkFileName).toPath(), tmpApkFile.toPath(),
+                StandardCopyOption.REPLACE_EXISTING);
+
+        File tmpIdsigFile = new File(tmpApkFile.getAbsolutePath() + ".idsig");
+        tmpIdsigFile.deleteOnExit();
+        Files.copy(buildHelper.getTestFile(apkFileName + ".idsig").toPath(), tmpIdsigFile.toPath());
+
         List<String> adbCmd = new ArrayList<>();
         adbCmd.add("adb");
         adbCmd.add("-s");
         adbCmd.add(getDevice().getSerialNumber());
         adbCmd.add("install");
         adbCmd.add("--incremental");
-        adbCmd.add(buildHelper.getTestFile(apkFileName).getAbsolutePath());
+        adbCmd.add(tmpApkFile.getAbsolutePath());
 
         // Using runUtil instead of executeAdbCommand() because the latter doesn't provide the
         // option to get stderr or redirect stderr to stdout.
