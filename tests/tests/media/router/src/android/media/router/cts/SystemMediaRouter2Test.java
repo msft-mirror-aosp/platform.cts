@@ -1406,12 +1406,15 @@ public class SystemMediaRouter2Test {
         clearTransferReasonAndInitiator();
 
         CountDownLatch onControllerUpdatedLatch = new CountDownLatch(1);
-        ControllerCallback controllerCallback = new ControllerCallback() {
-            @Override
-            public void onControllerUpdated(RoutingController controller) {
-                onControllerUpdatedLatch.countDown();
-            }
-        };
+        ControllerCallback controllerCallback =
+                new ControllerCallback() {
+                    @Override
+                    public void onControllerUpdated(RoutingController controller) {
+                        if (controller.wasTransferInitiatedBySelf()) {
+                            onControllerUpdatedLatch.countDown();
+                        }
+                    }
+                };
 
         mAppRouter2.registerControllerCallback(mExecutor, controllerCallback);
 
@@ -1440,12 +1443,15 @@ public class SystemMediaRouter2Test {
         clearTransferReasonAndInitiator();
 
         CountDownLatch onControllerUpdatedLatch = new CountDownLatch(1);
-        ControllerCallback controllerCallback = new ControllerCallback() {
-            @Override
-            public void onControllerUpdated(RoutingController controller) {
-                onControllerUpdatedLatch.countDown();
-            }
-        };
+        ControllerCallback controllerCallback =
+                new ControllerCallback() {
+                    @Override
+                    public void onControllerUpdated(RoutingController controller) {
+                        if (controller.wasTransferInitiatedBySelf()) {
+                            onControllerUpdatedLatch.countDown();
+                        }
+                    }
+                };
 
         mAppRouter2.registerControllerCallback(mExecutor, controllerCallback);
 
