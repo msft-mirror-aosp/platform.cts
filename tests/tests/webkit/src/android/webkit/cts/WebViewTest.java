@@ -2006,7 +2006,6 @@ public class WebViewTest extends SharedWebViewTest {
     }
 
     @Test
-    @Ignore("b/415129329")
     public void testSaveAndRestoreState() throws Throwable {
         mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
 
