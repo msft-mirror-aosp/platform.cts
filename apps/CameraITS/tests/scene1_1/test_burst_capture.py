@@ -62,6 +62,7 @@ class BurstCaptureTest(its_base_test.ItsBaseTest):
           chart_scaling=self.chart_scaling)
 
       req = capture_request_utils.auto_capture_request()
+      req['android.control.enableZsl'] = False
       if camera_properties_utils.noise_reduction_mode(props, _NR_MODE_FAST):
         req['android.noiseReduction.mode'] = _NR_MODE_FAST
       camera_properties_utils.log_minimum_focus_distance(props)
