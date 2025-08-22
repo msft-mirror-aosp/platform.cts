@@ -298,19 +298,16 @@ public class WebViewTest extends SharedWebViewTest {
     public void testLoadUrl() throws Exception {
         mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
 
-        WebkitUtils.onMainThreadSync(
-                () -> {
-                    assertNull(mWebView.getUrl());
-                    assertNull(mWebView.getOriginalUrl());
-                    assertEquals(INITIAL_PROGRESS, mWebView.getProgress());
+        assertNull(mOnUiThread.getUrl());
+        assertNull(mOnUiThread.getOriginalUrl());
+        assertEquals(INITIAL_PROGRESS, mOnUiThread.getProgress());
 
-                    String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
-                    mOnUiThread.loadUrlAndWaitForCompletion(url);
-                    assertEquals(100, mWebView.getProgress());
-                    assertEquals(url, mWebView.getUrl());
-                    assertEquals(url, mWebView.getOriginalUrl());
-                    assertEquals(TestHtmlConstants.HELLO_WORLD_TITLE, mWebView.getTitle());
-                });
+        String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
+        mOnUiThread.loadUrlAndWaitForCompletion(url);
+        assertEquals(100, mOnUiThread.getProgress());
+        assertEquals(url, mOnUiThread.getUrl());
+        assertEquals(url, mOnUiThread.getOriginalUrl());
+        assertEquals(TestHtmlConstants.HELLO_WORLD_TITLE, mOnUiThread.getTitle());
     }
 
     @Test
@@ -427,26 +424,22 @@ public class WebViewTest extends SharedWebViewTest {
     public void testGetOriginalUrl() throws Throwable {
         mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
 
-        WebkitUtils.onMainThreadSync(
-                () -> {
-                    final String finalUrl =
-                            mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
-                    final String redirectUrl =
-                            mWebServer.getRedirectingAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
+        final String finalUrl = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
+        final String redirectUrl =
+                mWebServer.getRedirectingAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
 
-                    assertNull(mWebView.getUrl());
-                    assertNull(mWebView.getOriginalUrl());
+        assertNull(mOnUiThread.getUrl());
+        assertNull(mOnUiThread.getOriginalUrl());
 
-                    // By default, WebView sends an intent to ask the system to
-                    // handle loading a new URL. We set a WebViewClient as
-                    // WebViewClient.shouldOverrideUrlLoading() returns false, so
-                    // the WebView will load the new URL.
-                    mWebView.setWebViewClient(new WaitForLoadedClient(mOnUiThread));
-                    mOnUiThread.loadUrlAndWaitForCompletion(redirectUrl);
+        // By default, WebView sends an intent to ask the system to
+        // handle loading a new URL. We set a WebViewClient as
+        // WebViewClient.shouldOverrideUrlLoading() returns false, so
+        // the WebView will load the new URL.
+        mOnUiThread.setWebViewClient(new WaitForLoadedClient(mOnUiThread));
+        mOnUiThread.loadUrlAndWaitForCompletion(redirectUrl);
 
-                    assertEquals(finalUrl, mWebView.getUrl());
-                    assertEquals(redirectUrl, mWebView.getOriginalUrl());
-                });
+        assertEquals(finalUrl, mOnUiThread.getUrl());
+        assertEquals(redirectUrl, mOnUiThread.getOriginalUrl());
     }
 
     @Test

@@ -377,6 +377,14 @@ public class WebViewOnUiThread extends WebViewSyncLoader {
         });
     }
 
+    /** Gets the original URL. */
+    public String getOriginalUrl() {
+        return WebkitUtils.onMainThreadSync(
+                () -> {
+                    return mWebView.getOriginalUrl();
+                });
+    }
+
     public int getProgress() {
         return WebkitUtils.onMainThreadSync(() -> {
             return mWebView.getProgress();
