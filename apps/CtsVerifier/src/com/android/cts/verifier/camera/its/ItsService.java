@@ -987,6 +987,7 @@ public class ItsService extends Service implements SensorEventListener {
                 Logt.e(TAG, "Default language is not set to " + Locale.US + "!");
                 stopSelf();
             }
+            Logt.i(TAG, "cmd: " + cmd);
 
             // Each command is a serialized JSON object.
             try {
