@@ -25,6 +25,7 @@ java_library {
     platform_apis: true,
     srcs: [
         "src/main/java/**/*.java",
+        "src/main/java/**/*.kt",
     ],
     static_libs: [
         "androidx.localbroadcastmanager_localbroadcastmanager",
