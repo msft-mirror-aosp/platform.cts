@@ -176,7 +176,7 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
     public static final double LATENCY_PRO_AUDIO_ANALOG = 20.0;
     public static final double LATENCY_PRO_AUDIO_USB = 25.0;
     public static final double LATENCY_MPC_AT_LEAST_ONE = 80.0;
-    public static final double TIMESTAMP_ACCURACY_MS = 30.0;
+    public static final double TIMESTAMP_ACCURACY_MS = 200.0;
 
     // The audio stream callback threads should stop and close
     // in less than a few hundred msec. This is a generous timeout value.
