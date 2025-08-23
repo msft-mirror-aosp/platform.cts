@@ -20,7 +20,7 @@ import static android.media.MediaCodecInfo.CodecProfileLevel.AACObjectELD;
 import static android.media.MediaCodecInfo.CodecProfileLevel.AACObjectHE;
 import static android.media.MediaCodecInfo.CodecProfileLevel.AACObjectLC;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
-import static android.mediav2.cts.AudioEncoderTest.flattenParams;
+import static android.mediav2.cts.AudioEncoderTest.getAudioEncoderCfgParams;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
@@ -64,6 +64,36 @@ import java.util.List;
 @RunWith(Parameterized.class)
 public class CodecEncoderBlockModelTest extends CodecEncoderBlockModelTestBase {
     private static final String LOG_TAG = CodecEncoderBlockModelTest.class.getSimpleName();
+
+    protected static List<Object[]> flattenParams(List<Object[]> params) {
+        List<Object[]> argsList = new ArrayList<>();
+        for (Object[] param : params) {
+            String mediaType = (String) param[0];
+            int[] qualityPresets = (int[]) param[1];
+            int[] sampleRates = (int[]) param[2];
+            int[] channelCounts = (int[]) param[3];
+            int pcmEncoding = (int) param[4];
+            int profile = (int) param[5];
+            for (int qualityPreset : qualityPresets) {
+                for (int sampleRate : sampleRates) {
+                    for (int channelCount : channelCounts) {
+                        Object[] testArgs = new Object[3];
+                        testArgs[0] = param[0];
+                        testArgs[1] = getAudioEncoderCfgParams(mediaType, qualityPreset, sampleRate,
+                                channelCount, pcmEncoding, profile);
+                        testArgs[2] = String.format("%d%s_%dkHz_%dch_%s_%d",
+                                mediaType.equals(MediaFormat.MIMETYPE_AUDIO_FLAC) ? qualityPreset :
+                                        qualityPreset / 1000,
+                                mediaType.equals(MediaFormat.MIMETYPE_AUDIO_FLAC) ? "clevel" :
+                                        "kbps", sampleRate / 1000, channelCount,
+                                audioEncodingToString(pcmEncoding), profile);
+                        argsList.add(testArgs);
+                    }
+                }
+            }
+        }
+        return argsList;
+    }
 
     @Parameterized.Parameters(name = "{index}_{0}_{1}_{3}")
     public static Collection<Object[]> input() {
