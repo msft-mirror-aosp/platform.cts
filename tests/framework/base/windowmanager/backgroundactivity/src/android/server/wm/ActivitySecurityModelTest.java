@@ -42,6 +42,8 @@ import androidx.annotation.NonNull;
 
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
+import com.android.bedstead.harrier.annotations.RequireNotTv;
+import com.android.bedstead.harrier.annotations.RequireNotWatch;
 
 import org.junit.After;
 import org.junit.Before;
@@ -52,6 +54,8 @@ import org.junit.Test;
 import java.util.Objects;
 
 public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
+    private static final String TAG = "ActivitySecurityModelTest";
+
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -365,6 +369,8 @@ public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ASM_OPT_SYSTEM_INTO_ENFORCEMENT)
     @RequireNotAutomotive(reason = "MANAGE_UNKNOWN_APP_SOURCES is not supported by Car Settings")
+    @RequireNotWatch(reason = "MANAGE_UNKNOWN_APP_SOURCES is not supported by Watch Settings")
+    @RequireNotTv(reason = "MANAGE_UNKNOWN_APP_SOURCES is not supported by TV Settings")
     public void testActivitySandwichWithSystem_launchBlocked() {
         BackgroundActivityLaunchTest.assumeSdkNewerThanUpsideDownCake();
 
@@ -397,8 +403,11 @@ public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
     @Test
     @RequiresFlagsDisabled(Flags.FLAG_ASM_OPT_SYSTEM_INTO_ENFORCEMENT)
     @RequireNotAutomotive(reason = "MANAGE_UNKNOWN_APP_SOURCES is not supported by Car Settings")
+    @RequireNotWatch(reason = "MANAGE_UNKNOWN_APP_SOURCES is not supported by Watch Settings")
+    @RequireNotTv(reason = "MANAGE_UNKNOWN_APP_SOURCES is not supported by TV Settings")
     public void testActivitySandwichWithSystem_launchAllowed() {
         BackgroundActivityLaunchTest.assumeSdkNewerThanUpsideDownCake();
+        recordTaskStateDump("testActivitySandwichWithSystem_launchAllowed");
 
         ComponentName capturedSettingsActivity =
                 new ActivityStartVerifier()
