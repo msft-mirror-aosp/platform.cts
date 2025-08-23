@@ -42,6 +42,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
@@ -147,7 +148,7 @@ public class OutputSwitcherTest {
     @Mock private StubMediaRoute2ProviderService.Proxy mProviderProxy;
 
     @Mock private MediaRouter2.TransferCallback mTransferCallback;
-    @Mock private MediaRouter2.ControllerCallback mControllerCallback;
+    private MediaRouter2.ControllerCallback mControllerCallback;
 
     private Context mContext;
     private Executor mExecutor;
@@ -169,6 +170,8 @@ public class OutputSwitcherTest {
         MediaRouter2TestActivity.startActivity(mContext);
         mService = mProviderSetup.setupAndGetService(mContext);
         mService.setProxy(mProviderProxy);
+        // We use a spy to make new overloads work as intended (call the overload with fewer args).
+        mControllerCallback = spy(MediaRouter2.ControllerCallback.class);
     }
 
     @After

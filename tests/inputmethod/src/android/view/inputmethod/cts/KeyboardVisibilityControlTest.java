@@ -503,7 +503,7 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     @Test
     public void testHideImeAfterBackPressed_legacyAppMigratedIme() throws Exception {
         verifyHideImeBackPressed(
-                /* appRequestsBackCallback= */ true,
+                /* appRequestsBackCallback= */ false,
                 /* imeRequestsBackCallback= */ true,
                 /* fullscreenInteraction= */ false,
                 NO_OP_PRE_BACK_PRESS_PROCEDURE);

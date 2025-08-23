@@ -37,3 +37,10 @@ genrule {
     cmd: "echo $(locations **/*) >$(genDir)/list && " +
         "$(location soong_zip) -o $(out) -P android-cts-verifier/CameraITS -C $$(dirname $(location build/envsetup.sh))/.. -l $(genDir)/list",
 }
+
+genrule {
+    name: "ui_interaction_utils_src_as_txt",
+    srcs: ["utils/ui_interaction_utils.py"],
+    out: ["ui_interaction_utils.txt"],
+    cmd: "cp $(in) $(out)",
+}

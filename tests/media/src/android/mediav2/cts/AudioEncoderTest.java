@@ -82,8 +82,8 @@ public class AudioEncoderTest extends CodecEncoderTestBase {
         super(encoder, mediaType, new EncoderConfigParams[]{encCfgParams}, allTestParams);
     }
 
-    private static EncoderConfigParams getAudioEncoderCfgParams(String mediaType, int qualityPreset,
-            int sampleRate, int channelCount, int pcmEncoding, int profile) {
+    protected static EncoderConfigParams getAudioEncoderCfgParams(String mediaType,
+            int qualityPreset, int sampleRate, int channelCount, int pcmEncoding, int profile) {
         EncoderConfigParams.Builder foreman = new EncoderConfigParams.Builder(mediaType)
                 .setSampleRate(sampleRate)
                 .setChannelCount(channelCount)
@@ -101,7 +101,7 @@ public class AudioEncoderTest extends CodecEncoderTestBase {
     // component's advertised capabilities. The extended sample-rate's array, channel-count's array,
     // qualityPresets array are permuted to encoding configurations and each configuration is run as
     // a junit test.
-    protected static List<Object[]> flattenParams(List<Object[]> params) {
+    private static List<Object[]> flattenParams(List<Object[]> params) {
         List<Object[]> argsList = new ArrayList<>();
         for (Object[] param : params) {
             String codecName = (String) param[0];

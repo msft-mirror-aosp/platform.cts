@@ -621,6 +621,7 @@ class ItsSession(object):
 
     logging.debug('Opening camera: %s', self._camera_id)
     cmd = {_CMD_NAME_STR: 'open', _CAMERA_ID_STR: self._camera_id}
+    cmd['cmd_sent'] = str(self.__dict__)
     if self._override_to_portrait is not None:
       cmd['overrideToPortrait'] = self._override_to_portrait
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
@@ -630,6 +631,7 @@ class ItsSession(object):
 
   def close_camera(self):
     cmd = {_CMD_NAME_STR: 'close'}
+    cmd['cmd_sent'] = str(self.__dict__)
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
     data, _ = self.__read_response_from_socket()
     if data[_TAG_STR] != 'cameraClosed':

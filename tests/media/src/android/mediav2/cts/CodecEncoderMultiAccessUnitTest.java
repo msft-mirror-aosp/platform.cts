@@ -17,15 +17,15 @@
 package android.mediav2.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_MultipleFrames;
-import static android.media.codec.Flags.FLAG_LARGE_AUDIO_FRAME_FINISH;
 import static android.media.MediaCodecInfo.CodecProfileLevel.AACObjectELD;
 import static android.media.MediaCodecInfo.CodecProfileLevel.AACObjectHE;
 import static android.media.MediaCodecInfo.CodecProfileLevel.AACObjectLC;
+import static android.media.codec.Flags.FLAG_LARGE_AUDIO_FRAME_FINISH;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
 import static android.mediav2.common.cts.MuxerUtils.getMuxerFormatForMediaType;
 import static android.mediav2.common.cts.MuxerUtils.getTempFilePath;
-import static android.mediav2.cts.AudioEncoderTest.flattenParams;
 import static android.mediav2.cts.CodecDecoderMultiAccessUnitTest.getCompressionRatio;
+import static android.mediav2.cts.CodecEncoderBlockModelTest.flattenParams;
 
 import static com.android.media.codec.flags.Flags.FLAG_LARGE_AUDIO_FRAME;
 
