@@ -21,7 +21,6 @@ import static org.junit.Assert.assertNull;
 import android.platform.test.annotations.AppModeFull;
 
 import com.android.tradefed.device.DeviceNotAvailableException;
-import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
 import org.junit.After;
@@ -29,6 +28,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -90,10 +90,14 @@ public class SuccessNotificationHostSideTest extends BaseBackupHostSideTest {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        installPackage(KEY_VALUE_BACKUP_APP_APK);
-        installPackage(FULL_BACKUP_APP_APK);
 
-        installPackage(SUCCESS_NOTIFICATION_APP_APK);
+        int userId = getBackupUtils().getCurrentUserId();
+        installPackageAsUser(
+                KEY_VALUE_BACKUP_APP_APK, /* grantPermission= */ true, userId, "-d", "-r");
+        installPackageAsUser(FULL_BACKUP_APP_APK, /* grantPermission= */ true, userId, "-d", "-r");
+
+        installPackageAsUser(
+                SUCCESS_NOTIFICATION_APP_APK, /* grantPermission= */ true, userId, "-d", "-r");
         checkDeviceTest("clearBackupSuccessNotificationsReceived");
         addBackupFinishedNotificationReceiver();
     }
@@ -148,9 +152,12 @@ public class SuccessNotificationHostSideTest extends BaseBackupHostSideTest {
      * {@link restoreBackupFinishedNotificationReceivers}.
      */
     private void addBackupFinishedNotificationReceiver()
-            throws DeviceNotAvailableException {
-        mOriginalBackupManagerConstants = getDevice().executeShellCommand(String.format(
-                "settings get secure %s", BACKUP_MANAGER_CONSTANTS_PREF)).trim();
+            throws DeviceNotAvailableException, IOException {
+        int userId = getBackupUtils().getCurrentUserId();
+        String command =
+                String.format(
+                        "settings --user %d get secure %s", userId, BACKUP_MANAGER_CONSTANTS_PREF);
+        mOriginalBackupManagerConstants = getDevice().executeShellCommand(command).trim();
         if ("null".equals(mOriginalBackupManagerConstants)) {
             mOriginalBackupManagerConstants = null;
         }
@@ -197,17 +204,22 @@ public class SuccessNotificationHostSideTest extends BaseBackupHostSideTest {
     }
 
     /**
-     * Restores the backup manager configuration stored by a previous call to
-     * {@link addBackupFinishedNotificationReceiver}.
+     * Restores the backup manager configuration stored by a previous call to {@link
+     * addBackupFinishedNotificationReceiver}.
      */
-    private void restoreBackupFinishedNotificationReceivers() throws DeviceNotAvailableException {
+    private void restoreBackupFinishedNotificationReceivers()
+            throws DeviceNotAvailableException, IOException {
         setBackupManagerConstants(mOriginalBackupManagerConstants);
     }
 
     private void setBackupManagerConstants(String backupManagerConstants)
-            throws DeviceNotAvailableException {
-        getDevice().executeShellCommand(String.format("settings put secure %s %s",
-                BACKUP_MANAGER_CONSTANTS_PREF, backupManagerConstants));
+            throws DeviceNotAvailableException, IOException {
+        int userId = getBackupUtils().getCurrentUserId();
+        String command =
+                String.format(
+                        "settings --user %d put secure %s %s",
+                        userId, BACKUP_MANAGER_CONSTANTS_PREF, backupManagerConstants);
+        getDevice().executeShellCommand(command);
     }
 
     private void checkDeviceTest(String methodName) throws DeviceNotAvailableException {

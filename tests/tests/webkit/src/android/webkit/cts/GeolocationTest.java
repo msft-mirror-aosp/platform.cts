@@ -154,6 +154,7 @@ public class GeolocationTest {
                 mOnUiThread = new WebViewOnUiThread(webview);
             }
         });
+        LocationUtils.setLocationEnabled(InstrumentationRegistry.getInstrumentation(), true);
         LocationUtils.registerMockLocationProvider(
                 InstrumentationRegistry.getInstrumentation(), true);
 

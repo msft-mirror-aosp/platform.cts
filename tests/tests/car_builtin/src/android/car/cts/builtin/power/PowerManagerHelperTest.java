@@ -18,6 +18,8 @@ package android.car.cts.builtin.power;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assume.assumeTrue;
+
 import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.car.builtin.power.PowerManagerHelper;
@@ -30,6 +32,8 @@ import android.view.Display;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
 import org.junit.Before;
@@ -59,6 +63,11 @@ public final class PowerManagerHelperTest {
 
     @Test
     public void testSetDisplayState() {
+        UserHelper userHelper = new UserHelper(mContext);
+        assumeTrue(
+                "This test is intended for the default display",
+                userHelper.getMainDisplayId() == Display.DEFAULT_DISPLAY);
+
         PowerManager powerManager = mContext.getSystemService(PowerManager.class);
 
         PowerManagerHelper.setDisplayState(mContext, /* on= */ true, SystemClock.uptimeMillis());

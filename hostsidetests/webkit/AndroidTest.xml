@@ -17,6 +17,8 @@
     <option name="test-suite-tag" value="cts" />
     <option name="config-descriptor:metadata" key="component" value="webview" />
     <option name="config-descriptor:metadata" key="parameter" value="instant_app" />
+    <!-- Tests in this module will only be executed for a single foldable configuration -->
+    <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
     <option name="config-descriptor:metadata" key="parameter" value="multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />

@@ -298,19 +298,16 @@ public class WebViewTest extends SharedWebViewTest {
     public void testLoadUrl() throws Exception {
         mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
 
-        WebkitUtils.onMainThreadSync(
-                () -> {
-                    assertNull(mWebView.getUrl());
-                    assertNull(mWebView.getOriginalUrl());
-                    assertEquals(INITIAL_PROGRESS, mWebView.getProgress());
+        assertNull(mOnUiThread.getUrl());
+        assertNull(mOnUiThread.getOriginalUrl());
+        assertEquals(INITIAL_PROGRESS, mOnUiThread.getProgress());
 
-                    String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
-                    mOnUiThread.loadUrlAndWaitForCompletion(url);
-                    assertEquals(100, mWebView.getProgress());
-                    assertEquals(url, mWebView.getUrl());
-                    assertEquals(url, mWebView.getOriginalUrl());
-                    assertEquals(TestHtmlConstants.HELLO_WORLD_TITLE, mWebView.getTitle());
-                });
+        String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
+        mOnUiThread.loadUrlAndWaitForCompletion(url);
+        assertEquals(100, mOnUiThread.getProgress());
+        assertEquals(url, mOnUiThread.getUrl());
+        assertEquals(url, mOnUiThread.getOriginalUrl());
+        assertEquals(TestHtmlConstants.HELLO_WORLD_TITLE, mOnUiThread.getTitle());
     }
 
     @Test
@@ -345,67 +342,56 @@ public class WebViewTest extends SharedWebViewTest {
 
     @Test
     public void testLoadUrlDoesNotStripParamsWhenLoadingContentUrls() throws Exception {
-        WebkitUtils.onMainThreadSync(
-                () -> {
-                    Uri.Builder uriBuilder =
-                            new Uri.Builder()
-                                    .scheme(ContentResolver.SCHEME_CONTENT)
-                                    .authority(MockContentProvider.AUTHORITY);
-                    uriBuilder.appendPath("foo.html").appendQueryParameter("param", "bar");
-                    String url = uriBuilder.build().toString();
-                    mOnUiThread.loadUrlAndWaitForCompletion(url);
-                    // verify the parameter is not stripped.
-                    Uri uri = Uri.parse(mWebView.getTitle());
-                    assertEquals("bar", uri.getQueryParameter("param"));
-                });
+        Uri.Builder uriBuilder =
+                new Uri.Builder()
+                        .scheme(ContentResolver.SCHEME_CONTENT)
+                        .authority(MockContentProvider.AUTHORITY);
+        uriBuilder.appendPath("foo.html").appendQueryParameter("param", "bar");
+        String url = uriBuilder.build().toString();
+        mOnUiThread.loadUrlAndWaitForCompletion(url);
+        // verify the parameter is not stripped.
+        Uri uri = Uri.parse(mOnUiThread.getTitle());
+        assertEquals("bar", uri.getQueryParameter("param"));
     }
 
     @Test
     public void testAppInjectedXRequestedWithHeaderIsNotOverwritten() throws Exception {
         mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
 
-        WebkitUtils.onMainThreadSync(
-                () -> {
-                    String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
-                    HashMap<String, String> map = new HashMap<String, String>();
-                    final String requester = "foo";
-                    map.put(X_REQUESTED_WITH, requester);
-                    mOnUiThread.loadUrlAndWaitForCompletion(url, map);
+        String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
+        HashMap<String, String> map = new HashMap<String, String>();
+        final String requester = "foo";
+        map.put(X_REQUESTED_WITH, requester);
+        mOnUiThread.loadUrlAndWaitForCompletion(url, map);
 
-                    // verify that the request also includes X-Requested-With header
-                    // but is not overwritten by the webview
-                    HttpRequest request =
-                            mWebServer.getLastAssetRequest(TestHtmlConstants.HELLO_WORLD_URL);
-                    String[] matchingHeaders = request.getHeaders(X_REQUESTED_WITH);
-                    assertEquals(1, matchingHeaders.length);
+        // verify that the request also includes X-Requested-With header
+        // but is not overwritten by the webview
+        HttpRequest request = mWebServer.getLastAssetRequest(TestHtmlConstants.HELLO_WORLD_URL);
+        String[] matchingHeaders = request.getHeaders(X_REQUESTED_WITH);
+        assertEquals(1, matchingHeaders.length);
 
-                    String header = matchingHeaders[0];
-                    assertEquals(requester, header);
-                });
+        String header = matchingHeaders[0];
+        assertEquals(requester, header);
     }
 
     @Test
     public void testAppCanInjectHeadersViaImmutableMap() throws Exception {
         mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
 
-        WebkitUtils.onMainThreadSync(
-                () -> {
-                    String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
-                    HashMap<String, String> map = new HashMap<String, String>();
-                    final String requester = "foo";
-                    map.put(X_REQUESTED_WITH, requester);
-                    mOnUiThread.loadUrlAndWaitForCompletion(url, Collections.unmodifiableMap(map));
+        String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
+        HashMap<String, String> map = new HashMap<String, String>();
+        final String requester = "foo";
+        map.put(X_REQUESTED_WITH, requester);
+        mOnUiThread.loadUrlAndWaitForCompletion(url, Collections.unmodifiableMap(map));
 
-                    // verify that the request also includes X-Requested-With header
-                    // but is not overwritten by the webview
-                    HttpRequest request =
-                            mWebServer.getLastAssetRequest(TestHtmlConstants.HELLO_WORLD_URL);
-                    String[] matchingHeaders = request.getHeaders(X_REQUESTED_WITH);
-                    assertEquals(1, matchingHeaders.length);
+        // verify that the request also includes X-Requested-With header
+        // but is not overwritten by the webview
+        HttpRequest request = mWebServer.getLastAssetRequest(TestHtmlConstants.HELLO_WORLD_URL);
+        String[] matchingHeaders = request.getHeaders(X_REQUESTED_WITH);
+        assertEquals(1, matchingHeaders.length);
 
-                    String header = matchingHeaders[0];
-                    assertEquals(requester, header);
-                });
+        String header = matchingHeaders[0];
+        assertEquals(requester, header);
     }
 
     @Test
@@ -438,26 +424,22 @@ public class WebViewTest extends SharedWebViewTest {
     public void testGetOriginalUrl() throws Throwable {
         mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
 
-        WebkitUtils.onMainThreadSync(
-                () -> {
-                    final String finalUrl =
-                            mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
-                    final String redirectUrl =
-                            mWebServer.getRedirectingAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
+        final String finalUrl = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
+        final String redirectUrl =
+                mWebServer.getRedirectingAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
 
-                    assertNull(mWebView.getUrl());
-                    assertNull(mWebView.getOriginalUrl());
+        assertNull(mOnUiThread.getUrl());
+        assertNull(mOnUiThread.getOriginalUrl());
 
-                    // By default, WebView sends an intent to ask the system to
-                    // handle loading a new URL. We set a WebViewClient as
-                    // WebViewClient.shouldOverrideUrlLoading() returns false, so
-                    // the WebView will load the new URL.
-                    mWebView.setWebViewClient(new WaitForLoadedClient(mOnUiThread));
-                    mOnUiThread.loadUrlAndWaitForCompletion(redirectUrl);
+        // By default, WebView sends an intent to ask the system to
+        // handle loading a new URL. We set a WebViewClient as
+        // WebViewClient.shouldOverrideUrlLoading() returns false, so
+        // the WebView will load the new URL.
+        mOnUiThread.setWebViewClient(new WaitForLoadedClient(mOnUiThread));
+        mOnUiThread.loadUrlAndWaitForCompletion(redirectUrl);
 
-                    assertEquals(finalUrl, mWebView.getUrl());
-                    assertEquals(redirectUrl, mWebView.getOriginalUrl());
-                });
+        assertEquals(finalUrl, mOnUiThread.getUrl());
+        assertEquals(redirectUrl, mOnUiThread.getOriginalUrl());
     }
 
     @Test
@@ -886,135 +868,127 @@ public class WebViewTest extends SharedWebViewTest {
 
     @Test
     public void testAccessHttpAuthUsernamePassword() {
-        WebkitUtils.onMainThreadSync(
-                () -> {
-                    try {
-                        WebViewDatabase.getInstance(mContext).clearHttpAuthUsernamePassword();
+        try {
+            WebViewDatabase.getInstance(mContext).clearHttpAuthUsernamePassword();
 
-                        String host = "http://localhost:8080";
-                        String realm = "testrealm";
-                        String userName = "user";
-                        String password = "password";
+            String host = "http://localhost:8080";
+            String realm = "testrealm";
+            String userName = "user";
+            String password = "password";
 
-                        String[] result = mWebView.getHttpAuthUsernamePassword(host, realm);
-                        assertNull(result);
+            String[] result = mOnUiThread.getHttpAuthUsernamePassword(host, realm);
+            assertNull(result);
 
-                        mWebView.setHttpAuthUsernamePassword(host, realm, userName, password);
-                        result = mWebView.getHttpAuthUsernamePassword(host, realm);
-                        assertNotNull(result);
-                        assertEquals(userName, result[0]);
-                        assertEquals(password, result[1]);
+            mOnUiThread.setHttpAuthUsernamePassword(host, realm, userName, password);
+            result = mOnUiThread.getHttpAuthUsernamePassword(host, realm);
+            assertNotNull(result);
+            assertEquals(userName, result[0]);
+            assertEquals(password, result[1]);
 
-                        String newPassword = "newpassword";
-                        mWebView.setHttpAuthUsernamePassword(host, realm, userName, newPassword);
-                        result = mWebView.getHttpAuthUsernamePassword(host, realm);
-                        assertNotNull(result);
-                        assertEquals(userName, result[0]);
-                        assertEquals(newPassword, result[1]);
+            String newPassword = "newpassword";
+            mOnUiThread.setHttpAuthUsernamePassword(host, realm, userName, newPassword);
+            result = mOnUiThread.getHttpAuthUsernamePassword(host, realm);
+            assertNotNull(result);
+            assertEquals(userName, result[0]);
+            assertEquals(newPassword, result[1]);
 
-                        String newUserName = "newuser";
-                        mWebView.setHttpAuthUsernamePassword(host, realm, newUserName, newPassword);
-                        result = mWebView.getHttpAuthUsernamePassword(host, realm);
-                        assertNotNull(result);
-                        assertEquals(newUserName, result[0]);
-                        assertEquals(newPassword, result[1]);
+            String newUserName = "newuser";
+            mOnUiThread.setHttpAuthUsernamePassword(host, realm, newUserName, newPassword);
+            result = mOnUiThread.getHttpAuthUsernamePassword(host, realm);
+            assertNotNull(result);
+            assertEquals(newUserName, result[0]);
+            assertEquals(newPassword, result[1]);
 
-                        // the user is set to null, can not change any thing in the future
-                        mWebView.setHttpAuthUsernamePassword(host, realm, null, password);
-                        result = mWebView.getHttpAuthUsernamePassword(host, realm);
-                        assertNotNull(result);
-                        assertNull(result[0]);
-                        assertEquals(password, result[1]);
+            // the user is set to null, can not change any thing in the future
+            mOnUiThread.setHttpAuthUsernamePassword(host, realm, null, password);
+            result = mOnUiThread.getHttpAuthUsernamePassword(host, realm);
+            assertNotNull(result);
+            assertNull(result[0]);
+            assertEquals(password, result[1]);
 
-                        mWebView.setHttpAuthUsernamePassword(host, realm, userName, null);
-                        result = mWebView.getHttpAuthUsernamePassword(host, realm);
-                        assertNotNull(result);
-                        assertEquals(userName, result[0]);
-                        assertNull(result[1]);
+            mOnUiThread.setHttpAuthUsernamePassword(host, realm, userName, null);
+            result = mOnUiThread.getHttpAuthUsernamePassword(host, realm);
+            assertNotNull(result);
+            assertEquals(userName, result[0]);
+            assertNull(result[1]);
 
-                        mWebView.setHttpAuthUsernamePassword(host, realm, null, null);
-                        result = mWebView.getHttpAuthUsernamePassword(host, realm);
-                        assertNotNull(result);
-                        assertNull(result[0]);
-                        assertNull(result[1]);
+            mOnUiThread.setHttpAuthUsernamePassword(host, realm, null, null);
+            result = mOnUiThread.getHttpAuthUsernamePassword(host, realm);
+            assertNotNull(result);
+            assertNull(result[0]);
+            assertNull(result[1]);
 
-                        mWebView.setHttpAuthUsernamePassword(host, realm, newUserName, newPassword);
-                        result = mWebView.getHttpAuthUsernamePassword(host, realm);
-                        assertNotNull(result);
-                        assertEquals(newUserName, result[0]);
-                        assertEquals(newPassword, result[1]);
-                    } finally {
-                        WebViewDatabase.getInstance(mContext).clearHttpAuthUsernamePassword();
-                    }
-                });
+            mOnUiThread.setHttpAuthUsernamePassword(host, realm, newUserName, newPassword);
+            result = mOnUiThread.getHttpAuthUsernamePassword(host, realm);
+            assertNotNull(result);
+            assertEquals(newUserName, result[0]);
+            assertEquals(newPassword, result[1]);
+        } finally {
+            WebViewDatabase.getInstance(mContext).clearHttpAuthUsernamePassword();
+        }
     }
 
     @Test
     public void testWebViewDatabaseAccessHttpAuthUsernamePassword() {
-        WebkitUtils.onMainThreadSync(
-                () -> {
-                    WebViewDatabase webViewDb = WebViewDatabase.getInstance(mContext);
-                    try {
-                        webViewDb.clearHttpAuthUsernamePassword();
+        WebViewDatabase webViewDb = WebViewDatabase.getInstance(mContext);
+        try {
+            webViewDb.clearHttpAuthUsernamePassword();
 
-                        String host = "http://localhost:8080";
-                        String realm = "testrealm";
-                        String userName = "user";
-                        String password = "password";
+            String host = "http://localhost:8080";
+            String realm = "testrealm";
+            String userName = "user";
+            String password = "password";
 
-                        String[] result = mWebView.getHttpAuthUsernamePassword(host, realm);
-                        assertNull(result);
+            String[] result = mOnUiThread.getHttpAuthUsernamePassword(host, realm);
+            assertNull(result);
 
-                        webViewDb.setHttpAuthUsernamePassword(host, realm, userName, password);
-                        result = webViewDb.getHttpAuthUsernamePassword(host, realm);
-                        assertNotNull(result);
-                        assertEquals(userName, result[0]);
-                        assertEquals(password, result[1]);
+            webViewDb.setHttpAuthUsernamePassword(host, realm, userName, password);
+            result = webViewDb.getHttpAuthUsernamePassword(host, realm);
+            assertNotNull(result);
+            assertEquals(userName, result[0]);
+            assertEquals(password, result[1]);
 
-                        String newPassword = "newpassword";
-                        webViewDb.setHttpAuthUsernamePassword(host, realm, userName, newPassword);
-                        result = webViewDb.getHttpAuthUsernamePassword(host, realm);
-                        assertNotNull(result);
-                        assertEquals(userName, result[0]);
-                        assertEquals(newPassword, result[1]);
+            String newPassword = "newpassword";
+            webViewDb.setHttpAuthUsernamePassword(host, realm, userName, newPassword);
+            result = webViewDb.getHttpAuthUsernamePassword(host, realm);
+            assertNotNull(result);
+            assertEquals(userName, result[0]);
+            assertEquals(newPassword, result[1]);
 
-                        String newUserName = "newuser";
-                        webViewDb.setHttpAuthUsernamePassword(
-                                host, realm, newUserName, newPassword);
-                        result = webViewDb.getHttpAuthUsernamePassword(host, realm);
-                        assertNotNull(result);
-                        assertEquals(newUserName, result[0]);
-                        assertEquals(newPassword, result[1]);
+            String newUserName = "newuser";
+            webViewDb.setHttpAuthUsernamePassword(host, realm, newUserName, newPassword);
+            result = webViewDb.getHttpAuthUsernamePassword(host, realm);
+            assertNotNull(result);
+            assertEquals(newUserName, result[0]);
+            assertEquals(newPassword, result[1]);
 
-                        // the user is set to null, can not change any thing in the future
-                        webViewDb.setHttpAuthUsernamePassword(host, realm, null, password);
-                        result = webViewDb.getHttpAuthUsernamePassword(host, realm);
-                        assertNotNull(result);
-                        assertNull(result[0]);
-                        assertEquals(password, result[1]);
+            // the user is set to null, can not change any thing in the future
+            webViewDb.setHttpAuthUsernamePassword(host, realm, null, password);
+            result = webViewDb.getHttpAuthUsernamePassword(host, realm);
+            assertNotNull(result);
+            assertNull(result[0]);
+            assertEquals(password, result[1]);
 
-                        webViewDb.setHttpAuthUsernamePassword(host, realm, userName, null);
-                        result = webViewDb.getHttpAuthUsernamePassword(host, realm);
-                        assertNotNull(result);
-                        assertEquals(userName, result[0]);
-                        assertNull(result[1]);
+            webViewDb.setHttpAuthUsernamePassword(host, realm, userName, null);
+            result = webViewDb.getHttpAuthUsernamePassword(host, realm);
+            assertNotNull(result);
+            assertEquals(userName, result[0]);
+            assertNull(result[1]);
 
-                        webViewDb.setHttpAuthUsernamePassword(host, realm, null, null);
-                        result = webViewDb.getHttpAuthUsernamePassword(host, realm);
-                        assertNotNull(result);
-                        assertNull(result[0]);
-                        assertNull(result[1]);
+            webViewDb.setHttpAuthUsernamePassword(host, realm, null, null);
+            result = webViewDb.getHttpAuthUsernamePassword(host, realm);
+            assertNotNull(result);
+            assertNull(result[0]);
+            assertNull(result[1]);
 
-                        webViewDb.setHttpAuthUsernamePassword(
-                                host, realm, newUserName, newPassword);
-                        result = webViewDb.getHttpAuthUsernamePassword(host, realm);
-                        assertNotNull(result);
-                        assertEquals(newUserName, result[0]);
-                        assertEquals(newPassword, result[1]);
-                    } finally {
-                        webViewDb.clearHttpAuthUsernamePassword();
-                    }
-                });
+            webViewDb.setHttpAuthUsernamePassword(host, realm, newUserName, newPassword);
+            result = webViewDb.getHttpAuthUsernamePassword(host, realm);
+            assertNotNull(result);
+            assertEquals(newUserName, result[0]);
+            assertEquals(newPassword, result[1]);
+        } finally {
+            webViewDb.clearHttpAuthUsernamePassword();
+        }
     }
 
     @Test
@@ -1850,7 +1824,6 @@ public class WebViewTest extends SharedWebViewTest {
     }
 
     @Test
-    @Ignore("b/415129329")
     public void testSaveAndRestoreState() throws Throwable {
         mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
 

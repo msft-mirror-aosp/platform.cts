@@ -87,14 +87,13 @@ public class WebViewStartupTest {
         }
     }
 
-    @SuppressWarnings("deprecation") // versionCode field is deprecated
     private static void assertPackageEquals(PackageInfo expected, PackageInfo actual) {
         if (expected == null) {
             assertNull(actual);
             return;
         }
         assertEquals(expected.packageName, actual.packageName);
-        assertEquals(expected.versionCode, actual.versionCode);
+        assertEquals(expected.getLongVersionCode(), actual.getLongVersionCode());
         assertEquals(expected.versionName, actual.versionName);
         assertEquals(expected.lastUpdateTime, actual.lastUpdateTime);
     }

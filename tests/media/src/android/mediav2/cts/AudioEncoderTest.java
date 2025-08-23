@@ -29,12 +29,14 @@ import static org.junit.Assert.fail;
 
 import android.media.AudioFormat;
 import android.media.MediaCodec;
+import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.mediav2.common.cts.CodecDecoderTestBase;
 import android.mediav2.common.cts.CodecEncoderTestBase;
 import android.mediav2.common.cts.CodecTestBase;
 import android.mediav2.common.cts.EncoderConfigParams;
 import android.mediav2.common.cts.OutputManager;
+import android.util.Range;
 
 import androidx.test.filters.LargeTest;
 
@@ -51,6 +53,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.IntStream;
 
 /**
  * The test verifies encoders present in media codec list in bytebuffer mode. The test feeds raw
@@ -94,28 +97,55 @@ public class AudioEncoderTest extends CodecEncoderTestBase {
         return foreman.build();
     }
 
+    // This function extends sample-rate array and channel-count array that were passed as args with
+    // component's advertised capabilities. The extended sample-rate's array, channel-count's array,
+    // qualityPresets array are permuted to encoding configurations and each configuration is run as
+    // a junit test.
     protected static List<Object[]> flattenParams(List<Object[]> params) {
         List<Object[]> argsList = new ArrayList<>();
         for (Object[] param : params) {
-            String mediaType = (String) param[0];
-            int[] qualityPresets = (int[]) param[1];
-            int[] sampleRates = (int[]) param[2];
-            int[] channelCounts = (int[]) param[3];
-            int pcmEncoding = (int) param[4];
-            int profile = (int) param[5];
+            String codecName = (String) param[0];
+            String mediaType = (String) param[1];
+            int[] qualityPresets = (int[]) param[2];
+            int[] sampleRates = (int[]) param[3];
+            int[] channelCounts = (int[]) param[4];
+            int pcmEncoding = (int) param[5];
+            int profile = (int) param[6];
+
+            // do not extend sample-rate, channel-count arrays for if profile is set as some
+            // profiles may not support every sample-rate, channel-count permutation.
+            if (profile < 0) {
+                MediaCodecInfo.AudioCapabilities audioCaps =
+                        getCodecCapabilities(codecName, mediaType).getAudioCapabilities();
+                int[] supportedSampleRates = audioCaps.getSupportedSampleRates();
+                if (supportedSampleRates != null) {
+                    sampleRates = combineUnique(sampleRates, supportedSampleRates);
+                }
+                Range<Integer>[] supportedChannelCountRanges =
+                        audioCaps.getInputChannelCountRanges();
+                for (Range<Integer> supportedChannelCountRange : supportedChannelCountRanges) {
+                    channelCounts = combineUnique(channelCounts,
+                            IntStream.range(supportedChannelCountRange.getLower(),
+                                    supportedChannelCountRange.getUpper() + 1).toArray());
+                }
+            }
+
             for (int qualityPreset : qualityPresets) {
                 for (int sampleRate : sampleRates) {
                     for (int channelCount : channelCounts) {
-                        Object[] testArgs = new Object[3];
-                        testArgs[0] = param[0];
-                        testArgs[1] = getAudioEncoderCfgParams(mediaType, qualityPreset, sampleRate,
-                                channelCount, pcmEncoding, profile);
-                        testArgs[2] = String.format("%d%s_%dkHz_%dch_%s_%d",
+                        Object[] testArgs = new Object[5];
+                        testArgs[0] = codecName;
+                        testArgs[1] = mediaType;
+                        EncoderConfigParams cfgParam = getAudioEncoderCfgParams(mediaType,
+                                qualityPreset, sampleRate, channelCount, pcmEncoding, profile);
+                        testArgs[2] = cfgParam;
+                        testArgs[3] = String.format("%d%s_%dkHz_%dch_%s_%d",
                                 mediaType.equals(MediaFormat.MIMETYPE_AUDIO_FLAC) ? qualityPreset :
                                         qualityPreset / 1000,
                                 mediaType.equals(MediaFormat.MIMETYPE_AUDIO_FLAC) ? "clevel" :
                                         "kbps", sampleRate / 1000, channelCount,
                                 audioEncodingToString(pcmEncoding), profile);
+                        testArgs[4] = cfgParam.toString();
                         argsList.add(testArgs);
                     }
                 }
@@ -132,17 +162,19 @@ public class AudioEncoderTest extends CodecEncoderTestBase {
         List<Object[]> defArgsList = new ArrayList<>(Arrays.asList(new Object[][]{
                 // mediaType, arrays of bit-rates, sample rates, channel counts, pcm encoding,
                 // profile
-                {MediaFormat.MIMETYPE_AUDIO_AAC, new int[]{64000, 128000}, new int[]{8000, 12000,
+                {MediaFormat.MIMETYPE_AUDIO_AAC, new int[]{192000}, new int[]{8000, 11025, 12000,
                         16000, 22050, 24000, 32000, 44100, 48000}, new int[]{1, 2, 5, 6},
                         AudioFormat.ENCODING_PCM_16BIT, AACObjectLC},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, new int[]{64000, 128000}, new int[]{16000, 24000,
+                {MediaFormat.MIMETYPE_AUDIO_AAC, new int[]{64000}, new int[]{16000, 22050, 24000,
                         32000, 44100, 48000}, new int[]{1, 2, 5, 6}, AudioFormat.ENCODING_PCM_16BIT,
                         AACObjectHE},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, new int[]{64000, 128000}, new int[]{16000, 12000,
-                        16000, 22050, 24000, 32000, 44100, 48000}, new int[]{1, 2},
-                        AudioFormat.ENCODING_PCM_16BIT, AACObjectELD},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, new int[]{128000}, new int[]{48000}, new int[]{2},
+                {MediaFormat.MIMETYPE_AUDIO_AAC, new int[]{128000}, new int[]{16000, 22050, 24000,
+                        32000, 44100, 48000}, new int[]{1, 2}, AudioFormat.ENCODING_PCM_16BIT,
+                        AACObjectELD},
+                {MediaFormat.MIMETYPE_AUDIO_AAC, new int[]{128000}, new int[]{48000}, new int[]{2},
                         AudioFormat.ENCODING_PCM_16BIT, -1},
+                {MediaFormat.MIMETYPE_AUDIO_OPUS, new int[]{128000}, new int[]{8000, 12000, 16000,
+                        24000, 48000}, new int[]{1, 2}, AudioFormat.ENCODING_PCM_16BIT, -1},
                 {MediaFormat.MIMETYPE_AUDIO_AMR_NB, new int[]{4750, 5150, 5900, 6700, 7400, 7950,
                         10200, 12200}, new int[]{8000}, new int[]{1},
                         AudioFormat.ENCODING_PCM_16BIT, -1},
@@ -156,8 +188,9 @@ public class AudioEncoderTest extends CodecEncoderTestBase {
                         new int[]{8000, 16000, 32000, 48000, 96000, 192000}, new int[]{1, 2},
                         AudioFormat.ENCODING_PCM_FLOAT, -1},
         }));
-        List<Object[]> argsList = flattenParams(defArgsList);
-        return prepareParamList(argsList, isEncoder, needAudio, needVideo, false);
+        List<Object[]> argsList =
+                prepareParamList(defArgsList, isEncoder, needAudio, needVideo, false);
+        return flattenParams(argsList);
     }
 
     void encodeAndValidate() throws IOException, InterruptedException {
@@ -221,6 +254,37 @@ public class AudioEncoderTest extends CodecEncoderTestBase {
                         + "is less than input sample count. This could be due to encoder-delay "
                         + "and/or encoder-padding not communicated cleanly. A/V sync errors "
                         + "possible \n" + mTestConfig + mTestEnv + errMsg + errMsg);
+            }
+        }
+        MediaFormat inpFormat = mActiveEncCfg.getFormat();
+        MediaFormat outFormat = cdtb.getOutputFormat();
+        int expSampleRate = mMediaType.equals(MediaFormat.MIMETYPE_AUDIO_OPUS) ? 48000 :
+                inpFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE, -1);
+        int gotSampleRate = outFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE, -1);
+        assertEquals(String.format(
+                "mismatch in sample rate. exp / got : %d / %d, \n encoder input format : %s, \n"
+                        + "decoder output format : %s \n %s %s \n",
+                expSampleRate, gotSampleRate, inpFormat, outFormat, mTestConfig.toString(),
+                mTestEnv.toString()), expSampleRate, gotSampleRate);
+        int expChannelCount = inpFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT, -1);
+        int gotChannelCount = outFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT, -1);
+        if (expChannelCount != gotChannelCount) {
+            if (expChannelCount >= 2) {
+                fail(String.format(
+                        "mismatch in channel count. exp / got : %d / %d, \n encoder input format"
+                        + " : %s, \n decoder output format : %s \n %s %s \n",
+                        expChannelCount, gotChannelCount, inpFormat, outFormat,
+                        mTestConfig.toString(), mTestEnv.toString()));
+            } else {
+                assertEquals("mono input did not produce mono output or stereo output \n"
+                        + mTestConfig + mTestEnv, 2, gotChannelCount);
+                short[] data = new short[out.limit() / 2];
+                out.asShortBuffer().get(data);
+                for (int i = 0; i < data.length; i += 2) {
+                    assertEquals("Mono input produced stereo output but left and right channel "
+                            + "contents are not identical at index : " + i + "\n" + mTestConfig
+                            + mTestEnv, data[i], data[i + 1]);
+                }
             }
         }
     }

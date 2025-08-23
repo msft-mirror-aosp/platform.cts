@@ -70,7 +70,8 @@ public final class WallpaperTest {
     @EnsureHasUserRestriction(DISALLOW_SET_WALLPAPER)
     @PolicyAppliesTest(policy = Wallpaper.class)
     public void setBitmap_viaDpc_disallowed_canSet() throws Exception {
-        try (SetUpWallpaperResource wallpaperResource = new SetUpWallpaperResource()) {
+        try (CleanUpWallpaperWithDpcResource cleanUpWallpaperResource =
+                new CleanUpWallpaperWithDpcResource()) {
             dpc(sDeviceState).wallpaperManager().setBitmap(sReferenceWallpaper);
 
             Poll.forValue("wallpaper bitmap", () -> TestApis.wallpaper().getBitmap())
@@ -85,7 +86,8 @@ public final class WallpaperTest {
     @EnsureHasUserRestriction(DISALLOW_SET_WALLPAPER)
     @PolicyDoesNotApplyTest(policy = Wallpaper.class)
     public void setBitmap_viaDpc_disallowed_cannotSet() throws Exception {
-        try (SetUpWallpaperResource wallpaperResource = new SetUpWallpaperResource()) {
+        try (CleanUpWallpaperWithTestApiResource cleanUpWallpaperResource =
+                new CleanUpWallpaperWithTestApiResource()) {
             dpc(sDeviceState).wallpaperManager().setBitmap(sReferenceWallpaper);
 
             Poll.forValue("wallpaper bitmap", () -> TestApis.wallpaper().getBitmap())
@@ -101,7 +103,8 @@ public final class WallpaperTest {
     @Test
     public void setBitmap_allowed_canSet() throws Exception {
         try (TestAppInstance testAppInstance = sTestApp.install();
-                SetUpWallpaperResource wallpaperResource = new SetUpWallpaperResource()) {
+                CleanUpWallpaperWithTestApiResource cleanUpWallpaperResource =
+                        new CleanUpWallpaperWithTestApiResource()) {
             testAppInstance.wallpaperManager().setBitmap(sReferenceWallpaper);
 
             Poll.forValue("wallpaper bitmap", () -> TestApis.wallpaper().getBitmap())
@@ -131,7 +134,8 @@ public final class WallpaperTest {
     @EnsureDoesNotHaveUserRestriction(DISALLOW_SET_WALLPAPER)
     @Test
     public void setStream_allowed_canSet() throws Exception {
-        try (SetUpWallpaperResource wallpaperResource = new SetUpWallpaperResource()) {
+        try (CleanUpWallpaperWithTestApiResource cleanUpWallpaperResource =
+                new CleanUpWallpaperWithTestApiResource()) {
             TestApis.wallpaper().setStream(BitmapUtils.bitmapToInputStream(sReferenceWallpaper));
 
             Poll.forValue("wallpaper bitmap", () -> TestApis.wallpaper().getBitmap())
@@ -154,10 +158,21 @@ public final class WallpaperTest {
                 .await();
     }
 
-    private class SetUpWallpaperResource implements AutoCloseable {
+    private class CleanUpWallpaperWithTestApiResource implements AutoCloseable {
         @Override
         public void close() throws Exception {
             TestApis.wallpaper().setBitmap(sOriginalWallpaper);
+            Poll.forValue("wallpaper bitmap", () -> TestApis.wallpaper().getBitmap())
+                    .toMeet(bitmap -> BitmapUtils.compareBitmaps(bitmap, sOriginalWallpaper))
+                    .errorOnFail()
+                    .await();
+        }
+    }
+
+    private class CleanUpWallpaperWithDpcResource implements AutoCloseable {
+        @Override
+        public void close() throws Exception {
+            dpc(sDeviceState).wallpaperManager().setBitmap(sOriginalWallpaper);
             Poll.forValue("wallpaper bitmap", () -> TestApis.wallpaper().getBitmap())
                     .toMeet(bitmap -> BitmapUtils.compareBitmaps(bitmap, sOriginalWallpaper))
                     .errorOnFail()

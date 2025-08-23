@@ -37,6 +37,7 @@ public class DeveloperVerificationTestBase extends InstallationTestBase {
         super.setup();
         // Developer verification CUJs are only available on Pia V2
         assumeTrue(sUsePiaV2);
+        uninstallPackage(EMPTY_TEST_APP_PACKAGE_NAME);
     }
 
     void grantPermissionAndAbortOnDeveloperVerificationDialog(
@@ -81,7 +82,7 @@ public class DeveloperVerificationTestBase extends InstallationTestBase {
         assertDeveloperVerificationUserConfirmationDialog(
                 /* assertBypassAllowed= */ true, isAppUpdating);
 
-        clickInstallWithoutVerifyingButton(isAppUpdating);
+        clickInstallWithoutVerifyingButton(isAppUpdating, /* expectingMoreDialogs= */ false);
     }
 
     void grantPermissionAndRetryOnDeveloperVerificationDialog(boolean isAppUpdating, int retryCount)
@@ -94,7 +95,7 @@ public class DeveloperVerificationTestBase extends InstallationTestBase {
         clickRetryButton(retryCount);
     }
 
-    private void clickTillDeveloperVerificationUserConfirmationDialog(boolean isAppUpdating)
+    void clickTillDeveloperVerificationUserConfirmationDialog(boolean isAppUpdating)
             throws Exception {
         waitForUiIdle();
 

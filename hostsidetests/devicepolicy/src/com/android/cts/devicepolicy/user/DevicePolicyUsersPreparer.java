@@ -88,6 +88,11 @@ public final class DevicePolicyUsersPreparer extends BaseTargetPreparer {
         return getOracle().getDeviceOwnerUserId();
     }
 
+    /** Gets the id of a user that *should* be used by tests to set a {@code ProfileOwner} on. */
+    public static int getProfileOwnerUserId() {
+        return getOracle().getProfileOwnerUserId();
+    }
+
     /**
      * Gets the ids of any user that *could* be used as parent of profiles (created by the test).
      */
@@ -151,6 +156,12 @@ public final class DevicePolicyUsersPreparer extends BaseTargetPreparer {
             Preconditions.checkState(mMainUserId != null, "Cannot set DO on mainless-user device");
 
             return mMainUserId;
+        }
+
+        private int getProfileOwnerUserId() {
+            // TODO(b/374832167): for now it's hard-coding USER_SYSTEM on non-HSUM devices, but in
+            // the long term it should simply return the current user as well.
+            return mIsHsum ? mInitialCurrentUserId : USER_SYSTEM;
         }
 
         private int[] getProfileParentUserIds() {

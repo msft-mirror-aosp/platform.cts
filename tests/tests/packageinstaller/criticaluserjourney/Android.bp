@@ -39,6 +39,8 @@ java_defaults {
     ],
 
     data: [
+        ":CtsEmptyTestApp",
+        ":CtsEmptyTestAppV2",
         ":CtsInstallerCujTestApp",
         ":CtsInstallerCujTestAppV2",
         ":CtsInstallerCujTestInstaller",
@@ -461,6 +463,7 @@ android_test {
     srcs: [
         "src/android/packageinstaller/criticaluserjourney/cts/DeveloperVerificationTestBase.java",
         "src/android/packageinstaller/criticaluserjourney/cts/DeveloperVerificationViaIntentCujTest.java",
+        "src/android/packageinstaller/criticaluserjourney/cts/DeveloperVerificationViaSessionTest.java",
         "src/android/packageinstaller/criticaluserjourney/cts/InstallationTestBase.java",
         "src/android/packageinstaller/criticaluserjourney/cts/PackageInstallerCujTestBase.java",
     ],

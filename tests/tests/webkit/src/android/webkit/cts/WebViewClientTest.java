@@ -800,6 +800,9 @@ public class WebViewClientTest extends SharedWebViewTest {
         private final BlockingQueue<RenderProcessGoneDetail> mOnRenderProcessGoneQueue =
                 new LinkedBlockingQueue<>();
 
+        private boolean mOnPageStartedCalledSinceLastOnPageFinished;
+        private boolean mOnResourceCalledSinceLastOnPageFinished;
+        private boolean mOnErrorReceivedCalledSinceLastOnPageFinished;
         MockWebViewClient() {
             super(mOnUiThread);
         }
@@ -915,6 +918,7 @@ public class WebViewClientTest extends SharedWebViewTest {
         @Override
         public void onPageStarted(WebView view, String url, Bitmap favicon) {
             super.onPageStarted(view, url, favicon);
+            mOnPageStartedCalledSinceLastOnPageFinished = true;
             mOnPageStartQueue.add(true);
         }
 
@@ -924,16 +928,22 @@ public class WebViewClientTest extends SharedWebViewTest {
             // TODO(ntfschr): propagate these exceptions to the instrumentation thread.
             assertTrue(
                     "Expected onPageStarted to be called before onPageFinished",
-                    hasOnPageStartedCalled());
+                    mOnPageStartedCalledSinceLastOnPageFinished);
             assertTrue(
-                    "Expected onLoadResource or onReceivedError to be called before onPageFinished",
-                    hasOnLoadResourceCalled() || hasOnReceivedError());
+                    "Expected onLoadResource or onReceivedError to be called before "
+                            + "onPageFinished",
+                    mOnResourceCalledSinceLastOnPageFinished
+                            || mOnErrorReceivedCalledSinceLastOnPageFinished);
+            mOnPageStartedCalledSinceLastOnPageFinished = false;
+            mOnResourceCalledSinceLastOnPageFinished = false;
+            mOnErrorReceivedCalledSinceLastOnPageFinished = false;
             mOnPageFinishedQueue.add(true);
         }
 
         @Override
         public void onLoadResource(WebView view, String url) {
             super.onLoadResource(view, url);
+            mOnResourceCalledSinceLastOnPageFinished = true;
             mOnLoadResourceQueue.add(true);
         }
 
@@ -941,6 +951,7 @@ public class WebViewClientTest extends SharedWebViewTest {
         public void onReceivedError(
                 WebView view, int errorCode, String description, String failingUrl) {
             super.onReceivedError(view, errorCode, description, failingUrl);
+            mOnErrorReceivedCalledSinceLastOnPageFinished = true;
             mOnReceivedErrorQueue.add(errorCode);
         }
 

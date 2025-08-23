@@ -44,8 +44,6 @@ import android.mediav2.common.cts.OutputManager;
 import android.opengl.GLES20;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.util.Pair;
 import android.util.Size;
@@ -61,7 +59,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -301,9 +298,6 @@ class CodecEncoderGLSurface extends CodecTestBase {
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
 @RunWith(Parameterized.class)
 public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
     private static final String LOG_TAG = VideoEncoderAvailabilityTest.class.getSimpleName();
     private static List<CodecResource> GLOBAL_AVBL_RESOURCES;
 

@@ -47,9 +47,9 @@
         </activity>
 
         <activity android:name="android.webkit.cts.WebViewCtsActivity"
-             android:label="WebViewCtsActivity"
-             android:screenOrientation="nosensor"
-             android:exported="true">
+            android:label="WebViewCtsActivity"
+            android:screenOrientation="nosensor"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>

@@ -16,21 +16,31 @@
 
 package android.cts.backup;
 
+import static android.multiuser.Flags.FLAG_BACKUP_ACTIVATED_FOR_ALL_USERS;
+
 import static org.junit.Assert.fail;
+
+import android.platform.test.flag.junit.host.DeviceFlags;
 
 import com.android.compatibility.common.util.BackupHostSideUtils;
 import com.android.compatibility.common.util.BackupUtils;
-import com.android.tradefed.build.IBuildInfo;
+import com.android.tradefed.config.ConfigurationException;
 import com.android.tradefed.config.Option;
 import com.android.tradefed.config.OptionClass;
+import com.android.tradefed.config.OptionSetter;
 import com.android.tradefed.device.CollectingOutputReceiver;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
+import com.android.tradefed.device.UserInfo;
+import com.android.tradefed.device.UserInfo.UserType;
+import com.android.tradefed.invoker.TestInformation;
 import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.targetprep.BaseTargetPreparer;
-import com.android.tradefed.targetprep.BuildError;
+import com.android.tradefed.targetprep.SwitchUserTargetPreparer;
 import com.android.tradefed.targetprep.TargetSetupError;
 import com.android.tradefed.util.RunUtil;
+
+import com.google.common.base.Preconditions;
 
 import java.io.IOException;
 import java.util.concurrent.Callable;
@@ -40,13 +50,16 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.annotation.Nullable;
+
 /**
  * Tradedfed target preparer for the backup tests. Enables backup before all the tests and selects
  * local transport. Reverts to the original state after all the tests are executed.
  */
 @OptionClass(alias = "backup-preparer")
-public class BackupPreparer extends BaseTargetPreparer {
+public final class BackupPreparer extends BaseTargetPreparer {
     private static final long TRANSPORT_AVAILABLE_TIMEOUT_SECONDS = TimeUnit.MINUTES.toSeconds(5);
+
     @Option(name="enable-backup-if-needed", description=
             "Enable backup before all the tests and return to the original state after.")
     private boolean mEnableBackup = true;
@@ -67,12 +80,30 @@ public class BackupPreparer extends BaseTargetPreparer {
     private String mOldTransport;
     private ITestDevice mDevice;
     private BackupUtils mBackupUtils;
-    private int mCurrentUser;
+    private final SwitchUserTargetPreparer mSwitchUserTargetPreparer =
+            new SwitchUserTargetPreparer();
+    private int mFullUserId;
+
+    /**
+     * Singleton instance used to provide static methods (like {@link #getFullUserId()}) to the
+     * tests.
+     */
+    private static @Nullable BackupPreparer sInstance;
 
     @Override
-    public void setUp(ITestDevice device, IBuildInfo buildInfo)
-            throws TargetSetupError, BuildError, DeviceNotAvailableException {
-        mDevice = device;
+    public void setUp(TestInformation testInformation)
+            throws TargetSetupError, DeviceNotAvailableException {
+        try {
+            OptionSetter optionSetter = new OptionSetter(mSwitchUserTargetPreparer);
+            optionSetter.setOptionValue(
+                    SwitchUserTargetPreparer.OPTION_USER_TYPE, UserType.FULL.name());
+        } catch (ConfigurationException e) {
+            throw new TargetSetupError(
+                    "Could not setup SwitchUserTargetPreparer", e, mDevice.getDeviceDescriptor());
+        }
+        mSwitchUserTargetPreparer.setUp(testInformation);
+
+        mDevice = testInformation.getDevice();
         mBackupUtils = BackupHostSideUtils.createBackupUtils(mDevice);
         mIsBackupSupported = mDevice.hasFeature("feature:" + FEATURE_BACKUP);
 
@@ -83,17 +114,12 @@ public class BackupPreparer extends BaseTargetPreparer {
         if (mIsBackupSupported) {
             BackupHostSideUtils.checkSetupComplete(mDevice);
 
-            try {
-                mCurrentUser = getCurrentUserId();
-            } catch (Exception e) {
-                throw new TargetSetupError("Failed to get current user ID", e);
-            }
-            CLog.i("Current user is " + mCurrentUser);
+            setFullUserId(testInformation);
 
-            if (!isBackupActiveForUser(mCurrentUser)) {
+            if (!isBackupActiveForUser(mFullUserId)) {
                 throw new TargetSetupError(
-                        "Cannot run test as backup is not active for current user " + mCurrentUser,
-                        device.getDeviceDescriptor());
+                        "Cannot run test as backup is not active for user " + mFullUserId,
+                        mDevice.getDeviceDescriptor());
             }
 
             // Enable backup and select local backup transport
@@ -111,21 +137,29 @@ public class BackupPreparer extends BaseTargetPreparer {
                 try {
                     mBackupUtils.waitForBackupInitialization();
                 } catch (IOException e) {
-                    throw new TargetSetupError("Backup not initialized", e);
+                    throw new TargetSetupError(
+                            "Backup not initialized (using user " + mFullUserId + ")",
+                            e,
+                            mDevice.getDeviceDescriptor());
                 }
             }
+        }
+
+        // Sets the singleton used by getFullUserId()
+        if (sInstance == null) {
+            sInstance = this;
+        } else {
+            CLog.e("sInstance (%s) already set (this=%s)", sInstance, this);
         }
     }
 
     @Override
-    public void tearDown(ITestDevice device, IBuildInfo buildInfo, Throwable e)
+    public void tearDown(TestInformation testInformation, Throwable e)
             throws DeviceNotAvailableException {
-        mDevice = device;
-
-        if (mIsBackupSupported) {
-            if (mEnableBackup) {
-                CLog.i("Returning backup to it's previous state on %s",
-                        mDevice.getSerialNumber());
+        sInstance = null;
+        try {
+            if (mIsBackupSupported && mEnableBackup) {
+                CLog.i("Returning backup to its previous state on %s", mDevice.getSerialNumber());
                 enableBackup(mWasBackupEnabled);
                 if (mSelectLocalTransport) {
                     CLog.i("Returning selected transport to it's previous value on %s",
@@ -133,7 +167,61 @@ public class BackupPreparer extends BaseTargetPreparer {
                     setBackupTransport(mOldTransport);
                 }
             }
+        } finally {
+            mSwitchUserTargetPreparer.tearDown(testInformation, e);
         }
+    }
+
+    /**
+     * Gets the id of a (non-profile) user that could be used to run backup tests on.
+     *
+     * <p>Backup & Restore used to be available only for the primary / system user, then main user,
+     * and now any user. Hence, methods tests should call this method instead of directly calling
+     * methods (like {@link ITestDevice#getMainUserId()}) that return these ids.
+     */
+    public static int getFullUserId() {
+        Preconditions.checkState(
+                sInstance != null,
+                "BackupPreparer instance not set - did you include it in your AndroidTest.xml?");
+        return sInstance.mFullUserId;
+    }
+
+    private void setFullUserId(TestInformation testInformation)
+            throws TargetSetupError, DeviceNotAvailableException {
+        // TODO(b/374830726): for now it's still checking for main user just in case, but in the
+        // long term it should be changed to always use the initial user.
+        Integer mainUserId = mDevice.getMainUserId();
+        if (mainUserId != null) {
+            CLog.i("setFullUserId(): using main user (%d)", mainUserId);
+            mFullUserId = mainUserId;
+            return;
+        }
+
+        var flags = DeviceFlags.createDeviceFlags(mDevice);
+        String flagValue = flags.getFlagValue(FLAG_BACKUP_ACTIVATED_FOR_ALL_USERS);
+        CLog.i(
+                "Device doesn't have main user, checking value of flag %s (%s)",
+                FLAG_BACKUP_ACTIVATED_FOR_ALL_USERS, flagValue);
+        if (Boolean.valueOf(flagValue)) {
+            mFullUserId = testInformation.getDevice().getCurrentUser();
+            CLog.i("setFullUserId(): using current user (%d)", mFullUserId);
+            return;
+        }
+        // TODO(b/374830726): ideally it should throw here for all devices, but that would crash
+        // tests on some mainline builds, so it's checkingfor HSUM
+        if (mDevice.isHeadlessSystemUserMode()) {
+            throw new TargetSetupError(
+                    "(HSUM) Device doesn't have a main user and flag "
+                            + FLAG_BACKUP_ACTIVATED_FOR_ALL_USERS
+                            + " is disabled",
+                    mDevice.getDeviceDescriptor());
+        }
+        CLog.e(
+                "(Non-HSUM) Device doesn't have a main user and flag %s is disabled (value is %s);"
+                        + " will use current user",
+                FLAG_BACKUP_ACTIVATED_FOR_ALL_USERS, flagValue);
+        mFullUserId = UserInfo.USER_SYSTEM;
+        CLog.i("setFullUserId(): using system user (%d)", mFullUserId);
     }
 
     private void waitForTransport(String transport) throws TargetSetupError {
@@ -151,7 +239,7 @@ public class BackupPreparer extends BaseTargetPreparer {
     private boolean hasBackupTransport(String transport, boolean logIfFail)
             throws DeviceNotAvailableException, TargetSetupError {
         String output =
-                mDevice.executeShellCommand("bmgr --user " + mCurrentUser + " list transports");
+                mDevice.executeShellCommand("bmgr --user " + mFullUserId + " list transports");
         for (String t : output.split(" ")) {
             if (transport.equals(t.trim())) {
                 return true;
@@ -192,7 +280,7 @@ public class BackupPreparer extends BaseTargetPreparer {
     // Copied over from BackupQuotaTest
     private boolean enableBackup(boolean enable) throws DeviceNotAvailableException {
         boolean previouslyEnabled;
-        String output = mDevice.executeShellCommand("bmgr --user " + mCurrentUser + " enabled");
+        String output = mDevice.executeShellCommand("bmgr --user " + mFullUserId + " enabled");
         Pattern pattern = Pattern.compile("^Backup Manager currently (enabled|disabled)$");
         Matcher matcher = pattern.matcher(output.trim());
         if (matcher.find()) {
@@ -201,7 +289,7 @@ public class BackupPreparer extends BaseTargetPreparer {
             throw new RuntimeException("non-parsable output setting bmgr enabled: " + output);
         }
 
-        mDevice.executeShellCommand("bmgr --user " + mCurrentUser + " enable " + enable);
+        mDevice.executeShellCommand("bmgr --user " + mFullUserId + " enable " + enable);
         return previouslyEnabled;
     }
 
@@ -209,7 +297,7 @@ public class BackupPreparer extends BaseTargetPreparer {
     private String setBackupTransport(String transport) throws DeviceNotAvailableException {
         String output =
                 mDevice.executeShellCommand(
-                        "bmgr --user " + mCurrentUser + " transport " + transport);
+                        "bmgr --user " + mFullUserId + " transport " + transport);
         Pattern pattern = Pattern.compile("\\(formerly (.*)\\)$");
         Matcher matcher = pattern.matcher(output);
         if (matcher.find()) {
@@ -240,8 +328,7 @@ public class BackupPreparer extends BaseTargetPreparer {
     }
 
     private int getCurrentUserId() throws Exception {
-        String output = mDevice.executeShellCommand("am get-current-user");
-        return Integer.parseInt(output.trim());
+        return mDevice.getCurrentUser();
     }
 
     private boolean isBackupActiveForUser(int userId) {

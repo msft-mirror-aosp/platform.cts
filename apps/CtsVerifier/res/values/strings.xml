@@ -3854,7 +3854,7 @@ You should be prompted to select credentials; choose the ones you just installed
     </string>
     <string name="set_device_owner_headless_dialog_text">
             For this test you need to set the device owner by running\n
-            adb shell dpm set-device-owner --user 0 com.android.cts.verifier/.managedprovisioning.DeviceAdminTestReceiver
+            adb shell dpm set-device-owner --user 10 com.android.cts.verifier/.managedprovisioning.DeviceAdminTestReceiver
     </string>
     <string name="device_owner_remove_device_owner_test">Remove device owner</string>
     <string name="device_owner_remove_device_owner_test_info">

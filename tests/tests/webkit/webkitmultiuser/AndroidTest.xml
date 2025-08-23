@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Copyright (C) 2015 The Android Open Source Project
+<!-- Copyright (C) 2025 The Android Open Source Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -13,10 +13,9 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<configuration description="Config for CTS Webkit test cases">
+<configuration description="Config for CTS Webkit Multiuser test cases">
     <option name="test-suite-tag" value="cts" />
     <option name="config-descriptor:metadata" key="component" value="webview" />
-    <!-- Note: about half of webkit CTS tests are skipped in instant_app mode since it requires HTTPS -->
     <option name="config-descriptor:metadata" key="parameter" value="instant_app" />
     <!-- WebView based tests for the SDK sandbox are already separately tested -->
     <option name="config-descriptor:metadata" key="parameter" value="not_run_on_sdk_sandbox" />
@@ -26,10 +25,11 @@
     <option name="config-descriptor:metadata" key="parameter" value="multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
+    <option name="config-descriptor:metadata" key="parameter" value="multiuser" />
     <target_preparer class="com.android.compatibility.common.tradefed.targetprep.LocationCheck" />
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
-        <option name="test-file-name" value="CtsWebkitTestCases.apk" />
+        <option name="test-file-name" value="CtsWebkitMultiuserTestCases.apk" />
     </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <!-- disable DeprecatedAbi warning -->
@@ -42,13 +42,11 @@
     </target_preparer>
     <target_preparer class="android.webkit.cts.preconditions.WebViewVersionPreparer" />
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
-        <option name="package" value="android.webkit.cts" />
+        <option name="package" value="android.webkitmultiuser.cts" />
         <option name="runtime-hint" value="8m10s" />
-
-        <!-- Run every test in its own fresh process. This is necessary for WebView because the
-        underlying chromium code has some global state which is not possible to reset between tests
-        (except by getting an entirely fresh process). -->
-        <option name="orchestrator" value="true"/>
+        <option name="exclude-annotation" value="com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile" />
+        <option name="exclude-annotation" value="com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser" />
+        <!-- MUST NOT enable test orchestrator in this test suite. It does not work correctly with bedstead.-->
     </test>
     <object type="module_controller" class="com.android.tradefed.testtype.suite.module.MainlineTestModuleController">
         <option name="mainline-module-package-name" value="com.google.android.webview.bootstrap" />
