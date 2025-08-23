@@ -44,6 +44,7 @@ import android.app.WindowConfiguration;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Rect;
 import android.hardware.input.InputManager;
@@ -169,6 +170,12 @@ public abstract class WindowUntrustedTouchTestBase {
     @Rule
     public ActivityScenarioRule<TestActivity> activityRule =
             new ActivityScenarioRule<>(TestActivity.class, createLaunchActivityOptionsBundle());
+
+    private boolean shouldSkipToastBoundsCheck() {
+        final PackageManager pm = mContext.getPackageManager();
+        return pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+                && pm.hasSystemFeature("android.software.car.splitscreen_multitasking");
+    }
 
     @Before
     public void setUp() throws Exception {
@@ -302,17 +309,24 @@ public abstract class WindowUntrustedTouchTestBase {
         if (!toastWindow.isSurfaceShown()) {
             return "toast surface not shown";
         }
-        Rect toastBounds = toastWindow.getFrame();
-        int[] viewXY = new int[2];
-        mContainer.getLocationOnScreen(viewXY);
-        Rect containerRect =
-                new Rect(
-                        viewXY[0],
-                        viewXY[1],
-                        viewXY[0] + mContainer.getWidth(),
-                        viewXY[1] + mContainer.getHeight());
-        if (!containerRect.contains(toastBounds.centerX(), toastBounds.centerY())) {
-            return "toast window is outside container bounds";
+        // TODO(b/440669095): Improve the test.
+        if (!shouldSkipToastBoundsCheck()) {
+            // In some non-phone targets, e.g. Automotive's multi tasking environments based on
+            // multiple root tasks where the activities are not launched in full screen,
+            // there are scenarios that the toast does not appear within the test activity's
+            // bounds. Skipping this check for these targets.
+            Rect toastBounds = toastWindow.getFrame();
+            int[] viewXY = new int[2];
+            mContainer.getLocationOnScreen(viewXY);
+            Rect containerRect =
+                    new Rect(
+                            viewXY[0],
+                            viewXY[1],
+                            viewXY[0] + mContainer.getWidth(),
+                            viewXY[1] + mContainer.getHeight());
+            if (!containerRect.contains(toastBounds.centerX(), toastBounds.centerY())) {
+                return "toast window is outside container bounds";
+            }
         }
         // Toast window is valid
         return null;
