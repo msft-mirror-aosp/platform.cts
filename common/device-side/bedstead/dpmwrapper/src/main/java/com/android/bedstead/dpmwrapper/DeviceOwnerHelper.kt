@@ -86,7 +86,7 @@ class DeviceOwnerHelper private constructor() {
                 if (numberArgs > 0) {
                     args = arrayOfNulls(numberArgs)
                     parameterTypes = arrayOfNulls(numberArgs)
-                    val extras = intent.extras
+                    val extras = intent.extras!!
                     for (i in 0..<numberArgs) {
                         DataFormatter.getArg(extras, args, parameterTypes, i)
                     }
