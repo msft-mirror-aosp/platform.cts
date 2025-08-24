@@ -29,7 +29,8 @@ java_library {
     ],
     static_libs: [
         "androidx.localbroadcastmanager_localbroadcastmanager",
-        "mockito-target-minus-junit4",
         "compatibility-device-util-axt",
+        "mockito-kotlin-nodeps",
+        "mockito-target-minus-junit4",
     ],
 }
