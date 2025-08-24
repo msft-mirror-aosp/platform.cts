@@ -1,0 +1,109 @@
+/*
+ * Copyright (C) 2025 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.android.bedstead.dpmwrapper
+
+import android.annotation.SuppressLint
+import android.app.admin.DeviceAdminInfo
+import android.app.admin.DevicePolicyManager
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.IntentFilter
+import android.util.Log
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.android.bedstead.dpmwrapper.Utils.Companion.isCurrentUserOnHeadlessSystemUser
+import com.android.bedstead.dpmwrapper.Utils.Companion.toString
+import com.android.compatibility.common.util.SystemUtil
+import com.android.compatibility.common.util.ThrowingSupplier
+
+/** Helper class used by the test apps. */
+class TestAppHelper private constructor() {
+    init {
+        throw UnsupportedOperationException("contains only static methods")
+    }
+
+    companion object {
+        private val TAG: String = TestAppHelper::class.java.getSimpleName()
+
+        /**
+         * Called by test case to register a [BrodcastReceiver] to receive intents sent by the
+         * device owner's [android.app.admin.DeviceAdminReceiver].
+         */
+        /**
+         * Called by test case to register a [BrodcastReceiver] to receive intents sent by the
+         * device owner's [android.app.admin.DeviceAdminReceiver].
+         */
+        @SuppressLint("MissingPermission")
+        @JvmOverloads
+        @JvmStatic
+        fun registerTestCaseReceiver(
+            context: Context,
+            receiver: BroadcastReceiver,
+            filter: IntentFilter,
+            forDeviceOwner: Boolean = true,
+        ) {
+            if (
+                forDeviceOwner &&
+                    isCurrentUserOnHeadlessSystemUser(context) &&
+                    SystemUtil.runWithShellPermissionIdentity<Boolean?>(
+                        ThrowingSupplier {
+                            context
+                                .getSystemService<DevicePolicyManager?>(
+                                    DevicePolicyManager::class.java
+                                )
+                                .getHeadlessDeviceOwnerMode() !=
+                                DeviceAdminInfo.HEADLESS_DEVICE_OWNER_MODE_SINGLE_USER
+                        }
+                    )
+            ) {
+                TestAppCallbacksReceiver.registerReceiver(context, receiver, filter)
+                return
+            }
+            Log.d(
+                TAG,
+                ("Registering " +
+                    receiver +
+                    " to receive " +
+                    toString(filter) +
+                    " locally on user " +
+                    context.userId),
+            )
+            LocalBroadcastManager.getInstance(context).registerReceiver(receiver, filter)
+        }
+
+        /**
+         * Called by test case to unregister a [BrodcastReceiver] that receive intents sent by the
+         * device owner's [android.app.admin.DeviceAdminReceiver].
+         */
+        /**
+         * Called by test case to unregister a [BrodcastReceiver] that receive intents sent by the
+         * device owner's [android.app.admin.DeviceAdminReceiver].
+         */
+        @JvmOverloads
+        @JvmStatic
+        fun unregisterTestCaseReceiver(
+            context: Context,
+            receiver: BroadcastReceiver,
+            forDeviceOwner: Boolean = true,
+        ) {
+            if (forDeviceOwner && isCurrentUserOnHeadlessSystemUser(context)) {
+                TestAppCallbacksReceiver.unregisterReceiver(context, receiver)
+                return
+            }
+            Log.d(TAG, "Unregistering $receiver locally on user ${context.userId}")
+            LocalBroadcastManager.getInstance(context).unregisterReceiver(receiver)
+        }
+    }
+}
