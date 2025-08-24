@@ -32,7 +32,7 @@ internal class GenericManagerWrapper : ServiceManagerWrapper<GenericManager?>() 
     override fun getWrapper(
         context: Context,
         manager: GenericManager?,
-        answer: Answer<*>?,
+        answer: Answer<*>,
     ): GenericManager? {
         val userId = context.userId
         var mock: GenericManager? = sMocks.get(context)

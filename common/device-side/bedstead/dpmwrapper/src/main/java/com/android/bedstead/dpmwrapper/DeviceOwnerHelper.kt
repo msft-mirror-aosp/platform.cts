@@ -21,7 +21,7 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import com.android.bedstead.dpmwrapper.TestAppSystemServiceFactory.resultCodeToString
+import com.android.bedstead.dpmwrapper.TestAppSystemServiceFactory.Companion.resultCodeToString
 import java.lang.reflect.Method
 import java.util.concurrent.Callable
 

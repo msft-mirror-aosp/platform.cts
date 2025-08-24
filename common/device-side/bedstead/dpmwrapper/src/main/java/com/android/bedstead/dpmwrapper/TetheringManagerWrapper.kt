@@ -34,7 +34,7 @@ internal class TetheringManagerWrapper : ServiceManagerWrapper<TetheringManager?
     override fun getWrapper(
         context: Context,
         manager: TetheringManager?,
-        answer: Answer<*>?,
+        answer: Answer<*>,
     ): TetheringManager? {
         val userId = context.userId
         var spy: TetheringManager? = sSpies.get(context)

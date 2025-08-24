@@ -34,7 +34,7 @@ internal class HardwarePropertiesManagerWrapper :
     override fun getWrapper(
         context: Context,
         manager: HardwarePropertiesManager?,
-        answer: Answer<*>?,
+        answer: Answer<*>,
     ): HardwarePropertiesManager? {
         val userId = context.userId
         var spy: HardwarePropertiesManager? = sSpies.get(context)

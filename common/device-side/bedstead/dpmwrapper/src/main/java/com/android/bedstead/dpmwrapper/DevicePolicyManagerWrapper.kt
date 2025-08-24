@@ -40,7 +40,7 @@ internal class DevicePolicyManagerWrapper : ServiceManagerWrapper<DevicePolicyMa
     @SuppressLint("MissingPermission")
     override fun getWrapper(
         context: Context,
-        dpm: DevicePolicyManager?,
+        manager: DevicePolicyManager?,
         answer: Answer<*>,
     ): DevicePolicyManager? {
         val userId = context.userId
@@ -50,7 +50,7 @@ internal class DevicePolicyManagerWrapper : ServiceManagerWrapper<DevicePolicyMa
             return spy
         }
 
-        spy = Mockito.spy<DevicePolicyManager?>(dpm)
+        spy = Mockito.spy<DevicePolicyManager?>(manager)
         val spyString = "DevicePolicyManagerWrapper#" + System.identityHashCode(spy)
         Log.d(TAG, "get(): created spy for user " + context.userId + ": " + spyString)
 

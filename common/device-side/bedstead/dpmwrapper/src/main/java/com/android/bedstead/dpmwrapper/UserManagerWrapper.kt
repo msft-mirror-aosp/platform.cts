@@ -33,7 +33,7 @@ internal class UserManagerWrapper : ServiceManagerWrapper<UserManager?>() {
     override fun getWrapper(
         context: Context,
         manager: UserManager?,
-        answer: Answer<*>?,
+        answer: Answer<*>,
     ): UserManager? {
         val userId = context.userId
         var spy: UserManager? = sSpies.get(context)
