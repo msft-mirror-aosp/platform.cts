@@ -96,7 +96,7 @@ android_test {
         ":CtsProviderTestUtils",
     ],
 
-    min_sdk_version: "21",
+    min_sdk_version: "23",
     target_sdk_version: "33",
 
     platform_apis: true,

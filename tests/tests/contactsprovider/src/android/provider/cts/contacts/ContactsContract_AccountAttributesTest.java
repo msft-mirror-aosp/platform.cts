@@ -57,6 +57,9 @@ public class ContactsContract_AccountAttributesTest {
     private Account mAccount2;
 
     private Account mSimAccount1;
+
+    private Account mSimSdnAccount1;
+
     private static final Account ACCT_NOT_PRESENT =
             new Account(
                     "test for account attributes not signed in", StaticAccountAuthenticator.TYPE);
@@ -94,6 +97,12 @@ public class ContactsContract_AccountAttributesTest {
                                 + System.currentTimeMillis(),
                         "ContactsContract_AccountAttributesTest SIM type");
 
+        mSimSdnAccount1 =
+                new Account(
+                        "ContactsContract_AccountAttributesTest SIM SDN name "
+                                + System.currentTimeMillis(),
+                        "ContactsContract_AccountAttributesTest SIM SDN type");
+
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
                     ContactsContract.SimContacts.addSimAccount(
@@ -102,6 +111,13 @@ public class ContactsContract_AccountAttributesTest {
                             mSimAccount1.type,
                             0,
                             ContactsContract.SimAccount.ADN_EF_TYPE);
+
+                    ContactsContract.SimContacts.addSimAccount(
+                            mResolver,
+                            mSimSdnAccount1.name,
+                            mSimSdnAccount1.type,
+                            0,
+                            ContactsContract.SimAccount.SDN_EF_TYPE);
                 });
         // Waiting a short while so that accounts are arrived on the device.
         try {
@@ -138,10 +154,17 @@ public class ContactsContract_AccountAttributesTest {
     @Test
     @RequiresFlagsEnabled({FLAG_NEW_ACCOUNT_ATTRIBUTES_API_ENABLED})
     public void testSetAndGetAccountAttributes_localAndSimAccount() {
+        // "Null" account should be considered as LOCAL account.
+        assertThat(getAccountAttributesInternal(mResolver, null, null))
+                .isEqualTo(AccountAttributes.ATTRIBUTE_DATA_ORIGIN_LOCAL);
+
         assertThat(getAccountAttributesInternal(mResolver, getLocalAccount(), null))
                 .isEqualTo(AccountAttributes.ATTRIBUTE_DATA_ORIGIN_LOCAL);
 
         assertThat(getAccountAttributesInternal(mResolver, mSimAccount1, null))
+                .isEqualTo(AccountAttributes.ATTRIBUTE_DATA_ORIGIN_SIM);
+
+        assertThat(getAccountAttributesInternal(mResolver, mSimSdnAccount1, null))
                 .isEqualTo(AccountAttributes.ATTRIBUTE_DATA_ORIGIN_SIM);
     }
 

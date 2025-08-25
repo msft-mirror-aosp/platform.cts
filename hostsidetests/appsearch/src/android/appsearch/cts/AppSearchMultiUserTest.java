@@ -115,6 +115,18 @@ public class AppSearchMultiUserTest extends AppSearchHostTestBase {
         runDeviceTestAsUserInPkgA("testRepeatedSetSchema_finished", sSecondaryUserId);
     }
 
+    @Ignore("b/435433815 - move out of cts tests")
+    @Test
+    public void testReadWriteLockContention() throws Exception {
+        runDeviceTestAsUserInPkgA("testReadWriteLockContention", sInitialUserId);
+    }
+
+    @Ignore("b/435433815 - move out of cts tests")
+    @Test
+    public void testReadParallelism() throws Exception {
+        runDeviceTestAsUserInPkgA("testReadParallelism", sInitialUserId);
+    }
+
     @Test
     public void testPackageUninstall_onLockedUser() throws Exception {
         installPackageAsUser(TARGET_APK_B, /* grantPermission= */true, sSecondaryUserId);

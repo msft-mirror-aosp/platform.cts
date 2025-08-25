@@ -32,8 +32,10 @@ public class WindowUtil {
      * @param activity The Activity whose main window should gain focus.
      */
     public static void waitForFocus(Activity activity) {
-        PollingCheck.waitFor(WINDOW_FOCUS_TIMEOUT_MILLIS,
-                activity::hasWindowFocus);
+        PollingCheck.waitFor(
+                WINDOW_FOCUS_TIMEOUT_MILLIS,
+                activity::hasWindowFocus,
+                "Timed out waiting for activity " + activity.getComponentName() + " to gain focus");
     }
 
     /**
@@ -41,7 +43,11 @@ public class WindowUtil {
      * @param window The Window that should gain focus.
      */
     public static void waitForFocus(Window window) {
-        PollingCheck.waitFor(WINDOW_FOCUS_TIMEOUT_MILLIS,
-                window.getDecorView()::hasWindowFocus);
+        PollingCheck.waitFor(
+                WINDOW_FOCUS_TIMEOUT_MILLIS,
+                window.getDecorView()::hasWindowFocus,
+                "Timed out waiting for window "
+                        + window.getAttributes().getTitle()
+                        + " to gain focus");
     }
 }
