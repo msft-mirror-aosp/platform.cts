@@ -84,6 +84,7 @@ import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
 import android.telephony.AccessNetworkConstants;
+import android.telephony.Annotation.RadioPowerState;
 import android.telephony.AvailableNetworkInfo;
 import android.telephony.CallAttributes;
 import android.telephony.CallForwardingInfo;
@@ -183,7 +184,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.IntSupplier;
 import java.util.regex.Matcher;
@@ -206,6 +206,9 @@ public class TelephonyManagerTest {
     private LocationHelper mLocationHelper;
     private boolean mOnCellInfoChanged = false;
     private boolean mOnSignalStrengthsChanged = false;
+    private boolean mServiceStateChangedCalled = false;
+    private boolean mRadioRebootTriggered = false;
+    private boolean mHasRadioPowerOff = false;
     private ServiceState mServiceState;
     private final Object mLock = new Object();
 
@@ -2157,95 +2160,105 @@ public class TelephonyManagerTest {
                 (tm) -> tm.setCarrierDataEnabled(true));
     }
 
-    void waitUntilTrue(BooleanSupplier test, Object lock, long waitMillis, String failureMessage) {
-        synchronized (lock) {
-            if (test.getAsBoolean()) return;
-            long timeout = System.currentTimeMillis() + waitMillis;
-            for (; waitMillis > 0; waitMillis = timeout - System.currentTimeMillis()) {
-                try {
-                    lock.wait(waitMillis);
-                    if (test.getAsBoolean()) return;
-                } catch (InterruptedException ie) {
-                    // ignored
-                }
-            }
-            assertTrue(failureMessage, test.getAsBoolean());
-        }
-    }
-
-    static class RadioCallback extends TelephonyCallback
-            implements TelephonyCallback.RadioPowerStateListener,
-                    TelephonyCallback.ServiceStateListener {
-
-        public final Object powerStateLock = new Object();
-        public int powerState;
-
-        public final Object serviceStateLock = new Object();
-        public ServiceState serviceState;
-
-        @Override
-        public void onRadioPowerStateChanged(int state) {
-            synchronized (powerStateLock) {
-                powerState = state;
-                powerStateLock.notifyAll();
-            }
-        }
-
-        @Override
-        public void onServiceStateChanged(ServiceState state) {
-            synchronized (serviceStateLock) {
-                serviceState = state;
-                serviceStateLock.notifyAll();
-            }
-        }
-    }
-
     /**
-     * Verifies that {@link TelephonyManager#rebootModem()} does not throw any exception and final
-     * radio state is radio power on.
+     * Verifies that {@link TelephonyManager#rebootModem()} does not throw any exception
+     * and final radio state is radio power on.
      */
     @Test
     public void testRebootRadio() throws Throwable {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-        assumeTrue(
-                "Skipping test since rebootModem is not supported/enforced until IRadio 2.3.",
-                mModemHalVersion >= RADIO_HAL_VERSION_2_3);
-
-        RadioCallback rc = new RadioCallback();
-
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                mTelephonyManager, (tm) -> tm.registerTelephonyCallback(Runnable::run, rc));
-        try {
-            waitUntilTrue(
-                    () -> rc.powerState == TelephonyManager.RADIO_POWER_ON,
-                    rc.powerStateLock,
-                    5000,
-                    "Never received power on");
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                    mTelephonyManager, (tm) -> tm.rebootRadio());
-            waitUntilTrue(
-                    () ->
-                            rc.powerState == TelephonyManager.RADIO_POWER_UNAVAILABLE
-                                    || rc.powerState == TelephonyManager.RADIO_POWER_OFF,
-                    rc.powerStateLock,
-                    5000,
-                    "Reboot never started");
-            waitUntilTrue(
-                    () -> rc.powerState == TelephonyManager.RADIO_POWER_ON,
-                    rc.powerStateLock,
-                    20000,
-                    "Never received power on after reboot");
-            waitUntilTrue(
-                    () ->
-                            rc.serviceState != null
-                                    && rc.serviceState.getState() == ServiceState.STATE_IN_SERVICE,
-                    rc.serviceStateLock,
-                    60000,
-                    "Service state not in service");
-        } finally {
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                    mTelephonyManager, (tm) -> tm.unregisterTelephonyCallback(rc));
+        if (mModemHalVersion < RADIO_HAL_VERSION_2_3) {
+            Log.d(TAG,
+                    "Skipping test since rebootModem is not supported/enforced until IRadio 2.3.");
+            return;
         }
+
+        TestThread t = new TestThread(() -> {
+            Looper.prepare();
+
+            mListener = new PhoneStateListener() {
+                @Override
+                public void onRadioPowerStateChanged(@RadioPowerState int state) {
+                    synchronized (mLock) {
+                        if (state == TelephonyManager.RADIO_POWER_ON && mHasRadioPowerOff) {
+                            mRadioRebootTriggered = true;
+                            mLock.notify();
+                        } else if (state == TelephonyManager.RADIO_POWER_OFF) {
+                            // reboot must go to power off
+                            mHasRadioPowerOff = true;
+                        }
+                    }
+                }
+            };
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                    (tm) -> tm.listen(mListener,
+                            PhoneStateListener.LISTEN_RADIO_POWER_STATE_CHANGED));
+            Looper.loop();
+        });
+
+        assertWithMessage("Unexpected power state")
+                .that(mTelephonyManager.getRadioPowerState())
+                .isEqualTo(TelephonyManager.RADIO_POWER_ON);
+        assertWithMessage("Reboot was triggered").that(mRadioRebootTriggered).isFalse();
+        assertWithMessage("Radio power is off").that(mHasRadioPowerOff).isFalse();
+        t.start();
+        try {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                    TelephonyManager::rebootModem);
+        } catch (Exception ex) {
+            //skip this test if not supported or unsuccessful (success=false)
+            return;
+        }
+
+        synchronized (mLock) {
+            // reboot takes longer time
+            if (!mRadioRebootTriggered) {
+                mLock.wait(20000);
+            }
+        }
+        assertWithMessage("Radio power is off")
+                .that(mTelephonyManager.getRadioPowerState())
+                .isEqualTo(TelephonyManager.RADIO_POWER_ON);
+        assertWithMessage("Reboot was not triggered").that(mRadioRebootTriggered).isTrue();
+
+        if (mListener != null) {
+            // unregister the listener
+            mTelephonyManager.listen(mListener, PhoneStateListener.LISTEN_NONE);
+        }
+
+        // note, other telephony states might not resumes properly at this point. e.g, service state
+        // might still in the transition from OOS to In service. Thus we need to wait for in
+        // service state before running next tests.
+        t = new TestThread(() -> {
+            Looper.prepare();
+
+            mListener = new PhoneStateListener() {
+                @Override
+                public void onServiceStateChanged(ServiceState serviceState) {
+                    synchronized (mLock) {
+                        if (serviceState.getState() == ServiceState.STATE_IN_SERVICE) {
+                            mServiceStateChangedCalled = true;
+                            mLock.notify();
+                        }
+                    }
+                }
+            };
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                    (tm) -> tm.listen(mListener, PhoneStateListener.LISTEN_SERVICE_STATE));
+            Looper.loop();
+        });
+
+        synchronized (mLock) {
+            t.start();
+            if (!mServiceStateChangedCalled) {
+                mLock.wait(60000);
+            }
+        }
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(android.Manifest.permission.READ_PHONE_STATE);
+        assertWithMessage("service state not in service")
+                .that(mTelephonyManager.getServiceState().getState())
+                .isEqualTo(ServiceState.STATE_IN_SERVICE);
     }
 
     /**
