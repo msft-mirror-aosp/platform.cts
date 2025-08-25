@@ -13,13 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package android.app.appsearch.testutil;
+package com.android.compatibility.common.util;
 
-import android.annotation.Nullable;
+import static android.os.UserHandle.USER_NULL;
+
 import android.annotation.UserIdInt;
-import android.os.Process;
+import android.content.Context;
 import android.os.UserHandle;
 import android.util.Log;
+
+import androidx.annotation.Nullable;
 
 import com.google.errorprone.annotations.FormatMethod;
 import com.google.errorprone.annotations.FormatString;
@@ -33,23 +36,58 @@ public final class UserAwareLogger {
     private final String mTag;
     private final @UserIdInt int mUserId;
 
-    /** Creates a logger for the given {@code tag} and {@code userId} */
-    public UserAwareLogger(String tag, @UserIdInt int userId) {
-        mTag = Objects.requireNonNull(tag, "tag cannot be null");
-        mUserId = userId;
+    /**
+     * Bob, the builder!
+     *
+     * <p>By default, uses the {@link UserHandle#myUserId() user id of the current process}.
+     */
+    public static final class Builder {
+        private final String mTag;
+        private @UserIdInt int mUserId = USER_NULL;
+
+        private Builder(String tag) {
+            mTag = tag;
+        }
+
+        /** Explicitly sets the user id that will be logged. */
+        public Builder setUserId(@UserIdInt int userId) {
+            if (userId == USER_NULL) {
+                throw new IllegalArgumentException("userId cannot be USER_NULL");
+            }
+            mUserId = userId;
+            return this;
+        }
+
+        /** Explicitly sets the user id that will be logged. */
+        public Builder setUser(UserHandle user) {
+            Objects.requireNonNull(user, "user cannot be null");
+            return setUserId(user.getIdentifier());
+        }
+
+        /** Sets the user it that will be logged as the {@link Context#getUser() context user}. */
+        public Builder setUser(Context context) {
+            Objects.requireNonNull(context, "context cannot be null");
+            return setUser(context.getUser());
+        }
+
+        /** Can we build it? Yes we can! */
+        public UserAwareLogger build() {
+            return new UserAwareLogger(this);
+        }
     }
 
-    /** Creates a logger for the given {@code tag} and {@code user} */
-    public UserAwareLogger(String tag, UserHandle user) {
-        this(tag, Objects.requireNonNull(user, "user cannot be null").getIdentifier());
+    /** Creates a builder for the given {@code tag}. */
+    public static Builder newBuilder(String tag) {
+        Objects.requireNonNull(tag, "tag cannot be null");
+        return new Builder(tag);
     }
 
-    /** Creates a logger for the given {@code tag} and using the process' user */
-    public UserAwareLogger(String tag) {
-        this(tag, Process.myUserHandle());
+    private UserAwareLogger(Builder builder) {
+        mTag = builder.mTag;
+        mUserId = builder.mUserId == USER_NULL ? UserHandle.myUserId() : builder.mUserId;
     }
 
-    /** Gets the user id. */
+    /** Gets the user ID. */
     public @UserIdInt int getUserId() {
         return mUserId;
     }
