@@ -1231,13 +1231,16 @@ public class WallpaperManagerTest {
 
     @Test
     public void getDrawable_homeScreen_succeeds() throws IOException {
-        Drawable expected = mContext.getDrawable(R.drawable.icon_red);
+        Drawable expectedOriginal = mContext.getDrawable(R.drawable.icon_red);
         mWallpaperManager.setResource(R.drawable.icon_red, FLAG_SYSTEM);
 
         Drawable actual = mWallpaperManager.getDrawable(FLAG_SYSTEM);
+        ParcelFileDescriptor expectedCropped = mWallpaperManager.getWallpaperFile(FLAG_SYSTEM);
 
         assertWithMessage("Drawables must represent the same image").that(
-                isSimilar(actual, expected, true)).isTrue();
+                isSimilar(actual, expectedOriginal, false)).isTrue();
+        assertWithMessage("Drawable must represent the cropped image")
+                .that(isSimilar(actual, expectedCropped, true)).isTrue();
     }
 
     @Test
@@ -1249,35 +1252,44 @@ public class WallpaperManagerTest {
 
     @Test
     public void getDrawable_lockScreenSet_succeeds() throws IOException {
-        Drawable expected = mContext.getDrawable(R.drawable.icon_red);
+        Drawable expectedOriginal = mContext.getDrawable(R.drawable.icon_red);
         mWallpaperManager.setResource(R.drawable.icon_red, FLAG_LOCK);
 
         Drawable actual = mWallpaperManager.getDrawable(FLAG_LOCK);
+        ParcelFileDescriptor expectedCropped = mWallpaperManager.getWallpaperFile(FLAG_LOCK);
 
         assertWithMessage("Drawables must represent the same image").that(
-                isSimilar(actual, expected, true)).isTrue();
+                isSimilar(actual, expectedOriginal, false)).isTrue();
+        assertWithMessage("Drawable must represent the cropped image")
+                .that(isSimilar(actual, expectedCropped, true)).isTrue();
     }
 
     @Test
     public void getDrawable_default_sameAsHome() throws IOException {
-        Drawable expected = mContext.getDrawable(R.drawable.icon_red);
+        Drawable expectedOriginal = mContext.getDrawable(R.drawable.icon_red);
         mWallpaperManager.setResource(R.drawable.icon_red, FLAG_SYSTEM);
 
         Drawable actual = mWallpaperManager.getDrawable();
+        ParcelFileDescriptor expectedCropped = mWallpaperManager.getWallpaperFile(FLAG_SYSTEM);
 
         assertWithMessage("Drawables must represent the same image").that(
-                isSimilar(actual, expected, true)).isTrue();
+                isSimilar(actual, expectedOriginal, false)).isTrue();
+        assertWithMessage("Drawable must represent the cropped image")
+                .that(isSimilar(actual, expectedCropped, true)).isTrue();
     }
 
     @Test
     public void getFastDrawable_homeScreen_succeeds() throws IOException {
-        Drawable expected = mContext.getDrawable(R.drawable.icon_red);
+        Drawable expectedOriginal = mContext.getDrawable(R.drawable.icon_red);
         mWallpaperManager.setResource(R.drawable.icon_red, FLAG_SYSTEM);
 
         Drawable actual = mWallpaperManager.getFastDrawable(FLAG_SYSTEM);
+        ParcelFileDescriptor expectedCropped = mWallpaperManager.getWallpaperFile(FLAG_SYSTEM);
 
         assertWithMessage("Drawables must represent the same image").that(
-                isSimilar(actual, expected, true)).isTrue();
+                isSimilar(actual, expectedOriginal, false)).isTrue();
+        assertWithMessage("Drawable must represent the cropped image")
+                .that(isSimilar(actual, expectedCropped, true)).isTrue();
     }
 
     @Test
@@ -1289,35 +1301,44 @@ public class WallpaperManagerTest {
 
     @Test
     public void getFastDrawable_lockScreenSet_succeeds() throws IOException {
-        Drawable expected = mContext.getDrawable(R.drawable.icon_red);
+        Drawable expectedOriginal = mContext.getDrawable(R.drawable.icon_red);
         mWallpaperManager.setResource(R.drawable.icon_red, FLAG_LOCK);
 
         Drawable actual = mWallpaperManager.getFastDrawable(FLAG_LOCK);
+        ParcelFileDescriptor expectedCropped = mWallpaperManager.getWallpaperFile(FLAG_LOCK);
 
         assertWithMessage("Drawables must represent the same image").that(
-                isSimilar(actual, expected, true)).isTrue();
+                isSimilar(actual, expectedOriginal, false)).isTrue();
+        assertWithMessage("Drawable must represent the cropped image")
+                .that(isSimilar(actual, expectedCropped, true)).isTrue();
     }
 
     @Test
     public void getFastDrawable_default_sameAsHome() throws IOException {
-        Drawable expected = mContext.getDrawable(R.drawable.icon_red);
+        Drawable expectedOriginal = mContext.getDrawable(R.drawable.icon_red);
         mWallpaperManager.setResource(R.drawable.icon_red, FLAG_SYSTEM);
 
         Drawable actual = mWallpaperManager.getFastDrawable();
+        ParcelFileDescriptor expectedCropped = mWallpaperManager.getWallpaperFile(FLAG_SYSTEM);
 
         assertWithMessage("Drawables must represent the same image").that(
-                isSimilar(actual, expected, true)).isTrue();
+                isSimilar(actual, expectedOriginal, false)).isTrue();
+        assertWithMessage("Drawable must represent the cropped image")
+                .that(isSimilar(actual, expectedCropped, true)).isTrue();
     }
 
     @Test
     public void peekDrawable_homeScreen_succeeds() throws IOException {
-        Drawable expected = mContext.getDrawable(R.drawable.icon_red);
+        Drawable expectedOriginal = mContext.getDrawable(R.drawable.icon_red);
         mWallpaperManager.setResource(R.drawable.icon_red, FLAG_SYSTEM);
 
         Drawable actual = mWallpaperManager.peekDrawable(FLAG_SYSTEM);
+        ParcelFileDescriptor expectedCropped = mWallpaperManager.getWallpaperFile(FLAG_SYSTEM);
 
         assertWithMessage("Drawables must represent the same image").that(
-                isSimilar(actual, expected, true)).isTrue();
+                isSimilar(actual, expectedOriginal, false)).isTrue();
+        assertWithMessage("Drawable must represent the cropped image")
+                .that(isSimilar(actual, expectedCropped, true)).isTrue();
     }
 
     @Test
@@ -1329,35 +1350,45 @@ public class WallpaperManagerTest {
 
     @Test
     public void peekDrawable_lockScreenSet_succeeds() throws IOException {
-        Drawable expected = mContext.getDrawable(R.drawable.icon_red);
+        Drawable expectedOriginal = mContext.getDrawable(R.drawable.icon_red);
         mWallpaperManager.setResource(R.drawable.icon_red, FLAG_LOCK);
 
         Drawable actual = mWallpaperManager.peekDrawable(FLAG_LOCK);
+        ParcelFileDescriptor expectedCropped = mWallpaperManager.getWallpaperFile(FLAG_LOCK);
 
         assertWithMessage("Drawables must represent the same image").that(
-                isSimilar(actual, expected, true)).isTrue();
+                isSimilar(actual, expectedOriginal, false)).isTrue();
+        assertWithMessage("Drawable must represent the cropped image")
+                .that(isSimilar(actual, expectedCropped, true)).isTrue();
     }
 
     @Test
     public void peekDrawable_default_sameAsHome() throws IOException {
-        Drawable expected = mContext.getDrawable(R.drawable.icon_red);
+        Drawable expectedOriginal = mContext.getDrawable(R.drawable.icon_red);
         mWallpaperManager.setResource(R.drawable.icon_red, FLAG_SYSTEM);
 
         Drawable actual = mWallpaperManager.peekDrawable();
+        ParcelFileDescriptor expectedCropped = mWallpaperManager.getWallpaperFile(FLAG_SYSTEM);
 
         assertWithMessage("Drawables must represent the same image").that(
-                isSimilar(actual, expected, true)).isTrue();
+                isSimilar(actual, expectedOriginal, false)).isTrue();
+        assertWithMessage("Drawable must represent the cropped image")
+                .that(isSimilar(actual, expectedCropped, true)).isTrue();
+
     }
 
     @Test
     public void peekFastDrawable_homeScreen_succeeds() throws IOException {
-        Drawable expected = mContext.getDrawable(R.drawable.icon_red);
+        Drawable expectedOriginal = mContext.getDrawable(R.drawable.icon_red);
         mWallpaperManager.setResource(R.drawable.icon_red, FLAG_SYSTEM);
 
         Drawable actual = mWallpaperManager.peekFastDrawable(FLAG_SYSTEM);
+        ParcelFileDescriptor expectedCropped = mWallpaperManager.getWallpaperFile(FLAG_SYSTEM);
 
         assertWithMessage("Drawables must represent the same image").that(
-                isSimilar(actual, expected, true)).isTrue();
+                isSimilar(actual, expectedOriginal, false)).isTrue();
+        assertWithMessage("Drawable must represent the cropped image")
+                .that(isSimilar(actual, expectedCropped, true)).isTrue();
     }
 
     @Test
@@ -1369,24 +1400,30 @@ public class WallpaperManagerTest {
 
     @Test
     public void peekFastDrawable_lockScreenSet_succeeds() throws IOException {
-        Drawable expected = mContext.getDrawable(R.drawable.icon_red);
+        Drawable expectedOriginal = mContext.getDrawable(R.drawable.icon_red);
         mWallpaperManager.setResource(R.drawable.icon_red, FLAG_LOCK);
 
         Drawable actual = mWallpaperManager.peekFastDrawable(FLAG_LOCK);
+        ParcelFileDescriptor expectedCropped = mWallpaperManager.getWallpaperFile(FLAG_LOCK);
 
         assertWithMessage("Drawables must represent the same image").that(
-                isSimilar(actual, expected, true)).isTrue();
+                isSimilar(actual, expectedOriginal, false)).isTrue();
+        assertWithMessage("Drawable must represent the cropped image")
+                .that(isSimilar(actual, expectedCropped, true)).isTrue();
     }
 
     @Test
     public void peekFastDrawable_default_sameAsHome() throws IOException {
-        Drawable expected = mContext.getDrawable(R.drawable.icon_red);
+        Drawable expectedOriginal = mContext.getDrawable(R.drawable.icon_red);
         mWallpaperManager.setResource(R.drawable.icon_red, FLAG_SYSTEM);
 
         Drawable actual = mWallpaperManager.peekFastDrawable();
+        ParcelFileDescriptor expectedCropped = mWallpaperManager.getWallpaperFile(FLAG_SYSTEM);
 
         assertWithMessage("Drawables must represent the same image").that(
-                isSimilar(actual, expected, true)).isTrue();
+                isSimilar(actual, expectedOriginal, false)).isTrue();
+        assertWithMessage("Drawable must represent the cropped image")
+                .that(isSimilar(actual, expectedCropped, true)).isTrue();
     }
 
     /**
