@@ -15,10 +15,13 @@
  */
 package com.android.cts.deviceandprofileowner.userrestrictions;
 
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Bundle;
 import android.os.Process;
 import android.os.UserHandle;
 import android.os.UserManager;
@@ -118,21 +121,25 @@ public abstract class BaseUserRestrictionsTest extends BaseDeviceAdminTest {
             "no_oem_unlock"
     };
 
-    protected void assertLayeredRestriction(String restriction, boolean expected) {
-        assertEquals("Restriction " + restriction + ": expected=" + expected,
-                expected, mUserManager.hasUserRestriction(restriction));
+    protected final void assertLayeredRestriction(String restriction, boolean expected) {
+        boolean hasIt = hasUserRestriction(restriction);
+        assertWithMessage("UM.hasUserRestriction(%s) on user %s", restriction, mContext.getUser())
+                .that(hasIt).isEqualTo(expected);
     }
 
-    protected void assertOwnerRestriction(String restriction, boolean expected) {
-        assertEquals("Restriction " + restriction + ": expected=" + expected,
-                expected, mDevicePolicyManager.getUserRestrictions(ADMIN_RECEIVER_COMPONENT)
-                        .getBoolean(restriction));
+    protected final void assertOwnerRestriction(String restriction, boolean expected) {
+        var restrictions = getUserRestrictions();
+        assertWithMessage("restriction %s on user %s (allRestrictions=%s)", restriction,
+                mContext.getUser(), toString(restrictions))
+                        .that(restrictions.getBoolean(restriction)).isEqualTo(expected);
     }
 
     /** Returns whether {@link UserManager} itself has applied the given restriction to the user. */
-    protected boolean hasBaseUserRestriction(String restriction, UserHandle userHandle) {
-        return ShellIdentityUtils.invokeMethodWithShellPermissions(mUserManager,
+    protected final boolean hasBaseUserRestriction(String restriction, UserHandle userHandle) {
+        boolean hasIt = ShellIdentityUtils.invokeMethodWithShellPermissions(mUserManager,
                 (um) -> um.hasBaseUserRestriction(restriction, userHandle));
+        mLogger.logV("hasBaseUserRestriction(%s, %s): %b", restriction, userHandle, hasIt);
+        return hasIt;
     }
 
     /**
@@ -141,7 +148,7 @@ public abstract class BaseUserRestrictionsTest extends BaseDeviceAdminTest {
      * @param expected the list of user restrictions that are expected to have been applied due
      *                 to DO/PO
      */
-    protected void assertRestrictions(Set<String> expected) {
+    protected final void assertRestrictions(Set<String> expected) {
         final UserHandle userHandle = Process.myUserHandle();
         for (String r : ALL_USER_RESTRICTIONS) {
             assertLayeredRestriction(r,
@@ -152,13 +159,13 @@ public abstract class BaseUserRestrictionsTest extends BaseDeviceAdminTest {
     /**
      * Test that the given restriction can be set and cleared, then leave it set again.
      */
-    protected void assertSetClearUserRestriction(String restriction) {
-        final boolean hadRestriction = mUserManager.hasUserRestriction(restriction);
+    protected final void assertSetClearUserRestriction(String restriction) {
+        boolean hadRestriction = hasUserRestriction(restriction);
 
         assertOwnerRestriction(restriction, false);
 
         // Set.  Shouldn't throw.
-        mDevicePolicyManager.addUserRestriction(ADMIN_RECEIVER_COMPONENT, restriction);
+        addUserRestriction(restriction);
 
         assertOwnerRestriction(restriction, true);
         assertLayeredRestriction(restriction, true);
@@ -169,19 +176,19 @@ public abstract class BaseUserRestrictionsTest extends BaseDeviceAdminTest {
         assertLayeredRestriction(restriction, hadRestriction);
 
         // Then set again.
-        mDevicePolicyManager.addUserRestriction(ADMIN_RECEIVER_COMPONENT, restriction);
+        addUserRestriction(restriction);
     }
 
     /**
      * Test that the given restriction can be cleared.  (and leave it cleared.)
      */
-    protected void assertClearUserRestriction(String restriction) {
-        mDevicePolicyManager.clearUserRestriction(ADMIN_RECEIVER_COMPONENT, restriction);
+    protected final void assertClearUserRestriction(String restriction) {
+        clearUserRestriction(restriction);
 
         assertOwnerRestriction(restriction, false);
     }
 
-    protected void assertClearDefaultRestrictions() {
+    protected final void assertClearDefaultRestrictions() {
         for (String restriction : getDefaultEnabledRestrictions()) {
             assertClearUserRestriction(restriction);
         }
@@ -190,14 +197,14 @@ public abstract class BaseUserRestrictionsTest extends BaseDeviceAdminTest {
     /**
      * Test that the given restriction *cannot* be set (or clear).
      */
-    protected void assertCannotSetUserRestriction(String restriction) {
-        final boolean hadRestriction = mUserManager.hasUserRestriction(restriction);
+    protected final void assertCannotSetUserRestriction(String restriction) {
+        boolean hadRestriction = hasUserRestriction(restriction);
 
         assertOwnerRestriction(restriction, false);
 
         // Set should fail.
         try {
-            mDevicePolicyManager.addUserRestriction(ADMIN_RECEIVER_COMPONENT, restriction);
+            addUserRestriction(restriction);
             fail("Restriction=" + restriction);
         } catch (SecurityException e) {
             // SecurityException expected
@@ -209,7 +216,7 @@ public abstract class BaseUserRestrictionsTest extends BaseDeviceAdminTest {
 
         // Clear should fail too.
         try {
-            mDevicePolicyManager.clearUserRestriction(ADMIN_RECEIVER_COMPONENT, restriction);
+            clearUserRestriction(restriction);
             fail("Restriction=" + restriction);
         } catch (SecurityException e) {
             // SecurityException expected
@@ -232,7 +239,7 @@ public abstract class BaseUserRestrictionsTest extends BaseDeviceAdminTest {
     /**
      * Test restrictions that should be enabled by default
      */
-    public void testDefaultRestrictions() {
+    public final void testDefaultRestrictions() {
         for (String restriction : getDefaultEnabledRestrictions()) {
             assertOwnerRestriction(restriction, true);
         }
@@ -248,7 +255,7 @@ public abstract class BaseUserRestrictionsTest extends BaseDeviceAdminTest {
     /**
      * Set only one restriction, and make sure only that's set, and then clear it.
      */
-    public void testSetAllRestrictionsIndividually() {
+    public final void testSetAllRestrictionsIndividually() {
         assertClearDefaultRestrictions();
         for (String r : getAllowedRestrictions()) {
             // Set it.
@@ -264,7 +271,7 @@ public abstract class BaseUserRestrictionsTest extends BaseDeviceAdminTest {
     /**
      * Make sure all allowed restrictions can be set, and the others can't.
      */
-    public void testSetAllRestrictions() {
+    public final void testSetAllRestrictions() {
         assertClearDefaultRestrictions();
         for (String r : getAllowedRestrictions()) {
             assertSetClearUserRestriction(r);
@@ -280,27 +287,83 @@ public abstract class BaseUserRestrictionsTest extends BaseDeviceAdminTest {
     /**
      * Clear all allowed restrictions.
      */
-    public void testClearAllRestrictions() {
+    public final void testClearAllRestrictions() {
         for (String r : getAllowedRestrictions()) {
             assertClearUserRestriction(r);
         }
     }
 
-    public void testBroadcast() throws Exception {
-        final CountDownLatch latch = new CountDownLatch(1);
-        final IntentFilter filter = new IntentFilter(UserManager.ACTION_USER_RESTRICTIONS_CHANGED);
+    public final void testBroadcast() throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
+        IntentFilter filter = new IntentFilter(UserManager.ACTION_USER_RESTRICTIONS_CHANGED);
         mContext.registerReceiver(new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
+                mLogger.logD("Received broadcast: %s", intent);
                 latch.countDown();
             }
         }, filter);
 
-        final String restriction = UserManager.DISALLOW_CONFIG_WIFI;
-        mDevicePolicyManager.addUserRestriction(ADMIN_RECEIVER_COMPONENT, restriction);
+        String restriction = UserManager.DISALLOW_CONFIG_WIFI;
+        addUserRestriction(restriction);
 
-        assertTrue("Didn't receive broadcast", latch.await(120, TimeUnit.SECONDS));
+        assertWithMessage("Received broadcast in 2 minutes)")
+                .that(latch.await(120, TimeUnit.SECONDS)).isTrue();
 
-        mDevicePolicyManager.clearUserRestriction(ADMIN_RECEIVER_COMPONENT, restriction);
+        clearUserRestriction(restriction);
+    }
+
+    protected final boolean hasUserRestriction(String restriction) {
+        boolean hasIt = mUserManager.hasUserRestriction(restriction);
+        if (VERBOSE) {
+            mLogger.logV("hasUserRestriction(%s): %b", restriction, hasIt);
+        }
+        return hasIt;
+    }
+
+    protected final Bundle getUserRestrictions() {
+        return getUserRestrictions(VERBOSE);
+    }
+
+    private Bundle getUserRestrictions(boolean logResult) {
+        Bundle restrictions = mDevicePolicyManager.getUserRestrictions(ADMIN_RECEIVER_COMPONENT);
+        if (logResult) {
+            mLogger.logV("getUserRestrictions(): %s", toString(restrictions));
+        }
+        return restrictions;
+    }
+
+    protected final void addUserRestriction(String restriction) {
+        mLogger.logD("calling addUserRestriction(%s, %s)",
+                ADMIN_RECEIVER_COMPONENT.flattenToShortString(), restriction);
+        try {
+            mDevicePolicyManager.addUserRestriction(ADMIN_RECEIVER_COMPONENT, restriction);
+        } catch (RuntimeException e) {
+            mLogger.logE("addUserRestriction(%s, %s) failed: %s",
+                    ADMIN_RECEIVER_COMPONENT.flattenToShortString(), restriction, e);
+            throw e;
+        }
+        logUserRestrictionsAfterChangingThem();
+    }
+
+    protected final void clearUserRestriction(String restriction) {
+        mLogger.logD("calling clearUserRestriction(%s, %s)",
+                ADMIN_RECEIVER_COMPONENT.flattenToShortString(), restriction);
+        try {
+            mDevicePolicyManager.clearUserRestriction(ADMIN_RECEIVER_COMPONENT, restriction);
+        } catch (RuntimeException e) {
+            mLogger.logE("clearUserRestriction(%s, %s) failed: %s",
+                    ADMIN_RECEIVER_COMPONENT.flattenToShortString(), restriction, e);
+            throw e;
+        }
+        logUserRestrictionsAfterChangingThem();
+    }
+
+    private void logUserRestrictionsAfterChangingThem() {
+        if (!VERBOSE) {
+            return;
+        }
+        Bundle restrictions = getUserRestrictions(/* logResult= */ false);
+        mLogger.logV("getUserRestrictions() afterwards: %s", toString(restrictions));
     }
 }
