@@ -2415,7 +2415,8 @@ class ItsSession(object):
             out_surfaces=None,
             repeat_request=None,
             first_surface_for_3a=False,
-            flash_mode=_FLASH_MODE_OFF):
+            flash_mode=_FLASH_MODE_OFF,
+            allow_af_not_focus_locked=False):
     """Perform a 3A operation on the device.
 
     Triggers some or all of AE, AWB, and AF, and returns once they have
@@ -2447,6 +2448,8 @@ class ItsSession(object):
         0: OFF
         1: SINGLE
         2: TORCH
+      allow_af_not_focus_locked: include CONTROL_AF_STATE_NOT_FOCUSED_LOCKED as
+        AF converge state.
 
       Region format in args:
          Arguments are lists of weighted regions; each weighted region is a
@@ -2508,6 +2511,7 @@ class ItsSession(object):
         raise AssertionError(f'Zoom ratio {zoom_ratio} out of range')
     cmd['reuseSession'] = reuse_session
     cmd['firstSurfaceFor3A'] = first_surface_for_3a
+    cmd['allowAFNotFocusLocked'] = allow_af_not_focus_locked
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
 
     # Wait for each specified 3A to converge.
@@ -3039,7 +3043,7 @@ def do_capture_with_latency(cam, req, sync_latency, fmt=None):
 
 
 def load_scene(cam, props, scene, tablet, chart_distance, lighting_check=True,
-               log_path=None, chart_scaling=None):
+               log_path=None, chart_scaling=None, allow_af_not_focus_locked = False):
   """Load the scene for the camera based on the FOV.
 
   Args:
@@ -3052,6 +3056,8 @@ def load_scene(cam, props, scene, tablet, chart_distance, lighting_check=True,
     log_path: [Optional] path to store artifacts
     chart_scaling: [Optional] chart scaling factor to be used
         for displaying scene image on the tablet
+    allow_af_not_focus_locked: include CONTROL_AF_STATE_NOT_FOCUSED_LOCKED as
+        AF converge state.
   """
   if not tablet:
     logging.info('Manual run: no tablet to load scene on.')
@@ -3116,7 +3122,7 @@ def load_scene(cam, props, scene, tablet, chart_distance, lighting_check=True,
           opencv_processing_utils.CHART_DISTANCE_22CM, rel_tol=0.1) and
       float(camera_fov) > opencv_processing_utils.FOV_THRESH_UW)
   if (rfov_camera_in_rfov_box or wfov_camera_in_wfov_box) and lighting_check:
-    cam.do_3a()
+    cam.do_3a(allow_af_not_focus_locked=allow_af_not_focus_locked)
     cap = cam.do_capture(
         capture_request_utils.auto_capture_request(), cam.CAP_YUV)
     y_plane, _, _ = image_processing_utils.convert_capture_to_planes(cap)
