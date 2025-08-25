@@ -18,57 +18,39 @@ package android.server.wm.other;
 
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.server.wm.StateLogger.logAlways;
-import static android.server.wm.app.Components.TaskMoveAllowedListenerActivity.ACTION_CHECK_IS_TASK_MOVE_ALLOWED;
-import static android.server.wm.app.Components.TaskMoveAllowedListenerActivity.ACTION_NOTIFY_LISTENER_CALLED;
-import static android.server.wm.app.Components.TaskMoveAllowedListenerActivity.ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT;
-import static android.server.wm.app.Components.TaskMoveAllowedListenerActivity.ACTION_REGISTER_LISTENER;
-import static android.server.wm.app.Components.TaskMoveAllowedListenerActivity.ACTION_REGISTER_LISTENER_ACK;
-import static android.server.wm.app.Components.TaskMoveAllowedListenerActivity.ACTION_UNREGISTER_LISTENER;
-import static android.server.wm.app.Components.TaskMoveAllowedListenerActivity.ACTION_UNREGISTER_LISTENER_ACK;
-import static android.server.wm.app.Components.TaskMoveAllowedListenerActivity.EXTRA_DISPLAY_ID_KEY;
-import static android.server.wm.app.Components.TaskMoveAllowedListenerActivity.EXTRA_TASK_MOVE_ALLOWED_RESULT;
-import static android.server.wm.app.Components.TaskMoveAllowedListenerActivity.EXTRA_TMA_KEYS_ARRAY_KEY;
-import static android.server.wm.app.Components.TaskMoveAllowedListenerActivity.EXTRA_TMA_VALUES_ARRAY_KEY;
+import static android.server.wm.app.Components.TaskMoveTestActivity.ACTION_NOTIFY_LISTENER_CALLED;
+import static android.server.wm.app.Components.TaskMoveTestActivity.ACTION_REGISTER_LISTENER;
+import static android.server.wm.app.Components.TaskMoveTestActivity.ACTION_REGISTER_LISTENER_ACK;
+import static android.server.wm.app.Components.TaskMoveTestActivity.ACTION_UNREGISTER_LISTENER;
+import static android.server.wm.app.Components.TaskMoveTestActivity.ACTION_UNREGISTER_LISTENER_ACK;
+import static android.server.wm.app.Components.TaskMoveTestActivity.EXTRA_TMA_KEYS_ARRAY_KEY;
+import static android.server.wm.app.Components.TaskMoveTestActivity.EXTRA_TMA_VALUES_ARRAY_KEY;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityManager;
 import android.app.TaskDisplayPolicyState;
-import android.content.BroadcastReceiver;
-import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.os.ConditionVariable;
-import android.os.UserHandle;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.server.wm.BuildUtils;
-import android.server.wm.MultiDisplayTestBase;
-import android.server.wm.ShellCommandHelper;
+import android.server.wm.TaskMoveTestBase;
 import android.server.wm.WindowManagerState.DisplayContent;
-import android.server.wm.app.Components;
 import android.util.SparseBooleanArray;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.window.flags.Flags;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /** Build/Install/Run: atest CtsWindowManagerDeviceOther:TaskMoveAllowedListenerTests */
 @Presubmit
@@ -77,52 +59,17 @@ import java.util.Map;
     Flags.FLAG_ENABLE_WINDOW_REPOSITIONING_API,
     Flags.FLAG_ENABLE_TASK_MOVE_ALLOWED_LISTENER_API
 })
-public class TaskMoveAllowedListenerTests extends MultiDisplayTestBase {
+public class TaskMoveAllowedListenerTests extends TaskMoveTestBase {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    private static final ComponentName TEST_ACTIVITY =
-            Components.TASK_MOVE_ALLOWED_LISTENER_ACTIVITY;
-    private static final int TIMEOUT_MS = 2000 * BuildUtils.HW_TIMEOUT_MULTIPLIER;
-    private Map<String, ConditionVariable> mBroadcastsReceived =
-            Collections.synchronizedMap(new HashMap<>());
-    private Map<String, Intent> mBroadcastsContentsReceived =
-            Collections.synchronizedMap(new HashMap<>());
-    private BroadcastReceiver mAppCommunicator =
-            new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    logAlways("Received an intent with action " + intent.getAction());
-                    mBroadcastsContentsReceived.put(intent.getAction(), intent);
-                    getBroadcastReceivedVariable(intent.getAction()).open();
-                }
-            };
-
-    private ConditionVariable getBroadcastReceivedVariable(String action) {
-        return mBroadcastsReceived.computeIfAbsent(action, k -> new ConditionVariable());
-    }
-
-    @Before
     @Override
-    public void setUp() throws Exception {
-        super.setUp();
-
-        mBroadcastsReceived.clear();
-        mBroadcastsContentsReceived.clear();
-        final IntentFilter filter = new IntentFilter();
-        filter.addAction(ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT);
+    protected IntentFilter getIntentFilter() {
+        final IntentFilter filter = super.getIntentFilter();
         filter.addAction(ACTION_NOTIFY_LISTENER_CALLED);
         filter.addAction(ACTION_REGISTER_LISTENER_ACK);
         filter.addAction(ACTION_UNREGISTER_LISTENER_ACK);
-        mContext.registerReceiver(mAppCommunicator, filter, Context.RECEIVER_EXPORTED);
-        grantBrowserRole();
-    }
-
-    @After
-    public void tearDown() {
-        revokeBrowserRole();
-        mContext.unregisterReceiver(mAppCommunicator);
-        Components.forceStopPackage();
+        return filter;
     }
 
     /**
@@ -189,7 +136,7 @@ public class TaskMoveAllowedListenerTests extends MultiDisplayTestBase {
 
         // The listener is called immediately upon registration. Reset the signal here so we can
         // wait for the *next* callback, which should be triggered by the display connection.
-        getBroadcastReceivedVariable(ACTION_NOTIFY_LISTENER_CALLED).close();
+        clearBroadcastData(ACTION_NOTIFY_LISTENER_CALLED);
 
         final int newDisplayId = createNewDisplay();
 
@@ -220,7 +167,7 @@ public class TaskMoveAllowedListenerTests extends MultiDisplayTestBase {
         unregisterListener();
 
         // Clear any received broadcasts related to the listener getting called.
-        getBroadcastReceivedVariable(ACTION_NOTIFY_LISTENER_CALLED).close();
+        clearBroadcastData(ACTION_NOTIFY_LISTENER_CALLED);
 
         createNewDisplay();
 
@@ -282,7 +229,7 @@ public class TaskMoveAllowedListenerTests extends MultiDisplayTestBase {
         registerListener();
         // The listener is called immediately upon registration. Reset the signal here so we can
         // wait for the *next* callback, which should be triggered by the display connection.
-        getBroadcastReceivedVariable(ACTION_NOTIFY_LISTENER_CALLED).close();
+        clearBroadcastData(ACTION_NOTIFY_LISTENER_CALLED);
 
         // Make TMA state on the display false by changing the windowing mode to fullscreen.
         launchActivityOnDisplay(TEST_ACTIVITY, WINDOWING_MODE_FULLSCREEN, displayId);
@@ -297,7 +244,7 @@ public class TaskMoveAllowedListenerTests extends MultiDisplayTestBase {
 
     private SparseBooleanArray assertListenerGotCalled() {
         final boolean notified = awaitBroadcast(ACTION_NOTIFY_LISTENER_CALLED);
-        final Intent response = mBroadcastsContentsReceived.get(ACTION_NOTIFY_LISTENER_CALLED);
+        final Intent response = getIntentOfBroadcast(ACTION_NOTIFY_LISTENER_CALLED);
 
         if (!notified || response == null) {
             fail("The activity has not notified about the listener getting called");
@@ -328,35 +275,6 @@ public class TaskMoveAllowedListenerTests extends MultiDisplayTestBase {
                 awaitBroadcast(ACTION_NOTIFY_LISTENER_CALLED));
     }
 
-    private void assumeTaskMoveAllowedOnDisplay(int displayId) {
-        logAlways("Sending ACTION_CHECK_IS_TASK_MOVE_ALLOWED intent with displayId = " + displayId);
-        mContext.sendBroadcast(
-                new Intent(ACTION_CHECK_IS_TASK_MOVE_ALLOWED)
-                        .setFlags(Intent.FLAG_RECEIVER_FOREGROUND)
-                        .putExtra(EXTRA_DISPLAY_ID_KEY, displayId));
-        final boolean notified = awaitBroadcast(ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT);
-        final Intent response =
-                mBroadcastsContentsReceived.get(ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT);
-
-        if (!notified || response == null) {
-            fail(
-                    "The activity has not notified about task movability on display "
-                            + displayId
-                            + ".");
-        }
-
-        if (!response.hasExtra(EXTRA_TASK_MOVE_ALLOWED_RESULT)) {
-            fail(
-                    "The activity has not notified about task movability on display "
-                            + displayId
-                            + ".");
-        }
-
-        assumeTrue(
-                "Only test when display allows task moving",
-                response.getBooleanExtra(EXTRA_TASK_MOVE_ALLOWED_RESULT, false));
-    }
-
     /**
      * This returns only after an acknowledgement from the test activity has been received. If the
      * acknowledgement has not been received in a reasonable time, it fails the test.
@@ -385,32 +303,6 @@ public class TaskMoveAllowedListenerTests extends MultiDisplayTestBase {
                 awaitBroadcast(ACTION_UNREGISTER_LISTENER_ACK));
     }
 
-    private void grantBrowserRole() {
-        logAlways("Granting browser role");
-        ShellCommandHelper.executeShellCommand(
-                "cmd role add-role-holder --user "
-                        + UserHandle.myUserId()
-                        + " android.app.role.BROWSER "
-                        + Components.getPackageName());
-    }
-
-    private void revokeBrowserRole() {
-        logAlways("Revoking browser role");
-        ShellCommandHelper.executeShellCommand(
-                "cmd role remove-role-holder --user "
-                        + UserHandle.myUserId()
-                        + " android.app.role.BROWSER "
-                        + Components.getPackageName());
-    }
-
-    private int createNewDisplay() {
-        return createManagedVirtualDisplaySession()
-                .setSimulateDisplay(true)
-                .setSimulationDisplaySize(1920 /* width */, 1080 /* height */)
-                .createDisplay()
-                .mId;
-    }
-
     private void assertArraysRepresentEqualMultisets(String message, int[] expected, int[] actual) {
         final int[] expectedSorted = expected.clone();
         Arrays.sort(expectedSorted);
@@ -419,12 +311,5 @@ public class TaskMoveAllowedListenerTests extends MultiDisplayTestBase {
         Arrays.sort(actualSorted);
 
         assertArrayEquals(message, expectedSorted, actualSorted);
-    }
-
-    private boolean awaitBroadcast(String action) {
-        final ConditionVariable cv = getBroadcastReceivedVariable(action);
-        final boolean notified = cv.block(TIMEOUT_MS);
-        cv.close();
-        return notified;
     }
 }
