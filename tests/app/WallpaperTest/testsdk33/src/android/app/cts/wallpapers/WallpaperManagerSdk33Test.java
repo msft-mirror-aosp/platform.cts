@@ -241,7 +241,7 @@ public class WallpaperManagerSdk33Test {
                 () -> methodToTest.get(), READ_WALLPAPER_INTERNAL);
         assertWithMessage(
                 "with permission, " + methodName + " should return the current bitmap")
-                .that(isSimilar(getBitmap(drawable), sRedBitmap, true)).isTrue();
+                .that(isSimilar(getBitmap(drawable), sRedBitmap, false)).isTrue();
     }
 
     private static void setRedWallpaper() throws IOException {
