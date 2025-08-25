@@ -95,9 +95,8 @@ public class WallpaperManagerSdk33Test {
         sWallpaperManager.clearWallpaper();
 
         // ignore for targets that have a live default wallpaper
-        runWithShellPermissionIdentity(
-                () -> assumeTrue(sWallpaperManager.getWallpaperInfo(FLAG_SYSTEM) == null),
-                QUERY_ALL_PACKAGES);
+        assumeTrue(runWithShellPermissionIdentity(() ->
+                sWallpaperManager.getWallpaperInfo(FLAG_SYSTEM) == null, QUERY_ALL_PACKAGES));
 
         sDefaultBitmap = runWithShellPermissionIdentity(
                 () -> sWallpaperManager.getBitmap(), READ_WALLPAPER_INTERNAL);
