@@ -85,6 +85,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.inline.InlinePresentationSpec;
+import android.window.OnBackInvokedCallback;
+import android.window.OnBackInvokedDispatcher;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.CallSuper;
@@ -154,6 +156,9 @@ public final class MockIme extends InputMethodService {
 
     @Nullable
     private InputConnection mMemorizedInputConnection = null;
+
+    private final OnBackInvokedCallback mCustomOnBackInvokedCallback =
+            () -> getTracer().onCustomBackInvoked(() -> {});
 
     @Nullable
     @MainThread
@@ -677,6 +682,24 @@ public final class MockIme extends InputMethodService {
                     }
                     case "getImeCaptionBarHeight": {
                         return mView.getRootWindowInsets().getInsets(captionBar()).bottom;
+                    }
+                    case "registerCustomImeBackCallback":
+                    {
+                        getWindow()
+                                .getOnBackInvokedDispatcher()
+                                .registerOnBackInvokedCallback(
+                                        OnBackInvokedDispatcher
+                                                .PRIORITY_DEFAULT,
+                                        mCustomOnBackInvokedCallback);
+                        return ImeEvent.RETURN_VALUE_UNAVAILABLE;
+                    }
+                    case "unregisterCustomImeBackCallback":
+                    {
+                        getWindow()
+                                .getOnBackInvokedDispatcher()
+                                .unregisterOnBackInvokedCallback(
+                                        mCustomOnBackInvokedCallback);
+                        return ImeEvent.RETURN_VALUE_UNAVAILABLE;
                     }
                 }
             }
@@ -1821,6 +1844,10 @@ public final class MockIme extends InputMethodService {
             final Bundle arguments = new Bundle();
             arguments.putBoolean("visible", visible);
             recordEventInternal("onCustomImeSwitcherButtonRequestedVisible", runnable, arguments);
+        }
+
+        void onCustomBackInvoked(@NonNull Runnable runnable) {
+            recordEventInternal("onCustomBackInvoked", runnable);
         }
     }
 }

@@ -45,6 +45,7 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.showSoftInputMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.waitForInputViewLayoutStable;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.withDescription;
+import static com.android.window.flags.Flags.FLAG_IME_BACK_CALLBACK_LEAK_PREVENTION;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -507,6 +508,183 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 /* imeRequestsBackCallback= */ true,
                 /* fullscreenInteraction= */ false,
                 NO_OP_PRE_BACK_PRESS_PROCEDURE);
+    }
+
+    /**
+     * This test ensures that the custom IME back callbacks cannot be registered in the app process
+     * while the IME is not visible. It also verifies that the custom IME back callbacks get
+     * registered in the app process as soon as the IME gets visible.
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_IME_BACK_CALLBACK_LEAK_PREVENTION)
+    public void testCustomImeBackCallbackNotRegisteredUntilSystemCallbackRegistered()
+            throws Exception {
+        verifyCustomImeBackCallbackRegistration(/* verifyUnregistration= */ false);
+    }
+
+    /**
+     * This test ensures that any registered custom IME back callbacks get cleared in the app
+     * process when the IME gets hidden.
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_IME_BACK_CALLBACK_LEAK_PREVENTION)
+    public void testCustomImeBackCallbackUnregisteredWhenSystemCallbackUnregistered()
+            throws Exception {
+        verifyCustomImeBackCallbackRegistration(/* verifyUnregistration= */ true);
+    }
+
+    private void verifyCustomImeBackCallbackRegistration(
+             boolean verifyUnregistration) throws Exception {
+        final Instrumentation instrumentation = mInstrumentation;
+        final Context context = instrumentation.getTargetContext();
+        final boolean onBackCallbackEnabled =
+                context.getApplicationInfo().isOnBackInvokedCallbackEnabled();
+
+        // Setup IME session
+        try (MockImeSession imeSession =
+                MockImeSession.create(
+                        instrumentation.getContext(),
+                        instrumentation.getUiAutomation(),
+                        new ImeSettings.Builder().setOnBackCallbackEnabled(true))) {
+            final ImeEventStream stream = imeSession.openEventStream();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final AtomicInteger appBackCallbackInvocationCount = new AtomicInteger();
+            context.getApplicationInfo().setEnableOnBackInvokedCallback(true);
+            final EditText editText = launchTestActivity(marker);
+            final TestActivity testActivity = (TestActivity) editText.getContext();
+            testActivity
+                    .getOnBackInvokedDispatcher()
+                    .registerOnBackInvokedCallback(
+                            OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                            appBackCallbackInvocationCount::getAndIncrement);
+
+            // register custom back callback while IME is invisible
+            imeSession.registerCustomImeBackCallback();
+
+            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            expectImeInvisible(TIMEOUT);
+
+            // Verify that custom back callback is not registered in app process yet (by pressing
+            // back key and expecting app's back callback to be called)
+            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+            assertEquals(1, appBackCallbackInvocationCount.get());
+
+            // Now show the IME
+            final InputMethodManager imm = testActivity.getSystemService(InputMethodManager.class);
+            assertTrue(
+                    "hasActiveInputConnection() must return true if the View has IME focus",
+                    getOnMainSync(() -> imm.hasActiveInputConnection(editText)));
+            testActivity.getWindow().getDecorView().getWindowInsetsController().show(ime());
+            expectEvent(stream, showSoftInputMatcher(0), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            expectEventWithKeyValue(
+                    stream, "onWindowVisibilityChanged", "visible", View.VISIBLE, TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            // Verify that custom back callback is registered in app process (by pressing back key
+            // and expecting IME's custom back callback to be called)
+            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+            expectEvent(stream, eventMatcher("onCustomBackInvoked"), TIMEOUT);
+
+            if (!verifyUnregistration) return;
+
+            // Now hide the IME
+            assertTrue(
+                    "hideSoftInputFromWindow must success if the View has IME focus",
+                    getOnMainSync(
+                            () -> imm.hideSoftInputFromWindow(editText.getWindowToken(), 0)));
+
+            expectEvent(stream, hideSoftInputMatcher(), TIMEOUT);
+            expectEvent(stream, onFinishInputViewMatcher(false), TIMEOUT);
+            expectEventWithKeyValue(
+                    stream, "onWindowVisibilityChanged", "visible", View.GONE, TIMEOUT);
+            expectImeInvisible(TIMEOUT);
+
+            // Verify that custom back callback is no longer registered in app process (by pressing
+            // back key and expecting app's back callback to be called)
+            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+            assertEquals(2, appBackCallbackInvocationCount.get());
+        } finally {
+            context.getApplicationInfo().setEnableOnBackInvokedCallback(onBackCallbackEnabled);
+        }
+    }
+
+    /**
+     * This test ensures that any registered custom IME back callbacks get transferred to the new
+     * ImeOnBackInvokedDispatcher whenever it changes (e.g. after a new activity was launched in the
+     * app process).
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_IME_BACK_CALLBACK_LEAK_PREVENTION)
+    public void testCustomImeBackCallbackTransferredToNewDispatcher() throws Exception {
+        final Context context = mInstrumentation.getTargetContext();
+        final boolean onBackCallbackEnabled =
+                context.getApplicationInfo().isOnBackInvokedCallbackEnabled();
+
+        try (MockImeSession imeSession =
+                MockImeSession.create(
+                        mInstrumentation.getContext(),
+                        mInstrumentation.getUiAutomation(),
+                        new ImeSettings.Builder().setOnBackCallbackEnabled(true))) {
+            context.getApplicationInfo().setEnableOnBackInvokedCallback(true);
+
+            final ImeEventStream stream = imeSession.openEventStream();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+
+            final EditText editText = launchTestActivity(marker);
+
+            imeSession.registerCustomImeBackCallback();
+
+            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            expectImeInvisible(TIMEOUT);
+
+            final var imm = editText.getContext().getSystemService(InputMethodManager.class);
+            assertNotNull("InputMethodManager should be found", imm);
+            assertTrue(
+                    "hasActiveInputConnection() must return true if the View has IME focus",
+                    getOnMainSync(() -> imm.hasActiveInputConnection(editText)));
+
+            assertTrue(
+                    "showSoftInput must success if the View has IME focus",
+                    getOnMainSync(() -> imm.showSoftInput(editText, 0)));
+            expectEvent(stream, showSoftInputMatcher(0), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            expectEventWithKeyValue(
+                    stream, "onWindowVisibilityChanged", "visible", View.VISIBLE, TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            // Launch the second test activity from the main process.
+            final var marker2 = getTestMarker(SECOND_EDIT_TEXT_TAG);
+            final var secondActivityBackCallbackInvocationCount = new AtomicInteger();
+            final var editText2 = launchTestActivity2(marker2);
+            final TestActivity testActivity2 = (TestActivity) editText2.getContext();
+            testActivity2.getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                    OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                    secondActivityBackCallbackInvocationCount::getAndIncrement);
+
+            // IME should hide after switching activity.
+            expectEvent(stream, hideSoftInputMatcher(), TIMEOUT);
+            expectImeInvisible(TIMEOUT);
+
+            // Show IME on the second activity.
+            assertTrue(
+                    "showSoftInput must success if the View has IME focus",
+                    getOnMainSync(() -> imm.showSoftInput(editText2, 0)));
+
+            expectEvent(stream, showSoftInputMatcher(InputMethod.SHOW_EXPLICIT), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInputView", marker2), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            // Press back, IME's custom back callback should be called.
+            mInstrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+            expectEvent(stream, eventMatcher("onCustomBackInvoked"), TIMEOUT);
+            assertEquals(0, secondActivityBackCallbackInvocationCount.get());
+            expectImeVisible(TIMEOUT);
+        } finally {
+            context.getApplicationInfo().setEnableOnBackInvokedCallback(onBackCallbackEnabled);
+        }
     }
 
     @RequireNotVisibleBackgroundUsers(reason =
