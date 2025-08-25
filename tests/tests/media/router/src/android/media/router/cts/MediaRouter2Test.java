@@ -1772,6 +1772,7 @@ public class MediaRouter2Test {
 
     private void testRouterSetsSuggestedDeviceInfoAndCallbackNotified(MediaRouter2 router)
             throws InterruptedException {
+        mRouter2.registerRouteCallback(mExecutor, mRouterDummyCallback, EMPTY_DISCOVERY_PREFERENCE);
         SuggestedDeviceInfo.Builder builder =
                 new SuggestedDeviceInfo.Builder("DEVICE_DISPLAY_NAME", "ROUTE_ID", 0);
         Bundle extras = new Bundle();
@@ -1802,6 +1803,7 @@ public class MediaRouter2Test {
 
     private void testRouterClearsSuggestionAndCallbackNotified(MediaRouter2 router)
             throws InterruptedException {
+        mRouter2.registerRouteCallback(mExecutor, mRouterDummyCallback, EMPTY_DISCOVERY_PREFERENCE);
         SuggestedDeviceInfo.Builder builder =
                 new SuggestedDeviceInfo.Builder("DEVICE_DISPLAY_NAME", "ROUTE_ID", 0);
         List<SuggestedDeviceInfo> suggestedDeviceInfo = List.of(builder.build());
@@ -1824,31 +1826,26 @@ public class MediaRouter2Test {
 
     @RequiresFlagsEnabled({FLAG_ENABLE_SUGGESTED_DEVICE_API})
     @Test
-    public void proxyRouterGetSuggestedDeviceInfo() throws InterruptedException {
+    public void proxyRouterGetSuggestedDeviceInfo() {
         testRouterGetSuggestedDeviceInfo(getProxyRouter());
     }
 
     @RequiresFlagsEnabled({FLAG_ENABLE_SUGGESTED_DEVICE_API})
     @Test
-    public void localRouterGetSuggestedDeviceInfo() throws InterruptedException {
+    public void localRouterGetSuggestedDeviceInfo() {
         testRouterGetSuggestedDeviceInfo(mRouter2);
     }
 
     private void testRouterGetSuggestedDeviceInfo(MediaRouter2 router) {
+        mRouter2.registerRouteCallback(mExecutor, mRouterDummyCallback, EMPTY_DISCOVERY_PREFERENCE);
         SuggestedDeviceInfo.Builder builder =
                 new SuggestedDeviceInfo.Builder("DEVICE_DISPLAY_NAME", "ROUTE_ID", 0);
         List<SuggestedDeviceInfo> suggestedDeviceInfo = List.of(builder.build());
-        TestDeviceSuggestionsUpdatesCallback callback = new TestDeviceSuggestionsUpdatesCallback();
 
-        try {
-            router.setDeviceSuggestions(suggestedDeviceInfo);
+        router.setDeviceSuggestions(suggestedDeviceInfo);
 
-            Map<String, List<SuggestedDeviceInfo>> suggestions = router.getDeviceSuggestions();
-
-            assertThat(suggestions.get(mContext.getPackageName())).isEqualTo(suggestedDeviceInfo);
-        } finally {
-            router.unregisterDeviceSuggestionsUpdatesCallback(callback);
-        }
+        Map<String, List<SuggestedDeviceInfo>> suggestions = router.getDeviceSuggestions();
+        assertThat(suggestions.get(mContext.getPackageName())).isEqualTo(suggestedDeviceInfo);
     }
 
     private static class TestDeviceSuggestionsUpdatesCallback
