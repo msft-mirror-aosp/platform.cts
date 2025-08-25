@@ -16,10 +16,11 @@
 
 import logging
 import struct
+import subprocess
 import time
 import pyudev
+import sensor_fusion_utils
 import serial
-import subprocess
 
 
 # baudrates used for lights and servo controllers
@@ -455,3 +456,25 @@ def set_lighting_state(serial_port, channel, state):
   set_light_brightness(serial_port, channel, level,
                        delay=_WAIT_FOR_CMD_COMPLETION)
 
+
+def setup_gen2_rig(rotator_ch, lighting_ch):
+  """Set up the gen2 rig and establish communication with ports.
+
+  Args:
+    rotator_ch: str to identify rotation channel number.
+    lighting_ch: str to identify lighting channel number.
+  Returns:
+    motor_port: serial port object for rotator
+    lights_port: serial port object for lights
+  """
+  motor_channel = int(rotator_ch)
+  lights_channel = int(lighting_ch)
+  lights_port = find_serial_port(DEFAULT_GEN2_LIGHTS_NAME)
+  if lights_port:
+    sensor_fusion_utils.establish_serial_comm(lights_port)
+    set_lighting_state(lights_port, lights_channel, 'ON')
+  motor_port = find_serial_port(DEFAULT_GEN2_ROTATOR_NAME)
+  if motor_port:
+    configure_rotator(motor_port, motor_channel)
+    rotate(motor_port, motor_channel)
+  return motor_port, lights_port
