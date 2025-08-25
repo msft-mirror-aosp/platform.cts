@@ -16,6 +16,7 @@
 
 package android.app.cts.wallpapers;
 
+import static android.app.Flags.alwaysRebindUserSetWallpaper;
 import static android.app.WallpaperManager.FLAG_LOCK;
 import static android.app.WallpaperManager.FLAG_SYSTEM;
 
@@ -286,6 +287,7 @@ public class WallpaperManagerTestUtils {
         public int expectedNumberOfLiveWallpaperCreate(WallpaperChange change) {
 
             if (change.mWallpaper.isStatic()) return 0;
+            if (alwaysRebindUserSetWallpaper()) return 1;
             switch (change.mDestination) {
                 case FLAG_SYSTEM | FLAG_LOCK:
                     return change.mWallpaper != mHomeWallpaper ? 1 : 0;
@@ -304,7 +306,17 @@ public class WallpaperManagerTestUtils {
          * of a live wallpaper from this state
          */
         public int expectedNumberOfLiveWallpaperDestroy(WallpaperChange change) {
-
+            if (alwaysRebindUserSetWallpaper()) {
+                boolean changeSystem = (change.mDestination & FLAG_SYSTEM) != 0;
+                boolean changeLock = (change.mDestination & FLAG_LOCK) != 0;
+                if (mSingleEngine) {
+                    return mHomeWallpaper.isLive() && changeSystem && changeLock ? 1 : 0;
+                }
+                int result = 0;
+                if (changeSystem && mHomeWallpaper.isLive()) result += 1;
+                if (changeLock && mLockWallpaper.isLive()) result += 1;
+                return result;
+            }
             if (mSingleEngine) {
                 return mHomeWallpaper.isLive()
                         && mHomeWallpaper != change.mWallpaper
