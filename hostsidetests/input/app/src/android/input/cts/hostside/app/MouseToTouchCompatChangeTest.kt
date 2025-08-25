@@ -63,11 +63,11 @@ class MouseToTouchCompatChangeTest {
             val bounds = windowManager.currentWindowMetrics.bounds
             windowCenter.x = bounds.centerX()
             windowCenter.y = bounds.centerY()
-
-            // Move twice to make sure at least one event is dispatched before the test starts.
-            desktopMouseRule.move(DEFAULT_DISPLAY, windowCenter.x - 1, windowCenter.y - 1)
-            desktopMouseRule.move(DEFAULT_DISPLAY, windowCenter.x, windowCenter.y)
         }
+
+        // Move twice to make sure at least one event is dispatched before the test starts.
+        desktopMouseRule.move(DEFAULT_DISPLAY, windowCenter.x - 1, windowCenter.y - 1)
+        desktopMouseRule.move(DEFAULT_DISPLAY, windowCenter.x, windowCenter.y)
 
         // DesktopMouseRule splits move into multiple deltas. Consume events until it reaches the
         // center.
