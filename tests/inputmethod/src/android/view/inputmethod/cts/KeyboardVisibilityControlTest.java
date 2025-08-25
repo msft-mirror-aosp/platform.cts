@@ -1345,8 +1345,8 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             AtomicReference<EditText> editTextRef = new AtomicReference<>();
             // Launch test activity with focusing editor
             final TestActivity testActivity =
-                    new TestActivity.Starter().withWindowingMode(
-                            WINDOWING_MODE_FULLSCREEN).startSync(activity -> {
+                    TestActivity.startSync(
+                            activity -> {
                                 final LinearLayout layout = new LinearLayout(activity);
                                 layout.setOrientation(LinearLayout.VERTICAL);
                                 layout.setGravity(Gravity.BOTTOM);
@@ -1360,7 +1360,7 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                                 decorView.setFitsSystemWindows(true);
                                 decorView.getWindowInsetsController().show(ime());
                                 return layout;
-                            }, TestActivity.class);
+                            });
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
             expectEvent(stream, eventMatcher("showSoftInput"), TIMEOUT);
             expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
