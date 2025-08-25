@@ -26,6 +26,7 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.cts.input.BlockingQueueEventVerifier
 import com.android.cts.input.CaptureEventActivity
+import com.android.cts.input.DebugInputRule
 import com.android.cts.input.inputeventmatchers.withActionButton
 import com.android.cts.input.inputeventmatchers.withMotionAction
 import com.android.cts.input.inputeventmatchers.withSource
@@ -46,6 +47,9 @@ class MouseToTouchCompatChangeTest {
     @get:Rule(order = 2)
     val activityScenarioRule = ActivityScenarioRule(CaptureEventActivity::class.java)
 
+    @get:Rule(order = 3)
+    val debugInputRile = DebugInputRule()
+
     private lateinit var eventVerifier: BlockingQueueEventVerifier
 
     @Before
@@ -59,11 +63,11 @@ class MouseToTouchCompatChangeTest {
             val bounds = windowManager.currentWindowMetrics.bounds
             windowCenter.x = bounds.centerX()
             windowCenter.y = bounds.centerY()
-
-            // Move twice to make sure at least one event is dispatched before the test starts.
-            desktopMouseRule.move(DEFAULT_DISPLAY, windowCenter.x - 1, windowCenter.y - 1)
-            desktopMouseRule.move(DEFAULT_DISPLAY, windowCenter.x, windowCenter.y)
         }
+
+        // Move twice to make sure at least one event is dispatched before the test starts.
+        desktopMouseRule.move(DEFAULT_DISPLAY, windowCenter.x - 1, windowCenter.y - 1)
+        desktopMouseRule.move(DEFAULT_DISPLAY, windowCenter.x, windowCenter.y)
 
         // DesktopMouseRule splits move into multiple deltas. Consume events until it reaches the
         // center.
@@ -84,6 +88,7 @@ class MouseToTouchCompatChangeTest {
         eventVerifier.assertNoEvents()
     }
 
+    @DebugInputRule.DebugInput(bug = 439445482)
     @Test
     fun testEnabled_clickToTouch() {
         desktopMouseRule.click()
@@ -112,6 +117,7 @@ class MouseToTouchCompatChangeTest {
         )
     }
 
+    @DebugInputRule.DebugInput(bug = 439445482)
     @Test
     fun testEnabled_rightClickAsIs() {
         desktopMouseRule.click(BUTTON_SECONDARY)
@@ -152,6 +158,7 @@ class MouseToTouchCompatChangeTest {
         )
     }
 
+    @DebugInputRule.DebugInput(bug = 439445482)
     @Test
     fun testDisabled_click() {
         desktopMouseRule.click()
