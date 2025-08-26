@@ -36,6 +36,7 @@ import com.android.tradefed.util.RunUtil;
 import com.google.errorprone.annotations.FormatMethod;
 import com.google.errorprone.annotations.FormatString;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -205,20 +206,39 @@ public final class Utils {
         }
     }
 
-    /** Gets all the users! */
+    /**
+     * Gets all the users, with the current user first.
+     *
+     * <p>Note: to preserve backward compatibility, if the list of users is empty or doesn't
+     * contains the current user, the first user will the {@link #USER_SYSTEM system user}.
+     */
     public static int[] getAllUsers(ITestDevice device) throws DeviceNotAvailableException {
-        Integer primary = device.getPrimaryUserId();
-        if (device.isHeadlessSystemUserMode()
-                && primary == USER_SYSTEM
-                && !device.canSwitchToHeadlessSystemUser()) {
-            primary = device.getMainUserId();
+        int currentUserId = device.getCurrentUser();
+        ArrayList<Integer> allUsers = device.listUsers();
+        if (allUsers == null || allUsers.isEmpty()) {
+            // Shouldn't happen, but we want to keep previous behavior
+            CLog.w("listUsers() is empty / null; returning {USER_SYSTEM}");
+            return new int[] {USER_SYSTEM};
         }
-        if (primary == null) {
-            primary = USER_SYSTEM;
+        if (!allUsers.contains(currentUserId)) {
+            // Shouldn't happen, but we want to keep previous behavior
+            if (!allUsers.contains(USER_SYSTEM)) {
+                CLog.w(
+                        "all users (%s) doesn't contain neither current user (%d) nor USER_SYSTEM; "
+                                + "will return the latter as first user",
+                        allUsers, currentUserId);
+                allUsers.add(USER_SYSTEM);
+            } else {
+                CLog.w(
+                        "all users (%s) doesn't contain current user (%d); returning USER_SYSTEM as"
+                                + " first user",
+                        allUsers, currentUserId);
+            }
+            currentUserId = USER_SYSTEM;
         }
-        int[] users = new int[] {primary};
-        for (Integer user : device.listUsers()) {
-            if ((user != USER_SYSTEM) && !Objects.equals(user, primary)) {
+        int[] users = new int[] {currentUserId};
+        for (Integer user : allUsers) {
+            if ((user != currentUserId) && !Objects.equals(user, currentUserId)) {
                 users = Arrays.copyOf(users, users.length + 1);
                 users[users.length - 1] = user;
             }
