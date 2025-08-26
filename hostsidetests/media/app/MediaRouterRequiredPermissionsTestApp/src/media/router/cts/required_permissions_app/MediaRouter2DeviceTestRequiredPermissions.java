@@ -68,12 +68,17 @@ public class MediaRouter2DeviceTestRequiredPermissions {
     private Context mContext;
     private MediaRouter2 mRouter;
     private Activity mScreenOnActivity;
+    private RouteDiscoveryPreference mDiscoveryPreference;
 
     @Before
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
         mExecutor = Executors.newSingleThreadExecutor();
         mRouter = MediaRouter2.getInstance(mContext);
+        mDiscoveryPreference =
+                new RouteDiscoveryPreference.Builder(
+                                List.of(FEATURE_SAMPLE), /* activeScan= */ true)
+                        .build();
     }
 
     @After
@@ -89,16 +94,9 @@ public class MediaRouter2DeviceTestRequiredPermissions {
         assertPermissionState(PERMISSION_DENIED, Manifest.permission.POST_NOTIFICATIONS);
 
         mScreenOnActivity = launchScreenOnActivity(mContext);
-        RouteDiscoveryPreference preference =
-                new RouteDiscoveryPreference.Builder(
-                        List.of(FEATURE_SAMPLE), /* activeScan= */ true)
-                        .build();
         Map<String, MediaRoute2Info> routes =
                 waitForAndGetRoutes(
-                        mRouter,
-                        preference,
-                        Set.of(ROUTE_ID_APP_1_ROUTE_1),
-                        mExecutor);
+                        mRouter, mDiscoveryPreference, Set.of(ROUTE_ID_APP_1_ROUTE_1), mExecutor);
         assertThat(routes.get(ROUTE_ID_REQUIRES_ONE_PERMISSION)).isNull();
     }
 
@@ -107,14 +105,10 @@ public class MediaRouter2DeviceTestRequiredPermissions {
         assertPermissionState(PERMISSION_GRANTED, Manifest.permission.POST_NOTIFICATIONS);
 
         mScreenOnActivity = launchScreenOnActivity(mContext);
-        RouteDiscoveryPreference preference =
-                new RouteDiscoveryPreference.Builder(
-                        List.of(FEATURE_SAMPLE), /* activeScan= */ true)
-                        .build();
         Map<String, MediaRoute2Info> routes =
                 waitForAndGetRoutes(
                         mRouter,
-                        preference,
+                        mDiscoveryPreference,
                         Set.of(ROUTE_ID_REQUIRES_ONE_PERMISSION),
                         mExecutor);
         assertThat(routes.get(ROUTE_ID_REQUIRES_ONE_PERMISSION).getName()).isEqualTo(
@@ -134,16 +128,9 @@ public class MediaRouter2DeviceTestRequiredPermissions {
                 REQUIRED_PERMISSIONS_SET_3_3);
 
         mScreenOnActivity = launchScreenOnActivity(mContext);
-        RouteDiscoveryPreference preference =
-                new RouteDiscoveryPreference.Builder(
-                        List.of(FEATURE_SAMPLE), /* activeScan= */ true)
-                        .build();
         Map<String, MediaRoute2Info> routes =
                 waitForAndGetRoutes(
-                        mRouter,
-                        preference,
-                        Set.of(ROUTE_ID_APP_1_ROUTE_1),
-                        mExecutor);
+                        mRouter, mDiscoveryPreference, Set.of(ROUTE_ID_APP_1_ROUTE_1), mExecutor);
         assertThat(routes.get(ROUTE_ID_REQUIRES_ANY_PERMISSION_SET)).isNull();
     }
 
@@ -159,14 +146,10 @@ public class MediaRouter2DeviceTestRequiredPermissions {
                 REQUIRED_PERMISSIONS_SET_3_3);
 
         mScreenOnActivity = launchScreenOnActivity(mContext);
-        RouteDiscoveryPreference preference =
-                new RouteDiscoveryPreference.Builder(
-                        List.of(FEATURE_SAMPLE), /* activeScan= */ true)
-                        .build();
         Map<String, MediaRoute2Info> routes =
                 waitForAndGetRoutes(
                         mRouter,
-                        preference,
+                        mDiscoveryPreference,
                         Set.of(ROUTE_ID_REQUIRES_ANY_PERMISSION_SET),
                         mExecutor);
         assertThat(routes.get(ROUTE_ID_REQUIRES_ANY_PERMISSION_SET).getName()).isEqualTo(
@@ -186,14 +169,10 @@ public class MediaRouter2DeviceTestRequiredPermissions {
                 REQUIRED_PERMISSIONS_SET_3_3);
 
         mScreenOnActivity = launchScreenOnActivity(mContext);
-        RouteDiscoveryPreference preference =
-                new RouteDiscoveryPreference.Builder(
-                        List.of(FEATURE_SAMPLE), /* activeScan= */ true)
-                        .build();
         Map<String, MediaRoute2Info> routes =
                 waitForAndGetRoutes(
                         mRouter,
-                        preference,
+                        mDiscoveryPreference,
                         Set.of(ROUTE_ID_REQUIRES_ANY_PERMISSION_SET),
                         mExecutor);
         assertThat(routes.get(ROUTE_ID_REQUIRES_ANY_PERMISSION_SET).getName()).isEqualTo(
@@ -211,16 +190,9 @@ public class MediaRouter2DeviceTestRequiredPermissions {
                 PERMISSION_GRANTED, REQUIRED_PERMISSIONS_SET_3_1, REQUIRED_PERMISSIONS_SET_3_3);
 
         mScreenOnActivity = launchScreenOnActivity(mContext);
-        RouteDiscoveryPreference preference =
-                new RouteDiscoveryPreference.Builder(
-                        List.of(FEATURE_SAMPLE), /* activeScan= */ true)
-                        .build();
         Map<String, MediaRoute2Info> routes =
                 waitForAndGetRoutes(
-                        mRouter,
-                        preference,
-                        Set.of(ROUTE_ID_APP_1_ROUTE_1),
-                        mExecutor);
+                        mRouter, mDiscoveryPreference, Set.of(ROUTE_ID_APP_1_ROUTE_1), mExecutor);
         assertThat(routes.get(ROUTE_ID_REQUIRES_ANY_PERMISSION_SET)).isNull();
     }
 
@@ -228,13 +200,12 @@ public class MediaRouter2DeviceTestRequiredPermissions {
     public void restrictLocalNetworkCompatChange_notEnabled_routeIsFound() throws TimeoutException {
         assertThat(CompatChanges.isChangeEnabled(RESTRICT_LOCAL_NETWORK_CHANGE_ID)).isFalse();
         mScreenOnActivity = launchScreenOnActivity(mContext);
-        RouteDiscoveryPreference preference =
-                new RouteDiscoveryPreference.Builder(
-                                List.of(FEATURE_SAMPLE), /* activeScan= */ true)
-                        .build();
         Map<String, MediaRoute2Info> routes =
                 waitForAndGetRoutes(
-                        mRouter, preference, Set.of(ROUTE_ID_REQUIRES_LOCAL_NETWORK), mExecutor);
+                        mRouter,
+                        mDiscoveryPreference,
+                        Set.of(ROUTE_ID_REQUIRES_LOCAL_NETWORK),
+                        mExecutor);
         assertThat(routes.get(ROUTE_ID_REQUIRES_LOCAL_NETWORK).getName().toString())
                 .isEqualTo(ROUTE_NAME_REQUIRES_LOCAL_NETWORK);
     }
@@ -243,12 +214,9 @@ public class MediaRouter2DeviceTestRequiredPermissions {
     public void restrictLocalNetworkCompatChange_enabled_routeNotFound() throws TimeoutException {
         assertThat(CompatChanges.isChangeEnabled(RESTRICT_LOCAL_NETWORK_CHANGE_ID)).isTrue();
         mScreenOnActivity = launchScreenOnActivity(mContext);
-        RouteDiscoveryPreference preference =
-                new RouteDiscoveryPreference.Builder(
-                                List.of(FEATURE_SAMPLE), /* activeScan= */ true)
-                        .build();
         Map<String, MediaRoute2Info> routes =
-                waitForAndGetRoutes(mRouter, preference, Set.of(ROUTE_ID_APP_1_ROUTE_1), mExecutor);
+                waitForAndGetRoutes(
+                        mRouter, mDiscoveryPreference, Set.of(ROUTE_ID_APP_1_ROUTE_1), mExecutor);
         assertThat(routes.get(ROUTE_ID_REQUIRES_LOCAL_NETWORK)).isNull();
     }
 
@@ -258,13 +226,12 @@ public class MediaRouter2DeviceTestRequiredPermissions {
         assertThat(CompatChanges.isChangeEnabled(RESTRICT_LOCAL_NETWORK_CHANGE_ID)).isTrue();
         assertPermissionState(PERMISSION_GRANTED, Manifest.permission.NEARBY_WIFI_DEVICES);
         mScreenOnActivity = launchScreenOnActivity(mContext);
-        RouteDiscoveryPreference preference =
-                new RouteDiscoveryPreference.Builder(
-                                List.of(FEATURE_SAMPLE), /* activeScan= */ true)
-                        .build();
         Map<String, MediaRoute2Info> routes =
                 waitForAndGetRoutes(
-                        mRouter, preference, Set.of(ROUTE_ID_REQUIRES_LOCAL_NETWORK), mExecutor);
+                        mRouter,
+                        mDiscoveryPreference,
+                        Set.of(ROUTE_ID_REQUIRES_LOCAL_NETWORK),
+                        mExecutor);
         assertThat(routes.get(ROUTE_ID_REQUIRES_LOCAL_NETWORK).getName())
                 .isEqualTo(ROUTE_NAME_REQUIRES_LOCAL_NETWORK);
     }
