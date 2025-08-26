@@ -575,7 +575,6 @@ android_test {
     sdk_version: "test_current",
     target_sdk_version: "35",
     min_sdk_version: "29",
-    platform_apis: true,
     libs: [
         "android.test.base.stubs.test",
         "android.test.mock.stubs.test",
@@ -627,7 +626,7 @@ java_library {
         "platform-compat-test-rules",
     ],
     visibility: [
-        "//cts/hostsidetests/scopedstorage/compatchanges/device",
+        "//cts/hostsidetests/scopedstorage/compatchanges/device:__subpackages__",
     ],
 }
 

@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableSet;
 
 public class OwnedPhotosHostTest extends CompatChangeGatingTestCase {
     protected static final String TEST_APK = "CtsOwnedPhotosTestsApp.apk";
-    protected static final String TEST_PKG = "android.cts.compatchanges.device";
+    protected static final String TEST_PKG = "android.cts.compatchanges.device.ownedphotos";
     protected static final String TEST_CLASS_NAME = ".OwnedPhotosTest";
     protected static final long OWNED_PHOTOS_CHANGE_ID = 310703690L;
 
