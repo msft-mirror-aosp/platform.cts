@@ -17,9 +17,9 @@
 package android.scopedstorage.cts.device;
 
 import static android.app.AppOpsManager.OPSTR_MANAGE_EXTERNAL_STORAGE;
-import static android.scopedstorage.cts.device.OtherAppFilesRule.GrantModifications.GRANT;
-import static android.scopedstorage.cts.device.OtherAppFilesRule.modifyReadAccess;
 import static android.scopedstorage.cts.device.OwnedFilesRule.RESOURCE_ID_WITH_METADATA;
+import static android.scopedstorage.cts.device.StorageUtils.GrantModifications.GRANT;
+import static android.scopedstorage.cts.device.StorageUtils.modifyReadAccess;
 import static android.scopedstorage.cts.lib.FilePathAccessTestUtils.assertCannotReadOrWrite;
 import static android.scopedstorage.cts.lib.FilePathAccessTestUtils.assertFileAccess_listFiles;
 import static android.scopedstorage.cts.lib.FilePathAccessTestUtils.assertFileAccess_readOnly;
