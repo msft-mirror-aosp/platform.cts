@@ -16,10 +16,8 @@
 
 package android.telephony.cts;
 
-import static android.Manifest.permission.INTERACT_ACROSS_USERS;
 import static android.Manifest.permission.MANAGE_COMPANION_DEVICES;
 import static android.Manifest.permission.MANAGE_ROLE_HOLDERS;
-import static android.Manifest.permission.MANAGE_USERS;
 import static android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE;
 import static android.Manifest.permission.RECEIVE_SENSITIVE_NOTIFICATIONS;
 
@@ -91,9 +89,6 @@ import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
 
-import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
-import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner;
-import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CarrierPrivilegeUtils;
 import com.android.compatibility.common.util.ShellIdentityUtils;
@@ -103,7 +98,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -112,7 +106,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -124,10 +117,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * Tests for {@link android.telephony.SmsManager}.
  *
- * <p>Structured so tests can be reused to test {@link android.telephony.gsm.SmsManager}
+ * Structured so tests can be reused to test {@link android.telephony.gsm.SmsManager}
  */
-@SuppressLint("MissingPermission")
-@RunWith(BedsteadJUnit4.class)
 public class SmsManagerTest {
 
     private static final String TAG = "SmsManagerTest";
@@ -198,13 +189,6 @@ public class SmsManagerTest {
 
     private static final int TIME_OUT = 1000 * 60 * 10;
     private static final int NO_CALLS_TIMEOUT_MILLIS = 1000; // 1 second
-    private static final List<String> TRUSTED_SMS_PERMISSIONS =
-            List.of(
-                    READ_PRIVILEGED_PHONE_STATE,
-                    MANAGE_COMPANION_DEVICES,
-                    MANAGE_ROLE_HOLDERS,
-                    INTERACT_ACROSS_USERS,
-                    MANAGE_USERS);
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -562,7 +546,6 @@ public class SmsManagerTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
-    @EnsureHasNoDeviceOwner
     public void testOtpSmsBroadcastReceivedByDefaultSmsApp() throws Exception {
         init();
         try {
@@ -581,7 +564,6 @@ public class SmsManagerTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
-    @EnsureHasNoDeviceOwner
     public void testOtpSmsBroadcastReceivedByDefaultTrustedRoleHolders() throws Exception {
         init();
         List<String> smsOtpReadingRoles =
@@ -609,7 +591,6 @@ public class SmsManagerTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
-    @EnsureHasNoDeviceOwner
     public void testOtpSmsBroadcastReceivedByReceiveSensitiveApps() throws Exception {
         init();
         String message = OTP_SMS_TEXT + " " + getSmsRetrieverHash();
@@ -627,7 +608,6 @@ public class SmsManagerTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
-    @EnsureHasNoDeviceOwner
     public void testOtpSmsBroadcastReceivedByCdmApps() throws Exception {
         init();
         associateCdm();
@@ -663,7 +643,6 @@ public class SmsManagerTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
-    @EnsureHasNoDeviceOwner
     public void testOtpSmsBroadcastNotReceivedByStandardApps() throws Exception {
         init();
         sendSmsRetrieverOtpMessage();
@@ -674,7 +653,6 @@ public class SmsManagerTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
-    @EnsureHasNoDeviceOwner
     public void testOtpSmsBroadcastReceivedByRetrieverApp() throws Exception {
         init();
 
@@ -691,17 +669,6 @@ public class SmsManagerTest {
         assertTrue(
                 "App to which the SMS retriever hash was matched should get SMS_RECEIVED "
                         + "for OTP calls",
-                mSmsReceivedReceiver.waitForCalls(1, TIME_OUT));
-    }
-
-    @Test
-    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
-    @EnsureHasDeviceOwner
-    public void testOtpSmsBroadcastReceivedByStandardApps_whenDeviceManaged() throws Exception {
-        init();
-        sendSmsRetrieverOtpMessage();
-        assertTrue(
-                "Standard apps should get SMS_RECEIVED for OTP calls",
                 mSmsReceivedReceiver.waitForCalls(1, TIME_OUT));
     }
 
@@ -1156,7 +1123,6 @@ public class SmsManagerTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS_API})
-    @EnsureHasNoDeviceOwner
     public void testGetSmsOtpTrustedAppIds_systemApps() throws Exception {
         Set<String> trustedAppIds =
                 callWithShellPermissionIdentity(
@@ -1173,12 +1139,14 @@ public class SmsManagerTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS_API})
-    @EnsureHasNoDeviceOwner
     public void testGetSmsOtpTrustedAppIds_receiveSensitiveHoldingApps() throws Exception {
         // Running the call with RECEIVE_SENSITIVE_NOTIFICATIONS, this uid should be trusted
         Set<String> newTrustedAppIds =
-                callWithTrustedSmsReadPermissions(
+                callWithShellPermissionIdentity(
                         () -> SmsManager.getSmsOtpTrustedPackages(mContext, null),
+                        READ_PRIVILEGED_PHONE_STATE,
+                        MANAGE_COMPANION_DEVICES,
+                        MANAGE_ROLE_HOLDERS,
                         RECEIVE_SENSITIVE_NOTIFICATIONS);
         assertTrue(
                 "Expected permission holding package "
@@ -1189,7 +1157,6 @@ public class SmsManagerTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS_API})
-    @EnsureHasNoDeviceOwner
     public void testGetSmsOtpTrustedAppIds_cdmAssociation() throws Exception {
         try {
             associateCdm();
@@ -1205,8 +1172,6 @@ public class SmsManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS_API})
-    @EnsureHasNoDeviceOwner
     public void testGetSmsOtpTrustedAppIds_carrierPrivilegedAppTrusted() throws Exception {
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         CarrierPrivilegeUtils.withCarrierPrivileges(
@@ -1223,8 +1188,7 @@ public class SmsManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS_API})
-    @EnsureHasNoDeviceOwner
+    @SuppressLint("MissingPermission")
     public void testGetSmsOtpTrustedAppIds_rolesTrusted() throws Exception {
         for (String roleName : SMS_OTP_READING_ROLES) {
             List<String> oldRoleHolders =
@@ -1251,7 +1215,6 @@ public class SmsManagerTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS_API})
-    @EnsureHasNoDeviceOwner
     public void testGetSmsOtpTrustedAppIds_standardAppNotIncluded() throws Exception {
         Set<String> trustedAppIds =
                 callWithTrustedSmsReadPermissions(
@@ -1263,7 +1226,6 @@ public class SmsManagerTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS_API})
-    @EnsureHasNoDeviceOwner
     public void testIsAppTrustedForSmsOtp_systemApps() throws Exception {
         List<PackageInfo> systemPkgs =
                 callWithShellPermissionIdentity(
@@ -1280,32 +1242,21 @@ public class SmsManagerTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS_API})
-    @EnsureHasNoDeviceOwner
     public void testIsAppTrustedForSmsOtp_receiveSensitiveHoldingApps() throws Exception {
         assertTrue(
                 "Expected permission holding app to be trusted",
-                callWithTrustedSmsReadPermissions(
+                callWithShellPermissionIdentity(
                         () ->
                                 SmsManager.isAppTrustedForSmsOtp(
                                         mContext, mSelfPackageName, mSelfUid),
+                        READ_PRIVILEGED_PHONE_STATE,
+                        MANAGE_COMPANION_DEVICES,
+                        MANAGE_ROLE_HOLDERS,
                         RECEIVE_SENSITIVE_NOTIFICATIONS));
     }
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS_API})
-    @EnsureHasDeviceOwner
-    public void testIsAppTrustedForSmsOtp_trueIfDeviceManaged() throws Exception {
-        assertTrue(
-                "Expected isAppTrustedForSmsOtp to be true when device is managed",
-                callWithTrustedSmsReadPermissions(
-                        () ->
-                                SmsManager.isAppTrustedForSmsOtp(
-                                        mContext, mSelfPackageName, mSelfUid)));
-    }
-
-    @Test
-    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS_API})
-    @EnsureHasNoDeviceOwner
     public void testIsAppTrustedForSmsOtp_cdmAssociation() throws Exception {
         try {
             associateCdm();
@@ -1321,8 +1272,6 @@ public class SmsManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS_API})
-    @EnsureHasNoDeviceOwner
     public void testIsAppTrustedForSmsOtp_carrierPrivilegedAppTrusted() throws Exception {
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         CarrierPrivilegeUtils.withCarrierPrivileges(
@@ -1339,8 +1288,7 @@ public class SmsManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS_API})
-    @EnsureHasNoDeviceOwner
+    @SuppressLint("MissingPermission")
     public void testIsAppTrustedForSmsOtp_rolesTrusted() throws Exception {
         for (String roleName : SMS_OTP_READING_ROLES) {
             List<String> oldRoleHolders =
@@ -1367,7 +1315,6 @@ public class SmsManagerTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS_API})
-    @EnsureHasNoDeviceOwner
     public void testIsAppTrustedForSmsOtp_standardAppNotTrusted() throws Exception {
         assertFalse(
                 "Expected a standard app to be untrusted",
@@ -1605,11 +1552,12 @@ public class SmsManagerTest {
         latch.await();
     }
 
-    private <T> T callWithTrustedSmsReadPermissions(
-            @NonNull Callable<T> callable, String... additionalPermissions) throws Exception {
-        List<String> permissions = new ArrayList<>();
-        permissions.addAll(TRUSTED_SMS_PERMISSIONS);
-        permissions.addAll(Arrays.asList(additionalPermissions));
-        return callWithShellPermissionIdentity(callable, permissions.toArray(new String[0]));
+    private <T> T callWithTrustedSmsReadPermissions(@NonNull Callable<T> callable)
+            throws Exception {
+        return callWithShellPermissionIdentity(
+                callable,
+                READ_PRIVILEGED_PHONE_STATE,
+                MANAGE_COMPANION_DEVICES,
+                MANAGE_ROLE_HOLDERS);
     }
 }
