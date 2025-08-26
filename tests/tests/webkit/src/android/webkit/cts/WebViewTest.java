@@ -87,7 +87,6 @@ import com.google.common.util.concurrent.SettableFuture;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -841,14 +840,16 @@ public class WebViewTest extends SharedWebViewTest {
     @Test
     public void testSetPictureListener() {
         final class MyPictureListener extends WaitablePictureListener {
-            public WebView webView;
-            public Picture picture;
+            public WebView mWebView;
+            public Picture mPicture;
 
             @Override
             public void onNewPicture(WebView view, Picture picture) {
+                this.mWebView = view;
+                this.mPicture = picture;
+                // Call the super method last, since that notifies the queue, which should happen
+                // after the fields in this class have been set.
                 super.onNewPicture(view, picture);
-                this.webView = view;
-                this.picture = picture;
             }
         }
 
@@ -858,8 +859,8 @@ public class WebViewTest extends SharedWebViewTest {
         mOnUiThread.setPictureListener(listener);
         mOnUiThread.loadUrlAndWaitForCompletion(url);
         listener.waitForNextCall();
-        assertEquals(mWebView, listener.webView);
-        assertNull(listener.picture);
+        assertEquals(mWebView, listener.mWebView);
+        assertNull(listener.mPicture);
 
         final String newUrl = mWebServer.getAssetUrl(TestHtmlConstants.SMALL_IMG_URL);
         mOnUiThread.loadUrlAndWaitForCompletion(newUrl);
