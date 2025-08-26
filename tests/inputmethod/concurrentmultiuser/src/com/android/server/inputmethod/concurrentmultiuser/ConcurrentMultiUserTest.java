@@ -108,6 +108,10 @@ public final class ConcurrentMultiUserTest {
         }
     }
 
+    /**
+     * Verifies that showing the IME on the driver's display does not affect the IME visibility on
+     * the passenger's display.
+     */
     @Test
     public void driverShowImeNotAffectPassenger() throws Exception {
         assertDriverImeHidden();
@@ -117,6 +121,10 @@ public final class ConcurrentMultiUserTest {
         assertPassengerImeHidden();
     }
 
+    /**
+     * Verifies that showing the IME on the passenger's display does not affect the IME visibility
+     * on the driver's display.
+     */
     @Test
     @Ignore("b/352823913")
     public void passengerShowImeNotAffectDriver() throws Exception {
@@ -127,6 +135,10 @@ public final class ConcurrentMultiUserTest {
         assertDriverImeHidden();
     }
 
+    /**
+     * Verifies that hiding the IME on the driver's display does not affect the IME visibility on
+     * the passenger's display.
+     */
     @Test
     public void driverHideImeNotAffectPassenger() throws Exception {
         showDriverImeAndAssert();
@@ -136,6 +148,10 @@ public final class ConcurrentMultiUserTest {
         assertPassengerImeShown();
     }
 
+    /**
+     * Verifies that hiding the IME on the passenger's display does not affect the IME visibility on
+     * the driver's display.
+     */
     @Test
     public void passengerHideImeNotAffectDriver() throws Exception {
         showDriverImeAndAssert();
@@ -145,6 +161,7 @@ public final class ConcurrentMultiUserTest {
         assertDriverImeShown();
     }
 
+    /** Verifies that both the driver and the passenger user have at least one IME installed. */
     @Test
     public void imeListNotEmpty() {
         List<InputMethodInfo> driverImeList = mInputMethodManager.getInputMethodList();
@@ -159,6 +176,7 @@ public final class ConcurrentMultiUserTest {
                 .isFalse();
     }
 
+    /** Verifies that both the driver and the passenger user have at least one enabled IME. */
     @Test
     public void enabledImeListNotEmpty() {
         List<InputMethodInfo> driverEnabledImeList =
@@ -174,6 +192,9 @@ public final class ConcurrentMultiUserTest {
                 .isFalse();
     }
 
+    /**
+     * Verifies that both the driver and the passenger user have a non-null current IME selected.
+     */
     @Test
     public void currentImeNotNull() {
         InputMethodInfo driverIme = mInputMethodManager.getCurrentInputMethodInfo();
@@ -184,6 +205,10 @@ public final class ConcurrentMultiUserTest {
         assertWithMessage("Passenger IME shouldn't be null").that(passengerIme).isNotNull();
     }
 
+    /**
+     * Verifies that enabling or disabling an IME for one user does not affect the IME settings of
+     * another user.
+     */
     @Test
     public void enableDisableImePerUser() throws IOException {
         UserHandle driver = UserHandle.of(mContext.getUserId());
@@ -192,6 +217,10 @@ public final class ConcurrentMultiUserTest {
         enableDisableImeForUser(passenger, driver);
     }
 
+    /**
+     * Verifies that setting the current IME for one user does not affect the current IME of another
+     * user.
+     */
     @Test
     public void setImePerUser() throws IOException {
         UserHandle driver = UserHandle.of(mContext.getUserId());
