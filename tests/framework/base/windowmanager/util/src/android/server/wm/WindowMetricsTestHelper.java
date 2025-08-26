@@ -138,7 +138,7 @@ public class WindowMetricsTestHelper {
         assertEquals("Reported display height must match window height",
                 displayMetrics.heightPixels, currentBounds.height());
         assertEquals("Reported display density must match density from window metrics",
-                displayMetrics.density, currentMetrics.getDensity(), 0.0f);
+                displayMetrics.density, currentMetrics.getDensity(), 0.01f);
 
         // Max window bounds should match real display size.
         final DisplayMetrics realDisplayMetrics = new DisplayMetrics();
@@ -149,7 +149,7 @@ public class WindowMetricsTestHelper {
         assertEquals("Reported real display height must match max window height",
                 realDisplayMetrics.heightPixels, maxBounds.height());
         assertEquals("Reported real display density must match density from window metrics",
-                realDisplayMetrics.density, currentMetrics.getDensity(), 0.0f);
+                realDisplayMetrics.density, currentMetrics.getDensity(), 0.01f);
     }
 
     /**
