@@ -45,6 +45,7 @@ java_defaults {
     libs: [
         "android.test.runner.stubs",
         "android.test.base.stubs",
+        "framework-annotations-lib",
     ],
 
     jarjar_rules: "protobuf-jarjar-rules.txt",

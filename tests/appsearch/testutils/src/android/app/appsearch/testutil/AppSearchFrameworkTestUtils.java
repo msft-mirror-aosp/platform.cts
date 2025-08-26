@@ -21,6 +21,7 @@ import android.app.appsearch.AppSearchResult;
 import android.app.appsearch.SearchResult;
 import android.app.appsearch.exceptions.AppSearchException;
 
+import com.android.compatibility.common.util.UserAwareLogger;
 import com.android.server.appsearch.sync.SyncSearchResults;
 
 import com.google.common.util.concurrent.Futures;

@@ -61,7 +61,6 @@ import android.app.appsearch.testutil.AppSearchTestUtils;
 import android.app.appsearch.testutil.PackageUtil;
 import android.app.appsearch.testutil.SystemUtil;
 import android.app.appsearch.testutil.TestObserverCallback;
-import android.app.appsearch.testutil.UserAwareLogger;
 import android.app.appsearch.util.DocumentIdUtil;
 import android.content.ComponentName;
 import android.content.Context;
@@ -78,6 +77,7 @@ import androidx.test.core.app.ApplicationProvider;
 import androidx.test.filters.SdkSuppress;
 
 import com.android.appsearch.flags.Flags;
+import com.android.compatibility.common.util.UserAwareLogger;
 import com.android.cts.appsearch.ICommandReceiver;
 
 import com.google.common.collect.ImmutableList;
@@ -177,7 +177,7 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
     @Before
     public void setUp() throws Exception {
         mContext = ApplicationProvider.getApplicationContext();
-        mLogger = new UserAwareLogger(TAG, mContext.getUser());
+        mLogger = UserAwareLogger.newBuilder(TAG).setUser(mContext).build();
         mDb = createAndLogSearchSessionAsync(DB_NAME);
         cleanup();
     }
@@ -2481,7 +2481,7 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
 
         TestServiceConnection(Context context) {
             mContext = context;
-            mLogger = new UserAwareLogger(TAG, context.getUser());
+            mLogger = UserAwareLogger.newBuilder(TAG).setUser(context).build();
         }
 
         @Override

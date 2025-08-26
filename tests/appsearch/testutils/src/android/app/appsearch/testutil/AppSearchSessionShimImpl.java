@@ -50,6 +50,8 @@ import android.os.UserHandle;
 
 import androidx.test.core.app.ApplicationProvider;
 
+import com.android.compatibility.common.util.UserAwareLogger;
+
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
@@ -107,7 +109,7 @@ public final class AppSearchSessionShimImpl implements AppSearchSessionShim {
 
     private AppSearchSessionShimImpl(
             @NonNull AppSearchSession session, @NonNull ExecutorService executor) {
-        mLogger = new UserAwareLogger(TAG);
+        mLogger = UserAwareLogger.newBuilder(TAG).build();
         mAppSearchSession = Objects.requireNonNull(session);
         mExecutor = Objects.requireNonNull(executor);
         mLogger.logD("constructor(session=%s)", session);
