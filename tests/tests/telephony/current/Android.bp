@@ -63,6 +63,7 @@ android_test {
         "flag-junit",
         "telecom_flags_core_java_lib",
         "androidx.test.rules",
+        "bedstead-enterprise",
     ],
     srcs: [
         "src/**/*.java",
