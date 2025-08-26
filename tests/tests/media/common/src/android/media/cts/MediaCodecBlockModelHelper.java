@@ -29,12 +29,10 @@ import android.mediav2.common.cts.OutputManager;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.AppModeFull;
-import android.util.Log;
 import android.view.Surface;
 
 import androidx.test.filters.SdkSuppress;
 
-import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.Preconditions;
 
 import java.io.File;
@@ -394,6 +392,7 @@ public class MediaCodecBlockModelHelper {
     }
 
     public static Result runDecodeShortVideo(
+            String codecName,
             MediaExtractor mediaExtractor,
             Long lastBufferTimestampUs,
             boolean obtainBlockForEachBuffer,
@@ -417,13 +416,7 @@ public class MediaCodecBlockModelHelper {
                 }
                 mediaFormat = format;
             }
-            // TODO: b/147748978
-            String[] codecs = MediaUtils.getDecoderNames(true /* isGoog */, mediaFormat);
-            if (codecs.length == 0) {
-                Log.i(TAG, "No decoder found for format= " + mediaFormat);
-                return Result.SKIP;
-            }
-            mediaCodec = MediaCodec.createByCodecName(codecs[0]);
+            mediaCodec = MediaCodec.createByCodecName(codecName);
 
             if (sessionId != null) {
                 crypto = new MediaCrypto(CLEARKEY_SCHEME_UUID, new byte[0] /* initData */);
