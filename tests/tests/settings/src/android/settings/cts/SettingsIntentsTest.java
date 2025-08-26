@@ -29,7 +29,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
@@ -39,7 +38,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.UserHelper;
-import com.android.internal.telephony.flags.Flags;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -96,7 +94,6 @@ public class SettingsIntentsTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ACTION_SIM_PREFERENCE_SETTINGS)
     public void testSimPreferenceIntentReceiverExists() {
         // Skipping for visible background users as SIM is not supported on visible background
         // users.
