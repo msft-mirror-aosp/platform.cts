@@ -803,6 +803,7 @@ public class WebViewClientTest extends SharedWebViewTest {
         private boolean mOnPageStartedCalledSinceLastOnPageFinished;
         private boolean mOnResourceCalledSinceLastOnPageFinished;
         private boolean mOnErrorReceivedCalledSinceLastOnPageFinished;
+
         MockWebViewClient() {
             super(mOnUiThread);
         }
@@ -923,9 +924,7 @@ public class WebViewClientTest extends SharedWebViewTest {
         }
 
         @Override
-        public void onPageFinished(WebView view, String url) {
-            super.onPageFinished(view, url);
-            // TODO(ntfschr): propagate these exceptions to the instrumentation thread.
+        public void onPageFinishedCapturesExceptions(WebView view, String url) {
             assertTrue(
                     "Expected onPageStarted to be called before onPageFinished",
                     mOnPageStartedCalledSinceLastOnPageFinished);
