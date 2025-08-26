@@ -221,6 +221,10 @@ public final class InputMethodStartInputLifecycleTest extends EndToEndImeTestBas
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
 
+            // Compatibility layer may cause multiple onStartInput events when TestActivity is
+            // created. Clear out the stream events to make sure only new events are detected.
+            stream.skipAll();
+
             // Get app window token
             final IBinder appWindowToken = TestUtils.getOnMainSync(
                     () -> editText.getApplicationWindowToken());
