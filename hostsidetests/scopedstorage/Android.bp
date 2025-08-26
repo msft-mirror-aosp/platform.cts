@@ -606,6 +606,31 @@ android_test {
     per_testcase_directory: true,
 }
 
+java_library {
+    name: "CtsScopedStorageDeviceLib",
+    srcs: [
+        "device/**/StorageUtils.java",
+        "libs/**/TestUtils.java",
+    ],
+    libs: [
+        "android.test.base.stubs.test",
+        "android.test.mock.stubs.test",
+        "android.test.runner.stubs.test",
+    ],
+    static_libs: [
+        "truth",
+        "cts-scopedstorage-lib",
+        "androidx.test.uiautomator_uiautomator",
+        "modules-utils-build_system",
+        "mediaprovider_flags_java_lib",
+        "flag-junit",
+        "platform-compat-test-rules",
+    ],
+    visibility: [
+        "//cts/hostsidetests/scopedstorage/compatchanges/device",
+    ],
+}
+
 android_test {
     name: "CtsScopedStorageBypassDatabaseOperationsTest",
     manifest: "bypassdatabase/AndroidManifest.xml",

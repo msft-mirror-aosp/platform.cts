@@ -1847,8 +1847,12 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     private void testAutogrouping_forceGrouping_common(boolean summaryOnly) throws Exception {
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
-        CountDownLatch postingLatch = mListener.setPostedCountDown(5);
-        CountDownLatch rerankLatch = mListener.setRankingUpdateCountDown(5);
+        final int numNotificationsInAutogroup = 5;
+        // Expect 2x number of posted callback because NMS will notify listeners
+        // when notifications were forced grouped through onNotificationPosted
+        final int numExpectedPostedCount = 2 * numNotificationsInAutogroup;
+        CountDownLatch postingLatch = mListener.setPostedCountDown(numExpectedPostedCount);
+        CountDownLatch rerankLatch;
 
         String testGroup = "testGroup";
         sendNotification(910, testGroup, summaryOnly, R.drawable.black, false, null);
@@ -1864,8 +1868,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
         // Wait until all the notifications, including the autogroup, are posted and grouped.
         postingLatch.await(TIMEOUT_FORCE_REGROUP_MS, TimeUnit.MILLISECONDS);
-        rerankLatch.await(TIMEOUT_FORCE_REGROUP_MS, TimeUnit.MILLISECONDS);
-        assertNotificationCount(5);
+        assertNotificationCount(numNotificationsInAutogroup);
         assertAllPostedNotificationsAutogrouped();
 
         // Cancel all autogrouped notifications
@@ -1880,8 +1883,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             assertAllPostedNotificationsAutogrouped();
         }
         // Autogroup summary should be canceled
-        postingLatch.await(400, TimeUnit.MILLISECONDS);
-        rerankLatch.await(400, TimeUnit.MILLISECONDS);
+        removedLatch = mListener.setRemovedCountDown(1);
+        removedLatch.await(400, TimeUnit.MILLISECONDS);
         assertNotificationCount(0);
     }
 

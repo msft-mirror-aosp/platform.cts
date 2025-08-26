@@ -15,8 +15,6 @@
  */
 package android.car.cts.permissiontest.content.pm;
 
-import static android.Manifest.permission.QUERY_ALL_PACKAGES;
-
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
@@ -26,9 +24,7 @@ import android.car.content.pm.CarAppBlockingPolicy;
 import android.car.content.pm.CarPackageManager;
 import android.car.cts.permissiontest.AbstractCarManagerPermissionTest;
 import android.car.feature.Flags;
-import android.car.test.PermissionsCheckerRule.EnsureHasPermission;
 import android.content.ComponentName;
-import android.content.pm.PackageManager.NameNotFoundException;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -88,14 +84,5 @@ public class CarPackageManagerPermissionTest extends AbstractCarManagerPermissio
     @RequiresFlagsEnabled(Flags.FLAG_DISPLAY_COMPATIBILITY)
     public void testActivityRequiresDisplayCompatFailsWithoutPermission() {
         assertThrows(SecurityException.class, () -> mPm.requiresDisplayCompat("blah"));
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DISPLAY_COMPATIBILITY)
-    @EnsureHasPermission({Car.PERMISSION_MANAGE_DISPLAY_COMPATIBILITY, QUERY_ALL_PACKAGES})
-    public void testActivityRequiresDisplayCompatWorksWithPermission()
-            throws NameNotFoundException {
-        assertThat(mPm.requiresDisplayCompat("android.car.cts.permissiontest"))
-                .isFalse();
     }
 }

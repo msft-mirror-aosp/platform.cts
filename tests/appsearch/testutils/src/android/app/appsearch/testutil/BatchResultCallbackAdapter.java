@@ -18,7 +18,8 @@ package android.app.appsearch.testutil;
 
 import android.app.appsearch.AppSearchBatchResult;
 import android.app.appsearch.BatchResultCallback;
-import android.os.UserHandle;
+
+import com.android.compatibility.common.util.UserAwareLogger;
 
 import com.google.common.util.concurrent.SettableFuture;
 
@@ -33,7 +34,7 @@ final class BatchResultCallbackAdapter<K, V> implements BatchResultCallback<K, V
     private final SettableFuture<AppSearchBatchResult<K, V>> mFuture;
 
     BatchResultCallbackAdapter(String id, SettableFuture<AppSearchBatchResult<K, V>> future) {
-        mLogger = new UserAwareLogger(TAG, UserHandle.myUserId());
+        mLogger = UserAwareLogger.newBuilder(TAG).build();
         mId = Objects.requireNonNull(id, "id cannot be null");
         mFuture = Objects.requireNonNull(future, "future cannot be null");
     }

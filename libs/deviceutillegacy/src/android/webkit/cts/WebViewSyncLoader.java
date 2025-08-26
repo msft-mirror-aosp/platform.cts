@@ -57,6 +57,15 @@ public class WebViewSyncLoader {
      */
     private int mProgress;
 
+    /** Holder for any errors that might happen during onPageFinished. */
+    private Throwable mOnPageFinishError;
+
+    /**
+     * Flag to indicate if this object is currently waiting. Used to determine how assertion errors
+     * should be handled.
+     */
+    private boolean mWaiting;
+
     /**
      * The WebView that calls will be made on.
      */
@@ -155,6 +164,19 @@ public class WebViewSyncLoader {
     }
 
     /**
+     * Called from WaitForLoadedClient, this is used to indicate that the page is loaded, but not
+     * drawn yet, and that an exception happened during the onPageFinished callback.
+     */
+    private synchronized void onPageFinished(Throwable throwable) {
+        if (mWaiting) {
+            mOnPageFinishError = throwable;
+            onPageFinished();
+        } else {
+            throw new RuntimeException("Error during onPageFinished", throwable);
+        }
+    }
+
+    /**
      * Called from the WebChrome client, this sets the current progress
      * for a page.
      * @param progress The progress made so far between 0 and 100.
@@ -247,6 +269,10 @@ public class WebViewSyncLoader {
      * @return Whether or not the load has finished.
      */
     private synchronized boolean isLoaded() {
+        if (mOnPageFinishError != null) {
+            // Wrap in an AssertionError to get a stack trace on the current thread.
+            throw new AssertionError("Page finish failed on main thread", mOnPageFinishError);
+        }
         return mLoaded && mNewPicture && mProgress == 100;
     }
 
@@ -272,13 +298,20 @@ public class WebViewSyncLoader {
                 + "without calling waitForLoadCompletion after the load",
                 !isLoaded());
         assertCorrectClientInstances();
-        clearLoad(); // clear any extraneous signals from a previous load.
-        if (isUiThread()) {
-            call.run();
-        } else {
-            WebkitUtils.onMainThread(call);
+        mWaiting = true;
+        try {
+            if (isUiThread()) {
+                call.run();
+            } else {
+                WebkitUtils.onMainThread(call);
+            }
+            waitForLoadCompletion();
+
+        } finally {
+            clearLoad(); // clear any extraneous signals from a previous load.
+            mWaiting = false;
         }
-        waitForLoadCompletion();
+
     }
 
     /**
@@ -289,6 +322,7 @@ public class WebViewSyncLoader {
         mLoaded = false;
         mNewPicture = false;
         mProgress = 0;
+        mOnPageFinishError = null;
     }
 
     /**
@@ -303,9 +337,7 @@ public class WebViewSyncLoader {
                 try {
                     return isLoaded();
                 } catch (Exception e) {
-                    Assert.fail("Unexpected error while checking load completion: "
-                            + e.getMessage());
-                    return true;
+                    throw new AssertionError("Unexpected error while checking load completion", e);
                 }
             }
         }.run();
@@ -328,8 +360,7 @@ public class WebViewSyncLoader {
         } catch (InterruptedException e) {
             // We'll just drop out of the loop and fail
         } catch (Exception e) {
-            Assert.fail("Unexpected error while checking load completion: "
-                    + e.getMessage());
+            throw new AssertionError("Unexpected error while checking load completion", e);
         }
     }
 
@@ -404,18 +435,34 @@ public class WebViewSyncLoader {
      * WaitForLoadedClient or call WebViewSyncLoader.onPageFinished.
      */
     public static class WaitForLoadedClient extends WebViewClient {
-        private WebViewSyncLoader mWebViewSyncLoader;
+        private final WebViewSyncLoader mWebViewSyncLoader;
 
         public WaitForLoadedClient(WebViewSyncLoader webViewSyncLoader) {
             mWebViewSyncLoader = webViewSyncLoader;
         }
 
+        /**
+         * Do not override. Override {@link #onPageFinishedCapturesExceptions(WebView, String)
+         * instead}
+         */
         @Override
-        @CallSuper
-        public void onPageFinished(WebView view, String url) {
+        public final void onPageFinished(WebView view, String url) {
             super.onPageFinished(view, url);
-            mWebViewSyncLoader.onPageFinished();
+            try {
+                onPageFinishedCapturesExceptions(view, url);
+                mWebViewSyncLoader.onPageFinished();
+            } catch (Throwable tr) {
+                mWebViewSyncLoader.onPageFinished(tr);
+            }
         }
+
+        /**
+         * Override this method instead of {@link #onPageFinished()} in order to automatically
+         * propagate any exceptions to the main thread.
+         *
+         * <p>Implementers should <em>not</em> call {@code super.onPageFinished} directly.
+         */
+        public void onPageFinishedCapturesExceptions(WebView view, String url) {}
 
         @Override
         @CallSuper
@@ -424,7 +471,6 @@ public class WebViewSyncLoader {
             mWebViewSyncLoader.onPageStarted();
         }
     }
-
     /**
      * A PictureListener that captures the onNewPicture for use in
      * waitForLoadCompletion. Using initializeWebView sets the PictureListener

@@ -39,6 +39,8 @@ import android.content.Context;
 
 import androidx.test.core.app.ApplicationProvider;
 
+import com.android.compatibility.common.util.UserAwareLogger;
+
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
@@ -87,7 +89,7 @@ public final class GlobalSearchSessionShimImpl implements GlobalSearchSessionShi
 
     private GlobalSearchSessionShimImpl(
             @NonNull GlobalSearchSession session, @NonNull ExecutorService executor) {
-        mLogger = new UserAwareLogger(TAG);
+        mLogger = UserAwareLogger.newBuilder(TAG).build();
         mGlobalSearchSession = Objects.requireNonNull(session);
         mExecutor = Objects.requireNonNull(executor);
     }

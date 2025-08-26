@@ -36,9 +36,13 @@ class StatsTest : BaseHostJUnit4Test() {
         private const val PACKAGE = "android.appwidget.cts.app"
         private const val TEST_CLASS = "android.appwidget.cts.app.StatsDeviceTest"
         private const val BIND_WIDGET = "bindWidget"
+        private const val REPORT_WIDGET_EVENT = "reportWidgetEvent"
     }
 
-    var user = 0
+    private var user = 0
+    private val extensionRegistry = ExtensionRegistry.newInstance().also {
+        FrameworkExtensionAtoms.registerAllExtensions(it)
+    }
 
     @Before
     fun before() {
@@ -91,10 +95,38 @@ class StatsTest : BaseHostJUnit4Test() {
         )
 
         // Verify widget memory stat was logged
-        val stats = events.single().getExtension(FrameworkExtensionAtoms.widgetMemoryStats)
-        assertThat(stats.uid)
-            .isEqualTo(DeviceUtils.getAppUidForUser(device, PACKAGE, user))
+        val stats = events
+            .map { it.getExtension(FrameworkExtensionAtoms.widgetMemoryStats) }
+            .single { it.uid == DeviceUtils.getAppUidForUser(device, PACKAGE, user) }
         // Bitmap is 640x480 with ARGB_8888 config
         assertThat(stats.bitmapMemoryBytes).isEqualTo(640 * 480 * 4)
+    }
+
+    @Test
+    fun testWidgetInteractionEvent() {
+        ConfigUtils.uploadConfigForPushedAtoms(
+            device,
+            PACKAGE,
+            intArrayOf(FrameworkExtensionAtoms.WIDGET_INTERACTION_EVENT_FIELD_NUMBER),
+        )
+
+        // Run device test to generate event
+        val result = runDeviceTests(PACKAGE, TEST_CLASS, REPORT_WIDGET_EVENT)
+        assertThat(result).isTrue()
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG.toLong())
+
+        // Pull and verify event
+        val hostUid = DeviceUtils.getAppUidForUser(device, PACKAGE, user)
+        val event = ReportUtils.getEventMetricDataList(device, extensionRegistry)
+            .map { it.atom.getExtension(FrameworkExtensionAtoms.widgetInteractionEvent) }
+            .single { it.hostUid == hostUid }
+        assertThat(event.provider)
+            .isEqualTo("android.appwidget.cts.app/android.appwidget.cts.app.TestAppWidgetProvider")
+        assertThat(event.startMillis).isLessThan(event.endMillis)
+        assertThat(event.visibleDurationMillis).isNotEqualTo(0)
+        assertThat(event.rectLeft).isNotEqualTo(-1)
+        assertThat(event.rectTop).isNotEqualTo(-1)
+        assertThat(event.rectRight).isNotEqualTo(-1)
+        assertThat(event.rectBottom).isNotEqualTo(-1)
     }
 }

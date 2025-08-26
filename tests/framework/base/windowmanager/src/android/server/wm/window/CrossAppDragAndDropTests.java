@@ -389,7 +389,6 @@ public class CrossAppDragAndDropTests extends ActivityManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DELEGATE_UNHANDLED_DRAGS)
     public void testDisallowGlobalSameAppWithDifferentUids() throws Exception {
         // Verify that dragging to another window from a different app doesn't work with
         // FLAG_DRAG_GLOBAL_SAME_APP
@@ -397,7 +396,6 @@ public class CrossAppDragAndDropTests extends ActivityManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DELEGATE_UNHANDLED_DRAGS)
     public void testGlobalSameAppWithSameUids() throws Exception {
         // Verify that dragging to another window from the same app works with
         // FLAG_DRAG_GLOBAL_SAME_APP

@@ -29,6 +29,7 @@ import static android.server.wm.app.Components.INHERIT_SHOW_WHEN_LOCKED_REMOVE_A
 import static android.server.wm.app.Components.KEYGUARD_LOCK_ACTIVITY;
 import static android.server.wm.app.Components.LAUNCHING_ACTIVITY;
 import static android.server.wm.app.Components.NO_INHERIT_SHOW_WHEN_LOCKED_ATTR_ACTIVITY;
+import static android.server.wm.app.Components.RESIZEABLE_ACTIVITY;
 import static android.server.wm.app.Components.SHOW_WHEN_LOCKED_ACTIVITY;
 import static android.server.wm.app.Components.SHOW_WHEN_LOCKED_ATTR_ACTIVITY;
 import static android.server.wm.app.Components.SHOW_WHEN_LOCKED_ATTR_ROTATION_ACTIVITY;
@@ -70,8 +71,6 @@ import android.server.wm.RotationSession;
 import android.server.wm.UiDeviceUtils;
 import android.server.wm.WindowManagerState;
 import android.server.wm.app.Components;
-
-import com.android.systemui.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -856,11 +855,11 @@ public class KeyguardTests extends KeyguardTestBase {
         try (LockScreenSession lockScreenSession =
                     new LockScreenSession(mInstrumentation, mWmState)) {
             separateTestJournal();
-            launchActivity(TEST_ACTIVITY);
-            waitAndAssertResumedActivity(TEST_ACTIVITY);
+            launchActivity(RESIZEABLE_ACTIVITY);
+            waitAndAssertResumedActivity(RESIZEABLE_ACTIVITY);
             lockScreenSession.sleepDevice();
             mWmState.waitForAllStoppedActivities();
-            assertSingleLaunchAndStop(TEST_ACTIVITY);
+            assertSingleLaunchAndStop(RESIZEABLE_ACTIVITY);
         }
 
     }
