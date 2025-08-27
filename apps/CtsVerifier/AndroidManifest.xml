@@ -6817,6 +6817,11 @@
             <meta-data android:name="NonApiTest"
                 android:value="Helper class. Used to test location attack on camera intents." />
         </activity>
+
+        <!-- Disable Automotive density scaling -->
+        <meta-data
+            android:name="android.software.car.display_compatibility"
+            android:value="false" />
     </application>
 
     <queries>
