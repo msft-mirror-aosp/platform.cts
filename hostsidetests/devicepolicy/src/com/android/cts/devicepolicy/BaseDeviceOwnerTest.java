@@ -44,9 +44,7 @@ public abstract class BaseDeviceOwnerTest extends BaseDevicePolicyTest {
     public void setUp() throws Exception {
         super.setUp();
 
-        mDeviceOwnerUserId = refactoredToNotRelyOnMainUser()
-                ? DevicePolicyUsersPreparer.getDeviceOwnerUserId()
-                : getMainUser();
+        mDeviceOwnerUserId = DevicePolicyUsersPreparer.getDeviceOwnerUserId();
     }
 
     protected final void installDeviceOwnerApp(String apk) throws Exception {
