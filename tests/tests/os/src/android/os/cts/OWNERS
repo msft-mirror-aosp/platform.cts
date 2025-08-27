@@ -4,6 +4,7 @@ per-file BinderFrozenTest.java = yutingtseng@google.com, shayba@google.com
 per-file SeccompTest.java = file:/platform/external/minijail:/OWNERS
 per-file SecurityStateManagerTest.java = file:platform/frameworks/base:/SECURITY_STATE_OWNERS
 per-file StrictModeBalTest.java = file:platform/frameworks/base:/BAL_OWNERS
+per-file TraceTest.java = lalitm@google.com
 
 # Tests for MessageQueue and related classes
 per-file *Handler*.java = file:platform/frameworks/base:/MESSAGE_QUEUE_OWNERS
