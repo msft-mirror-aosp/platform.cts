@@ -65,7 +65,7 @@ public class FrameRateOverrideCtsActivity extends Activity {
 
     private long mLastBufferPostTime;
 
-    private enum ActivityState { RUNNING, PAUSED, DESTROYED }
+    private enum ActivityState { RUNNING, PAUSED, DESTROYED, RECREATING }
     private ActivityState mActivityState;
 
     SurfaceHolder.Callback mSurfaceHolderCallback = new SurfaceHolder.Callback() {
@@ -165,8 +165,12 @@ public class FrameRateOverrideCtsActivity extends Activity {
         super.onDestroy();
         mDisplayManager.unregisterDisplayListener(mDisplayListener);
         synchronized (mLock) {
+        if (isChangingConfigurations() || !isFinishing()) {
+            mActivityState = ActivityState.RECREATING;
+        } else {
             mActivityState = ActivityState.DESTROYED;
-            mLock.notify();
+        }
+        mLock.notify();
         }
     }
 
