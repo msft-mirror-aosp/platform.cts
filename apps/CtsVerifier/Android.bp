@@ -21,6 +21,7 @@ package {
         "Android-Apache-2.0",
         "cts_apps_CtsVerifier_fatcow_license",
     ],
+    default_team: "trendy_team_partner_eng",
 }
 
 license {
