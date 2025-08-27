@@ -20,6 +20,7 @@ import static org.junit.Assume.assumeTrue;
 
 import com.android.compatibility.common.util.SystemUtil;
 
+import org.junit.After;
 import org.junit.Before;
 
 import java.util.Arrays;
@@ -38,6 +39,13 @@ public class DeveloperVerificationTestBase extends InstallationTestBase {
         // Developer verification CUJs are only available on Pia V2
         assumeTrue(sUsePiaV2);
         uninstallPackage(EMPTY_TEST_APP_PACKAGE_NAME);
+    }
+
+    @After
+    @Override
+    public void tearDown() throws Exception {
+        uninstallPackage(EMPTY_TEST_APP_PACKAGE_NAME);
+        super.tearDown();
     }
 
     void grantPermissionAndAbortOnDeveloperVerificationDialog(
