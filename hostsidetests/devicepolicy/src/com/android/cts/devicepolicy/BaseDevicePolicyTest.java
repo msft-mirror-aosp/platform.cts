@@ -225,7 +225,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
                 : getMainUser();
 
         if (hasDeviceFeature(FEATURE_SECURE_LOCK_SCREEN)) {
-            ensureMainUserHasNoPassword();
+            ensureInitialUserHasNoPassword();
         }
 
         // disable the package verifier to avoid the dialog when installing an app
@@ -263,12 +263,9 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         executeShellCommand("input keyevent KEYCODE_HOME");
     }
 
-    private void ensureMainUserHasNoPassword() throws DeviceNotAvailableException {
-        int mainUserId = refactoredToNotRelyOnMainUser()
-                ? getDevice().getCurrentUser()
-                : mMainUserId;
-        if (!verifyUserCredentialIsCorrect(null, mainUserId)) {
-            changeUserCredential(null, TEST_PASSWORD, mainUserId);
+    private void ensureInitialUserHasNoPassword() throws DeviceNotAvailableException {
+        if (!verifyUserCredentialIsCorrect(null, mInitialUserId)) {
+            changeUserCredential(null, TEST_PASSWORD, mInitialUserId);
         }
     }
 
