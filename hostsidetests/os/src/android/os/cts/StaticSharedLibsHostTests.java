@@ -122,6 +122,11 @@ public class StaticSharedLibsHostTests extends BaseHostJUnit4Test implements IBu
     private static final String SETTING_UNUSED_STATIC_SHARED_LIB_MIN_CACHE_PERIOD =
             "unused_static_shared_lib_min_cache_period";
 
+    private static final String APP_PACKAGE_NAME_MATCHES_LIBRARY_PACKAGE_NAME_APK =
+            "CtsStaticSharedLibMatchesPackageNameApp.apk";
+    private static final String APP_PACKAGE_NAME_MATCHES_LIBRARY_NAME_APK =
+            "CtsStaticSharedLibMatchesLibraryNameApp.apk";
+
     private static final long DEFAULT_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(30);
 
     private CompatibilityBuildHelper mBuildHelper;
@@ -142,6 +147,7 @@ public class StaticSharedLibsHostTests extends BaseHostJUnit4Test implements IBu
         getDevice().uninstallPackage(STATIC_LIB_PROVIDER2_PKG);
         getDevice().uninstallPackage(STATIC_LIB_PROVIDER1_PKG);
         getDevice().uninstallPackage(STATIC_LIB_PROVIDER_RECURSIVE_PKG);
+        getDevice().uninstallPackage(STATIC_LIB_PROVIDER_RECURSIVE_NAME);
     }
 
     @Override
@@ -181,6 +187,37 @@ public class StaticSharedLibsHostTests extends BaseHostJUnit4Test implements IBu
             getDevice().uninstallPackage(STATIC_LIB_PROVIDER2_PKG);
             getDevice().uninstallPackage(STATIC_LIB_PROVIDER_RECURSIVE_PKG);
         }
+    }
+
+    @AppModeFull
+    @Test
+    public void testCannotInstallAppWherePackageNameMatchesLibraryPackage() throws Exception {
+        // Install static library
+        assertNull(install(STATIC_LIB_PROVIDER_RECURSIVE_APK));
+
+        // Install a package, where its package name matches the package name of
+        // the static library, should throw the INSTALL_FAILED_DUPLICATE_PACKAGE exception.
+        assertThat(install(APP_PACKAGE_NAME_MATCHES_LIBRARY_PACKAGE_NAME_APK))
+                .contains("INSTALL_FAILED_DUPLICATE_PACKAGE");
+
+        // Uninstall the library
+        assertNull(getDevice().uninstallPackage(STATIC_LIB_PROVIDER_RECURSIVE_PKG));
+    }
+
+    @AppModeFull
+    @Test
+    public void testCanInstallAppWherePackageNameMatchesLibraryName() throws Exception {
+        // Install static library
+        assertNull(install(STATIC_LIB_PROVIDER_RECURSIVE_APK));
+
+        // Install app where its package name matches the static library name, should succeed
+        assertNull(install(APP_PACKAGE_NAME_MATCHES_LIBRARY_NAME_APK));
+
+        // Uninstall app
+        assertNull(getDevice().uninstallPackage(STATIC_LIB_PROVIDER_RECURSIVE_NAME));
+
+        // Uninstall the library
+        assertNull(getDevice().uninstallPackage(STATIC_LIB_PROVIDER_RECURSIVE_PKG));
     }
 
     @AppModeInstant
