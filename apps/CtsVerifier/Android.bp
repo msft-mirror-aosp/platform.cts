@@ -141,6 +141,12 @@ android_test {
         "libaudioloopback_jni",
         "libmegaaudio_jni",
     ],
+
+    // Disable coverage since it pushes us over the dex limit and we
+    // don't actually need to measure the tests themselves.
+    jacoco: {
+        exclude_filter: ["**"],
+    },
 }
 
 // opencv library
