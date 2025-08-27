@@ -21,6 +21,7 @@ import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.SystemProperties;
 
 /**
  * SystemUiHelper is used to check SystemUI related status such as whether or not a
@@ -40,8 +41,8 @@ public class SystemUiHelper {
         boolean isWatch = context.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_WATCH);
 
-        return isTelevision || isWatch || Boolean.getBoolean(
-                "persist.sysui.nostatusbar");
+        return isTelevision || isWatch || SystemProperties.getBoolean(
+                "persist.sysui.nostatusbar", false);
 
     }
 

@@ -39,14 +39,12 @@ import android.bluetooth.BluetoothStatusCodes;
 import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.bluetooth.test_utils.Permissions;
 import android.content.Context;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.CddTest;
 import com.android.modules.utils.build.SdkLevel;
 
@@ -150,7 +148,6 @@ public class BluetoothLeAudioTest {
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_MONO_LOCATION_ERRATA_API)
     public void getAudioLocation() {
         assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
 
@@ -201,7 +198,6 @@ public class BluetoothLeAudioTest {
     // CTS doesn't run with a compatible remote device.
     // In order to trigger the callbacks, there is no alternative to a direct call on mock
     @SuppressWarnings("DirectInvocationOnMock")
-    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_BROADCAST_API_MANAGE_PRIMARY_GROUP)
     public void fakeCallbackCoverage() {
         mCallback.onBroadcastToUnicastFallbackGroupChanged(0);
         mCallback.onCodecConfigChanged(0, null);
@@ -261,7 +257,6 @@ public class BluetoothLeAudioTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_BROADCAST_API_MANAGE_PRIMARY_GROUP)
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void broadcastToUnicastFallbackGroup() {

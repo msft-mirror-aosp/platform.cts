@@ -20,7 +20,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -121,37 +120,31 @@ public class SdkSandboxWebViewClientTest {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testOnRenderProcessGone");
     }
 
-    @Ignore("b/40196091")
     @Test
     public void testOnSafeBrowsingHitBackToSafety() throws Throwable {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testOnSafeBrowsingHitBackToSafety");
     }
 
-    @Ignore("b/40196091")
     @Test
     public void testOnSafeBrowsingHitProceed() throws Throwable {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testOnSafeBrowsingHitProceed");
     }
 
-    @Ignore("b/40196091")
     @Test
     public void testOnSafeBrowsingMalwareCode() throws Throwable {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testOnSafeBrowsingMalwareCode");
     }
 
-    @Ignore("b/40196091")
     @Test
     public void testOnSafeBrowsingPhishingCode() throws Throwable {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testOnSafeBrowsingPhishingCode");
     }
 
-    @Ignore("b/40196091")
     @Test
     public void testOnSafeBrowsingUnwantedSoftwareCode() throws Throwable {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testOnSafeBrowsingUnwantedSoftwareCode");
     }
 
-    @Ignore("b/40196091")
     @Test
     public void testOnSafeBrowsingBillingCode() throws Throwable {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testOnSafeBrowsingBillingCode");

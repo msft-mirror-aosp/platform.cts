@@ -17,7 +17,9 @@
 package android.provider.cts;
 
 import android.app.UiAutomation;
+import android.os.Build;
 import android.os.ParcelFileDescriptor;
+import android.os.SystemProperties;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
@@ -132,4 +134,17 @@ public class ProviderTestUtils {
         executeShellCommand("bmgr wipe " + backupTransport + " " + packageName, uiAutomation);
     }
 
+    /**
+     * To gate GSI tests that run on older OS version where flag definitions released in a certain
+     * Android version aren't available.
+     *
+     * @param versionToCheck Android version to check against
+     * @return {@code true} if the device build matches the minimum SDK requirement from the passed
+     *     in parameter, {@code false} otherwise.
+     */
+    public static boolean isVersionSupportedFor(int versionToCheck) {
+        return SystemProperties.getInt(
+                        "ro.product.first_api_level", Build.VERSION_CODES.CUR_DEVELOPMENT)
+                >= versionToCheck;
+    }
 }

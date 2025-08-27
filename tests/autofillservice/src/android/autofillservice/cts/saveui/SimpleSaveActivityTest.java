@@ -79,6 +79,7 @@ import android.service.autofill.Validator;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.style.URLSpan;
+import android.view.Display;
 import android.view.View;
 import android.view.autofill.AutofillId;
 import android.widget.RemoteViews;
@@ -840,6 +841,7 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
 
         // Go home, you are drunk!
         mUiBot.pressHome();
+        Helper.waitForHomeActivity(Display.DEFAULT_DISPLAY);
         mUiBot.assertNoDatasets();
         callback.assertUiHiddenEvent(mActivity.mInput);
 

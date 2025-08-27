@@ -53,7 +53,6 @@ import com.google.common.util.concurrent.SettableFuture;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -593,8 +592,7 @@ public class WebViewClientTest extends SharedWebViewTest {
      * this test should be reflected in that test as necessary. See http://go/modifying-webview-cts.
      */
     @Test
-    @Ignore("b/40196091")
-    public void testOnSafeBrowsingHitBackToSafety() throws Throwable {
+    public void testOnSafeBrowsingHitBackToSafety() {
         mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
         mOnUiThread.loadUrlAndWaitForCompletion(url);
@@ -608,17 +606,31 @@ public class WebViewClientTest extends SharedWebViewTest {
         // Note: Safe Browsing is enabled by default, and will work on chrome://safe-browsing/ URLs
         // regardless of user opt-in or GMS state (because this URL will never be sent to GMS Core).
         assertFalse(backToSafetyWebViewClient.hasOnReceivedError());
-        mOnUiThread.loadUrlAndWaitForCompletion(TEST_SAFE_BROWSING_MALWARE_URL);
 
-        assertEquals(
-                TEST_SAFE_BROWSING_MALWARE_URL,
-                backToSafetyWebViewClient.getOnSafeBrowsingHitRequest().getUrl().toString());
-        assertTrue(backToSafetyWebViewClient.getOnSafeBrowsingHitRequest().isForMainFrame());
+        mOnUiThread.loadUrl(TEST_SAFE_BROWSING_MALWARE_URL);
+        WebResourceRequest onSafeBrowsingHitRequest =
+                backToSafetyWebViewClient.waitForOnSafeBrowsingHitRequest();
+        assertEquals(TEST_SAFE_BROWSING_MALWARE_URL, onSafeBrowsingHitRequest.getUrl().toString());
+        assertTrue(onSafeBrowsingHitRequest.isForMainFrame());
         assertEquals(
                 "Back to safety should produce a network error",
                 Integer.valueOf(WebViewClient.ERROR_UNSAFE_RESOURCE),
                 backToSafetyWebViewClient.waitForOnReceivedError());
-        assertEquals("Back to safety should navigate backward", ORIGINAL_URL, mOnUiThread.getUrl());
+
+        backToSafetyWebViewClient.waitForOnPageFinished();
+        // TODO(https://crbug.com/40196091): Wait for callbacks that indicate that the original
+        //     web page has loaded.
+        // WebViewClient will _not_ receive any `onPageStarted` and `onPageFinished` callbacks to
+        // indicate that the original page has been loaded again. The `ERROR_UNSAFE_RESOURCE`
+        // error in `onReceivedError` means that the navigation was cancelled, and while
+        // WebViewClient does receive an `onPageFinished` callback for the unsafe URL, this
+        // actually means that the navigation is done, and the original page is loaded again.
+        // For now, this test just asserts that WebView does in fact report the correct URL after
+        // the `onPageFinished` callback.
+        assertEquals(
+                "Back to safety should set the URL back to the original value",
+                ORIGINAL_URL,
+                mOnUiThread.getUrl());
     }
 
     /**
@@ -627,12 +639,10 @@ public class WebViewClientTest extends SharedWebViewTest {
      * test should be reflected in that test as necessary. See http://go/modifying-webview-cts.
      */
     @Test
-    @Ignore("b/40196091")
-    public void testOnSafeBrowsingHitProceed() throws Throwable {
+    public void testOnSafeBrowsingHitProceed() {
         mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
         mOnUiThread.loadUrlAndWaitForCompletion(url);
-        final String ORIGINAL_URL = mOnUiThread.getUrl();
 
         final SafeBrowsingProceedClient proceedWebViewClient = new SafeBrowsingProceedClient();
         mOnUiThread.setWebViewClient(proceedWebViewClient);
@@ -642,10 +652,11 @@ public class WebViewClientTest extends SharedWebViewTest {
         assertFalse(proceedWebViewClient.hasOnReceivedError());
         mOnUiThread.loadUrlAndWaitForCompletion(TEST_SAFE_BROWSING_MALWARE_URL);
 
-        assertEquals(
-                TEST_SAFE_BROWSING_MALWARE_URL,
-                proceedWebViewClient.getOnSafeBrowsingHitRequest().getUrl().toString());
-        assertTrue(proceedWebViewClient.getOnSafeBrowsingHitRequest().isForMainFrame());
+        WebResourceRequest onSafeBrowsingHitRequest =
+                proceedWebViewClient.waitForOnSafeBrowsingHitRequest();
+        assertEquals(TEST_SAFE_BROWSING_MALWARE_URL, onSafeBrowsingHitRequest.getUrl().toString());
+        assertTrue(onSafeBrowsingHitRequest.isForMainFrame());
+        proceedWebViewClient.waitForOnPageFinished();
 
         assertEquals(
                 "Proceed button should navigate to the page",
@@ -653,8 +664,7 @@ public class WebViewClientTest extends SharedWebViewTest {
                 mOnUiThread.getUrl());
     }
 
-    private void testOnSafeBrowsingCode(String expectedUrl, int expectedThreatType)
-            throws Throwable {
+    private void testOnSafeBrowsingCode(String expectedUrl, int expectedThreatType) {
         mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
         mOnUiThread.loadUrlAndWaitForCompletion(url);
@@ -665,12 +675,12 @@ public class WebViewClientTest extends SharedWebViewTest {
 
         // Note: Safe Browsing is enabled by default, and will work on chrome://safe-browsing/ URLs
         // regardless of user opt-in or GMS state (because this URL will never be sent to GMS Core).
-        mOnUiThread.loadUrlAndWaitForCompletion(expectedUrl);
+        mOnUiThread.loadUrl(expectedUrl);
 
         assertEquals(
                 "Safe Browsing hit is for unexpected URL",
                 expectedUrl,
-                backToSafetyWebViewClient.getOnSafeBrowsingHitRequest().getUrl().toString());
+                backToSafetyWebViewClient.waitForOnSafeBrowsingHitRequest().getUrl().toString());
 
         assertEquals(
                 "Safe Browsing hit has unexpected threat type",
@@ -684,8 +694,7 @@ public class WebViewClientTest extends SharedWebViewTest {
      * test should be reflected in that test as necessary. See http://go/modifying-webview-cts.
      */
     @Test
-    @Ignore("b/40196091")
-    public void testOnSafeBrowsingMalwareCode() throws Throwable {
+    public void testOnSafeBrowsingMalwareCode() {
         testOnSafeBrowsingCode(
                 TEST_SAFE_BROWSING_MALWARE_URL, WebViewClient.SAFE_BROWSING_THREAT_MALWARE);
     }
@@ -696,8 +705,7 @@ public class WebViewClientTest extends SharedWebViewTest {
      * test should be reflected in that test as necessary. See http://go/modifying-webview-cts.
      */
     @Test
-    @Ignore("b/40196091")
-    public void testOnSafeBrowsingPhishingCode() throws Throwable {
+    public void testOnSafeBrowsingPhishingCode() {
         testOnSafeBrowsingCode(
                 TEST_SAFE_BROWSING_PHISHING_URL, WebViewClient.SAFE_BROWSING_THREAT_PHISHING);
     }
@@ -709,8 +717,7 @@ public class WebViewClientTest extends SharedWebViewTest {
      * http://go/modifying-webview-cts.
      */
     @Test
-    @Ignore("b/40196091")
-    public void testOnSafeBrowsingUnwantedSoftwareCode() throws Throwable {
+    public void testOnSafeBrowsingUnwantedSoftwareCode() {
         testOnSafeBrowsingCode(
                 TEST_SAFE_BROWSING_UNWANTED_SOFTWARE_URL,
                 WebViewClient.SAFE_BROWSING_THREAT_UNWANTED_SOFTWARE);
@@ -722,13 +729,12 @@ public class WebViewClientTest extends SharedWebViewTest {
      * test should be reflected in that test as necessary. See http://go/modifying-webview-cts.
      */
     @Test
-    @Ignore("b/40196091")
-    public void testOnSafeBrowsingBillingCode() throws Throwable {
+    public void testOnSafeBrowsingBillingCode() {
         testOnSafeBrowsingCode(
                 TEST_SAFE_BROWSING_BILLING_URL, WebViewClient.SAFE_BROWSING_THREAT_BILLING);
     }
 
-    private void requireLoadedPage() throws Throwable {
+    private void requireLoadedPage() {
         mOnUiThread.loadUrlAndWaitForCompletion("about:blank");
     }
 
@@ -933,9 +939,8 @@ public class WebViewClientTest extends SharedWebViewTest {
                             + "onPageFinished",
                     mOnResourceCalledSinceLastOnPageFinished
                             || mOnErrorReceivedCalledSinceLastOnPageFinished);
-            mOnPageStartedCalledSinceLastOnPageFinished = false;
-            mOnResourceCalledSinceLastOnPageFinished = false;
-            mOnErrorReceivedCalledSinceLastOnPageFinished = false;
+            // TODO(crbug.com/441278048): Reset the boolean flags when onPageFinished is no longer
+            //  called multiple times in backToSafety flows for safebrowsing.
             mOnPageFinishedQueue.add(true);
         }
 
@@ -1031,7 +1036,7 @@ public class WebViewClientTest extends SharedWebViewTest {
                 SettableFuture.create();
         private volatile int mOnSafeBrowsingHitThreatType;
 
-        WebResourceRequest getOnSafeBrowsingHitRequest() {
+        WebResourceRequest waitForOnSafeBrowsingHitRequest() {
             return WebkitUtils.waitForFuture(mOnSafeBrowsingHitRequestFuture);
         }
 
@@ -1046,9 +1051,9 @@ public class WebViewClientTest extends SharedWebViewTest {
                 int threatType,
                 SafeBrowsingResponse response) {
             // Immediately go back to safety to return the network error code
-            mOnSafeBrowsingHitRequestFuture.set(request);
+            response.backToSafety(/* report= */ true);
             mOnSafeBrowsingHitThreatType = threatType;
-            response.backToSafety(/* report */ true);
+            mOnSafeBrowsingHitRequestFuture.set(request);
         }
     }
 
@@ -1056,7 +1061,7 @@ public class WebViewClientTest extends SharedWebViewTest {
         private final SettableFuture<WebResourceRequest> mOnSafeBrowsingHitRequestFuture =
                 SettableFuture.create();
 
-        WebResourceRequest getOnSafeBrowsingHitRequest() {
+        WebResourceRequest waitForOnSafeBrowsingHitRequest() {
             return WebkitUtils.waitForFuture(mOnSafeBrowsingHitRequestFuture);
         }
 
@@ -1067,8 +1072,8 @@ public class WebViewClientTest extends SharedWebViewTest {
                 int threatType,
                 SafeBrowsingResponse response) {
             // Proceed through Safe Browsing warnings
+            response.proceed(/* report= */ true);
             mOnSafeBrowsingHitRequestFuture.set(request);
-            response.proceed(/* report */ true);
         }
     }
 }

@@ -59,6 +59,7 @@ import org.junit.runners.model.Statement;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -188,38 +189,52 @@ public class MediaProjectionRule implements TestRule {
 
     /** Start a MediaProjection session. */
     public MediaProjection startMediaProjection() throws Exception {
-        return startMediaProjection(null, null, null, false);
+        return startMediaProjection(null, null, null, false, null);
+    }
+
+    /**
+     * Start a MediaProjection session on the provided display. This will enable the consent flow.
+     */
+    public MediaProjection startMediaProjection(int displayId) throws Exception {
+        if (displayId != Display.DEFAULT_DISPLAY) {
+            // Need to enable consent flow so the external display is selected
+            enableConsentFlow();
+        }
+        DisplayManager displayManager = mContext.getSystemService(DisplayManager.class);
+        String displayName = Objects.requireNonNull(displayManager).getDisplay(displayId).getName();
+        return startMediaProjection(null, null, null, false, displayName);
     }
 
     /** Start a MediaProjection session (with a custom foregroundService class). */
     public MediaProjection startMediaProjection(String foregroundServiceClass) throws Exception {
-        return startMediaProjection(null, null, foregroundServiceClass, false);
+        return startMediaProjection(null, null, foregroundServiceClass, false, null);
     }
 
     /** Start a MediaProjection session (with a custom MediaProjectionConfig). */
     public MediaProjection startMediaProjection(MediaProjectionConfig config) throws Exception {
-        return startMediaProjection(config, null, null, false);
+        return startMediaProjection(config, null, null, false, null);
     }
 
     /** Start a MediaProjection session for a specific LaunchCookie. */
     public MediaProjection startMediaProjection(ActivityOptions.LaunchCookie launchCookie)
             throws Exception {
-        return startMediaProjection(null, launchCookie, null, false);
+        return startMediaProjection(null, launchCookie, null, false, null);
     }
 
     /** Start a MediaProjection session for a specific LaunchCookie. */
     public MediaProjection startMediaProjection(boolean skipDefaultCallback) throws Exception {
-        return startMediaProjection(null, null, null, skipDefaultCallback);
+        return startMediaProjection(null, null, null, skipDefaultCallback, null);
     }
 
     private MediaProjection startMediaProjection(
             @Nullable MediaProjectionConfig config,
             @Nullable ActivityOptions.LaunchCookie launchCookie,
             @Nullable String foregroundServiceClass,
-            boolean skipDefaultCallback)
+            boolean skipDefaultCallback,
+            @Nullable String displayName)
             throws Exception {
         showMediaProjectionConsent(config, launchCookie, foregroundServiceClass);
-        mActivity.performMediaProjectionConsent();
+        mActivity.performMediaProjectionConsent(displayName);
         mMediaProjectionTrackerRule.mMediaProjection = mActivity.startMediaProjection();
         mMediaProjectionTrackerRule.mActivityScenario.close();
         if (!skipDefaultCallback) {
@@ -238,7 +253,7 @@ public class MediaProjectionRule implements TestRule {
     public void authorizeMediaProjection(@Nullable ActivityOptions.LaunchCookie launchCookie)
             throws Exception {
         showMediaProjectionConsent(null, launchCookie, null);
-        mActivity.performMediaProjectionConsent();
+        mActivity.performMediaProjectionConsent(null);
     }
 
     /**

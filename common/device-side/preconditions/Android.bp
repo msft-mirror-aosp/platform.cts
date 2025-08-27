@@ -23,5 +23,5 @@ java_library {
 
     static_libs: ["compatibility-common-util-devicesidelib"],
 
-    sdk_version: "current",
+    sdk_version: "test_current",
 }

@@ -50,4 +50,14 @@ compatibility_test_suite_package {
     ],
     build_test_list: true,
     build_metadata: true,
+    phony_deps: [
+        "cts-verifier",
+    ],
+}
+
+phony_rule {
+    name: "cts_v2",
+    phony_deps: [
+        "cts",
+    ],
 }

@@ -181,9 +181,7 @@ public class ScanSettingsTest {
     public void rssiThreshold() {
         int rssiThreshold = -50;
         ScanSettings settingsRssi =
-                new ScanSettings.Builder()
-                        .setRssiThreshold(rssiThreshold)
-                        .build();
+                new ScanSettings.Builder().setRssiThreshold(rssiThreshold).build();
 
         assertThat(settingsRssi.getRssiThreshold()).isEqualTo(rssiThreshold);
     }
