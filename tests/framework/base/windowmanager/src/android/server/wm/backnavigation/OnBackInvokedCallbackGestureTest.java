@@ -21,8 +21,6 @@ import static android.view.Display.DEFAULT_DISPLAY;
 import static android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT;
 import static android.window.OnBackInvokedDispatcher.PRIORITY_SYSTEM_NAVIGATION_OBSERVER;
 
-import static com.android.window.flags.Flags.FLAG_PREDICTIVE_BACK_SYSTEM_OVERRIDE_CALLBACK;
-
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.fail;
 
@@ -30,9 +28,6 @@ import static org.junit.Assert.assertTrue;
 
 import android.app.Instrumentation;
 import android.content.ComponentName;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.TouchHelper;
 import android.view.KeyEvent;
@@ -46,7 +41,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -59,9 +53,6 @@ import java.util.function.Supplier;
  * Integration test for back navigation
  */
 public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Instrumentation mInstrumentation;
     private UiDevice mUiDevice;
@@ -273,7 +264,6 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_PREDICTIVE_BACK_SYSTEM_OVERRIDE_CALLBACK)
     public void invokesSystemOverrideObserverCallback_invoked() throws InterruptedException {
         registerBackCallback(mActivity, mAnimationCallback, PRIORITY_SYSTEM_NAVIGATION_OBSERVER);
         // The override system callback can trigger navigation observer.
