@@ -381,7 +381,7 @@ public class CallLogTest extends InstrumentationTestCase {
      * fetched.
      */
     public void testInsertingBusinessCallComposerValues() {
-        if (!Flags.businessCallComposer()) {
+        if (!isVersionSupportedFor(Build.VERSION_CODES.BAKLAVA) || !Flags.businessCallComposer()) {
             return;
         }
         final String[] businessCallSelection =
