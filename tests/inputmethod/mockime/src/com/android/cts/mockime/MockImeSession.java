@@ -1815,6 +1815,18 @@ public class MockImeSession implements AutoCloseable {
     }
 
     @NonNull
+    public ImeCommand registerCustomImeBackCallback() {
+        final Bundle params = new Bundle();
+        return callCommandInternal("registerCustomImeBackCallback", params);
+    }
+
+    @NonNull
+    public ImeCommand unregisterCustomImeBackCallback() {
+        final Bundle params = new Bundle();
+        return callCommandInternal("unregisterCustomImeBackCallback", params);
+    }
+
+    @NonNull
     public ImeCommand callGetDisplayId() {
         final Bundle params = new Bundle();
         return callCommandInternal("getDisplayId", params);
