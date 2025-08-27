@@ -28,15 +28,12 @@ import static android.bluetooth.le.AdvertisingSetParameters.TX_POWER_MAX;
 import static android.bluetooth.le.AdvertisingSetParameters.TX_POWER_MEDIUM;
 import static android.bluetooth.le.AdvertisingSetParameters.TX_POWER_MIN;
 
-import static com.android.bluetooth.flags.Flags.FLAG_DIRECTED_ADVERTISING_API;
-
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
 
 import android.bluetooth.le.AdvertisingSetParameters;
 import android.os.Parcel;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
@@ -80,7 +77,6 @@ public class AdvertisingSetParametersTest {
         }
     }
 
-    @RequiresFlagsEnabled(FLAG_DIRECTED_ADVERTISING_API)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void createFromParcelForDirectedAdvertising() {
@@ -225,7 +221,6 @@ public class AdvertisingSetParametersTest {
         assertThat(params.getSecondaryPhy()).isEqualTo(PHY_LE_CODED);
     }
 
-    @RequiresFlagsEnabled(FLAG_DIRECTED_ADVERTISING_API)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setDirected() {
@@ -237,7 +232,6 @@ public class AdvertisingSetParametersTest {
         assertThat(params.isDirected()).isTrue();
     }
 
-    @RequiresFlagsEnabled(FLAG_DIRECTED_ADVERTISING_API)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setHighDutyCycle() {
@@ -252,7 +246,6 @@ public class AdvertisingSetParametersTest {
         assertThat(params.isDirected()).isTrue();
     }
 
-    @RequiresFlagsEnabled(FLAG_DIRECTED_ADVERTISING_API)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setPeerAddress() {
@@ -261,7 +254,6 @@ public class AdvertisingSetParametersTest {
         assertThat(params.getPeerAddress()).isEqualTo("00:01:02:03:04:05");
     }
 
-    @RequiresFlagsEnabled(FLAG_DIRECTED_ADVERTISING_API)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setPeerAddressType() {
