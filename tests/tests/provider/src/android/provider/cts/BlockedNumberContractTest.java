@@ -16,6 +16,8 @@
 
 package android.provider.cts;
 
+import static android.provider.cts.ProviderTestUtils.isVersionSupportedFor;
+
 import android.Manifest;
 import android.content.ContentResolver;
 import android.content.ContentUris;
@@ -24,6 +26,7 @@ import android.content.Context;
 import android.database.ContentObserver;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.UserManager;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.provider.BlockedNumberContract;
@@ -421,7 +424,8 @@ public class BlockedNumberContractTest extends TestCaseThatRunsIfTelephonyIsEnab
     }
 
     public void testBlockSuppression() throws Exception {
-        if (!mIsSystemUser
+        if (!isVersionSupportedFor(Build.VERSION_CODES.BAKLAVA)
+                || !mIsSystemUser
                 || !com.android.server.telecom.flags.Flags.telecomMainlineBlockedNumbersManager()) {
             Log.i(TAG, "skipping BlockedNumberContractTest");
             return;
@@ -498,7 +502,8 @@ public class BlockedNumberContractTest extends TestCaseThatRunsIfTelephonyIsEnab
     }
 
     public void testEnhancedBlocking() throws Exception {
-        if (!mIsSystemUser
+        if (!isVersionSupportedFor(Build.VERSION_CODES.BAKLAVA)
+                || !mIsSystemUser
                 || !com.android.server.telecom.flags.Flags.telecomMainlineBlockedNumbersManager()) {
             Log.i(TAG, "skipping BlockedNumberContractTest");
             return;

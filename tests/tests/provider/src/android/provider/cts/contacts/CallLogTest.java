@@ -16,6 +16,8 @@
 
 package android.provider.cts.contacts;
 
+import static android.provider.cts.ProviderTestUtils.isVersionSupportedFor;
+
 import static org.junit.Assert.assertArrayEquals;
 
 import android.Manifest;
@@ -27,6 +29,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.OutcomeReceiver;
 import android.os.ParcelFileDescriptor;
 import android.os.UserHandle;
@@ -413,7 +416,7 @@ public class CallLogTest extends InstrumentationTestCase {
     }
 
     public void testInsertUuidValue() {
-        if (!Flags.integratedCallLogs()) {
+        if (!isVersionSupportedFor(Build.VERSION_CODES.BAKLAVA) || !Flags.integratedCallLogs()) {
             return;
         }
 
@@ -445,7 +448,7 @@ public class CallLogTest extends InstrumentationTestCase {
     }
 
     public void testQueryAndDeleteVoIPCallLogs() {
-        if (!Flags.integratedCallLogs()) {
+        if (!isVersionSupportedFor(Build.VERSION_CODES.BAKLAVA) || !Flags.integratedCallLogs()) {
             return;
         }
 
