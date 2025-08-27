@@ -116,7 +116,7 @@ public final class ConcurrentMultiUserTestActivity extends ConcurrentUserActivit
 
     boolean isMyImeVisible() {
         final WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(mEditor);
-        return insets == null ? false : insets.isVisible(WindowInsetsCompat.Type.ime());
+        return (insets != null && insets.isVisible(WindowInsetsCompat.Type.ime()));
     }
 
     float[] getEditTextCenter() {
