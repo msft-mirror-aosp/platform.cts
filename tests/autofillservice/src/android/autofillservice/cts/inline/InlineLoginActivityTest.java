@@ -199,7 +199,6 @@ public class InlineLoginActivityTest extends LoginActivityCommonTestCase {
         mUiBot.assertDatasets("The Username");
 
         mUiBot.pressHome();
-        mUiBot.waitForIdle();
 
         // Switch to another Activity
         startActivity(clazz);
