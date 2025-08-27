@@ -18,6 +18,7 @@ package android.devicepolicy.cts
 import android.app.admin.ConnectEvent
 import android.app.admin.DnsEvent
 import android.app.admin.NetworkEvent
+import android.app.admin.flags.Flags
 import android.os.SystemClock
 import android.util.Log
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
@@ -52,6 +53,7 @@ import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
 import org.junit.Assert.fail
 import org.junit.Assume
+import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Ignore
 import org.junit.Rule
@@ -64,6 +66,18 @@ import org.testng.Assert
 // migrated to the new infrastructure
 @RunWith(BedsteadJUnit4::class)
 class NetworkLoggingTest {
+    @Before
+    fun setUp() {
+        val users = TestApis.users()
+        if (users.isHeadlessSystemUserMode() && !Flags.deviceOwnerForAll()) {
+            // TODO(b/420745998): Remove this assumption when non-main user can be device owner.
+            Assume.assumeNotNull(
+                "Devices in headless system user mode require a main user to set a device owner.",
+                users.main()
+            )
+        }
+    }
+
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#isNetworkLoggingEnabled"])
     @CannotSetPolicyTest(policy = [GlobalNetworkLogging::class, NetworkLogging::class])
     @Postsubmit(reason = "new test")
