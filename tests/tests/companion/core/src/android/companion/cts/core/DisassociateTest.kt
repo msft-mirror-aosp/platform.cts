@@ -121,21 +121,24 @@ class DisassociateTest : CoreTestBase() {
             )
         }
         associate(MAC_ADDRESS_A, DEVICE_PROFILE_WATCH)
+        sleepFor(1.seconds)
         associate(MAC_ADDRESS_B, DEVICE_PROFILE_WATCH)
+        sleepFor(1.seconds)
         assertTrue(
             nm.isNotificationListenerAccessGranted(
                 TestNotificationListener.componentName
             )
         )
 
-        cdm.disassociate(cdm.getMyAssociationLinkedTo(MAC_ADDRESS_A).id)
+        disassociate(MAC_ADDRESS_A)
+        sleepFor(1.seconds)
         assertTrue(
             nm.isNotificationListenerAccessGranted(
                 TestNotificationListener.componentName
             )
         )
 
-        cdm.disassociate(cdm.getMyAssociationLinkedTo(MAC_ADDRESS_B).id)
+        disassociate(MAC_ADDRESS_B)
         sleepFor(1.seconds)
         assertFalse(
             nm.isNotificationListenerAccessGranted(
