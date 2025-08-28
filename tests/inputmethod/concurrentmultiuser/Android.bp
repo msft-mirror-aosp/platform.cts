@@ -30,7 +30,7 @@ android_test {
         "platform-test-annotations",
         "platform-test-rules",
         "truth",
-
+        "ui-trace-collector",
         // beadstead
         "Nene",
         "Harrier",
