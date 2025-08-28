@@ -150,7 +150,6 @@ public class VirtualAudioPermissionTest {
     }
 
     @RequiresFlagsEnabled({
-            android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED})
     @Test
@@ -162,7 +161,6 @@ public class VirtualAudioPermissionTest {
     }
 
     @RequiresFlagsEnabled({
-            android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED})
     @Test
@@ -177,7 +175,6 @@ public class VirtualAudioPermissionTest {
     }
 
     @RequiresFlagsEnabled({
-            android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED})
     @Test
@@ -194,7 +191,6 @@ public class VirtualAudioPermissionTest {
     }
 
     @RequiresFlagsEnabled({
-            android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED})
     @Test
@@ -214,7 +210,6 @@ public class VirtualAudioPermissionTest {
     }
 
     @RequiresFlagsEnabled({
-            android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED})
     @Test
@@ -247,7 +242,6 @@ public class VirtualAudioPermissionTest {
     }
 
     @RequiresFlagsEnabled({
-            android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED
     })
@@ -272,7 +266,6 @@ public class VirtualAudioPermissionTest {
     }
 
     @RequiresFlagsEnabled({
-            android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED
     })
@@ -300,7 +293,6 @@ public class VirtualAudioPermissionTest {
 
     @Ignore("b/402139346") // TODO - enable after 25Q2 release
     @RequiresFlagsEnabled({
-            android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED
     })
