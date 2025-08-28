@@ -167,9 +167,8 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     /** Whether multi-user is supported. */
     private boolean mSupportsMultiUser;
 
-    // TODO(b/435528858): move to DevicePolicyUsersPreparer
     /** Users we shouldn't delete in the tests */
-    private final Set<Integer> mPreExistingUsers = new LinkedHashSet<>();
+    private final Set<Integer> mNonTestUserIds = new LinkedHashSet<>();
 
     protected boolean mHasAttestation;
 
@@ -213,17 +212,19 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         // Gets the value of the initial user running these tests - it will be switched to (in
         // a few lines) and won't be removed
         mInitialUserId = DevicePolicyUsersPreparer.getInitialCurrentUserId();
-        mPreExistingUsers.add(USER_SYSTEM);
-        mPreExistingUsers.add(mInitialUserId);
+
+        mNonTestUserIds.add(USER_SYSTEM);
+        mNonTestUserIds.add(mInitialUserId);
 
         CLog.d(
-                "%s.setUp(): mInitialUserId=%d, currentUser=%d, mainUserId=%s,"
-                    + " mPreExistingUsers=%s",
+                "%s.setUp(): mInitialUserId=%d, currentUser=%d, mainUserId=%s, "
+                        + "mNonTestUserIds=%s, preExistingUserIds=%s",
                 getClass().getSimpleName(),
                 mInitialUserId,
                 getDevice().getCurrentUser(),
                 getDevice().getMainUserId(),
-                mPreExistingUsers);
+                mNonTestUserIds,
+                DevicePolicyUsersPreparer.getPreExistingUserIds());
 
         getDevice().executeShellCommand(" mkdir " + TEST_UPDATE_LOCATION);
 
@@ -501,7 +502,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     }
 
     private void removeTestAddedUser(int userId) throws Exception  {
-        if (mPreExistingUsers.contains(userId)) {
+        if (mNonTestUserIds.contains(userId)) {
             CLog.d("removeTestAddedUser(%d): ignoring as user existed before test");
             return;
         }
@@ -513,7 +514,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
      */
     protected List<Integer> getUsersCreatedByTests() throws Exception {
         List<Integer> result = listUsers();
-        result.removeAll(mPreExistingUsers);
+        result.removeAll(mNonTestUserIds);
         return result;
     }
 

@@ -78,7 +78,7 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
     public void setUp() throws Exception {
         super.setUp();
 
-        mParentUserId = DevicePolicyUsersPreparer.getProfileParentUserIds()[0];
+        mParentUserId = DevicePolicyUsersPreparer.getProfileParentUserIds().getFirst();
 
         removeTestUsers();
         createManagedProfile();
