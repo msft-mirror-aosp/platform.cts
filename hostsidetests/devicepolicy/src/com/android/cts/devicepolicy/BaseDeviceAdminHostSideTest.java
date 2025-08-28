@@ -17,6 +17,7 @@ package com.android.cts.devicepolicy;
 
 import static org.junit.Assert.assertTrue;
 
+import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.tradefed.device.DeviceNotAvailableException;
 
 import org.junit.Test;
@@ -55,7 +56,7 @@ public abstract class BaseDeviceAdminHostSideTest extends BaseDevicePolicyTest {
     public void setUp() throws Exception {
         super.setUp();
 
-        mUserId = getMainUser();
+        mUserId = DevicePolicyUsersPreparer.getInitialCurrentUserId();
 
         installAppAsUser(getDeviceAdminApkFileName(), mUserId);
         setDeviceAdmin(getAdminReceiverComponent(), mUserId);
