@@ -1,3 +1,4 @@
+//
 // Copyright (C) 2025 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,27 +12,31 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
 
-java_test_host {
-    name: "CtsScopedStorageCompatHostTest",
-    defaults: ["cts_defaults"],
+package {
+    default_team: "trendy_team_lse_app_compat",
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+android_test_helper_app {
+    name: "CtsLimitRequestUrisTestsApp",
+    defaults: ["cts_support_defaults"],
     srcs: ["src/**/*.java"],
     libs: [
-        "cts-tradefed",
-        "tradefed",
-        "guava",
-    ],
-    device_common_data: [
-        ":CtsOwnedPhotosTestsApp",
-        ":CtsLimitRequestUrisTestsApp",
+        "junit",
     ],
     static_libs: [
-        "CompatChangeGatingTestBase",
+        "ctstestrunner-axt",
+        "testng",
+        "truth",
+        "CtsScopedStorageDeviceLib",
     ],
-    // tag this module as a cts test artifact
+
+    // Tag this module as a cts test artifact
     test_suites: [
         "cts",
         "general-tests",
     ],
-    per_testcase_directory: true,
+    sdk_version: "test_current",
 }

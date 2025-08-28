@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.cts.compatchanges.device;
+package android.cts.compatchanges.device.ownedphotos;
 
 import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE;
 import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_AUDIO;

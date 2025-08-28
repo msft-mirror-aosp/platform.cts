@@ -15,7 +15,7 @@
 -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="android.cts.compatchanges.device">
+    package="android.cts.compatchanges.device.ownedphotos">
     <uses-sdk android:targetSdkVersion="36"/>
 
     <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
@@ -27,6 +27,6 @@
 
     <instrumentation
         android:name="androidx.test.runner.AndroidJUnitRunner"
-        android:targetPackage="android.cts.compatchanges.device" />
+        android:targetPackage="android.cts.compatchanges.device.ownedphotos" />
 
 </manifest>
