@@ -42,6 +42,7 @@ import android.content.ContentResolver;
 import android.database.Cursor;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.MediaStore;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.core.app.ApplicationProvider;
@@ -68,6 +69,7 @@ public class OwnedPhotosTest {
     @BeforeClass
     public static void init() throws Exception {
         pollForPermission(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED, true);
+        MediaStore.scanVolume(sContentResolver, MediaStore.VOLUME_EXTERNAL_PRIMARY);
     }
 
     @Before
