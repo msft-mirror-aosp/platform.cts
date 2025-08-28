@@ -27,6 +27,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Process;
 import android.os.SystemClock;
 import android.os.UserHandle;
@@ -40,9 +41,11 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.bedstead.dpmwrapper.DeviceOwnerHelper;
 import com.android.bedstead.dpmwrapper.TestAppSystemServiceFactory;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserAwareLogger;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.stream.Collectors;
 
 /**
  * Base class for profile and device based tests.
@@ -118,6 +121,7 @@ public abstract class BaseDeviceAdminTest extends InstrumentationTestCase {
     }
 
     private static final String TAG = BaseDeviceAdminTest.class.getSimpleName();
+    protected static final boolean VERBOSE = Log.isLoggable(TAG, Log.VERBOSE);
 
     public static final String PACKAGE_NAME = BasicAdminReceiver.class.getPackage().getName();
     public static final ComponentName ADMIN_RECEIVER_COMPONENT = new ComponentName(
@@ -133,11 +137,22 @@ public abstract class BaseDeviceAdminTest extends InstrumentationTestCase {
     static CountDownLatch mOnPasswordExpiryTimeoutCalled;
     static CountDownLatch mOnPasswordChangedCalled;
     static CountDownLatch mOnSecurityLogsAvailableCalled;
-    protected final String mTag = getClass().getSimpleName();
+
+    protected final UserAwareLogger mLogger;
+
+    public BaseDeviceAdminTest() {
+        var loggerBuilder = UserAwareLogger.newBuilder(TAG);
+        if (VERBOSE) {
+            // subTag helps figure out which test is failing, but makes the log lines too long
+            loggerBuilder.setSubTag(getClass().getSimpleName());
+        }
+        mLogger = loggerBuilder.build();
+    }
 
     @Override
     protected void setUp() throws Exception {
         super.setUp();
+
         mContext = getInstrumentation().getContext();
 
         mUserManager = mContext.getSystemService(UserManager.class);
@@ -155,18 +170,17 @@ public abstract class BaseDeviceAdminTest extends InstrumentationTestCase {
                 BasicAdminReceiver.class, mIsDeviceOwnerTest);
         mLocalDevicePolicyManager = mContext.getSystemService(DevicePolicyManager.class);
 
-        Log.v(TAG, "setup(): dpm for " + getClass() + " and user " + mContext.getUserId() + ": "
-                + mDevicePolicyManager);
+        mLogger.logV("setUp(): mDevicePolicyManager=%s", mDevicePolicyManager);
         assertWithMessage("dpm").that(mDevicePolicyManager).isNotNull();
 
         boolean isActiveAdmin = mDevicePolicyManager.isAdminActive(ADMIN_RECEIVER_COMPONENT);
         boolean isProfileOwner = mDevicePolicyManager.isProfileOwnerApp(PACKAGE_NAME);
         boolean isDeviceOwner = mDevicePolicyManager.isDeviceOwnerApp(PACKAGE_NAME);
 
-        Log.d(mTag, "setup() on user " + mContext.getUserId() + ": package=" + PACKAGE_NAME
-                + ", adminReceiverComponent=" + ADMIN_RECEIVER_COMPONENT
-                + ", isActiveAdmin=" + isActiveAdmin + ", isProfileOwner=" + isProfileOwner
-                + ", isDeviceOwner=" + isDeviceOwner + ", isDeviceOwnerTest=" + mIsDeviceOwnerTest);
+        mLogger.logD("setUp(): VERBOSE=%b, package=%s, adminReceiverComponent=%s, isActiveAdmin=%b,"
+                + " isProfileOwner=%b, isDeviceOwner=%b, isDeviceOwnerTest=%b", VERBOSE,
+                PACKAGE_NAME, ADMIN_RECEIVER_COMPONENT, isActiveAdmin, isProfileOwner,
+                isDeviceOwner, mIsDeviceOwnerTest);
 
         assertWithMessage("active admin for %s", ADMIN_RECEIVER_COMPONENT).that(isActiveAdmin)
                 .isTrue();
@@ -175,7 +189,7 @@ public abstract class BaseDeviceAdminTest extends InstrumentationTestCase {
                 .that(isProfileOwner || isDeviceOwner).isTrue();
     }
 
-    protected int getTargetApiLevel() throws Exception {
+    protected final int getTargetApiLevel() throws Exception {
         final PackageManager pm = mContext.getPackageManager();
         final PackageInfo pi = pm.getPackageInfo(mContext.getPackageName(), /* flags= */ 0);
         return pi.applicationInfo.targetSdkVersion;
@@ -184,9 +198,9 @@ public abstract class BaseDeviceAdminTest extends InstrumentationTestCase {
     /**
      * Runs a Shell command, returning a trimmed response.
      */
-    protected String runShellCommand(String template, Object...args) {
+    protected final String runShellCommand(String template, Object...args) {
         final String command = String.format(template, args);
-        Log.d(mTag, "runShellCommand(): " + command);
+        mLogger.logD("runShellCommand(): %s", command);
         try {
             final String result = SystemUtil.runShellCommand(getInstrumentation(), command);
             return TextUtils.isEmpty(result) ? "" : result.trim();
@@ -195,7 +209,7 @@ public abstract class BaseDeviceAdminTest extends InstrumentationTestCase {
         }
     }
 
-    protected void waitUntilUserUnlocked() {
+    protected final void waitUntilUserUnlocked() {
         boolean isUserUnlocked = mUserManager.isUserUnlocked();
         int retries = 30;
         while (retries >= 0 && !isUserUnlocked) {
@@ -209,25 +223,33 @@ public abstract class BaseDeviceAdminTest extends InstrumentationTestCase {
         assertWithMessage("user unlocked").that(mUserManager.isUserUnlocked()).isTrue();
     }
 
-    protected void assertPasswordSufficiency(boolean expectPasswordSufficient) {
+    protected final void assertPasswordSufficiency(boolean expectPasswordSufficient) {
         waitUntilUserUnlocked();
         assertWithMessage("isActivePasswordSufficient()")
                 .that(mDevicePolicyManager.isActivePasswordSufficient())
                 .isEqualTo(expectPasswordSufficient);
     }
 
-    protected boolean isDeviceOwner() {
+    protected final boolean isDeviceOwner() {
         return mDevicePolicyManager.isDeviceOwnerApp(PACKAGE_NAME);
     }
 
-    protected void setDelegatedScopes(String delegatePackage, List<String> scopes) {
-        Log.v(TAG, "Calling setDelegatedScopes(" + ADMIN_RECEIVER_COMPONENT.flattenToShortString()
-                + ", " + delegatePackage + ", " + scopes + ") using " + mDevicePolicyManager);
+    protected final void setDelegatedScopes(String delegatePackage, List<String> scopes) {
+        mLogger.logV("Calling setDelegatedScopes(%s, %s, %s) using %s",
+                ADMIN_RECEIVER_COMPONENT.flattenToShortString(), delegatePackage, scopes,
+                mDevicePolicyManager);
         mDevicePolicyManager.setDelegatedScopes(ADMIN_RECEIVER_COMPONENT, delegatePackage, scopes);
     }
 
-    void sleep(int timeMs) {
-        Log.d(TAG, "Sleeping " + timeMs + " ms");
+    protected final void sleep(int timeMs) {
+        mLogger.logD("Sleeping %dms", timeMs);
+
         SystemClock.sleep(timeMs);
+    }
+
+    @SuppressWarnings("deprecation")
+    protected static String toString(Bundle bundle) {
+        return bundle.keySet().stream().map(key -> key + "=" + String.valueOf(bundle.get(key)))
+                .collect(Collectors.joining(", ", "Bundle[", "]"));
     }
 }
