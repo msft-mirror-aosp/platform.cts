@@ -23,6 +23,9 @@ import static android.view.KeyEvent.KEYCODE_A;
 import static android.view.MotionEvent.FLAG_WINDOW_IS_OBSCURED;
 import static android.view.MotionEvent.FLAG_WINDOW_IS_PARTIALLY_OBSCURED;
 
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withKeyAction;
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withMotionAction;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -53,6 +56,8 @@ import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.WindowUtil;
+import com.android.cts.input.BlockingQueueEventVerifier;
+import com.android.cts.input.CaptureEventActivity;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -75,7 +80,8 @@ public class VerifyInputEventTest {
 
     private InputManager mInputManager;
     private UiAutomation mAutomation;
-    private InputEventInterceptTestActivity mActivity;
+    private CaptureEventActivity mActivity;
+    private BlockingQueueEventVerifier mVerifier;
 
     @Rule(order = 0)
     public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
@@ -83,8 +89,8 @@ public class VerifyInputEventTest {
             Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
 
     @Rule(order = 1)
-    public ActivityTestRule<InputEventInterceptTestActivity> mActivityRule =
-            new ActivityTestRule<>(InputEventInterceptTestActivity.class);
+    public ActivityTestRule<CaptureEventActivity> mActivityRule =
+            new ActivityTestRule<>(CaptureEventActivity.class);
 
     @Before
     public void setup() {
@@ -93,6 +99,7 @@ public class VerifyInputEventTest {
         assertNotNull(mInputManager);
         mAutomation = instrumentation.getUiAutomation();
         mActivity = mActivityRule.getActivity();
+        mVerifier = mActivity.getVerifier();
         WindowUtil.waitForFocus(mActivity);
     }
 
@@ -104,7 +111,7 @@ public class VerifyInputEventTest {
                 KeyEvent.ACTION_DOWN, keyCode, 0 /* repeatCount */);
         mAutomation.injectInputEvent(downEvent, true);
         try {
-            KeyEvent received = waitForKey();
+            KeyEvent received = mVerifier.assertReceivedKey(withKeyAction(KeyEvent.ACTION_DOWN));
             VerifiedInputEvent verified = mInputManager.verifyInputEvent(received);
             assertNotNull(verified);
             compareKeys(downEvent, verified);
@@ -113,7 +120,7 @@ public class VerifyInputEventTest {
             KeyEvent upEvent = new KeyEvent(downTime, SystemClock.uptimeMillis(),
                     KeyEvent.ACTION_UP, keyCode, 0 /* repeatCount */);
             mAutomation.injectInputEvent(upEvent, true);
-            waitForKey();
+            mVerifier.assertReceivedKey(withKeyAction(KeyEvent.ACTION_UP));
         }
     }
 
@@ -130,7 +137,7 @@ public class VerifyInputEventTest {
                 KeyEvent.ACTION_DOWN, keyCode, 0 /* repeatCount */);
         mAutomation.injectInputEvent(downEvent, true);
         try {
-            waitForKey(); // we will not be using the received event
+            mVerifier.assertReceivedKey(withKeyAction(KeyEvent.ACTION_DOWN));
             VerifiedInputEvent verified = mInputManager.verifyInputEvent(downEvent);
             assertNull(verified);
         } finally {
@@ -138,7 +145,7 @@ public class VerifyInputEventTest {
             KeyEvent upEvent = new KeyEvent(downTime, SystemClock.uptimeMillis(),
                     KeyEvent.ACTION_UP, keyCode, 0 /* repeatCount */);
             mAutomation.injectInputEvent(upEvent, true);
-            waitForKey();
+            mVerifier.assertReceivedKey(withKeyAction(KeyEvent.ACTION_UP));
         }
     }
 
@@ -154,7 +161,7 @@ public class VerifyInputEventTest {
                 KeyEvent.ACTION_DOWN, keyCode, 0 /* repeatCount */);
         mAutomation.injectInputEvent(downEvent, true);
         try {
-            KeyEvent received = waitForKey();
+            KeyEvent received = mVerifier.assertReceivedKey(withKeyAction(KeyEvent.ACTION_DOWN));
             received.setSource(SOURCE_JOYSTICK); // use the received event, but modify its source
             VerifiedInputEvent verified = mInputManager.verifyInputEvent(received);
             assertNull(verified);
@@ -163,7 +170,7 @@ public class VerifyInputEventTest {
             KeyEvent upEvent = new KeyEvent(downTime, SystemClock.uptimeMillis(),
                     KeyEvent.ACTION_UP, keyCode, 0 /* repeatCount */);
             mAutomation.injectInputEvent(upEvent, true);
-            waitForKey();
+            mVerifier.assertReceivedKey(withKeyAction(KeyEvent.ACTION_UP));
         }
     }
 
@@ -178,7 +185,8 @@ public class VerifyInputEventTest {
         downEvent.setDisplayId(mActivity.getDisplayId());
         mAutomation.injectInputEvent(downEvent, true);
         try {
-            MotionEvent received = waitForMotion();
+            MotionEvent received =
+                    mVerifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_DOWN));
             VerifiedInputEvent verified = mInputManager.verifyInputEvent(received);
             assertNotNull(verified);
 
@@ -190,7 +198,7 @@ public class VerifyInputEventTest {
             upEvent.setSource(InputDevice.SOURCE_TOUCHSCREEN);
             upEvent.setDisplayId(mActivity.getDisplayId());
             mAutomation.injectInputEvent(upEvent, true);
-            waitForMotion();
+            mVerifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_UP));
         }
     }
 
@@ -210,7 +218,7 @@ public class VerifyInputEventTest {
         downEvent.setDisplayId(mActivity.getDisplayId());
         mAutomation.injectInputEvent(downEvent, true);
         try {
-            waitForMotion(); // we will not be using the received event
+            mVerifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_DOWN));
             VerifiedInputEvent verified = mInputManager.verifyInputEvent(downEvent);
             assertNull(verified);
         } finally {
@@ -220,7 +228,7 @@ public class VerifyInputEventTest {
             upEvent.setSource(InputDevice.SOURCE_TOUCHSCREEN);
             upEvent.setDisplayId(mActivity.getDisplayId());
             mAutomation.injectInputEvent(upEvent, true);
-            waitForMotion();
+            mVerifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_UP));
         }
     }
 
@@ -239,8 +247,9 @@ public class VerifyInputEventTest {
         downEvent.setDisplayId(mActivity.getDisplayId());
         mAutomation.injectInputEvent(downEvent, true);
         try {
-            MotionEvent received = waitForMotion();
-            // use the received event, by modify its action
+            MotionEvent received =
+                    mVerifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_DOWN));
+            // use the received event, but modify its action
             received.setAction(MotionEvent.ACTION_CANCEL);
             VerifiedInputEvent verified = mInputManager.verifyInputEvent(received);
             assertNull(verified);
@@ -251,7 +260,7 @@ public class VerifyInputEventTest {
             upEvent.setSource(InputDevice.SOURCE_TOUCHSCREEN);
             upEvent.setDisplayId(mActivity.getDisplayId());
             mAutomation.injectInputEvent(upEvent, true);
-            waitForMotion();
+            mVerifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_UP));
         }
     }
 
@@ -269,7 +278,7 @@ public class VerifyInputEventTest {
                 1/*deviceId*/, 0 /*scanCode*/);
         mAutomation.injectInputEvent(downEvent, true);
         try {
-            KeyEvent received = waitForKey();
+            KeyEvent received = mVerifier.assertReceivedKey(withKeyAction(KeyEvent.ACTION_DOWN));
             assertEquals(INJECTED_EVENT_DEVICE_ID, received.getDeviceId());
 
             // This event can still be verified, however.
@@ -281,7 +290,7 @@ public class VerifyInputEventTest {
                     KeyEvent.ACTION_UP, KeyEvent.KEYCODE_A, 0 /*repeat*/, 0 /*metaState*/,
                     1/*deviceId*/, 0 /*scanCode*/);
             mAutomation.injectInputEvent(upEvent, true);
-            waitForKey();
+            mVerifier.assertReceivedKey(withKeyAction(KeyEvent.ACTION_UP));
         }
     }
 
@@ -303,7 +312,8 @@ public class VerifyInputEventTest {
         downEvent.setDisplayId(mActivity.getDisplayId());
         mAutomation.injectInputEvent(downEvent, true);
         try {
-            MotionEvent received = waitForMotion();
+            MotionEvent received =
+                    mVerifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_DOWN));
             assertEquals(INJECTED_EVENT_DEVICE_ID, received.getDeviceId());
 
             // This event can still be verified, however.
@@ -318,7 +328,7 @@ public class VerifyInputEventTest {
             upEvent.setSource(InputDevice.SOURCE_TOUCHSCREEN);
             upEvent.setDisplayId(mActivity.getDisplayId());
             mAutomation.injectInputEvent(upEvent, true);
-            waitForMotion();
+            mVerifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_UP));
         }
     }
 
@@ -329,14 +339,6 @@ public class VerifyInputEventTest {
         final int height = view.getHeight();
 
         return new Point(location[0] + width / 2, location[1] + height / 2);
-    }
-
-    private KeyEvent waitForKey() {
-        return mActivity.mKeyEvents.poll();
-    }
-
-    private MotionEvent waitForMotion() {
-        return mActivity.mMotionEvents.poll();
     }
 
     private void compareKeys(KeyEvent keyEvent, VerifiedInputEvent verified) {

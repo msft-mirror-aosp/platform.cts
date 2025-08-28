@@ -405,6 +405,13 @@
             </intent-filter>
         </activity>
 
+        <activity android:name="com.android.cts.input.CaptureEventActivity"
+                  android:label="Activity that captures input events"
+            android:turnScreenOn="true"
+            android:theme="@style/no_starting_window"
+            android:exported="true">
+        </activity>
+
         <activity android:name="android.view.cts.input.InputDeviceKeyLayoutMapTestActivity"
              android:enableOnBackInvokedCallback="false"
              android:configChanges="keyboardHidden|navigation|keyboard"
