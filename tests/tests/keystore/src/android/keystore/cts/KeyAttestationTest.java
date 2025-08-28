@@ -34,7 +34,6 @@ import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_DECRYPT;
 import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_ENCRYPT;
 import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_SIGN;
 import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_VERIFY;
-import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_WRAP;
 import static android.security.keystore.KeyProperties.DIGEST_SHA256;
 import static android.security.keystore.KeyProperties.ENCRYPTION_PADDING_NONE;
 import static android.security.keystore.KeyProperties.ENCRYPTION_PADDING_RSA_OAEP;
@@ -46,7 +45,6 @@ import static android.security.keystore.KeyProperties.PURPOSE_DECRYPT;
 import static android.security.keystore.KeyProperties.PURPOSE_ENCRYPT;
 import static android.security.keystore.KeyProperties.PURPOSE_SIGN;
 import static android.security.keystore.KeyProperties.PURPOSE_VERIFY;
-import static android.security.keystore.KeyProperties.PURPOSE_WRAP_KEY;
 import static android.security.keystore.KeyProperties.SIGNATURE_PADDING_RSA_PKCS1;
 import static android.security.keystore.KeyProperties.SIGNATURE_PADDING_RSA_PSS;
 
@@ -721,20 +719,21 @@ public class KeyAttestationTest {
         }
 
         final @KeyProperties.PurposeEnum int[] purposes = {
-            PURPOSE_SIGN | PURPOSE_VERIFY, PURPOSE_ENCRYPT | PURPOSE_DECRYPT, PURPOSE_WRAP_KEY
+                PURPOSE_SIGN | PURPOSE_VERIFY,
+                PURPOSE_ENCRYPT | PURPOSE_DECRYPT,
         };
         final String[][] signaturePaddingModes = {
-            {
-                SIGNATURE_PADDING_RSA_PKCS1,
-            },
-            {
-                SIGNATURE_PADDING_RSA_PSS,
-            },
-            {
-                SIGNATURE_PADDING_RSA_PKCS1, SIGNATURE_PADDING_RSA_PSS,
-            },
+                {
+                        SIGNATURE_PADDING_RSA_PKCS1,
+                },
+                {
+                        SIGNATURE_PADDING_RSA_PSS,
+                },
+                {
+                        SIGNATURE_PADDING_RSA_PKCS1,
+                        SIGNATURE_PADDING_RSA_PSS,
+                },
         };
-        final String[][] wrappingPaddingModes = {{ENCRYPTION_PADDING_RSA_OAEP}};
         final boolean[] devicePropertiesAttestationValues = {true, false};
         final int[] keySizes;
         final byte[][] challenges;
@@ -792,14 +791,6 @@ public class KeyAttestationTest {
                         if (isEncryptionPurpose(purpose)) {
                             testRsaAttestations(keySize, challenge, purpose, encryptionPaddingModes,
                                     devicePropertiesAttestation, isStrongBox);
-                        } else if (isWrappingKeyPurpose(purpose)) {
-                            testRsaAttestations(
-                                    keySize,
-                                    challenge,
-                                    purpose,
-                                    wrappingPaddingModes,
-                                    devicePropertiesAttestation,
-                                    isStrongBox);
                         } else {
                             testRsaAttestations(keySize, challenge, purpose, signaturePaddingModes,
                                     devicePropertiesAttestation, isStrongBox);
@@ -1203,7 +1194,7 @@ public class KeyAttestationTest {
                     .setKeyValidityForOriginationEnd(originationEnd)
                     .setKeyValidityForConsumptionEnd(consumptionEnd);
         }
-        if (isEncryptionPurpose(purposes) || isWrappingKeyPurpose(purposes)) {
+        if (isEncryptionPurpose(purposes)) {
             builder.setEncryptionPaddings(paddingModes);
             // Because we sometimes set "no padding", allow non-randomized encryption.
             builder.setRandomizedEncryptionRequired(false);
@@ -1237,10 +1228,10 @@ public class KeyAttestationTest {
 
     private void checkKeyUsage(
             X509Certificate attestationCert,
-            @KeyProperties.PurposeEnum int purpose,
+            @KeyProperties.PurposeEnum int purposes,
             boolean isStrongBox) {
         boolean[] actualKeyUsage = attestationCert.getKeyUsage();
-        if (purpose == PURPOSE_VERIFY && actualKeyUsage == null) {
+        if (purposes == PURPOSE_VERIFY && actualKeyUsage == null) {
             // A key with *just* verify purpose might have no `KeyUsage` extension,
             // because the private key can't be used by KeyMint.
             return;
@@ -1252,18 +1243,16 @@ public class KeyAttestationTest {
 
         boolean[] requiredKeyUsage = new boolean[KEY_USAGE_BITSTRING_LENGTH];
         boolean[] allowedKeyUsage = new boolean[KEY_USAGE_BITSTRING_LENGTH];
-        if (isVerifyPurpose(purpose)) {
+        if (isVerifyPurpose(purposes)) {
             // A PURPOSE_VERIFY key might have the digital signature bit set.
             allowedKeyUsage[KEY_USAGE_DIGITAL_SIGNATURE_BIT_OFFSET] = true;
         }
-        if (isSignaturePurpose(purpose)) {
+        if (isSignaturePurpose(purposes)) {
             // A PURPOSE_SIGN key must have the digital signature bit set.
             requiredKeyUsage[KEY_USAGE_DIGITAL_SIGNATURE_BIT_OFFSET] = true;
         }
-        if (isEncryptionPurpose(purpose)) {
+        if (isEncryptionPurpose(purposes)) {
             requiredKeyUsage[KEY_USAGE_DATA_ENCIPHERMENT_BIT_OFFSET] = true;
-        }
-        if (isEncryptionPurpose(purpose) || isWrappingKeyPurpose(purpose)) {
             if (laxChecks) {
                 // Allow the key encipherment bit to be missing on older StrongBox impls.
                 allowedKeyUsage[KEY_USAGE_KEY_ENCIPHERMENT_BIT_OFFSET] = true;
@@ -1271,7 +1260,7 @@ public class KeyAttestationTest {
                 requiredKeyUsage[KEY_USAGE_KEY_ENCIPHERMENT_BIT_OFFSET] = true;
             }
         }
-        if (isAgreeKeyPurpose(purpose)) {
+        if (isAgreeKeyPurpose(purposes)) {
             requiredKeyUsage[KEY_USAGE_KEY_AGREE_BIT_OFFSET] = true;
         }
 
@@ -1958,7 +1947,6 @@ public class KeyAttestationTest {
     }
 
     private double calculateShannonEntropy(double probabilityOfSetBit, String dataName) {
-        Log.i(TAG, "probabilityOfSetBit: " + probabilityOfSetBit);
         if (probabilityOfSetBit <= 0.001 || probabilityOfSetBit >= .999) return 0;
         double entropy = (-probabilityOfSetBit * logTwo(probabilityOfSetBit)) -
                 ((1 - probabilityOfSetBit) * logTwo(1 - probabilityOfSetBit));
@@ -2156,10 +2144,6 @@ public class KeyAttestationTest {
         return (purposes & PURPOSE_AGREE_KEY) != 0;
     }
 
-    private boolean isWrappingKeyPurpose(@KeyProperties.PurposeEnum int purposes) {
-        return (purposes & PURPOSE_WRAP_KEY) != 0;
-    }
-
     private ImmutableSet<Integer> buildPurposeSet(@KeyProperties.PurposeEnum int purposes) {
         ImmutableSet.Builder<Integer> builder = ImmutableSet.builder();
         if ((purposes & PURPOSE_SIGN) != 0) {
@@ -2176,9 +2160,6 @@ public class KeyAttestationTest {
         }
         if ((purposes & PURPOSE_AGREE_KEY) != 0) {
             builder.add(KM_PURPOSE_AGREE_KEY);
-        }
-        if ((purposes & PURPOSE_WRAP_KEY) != 0) {
-            builder.add(KM_PURPOSE_WRAP);
         }
         return builder.build();
     }
