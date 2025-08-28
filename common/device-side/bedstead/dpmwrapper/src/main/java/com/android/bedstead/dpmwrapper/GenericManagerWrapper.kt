@@ -18,11 +18,14 @@ package com.android.bedstead.dpmwrapper
 import android.content.Context
 import android.util.Log
 import com.android.bedstead.dpmwrapper.TestAppSystemServiceFactory.ServiceManagerWrapper
-import org.mockito.ArgumentMatchers
-import org.mockito.Mockito
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.stub
 import org.mockito.stubbing.Answer
 
-internal class GenericManagerWrapper : ServiceManagerWrapper<GenericManager?>() {
+internal class GenericManagerWrapper : ServiceManagerWrapper<GenericManager>() {
     companion object {
         private val TAG: String = GenericManagerWrapper::class.java.getSimpleName()
 
@@ -31,35 +34,30 @@ internal class GenericManagerWrapper : ServiceManagerWrapper<GenericManager?>() 
 
     override fun getWrapper(
         context: Context,
-        manager: GenericManager?,
+        manager: GenericManager,
         answer: Answer<*>,
-    ): GenericManager? {
+    ): GenericManager {
         val userId = context.userId
-        var mock: GenericManager? = sMocks.get(context)
-        if (mock != null) {
+        val cachedMock: GenericManager? = sMocks.get(context)
+        if (cachedMock != null) {
             Log.d(TAG, "get(): returning cached mock for user $userId")
-            return mock
+            return cachedMock
         }
 
-        mock = Mockito.mock<GenericManager?>(GenericManager::class.java)
-        val mockString = "GenericManagerWrapper#" + System.identityHashCode(mock)
-        Log.d(TAG, "get(): created mock for user ${context.userId}: $mockString")
-
-        // TODO(b/176993670): given that GenericManager is an interface, we could dynamilly mock all
-        // methods (for example, using Java's DynamicProxy), but given that DpmWrapper will
+        // TODO(b/176993670): given that GenericManager is an interface, we could dynamically mock
+        // all methods (for example, using Java's DynamicProxy), but given that DpmWrapper will
         // eventually go away, it's not worth the effort
-        try {
-            Mockito.`when`<String?>(mock.toString()).thenReturn(mockString)
-            Mockito.`when`<Int?>(mock.getSecureIntSettings(ArgumentMatchers.any<String?>()))
-                .thenAnswer(answer)
-        } catch (e: Exception) {
-            // Should never happen, but needs to be catch as some methods declare checked exceptions
-            Log.wtf("Exception setting mocks", e)
-        }
+        val genericManagerMock =
+            mock<GenericManager> { on { getSecureIntSettings(anyOrNull()) } doAnswer answer }
 
-        sMocks.put(context, mock)
+        val identificationString =
+            "GenericManagerWrapper#${System.identityHashCode(genericManagerMock)}"
+        genericManagerMock.stub { on { toString() } doReturn identificationString }
+        Log.d(TAG, "get(): created mock for user ${context.userId}: $identificationString")
+
+        sMocks.put(context, genericManagerMock)
         Log.d(TAG, "get(): returning new mock for context $context and user $userId")
 
-        return mock
+        return genericManagerMock
     }
 }
