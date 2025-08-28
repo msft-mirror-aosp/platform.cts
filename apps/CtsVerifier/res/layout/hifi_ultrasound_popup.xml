@@ -11,8 +11,14 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="9"
-        androidPlot.domainLabel="kHz"
+        androidPlot.title="Frequency Response"
+        androidPlot.domainLabel="Hz"
         androidPlot.rangeLabel="dB"
+        androidPlot.graphWidget.marginTop="30dp"
+        androidPlot.graphWidget.marginRight="30dp"
+        androidPlot.graphWidget.marginLeft="45dp"
+        androidPlot.graphWidget.marginBottom="175dp"
+        androidPlot.titleWidget.labelPaint.textSize="16dp"
         androidPlot.domainLabelWidget.labelPaint.textSize="16dp"
         androidPlot.rangeLabelWidget.labelPaint.textSize="16dp"
         androidPlot.graphWidget.rangeLabelPaint.textSize="16dp"
@@ -22,7 +28,7 @@
         androidPlot.legendWidget.textPaint.textSize="16dp"
         androidPlot.legendWidget.iconSizeMetrics.heightMetric.value="16dp"
         androidPlot.legendWidget.iconSizeMetrics.widthMetric.value="16dp"
-        androidPlot.legendWidget.heightMetric.value="16dp"
+        androidPlot.legendWidget.heightMetric.value="150dp"
         androidPlot.graphWidget.gridLinePaint.color="#000000" />
 
     <Button
