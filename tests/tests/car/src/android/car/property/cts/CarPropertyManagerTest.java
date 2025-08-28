@@ -168,8 +168,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1419,23 +1417,9 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
             verifierPropertyIds.add(verifier.getPropertyId());
         }
 
-        for (Field field : VehiclePropertyIds.class.getDeclaredFields()) {
-            boolean isIntConstant =
-                    field.getType() == int.class
-                            && field.getModifiers()
-                                    == (Modifier.STATIC | Modifier.FINAL | Modifier.PUBLIC);
-            if (!isIntConstant) {
-                continue;
-            }
-
-            Integer propertyId = null;
-            try {
-                propertyId = field.getInt(null);
-            } catch (Exception e) {
-                assertWithMessage("Failed trying to find value for " + field.getName() + ", " + e)
-                        .fail();
-            }
-            if (PROPERTIES_NOT_EXPOSED_THROUGH_CPM.contains(propertyId)) {
+        for (Integer propertyId : CAR_SVC_PROPS_PARSER.getAllSystemPropertyIds()) {
+            if (PROPERTIES_NOT_EXPOSED_THROUGH_CPM.contains(propertyId)
+                    || isAndroidBPropertyWithDisabledFlag(propertyId)) {
                 continue;
             }
             expectWithMessage(
@@ -1446,6 +1430,10 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                     .that(propertyId)
                     .isIn(verifierPropertyIds);
         }
+    }
+
+    private boolean isAndroidBPropertyWithDisabledFlag(int propertyId) {
+        return B_FLAG_PROPERTIES.contains(propertyId) && !Flags.androidBVehicleProperties();
     }
 
     static final class AllStepsProvider extends TestParameterValuesProvider {
