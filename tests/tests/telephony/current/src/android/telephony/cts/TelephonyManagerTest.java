@@ -137,6 +137,8 @@ import android.util.Pair;
 
 import androidx.test.InstrumentationRegistry;
 
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.compatibility.common.util.AmUtils;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CarrierPrivilegeUtils;
@@ -6504,12 +6506,13 @@ public class TelephonyManagerTest {
         // make sure not to face any permission problem while calling the API
         CompletableFuture<Pair<Set<String>, Exception>> pendingResult = new CompletableFuture<>();
         OutcomeReceiver<Set<String>, Exception> callback = createOutcomeReceiver(pendingResult);
-
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                mTelephonyManager,
-                tm -> tm.requestUiccIari(getContext().getMainExecutor(), callback),
-                Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
-        Pair<Set<String>, Exception> result = getResultOrFail("requestUiccIari", pendingResult);
+        Pair<Set<String>, Exception> result;
+        try (PermissionContext p =
+                TestApis.permissions()
+                        .withPermission(Manifest.permission.READ_PRIVILEGED_PHONE_STATE)) {
+            mTelephonyManager.requestUiccIari(getContext().getMainExecutor(), callback);
+            result = getResultOrFail("requestUiccIari", pendingResult);
+        }
 
         Set<String> iari = result.first;
         Exception ex = result.second;
