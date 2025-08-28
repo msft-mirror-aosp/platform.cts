@@ -50,6 +50,7 @@ def ae_iso_priority_capture_request(sensitivity):
   req = {
       'android.control.mode': 1,  # CONTROL_MODE_AUTO
       'android.control.aeMode': 1,  # CONTROL_AE_MODE_ON
+      'android.control.afMode': 0,  # CONTROL_AF_MODE_OFF
       'android.control.aePriorityMode': 1,
       # CONTROL_AE_PRIORITY_MODE_SENSOR_SENSITIVITY_PRIORITY
       'android.sensor.sensitivity': sensitivity,
