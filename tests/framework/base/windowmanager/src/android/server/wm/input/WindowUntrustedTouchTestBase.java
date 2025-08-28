@@ -63,6 +63,7 @@ import android.server.wm.Condition;
 import android.server.wm.CtsWindowInfoUtils;
 import android.server.wm.FutureConnection;
 import android.server.wm.TouchHelper;
+import android.server.wm.WindowInsetsAnimationWaiter;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerStateHelper;
 import android.server.wm.overlay.Components;
@@ -147,6 +148,8 @@ public abstract class WindowUntrustedTouchTestBase {
     private int mPreviousSawAppOp;
     private final Set<String> mSawWindowsAdded = new ArraySet<>();
     private final AtomicInteger mTouchesReceived = new AtomicInteger(0);
+    private final WindowInsetsAnimationWaiter mInsetsAnimationWaiter =
+            new WindowInsetsAnimationWaiter();
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -184,6 +187,7 @@ public abstract class WindowUntrustedTouchTestBase {
             mContainer = mActivity.view;
             // On ARC++, text toast is fixed on the screen. Its position may overlays the navigation
             // bar. Hide it to ensure the text toast overlays the app. b/191075641
+            mContainer.setWindowInsetsAnimationCallback(mInsetsAnimationWaiter);
             mContainer.getWindowInsetsController().hide(statusBars() | navigationBars());
             mContainer.setOnTouchListener(this::onTouchEvent);
         });
@@ -244,6 +248,18 @@ public abstract class WindowUntrustedTouchTestBase {
     void assertAnimationRunning() {
         assertThat(mWmState.getDisplay(Display.DEFAULT_DISPLAY).getAppTransitionState()).isEqualTo(
                 WindowManagerStateHelper.APP_STATE_RUNNING);
+    }
+
+    /**
+     * Waits for the animations that hide system bars (such as the taskbar) to finish after the
+     * initial creation of the test activity.
+     *
+     * <p>This is necessary for tests that inject touches near the edges of the screen, as {@code
+     * WindowManagerService} doesn't know about inset animations, so they're not covered by {@link
+     * #mTouchHelper}'s waitForAnimations logic. (b/440842960)
+     */
+    protected void waitForInsetsAnimation() throws InterruptedException {
+        mInsetsAnimationWaiter.waitForFinishing();
     }
 
     void addToastOverlay(@NonNull ComponentName component, boolean custom) throws Exception {

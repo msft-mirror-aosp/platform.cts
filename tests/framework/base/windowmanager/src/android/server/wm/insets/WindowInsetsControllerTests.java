@@ -76,6 +76,7 @@ import android.platform.test.annotations.Presubmit;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.MockImeHelper;
+import android.server.wm.WindowInsetsAnimationWaiter;
 import android.server.wm.WindowManagerTestBase;
 import android.text.TextUtils;
 import android.util.Log;
@@ -130,7 +131,8 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
     private static final long TIMEOUT_UPDATING_INPUT_WINDOW = 500; // milliseconds
     private static final long TIMEOUT_UPDATING_SYSTEM_BAR_VISIBILITY = 500; // milliseconds
     private static final long TIME_SLICE = 50; // milliseconds
-    private static final AnimationCallback ANIMATION_CALLBACK = new AnimationCallback();
+    private static final WindowInsetsAnimationWaiter ANIMATION_CALLBACK =
+            new WindowInsetsAnimationWaiter();
 
     private static final String AM_BROADCAST_CLOSE_SYSTEM_DIALOGS =
             "am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS";
@@ -1198,66 +1200,6 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
         // Use UiAutomation to inject into TestActivity because it is started and owned by the
         // Shell, which has a different uid than this instrumentation.
         getInstrumentation().getUiAutomation().injectInputEvent(event, true);
-    }
-
-    private static class AnimationCallback extends WindowInsetsAnimation.Callback {
-
-        private static final long ANIMATION_TIMEOUT = 5000; // milliseconds
-
-        private WindowInsetsAnimation mAnimation;
-        private boolean mFinished = false;
-
-        AnimationCallback() {
-            super(DISPATCH_MODE_CONTINUE_ON_SUBTREE);
-        }
-
-        @Override
-        public void onPrepare(@NonNull WindowInsetsAnimation animation) {
-            Log.d(TAG, "onPrepare animation=" + toString(animation), new Throwable());
-            mAnimation = animation;
-        }
-
-        @Override
-        public WindowInsets onProgress(
-                @NonNull WindowInsets insets,
-                @NonNull List<WindowInsetsAnimation> runningAnimations) {
-            return insets;
-        }
-
-        @Override
-        public void onEnd(@NonNull WindowInsetsAnimation animation) {
-            synchronized (this) {
-                Log.d(TAG, "onEnd animation=" + toString(animation), new Throwable());
-                if (mAnimation == animation) {
-                    mFinished = true;
-                    notify();
-                }
-            }
-        }
-
-        void waitForFinishing() throws InterruptedException {
-            synchronized (this) {
-                if (!mFinished) {
-                    wait(ANIMATION_TIMEOUT);
-                }
-            }
-        }
-
-        void reset() {
-            synchronized (this) {
-                mAnimation = null;
-                mFinished = false;
-            }
-        }
-
-        private static String toString(@NonNull WindowInsetsAnimation animation) {
-            return animation
-                    + "{insetsTypes=" + WindowInsets.Type.toString(animation.getTypeMask())
-                    + " fraction=" + animation.getFraction()
-                    + " alpha=" + animation.getAlpha()
-                    + " duration=" + animation.getDurationMillis()
-                    + "}";
-        }
     }
 
     private static View setViews(Activity activity, @Nullable String privateImeOptions) {

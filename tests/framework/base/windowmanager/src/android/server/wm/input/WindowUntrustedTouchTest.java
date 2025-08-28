@@ -798,6 +798,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
+        waitForInsetsAnimation();
         addToastOverlay(SAME_UID_UNTRUSTED_TOUCH_TEST_SERVICE, /* custom */ false);
 
         // In some non-phone targets, e.g. Automotive's multi tasking environments based on
@@ -839,6 +840,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
                 FeatureUtil.isXrHeadset());
 
         assumeFalse("Watch does not support new Toast behavior yet.", FeatureUtil.isWatch());
+        waitForInsetsAnimation();
         addToastOverlay(SECOND_UNTRUSTED_TOUCH_TEST_SERVICE, /* custom */ false);
         Rect toast = mWmState.waitForResult("toast bounds",
                 state -> state.findFirstWindowWithType(LayoutParams.TYPE_TOAST).getFrame());
