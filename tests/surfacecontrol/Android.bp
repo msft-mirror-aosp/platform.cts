@@ -111,3 +111,15 @@ android_ravenwood_test {
         strip_mockito: true,
     },
 }
+
+test_module_config {
+    name: "CtsSurfaceControlTests_input_related",
+    base: "CtsSurfaceControlTests",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.view.surfacecontrol.cts.ASurfaceControlInputReceiverTest",
+        "android.view.surfacecontrol.cts.SetTouchableRegionTest",
+        "android.view.surfacecontrol.cts.SurfaceControlInputReceiverTests",
+        "android.view.surfacecontrol.cts.SurfaceControlViewHostTests",
+    ],
+}
