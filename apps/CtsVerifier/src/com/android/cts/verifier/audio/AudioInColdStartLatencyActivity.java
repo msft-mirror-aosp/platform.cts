@@ -46,12 +46,7 @@ public class AudioInColdStartLatencyActivity
     // MegaAudio
     private Recorder mRecorder;
 
-    private long mPreviousCallbackTime;
-
-    private long mNominalCallbackDelta;
-    private long mCallbackThresholdTime;
-    private long mAccumulatedTime;
-    private long mNumCallbacks;
+    private long mFirstCallbackTime;
 
     // ReportLog Schema
     private static final String SECTION_INPUT_LATENCY = "in_coldlatency_activity";
@@ -79,7 +74,7 @@ public class AudioInColdStartLatencyActivity
     }
 
     double calcColdStartLatency() {
-        mColdStartlatencyMS = nanosToMs(mPreviousCallbackTime - mPreOpenTime);
+        mColdStartlatencyMS = nanosToMs(mFirstCallbackTime - mPreOpenTime);
         return mColdStartlatencyMS;
     }
 
@@ -105,9 +100,7 @@ public class AudioInColdStartLatencyActivity
     boolean runAudioTest() {
         clearResults();
 
-        mPreviousCallbackTime = 0;
-        mAccumulatedTime = 0;
-        mNumCallbacks = 0;
+        mFirstCallbackTime = 0;
 
         int buildResult = StreamBase.ERROR_UNKNOWN;
         int openResult = StreamBase.ERROR_UNKNOWN;
@@ -124,15 +117,23 @@ public class AudioInColdStartLatencyActivity
             mRecorder = builder.allocStream();
             mPreStartTime = System.nanoTime();
             if ((buildResult = mRecorder.build(builder)) == StreamBase.OK
-                    && (openResult = mRecorder.open()) == StreamBase.OK
-                    && (startResult = mRecorder.start()) == StreamBase.OK) {
-                mPostStartTime = System.nanoTime();
+                    && (openResult = mRecorder.open()) == StreamBase.OK) {
+                mPostOpenTime = System.nanoTime();
                 mIsTestRunning = true;
             }
         } catch (RecorderBuilder.BadStateException badStateException) {
             mLatencyTxt.setText(getString(R.string.audio_coldstart_badrecorderstate));
             Log.e(TAG, "BadStateException: " + badStateException);
             mIsTestRunning = false;
+        }
+
+        if (mIsTestRunning) {
+            mPreStartTime = System.nanoTime();
+            if ((startResult = mRecorder.start()) == StreamBase.OK) {
+                mPostStartTime = System.nanoTime();
+            } else {
+                mIsTestRunning = false;
+            }
         }
 
         if (mIsTestRunning) {
@@ -153,10 +154,10 @@ public class AudioInColdStartLatencyActivity
             return;
         }
 
+        mIsTestRunning = false;
+
         // Unwind will call stop()
         mRecorder.unwind();
-
-        mIsTestRunning = false;
 
         mStartBtn.setEnabled(true);
         mStopBtn.setEnabled(false);
@@ -170,40 +171,25 @@ public class AudioInColdStartLatencyActivity
 
     // Callback for Recorder
     /*
-     * Monitor callbacks until they become consistent (i.e. delta between callbacks is below
-     * some threshold like 1/8 the "nominal" callback time). This is defined as the "cold start
-     * latency". Calculate that time and display the results.
+     * Get the first callback time.
+     * Since we can't get the input timestamp for non-MMAP input streams, use the first callback
+     * time to calculate cold start latency.
      */
     class ColdStartAppCallback implements AppCallback {
         public void onDataReady(float[] audioData, int numFrames) {
-            mNumCallbacks++;
-
             long time = System.nanoTime();
-            if (mPreviousCallbackTime == 0) {
-                mNumExchangeFrames = numFrames;
-                mNominalCallbackDelta = (long) ((1000000000.0 * (double) mNumExchangeFrames)
-                                            / (double) mSampleRate);
-                mCallbackThresholdTime = mNominalCallbackDelta + (mNominalCallbackDelta / 8);
-                // update attributes with actual buffer size
-                // showAttributes();
-                mPreviousCallbackTime = time;
-            } else {
-                long callbackDeltaTime = time - mPreviousCallbackTime;
-
-                mPreviousCallbackTime = time;
-                mAccumulatedTime += callbackDeltaTime;
-
-                if (callbackDeltaTime < mCallbackThresholdTime) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            stopAudio();
-                            updateTestStateButtons();
-                            calcColdStartLatency();
-                            showInResults();
-                        }
-                    });
-                }
+            if (mFirstCallbackTime == 0) {
+                mFirstCallbackTime = time;
+                runOnUiThread(
+                        new Runnable() {
+                            @Override
+                            public void run() {
+                                stopAudio();
+                                updateTestStateButtons();
+                                calcColdStartLatency();
+                                showInResults();
+                            }
+                        });
             }
         }
     }
