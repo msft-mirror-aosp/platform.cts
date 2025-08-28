@@ -27,6 +27,7 @@ android_test {
         "androidx.test.ext.junit",
         "androidx.test.rules",
         "compatibility-device-util-axt",
+        "cts-wm-util",
         "platform-test-annotations",
         "platform-test-rules",
         "truth",
