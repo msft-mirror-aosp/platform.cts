@@ -31,6 +31,7 @@ import android.accessibility.cts.common.InstrumentedAccessibilityServiceTestRule
 import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.content.Context;
+import android.graphics.Typeface;
 import android.os.Message;
 import android.os.Parcel;
 import android.os.SystemClock;
@@ -128,6 +129,8 @@ public class AccessibilityEventTest {
                                             mParentView = new EventReportingLinearLayout(activity);
                                             mChildView = new View(activity);
                                             mTextView = new TextView(activity);
+                                            mTextView.setTypeface(
+                                                    Typeface.create("roboto", Typeface.NORMAL));
                                             grandparent.addView(mParentView);
                                             mParentView.addView(mChildView);
                                             mParentView.addView(mTextView);

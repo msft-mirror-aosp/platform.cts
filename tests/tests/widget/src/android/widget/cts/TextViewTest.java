@@ -306,7 +306,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testGetLineHeight() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         assertTrue(mTextView.getLineHeight() > 0);
 
         mTextView.setLineSpacing(1.2f, 1.5f);
@@ -766,7 +766,7 @@ public class TextViewTest {
     public void testAccessTextSize() {
         DisplayMetrics metrics = mActivity.getResources().getDisplayMetrics();
 
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         mTextView.setTextSize(TypedValue.COMPLEX_UNIT_PX, 20f);
         assertEquals(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PX, 20f, metrics),
                 mTextView.getTextSize(), 0.01f);
@@ -792,7 +792,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testAccessTextColor() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
 
         mTextView.setTextColor(Color.GREEN);
         assertEquals(Color.GREEN, mTextView.getCurrentTextColor());
@@ -972,7 +972,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testGetPaint() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         TextPaint tp = mTextView.getPaint();
         assertNotNull(tp);
 
@@ -1013,7 +1013,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testAccessHintTextColor() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         // using int values
         // normal
         mTextView.setHintTextColor(Color.GREEN);
@@ -1046,7 +1046,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testAccessLinkTextColor() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         // normal
         mTextView.setLinkTextColor(Color.GRAY);
         assertSame(ColorStateList.valueOf(Color.GRAY), mTextView.getLinkTextColors());
@@ -1075,7 +1075,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testAccessPaintFlags() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         assertEquals(Paint.DEV_KERN_TEXT_FLAG | Paint.EMBEDDED_BITMAP_TEXT_FLAG
                 | Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG, mTextView.getPaintFlags());
 
@@ -1424,7 +1424,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testSetEditableFactory() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         String text = "sample";
 
         final Editable.Factory mockEditableFactory = spy(new Editable.Factory());
@@ -1461,7 +1461,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testSetSpannableFactory() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         String text = "sample";
 
         final Spannable.Factory mockSpannableFactory = spy(new Spannable.Factory());
@@ -1498,7 +1498,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testTextChangedListener() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         MockTextWatcher watcher0 = new MockTextWatcher();
         MockTextWatcher watcher1 = new MockTextWatcher();
 
@@ -1564,7 +1564,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testSetTextKeepState1() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
 
         String longString = "very long content";
         String shortString = "short";
@@ -2623,13 +2623,13 @@ public class TextViewTest {
     @Test
     public void testSaveInstanceState() {
         // should save text when freezesText=true
-        TextView originalTextView = new TextView(mActivity);
+        TextView originalTextView = createTextView(mActivity);
         final String text = "This is a string";
         originalTextView.setText(text);
         originalTextView.setFreezesText(true);  // needed to actually save state
         Parcelable state = originalTextView.onSaveInstanceState();
 
-        TextView restoredTextView = new TextView(mActivity);
+        TextView restoredTextView = createTextView(mActivity);
         restoredTextView.onRestoreInstanceState(state);
         assertEquals(text, restoredTextView.getText().toString());
     }
@@ -2640,12 +2640,12 @@ public class TextViewTest {
         final String text = "This is a string";
         { // should not save text when freezesText=false
             // prepare TextView for before saveInstanceState
-            TextView textView1 = new TextView(mActivity);
+            TextView textView1 = createTextView(mActivity);
             textView1.setFreezesText(false);
             textView1.setText(text);
 
             // prepare TextView for after saveInstanceState
-            TextView textView2 = new TextView(mActivity);
+            TextView textView2 = createTextView(mActivity);
             textView2.setFreezesText(false);
 
             textView2.onRestoreInstanceState(textView1.onSaveInstanceState());
@@ -2655,13 +2655,13 @@ public class TextViewTest {
 
         { // should not save text even when textIsSelectable=true
             // prepare TextView for before saveInstanceState
-            TextView textView1 = new TextView(mActivity);
+            TextView textView1 = createTextView(mActivity);
             textView1.setFreezesText(false);
             textView1.setTextIsSelectable(true);
             textView1.setText(text);
 
             // prepare TextView for after saveInstanceState
-            TextView textView2 = new TextView(mActivity);
+            TextView textView2 = createTextView(mActivity);
             textView2.setFreezesText(false);
             textView2.setTextIsSelectable(true);
 
@@ -2677,12 +2677,12 @@ public class TextViewTest {
     public void testOnSaveInstanceState_doesNotSaveSelectionWhenDoesNotExist() {
         // prepare TextView for before saveInstanceState
         final String text = "This is a string";
-        TextView textView1 = new TextView(mActivity);
+        TextView textView1 = createTextView(mActivity);
         textView1.setFreezesText(true);
         textView1.setText(text);
 
         // prepare TextView for after saveInstanceState
-        TextView textView2 = new TextView(mActivity);
+        TextView textView2 = createTextView(mActivity);
         textView2.setFreezesText(true);
 
         textView2.onRestoreInstanceState(textView1.onSaveInstanceState());
@@ -2697,14 +2697,14 @@ public class TextViewTest {
     public void testOnSaveInstanceState_doesNotRestoreSelectionWhenTextIsAbsent() {
         // prepare TextView for before saveInstanceState
         final String text = "This is a string";
-        TextView textView1 = new TextView(mActivity);
+        TextView textView1 = createTextView(mActivity);
         textView1.setFreezesText(false);
         textView1.setTextIsSelectable(true);
         textView1.setText(text);
         Selection.setSelection((Spannable) textView1.getText(), 2, text.length() - 2);
 
         // prepare TextView for after saveInstanceState
-        TextView textView2 = new TextView(mActivity);
+        TextView textView2 = createTextView(mActivity);
         textView2.setFreezesText(false);
         textView2.setTextIsSelectable(true);
 
@@ -2722,14 +2722,14 @@ public class TextViewTest {
     public void testOnSaveInstanceState_savesSelectionWhenExists() {
         final String text = "This is a string";
         // prepare TextView for before saveInstanceState
-        TextView textView1 = new TextView(mActivity);
+        TextView textView1 = createTextView(mActivity);
         textView1.setFreezesText(true);
         textView1.setTextIsSelectable(true);
         textView1.setText(text);
         Selection.setSelection((Spannable) textView1.getText(), 2, text.length() - 2);
 
         // prepare TextView for after saveInstanceState
-        TextView textView2 = new TextView(mActivity);
+        TextView textView2 = createTextView(mActivity);
         textView2.setFreezesText(true);
         textView2.setTextIsSelectable(true);
 
@@ -3144,7 +3144,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testScroll() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
 
         assertEquals(0, mTextView.getScrollX());
         assertEquals(0, mTextView.getScrollY());
@@ -3169,11 +3169,12 @@ public class TextViewTest {
 
     @Test
     public void testDebug() throws Throwable {
-        mActivityRule.runOnUiThread(() -> {
-            mTextView = new TextView(mActivity);
-            mTextView.debug(0);
-            mTextView.setText("Hello!");
-        });
+        mActivityRule.runOnUiThread(
+                () -> {
+                    mTextView = createTextView(mActivity);
+                    mTextView.debug(0);
+                    mTextView.setText("Hello!");
+                });
         mInstrumentation.waitForIdleSync();
 
         layout(mTextView);
@@ -3183,7 +3184,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testSelection() throws Throwable {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         String text = "This is the content";
         mTextView.setText(text, BufferType.SPANNABLE);
         assertFalse(mTextView.hasSelection());
@@ -3276,18 +3277,18 @@ public class TextViewTest {
     @Test
     public void testEllipsizeAndMaxLinesForSingleLine() throws Throwable {
         // no maxline or ellipsize set, single line text
-        final TextView tvNoMaxLine = new TextView(mActivity);
+        final TextView tvNoMaxLine = createTextView(mActivity);
         tvNoMaxLine.setLineSpacing(0, 1.5f);
         tvNoMaxLine.setText("a");
 
         // maxline set, no ellipsize, text with two lines
-        final TextView tvEllipsizeNone = new TextView(mActivity);
+        final TextView tvEllipsizeNone = createTextView(mActivity);
         tvEllipsizeNone.setMaxLines(1);
         tvEllipsizeNone.setLineSpacing(0, 1.5f);
         tvEllipsizeNone.setText("a\na");
 
         // maxline set, ellipsize end, text with two lines
-        final TextView tvEllipsizeEnd = new TextView(mActivity);
+        final TextView tvEllipsizeEnd = createTextView(mActivity);
         tvEllipsizeEnd.setEllipsize(TruncateAt.END);
         tvEllipsizeEnd.setMaxLines(1);
         tvEllipsizeEnd.setLineSpacing(0, 1.5f);
@@ -3322,18 +3323,18 @@ public class TextViewTest {
     @Test
     public void testEllipsizeAndMaxLinesForMultiLine() throws Throwable {
         // no maxline, no ellipsize, text with two lines
-        final TextView tvNoMaxLine = new TextView(mActivity);
+        final TextView tvNoMaxLine = createTextView(mActivity);
         tvNoMaxLine.setLineSpacing(0, 1.5f);
         tvNoMaxLine.setText("a\na");
 
         // maxline set, no ellipsize, text with three lines
-        final TextView tvEllipsizeNone = new TextView(mActivity);
+        final TextView tvEllipsizeNone = createTextView(mActivity);
         tvEllipsizeNone.setMaxLines(2);
         tvEllipsizeNone.setLineSpacing(0, 1.5f);
         tvEllipsizeNone.setText("a\na\na");
 
         // maxline set, ellipsize end, text with three lines
-        final TextView tvEllipsizeEnd = new TextView(mActivity);
+        final TextView tvEllipsizeEnd = createTextView(mActivity);
         tvEllipsizeEnd.setEllipsize(TruncateAt.END);
         tvEllipsizeEnd.setMaxLines(2);
         tvEllipsizeEnd.setLineSpacing(0, 1.5f);
@@ -3373,24 +3374,24 @@ public class TextViewTest {
     @Test
     public void testEllipsizeAndMaxLinesForHint() throws Throwable {
         // no maxline, no ellipsize, hint with two lines
-        final TextView tvTwoLines = new TextView(mActivity);
+        final TextView tvTwoLines = createTextView(mActivity);
         tvTwoLines.setLineSpacing(0, 1.5f);
         tvTwoLines.setHint("a\na");
 
         // no maxline, no ellipsize, hint with three lines
-        final TextView tvThreeLines = new TextView(mActivity);
+        final TextView tvThreeLines = createTextView(mActivity);
         tvThreeLines.setLineSpacing(0, 1.5f);
         tvThreeLines.setHint("a\na\na");
 
         // maxline set, ellipsize end, hint with three lines
-        final TextView tvEllipsizeEnd = new TextView(mActivity);
+        final TextView tvEllipsizeEnd = createTextView(mActivity);
         tvEllipsizeEnd.setEllipsize(TruncateAt.END);
         tvEllipsizeEnd.setMaxLines(2);
         tvEllipsizeEnd.setLineSpacing(0, 1.5f);
         tvEllipsizeEnd.setHint("a\na\na");
 
         // maxline set, no ellipsize, hint with three lines
-        final TextView tvEllipsizeNone = new TextView(mActivity);
+        final TextView tvEllipsizeNone = createTextView(mActivity);
         tvEllipsizeNone.setMaxLines(2);
         tvEllipsizeNone.setLineSpacing(0, 1.5f);
         tvEllipsizeNone.setHint("a\na\na");
@@ -3422,7 +3423,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testAccessCursorVisible() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
 
         mTextView.setCursorVisible(true);
         assertTrue(mTextView.isCursorVisible());
@@ -3562,7 +3563,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testAppend() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
 
         // 1: check the original length, should be blank as initialised.
         assertEquals(0, mTextView.getText().length());
@@ -3610,7 +3611,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testAppend_doesNotAddLinksWhenAppendedTextDoesNotContainLinks() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         mTextView.setAutoLinkMask(Linkify.ALL);
         mTextView.setText("text without URL");
 
@@ -3625,7 +3626,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testAppend_doesNotAddLinksWhenAutoLinkIsNotEnabled() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         mTextView.setText("text without URL");
 
         mTextView.append(" text with URL http://android.com");
@@ -3639,7 +3640,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testAppend_addsLinksWhenAutoLinkIsEnabled() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         mTextView.setAutoLinkMask(Linkify.ALL);
         mTextView.setText("text without URL");
 
@@ -3656,7 +3657,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testAppend_addsLinksEvenWhenThereAreUrlsSetBefore() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         mTextView.setAutoLinkMask(Linkify.ALL);
         mTextView.setText("text with URL http://android.com/before");
 
@@ -3676,7 +3677,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testAppend_setsMovementMethodWhenTextContainsUrlAndAutoLinkIsEnabled() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         mTextView.setAutoLinkMask(Linkify.ALL);
         mTextView.setText("text without a URL");
 
@@ -3691,7 +3692,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testAppend_addsLinksWhenTextIsSpannableAndContainsUrlAndAutoLinkIsEnabled() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         mTextView.setAutoLinkMask(Linkify.ALL);
         mTextView.setText("text without a URL");
 
@@ -3707,7 +3708,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testAppend_addsLinkIfAppendedTextCompletesPartialUrlAtTheEndOfExistingText() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         mTextView.setAutoLinkMask(Linkify.ALL);
         mTextView.setText("text with a partial url android.");
 
@@ -3724,7 +3725,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testAppend_addsLinkIfAppendedTextUpdatesUrlAtTheEndOfExistingText() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         mTextView.setAutoLinkMask(Linkify.ALL);
         mTextView.setText("text with a url http://android.com");
 
@@ -3740,7 +3741,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testGetLetterSpacing_returnsValueThatWasSet() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         mTextView.setLetterSpacing(2f);
         assertEquals("getLetterSpacing should return the value that was set",
                 2f, mTextView.getLetterSpacing(), 0.0f);
@@ -3748,12 +3749,13 @@ public class TextViewTest {
 
     @Test
     public void testSetLetterSpacingChangesTextWidth() throws Throwable {
-        mActivityRule.runOnUiThread(() -> {
-            mTextView = new TextView(mActivity);
-            mTextView.setText("aa");
-            mTextView.setLetterSpacing(0f);
-            mTextView.setTextSize(8f);
-        });
+        mActivityRule.runOnUiThread(
+                () -> {
+                    mTextView = createTextView(mActivity);
+                    mTextView.setText("aa");
+                    mTextView.setLetterSpacing(0f);
+                    mTextView.setTextSize(8f);
+                });
         mInstrumentation.waitForIdleSync();
 
         final FrameLayout layout = new FrameLayout(mActivity);
@@ -3789,7 +3791,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testGetFontFeatureSettings_returnsValueThatWasSet() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         mTextView.setFontFeatureSettings("\"smcp\" on");
         assertEquals("getFontFeatureSettings should return the value that was set",
                 "\"smcp\" on", mTextView.getFontFeatureSettings());
@@ -3799,7 +3801,7 @@ public class TextViewTest {
     @Test
     @RequiresFlagsDisabled(com.android.text.flags.Flags.FLAG_TYPEFACE_REDESIGN_READONLY)
     public void testSetGetFontVariationSettings_Api35() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         Context context = InstrumentationRegistry.getTargetContext();
         Typeface typeface = Typeface.createFromAsset(context.getAssets(), "multiaxis.ttf");
         mTextView.setTypeface(typeface);
@@ -3869,7 +3871,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testSetGetFontVariationSettings() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         Context context = InstrumentationRegistry.getTargetContext();
         Typeface typeface = Typeface.createFromAsset(context.getAssets(), "multiaxis.ttf");
         mTextView.setTypeface(typeface);
@@ -3912,12 +3914,13 @@ public class TextViewTest {
         // asserts getOffsetPosition returns correct values for a single line LTR text
         final String text = "aaaaa";
 
-        mActivityRule.runOnUiThread(() -> {
-            mTextView = new TextView(mActivity);
-            mTextView.setText(text);
-            mTextView.setTextSize(8f);
-            mTextView.setSingleLine(true);
-        });
+        mActivityRule.runOnUiThread(
+                () -> {
+                    mTextView = createTextView(mActivity);
+                    mTextView.setText(text);
+                    mTextView.setTextSize(8f);
+                    mTextView.setSingleLine(true);
+                });
         mInstrumentation.waitForIdleSync();
 
         // add a compound drawable to TextView to make offset calculation more interesting
@@ -3971,14 +3974,17 @@ public class TextViewTest {
     public void testGetOffsetForPositionMultiLineLtr() throws Throwable {
         final String line = "aaa\n";
         final String threeLines = line + line + line;
-        mActivityRule.runOnUiThread(() -> {
-            mTextView = new TextView(mActivity);
-            mTextView.setText(threeLines);
-            mTextView.setTextSize(8f);
-            mTextView.setLines(2);
-            mTextView.setTypeface(Typeface.createFromAsset(
-                    mTextView.getContext().getAssets(), "fonts/all_one_em_font.ttf"));
-        });
+        mActivityRule.runOnUiThread(
+                () -> {
+                    mTextView = createTextView(mActivity);
+                    mTextView.setText(threeLines);
+                    mTextView.setTextSize(8f);
+                    mTextView.setLines(2);
+                    mTextView.setTypeface(
+                            Typeface.createFromAsset(
+                                    mTextView.getContext().getAssets(),
+                                    "fonts/all_one_em_font.ttf"));
+                });
         mInstrumentation.waitForIdleSync();
 
         // add a compound drawable to TextView to make offset calculation more interesting
@@ -4040,14 +4046,17 @@ public class TextViewTest {
     public void testGetOffsetForPositionMultiLineRtl() throws Throwable {
         final String line = "\u0635\u0635\u0635\n";
         final String threeLines = line + line + line;
-        mActivityRule.runOnUiThread(() -> {
-            mTextView = new TextView(mActivity);
-            mTextView.setText(threeLines);
-            mTextView.setTextSize(8f);
-            mTextView.setLines(2);
-            mTextView.setTypeface(Typeface.createFromAsset(
-                    mTextView.getContext().getAssets(), "fonts/all_one_em_font.ttf"));
-        });
+        mActivityRule.runOnUiThread(
+                () -> {
+                    mTextView = createTextView(mActivity);
+                    mTextView.setText(threeLines);
+                    mTextView.setTextSize(8f);
+                    mTextView.setLines(2);
+                    mTextView.setTypeface(
+                            Typeface.createFromAsset(
+                                    mTextView.getContext().getAssets(),
+                                    "fonts/all_one_em_font.ttf"));
+                });
         mInstrumentation.waitForIdleSync();
 
         // add a compound drawable to TextView to make offset calculation more interesting
@@ -4110,7 +4119,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testIsTextSelectable_returnsFalseByDefault() {
-        final TextView textView = new TextView(mActivity);
+        final TextView textView = createTextView(mActivity);
         textView.setText("any text");
         assertFalse(textView.isTextSelectable());
     }
@@ -4118,7 +4127,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testIsTextSelectable_returnsTrueIfSetTextIsSelectableCalledWithTrue() {
-        final TextView textView = new TextView(mActivity);
+        final TextView textView = createTextView(mActivity);
         textView.setText("any text");
         textView.setTextIsSelectable(true);
         assertTrue(textView.isTextSelectable());
@@ -4127,7 +4136,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testSetIsTextSelectable() {
-        final TextView textView = new TextView(mActivity);
+        final TextView textView = createTextView(mActivity);
 
         assertFalse(textView.isTextSelectable());
         assertFalse(textView.isFocusable());
@@ -4192,7 +4201,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testCompound() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         int padding = 3;
         Drawable[] drawables = mTextView.getCompoundDrawables();
         assertNull(drawables[0]);
@@ -4278,7 +4287,7 @@ public class TextViewTest {
     @Test
     public void testGetCompoundDrawablesRelative() {
         // prepare textview
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
 
         // prepare drawables
         final Drawable start = TestUtils.getDrawable(mActivity, R.drawable.blue);
@@ -4340,7 +4349,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testCursorDrawable_canBeSet_toDrawable() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         final Drawable cursor = TestUtils.getDrawable(mActivity, R.drawable.blue);
         mTextView.setTextCursorDrawable(cursor);
         assertSame(cursor, mTextView.getTextCursorDrawable());
@@ -4349,7 +4358,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testCursorDrawable_canBeSet_toDrawableResource() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         mTextView.setTextCursorDrawable(R.drawable.start);
         WidgetTestUtils.assertEquals(TestUtils.getBitmap(mActivity, R.drawable.start),
                 ((BitmapDrawable) mTextView.getTextCursorDrawable()).getBitmap());
@@ -4370,7 +4379,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testHandleDrawables_areNotNullByDefault() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         assertNotNull(mTextView.getTextSelectHandle());
         assertNotNull(mTextView.getTextSelectHandleLeft());
         assertNotNull(mTextView.getTextSelectHandleRight());
@@ -4379,7 +4388,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testHandleDrawables_canBeSet_toDrawables() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
 
         final Drawable blue = TestUtils.getDrawable(mActivity, R.drawable.blue);
         final Drawable yellow = TestUtils.getDrawable(mActivity, R.drawable.yellow);
@@ -4397,7 +4406,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testHandleDrawables_canBeSet_toDrawableResources() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
 
         mTextView.setTextSelectHandle(R.drawable.start);
         mTextView.setTextSelectHandleLeft(R.drawable.pass);
@@ -4603,7 +4612,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testIsSingleLineTrue() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
 
         mTextView.setSingleLine(true);
 
@@ -4613,7 +4622,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testIsSingleLineFalse() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
 
         mTextView.setSingleLine(false);
 
@@ -4735,7 +4744,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testSetMaxLinesException() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         mTextView.setFitsSystemWindows(true);
         mActivity.setContentView(mTextView);
         mTextView.setWidth(mTextView.getWidth() >> 3);
@@ -4776,7 +4785,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testSetLinesException() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         mTextView.setFitsSystemWindows(true);
         mActivity.setContentView(mTextView);
         mTextView.setWidth(mTextView.getWidth() >> 3);
@@ -4916,7 +4925,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testGetUrls() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
 
         URLSpan[] spans = mTextView.getUrls();
         assertEquals(0, spans.length);
@@ -4949,7 +4958,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testSetPadding() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
 
         mTextView.setPadding(0, 1, 2, 4);
         assertEquals(0, mTextView.getPaddingLeft());
@@ -4984,7 +4993,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testSetFirstBaselineToTopHeight() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         mTextView.setText("This is some random text");
         final int padding = 100;
         mTextView.setPadding(padding, padding, padding, padding);
@@ -5009,7 +5018,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testSetFirstBaselineToTopHeight_tooSmall() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         mTextView.setText("This is some random text");
         final int padding = 100;
         mTextView.setPadding(padding, padding, padding, padding);
@@ -5033,7 +5042,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testSetLastBaselineToBottomHeight() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         mTextView.setText("This is some random text");
         final int padding = 100;
         mTextView.setPadding(padding, padding, padding, padding);
@@ -5058,7 +5067,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testSetLastBaselineToBottomHeight_tooSmall() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         mTextView.setText("This is some random text");
         final int padding = 100;
         mTextView.setPadding(padding, padding, padding, padding);
@@ -5082,7 +5091,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testSetLineHeight() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         mTextView.setText("This is some random text");
 
         // The line height of RobotoFont is (1900 + 500) / 2048 em.
@@ -5115,7 +5124,7 @@ public class TextViewTest {
                 "The values in this test only work when the font scale is 1.0",
                 mActivity.getResources().getConfiguration().fontScale == 1.0f);
 
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         mTextView.setText("This is some random text");
 
         // The line height of RobotoFont is (1900 + 500) / 2048 em.
@@ -5189,7 +5198,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testDeprecatedSetTextAppearance() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
 
         mTextView.setTextAppearance(mActivity, R.style.TextAppearance_All);
         assertEquals(mActivity.getResources().getColor(R.drawable.black),
@@ -5220,7 +5229,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testSetTextAppearance() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
 
         mTextView.setTextAppearance(R.style.TextAppearance_All);
         assertEquals(mActivity.getResources().getColor(R.drawable.black),
@@ -5321,7 +5330,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testAccessCompoundDrawableTint() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
 
         ColorStateList colors = ColorStateList.valueOf(Color.RED);
         mTextView.setCompoundDrawableTintList(colors);
@@ -5562,7 +5571,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testGetMarqueeRepeatLimit() {
-        final TextView textView = new TextView(mActivity);
+        final TextView textView = createTextView(mActivity);
 
         textView.setMarqueeRepeatLimit(10);
         assertEquals(10, textView.getMarqueeRepeatLimit());
@@ -5571,7 +5580,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testAccessInputExtras() throws XmlPullParserException, IOException {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         mTextView.setText(null, BufferType.EDITABLE);
         mTextView.setInputType(InputType.TYPE_CLASS_TEXT);
 
@@ -5596,7 +5605,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testAccessContentType() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         mTextView.setText(null, BufferType.EDITABLE);
         mTextView.setKeyListener(null);
         mTextView.setTransformationMethod(null);
@@ -5673,7 +5682,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testAccessRawContentType() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         mTextView.setText(null, BufferType.EDITABLE);
         mTextView.setKeyListener(null);
         mTextView.setTransformationMethod(null);
@@ -5753,7 +5762,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void isAutoHandwritingEnabled_default_returnsTrue() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         mTextView.setText(null, BufferType.EDITABLE);
         mTextView.setInputType(InputType.TYPE_CLASS_TEXT);
 
@@ -5763,7 +5772,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void isAutoHandwritingEnabled_password_returnsFalse() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         mTextView.setText(null, BufferType.EDITABLE);
         mTextView.setInputType(InputType.TYPE_CLASS_TEXT
                 | InputType.TYPE_TEXT_VARIATION_PASSWORD);
@@ -5774,7 +5783,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void isAutoHandwritingEnabled_visiblePassword_returnsFalse() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         mTextView.setText(null, BufferType.EDITABLE);
         mTextView.setInputType(InputType.TYPE_CLASS_TEXT
                 | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
@@ -5791,7 +5800,7 @@ public class TextViewTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_EDITORINFO_HANDWRITING_ENABLED)
     public void isStylusHandwritingEnabled_default_returnsTrue() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         mTextView.setText(null, BufferType.EDITABLE);
         mTextView.setInputType(InputType.TYPE_CLASS_TEXT);
         mTextView.requestFocus();
@@ -5809,7 +5818,7 @@ public class TextViewTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_EDITORINFO_HANDWRITING_ENABLED)
     public void isStylusHandwritingEnabled_autoHandwritingDisabled_returnsFalse() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
         mTextView.setText(null, BufferType.EDITABLE);
         mTextView.setInputType(InputType.TYPE_CLASS_TEXT);
         mTextView.setAutoHandwritingEnabled(false);
@@ -5888,7 +5897,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testAccessImeHintLocales() {
-        final TextView textView = new TextView(mActivity);
+        final TextView textView = createTextView(mActivity);
         textView.setText("", BufferType.EDITABLE);
         textView.setKeyListener(null);
         textView.setRawInputType(InputType.TYPE_CLASS_TEXT);
@@ -5912,7 +5921,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testSetImeHintLocalesChangesInputType() {
-        final TextView textView = new TextView(mActivity);
+        final TextView textView = createTextView(mActivity);
         textView.setText("", BufferType.EDITABLE);
 
         textView.setInputType(InputType.TYPE_CLASS_NUMBER);
@@ -5950,7 +5959,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testSetImeHintLocalesDoesntLoseInputType() {
-        final TextView textView = new TextView(mActivity);
+        final TextView textView = createTextView(mActivity);
         textView.setText("", BufferType.EDITABLE);
         final int inputType = InputType.TYPE_CLASS_TEXT
                 | InputType.TYPE_TEXT_VARIATION_WEB_EDIT_TEXT
@@ -6235,24 +6244,26 @@ public class TextViewTest {
     @Test
     public void testSelectAllJustAfterTap() throws Throwable {
         // Prepare an EditText with focus.
-        mActivityRule.runOnUiThread(() -> {
-            // Make a placeholder focusable so that initial focus doesn't go to our test textview
-            LinearLayout top = new LinearLayout(mActivity);
-            TextView placeholder = new TextView(mActivity);
-            placeholder.setFocusableInTouchMode(true);
-            top.addView(placeholder, LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-            mTextView = new EditText(mActivity);
-            top.addView(mTextView, LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-            top.setFitsSystemWindows(true);
-            mActivity.setContentView(top);
+        mActivityRule.runOnUiThread(
+                () -> {
+                    // Make a placeholder focusable so that initial focus doesn't go to our test
+                    // textview
+                    LinearLayout top = new LinearLayout(mActivity);
+                    TextView placeholder = createTextView(mActivity);
+                    placeholder.setFocusableInTouchMode(true);
+                    top.addView(placeholder, LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+                    mTextView = new EditText(mActivity);
+                    top.addView(mTextView, LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+                    top.setFitsSystemWindows(true);
+                    mActivity.setContentView(top);
 
-            assertFalse(mTextView.didTouchFocusSelect());
-            mTextView.setFocusable(true);
-            mTextView.requestFocus();
-            assertTrue(mTextView.didTouchFocusSelect());
+                    assertFalse(mTextView.didTouchFocusSelect());
+                    mTextView.setFocusable(true);
+                    mTextView.requestFocus();
+                    assertTrue(mTextView.didTouchFocusSelect());
 
-            mTextView.setText("Hello, World.", BufferType.SPANNABLE);
-        });
+                    mTextView.setText("Hello, World.", BufferType.SPANNABLE);
+                });
         mInstrumentation.waitForIdleSync();
 
         // Tap the view to show InsertPointController.
@@ -6277,7 +6288,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testExtractText() {
-        mTextView = new TextView(mActivity);
+        mTextView = createTextView(mActivity);
 
         ExtractedTextRequest request = new ExtractedTextRequest();
         ExtractedText outText = new ExtractedText();
@@ -6303,14 +6314,14 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testTextDirectionDefault() {
-        TextView tv = new TextView(mActivity);
+        TextView tv = createTextView(mActivity);
         assertEquals(View.TEXT_DIRECTION_INHERIT, tv.getRawTextDirection());
     }
 
     @UiThreadTest
     @Test
     public void testSetGetTextDirection() {
-        TextView tv = new TextView(mActivity);
+        TextView tv = createTextView(mActivity);
 
         tv.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG);
         assertEquals(View.TEXT_DIRECTION_FIRST_STRONG, tv.getRawTextDirection());
@@ -6340,7 +6351,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testGetResolvedTextDirectionLtr() {
-        TextView tv = new TextView(mActivity);
+        TextView tv = createTextView(mActivity);
         tv.setText("this is a test");
 
         assertEquals(View.TEXT_DIRECTION_FIRST_STRONG, tv.getTextDirection());
@@ -6376,7 +6387,7 @@ public class TextViewTest {
         LinearLayout ll = new LinearLayout(mActivity);
         ll.setTextDirection(View.TEXT_DIRECTION_ANY_RTL);
 
-        TextView tv = new TextView(mActivity);
+        TextView tv = createTextView(mActivity);
         tv.setText("this is a test");
         ll.addView(tv);
 
@@ -6408,7 +6419,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testGetResolvedTextDirectionRtl() {
-        TextView tv = new TextView(mActivity);
+        TextView tv = createTextView(mActivity);
         tv.setText("\u05DD\u05DE"); // hebrew
 
         assertEquals(View.TEXT_DIRECTION_FIRST_STRONG, tv.getTextDirection());
@@ -6444,7 +6455,7 @@ public class TextViewTest {
         LinearLayout ll = new LinearLayout(mActivity);
         ll.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG);
 
-        TextView tv = new TextView(mActivity);
+        TextView tv = createTextView(mActivity);
         tv.setText("\u05DD\u05DE"); // hebrew
         ll.addView(tv);
 
@@ -6526,7 +6537,7 @@ public class TextViewTest {
             // The first directional character is LTR, the paragraph direction is LTR.
             LinearLayout ll = new LinearLayout(mActivity);
 
-            TextView tv = new TextView(mActivity);
+            TextView tv = createTextView(mActivity);
             tv.setText("this is a test");
             ll.addView(tv);
 
@@ -6541,7 +6552,7 @@ public class TextViewTest {
             // The first directional character is RTL, the paragraph direction is RTL.
             LinearLayout ll = new LinearLayout(mActivity);
 
-            TextView tv = new TextView(mActivity);
+            TextView tv = createTextView(mActivity);
             tv.setText("\u05DD\u05DE"); // Hebrew
             ll.addView(tv);
 
@@ -6557,7 +6568,7 @@ public class TextViewTest {
             // direction is LTR.
             LinearLayout ll = new LinearLayout(mActivity);
 
-            TextView tv = new TextView(mActivity);
+            TextView tv = createTextView(mActivity);
             tv.setText("\uFFFD");  // REPLACEMENT CHARACTER. Neutral direction.
             ll.addView(tv);
 
@@ -6577,7 +6588,7 @@ public class TextViewTest {
             // The first directional character is LTR, the paragraph direction is LTR.
             LinearLayout ll = new LinearLayout(mActivity);
 
-            TextView tv = new TextView(mActivity);
+            TextView tv = createTextView(mActivity);
             tv.setText("this is a test");
             ll.addView(tv);
 
@@ -6592,7 +6603,7 @@ public class TextViewTest {
             // The first directional character is RTL, the paragraph direction is RTL.
             LinearLayout ll = new LinearLayout(mActivity);
 
-            TextView tv = new TextView(mActivity);
+            TextView tv = createTextView(mActivity);
             tv.setText("\u05DD\u05DE"); // Hebrew
             ll.addView(tv);
 
@@ -6608,7 +6619,7 @@ public class TextViewTest {
             // direction is RTL.
             LinearLayout ll = new LinearLayout(mActivity);
 
-            TextView tv = new TextView(mActivity);
+            TextView tv = createTextView(mActivity);
             tv.setText("\uFFFD");  // REPLACEMENT CHARACTER. Neutral direction.
             ll.addView(tv);
 
@@ -6624,7 +6635,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testTextLocales() {
-        TextView tv = new TextView(mActivity);
+        TextView tv = createTextView(mActivity);
         assertEquals(Locale.getDefault(), tv.getTextLocale());
         assertEquals(LocaleList.getDefault(), tv.getTextLocales());
 
@@ -6673,7 +6684,7 @@ public class TextViewTest {
             Locale.US,
         };
 
-        final TextView tv = new TextView(mActivity);
+        final TextView tv = createTextView(mActivity);
         tv.setAllCaps(true);
         for (Locale locale: testLocales) {
             tv.setTextLocale(locale);
@@ -6693,7 +6704,7 @@ public class TextViewTest {
         final int[] indexMap = {0, 1, 1, 2, 3, 4, 5};
         final int flags = Spanned.SPAN_INCLUSIVE_INCLUSIVE;
 
-        final TextView tv = new TextView(mActivity);
+        final TextView tv = createTextView(mActivity);
         tv.setTextLocale(greek);
         tv.setAllCaps(true);
 
@@ -6730,7 +6741,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testTextAlignmentDefault() {
-        TextView tv = new TextView(mActivity);
+        TextView tv = createTextView(mActivity);
         assertEquals(View.TEXT_ALIGNMENT_GRAVITY, tv.getRawTextAlignment());
         // resolved default text alignment is GRAVITY
         assertEquals(View.TEXT_ALIGNMENT_GRAVITY, tv.getTextAlignment());
@@ -6739,7 +6750,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testSetGetTextAlignment() {
-        TextView tv = new TextView(mActivity);
+        TextView tv = createTextView(mActivity);
 
         tv.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         assertEquals(View.TEXT_ALIGNMENT_GRAVITY, tv.getRawTextAlignment());
@@ -6763,7 +6774,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testGetResolvedTextAlignment() {
-        TextView tv = new TextView(mActivity);
+        TextView tv = createTextView(mActivity);
 
         assertEquals(View.TEXT_ALIGNMENT_GRAVITY, tv.getTextAlignment());
 
@@ -6794,7 +6805,7 @@ public class TextViewTest {
         LinearLayout ll = new LinearLayout(mActivity);
         ll.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
 
-        TextView tv = new TextView(mActivity);
+        TextView tv = createTextView(mActivity);
         ll.addView(tv);
 
         // check defaults
@@ -7017,7 +7028,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testSetGetBreakStrategy() {
-        TextView tv = new TextView(mActivity);
+        TextView tv = createTextView(mActivity);
 
         assertEquals(Layout.BREAK_STRATEGY_HIGH_QUALITY, tv.getBreakStrategy());
 
@@ -7049,7 +7060,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testSetGetHyphenationFrequency() {
-        TextView tv = new TextView(mActivity);
+        TextView tv = createTextView(mActivity);
 
         // Hypenation is enabled by default on watches to fit more text on their tiny screens.
         if (isWatch()) {
@@ -7071,7 +7082,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testSetGetJustify() {
-        TextView tv = new TextView(mActivity);
+        TextView tv = createTextView(mActivity);
 
         assertEquals(Layout.JUSTIFICATION_MODE_NONE, tv.getJustificationMode());
         tv.setJustificationMode(Layout.JUSTIFICATION_MODE_INTER_WORD);
@@ -7618,20 +7629,22 @@ public class TextViewTest {
         // Prepare a focusable TextView with an onClickListener attached.
         final View.OnClickListener mockOnClickListener = mock(View.OnClickListener.class);
         final int safeDoubleTapTimeout = ViewConfiguration.getDoubleTapTimeout() + 1;
-        mActivityRule.runOnUiThread(() -> {
-            // set up a placeholder focusable so that initial focus doesn't go to our test textview
-            LinearLayout top = new LinearLayout(mActivity);
-            TextView placeholder = new TextView(mActivity);
-            placeholder.setFocusableInTouchMode(true);
-            top.addView(placeholder, LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-            mTextView = new TextView(mActivity);
-            mTextView.setText("...text 11:11. some more text is in here...");
-            mTextView.setFocusable(true);
-            mTextView.setOnClickListener(mockOnClickListener);
-            top.addView(mTextView, LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-            top.setFitsSystemWindows(true);
-            mActivity.setContentView(top);
-        });
+        mActivityRule.runOnUiThread(
+                () -> {
+                    // set up a placeholder focusable so that initial focus doesn't go to our test
+                    // textview
+                    LinearLayout top = new LinearLayout(mActivity);
+                    TextView placeholder = createTextView(mActivity);
+                    placeholder.setFocusableInTouchMode(true);
+                    top.addView(placeholder, LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+                    mTextView = createTextView(mActivity);
+                    mTextView.setText("...text 11:11. some more text is in here...");
+                    mTextView.setFocusable(true);
+                    mTextView.setOnClickListener(mockOnClickListener);
+                    top.addView(mTextView, LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+                    top.setFitsSystemWindows(true);
+                    mActivity.setContentView(top);
+                });
         mInstrumentation.waitForIdleSync();
         assertTrue(mTextView.isFocusable());
         assertFalse(mTextView.isTextSelectable());
@@ -7856,7 +7869,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testOnInitializeA11yNodeInfo_populatesHintTextProperly() {
-        final TextView textView = new TextView(mActivity);
+        final TextView textView = createTextView(mActivity);
         textView.setText("", BufferType.EDITABLE);
         final String hintText = "Hint text";
         textView.setHint(hintText);
@@ -8681,7 +8694,7 @@ public class TextViewTest {
 
     @Test
     public void testAutoSizeUniform_getSetAutoSizeTextDefaults() {
-        final TextView textView = new TextView(mActivity);
+        final TextView textView = createTextView(mActivity);
         assertEquals(TextView.AUTO_SIZE_TEXT_TYPE_NONE, textView.getAutoSizeTextType());
         // Min/Max/Granularity values for auto-sizing are 0 because they are not used.
         assertEquals(-1, textView.getAutoSizeMinTextSize());
@@ -8707,7 +8720,7 @@ public class TextViewTest {
 
     @Test
     public void testAutoSizeUniform_getSetAutoSizeStepGranularity() {
-        final TextView textView = new TextView(mActivity);
+        final TextView textView = createTextView(mActivity);
         assertEquals(TextView.AUTO_SIZE_TEXT_TYPE_NONE, textView.getAutoSizeTextType());
         final int initialValue = -1;
         assertEquals(initialValue, textView.getAutoSizeStepGranularity());
@@ -8730,7 +8743,7 @@ public class TextViewTest {
 
     @Test
     public void testAutoSizeUniform_getSetAutoSizeMinTextSize() {
-        final TextView textView = new TextView(mActivity);
+        final TextView textView = createTextView(mActivity);
         textView.setAutoSizeTextTypeWithDefaults(TextView.AUTO_SIZE_TEXT_TYPE_UNIFORM);
         assertEquals(TextView.AUTO_SIZE_TEXT_TYPE_UNIFORM, textView.getAutoSizeTextType());
         final int minSize = textView.getAutoSizeMinTextSize();
@@ -8766,28 +8779,28 @@ public class TextViewTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testAutoSizeUniform_throwsException_whenMaxLessThanMin() {
-        final TextView textView = new TextView(mActivity);
+        final TextView textView = createTextView(mActivity);
         textView.setAutoSizeTextTypeUniformWithConfiguration(
                 10, 9, 1, TypedValue.COMPLEX_UNIT_SP);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testAutoSizeUniform_throwsException_minLessThanZero() {
-        final TextView textView = new TextView(mActivity);
+        final TextView textView = createTextView(mActivity);
         textView.setAutoSizeTextTypeUniformWithConfiguration(
                 -1, 9, 1, TypedValue.COMPLEX_UNIT_SP);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testAutoSizeUniform_throwsException_maxLessThanZero() {
-        final TextView textView = new TextView(mActivity);
+        final TextView textView = createTextView(mActivity);
         textView.setAutoSizeTextTypeUniformWithConfiguration(
                 10, -1, 1, TypedValue.COMPLEX_UNIT_SP);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testAutoSizeUniform_throwsException_granularityLessThanZero() {
-        final TextView textView = new TextView(mActivity);
+        final TextView textView = createTextView(mActivity);
         textView.setAutoSizeTextTypeUniformWithConfiguration(
                 10, 20, -1, TypedValue.COMPLEX_UNIT_SP);
     }
@@ -8806,11 +8819,11 @@ public class TextViewTest {
         final int granularity = 2;
         final int unit = TypedValue.COMPLEX_UNIT_SP;
 
-        final TextView granularityTextView = new TextView(mActivity);
+        final TextView granularityTextView = createTextView(mActivity);
         granularityTextView.setAutoSizeTextTypeUniformWithConfiguration(
                 minTextSize, maxTextSize, granularity, unit);
 
-        final TextView presetTextView = new TextView(mActivity);
+        final TextView presetTextView = createTextView(mActivity);
         presetTextView.setAutoSizeTextTypeUniformWithPresetSizes(
                 new int[] {minTextSize, 12, 14, 16, 18, maxTextSize}, unit);
 
@@ -8869,7 +8882,7 @@ public class TextViewTest {
 
     @Test
     public void testAutoSizeUniform_getSetAutoSizeMaxTextSize() {
-        final TextView textView = new TextView(mActivity);
+        final TextView textView = createTextView(mActivity);
         textView.setAutoSizeTextTypeWithDefaults(TextView.AUTO_SIZE_TEXT_TYPE_UNIFORM);
         assertEquals(TextView.AUTO_SIZE_TEXT_TYPE_UNIFORM, textView.getAutoSizeTextType());
         final int minSize = textView.getAutoSizeMinTextSize();
@@ -9230,7 +9243,7 @@ public class TextViewTest {
     @UiThreadTest
     @Test
     public void testSetGetLineBreakConfig() {
-        TextView tv = new TextView(mActivity);
+        TextView tv = createTextView(mActivity);
         tv.setLineBreakStyle(LineBreakConfig.LINE_BREAK_STYLE_NONE);
         assertEquals(LineBreakConfig.LINE_BREAK_STYLE_NONE, tv.getLineBreakStyle());
 
@@ -9297,7 +9310,7 @@ public class TextViewTest {
 
     @Test
     public void testLineBreakConfigWithTextAppearance() {
-        TextView textView = new TextView(mActivity);
+        TextView textView = createTextView(mActivity);
         textView.setLineBreakStyle(LineBreakConfig.LINE_BREAK_STYLE_LOOSE);
         textView.setLineBreakWordStyle(LineBreakConfig.LINE_BREAK_WORD_STYLE_NONE);
 
@@ -9570,7 +9583,7 @@ public class TextViewTest {
     @Test
     public void measureConsistency() {
         String text = "12\n34";
-        TextView textView = new TextView(mActivity);
+        TextView textView = createTextView(mActivity);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_PX, 100);
         textView.setText(text);
 
@@ -9590,7 +9603,7 @@ public class TextViewTest {
 
     @Test
     public void setGetShiftDrawingOffsetForStartOverhang() {
-        TextView textView = new TextView(mActivity);
+        TextView textView = createTextView(mActivity);
 
         // false by default
         assertFalse(textView.getShiftDrawingOffsetForStartOverhang());
@@ -9674,12 +9687,14 @@ public class TextViewTest {
      * tests.
      */
     private ClickableSpanTestDetails prepareAndRetrieveClickableSpanDetails() throws Throwable {
-        mActivityRule.runOnUiThread(() -> {
-            LinearLayout ll = (LinearLayout) mActivity.findViewById(R.id.layout_textviewtest);
-            ll.removeAllViews();
-            mTextView = new TextView(mActivity);
-            ll.addView(mTextView);
-        });
+        mActivityRule.runOnUiThread(
+                () -> {
+                    LinearLayout ll =
+                            (LinearLayout) mActivity.findViewById(R.id.layout_textviewtest);
+                    ll.removeAllViews();
+                    mTextView = createTextView(mActivity);
+                    ll.addView(mTextView);
+                });
         mInstrumentation.waitForIdleSync();
 
         ClickableSpan mockTextLink = mock(ClickableSpan.class);
@@ -9993,5 +10008,11 @@ public class TextViewTest {
             s.replace(0, s.length(), builder.toString());
             mChangingText = false;
         }
+    }
+
+    private TextView createTextView(Activity activity) {
+        TextView textView = new TextView(activity);
+        textView.setTypeface(Typeface.create("roboto", Typeface.NORMAL));
+        return textView;
     }
 }
