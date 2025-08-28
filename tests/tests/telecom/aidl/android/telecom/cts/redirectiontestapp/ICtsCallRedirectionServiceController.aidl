@@ -35,4 +35,6 @@ interface ICtsCallRedirectionServiceController {
     boolean waitForTimeoutNotified();
 
     boolean waitForOnPlaceCallInvoked();
+
+    Uri getReceivedOriginalHandle();
 }
