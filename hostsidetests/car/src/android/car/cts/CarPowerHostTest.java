@@ -35,6 +35,8 @@ import java.util.concurrent.Callable;
 @RunWith(DeviceJUnit4ClassRunner.class)
 public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     private static final long TIMEOUT_MS = 5_000;
+    private static final long LONG_TIMEOUT_MS = 10_000;
+    private static final long POLLING_DELAY_MS = 5_000;
     private static final int SUSPEND_SEC = 3;
     private static final long WAIT_FOR_SUSPEND_MS = SUSPEND_SEC * 2000;
     private static final String PRODUCT_MODEL_PROPERTY = "ro.product.model";
@@ -152,8 +154,16 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
         clearListener();
         setPowerStateListener(completionType, suspendType);
         suspendDevice.run();
-        // TODO(b/300515548): Replace sleep with a check that device has resumed from suspend
-        sleep(WAIT_FOR_SUSPEND_MS);
+        // Wait for the device to go offline, indicating it has suspended.
+        getDevice().waitForDeviceNotAvailable(WAIT_FOR_SUSPEND_MS);
+        // Wait for the device to come back online.
+        getDevice().waitForDeviceAvailable();
+        // Wait for the device to fully resume to the ON state.
+        pollWithDelay(
+                "Device did not resume to ON state",
+                LONG_TIMEOUT_MS,
+                POLLING_DELAY_MS,
+                () -> getPowerState().equals(POWER_ON));
 
         boolean statesMatchExpected =
                 listenerStatesMatchExpected(completionType, suspendType);
@@ -162,28 +172,35 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
                 + suspendType).that(statesMatchExpected).isTrue();
     }
 
-    private void waitForPowerListenerSet() throws Exception {
-        PollingCheck.check("Wait for listener set timed out", TIMEOUT_MS, () -> {
-            String[] lines = fetchServiceDumpsys().split("\n");
-            for (String line : lines) {
-                if (line.contains(LISTENER_DUMP_HEADER)) {
-                    return line.split(":")[1].trim().equals("true");
-                }
-            }
-            return false;
-        });
-    }
-
-    private void waitForPowerListenerCleared() throws Exception {
-        PollingCheck.check("Wait for listener cleared timed out", TIMEOUT_MS, () -> {
-            String[] lines = fetchServiceDumpsys().split("\n");
-            for (String line : lines) {
-                if (line.contains(LISTENER_DUMP_HEADER)) {
-                    return line.split(":")[1].trim().equals("false");
-                }
-            }
-            return false;
-        });
+    private void waitForPowerListenerState(boolean expectIsSet) throws Exception {
+        long timeout = expectIsSet ? TIMEOUT_MS : 30_000;
+        String message =
+                expectIsSet
+                        ? "Wait for listener set timed out"
+                        : "Wait for listener cleared timed out";
+        pollWithDelay(
+                message,
+                timeout,
+                POLLING_DELAY_MS,
+                () -> {
+                    if (!expectIsSet) {
+                        // TODO(b/328617252): remove this sleep once listener state is reliably
+                        // cleared
+                        Thread.sleep(2000);
+                    }
+                    String[] lines = fetchServiceDumpsys().split("\n");
+                    for (String line : lines) {
+                        if (!line.contains(LISTENER_DUMP_HEADER)) {
+                            continue;
+                        }
+                        String value = line.split(":")[1].trim();
+                        if (expectIsSet) {
+                            return Objects.equals(value, "true");
+                        }
+                        return Objects.equals(value, "false") || Objects.equals("null", value);
+                    }
+                    return false;
+                });
     }
 
     // TODO(b/328617252): remove this method once ADB reconnection from suspend is stable
@@ -231,12 +248,12 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     private void setPowerStateListener(String completionType, String suspendType) throws Exception {
         executeCommand("%s set-listener,%s,%s", TEST_COMMAND_HEADER, completionType,
                 suspendType);
-        waitForPowerListenerSet();
+        waitForPowerListenerState(/* expectIsSet= */ true); // setting listener
     }
 
     private void clearListener() throws Exception {
         executeCommand("%s clear-listener", TEST_COMMAND_HEADER);
-        waitForPowerListenerCleared();
+        waitForPowerListenerState(/* expectIsSet= */ false); // clearing listener
     }
 
     private boolean listenerStatesMatchExpected(String completionType, String suspendType)
@@ -264,5 +281,18 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
 
     public String fetchServiceDumpsys() throws Exception {
         return executeCommand("dumpsys activity service %s", ANDROID_CLIENT_SERVICE);
+    }
+
+    private void pollWithDelay(
+            String message, long timeout, long delay, Callable<Boolean> condition)
+            throws Exception {
+        long endTime = System.currentTimeMillis() + timeout;
+        while (System.currentTimeMillis() < endTime) {
+            if (condition.call()) {
+                return;
+            }
+            Thread.sleep(delay);
+        }
+        throw new AssertionError(message);
     }
 }
