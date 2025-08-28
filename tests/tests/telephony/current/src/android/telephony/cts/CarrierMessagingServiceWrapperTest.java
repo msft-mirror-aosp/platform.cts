@@ -15,6 +15,8 @@
  */
 package android.telephony.cts;
 
+import static android.Manifest.permission.BIND_CARRIER_SERVICES;
+import static android.Manifest.permission.INTERACT_ACROSS_USERS;
 import static android.telephony.cts.FakeCarrierMessagingService.FAKE_MESSAGE_REF;
 
 import static org.junit.Assert.assertTrue;
@@ -110,8 +112,9 @@ public class CarrierMessagingServiceWrapperTest {
         String packageName = "android.telephony.cts";
         mServiceWrapper = new CarrierMessagingServiceWrapper();
 
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                .adoptShellPermissionIdentity("android.permission.BIND_CARRIER_SERVICES");
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(BIND_CARRIER_SERVICES, INTERACT_ACROSS_USERS);
         boolean bindResult = mServiceWrapper.bindToCarrierMessagingService(
                 mContext, packageName, Runnable::run, mOnServiceReadyCallback);
         assertTrue(bindResult);

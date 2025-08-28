@@ -188,10 +188,9 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
     }
 
     private TestActivity createTestActivity2(int windowFlags) {
-        return new TestActivity.Starter()
-                .startSync(
-                        activity -> createLayout(windowFlags, activity, false),
-                        TestActivity2.class);
+        return new TestActivity.Starter().startSync(
+                activity -> createLayout(windowFlags, activity, /* autoRequestFocus */ true),
+                TestActivity2.class);
     }
 
     private LinearLayout createLayout(

@@ -45,6 +45,7 @@ import android.os.UserHandle;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
 
+import androidx.annotation.NonNull;
 import androidx.test.core.app.ActivityScenario;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
@@ -302,7 +303,8 @@ public final class ConcurrentMultiUserTest {
      * Disables/enables IME for {@code user1}, then verifies that the IME settings for {@code user1}
      * has changed as expected and {@code user2} stays the same.
      */
-    private void enableDisableImeForUser(UserHandle user1, UserHandle user2) throws IOException {
+    private void enableDisableImeForUser(@NonNull UserHandle user1, @NonNull UserHandle user2)
+            throws IOException {
         List<InputMethodInfo> user1EnabledImeList =
                 mInputMethodManager.getEnabledInputMethodListAsUser(user1);
         List<InputMethodInfo> user2EnabledImeList =
@@ -366,7 +368,8 @@ public final class ConcurrentMultiUserTest {
      * Sets/resets IME for {@code user1}, then verifies that the IME settings for {@code user1} has
      * changed as expected and {@code user2} stays the same.
      */
-    private void setImeForUser(UserHandle user1, UserHandle user2) throws IOException {
+    private void setImeForUser(@NonNull UserHandle user1, @NonNull UserHandle user2)
+            throws IOException {
         // Reset IME for user1.
         SystemUtil.runShellCommand(mUiAutomation, "ime reset --user " + user1.getIdentifier());
 

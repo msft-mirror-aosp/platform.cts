@@ -15,7 +15,11 @@
  */
 package com.android.cts.devicepolicy.user;
 
+import static android.app.admin.flags.Flags.FLAG_DEVICE_OWNER_FOR_ALL;
+
 import static com.android.tradefed.device.UserInfo.USER_SYSTEM;
+
+import android.platform.test.flag.junit.host.DeviceFlags;
 
 import com.android.compatibility.common.util.UserUtil;
 import com.android.ddmlib.Log.LogLevel;
@@ -135,26 +139,45 @@ public final class DevicePolicyUsersPreparer extends BaseTargetPreparer {
         private final int mInitialCurrentUserId;
         private final @Nullable Integer mMainUserId;
         private final boolean mSupportsProfilesForAll;
+        private final boolean mSupportsDeviceOwnerForAll;
 
         private UsersOracle(ITestDevice device) throws DeviceNotAvailableException {
             mIsHsum = device.isHeadlessSystemUserMode();
             mInitialCurrentUserId = device.getCurrentUser();
             mMainUserId = device.getMainUserId();
             mSupportsProfilesForAll = new UserUtil(device).isProfilesOnNonMainUserSupported();
+            var flags = DeviceFlags.createDeviceFlags(device);
+            String supportsDoForAllFlag = flags.getFlagValue(FLAG_DEVICE_OWNER_FOR_ALL);
+            if (true) {
+                // TODO(b/383180991): temporary hac^H^H^H workaround as `device_config list` is
+                // returning `false` even when it's enabled; probably because the flag is new and
+                // hasn't being ramped-up to staging yet, so it's not in the build.
+                // But before removing this workaround, we need to make sure it would also work
+                // if developers manually change the flag (and same goes for
+                // UserUtils.isProfilesOnNonMainUserSupported())
+                String hackyFlagValue = device.executeShellCommand(
+                        "aflags list | grep android.app.admin.flags.device_owner_for_all");
+                mSupportsDeviceOwnerForAll = hackyFlagValue.trim().contains("enabled");
+            } else {
+                mSupportsDeviceOwnerForAll = Boolean.valueOf(supportsDoForAllFlag);
+            }
             logAndDisplay(
-                    "UsersOracle: isHsum=%b, initialCurrentUser=%d, mainUserId=%s, "
-                            + "supportsProfilesForAll=%b",
-                    mIsHsum, mInitialCurrentUserId, mMainUserId, mSupportsProfilesForAll);
+                    "setUp(): isHsum=%b, initialCurrentUser=%d, mainUserId=%s, "
+                            + "supportsProfilesForAll=%b, supportsDeviceOwnerForAll=%b "
+                            + "(flag %s=%s)", mIsHsum, mInitialCurrentUserId, mMainUserId,
+                            mSupportsProfilesForAll, mSupportsDeviceOwnerForAll,
+                            FLAG_DEVICE_OWNER_FOR_ALL, supportsDoForAllFlag);
         }
 
         private int getDeviceOwnerUserId() {
             if (!mIsHsum) {
                 return USER_SYSTEM;
             }
-
-            // TODO(b/435271558): return the current user once that's supported by DPMS
-            Preconditions.checkState(mMainUserId != null, "Cannot set DO on mainless-user device");
-
+            if (mSupportsDeviceOwnerForAll) {
+                return mInitialCurrentUserId;
+            }
+            Preconditions.checkState(mMainUserId != null,
+                    "DO not supported on mainless-user device");
             return mMainUserId;
         }
 

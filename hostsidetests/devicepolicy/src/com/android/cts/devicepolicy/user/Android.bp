@@ -26,5 +26,6 @@ java_library_host {
     ],
     static_libs: [
         "compatibility-host-util-axt",
+        "device_policy_aconfig_flags_lib_host",
     ],
 }

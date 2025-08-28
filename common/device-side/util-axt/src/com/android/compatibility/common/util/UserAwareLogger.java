@@ -34,6 +34,7 @@ import java.util.Objects;
 public final class UserAwareLogger {
 
     private final String mTag;
+    private final @Nullable String mSubTag;
     private final @UserIdInt int mUserId;
 
     /**
@@ -43,10 +44,17 @@ public final class UserAwareLogger {
      */
     public static final class Builder {
         private final String mTag;
+        private @Nullable String mSubTag;
         private @UserIdInt int mUserId = USER_NULL;
 
         private Builder(String tag) {
             mTag = tag;
+        }
+
+        /** Sets a {@code subTag} (typically the name of a subclass) to be logged on each line. */
+        public Builder setSubTag(String subTag) {
+            mSubTag = Objects.requireNonNull(subTag, "subTag cannot be null");
+            return this;
         }
 
         /** Explicitly sets the user id that will be logged. */
@@ -84,6 +92,7 @@ public final class UserAwareLogger {
 
     private UserAwareLogger(Builder builder) {
         mTag = builder.mTag;
+        mSubTag = builder.mSubTag;
         mUserId = builder.mUserId == USER_NULL ? UserHandle.myUserId() : builder.mUserId;
     }
 
@@ -124,12 +133,22 @@ public final class UserAwareLogger {
 
     @Override
     public String toString() {
-        return "UserAwareLogger[tag=" + mTag + ", userId=" + mUserId + "]";
+        var string = new StringBuilder("UserAwareLogger[tag=").append(mTag);
+        if (mSubTag != null) {
+            string.append(", subTag=").append(mSubTag);
+        }
+
+        return string.append(", userId=").append(mUserId).append("]").toString();
     }
 
     @FormatMethod
     private void log(int level, @FormatString String fmt, @Nullable Object... args) {
-        String msg = "(userId=" + mUserId + "): " + String.format(Locale.ENGLISH, fmt, args);
+        StringBuilder builder = new StringBuilder("[");
+        if (mSubTag != null) {
+            builder.append(mSubTag).append(", ");
+        }
+        String msg = builder.append("userId=").append(mUserId).append("]: ")
+                .append(String.format(Locale.ENGLISH, fmt, args)).toString();
         switch (level) {
             case Log.ERROR -> Log.e(mTag, msg);
             case Log.WARN -> Log.w(mTag, msg);

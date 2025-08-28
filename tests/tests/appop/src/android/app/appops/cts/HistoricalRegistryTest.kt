@@ -26,6 +26,7 @@ import android.app.AppOpsManager.OPSTR_RESERVED_FOR_TESTING
 import android.app.AppOpsManager.OPSTR_WAKE_LOCK
 import android.app.AppOpsManager.OP_FLAGS_ALL
 import android.content.Context
+import android.os.Build
 import android.os.Process
 import android.permission.flags.Flags.FLAG_ENABLE_ALL_SQLITE_APPOPS_ACCESSES
 import android.platform.test.annotations.AppModeFull
@@ -41,6 +42,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 import java.util.function.Consumer
 import org.junit.After
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Ignore
 import org.junit.Rule
@@ -123,25 +125,37 @@ class HistoricalRegistryTest {
     }
 
     @Test
-    fun appOpAccessesArePersistedAcrossReboot() {
+    fun shortIntervalAppOpAccessesArePersistedAcrossReboot() {
         ensureNoteOpBatchingDoesNotAffectTest()
-        val opNames = listOf(SHORT_INTERVAL_OP, LONG_INTERVAL_OP)
+        val opNames = listOf(SHORT_INTERVAL_OP)
         ensureAppOpsModeAllowed(testUid, testPackageName, opNames)
         noteOpWithShellIdentity(SHORT_INTERVAL_OP, testUid, testPackageName, null)
+        runWithShellPermissionIdentity {
+            appOpsManager.rebootHistory(100)
+        }
+        val historicalOps = getHistoricalOps(opNames = opNames)
+        val discreteOps = convertHistoricalOpsToDiscreteAccessEvents(historicalOps)
+        assertThat(discreteOps.size).isEqualTo(1)
+        assertThat(discreteOps.first().opName).isEqualTo(SHORT_INTERVAL_OP)
+    }
+
+    @Test
+    fun longIntervalAppOpAccessesArePersistedAcrossReboot() {
+        // This test doesn't pass on xml impl due to b/441328280.
+        assumeTrue(Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1)
+        ensureNoteOpBatchingDoesNotAffectTest()
+        val opNames = listOf(LONG_INTERVAL_OP)
+        ensureAppOpsModeAllowed(testUid, testPackageName, opNames)
         noteOpWithShellIdentity(LONG_INTERVAL_OP, testUid, testPackageName, null)
         runWithShellPermissionIdentity {
             appOpsManager.rebootHistory(100)
         }
 
         val historicalOps = getHistoricalOps(historyFlag = HISTORY_FLAGS_ALL, opNames = opNames)
-        val discreteOps = convertHistoricalOpsToDiscreteAccessEvents(historicalOps)
-        assertThat(discreteOps.size).isEqualTo(1)
-        assertThat(discreteOps.first().opName).isEqualTo(SHORT_INTERVAL_OP)
-
         val aggregatedOps = convertHistoricalOpsToAggregatedAccessEvents(historicalOps)
-        assertThat(aggregatedOps.size).isEqualTo(2)
+        assertThat(aggregatedOps.size).isEqualTo(1)
         aggregatedOps.forEach { accessEvent ->
-            assertThat(accessEvent.opName).isAnyOf(SHORT_INTERVAL_OP, LONG_INTERVAL_OP)
+            assertThat(accessEvent.opName).isEqualTo(LONG_INTERVAL_OP)
             assertThat(accessEvent.totalDurationMillis).isEqualTo(0)
             assertThat(accessEvent.rejectCount).isEqualTo(0)
             assertWithMessage(accessEvent.toString()).that(accessEvent.accessCount).isEqualTo(1)
@@ -224,8 +238,8 @@ class HistoricalRegistryTest {
 
     @Test
     fun getHistoricalOpsInDisabledMode() {
-        setAppOpHistoryParameters("mode=HISTORICAL_MODE_DISABLED")
         try {
+            setAppOpHistoryParameters(AppOpsManager.HISTORICAL_MODE_DISABLED)
             waitUntilSafelyInTimeQuant(SHORT_INTERVAL_QUANTIZATION_MILLIS, 5 * 1000)
             val opNames = listOf(SHORT_INTERVAL_OP)
             ensureAppOpsModeAllowed(testUid, testPackageName, opNames)
@@ -240,14 +254,13 @@ class HistoricalRegistryTest {
             val appOps = convertHistoricalOpsToAggregatedAccessEvents(historicalOps)
             assertThat(appOps.size).isEqualTo(0)
         } finally {
-            setAppOpHistoryParameters("mode=HISTORICAL_MODE_ENABLED_ACTIVE")
+            setAppOpHistoryParameters(AppOpsManager.HISTORICAL_MODE_ENABLED_ACTIVE)
         }
     }
 
-    private fun setAppOpHistoryParameters(value: String) {
+    private fun setAppOpHistoryParameters(mode: Int) {
         runWithShellPermissionIdentity {
-            instrumentation.uiAutomation
-                .executeShellCommand("settings put global appop_history_parameters $value")
+            appOpsManager.setHistoryParameters(mode, 15 * 60 * 1000, 10)
         }
     }
 

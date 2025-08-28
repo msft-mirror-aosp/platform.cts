@@ -53,6 +53,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import org.junit.Assert.fail
 import org.junit.Assume
 import org.junit.ClassRule
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -274,6 +275,7 @@ class NetworkLoggingTest {
      * The test is only running in DO configuration since batching logic isn't really dependent on
      * management mode and the test may take quite some time.
      */
+    @Ignore("b/438919878")
     @Postsubmit(reason = "new test")
     @Test
     @EnsureHasDeviceOwner

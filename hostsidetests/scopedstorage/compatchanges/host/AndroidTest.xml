@@ -21,6 +21,6 @@
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
 
     <test class="com.android.compatibility.common.tradefed.testtype.JarHostTest" >
-        <option name="jar" value="CtsOwnedPhotosHostTestCases.jar" />
+        <option name="jar" value="CtsScopedStorageCompatHostTest.jar" />
     </test>
 </configuration>

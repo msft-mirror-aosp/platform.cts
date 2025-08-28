@@ -36,22 +36,13 @@ public final class ProfileOwnerTest extends BaseDevicePolicyTest {
             PROFILE_OWNER_PKG + ".BaseProfileOwnerTest$BasicAdminReceiver";
 
     private boolean mOwnerSet;
-    private int mUserId = 0;
-
-    @Override
-    protected boolean refactoredToNotRelyOnMainUser() {
-        return true;
-    }
+    private int mUserId;
 
     @Override
     public void setUp() throws Exception {
         super.setUp();
 
-        if (refactoredToNotRelyOnMainUser()) {
-            mUserId = DevicePolicyUsersPreparer.getProfileOwnerUserId();
-        } else {
-            mUserId = isHeadlessSystemUserMode() ? getCurrentUser() : getMainUser();
-        }
+        mUserId = DevicePolicyUsersPreparer.getProfileOwnerUserId();
 
         installAppAsUser(PROFILE_OWNER_APK, mUserId);
         if (!setProfileOwner(
