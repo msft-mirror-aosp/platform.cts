@@ -2101,7 +2101,6 @@ public class ImsServiceTest {
         boolean mTelUriSupported = CarrierCapability.SUPPORT_TEL_URI_PUBLISH.contains(mccmnc);
 
         ImsRcsManager imsRcsManager = imsManager.getImsRcsManager(sTestSub);
-        RcsUceAdapter uceAdapter = imsRcsManager.getUceAdapter();
 
         // Connect to device ImsService with MmTel feature and RCS feature
         triggerFrameworkConnectToImsServiceBindMmTelAndRcsFeature();
@@ -2151,6 +2150,11 @@ public class ImsServiceTest {
         ShellIdentityUtils.invokeThrowableMethodWithShellPermissionsNoReturn(imsRcsManager,
                 (m) -> m.registerImsRegistrationCallback(getContext().getMainExecutor(), callback),
                 ImsException.class);
+        // Give the UCE stack time to settle so that it doesn't cause a race when trying to issue
+        // a PUBLISH later.
+        sServiceConnector
+                .getCarrierService()
+                .waitForLatchCountdown(TestImsService.LATCH_UCE_REQUEST_PUBLISH);
 
         ArraySet<String> featureTags = new ArraySet<>();
         // Chat Session
@@ -2164,8 +2168,15 @@ public class ImsServiceTest {
         // Notify framework that the RCS capability status is changed and PRESENCE UCE is enabled.
         RcsImsCapabilities capabilities =
                 new RcsImsCapabilities(RcsUceAdapter.CAPABILITY_TYPE_PRESENCE_UCE);
-        sServiceConnector.getCarrierService().getRcsFeature()
+        sServiceConnector
+                .getCarrierService()
+                .getRcsFeature()
                 .notifyCapabilitiesStatusChanged(capabilities);
+        // Give the UCE stack time to settle so that it doesn't cause a race when trying to issue
+        // a PUBLISH.
+        sServiceConnector
+                .getCarrierService()
+                .waitForLatchCountdown(TestImsService.LATCH_UCE_REQUEST_PUBLISH);
 
         // ImsService triggers to notify framework publish device's capabilities.
         CapabilityExchangeEventListener eventListener =
@@ -4586,37 +4597,45 @@ public class ImsServiceTest {
             assertTrue(!provisioningManager.isRcsProvisioningRequiredForCapability(
                     RCS_CAP_PRESENCE, IMS_REGI_TECH_NR));
 
-            // However, getProvisioningStatusForCapability() should return true because it does not
-            // require provision
-            assertTrue(provisioningManager.getProvisioningStatusForCapability(
-                    RCS_CAP_PRESENCE, IMS_REGI_TECH_LTE));
+            // However, getRcsProvisioningStatusForCapability() should return true because it does
+            // not require provision
+            assertTrue(
+                    provisioningManager.getRcsProvisioningStatusForCapability(
+                            RCS_CAP_PRESENCE, IMS_REGI_TECH_LTE));
             // put opposite value to check if the key is changed or not
-            provisioningManager.setProvisioningStatusForCapability(
+            provisioningManager.setRcsProvisioningStatusForCapability(
                     RCS_CAP_PRESENCE, IMS_REGI_TECH_LTE, false);
             // key value should not be changed whatever value is set
-            assertTrue(provisioningManager.getProvisioningStatusForCapability(
-                    RCS_CAP_PRESENCE, IMS_REGI_TECH_LTE));
+            assertTrue(
+                    provisioningManager.getRcsProvisioningStatusForCapability(
+                            RCS_CAP_PRESENCE, IMS_REGI_TECH_LTE));
 
-            assertTrue(provisioningManager.getProvisioningStatusForCapability(
-                    RCS_CAP_PRESENCE, IMS_REGI_TECH_IWLAN));
-            provisioningManager.setProvisioningStatusForCapability(
+            assertTrue(
+                    provisioningManager.getRcsProvisioningStatusForCapability(
+                            RCS_CAP_PRESENCE, IMS_REGI_TECH_IWLAN));
+            provisioningManager.setRcsProvisioningStatusForCapability(
                     RCS_CAP_PRESENCE, IMS_REGI_TECH_IWLAN, false);
-            assertTrue(provisioningManager.getProvisioningStatusForCapability(
-                    RCS_CAP_PRESENCE, IMS_REGI_TECH_IWLAN));
+            assertTrue(
+                    provisioningManager.getRcsProvisioningStatusForCapability(
+                            RCS_CAP_PRESENCE, IMS_REGI_TECH_IWLAN));
 
-            assertTrue(provisioningManager.getProvisioningStatusForCapability(
-                    RCS_CAP_PRESENCE, IMS_REGI_TECH_CROSS_SIM));
-            provisioningManager.setProvisioningStatusForCapability(
+            assertTrue(
+                    provisioningManager.getRcsProvisioningStatusForCapability(
+                            RCS_CAP_PRESENCE, IMS_REGI_TECH_CROSS_SIM));
+            provisioningManager.setRcsProvisioningStatusForCapability(
                     RCS_CAP_PRESENCE, IMS_REGI_TECH_CROSS_SIM, false);
-            assertTrue(provisioningManager.getProvisioningStatusForCapability(
-                    RCS_CAP_PRESENCE, IMS_REGI_TECH_CROSS_SIM));
+            assertTrue(
+                    provisioningManager.getRcsProvisioningStatusForCapability(
+                            RCS_CAP_PRESENCE, IMS_REGI_TECH_CROSS_SIM));
 
-            assertTrue(provisioningManager.getProvisioningStatusForCapability(
-                    RCS_CAP_PRESENCE, IMS_REGI_TECH_NR));
-            provisioningManager.setProvisioningStatusForCapability(
+            assertTrue(
+                    provisioningManager.getRcsProvisioningStatusForCapability(
+                            RCS_CAP_PRESENCE, IMS_REGI_TECH_NR));
+            provisioningManager.setRcsProvisioningStatusForCapability(
                     RCS_CAP_PRESENCE, IMS_REGI_TECH_NR, false);
-            assertTrue(provisioningManager.getProvisioningStatusForCapability(
-                    RCS_CAP_PRESENCE, IMS_REGI_TECH_NR));
+            assertTrue(
+                    provisioningManager.getRcsProvisioningStatusForCapability(
+                            RCS_CAP_PRESENCE, IMS_REGI_TECH_NR));
 
             // TODO : work for OPTIONS case
 
