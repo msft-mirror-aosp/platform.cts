@@ -278,8 +278,10 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
         // Wait for the fullscreen stack to start sleeping, and then make sure the
         // test activity is still resumed.
         final ActivityLifecycleCounts counts = new ActivityLifecycleCounts(RESIZEABLE_ACTIVITY);
-        if (!Condition.waitFor(counts.countWithRetry(RESIZEABLE_ACTIVITY + " to be stopped",
-                countSpec(ActivityCallback.ON_STOP, CountSpec.EQUALS, 1)))) {
+        if (!Condition.waitFor(
+                counts.countWithRetry(
+                        RESIZEABLE_ACTIVITY + " to be stopped",
+                        ActivityCallback.ON_STOP.hasCountEquals(1)))) {
             fail(RESIZEABLE_ACTIVITY + " has received "
                     + counts.getCount(ActivityCallback.ON_STOP)
                     + " onStop() calls, expecting 1");

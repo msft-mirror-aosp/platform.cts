@@ -2059,84 +2059,20 @@ public abstract class ActivityManagerTestBase {
         mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
     }
 
-    public static class CountSpec<T> {
-        static final int DONT_CARE = Integer.MIN_VALUE;
-        public static final int EQUALS = 1;
-        public static final int GREATER_THAN = 2;
-        static final int LESS_THAN = 3;
-        public static final int GREATER_THAN_OR_EQUALS = 4;
-
-        final T mEvent;
-        final int mRule;
-        final int mCount;
-        final String mMessage;
-
-        CountSpec(T event, int rule, int count, String message) {
-            mEvent = event;
-            mRule = count == DONT_CARE ? DONT_CARE : rule;
-            mCount = count;
-            if (message != null) {
-                mMessage = message;
-            } else {
-                switch (rule) {
-                    case EQUALS:
-                        mMessage = event + " must equal to " + count;
-                        break;
-                    case GREATER_THAN:
-                        mMessage = event + " must be greater than " + count;
-                        break;
-                    case LESS_THAN:
-                        mMessage = event + " must be less than " + count;
-                        break;
-                    case GREATER_THAN_OR_EQUALS:
-                        mMessage = event + " must be greater than (or equals to) " + count;
-                        break;
-                    default:
-                        mMessage = "Don't care";
-                }
-            }
-        }
-
-        /** @return {@code true} if the given value is satisfied the condition. */
-        boolean validate(int value) {
-            switch (mRule) {
-                case DONT_CARE:
-                    return true;
-                case EQUALS:
-                    return value == mCount;
-                case GREATER_THAN:
-                    return value > mCount;
-                case LESS_THAN:
-                    return value < mCount;
-                case GREATER_THAN_OR_EQUALS:
-                    return value >= mCount;
-                default:
-            }
-            throw new RuntimeException("Unknown CountSpec rule");
-        }
-    }
-
-    static <T> CountSpec<T> countSpec(T event, int rule, int count, String message) {
-        return new CountSpec<>(event, rule, count, message);
-    }
-
-    public static <T> CountSpec<T> countSpec(T event, int rule, int count) {
-        return new CountSpec<>(event, rule, count, null /* message */);
-    }
-
     static void assertLifecycleCounts(ComponentName activityName, String message,
             int createCount, int startCount, int resumeCount, int pauseCount, int stopCount,
             int destroyCount, int configChangeCount) {
-        new ActivityLifecycleCounts(activityName).assertCountWithRetry(
-                message,
-                countSpec(ActivityCallback.ON_CREATE, CountSpec.EQUALS, createCount),
-                countSpec(ActivityCallback.ON_START, CountSpec.EQUALS, startCount),
-                countSpec(ActivityCallback.ON_RESUME, CountSpec.EQUALS, resumeCount),
-                countSpec(ActivityCallback.ON_PAUSE, CountSpec.EQUALS, pauseCount),
-                countSpec(ActivityCallback.ON_STOP, CountSpec.EQUALS, stopCount),
-                countSpec(ActivityCallback.ON_DESTROY, CountSpec.EQUALS, destroyCount),
-                countSpec(ActivityCallback.ON_CONFIGURATION_CHANGED, CountSpec.EQUALS,
-                        configChangeCount));
+        new ActivityLifecycleCounts(activityName)
+                .assertCountWithRetry(
+                        message,
+                        ActivityCallback.ON_CREATE.hasCountEquals(createCount),
+                        ActivityCallback.ON_START.hasCountEquals(startCount),
+                        ActivityCallback.ON_RESUME.hasCountEquals(resumeCount),
+                        ActivityCallback.ON_PAUSE.hasCountEquals(pauseCount),
+                        ActivityCallback.ON_STOP.hasCountEquals(stopCount),
+                        ActivityCallback.ON_DESTROY.hasCountEquals(destroyCount),
+                        ActivityCallback.ON_CONFIGURATION_CHANGED.hasCountEquals(
+                                configChangeCount));
     }
 
     public static void assertLifecycleCounts(
@@ -2154,35 +2090,55 @@ public abstract class ActivityManagerTestBase {
     }
 
     public static void assertSingleLaunch(ComponentName activityName) {
-        assertLifecycleCounts(activityName,
+        assertLifecycleCounts(
+                activityName,
                 "activity create, start, and resume",
-                1 /* createCount */, 1 /* startCount */, 1 /* resumeCount */,
-                0 /* pauseCount */, 0 /* stopCount */, 0 /* destroyCount */,
-                CountSpec.DONT_CARE /* configChangeCount */);
+                1 /* createCount */,
+                1 /* startCount */,
+                1 /* resumeCount */,
+                0 /* pauseCount */,
+                0 /* stopCount */,
+                0 /* destroyCount */,
+                CountSpec.DONT_CARE_COUNT /* configChangeCount */);
     }
 
     public static void assertSingleLaunchAndStop(ComponentName activityName) {
-        assertLifecycleCounts(activityName,
+        assertLifecycleCounts(
+                activityName,
                 "activity create, start, resume, pause, and stop",
-                1 /* createCount */, 1 /* startCount */, 1 /* resumeCount */,
-                1 /* pauseCount */, 1 /* stopCount */, 0 /* destroyCount */,
-                CountSpec.DONT_CARE /* configChangeCount */);
+                1 /* createCount */,
+                1 /* startCount */,
+                1 /* resumeCount */,
+                1 /* pauseCount */,
+                1 /* stopCount */,
+                0 /* destroyCount */,
+                CountSpec.DONT_CARE_COUNT /* configChangeCount */);
     }
 
     public static void assertSingleStartAndStop(ComponentName activityName) {
-        assertLifecycleCounts(activityName,
+        assertLifecycleCounts(
+                activityName,
                 "activity start, resume, pause, and stop",
-                0 /* createCount */, 1 /* startCount */, 1 /* resumeCount */,
-                1 /* pauseCount */, 1 /* stopCount */, 0 /* destroyCount */,
-                CountSpec.DONT_CARE /* configChangeCount */);
+                0 /* createCount */,
+                1 /* startCount */,
+                1 /* resumeCount */,
+                1 /* pauseCount */,
+                1 /* stopCount */,
+                0 /* destroyCount */,
+                CountSpec.DONT_CARE_COUNT /* configChangeCount */);
     }
 
     protected static void assertSingleStart(ComponentName activityName) {
-        assertLifecycleCounts(activityName,
+        assertLifecycleCounts(
+                activityName,
                 "activity start and resume",
-                0 /* createCount */, 1 /* startCount */, 1 /* resumeCount */,
-                0 /* pauseCount */, 0 /* stopCount */, 0 /* destroyCount */,
-                CountSpec.DONT_CARE /* configChangeCount */);
+                0 /* createCount */,
+                1 /* startCount */,
+                1 /* resumeCount */,
+                0 /* pauseCount */,
+                0 /* stopCount */,
+                0 /* destroyCount */,
+                CountSpec.DONT_CARE_COUNT /* configChangeCount */);
     }
 
     /** Assert the activity is either relaunched or received configuration changed. */
@@ -2215,34 +2171,37 @@ public abstract class ActivityManagerTestBase {
         final ActivityLifecycleCounts lifecycles = new ActivityLifecycleCounts(callbackHistory);
         if (relaunched) {
             return lifecycles.validateCount(
-                    countSpec(ActivityCallback.ON_DESTROY, CountSpec.GREATER_THAN, 0,
-                            name + " must have been destroyed."),
-                    countSpec(ActivityCallback.ON_CREATE, CountSpec.GREATER_THAN, 0,
-                            name + " must have been (re)created."));
+                    ActivityCallback.ON_DESTROY.hasCountGreaterThan(
+                            0, name + " must have been destroyed."),
+                    ActivityCallback.ON_CREATE.hasCountGreaterThan(
+                            0, name + " must have been (re)created."));
         }
         return lifecycles.validateCount(
-                countSpec(ActivityCallback.ON_DESTROY, CountSpec.LESS_THAN, 1,
-                        name + " must *NOT* have been destroyed."),
-                countSpec(ActivityCallback.ON_CREATE, CountSpec.LESS_THAN, 1,
-                        name + " must *NOT* have been (re)created."),
-                countSpec(ActivityCallback.ON_CONFIGURATION_CHANGED, CountSpec.GREATER_THAN, 0,
-                                name + " must have received configuration changed."));
+                ActivityCallback.ON_DESTROY.hasCountLessThan(
+                        1, name + " must *NOT* have been destroyed."),
+                ActivityCallback.ON_CREATE.hasCountLessThan(
+                        1, name + " must *NOT* have been (re)created."),
+                ActivityCallback.ON_CONFIGURATION_CHANGED.hasCountGreaterThan(
+                        0, name + " must have received configuration changed."));
     }
 
     public static void assertRelaunchOrConfigChanged(
             ComponentName activityName, int numRelaunch, int numConfigChange) {
-        new ActivityLifecycleCounts(activityName).assertCountWithRetry("relaunch or config changed",
-                countSpec(ActivityCallback.ON_DESTROY, CountSpec.EQUALS, numRelaunch),
-                countSpec(ActivityCallback.ON_CREATE, CountSpec.EQUALS, numRelaunch),
-                countSpec(ActivityCallback.ON_CONFIGURATION_CHANGED, CountSpec.EQUALS,
-                        numConfigChange));
+        new ActivityLifecycleCounts(activityName)
+                .assertCountWithRetry(
+                        "relaunch or config changed",
+                        ActivityCallback.ON_DESTROY.hasCountEquals(numRelaunch),
+                        ActivityCallback.ON_CREATE.hasCountEquals(numRelaunch),
+                        ActivityCallback.ON_CONFIGURATION_CHANGED.hasCountEquals(numConfigChange));
     }
 
     public static void assertActivityDestroyed(ComponentName activityName) {
-        new ActivityLifecycleCounts(activityName).assertCountWithRetry("activity destroyed",
-                countSpec(ActivityCallback.ON_DESTROY, CountSpec.EQUALS, 1),
-                countSpec(ActivityCallback.ON_CREATE, CountSpec.EQUALS, 0),
-                countSpec(ActivityCallback.ON_CONFIGURATION_CHANGED, CountSpec.EQUALS, 0));
+        new ActivityLifecycleCounts(activityName)
+                .assertCountWithRetry(
+                        "activity destroyed",
+                        ActivityCallback.ON_DESTROY.hasCountEquals(1),
+                        ActivityCallback.ON_CREATE.hasCountEquals(0),
+                        ActivityCallback.ON_CONFIGURATION_CHANGED.hasCountEquals(0));
     }
 
     public static void assertSecurityExceptionFromActivityLauncher() {
@@ -2301,8 +2260,10 @@ public abstract class ActivityManagerTestBase {
     /** Waits for at least one onMultiWindowModeChanged event. */
     public ActivityLifecycleCounts waitForOnMultiWindowModeChanged(ComponentName activityName) {
         final ActivityLifecycleCounts counts = new ActivityLifecycleCounts(activityName);
-        Condition.waitFor(counts.countWithRetry("waitForOnMultiWindowModeChanged", countSpec(
-                ActivityCallback.ON_MULTI_WINDOW_MODE_CHANGED, CountSpec.GREATER_THAN, 0)));
+        Condition.waitFor(
+                counts.countWithRetry(
+                        "waitForOnMultiWindowModeChanged",
+                        ActivityCallback.ON_MULTI_WINDOW_MODE_CHANGED.hasCountGreaterThan(0)));
         return counts;
     }
 
@@ -2389,12 +2350,12 @@ public abstract class ActivityManagerTestBase {
         final String validateCount(CountSpec<ActivityCallback>... countSpecs) {
             ArrayList<String> failedReasons = null;
             for (CountSpec<ActivityCallback> spec : countSpecs) {
-                final int realCount = mCounts[spec.mEvent.ordinal()];
+                final int realCount = mCounts[spec.getEvent().ordinal()];
                 if (!spec.validate(realCount)) {
                     if (failedReasons == null) {
                         failedReasons = new ArrayList<>();
                     }
-                    failedReasons.add(spec.mMessage + " (got " + realCount + ")");
+                    failedReasons.add(spec.getMessage() + " (got " + realCount + ")");
                 }
             }
             return failedReasons == null ? null : String.join("\n", failedReasons);
