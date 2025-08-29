@@ -20,6 +20,8 @@ import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
 
 import android.content.Context;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
@@ -37,9 +39,16 @@ import android.widget.PopupWindow;
 import android.widget.TextView;
 import java.util.Arrays;
 
+import com.androidplot.ui.AnchorPosition;
+import com.androidplot.ui.DynamicTableModel;
+import com.androidplot.ui.XLayoutStyle;
+import com.androidplot.ui.YLayoutStyle;
+import com.androidplot.ui.widget.TextLabelWidget;
+import com.androidplot.util.PixelUtils;
 import com.androidplot.xy.PointLabelFormatter;
 import com.androidplot.xy.LineAndPointFormatter;
 import com.androidplot.xy.SimpleXYSeries;
+import com.androidplot.xy.XYLegendWidget;
 import com.androidplot.xy.XYPlot;
 import com.androidplot.xy.XYSeries;
 import com.androidplot.xy.XYStepMode;
@@ -270,15 +279,29 @@ public class HifiUltrasoundSpeakerTestActivity extends PassFailButtons.Activity 
 
     XYPlot plot = (XYPlot) popupView.findViewById(R.id.responseChart);
     plot.clear();
-    plot.setDomainStep(XYStepMode.INCREMENT_BY_VAL, 2000);
+    // Write the domain step every 6000 Hz
+    plot.setDomainStep(XYStepMode.INCREMENT_BY_VAL, 6000);
+    XYLegendWidget legendWidget = plot.getLegendWidget();
+    // Stack the legend vertically
+    legendWidget.setTableModel(new DynamicTableModel(1 /* numColumns */, 0 /* numRows */));
+    TextLabelWidget domainLabelWidget = plot.getDomainLabelWidget();
+    domainLabelWidget.position(
+        PixelUtils.dpToPix(0),
+        XLayoutStyle.ABSOLUTE_FROM_CENTER,
+        PixelUtils.dpToPix(150), // Absolute position from bottom
+        YLayoutStyle.ABSOLUTE_FROM_BOTTOM,
+        AnchorPosition.BOTTOM_MIDDLE);
 
     Double[] frequencies = new Double[Common.PIP_NUM];
     for (int i = 0; i < Common.PIP_NUM; i++) {
       frequencies[i] = new Double(Common.FREQUENCIES_ORIGINAL[i]);
     }
 
-    if (wavAnalyzerTask != null) {
+    Paint transparentFillPaint = new Paint();
+    transparentFillPaint.setColor(Color.TRANSPARENT);
+    transparentFillPaint.setStyle(Paint.Style.FILL);
 
+    if (wavAnalyzerTask != null) {
       double[][] power = wavAnalyzerTask.getPower();
       for(int i = 0; i < Common.REPETITIONS; i++) {
         Double[] powerWrap = new Double[Common.PIP_NUM];
@@ -288,12 +311,17 @@ public class HifiUltrasoundSpeakerTestActivity extends PassFailButtons.Activity 
         XYSeries series = new SimpleXYSeries(
             Arrays.asList(frequencies),
             Arrays.asList(powerWrap),
-            "");
-        LineAndPointFormatter seriesFormat = new LineAndPointFormatter();
-        seriesFormat.setPointLabelFormatter(new PointLabelFormatter());
-        seriesFormat.configure(getApplicationContext(),
-            R.xml.ultrasound_line_formatter_trials);
-        plot.addSeries(series, seriesFormat);
+            "repetition: " + (i + 1));
+          // Use colors around the color wheel
+          float hue = (360.0f / Common.REPETITIONS) * i;
+          // Use a low saturation and a high value so the median sticks out
+          int trialColorInt = Color.HSVToColor(new float[]{hue, 0.2f, 0.9f});
+          LineAndPointFormatter seriesFormat = new LineAndPointFormatter(
+              trialColorInt /* lineColor */,
+              trialColorInt /* pointColor */,
+              Color.TRANSPARENT /* fillColor */,
+              null /* don't label points */);
+          plot.addSeries(series, seriesFormat);
       }
 
       double[] noiseDB = wavAnalyzerTask.getNoiseDB();
@@ -307,9 +335,10 @@ public class HifiUltrasoundSpeakerTestActivity extends PassFailButtons.Activity 
           Arrays.asList(noiseDBWrap),
           "background noise");
       LineAndPointFormatter noiseSeriesFormat = new LineAndPointFormatter();
-      noiseSeriesFormat.setPointLabelFormatter(new PointLabelFormatter());
+      noiseSeriesFormat.setPointLabelFormatter(null);
       noiseSeriesFormat.configure(getApplicationContext(),
           R.xml.ultrasound_line_formatter_noise);
+      noiseSeriesFormat.setFillPaint(transparentFillPaint);
       plot.addSeries(noiseSeries, noiseSeriesFormat);
 
       double[] dB = wavAnalyzerTask.getDB();
@@ -323,9 +352,10 @@ public class HifiUltrasoundSpeakerTestActivity extends PassFailButtons.Activity 
           Arrays.asList(dBWrap),
           "median");
       LineAndPointFormatter seriesFormat = new LineAndPointFormatter();
-      seriesFormat.setPointLabelFormatter(new PointLabelFormatter());
+      seriesFormat.setPointLabelFormatter(null);
       seriesFormat.configure(getApplicationContext(),
           R.xml.ultrasound_line_formatter_median);
+      seriesFormat.setFillPaint(transparentFillPaint);
       plot.addSeries(series, seriesFormat);
 
       Double[] passX = new Double[] {Common.MIN_FREQUENCY_HZ, Common.MAX_FREQUENCY_HZ};
@@ -333,9 +363,10 @@ public class HifiUltrasoundSpeakerTestActivity extends PassFailButtons.Activity 
       XYSeries passSeries = new SimpleXYSeries(
           Arrays.asList(passX), Arrays.asList(passY), "passing");
       LineAndPointFormatter passSeriesFormat = new LineAndPointFormatter();
-      passSeriesFormat.setPointLabelFormatter(new PointLabelFormatter());
+      passSeriesFormat.setPointLabelFormatter(null);
       passSeriesFormat.configure(getApplicationContext(),
           R.xml.ultrasound_line_formatter_pass);
+      passSeriesFormat.setFillPaint(transparentFillPaint);
       plot.addSeries(passSeries, passSeriesFormat);
     }
   }
