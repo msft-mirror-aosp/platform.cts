@@ -21,6 +21,14 @@ import android.app.UiModeManager
 import android.app.UiModeManager.MODE_NIGHT_NO
 import android.app.UiModeManager.MODE_NIGHT_YES
 import android.content.Context
+import android.content.theming.ThemeStyle
+import android.content.theming.ThemeStyle.EXPRESSIVE
+import android.content.theming.ThemeStyle.FRUIT_SALAD
+import android.content.theming.ThemeStyle.MONOCHROMATIC
+import android.content.theming.ThemeStyle.RAINBOW
+import android.content.theming.ThemeStyle.SPRITZ
+import android.content.theming.ThemeStyle.TONAL_SPOT
+import android.content.theming.ThemeStyle.VIBRANT
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -41,14 +49,6 @@ import com.android.compatibility.common.util.CddTest
 import com.android.compatibility.common.util.FeatureUtil
 import com.android.compatibility.common.util.SystemUtil.runShellCommand
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
-import com.android.systemui.monet.Style
-import com.android.systemui.monet.Style.EXPRESSIVE
-import com.android.systemui.monet.Style.FRUIT_SALAD
-import com.android.systemui.monet.Style.MONOCHROMATIC
-import com.android.systemui.monet.Style.RAINBOW
-import com.android.systemui.monet.Style.SPRITZ
-import com.android.systemui.monet.Style.TONAL_SPOT
-import com.android.systemui.monet.Style.VIBRANT
 import com.google.common.truth.Truth.assertWithMessage
 import com.google.ux.material.libmonet.contrast.Contrast
 import com.google.ux.material.libmonet.hct.Hct
@@ -79,12 +79,12 @@ class SystemPaletteTest(
 ) {
     val mContext: Context = getInstrumentation().targetContext
 
-    val isSupportedDevice =!(
-        FeatureUtil.isTV() ||
-        FeatureUtil.isWatch() ||
-        FeatureUtil.isAutomotive() ||
-        /* TODO:b/362682063 - Remove this once the bug is fixed */
-        UserManager.isHeadlessSystemUserMode())
+    val isSupportedDevice =
+        !(FeatureUtil.isTV() ||
+            FeatureUtil.isWatch() ||
+            FeatureUtil.isAutomotive() ||
+            /* TODO:b/362682063 - Remove this once the bug is fixed */
+            UserManager.isHeadlessSystemUserMode())
 
     val isOldSpec: Boolean =
         mContext.resources.getIdentifier("system_primary_dim_light", "color", "android") == 0
@@ -201,7 +201,7 @@ class SystemPaletteTest(
                                 MONOCHROMATIC,
                             )
                             .forEach { style ->
-                                dataList.add(arrayOf(color, Style.name(style), mode))
+                                dataList.add(arrayOf(color, ThemeStyle.name(style), mode))
                             }
                     }
             }
