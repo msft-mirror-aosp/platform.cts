@@ -19,6 +19,7 @@ package com.android.cts.lint
 import com.android.tools.lint.client.api.IssueRegistry
 import com.android.tools.lint.client.api.Vendor
 import com.android.tools.lint.detector.api.CURRENT_API
+import com.google.android.lint.flags.CheckFlagsRuleDetector
 import com.google.auto.service.AutoService
 
 @AutoService(IssueRegistry::class)
@@ -26,6 +27,7 @@ class CtsIssueRegistry : IssueRegistry() {
     override val issues =
         listOf(
             PackageNameDetector.ISSUE,
+            CheckFlagsRuleDetector.ISSUE_MISSING_CHECK_FLAGS_RULE,
         )
 
     override val api: Int

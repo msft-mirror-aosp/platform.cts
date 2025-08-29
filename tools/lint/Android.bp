@@ -24,6 +24,7 @@ java_library_host {
     ],
     static_libs: [
         "AndroidCommonLint",
+        "AndroidGlobalLintChecker",
     ],
     kotlincflags: [
         "-Xjvm-default=all",
