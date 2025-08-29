@@ -59,18 +59,22 @@ import android.os.SystemClock;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.DesktopTest;
 import android.platform.test.annotations.AppModeInstant;
+import android.platform.test.annotations.DesktopTest;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
+import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.widget.RemoteViews;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.DeviceConfigStateHelper;
+import com.android.compatibility.common.util.SettingsStateKeeperRule;
+import com.android.compatibility.common.util.SettingsStateManager;
+import com.android.compatibility.common.util.UserSettings;
 
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
@@ -98,11 +102,21 @@ public class AppWidgetTest extends AppWidgetTestCase {
     @Rule(order = 0)
     public final CheckFlagsRule checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
+    @Rule(order = 1)
+    public final SettingsStateKeeperRule fontScaleRule = new SettingsStateKeeperRule(
+        getInstrumentation().getTargetContext(), UserSettings.Namespace.SYSTEM,
+        Settings.System.FONT_SCALE
+    );
+
     private static final long OPERATION_TIMEOUT = 20 * 1000; // 20 sec
 
     private final Object mLock = new Object();
     private final DeviceConfigStateHelper mDeviceConfigStateHelper = new DeviceConfigStateHelper(
             DeviceConfig.NAMESPACE_SYSTEMUI);
+    private final SettingsStateManager mFontScale = new SettingsStateManager(
+        getInstrumentation().getTargetContext(), UserSettings.Namespace.SYSTEM,
+        Settings.System.FONT_SCALE
+    );
 
     @Before
     public void setUpDexmaker() throws Exception {
@@ -1618,6 +1632,43 @@ public class AppWidgetTest extends AppWidgetTestCase {
             // Wait for onEnabled and onUpdate
             waitForCallCount(invocationCounter, 2);
 
+        } finally {
+            FirstAppWidgetProvider.setCallbacks(null);
+            host.deleteHost();
+            revokeBindAppWidgetPermission();
+        }
+    }
+
+    @AppModeFull(reason = "Instant apps cannot provide or host app widgets")
+    @Test
+    public void testFontScaleChange() throws Exception {
+        final Context context = getInstrumentation().getTargetContext();
+        final AppWidgetHost host = new AppWidgetHost(context, 0);
+        // Delete host to clear up any old ones.
+        host.deleteHost();
+        host.startListening();
+        try {
+            // Configure the provider behavior.
+            final AtomicInteger invocationCounter = new AtomicInteger();
+            FirstAppWidgetProvider.setCallbacks(createAppWidgetProviderCallbacks(
+                invocationCounter));
+
+            // Bind an instance of the widget
+            grantBindAppWidgetPermission();
+            final AppWidgetProviderInfo provider = getFirstAppWidgetProviderInfo();
+            final int appWidgetId = host.allocateAppWidgetId();
+            getAppWidgetManager().bindAppWidgetIdIfAllowed(appWidgetId,
+                provider.getProfile(), provider.provider, null);
+
+            // Wait for onEnabled and onUpdate
+            waitForCallCount(invocationCounter, 2);
+
+            // Change the font scale
+            float currentScale = Float.parseFloat(mFontScale.get());
+            mFontScale.set(String.valueOf(currentScale + 0.5));
+
+            // Wait for onUpdate
+            waitForCallCount(invocationCounter, 3);
         } finally {
             FirstAppWidgetProvider.setCallbacks(null);
             host.deleteHost();
