@@ -2147,6 +2147,18 @@ public class ImsCallingTest extends ImsCallingBase {
         overrideCarrierConfig(null);
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_AUTO_UNHOLD)
+    @Test
+    public void testAutoUnholdBgCallOnRemoteDisconnect_ConfigSupported() throws Exception {
+        verifyAutoUnholdFeature(true /* enableAutoUnhold */);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_AUTO_UNHOLD)
+    @Test
+    public void testAutoUnholdBgCallOnRemoteDisconnect_ConfigNotSupported() throws Exception {
+        verifyAutoUnholdFeature(false /* enableAutoUnhold */);
+    }
+
     @RequiresFlagsEnabled(Flags.FLAG_LOG_CALLS_ANSWERED_ELSEWHERE)
     @ApiTest(apis = "android.telephony.CarrierConfigManager#KEY_LOG_CALLS_ANSWERED_ELSEWHERE_BOOL")
     @Test
@@ -2740,6 +2752,46 @@ public class ImsCallingTest extends ImsCallingBase {
                 .getConferenceHelper();
         if (confHelper != null) {
             confHelper.clearSessions();
+        }
+    }
+
+    private void verifyAutoUnholdFeature(boolean enableAutoUnhold) throws Exception {
+        bindImsService();
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putBoolean(CarrierConfigManager.KEY_ALLOW_HOLD_IN_IMS_CALL_BOOL, true);
+        // Disable the corresponding carrier config key to verify that auto-unhold doesn't happen.
+        bundle.putBoolean(
+                CarrierConfigManager.KEY_AUTO_UNHOLD_ON_REMOTE_DISCONNECT_BOOL, enableAutoUnhold);
+        overrideCarrierConfig(bundle);
+
+        // Place outgoing call.
+        Call firstCall = placeOutgoingCall();
+        waitForCallSessionToNotBe(null);
+        TestImsCallSessionImpl firstCallSession =
+                sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+        isCallActive(firstCall, firstCallSession);
+
+        // Place second call
+        Call secondCall = placeOutgoingCall();
+        waitForCallSessionToNotBe(firstCallSession);
+        TestImsCallSessionImpl secondCallSession =
+                sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+        // Ensure that the first call is held and the new call is active.
+        isCallHolding(firstCall, firstCallSession);
+        isCallActive(secondCall, secondCallSession);
+
+        // Remotely disconnect the active call.
+        secondCallSession.simulateCallDisconnection(ImsReasonInfo.CODE_USER_TERMINATED_BY_REMOTE);
+        isCallDisconnected(secondCall, secondCallSession);
+
+        // Verify either the bg call was unheld or not depending on the state of the carrier config
+        // (KEY_AUTO_UNHOLD_ON_REMOTE_DISCONNECT_BOOL) value.
+        if (enableAutoUnhold) {
+            isCallActive(firstCall, firstCallSession);
+        } else {
+            assertTrue(
+                    firstCallSession.isSessionOnHold()
+                            && firstCall.getDetails().getState() == Call.STATE_HOLDING);
         }
     }
 }
