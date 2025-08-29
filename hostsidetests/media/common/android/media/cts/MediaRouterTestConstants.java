@@ -145,6 +145,7 @@ public final class MediaRouterTestConstants {
 
     public static final String ROUTE_ID_VISIBILITY_RESTRICTED = "route_visibility_restricted";
     public static final String ROUTE_ID_RESTRICTED_ALLOW_PRIVILEGED = "route_allow_privileged";
+    public static final String ROUTE_ID_RESTRICTED_OTHER_PACKAGE = "route_other_package_restricted";
 
     public static final String ROUTE_NAME_1 = "route 1";
     public static final String ROUTE_NAME_2 = "route 2";
@@ -159,6 +160,8 @@ public final class MediaRouterTestConstants {
 
     public static final String ROUTE_NAME_VISIBILITY_RESTRICTED = "visibility_restricted_route";
     public static final String ROUTE_NAME_RESTRICTED_ALLOW_PRIVILEGED = "allow_privileged_route";
+    public static final String ROUTE_NAME_RESTRICTED_OTHER_PACKAGE =
+            "other_package_restricted_route";
 
     public static final String ROUTE_DEDUPLICATION_ID_1 = "dedup_id_1";
     public static final String ROUTE_DEDUPLICATION_ID_2 = "dedup_id_2";

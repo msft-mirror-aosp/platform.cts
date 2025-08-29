@@ -452,6 +452,32 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
 
     @AppModeFull
     @RequiresDevice
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_COMPAT_FIXES)
+    @Test
+    public void permissionHiddenRoute_routeSelectedInOsw_routeBecomesVisibleBeforeTransfer()
+            throws Exception {
+        revokeAllPermissions(DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE);
+        runDeviceTests(
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS,
+                "permissionHiddenRoute_routeSelectedInOsw_routeBecomesVisibleBeforeTransfer");
+    }
+
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_COMPAT_FIXES)
+    @Test
+    public void visibilityRestrictedRoute_routeSelectedInOsw_routeBecomesVisibleBeforeTransfer()
+            throws Exception {
+        revokeAllPermissions(DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE);
+        runDeviceTests(
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS,
+                "visibilityRestrictedRoute_routeSelectedInOsw_routeBecomesVisibleBeforeTransfer");
+    }
+
+    @AppModeFull
+    @RequiresDevice
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_MEDIA_ROUTE_2_INFO_PROVIDER_PACKAGE_NAME)
     @Test
     public void testGetProviderPackageName_propagatesCorrectlyFromProvider() throws Exception {
