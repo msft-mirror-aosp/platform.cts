@@ -16,7 +16,7 @@ import java.io.IOException;
 public class AudioRecordHelper {
 
   private static final int[] SOURCE = {
-      MediaRecorder.AudioSource.MIC, MediaRecorder.AudioSource.VOICE_RECOGNITION};
+      MediaRecorder.AudioSource.VOICE_RECOGNITION, MediaRecorder.AudioSource.MIC};
   private static final int[] SAMPLE_RATES_HZ = {
     AudioTrack.getNativeOutputSampleRate(AudioManager.STREAM_MUSIC), 48000, 44100};
 
