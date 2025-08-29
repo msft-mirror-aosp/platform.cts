@@ -63,11 +63,13 @@ public final class DevicePolicyUsersPreparer extends BaseTargetPreparer {
             // Log what it will return...
             logAndDisplay(
                     "preview: getInitialCurrentUserId()=%s, getDeviceOwnerUserId()=%s, "
-                            + "getProfileParentUserIds()=%s, getPreExistingUserIds()=%s",
+                            + "getProfileParentUserIds()=%s, getPreExistingUserIds()=%s,"
+                            + "isDeviceOwnerSupportedOnAnyFullUsers()=%s",
                     safeToString(DevicePolicyUsersPreparer::getInitialCurrentUserId),
                     safeToString(DevicePolicyUsersPreparer::getDeviceOwnerUserId),
                     safeToString(DevicePolicyUsersPreparer::getProfileParentUserIds),
-                    safeToString(DevicePolicyUsersPreparer::getPreExistingUserIds));
+                    safeToString(DevicePolicyUsersPreparer::getPreExistingUserIds),
+                    safeToString(DevicePolicyUsersPreparer::isDeviceOwnerSupportedOnAnyFullUsers));
         } catch (Exception e) {
             // ... but don't fail
             CLog.e("Failed to log initial state: %s", e);
@@ -103,6 +105,11 @@ public final class DevicePolicyUsersPreparer extends BaseTargetPreparer {
     /** Gets the id of a user that *should* be used by tests to set a {@code ProfileOwner} on. */
     public static int getProfileOwnerUserId() {
         return getOracle().getProfileOwnerUserId();
+    }
+
+    /** Gets whether device owner could be set on any full user. */
+    public static boolean isDeviceOwnerSupportedOnAnyFullUsers() {
+        return getOracle().isDeviceOwnerSupportedOnAnyFullUsers();
     }
 
     /**
@@ -141,6 +148,8 @@ public final class DevicePolicyUsersPreparer extends BaseTargetPreparer {
         private final @Nullable Integer mMainUserId;
         private final boolean mSupportsProfilesForAll;
         private final boolean mSupportsDeviceOwnerForAll;
+        // TODO(b/35372278): temporary workaround until flag is ramped up
+        private final boolean mIsAutomotive;
 
         private UsersOracle(ITestDevice device) throws DeviceNotAvailableException {
             mIsHsum = device.isHeadlessSystemUserMode();
@@ -148,6 +157,7 @@ public final class DevicePolicyUsersPreparer extends BaseTargetPreparer {
             mPreExistingUserIds = device.getUserInfos().keySet();
             mMainUserId = device.getMainUserId();
             mSupportsProfilesForAll = new UserUtil(device).isProfilesOnNonMainUserSupported();
+            mIsAutomotive = device.hasFeature("android.hardware.type.automotive");
             var flags = DeviceFlags.createDeviceFlags(device);
             String supportsDoForAllFlag = flags.getFlagValue(FLAG_DEVICE_OWNER_FOR_ALL);
             if (true) {
@@ -166,7 +176,7 @@ public final class DevicePolicyUsersPreparer extends BaseTargetPreparer {
             logAndDisplay(
                     "setUp(): isHsum=%b, initialCurrentUser=%d, mainUserId=%s, "
                             + "supportsProfilesForAll=%b, supportsDeviceOwnerForAll=%b "
-                            + "(flag %s=%s), mPreExistingUserIds=%s",
+                            + "(flag %s=%s), mIsAutomotive=%b, mPreExistingUserIds=%s",
                     mIsHsum,
                     mInitialCurrentUserId,
                     mMainUserId,
@@ -174,7 +184,12 @@ public final class DevicePolicyUsersPreparer extends BaseTargetPreparer {
                     mSupportsDeviceOwnerForAll,
                     FLAG_DEVICE_OWNER_FOR_ALL,
                     supportsDoForAllFlag,
+                    mIsAutomotive,
                     mPreExistingUserIds);
+        }
+
+        private boolean isDeviceOwnerSupportedOnAnyFullUsers() {
+            return mSupportsDeviceOwnerForAll;
         }
 
         private int getDeviceOwnerUserId() {
@@ -182,6 +197,10 @@ public final class DevicePolicyUsersPreparer extends BaseTargetPreparer {
                 return USER_SYSTEM;
             }
             if (mSupportsDeviceOwnerForAll) {
+                return mInitialCurrentUserId;
+            }
+            if (mMainUserId == null && mIsAutomotive) {
+                CLog.d("getDeviceOwnerUserId(): returning initial user (%d) on automotive build");
                 return mInitialCurrentUserId;
             }
             Preconditions.checkState(mMainUserId != null,
@@ -213,6 +232,12 @@ public final class DevicePolicyUsersPreparer extends BaseTargetPreparer {
         private int mainOrCurrentUserId() {
             if (mMainUserId != null) {
                 return mMainUserId;
+            }
+            if (mIsAutomotive) {
+                CLog.d(
+                        "mainOrCurrentUserId(): returning current user (%d) on automotive build",
+                        mInitialCurrentUserId);
+                return mInitialCurrentUserId;
             }
             Preconditions.checkState(mSupportsProfilesForAll, "device does not have main user");
             return mInitialCurrentUserId;

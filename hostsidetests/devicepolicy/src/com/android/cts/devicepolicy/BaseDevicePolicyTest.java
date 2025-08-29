@@ -825,6 +825,10 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
             throws DeviceNotAvailableException {
         CLog.d("setDeviceOwner(componentName=%s, userId=%d, expectFailure=%b", componentName,
                 userId, expectFailure);
+        // TODO(b/35372278): temporary workaround until flag is ramped up
+        if (isAutomotive() && !DevicePolicyUsersPreparer.isDeviceOwnerSupportedOnAnyFullUsers()) {
+            throw new AssumptionViolatedException("Cannot set device owner on automotive build");
+        }
         String command = "dpm set-device-owner --user " + userId + " '" + componentName + "'";
         String commandOutput = getDevice().executeShellCommand(command);
         boolean success = commandOutput.startsWith("Success:");
