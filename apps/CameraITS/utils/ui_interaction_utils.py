@@ -323,14 +323,9 @@ def jca_ui_zoom(dut, zoom_ratio, log_path):
       res=UI_DEBUG_OVERLAY_SET_ZOOM_RATIO_TEXT_FIELD_RESOURCE_ID
   ).set_text(str(zoom_ratio))
   dut.ui(res=UI_DEBUG_OVERLAY_SET_ZOOM_RATIO_SET_BUTTON_RESOURCE_ID).click()
-  # Ensure that preview is stable by clicking the center of the screen.
-  center_x, center_y = (
-      dut.ui.info['displayWidth'] // 2,
-      dut.ui.info['displayHeight'] // 2
-  )
-  dut.ui.click(x=center_x, y=center_y)
-  time.sleep(UI_OBJECT_WAIT_TIME_SECONDS.total_seconds())
-  if not dut.ui(res=UI_ZOOM_RATIO_TEXT_RESOURCE_ID).text:
+  if not dut.ui(res=UI_ZOOM_RATIO_TEXT_RESOURCE_ID).wait.exists(
+      UI_OBJECT_WAIT_TIME_SECONDS
+  ):
     dut.ui.press.back()
     dut.ui(res=UI_ZOOM_RATIO_TEXT_RESOURCE_ID).wait.exists(
         UI_OBJECT_WAIT_TIME_SECONDS
@@ -347,6 +342,13 @@ def jca_ui_zoom(dut, zoom_ratio, log_path):
         f'Failed to zoom to {zoom_ratio}, '
         f'zoomed to {zoom_ratio_after_zoom} instead.'
     )
+  # Ensure that preview is stable by clicking the center of the screen.
+  center_x, center_y = (
+      dut.ui.info['displayWidth'] // 2,
+      dut.ui.info['displayHeight'] // 2
+  )
+  dut.ui.click(x=center_x, y=center_y)
+  time.sleep(UI_OBJECT_WAIT_TIME_SECONDS.total_seconds())
   logging.debug('Set zoom ratio to %.2f', zoom_ratio)
   dut.take_screenshot(log_path, prefix=f'zoomed_to_{zoom_ratio}')
 
