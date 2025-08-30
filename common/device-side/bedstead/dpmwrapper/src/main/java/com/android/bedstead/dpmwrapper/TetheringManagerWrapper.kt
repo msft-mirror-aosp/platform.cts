@@ -20,11 +20,15 @@ import android.net.TetheringManager
 import android.util.Log
 import com.android.bedstead.dpmwrapper.TestAppSystemServiceFactory.ServiceManagerWrapper
 import java.util.concurrent.Executor
-import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.spy
+import org.mockito.kotlin.stub
 import org.mockito.stubbing.Answer
 
-internal class TetheringManagerWrapper : ServiceManagerWrapper<TetheringManager?>() {
+internal class TetheringManagerWrapper : ServiceManagerWrapper<TetheringManager>() {
     companion object {
         private val TAG: String = TetheringManagerWrapper::class.java.getSimpleName()
 
@@ -33,46 +37,47 @@ internal class TetheringManagerWrapper : ServiceManagerWrapper<TetheringManager?
 
     override fun getWrapper(
         context: Context,
-        manager: TetheringManager?,
+        manager: TetheringManager,
         answer: Answer<*>,
-    ): TetheringManager? {
+    ): TetheringManager {
         val userId = context.userId
-        var spy: TetheringManager? = sSpies.get(context)
-        if (spy != null) {
+        val cachedSpy: TetheringManager? = sSpies.get(context)
+        if (cachedSpy != null) {
             Log.d(TAG, "get(): returning cached spy for user $userId")
-            return spy
+            return cachedSpy
         }
-
-        spy = Mockito.spy<TetheringManager?>(manager)
-        val spyString = "TetheringManagerWrapper#" + System.identityHashCode(spy)
-        Log.d(TAG, "get(): created spy for user " + context.userId + ": " + spyString)
 
         // TODO(b/176993670): ideally there should be a way to automatically mock all DPM methods,
         // but that's probably not doable, as there is no contract (such as an interface) to specify
         // which ones should be spied and which ones should not (in fact, if there was an interface,
         // we wouldn't need Mockito and could wrap the calls using java's DynamicProxy
-        try {
-            Mockito.doReturn(spyString).`when`<TetheringManager?>(spy).toString()
+        val tetheringManagerSpy =
+            spy(manager) {
+                // Used by TetheringTest
+                on {
+                    startTethering(
+                        any<TetheringManager.TetheringRequest>(),
+                        anyOrNull(),
+                        anyOrNull(),
+                    )
+                } doAnswer answer
+                on {
+                    startTethering(
+                        any<Int>(),
+                        anyOrNull<Executor>(),
+                        anyOrNull<TetheringManager.StartTetheringCallback>(),
+                    )
+                } doAnswer answer
+            }
 
-            // Used by TetheringTest
-            Mockito.doAnswer(answer)
-                .`when`<TetheringManager?>(spy)
-                .startTethering(any<TetheringManager.TetheringRequest>(), any(), any())
-            Mockito.doAnswer(answer)
-                .`when`<TetheringManager?>(spy)
-                .startTethering(
-                    any<Int>(),
-                    any<Executor>(),
-                    any<TetheringManager.StartTetheringCallback>(),
-                )
-        } catch (e: Exception) {
-            // Should never happen, but needs to be catch as some methods declare checked exceptions
-            Log.wtf("Exception setting mocks", e)
-        }
+        val identificationString =
+            "TetheringManagerWrapper#${System.identityHashCode(tetheringManagerSpy)}"
+        tetheringManagerSpy.stub { on { toString() } doReturn identificationString }
+        Log.d(TAG, "get(): created spy for user ${context.userId}: $identificationString")
 
-        sSpies.put(context, spy)
+        sSpies.put(context, tetheringManagerSpy)
         Log.d(TAG, "get(): returning new spy for context $context and user $userId")
 
-        return spy
+        return tetheringManagerSpy
     }
 }

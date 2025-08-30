@@ -19,12 +19,15 @@ import android.content.Context
 import android.os.HardwarePropertiesManager
 import android.util.Log
 import com.android.bedstead.dpmwrapper.TestAppSystemServiceFactory.ServiceManagerWrapper
-import org.mockito.ArgumentMatchers
-import org.mockito.Mockito
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.spy
+import org.mockito.kotlin.stub
 import org.mockito.stubbing.Answer
 
 internal class HardwarePropertiesManagerWrapper :
-    ServiceManagerWrapper<HardwarePropertiesManager?>() {
+    ServiceManagerWrapper<HardwarePropertiesManager>() {
     companion object {
         private val TAG: String = HardwarePropertiesManagerWrapper::class.java.getSimpleName()
 
@@ -33,41 +36,36 @@ internal class HardwarePropertiesManagerWrapper :
 
     override fun getWrapper(
         context: Context,
-        manager: HardwarePropertiesManager?,
+        manager: HardwarePropertiesManager,
         answer: Answer<*>,
-    ): HardwarePropertiesManager? {
+    ): HardwarePropertiesManager {
         val userId = context.userId
-        var spy: HardwarePropertiesManager? = sSpies.get(context)
-        if (spy != null) {
+        val cachedSpy: HardwarePropertiesManager? = sSpies.get(context)
+        if (cachedSpy != null) {
             Log.d(TAG, "get(): returning cached spy for user $userId")
-            return spy
+            return cachedSpy
         }
-
-        spy = Mockito.spy<HardwarePropertiesManager?>(manager)
-        val spyString = "HardwarePropertiesManagerWrapper#" + System.identityHashCode(spy)
-        Log.d(TAG, "get(): created spy for user " + context.userId + ": " + spyString)
 
         // TODO(b/176993670): ideally there should be a way to automatically mock all DPM methods,
         // but that's probably not doable, as there is no contract (such as an interface) to specify
         // which ones should be spied and which ones should not (in fact, if there was an interface,
         // we wouldn't need Mockito and could wrap the calls using java's DynamicProxy
-        try {
-            Mockito.doReturn(spyString).`when`<HardwarePropertiesManager?>(spy).toString()
+        val hardwarePropertiesManagerSpy =
+            spy(manager) {
+                // Used by HardwarePropertiesManagerTest
+                on { cpuUsages } doAnswer answer
+                on { getDeviceTemperatures(any(), any()) } doAnswer answer
+                on { fanSpeeds } doAnswer answer
+            }
 
-            // Used by HardwarePropertiesManagerTest
-            Mockito.doAnswer(answer).`when`<HardwarePropertiesManager?>(spy).cpuUsages
-            Mockito.doAnswer(answer)
-                .`when`<HardwarePropertiesManager?>(spy)
-                .getDeviceTemperatures(ArgumentMatchers.anyInt(), ArgumentMatchers.anyInt())
-            Mockito.doAnswer(answer).`when`<HardwarePropertiesManager?>(spy).fanSpeeds
-        } catch (e: Exception) {
-            // Should never happen, but needs to be catch as some methods declare checked exceptions
-            Log.wtf("Exception setting mocks", e)
-        }
+        val identificationHashCode = System.identityHashCode(hardwarePropertiesManagerSpy)
+        val identificationString = "HardwarePropertiesManagerWrapper#$identificationHashCode"
+        hardwarePropertiesManagerSpy.stub { on { toString() } doReturn identificationString }
+        Log.d(TAG, "get(): created spy for user ${context.userId}: $identificationString")
 
-        sSpies.put(context, spy)
+        sSpies.put(context, hardwarePropertiesManagerSpy)
         Log.d(TAG, ("get(): returning new spy for context $context and user $userId"))
 
-        return spy
+        return hardwarePropertiesManagerSpy
     }
 }
