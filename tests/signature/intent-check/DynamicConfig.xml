@@ -30,6 +30,7 @@
     Bug: 237978237 android.intent.action.REMOTE_COPY
     Bug: 316270779 android.intent.action.UNARCHIVE_PACKAGE
     Bug: 389672924 android.intent.action.USER_INFO_CHANGED_BACKGROUND
+    Bug: 399172476 android.intent.action.OPEN_EYE_DROPPER
 -->
 <dynamicConfig>
     <entry key ="intent_whitelist">
@@ -48,5 +49,6 @@
       <value>android.intent.action.REMOTE_COPY</value>
       <value>android.intent.action.UNARCHIVE_PACKAGE</value>
       <value>android.intent.action.USER_INFO_CHANGED_BACKGROUND</value>
+      <value>android.intent.action.OPEN_EYE_DROPPER</value>
     </entry>
 </dynamicConfig>
