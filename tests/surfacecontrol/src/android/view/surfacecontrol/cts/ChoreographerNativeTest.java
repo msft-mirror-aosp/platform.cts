@@ -50,6 +50,7 @@ import org.junit.runner.RunWith;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.stream.IntStream;
 
 @FlakyTest
 @RunWith(AndroidJUnit4.class)
@@ -69,7 +70,10 @@ public class ChoreographerNativeTest {
                     Manifest.permission.MODIFY_REFRESH_RATE_SWITCHING_TYPE);
 
     private static native long nativeGetChoreographer();
-    private static native boolean nativePrepareChoreographerTests(long ptr, long[] refreshPeriods);
+
+    private static native boolean nativePrepareChoreographerTests(
+            long ptr, long[] refreshPeriods, boolean isRefreshRateUpdateSupportedIsFlagEnabled);
+
     private static native void nativeTestPostCallbackWithoutDelayEventuallyRunsCallbacks(long ptr);
     private static native void nativeTestPostCallbackWithDelayEventuallyRunsCallbacks(long ptr);
     private static native void nativeTestPostCallback64WithoutDelayEventuallyRunsCallbacks(
@@ -118,13 +122,30 @@ public class ChoreographerNativeTest {
         assertTrue(defaultDisplayOpt.isPresent());
         mDefaultDisplay = defaultDisplayOpt.get();
 
-        mSupportedPeriods = Arrays.stream(mDefaultDisplay.getSupportedModes())
-                .mapToLong(mode -> (long) (Duration.ofSeconds(1).toNanos() / mode.getRefreshRate()))
-                .distinct()
-                .toArray();
-
+        if (com.android.graphics.surfaceflinger.flags.Flags.supportedRefreshRateUpdate()) {
+            float[] refreshRates = mDefaultDisplay.getSupportedRefreshRates();
+            mSupportedPeriods =
+                    IntStream.range(0, refreshRates.length)
+                            .mapToLong(
+                                    i -> (long) (Duration.ofSeconds(1).toNanos() / refreshRates[i]))
+                            .distinct()
+                            .toArray();
+        } else {
+            mSupportedPeriods =
+                    Arrays.stream(mDefaultDisplay.getSupportedModes())
+                            .mapToLong(
+                                    mode ->
+                                            (long)
+                                                    (Duration.ofSeconds(1).toNanos()
+                                                            / mode.getRefreshRate()))
+                            .distinct()
+                            .toArray();
+        }
         mChoreographerPtr = nativeGetChoreographer();
-        if (!nativePrepareChoreographerTests(mChoreographerPtr, mSupportedPeriods)) {
+        if (!nativePrepareChoreographerTests(
+                mChoreographerPtr,
+                mSupportedPeriods,
+                com.android.graphics.surfaceflinger.flags.Flags.supportedRefreshRateUpdate())) {
             fail("Failed to setup choreographer tests");
         }
     }
@@ -270,6 +291,14 @@ public class ChoreographerNativeTest {
     private Optional<Mode> findModeForSeamlessSwitch() {
         Mode activeMode = mDefaultDisplay.getMode();
         int refreshRate = Math.round(mDefaultDisplay.getRefreshRate());
+        if (com.android.graphics.surfaceflinger.flags.Flags.supportedRefreshRateUpdate()) {
+            float[] refreshRates = mDefaultDisplay.getSupportedRefreshRates();
+            Arrays.sort(refreshRates);
+            return Arrays.stream(mDefaultDisplay.getSupportedModes())
+                    .filter(mode -> DisplayUtil.isModeSwitchSeamless(activeMode, mode))
+                    .filter(mode -> Arrays.binarySearch(refreshRates, refreshRate) >= 0)
+                    .findFirst();
+        }
         return Arrays.stream(mDefaultDisplay.getSupportedModes())
                 .filter(mode -> DisplayUtil.isModeSwitchSeamless(activeMode, mode))
                 .filter(mode ->  Math.round(mode.getRefreshRate()) != refreshRate)

@@ -18,6 +18,7 @@ package android.media.decoder.cts;
 
 import static android.media.codec.Flags.apvSupport;
 import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_B;
+import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_V;
 
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
@@ -94,9 +95,6 @@ public class DecoderBlockModelTest {
     public static Collection<Object[]> input() {
         final List<Object[]> exhaustiveArgsList = new ArrayList<>(Arrays.asList(new Object[][]{
                 {MediaFormat.MIMETYPE_AUDIO_RAW, "bbb_2ch_48kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_MPEG, "sinesweepmp3smpb.mp3"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "bbb_mono_16kHz_23.85kbps_amrwb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "bbb_mono_8kHz_4.75kbps_amrnb.3gp"},
                 {MediaFormat.MIMETYPE_AUDIO_FLAC, "sinesweepflacmp4.mp4"},
                 {MediaFormat.MIMETYPE_AUDIO_G711_ALAW, "bbb_2ch_8kHz_alaw.wav"},
                 {MediaFormat.MIMETYPE_AUDIO_G711_MLAW, "bbb_2ch_8kHz_mulaw.wav"},
@@ -118,6 +116,16 @@ public class DecoderBlockModelTest {
                 {MediaFormat.MIMETYPE_VIDEO_AV1,
                         "video_480x360_webm_av1_400kbps_30fps_vorbis_stereo_128kbps_48000hz.webm"},
         }));
+        // SkipCutBuffer handling for the following media types in case of block model mode had
+        // issues prior to Android V (b/329767811). These issues were fixed in Android V and hence
+        // the tests for these are limited to Android V and above.
+        if (IS_AT_LEAST_V) {
+            exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
+                    {MediaFormat.MIMETYPE_AUDIO_MPEG, "sinesweepmp3smpb.mp3"},
+                    {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "bbb_mono_16kHz_23.85kbps_amrwb.3gp"},
+                    {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "bbb_mono_8kHz_4.75kbps_amrnb.3gp"},
+            }));
+        }
         if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
             exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
                     {MediaFormat.MIMETYPE_VIDEO_APV, "pattern_640x480_30fps_16mbps_apv_10bit.mp4"},

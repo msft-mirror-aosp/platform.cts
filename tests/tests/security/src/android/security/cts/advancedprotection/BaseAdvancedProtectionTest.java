@@ -43,11 +43,6 @@ public abstract class BaseAdvancedProtectionTest {
 
     private boolean mInitialApmState;
 
-    @BeforeClass
-    public static void setupClass() {
-        disableUsbDataProtection();
-    }
-
     @Before
     public void setup() {
         assumeTrue(shouldTestAdvancedProtection(mInstrumentation.getContext()));

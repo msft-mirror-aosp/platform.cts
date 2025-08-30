@@ -32,10 +32,12 @@ import com.android.tradefed.targetprep.BuildError;
 import com.android.tradefed.targetprep.TargetSetupError;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.FormatMethod;
 import com.google.errorprone.annotations.FormatString;
 
-import java.util.Arrays;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import javax.annotation.Nullable;
@@ -61,10 +63,11 @@ public final class DevicePolicyUsersPreparer extends BaseTargetPreparer {
             // Log what it will return...
             logAndDisplay(
                     "preview: getInitialCurrentUserId()=%s, getDeviceOwnerUserId()=%s, "
-                            + "getProfileParentUserIds()=%s",
+                            + "getProfileParentUserIds()=%s, getPreExistingUserIds()=%s",
                     safeToString(DevicePolicyUsersPreparer::getInitialCurrentUserId),
                     safeToString(DevicePolicyUsersPreparer::getDeviceOwnerUserId),
-                    safeIntArrayToString(DevicePolicyUsersPreparer::getProfileParentUserIds));
+                    safeToString(DevicePolicyUsersPreparer::getProfileParentUserIds),
+                    safeToString(DevicePolicyUsersPreparer::getPreExistingUserIds));
         } catch (Exception e) {
             // ... but don't fail
             CLog.e("Failed to log initial state: %s", e);
@@ -80,6 +83,11 @@ public final class DevicePolicyUsersPreparer extends BaseTargetPreparer {
     /** Gets the id of the current user when the test module started. */
     public static int getInitialCurrentUserId() {
         return getOracle().mInitialCurrentUserId;
+    }
+
+    /** Gets the ids of the users that existed before the test module started. */
+    public static ImmutableSet<Integer> getPreExistingUserIds() {
+        return ImmutableSet.copyOf(getOracle().mPreExistingUserIds);
     }
 
     /**
@@ -100,8 +108,8 @@ public final class DevicePolicyUsersPreparer extends BaseTargetPreparer {
     /**
      * Gets the ids of any user that *could* be used as parent of profiles (created by the test).
      */
-    public static int[] getProfileParentUserIds() {
-        return getOracle().getProfileParentUserIds();
+    public static ImmutableList<Integer> getProfileParentUserIds() {
+        return ImmutableList.of(getOracle().getProfileParentUserId());
     }
 
     @FormatMethod
@@ -112,14 +120,6 @@ public final class DevicePolicyUsersPreparer extends BaseTargetPreparer {
     private static String safeToString(Supplier<Object> supplier) {
         try {
             return supplier.get().toString();
-        } catch (Exception e) {
-            return e.getMessage();
-        }
-    }
-
-    private static String safeIntArrayToString(Supplier<int[]> supplier) {
-        try {
-            return Arrays.toString(supplier.get());
         } catch (Exception e) {
             return e.getMessage();
         }
@@ -137,6 +137,7 @@ public final class DevicePolicyUsersPreparer extends BaseTargetPreparer {
 
         private final boolean mIsHsum;
         private final int mInitialCurrentUserId;
+        private final Set<Integer> mPreExistingUserIds;
         private final @Nullable Integer mMainUserId;
         private final boolean mSupportsProfilesForAll;
         private final boolean mSupportsDeviceOwnerForAll;
@@ -144,6 +145,7 @@ public final class DevicePolicyUsersPreparer extends BaseTargetPreparer {
         private UsersOracle(ITestDevice device) throws DeviceNotAvailableException {
             mIsHsum = device.isHeadlessSystemUserMode();
             mInitialCurrentUserId = device.getCurrentUser();
+            mPreExistingUserIds = device.getUserInfos().keySet();
             mMainUserId = device.getMainUserId();
             mSupportsProfilesForAll = new UserUtil(device).isProfilesOnNonMainUserSupported();
             var flags = DeviceFlags.createDeviceFlags(device);
@@ -164,9 +166,15 @@ public final class DevicePolicyUsersPreparer extends BaseTargetPreparer {
             logAndDisplay(
                     "setUp(): isHsum=%b, initialCurrentUser=%d, mainUserId=%s, "
                             + "supportsProfilesForAll=%b, supportsDeviceOwnerForAll=%b "
-                            + "(flag %s=%s)", mIsHsum, mInitialCurrentUserId, mMainUserId,
-                            mSupportsProfilesForAll, mSupportsDeviceOwnerForAll,
-                            FLAG_DEVICE_OWNER_FOR_ALL, supportsDoForAllFlag);
+                            + "(flag %s=%s), mPreExistingUserIds=%s",
+                    mIsHsum,
+                    mInitialCurrentUserId,
+                    mMainUserId,
+                    mSupportsProfilesForAll,
+                    mSupportsDeviceOwnerForAll,
+                    FLAG_DEVICE_OWNER_FOR_ALL,
+                    supportsDoForAllFlag,
+                    mPreExistingUserIds);
         }
 
         private int getDeviceOwnerUserId() {
@@ -187,21 +195,19 @@ public final class DevicePolicyUsersPreparer extends BaseTargetPreparer {
             return mIsHsum ? mInitialCurrentUserId : USER_SYSTEM;
         }
 
-        private int[] getProfileParentUserIds() {
+        private int getProfileParentUserId() {
             if (!mIsHsum) {
                 // TODO(b/374832167): in theory we don't need this check - the logic below should
-                // apply
-                // to non-HSUM devices as well as it checks for mSupportsProfilesForAll - but given
-                // that the whole point of this class is to support HSUM device, it would be safer
-                // (to
-                // avoid potential breakages) to simplify its logic for non-HSUM devices
-                return new int[] {USER_SYSTEM};
+                // apply to non-HSUM devices as well as it checks for mSupportsProfilesForAll - but
+                // given that the whole point of this class is to support HSUM device, it would be
+                // safer (to avoid potential breakages) to simplify its logic for non-HSUM devices
+                return USER_SYSTEM;
             }
 
             // TODO(b/374832167): we could add all full users, but given that no test is currently
             // setting profiles in more than one user (and mostly likely tests that do so would be
-            // added on CtsDevicePolicyTestCases), we're just retuning one user.
-            return new int[] {mainOrCurrentUserId()};
+            // added on CtsDevicePolicyTestCases), we're just returning one user.
+            return mainOrCurrentUserId();
         }
 
         private int mainOrCurrentUserId() {

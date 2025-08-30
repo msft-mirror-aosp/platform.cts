@@ -63,7 +63,6 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
-import com.android.compatibility.common.util.ApiTest;
 import com.android.media.flags.Flags;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
@@ -209,7 +208,6 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
                 "getRoutes_withModifyAudioRouting_returnsDeviceRoute");
     }
 
-    @ApiTest(apis = {"android.media.RouteDiscoveryPreference, android.media.MediaRouter2"})
     @AppModeFull
     @RequiresDevice
     @Test
@@ -220,7 +218,6 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
                 "deduplicationIds_propagateAcrossApps");
     }
 
-    @ApiTest(apis = {"android.media.RouteDiscoveryPreference, android.media.MediaRouter2"})
     @AppModeFull
     @RequiresDevice
     @Test
@@ -231,7 +228,6 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
                 "deviceType_propagatesAcrossApps");
     }
 
-    @ApiTest(apis = {"android.media.RouteListingPreference, android.media.MediaRouter2"})
     @AppModeFull
     @RequiresDevice
     @Test
@@ -252,7 +248,6 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
                 "getInstance_findsExternalPackage");
     }
 
-    @ApiTest(apis = {"android.media.RouteDiscoveryPreference, android.media.MediaRouter2"})
     @AppModeFull
     @RequiresDevice
     @Test
@@ -263,7 +258,6 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
                 "visibilityAndAllowedPackages_propagateAcrossApps");
     }
 
-    @ApiTest(apis = {"android.media.MediaRoute2Info.Builder#setRequiredPermissions(Set)"})
     @AppModeFull
     @RequiresDevice
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
@@ -281,7 +275,6 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
                 "requiredPermissions_routeVisibleWhenOnePermissionIsHeld");
     }
 
-    @ApiTest(apis = {"android.media.MediaRoute2Info.Builder#setRequiredPermissions(Set)"})
     @AppModeFull
     @RequiresDevice
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
@@ -295,7 +288,6 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
                 "requiredPermissions_routeNotVisibleWhenOnePermissionNotHeld");
     }
 
-    @ApiTest(apis = {"android.media.MediaRoute2Info.Builder#setRequiredPermissions(Set)"})
     @AppModeFull
     @RequiresDevice
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
@@ -309,7 +301,6 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
                 "requiredPermissions_routeNotVisibleWhenNoEntryInAnySetIsHeld");
     }
 
-    @ApiTest(apis = {"android.media.MediaRoute2Info.Builder#setRequiredPermissions(Set)"})
     @AppModeFull
     @RequiresDevice
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
@@ -327,7 +318,6 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
                 "requiredPermissions_routeVisibleWhenFirstSetInListIsHeld");
     }
 
-    @ApiTest(apis = {"android.media.MediaRoute2Info.Builder#setRequiredPermissions(Set)"})
     @AppModeFull
     @RequiresDevice
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
@@ -350,7 +340,6 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
                 "requiredPermissions_routeVisibleWhenSecondSetInListIsHeld");
     }
 
-    @ApiTest(apis = {"android.media.MediaRoute2Info.Builder#setRequiredPermissions(Set)"})
     @AppModeFull
     @RequiresDevice
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
@@ -374,7 +363,6 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
                 "requiredPermissions_routeNotVisibleWhenSecondOfThirdSetIsNotHeld");
     }
 
-    @ApiTest(apis = {"android.media.MediaRoute2ProviderService#onDiscoveryPreferenceChanged"})
     @AppModeFull
     @RequiresDevice
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
@@ -392,7 +380,6 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
                 .isTrue();
     }
 
-    @ApiTest(apis = {"android.media.MediaRoute2ProviderService#onDiscoveryPreferenceChanged"})
     @AppModeFull
     @RequiresDevice
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
@@ -463,7 +450,32 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
                 "restrictLocalNetworkCompatChange_enabled_routeFoundWhenWifiPermissionHeld");
     }
 
-    @ApiTest(apis = {"android.media.MediaRoute2Info#getProviderPackageName"})
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_COMPAT_FIXES)
+    @Test
+    public void permissionHiddenRoute_routeSelectedInOsw_routeBecomesVisibleBeforeTransfer()
+            throws Exception {
+        revokeAllPermissions(DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE);
+        runDeviceTests(
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS,
+                "permissionHiddenRoute_routeSelectedInOsw_routeBecomesVisibleBeforeTransfer");
+    }
+
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_COMPAT_FIXES)
+    @Test
+    public void visibilityRestrictedRoute_routeSelectedInOsw_routeBecomesVisibleBeforeTransfer()
+            throws Exception {
+        revokeAllPermissions(DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE);
+        runDeviceTests(
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS,
+                "visibilityRestrictedRoute_routeSelectedInOsw_routeBecomesVisibleBeforeTransfer");
+    }
+
     @AppModeFull
     @RequiresDevice
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_MEDIA_ROUTE_2_INFO_PROVIDER_PACKAGE_NAME)
@@ -475,7 +487,6 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
                 "getProviderPackageName_propagatesCorrectlyFromProvider");
     }
 
-    @ApiTest(apis = {"android.media.RouteDiscoveryPreference, android.media.MediaRouter2"})
     @AppModeFull
     @RequiresDevice
     @Test
@@ -487,7 +498,6 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
                 "setRouteListingPreference_withCustomDisableReason_propagatesCorrectly");
     }
 
-    @ApiTest(apis = {"android.media.RouteDiscoveryPreference, android.media.MediaRouter2"})
     @AppModeFull
     @RequiresDevice
     @Test
@@ -498,7 +508,6 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
                 "newRouteListingPreference_withInvalidCustomSubtext_throws");
     }
 
-    @ApiTest(apis = {"android.media.RouteDiscoveryPreference, android.media.MediaRouter2"})
     @AppModeFull
     @RequiresDevice
     @Test
@@ -592,7 +601,6 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
                 "getSystemController_withoutBTPermissions_returnsDefaultRoute");
     }
 
-    @ApiTest(apis = {"android.media.MediaRouter2"})
     @AppModeFull
     @RequiresDevice
     @Test
@@ -603,7 +611,6 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
                 "selfScanOnlyProvider_notScannedByAnotherApp");
     }
 
-    @ApiTest(apis = {"android.media.MediaRouter2ProviderService#onBind"})
     @AppModeFull
     @RequiresDevice
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PREVENTION_OF_KEEP_ALIVE_ROUTE_PROVIDERS)
@@ -647,7 +654,6 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
         }
     }
 
-    @ApiTest(apis = {"android.media.MediaRouter2ProviderService#onBind"})
     @AppModeFull
     @RequiresDevice
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PREVENTION_OF_KEEP_ALIVE_ROUTE_PROVIDERS)

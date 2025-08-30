@@ -120,6 +120,7 @@ public class HardwareBufferTest {
 
         if (requestedFormatsBgra1010102()) {
             formats.add(HardwareBuffer.BGRA_1010102);
+            formats.add(HardwareBuffer.BGRX_1010102);
         }
 
         return formats.toArray();

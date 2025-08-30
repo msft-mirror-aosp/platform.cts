@@ -20,6 +20,7 @@ import static com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.FEATUR
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresAdditionalFeatures;
+import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil.CLog;
 
@@ -53,10 +54,7 @@ public final class UserRestrictionsTest extends BaseDeviceOwnerTest {
     public void setUp() throws Exception {
         super.setUp();
 
-        // TODO(b/435528858): get from DevicePolicyUsersPreparer
-        mInitialUser = getMainUser();
-
-        mRemoveOwnerInTearDown = false;
+        mInitialUser = DevicePolicyUsersPreparer.getInitialCurrentUserId();
     }
 
     @Override
@@ -106,7 +104,6 @@ public final class UserRestrictionsTest extends BaseDeviceOwnerTest {
 
     @Test
     public void testUserRestrictions_primaryProfileOwnerOnly() throws Exception {
-        assumeHasMainUser();
         setPoAsUser(mInitialUser);
 
         try {
@@ -238,7 +235,6 @@ public final class UserRestrictionsTest extends BaseDeviceOwnerTest {
     @Test
     public void testUserRestrictions_layering_profileOwnerNoLeaking() throws Exception {
         assumeSupportsMultiUser();
-        assumeHasMainUser();
 
         // Set PO on the initial user.
         setPoAsUser(mInitialUser);

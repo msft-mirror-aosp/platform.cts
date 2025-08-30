@@ -24,7 +24,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
@@ -168,9 +167,8 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     /** Whether multi-user is supported. */
     private boolean mSupportsMultiUser;
 
-    // TODO(b/435528858): move to DevicePolicyUsersPreparer
     /** Users we shouldn't delete in the tests */
-    private final Set<Integer> mPreExistingUsers = new LinkedHashSet<>();
+    private final Set<Integer> mNonTestUserIds = new LinkedHashSet<>();
 
     protected boolean mHasAttestation;
 
@@ -214,17 +212,19 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         // Gets the value of the initial user running these tests - it will be switched to (in
         // a few lines) and won't be removed
         mInitialUserId = DevicePolicyUsersPreparer.getInitialCurrentUserId();
-        mPreExistingUsers.add(USER_SYSTEM);
-        mPreExistingUsers.add(mInitialUserId);
+
+        mNonTestUserIds.add(USER_SYSTEM);
+        mNonTestUserIds.add(mInitialUserId);
 
         CLog.d(
-                "%s.setUp(): mInitialUserId=%d, currentUser=%d, mainUserId=%s,"
-                    + " mPreExistingUsers=%s",
+                "%s.setUp(): mInitialUserId=%d, currentUser=%d, mainUserId=%s, "
+                        + "mNonTestUserIds=%s, preExistingUserIds=%s",
                 getClass().getSimpleName(),
                 mInitialUserId,
                 getDevice().getCurrentUser(),
                 getDevice().getMainUserId(),
-                mPreExistingUsers);
+                mNonTestUserIds,
+                DevicePolicyUsersPreparer.getPreExistingUserIds());
 
         getDevice().executeShellCommand(" mkdir " + TEST_UPDATE_LOCATION);
 
@@ -502,7 +502,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     }
 
     private void removeTestAddedUser(int userId) throws Exception  {
-        if (mPreExistingUsers.contains(userId)) {
+        if (mNonTestUserIds.contains(userId)) {
             CLog.d("removeTestAddedUser(%d): ignoring as user existed before test");
             return;
         }
@@ -514,7 +514,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
      */
     protected List<Integer> getUsersCreatedByTests() throws Exception {
         List<Integer> result = listUsers();
-        result.removeAll(mPreExistingUsers);
+        result.removeAll(mNonTestUserIds);
         return result;
     }
 
@@ -700,15 +700,6 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         assumeTrue("device doesn't support multiple users", mSupportsMultiUser);
     }
 
-    /**
-     * @deprecated TODO(b/435528858): tests should not depend on main user
-     */
-    @Deprecated
-    protected final void assumeHasMainUser() throws DeviceNotAvailableException {
-        Integer user = getDevice().getMainUserId();
-        assumeTrue("device doesn't have a main user", user != null);
-    }
-
     protected final void assumeHasWifiFeature() throws DeviceNotAvailableException {
         assumeHasDeviceFeature(FEATURE_WIFI);
     }
@@ -764,36 +755,6 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         String commandOutput = getDevice().executeShellCommand(command);
         CLog.d("Output for command " + command + ": " + commandOutput);
         return commandOutput;
-    }
-
-    /**
-     * @deprecated TODO(b/435528858): should use proper method from upcoming TargetPreparer
-     */
-    @Deprecated
-    protected final int getMainUser() throws DeviceNotAvailableException {
-        if (isAutomotive()) {
-            // In Automotive, the main user is not defined.
-            // Use the current user instead of the main user.
-            return getDevice().getCurrentUser();
-        }
-        Integer user = getDevice().getMainUserId();
-        if (user == null) {
-            user = getDevice().getPrimaryUserId();
-            if (user == null) {
-                user = 0;
-            }
-        }
-        return user;
-    }
-
-    /**
-     * @deprecated TODO(b/435528858): callers should use {@code
-     *     DevicePolicyUsersPreparer#getInitialCurrentUserId()} or {@link
-     *     ITestDevice#getCurrentUser()}.
-     */
-    @Deprecated
-    protected final int getCurrentUser() throws DeviceNotAvailableException {
-        return getDevice().getCurrentUser();
     }
 
     protected int getUserSerialNumber(int userId) throws DeviceNotAvailableException{

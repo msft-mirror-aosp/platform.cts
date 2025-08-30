@@ -23,6 +23,8 @@ import static org.junit.Assert.assertTrue;
 import android.app.admin.flags.Flags;
 import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil;
@@ -32,6 +34,7 @@ import com.android.tradefed.util.StreamUtil;
 
 import com.google.common.collect.Sets;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -44,9 +47,6 @@ import java.util.Set;
 public final class ManagedProfileCrossProfileTest extends BaseManagedProfileTest {
     private static final String WIDGET_PROVIDER_APK = "CtsWidgetProviderApp.apk";
     private static final String WIDGET_PROVIDER_PKG = "com.android.cts.widgetprovider";
-    private static final String WIDGET_PROVIDER_PKG_2 = "com.android.cts.widgetprovider_2";
-    private static final String WIDGET_PROVIDER_PKG_3 = "com.android.cts.widgetprovider_3";
-    private static final String PARAM_PROFILE_ID = "profile-id";
     private static final String ACTION_CAN_INTERACT_ACROSS_PROFILES_CHANGED =
             "android.content.pm.action.CAN_INTERACT_ACROSS_PROFILES_CHANGED";
 
@@ -58,6 +58,10 @@ public final class ManagedProfileCrossProfileTest extends BaseManagedProfileTest
     private static final Set<String> UNSET_CROSS_PROFILE_PACKAGES = Sets.newHashSet(TEST_APP_4_PKG);
     private static final Set<String> MAINTAINED_CROSS_PROFILE_PACKAGES =
             Sets.newHashSet(TEST_APP_1_PKG, TEST_APP_2_PKG, TEST_APP_3_PKG);
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
 
     @FlakyTest
     @Test
@@ -223,8 +227,11 @@ public final class ManagedProfileCrossProfileTest extends BaseManagedProfileTest
             runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".CrossProfileWidgetTest",
                     "testCrossProfileWidgetProviderAddThenSet", mProfileUserId);
         } finally {
-            runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".CrossProfileWidgetTest",
-                    "clearCrossProfileWidgetProviders", mProfileUserId);
+            runDeviceTestsAsUser(
+                    MANAGED_PROFILE_PKG,
+                    ".CrossProfileWidgetTest",
+                    "testClearCrossProfileWidgetProviders",
+                    mProfileUserId);
             getDevice().uninstallPackage(WIDGET_PROVIDER_PKG);
         }
     }

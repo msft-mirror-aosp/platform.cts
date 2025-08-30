@@ -15,13 +15,14 @@
  */
 package com.android.cts.devicepolicy;
 
+import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.tradefed.log.LogUtil.CLog;
 
 public final class DeviceAdminServiceDeviceOwnerTest extends BaseDeviceAdminServiceTest {
 
     @Override
     protected int getUserId() throws Exception {
-        return getMainUser();
+        return DevicePolicyUsersPreparer.getInitialCurrentUserId();
     }
 
     @Override

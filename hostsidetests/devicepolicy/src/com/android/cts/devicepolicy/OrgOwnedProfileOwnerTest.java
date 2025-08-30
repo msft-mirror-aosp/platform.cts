@@ -18,11 +18,10 @@ package com.android.cts.devicepolicy;
 
 import static com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.FEATURE_MANAGED_USERS;
 import static com.android.cts.devicepolicy.DeviceAndProfileOwnerTest.DEVICE_ADMIN_COMPONENT_FLATTENED;
-import static com.android.tradefed.device.UserInfo.USER_SYSTEM;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.platform.test.annotations.LargeTest;
@@ -30,6 +29,7 @@ import android.platform.test.annotations.LargeTest;
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresAdditionalFeatures;
 import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.tradefed.device.DeviceNotAvailableException;
+import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.util.RunUtil;
 
@@ -66,10 +66,7 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
 
     protected int mUserId;
 
-    /**
-     * @deprecated TODO(b/435528858): should use proper method from DevicePolicyUsersPreparer
-     */
-    @Deprecated private int mParentUserId;
+    private int mParentUserId;
 
     @Rule
     public DeviceJUnit4ClassRunner.TestLogData mLogger = new DeviceJUnit4ClassRunner.TestLogData();
@@ -78,7 +75,7 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
     public void setUp() throws Exception {
         super.setUp();
 
-        mParentUserId = DevicePolicyUsersPreparer.getProfileParentUserIds()[0];
+        mParentUserId = DevicePolicyUsersPreparer.getProfileParentUserIds().getFirst();
 
         removeTestUsers();
         createManagedProfile();
@@ -112,22 +109,25 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
 
     @Test
     public void testCanRelinquishControlOverDevice() throws Exception {
+        int deviceOwnerUserId = DevicePolicyUsersPreparer.getDeviceOwnerUserId();
+        CLog.d("testCanRelinquishControlOverDevice(): mUserId=%d, currentUser=%d, "
+                + "deviceOwnerUserId=%d", mUserId, getDevice().getCurrentUser(), deviceOwnerUserId);
         runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".LockScreenInfoTest", "testSetAndGetLockInfo",
                 mUserId);
 
         removeOrgOwnedProfile();
         assertHasNoUser(mUserId);
-
-        // TODO(b/435528858): most likely should use mDeviceOwnerUserId below
         try {
-            installAppAsUser(DEVICE_ADMIN_APK, USER_SYSTEM);
-            assertTrue(setDeviceOwner(DEVICE_ADMIN_COMPONENT_FLATTENED,
-                    USER_SYSTEM, /*expectFailure= */ false));
+            installAppAsUser(DEVICE_ADMIN_APK, deviceOwnerUserId);
+            boolean deviceOwnerSet = setDeviceOwner(DEVICE_ADMIN_COMPONENT_FLATTENED,
+                    deviceOwnerUserId, /* expectFailure= */ false);
+            assertWithMessage("setDeviceOwner(%s on user %s)", DEVICE_ADMIN_COMPONENT_FLATTENED,
+                    deviceOwnerUserId).that(deviceOwnerSet).isTrue();
             runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".LockScreenInfoTest", "testLockInfoIsNull",
-                    USER_SYSTEM);
+                    deviceOwnerUserId);
         } finally {
-            removeAdmin(DEVICE_ADMIN_COMPONENT_FLATTENED, USER_SYSTEM);
-            getDevice().uninstallPackage(DEVICE_ADMIN_PKG);
+            removeAdmin(DEVICE_ADMIN_COMPONENT_FLATTENED, deviceOwnerUserId);
+            uninstallPackage(DEVICE_ADMIN_PKG);
         }
     }
 

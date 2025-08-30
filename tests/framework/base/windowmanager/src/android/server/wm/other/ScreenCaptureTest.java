@@ -188,6 +188,39 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
     @RequiresFlagsEnabled(FLAG_READBACK_SCREENSHOT)
     @ApiTest(
             apis = {
+                "android.window.ScreenCapture.ScreenCaptureParams.Builder#setCaptureMode",
+                "android.window.ScreenCapture.ScreenCaptureParams.Builder#setPixelFormat",
+                "android.window.ScreenCapture.ScreenCaptureParams.Builder#build",
+                "android.window.ScreenCapture#capture"
+            })
+    @Test
+    public void capture_CaptureModeOptimizedFailsOnUnsupportedPixelFormat() throws Exception {
+        assumeTrue(ScreenCapture.isScreenCaptureOptimizationEnabled());
+        Exception[] exception = {null};
+        // Pixel format that is not supported by CAPTURE_MODE_REQUIRE_OPTIMIZED.
+        int unsupportedPixelFormat = -1;
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    launchActivity(true /*secure*/, null /*contentBounds*/);
+
+                    ScreenCaptureParams params =
+                            new ScreenCaptureParams.Builder(Display.DEFAULT_DISPLAY)
+                                    .setCaptureMode(
+                                            ScreenCaptureParams.CAPTURE_MODE_REQUIRE_OPTIMIZED)
+                                    .setPixelFormat(unsupportedPixelFormat)
+                                    .build();
+                    Executor executor = runnable -> runnable.run();
+                    SynchronousReceiver receiver = new SynchronousReceiver();
+                    ScreenCapture.capture(params, executor, receiver);
+                    exception[0] = receiver.waitForError();
+                });
+
+        assertThat(exception[0], instanceOf(IllegalStateException.class));
+    }
+
+    @RequiresFlagsEnabled(FLAG_READBACK_SCREENSHOT)
+    @ApiTest(
+            apis = {
                 "android.window.ScreenCapture.ScreenCaptureParams.Builder#build",
                 "android.window.ScreenCapture#capture"
             })

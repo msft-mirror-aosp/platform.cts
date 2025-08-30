@@ -26,11 +26,15 @@ import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSION_LOC
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_REQUIRES_ANY_PERMISSION_SET;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_REQUIRES_LOCAL_NETWORK;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_REQUIRES_ONE_PERMISSION;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_RESTRICTED_OTHER_PACKAGE;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_REQUIRES_ANY_PERMISSION_SET;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_REQUIRES_LOCAL_NETWORK;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_REQUIRES_ONE_PERMISSION;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_RESTRICTED_OTHER_PACKAGE;
 
 import android.media.MediaRoute2Info;
+import android.media.RoutingSessionInfo;
+import android.os.Bundle;
 
 import com.android.media.flags.Flags;
 
@@ -38,6 +42,7 @@ import java.util.List;
 import java.util.Set;
 
 public class PermissionsRequiredRouteProvider extends BaseFakeRouteProviderService {
+    private int mNextSessionId = 1000;
 
     public PermissionsRequiredRouteProvider() {
         super(createRoutes());
@@ -65,9 +70,40 @@ public class PermissionsRequiredRouteProvider extends BaseFakeRouteProviderServi
                     createPermissionsRequiredRoute(
                             ROUTE_ID_REQUIRES_LOCAL_NETWORK,
                             ROUTE_NAME_REQUIRES_LOCAL_NETWORK,
-                            List.of(Set.of(REQUIRED_PERMISSION_LOCAL_NETWORK))));
+                            List.of(Set.of(REQUIRED_PERMISSION_LOCAL_NETWORK))),
+                    createRestrictedRouteAllowPrivileged(
+                            ROUTE_ID_RESTRICTED_OTHER_PACKAGE,
+                            ROUTE_NAME_RESTRICTED_OTHER_PACKAGE,
+                            Set.of("some.allowed.package"),
+                            /* allowPrivileged= */ true));
         } else {
             return List.of();
         }
+    }
+
+    @Override
+    public void onCreateSession(
+            long requestId, String packageName, String routeId, Bundle sessionHints) {
+        MediaRoute2Info route =
+                mAllRoutes.stream()
+                        .filter(r -> r.getOriginalId().equals(routeId))
+                        .findFirst()
+                        .orElse(null);
+        if (route == null) {
+            throw new IllegalArgumentException(
+                    "onCreateSession failed to find route with id " + routeId);
+        }
+
+        String sessionId = String.valueOf(mNextSessionId++);
+        RoutingSessionInfo.Builder sessionInfoBuilder =
+                new RoutingSessionInfo.Builder(sessionId, packageName)
+                        .addSelectedRoute(routeId)
+                        .setControlHints(sessionHints);
+        notifySessionCreated(requestId, sessionInfoBuilder.build());
+    }
+
+    @Override
+    public void onReleaseSession(long requestId, String sessionId) {
+        notifySessionReleased(sessionId);
     }
 }
