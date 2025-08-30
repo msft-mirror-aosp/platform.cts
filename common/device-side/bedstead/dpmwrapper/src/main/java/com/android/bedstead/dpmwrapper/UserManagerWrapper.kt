@@ -19,11 +19,14 @@ import android.content.Context
 import android.os.UserManager
 import android.util.Log
 import com.android.bedstead.dpmwrapper.TestAppSystemServiceFactory.ServiceManagerWrapper
-import org.mockito.ArgumentMatchers
-import org.mockito.Mockito
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.spy
+import org.mockito.kotlin.stub
 import org.mockito.stubbing.Answer
 
-internal class UserManagerWrapper : ServiceManagerWrapper<UserManager?>() {
+internal class UserManagerWrapper : ServiceManagerWrapper<UserManager>() {
     companion object {
         private val TAG: String = UserManagerWrapper::class.java.getSimpleName()
 
@@ -32,39 +35,33 @@ internal class UserManagerWrapper : ServiceManagerWrapper<UserManager?>() {
 
     override fun getWrapper(
         context: Context,
-        manager: UserManager?,
+        manager: UserManager,
         answer: Answer<*>,
-    ): UserManager? {
+    ): UserManager {
         val userId = context.userId
-        var spy: UserManager? = sSpies.get(context)
-        if (spy != null) {
+        val cachedSpy: UserManager? = sSpies.get(context)
+        if (cachedSpy != null) {
             Log.d(TAG, "get(): returning cached spy for user $userId")
-            return spy
+            return cachedSpy
         }
-
-        spy = Mockito.spy<UserManager?>(manager)
-        val spyString = "UserManagerWrapper#" + System.identityHashCode(spy)
-        Log.d(TAG, "get(): created spy for user " + context.userId + ": " + spyString)
 
         // TODO(b/176993670): ideally there should be a way to automatically mock all DPM methods,
         // but that's probably not doable, as there is no contract (such as an interface) to specify
         // which ones should be spied and which ones should not (in fact, if there was an interface,
         // we wouldn't need Mockito and could wrap the calls using java's DynamicProxy
-        try {
-            Mockito.doReturn(spyString).`when`<UserManager?>(spy).toString()
+        val userManagerSpy =
+            spy(manager) {
+                // Used by HardwarePropertiesManagerTest
+                on { getApplicationRestrictions(anyOrNull()) } doAnswer answer
+            }
 
-            // Used by HardwarePropertiesManagerTest
-            Mockito.doAnswer(answer)
-                .`when`<UserManager?>(spy)
-                .getApplicationRestrictions(ArgumentMatchers.any<String?>())
-        } catch (e: Exception) {
-            // Should never happen, but needs to be catch as some methods declare checked exceptions
-            Log.wtf("Exception setting mocks", e)
-        }
+        val identificationString = "UserManagerWrapper#${System.identityHashCode(userManagerSpy)}"
+        userManagerSpy.stub { on { toString() } doReturn identificationString }
+        Log.d(TAG, "get(): created spy for user ${context.userId}: $identificationString")
 
-        sSpies.put(context, spy)
+        sSpies.put(context, userManagerSpy)
         Log.d(TAG, "get(): returning new spy for context $context and user $userId")
 
-        return spy
+        return userManagerSpy
     }
 }

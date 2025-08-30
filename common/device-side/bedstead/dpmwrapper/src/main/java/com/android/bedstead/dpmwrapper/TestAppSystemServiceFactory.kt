@@ -98,7 +98,7 @@ class TestAppSystemServiceFactory private constructor() {
     }
 
     internal abstract class ServiceManagerWrapper<T> {
-        abstract fun getWrapper(context: Context, manager: T?, answer: Answer<*>): T?
+        abstract fun getWrapper(context: Context, manager: T, answer: Answer<*>): T
     }
 
     init {

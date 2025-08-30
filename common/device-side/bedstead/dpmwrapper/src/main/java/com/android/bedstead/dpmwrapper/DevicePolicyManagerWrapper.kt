@@ -22,15 +22,16 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import com.android.bedstead.dpmwrapper.TestAppSystemServiceFactory.ServiceManagerWrapper
-import org.mockito.ArgumentMatchers.anyBoolean
-import org.mockito.ArgumentMatchers.anyInt
-import org.mockito.ArgumentMatchers.anyLong
-import org.mockito.Mockito
-import org.mockito.Mockito.doAnswer
+import org.mockito.kotlin.KStubbing
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.spy
+import org.mockito.kotlin.stub
 import org.mockito.stubbing.Answer
 
-internal class DevicePolicyManagerWrapper : ServiceManagerWrapper<DevicePolicyManager?>() {
+internal class DevicePolicyManagerWrapper : ServiceManagerWrapper<DevicePolicyManager>() {
     companion object {
         private val TAG: String = DevicePolicyManagerWrapper::class.java.getSimpleName()
 
@@ -40,388 +41,412 @@ internal class DevicePolicyManagerWrapper : ServiceManagerWrapper<DevicePolicyMa
     @SuppressLint("MissingPermission")
     override fun getWrapper(
         context: Context,
-        manager: DevicePolicyManager?,
+        manager: DevicePolicyManager,
         answer: Answer<*>,
-    ): DevicePolicyManager? {
+    ): DevicePolicyManager {
         val userId = context.userId
-        var spy: DevicePolicyManager? = sSpies.get(context)
-        if (spy != null) {
+        val cachedSpy: DevicePolicyManager? = sSpies.get(context)
+        if (cachedSpy != null) {
             Log.d(TAG, "getWrapper(): returning cached spy for user $userId")
-            return spy
+            return cachedSpy
         }
-
-        spy = Mockito.spy<DevicePolicyManager?>(manager)
-        val spyString = "DevicePolicyManagerWrapper#" + System.identityHashCode(spy)
-        Log.d(TAG, "get(): created spy for user " + context.userId + ": " + spyString)
 
         // TODO(b/176993670): ideally there should be a way to automatically mock all DPM methods,
         // but that's probably not doable, as there is no contract (such as an interface) to specify
         // which ones should be spied and which ones should not (in fact, if there was an interface,
         // we wouldn't need Mockito and could wrap the calls using java's DynamicProxy
-        try {
-            Mockito.doReturn(spyString).`when`<DevicePolicyManager?>(spy).toString()
+        val devicePolicyManagerSpy = spy(manager) { setUpStubs(answer) }
 
-            // Basic methods used by most tests
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).isAdminActive(any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).isDeviceOwnerApp(any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).isManagedProfile(any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).isProfileOwnerApp(any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).isAffiliatedUser()
+        val identificationString =
+            "DevicePolicyManagerWrapper#${System.identityHashCode(devicePolicyManagerSpy)}"
+        devicePolicyManagerSpy.stub { on { toString() } doReturn identificationString }
+        Log.d(TAG, "get(): created spy for user " + context.userId + ": " + identificationString)
 
-            // Used by SetTimeTest
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).setTime(any(), anyLong())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).setTimeZone(any(), any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).setGlobalSetting(any(), any(), any())
-
-            // Used by UserControlDisabledPackagesTest
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setUserControlDisabledPackages(any(), any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).getUserControlDisabledPackages(any())
-
-            // Used by DeviceOwnerProvisioningTest
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .enableSystemApp(any<ComponentName>(), any<String>())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .enableSystemApp(any<ComponentName>(), any<Intent>())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).canAdminGrantSensorsPermissions()
-
-            // Used by CtsVerifier
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).addUserRestriction(any(), any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).clearUserRestriction(any(), any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).clearDeviceOwnerApp(any())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setKeyguardDisabledFeatures(any(), anyInt())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).setPasswordQuality(any(), anyInt())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setMaximumTimeToLock(any(), anyInt().toLong())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setPermittedAccessibilityServices(any(), any())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setPermittedInputMethods(any(), any())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setDeviceOwnerLockScreenInfo(any(), any())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setKeyguardDisabled(any(), anyBoolean())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setAutoTimeRequired(any(), anyBoolean())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setStatusBarDisabled(any(), anyBoolean())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).setOrganizationName(any(), any())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setSecurityLoggingEnabled(any(), anyBoolean())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setPermissionGrantState(any(), any(), any(), anyInt())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .clearPackagePersistentPreferredActivities(any(), any())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setAlwaysOnVpnPackage(any(), any(), anyBoolean())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setRecommendedGlobalProxy(any(), any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).uninstallCaCert(any(), any())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setMaximumFailedPasswordsForWipe(any(), anyInt())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).setSecureSetting(any(), any(), any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).setAffiliationIds(any(), any())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setStartUserSessionMessage(any(), any())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setEndUserSessionMessage(any(), any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).setLogoutEnabled(any(), anyBoolean())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).removeUser(any(), any())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setMinimumRequiredWifiSecurityLevel(anyInt())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).setWifiSsidPolicy(any())
-
-            // Used by DevicePolicySafetyCheckerIntegrationTest
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .createAndManageUser(any(), any(), any(), any(), anyInt())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).lockNow()
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).lockNow(anyInt())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).logoutUser(any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).reboot(any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).removeActiveAdmin(any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).removeKeyPair(any(), any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).requestBugreport(any())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setAlwaysOnVpnPackage(any(), any(), anyBoolean(), any())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setApplicationHidden(any(), any(), anyBoolean())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setApplicationRestrictions(any(), any(), any())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setCameraDisabled(any(), anyBoolean())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setFactoryResetProtectionPolicy(any(), any())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setGlobalPrivateDnsModeOpportunistic(any())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setKeepUninstalledPackages(any(), any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).setLockTaskFeatures(any(), anyInt())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).setLockTaskPackages(any(), any())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setMasterVolumeMuted(any(), anyBoolean())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setOverrideApnsEnabled(any(), anyBoolean())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).setPermissionPolicy(any(), anyInt())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).setRestrictionsProvider(any(), any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).setSystemUpdatePolicy(any(), any())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setTrustAgentConfiguration(any(), any(), any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).startUserInBackground(any(), any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).stopUser(any(), any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).switchUser(any(), any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).wipeData(anyInt(), any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).wipeData(anyInt())
-
-            // Used by ListForegroundAffiliatedUsersTest
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).listForegroundAffiliatedUsers()
-
-            // Used by UserSessionTest
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).getStartUserSessionMessage(any())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setStartUserSessionMessage(any(), any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).getEndUserSessionMessage(any())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setEndUserSessionMessage(any(), any())
-
-            // Used by SuspendPackageTest
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).getPolicyExemptApps()
-
-            // Used by PrivacyDeviceOwnerTest
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).getDeviceOwner()
-
-            // Used by AdminActionBookkeepingTest
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).deviceOwnerOrganizationName
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).setOrganizationName(any(), any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).retrieveSecurityLogs(any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).lastSecurityLogRetrievalTime
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).lastBugReportRequestTime
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).isDeviceManaged
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).isCurrentInputMethodSetByOwner
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).installCaCert(any(), any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).getOwnerInstalledCaCerts(any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).retrievePreRebootSecurityLogs(any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).lastNetworkLogRetrievalTime
-
-            // Used by PrivateDnsPolicyTest
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).getGlobalPrivateDnsHost(any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).getGlobalPrivateDnsMode(any())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setGlobalPrivateDnsModeSpecifiedHost(any(), any())
-
-            // Used by StorageEncryptionTest
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).getStorageEncryptionStatus()
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setStorageEncryption(any(), anyBoolean())
-
-            // Used by AdminConfiguredNetworksTest
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setConfiguredNetworksLockdownState(any(), anyBoolean())
-
-            // Used by SecurityLoggingTest
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).isSecurityLoggingEnabled(any())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setDelegatedScopes(any(), any(), any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).retrieveSecurityLogs(any())
-
-            // Used by WifiTest
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).getWifiMacAddress(any())
-
-            // Used by AdminConfiguredNetworksTest
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .hasLockdownAdminConfiguredNetworks(any())
-
-            // Used by DevicePolicyLoggingTest
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).getAutoTimeEnabled(any())
-
-            // Used by FactoryResetProtectionPolicyTest
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .getFactoryResetProtectionPolicy(any())
-
-            // Used by DefaultSmsApplicationTest
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setDefaultSmsApplication(any(), any())
-
-            // Used by OverrideApnTest
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).addOverrideApn(any(), any())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .updateOverrideApn(any(), anyInt(), any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).removeOverrideApn(any(), anyInt())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).getOverrideApns(any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).isOverrideApnEnabled(any())
-
-            // Used for DevicePolicyLoggingTest.
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setPasswordMinimumLength(any(), anyInt())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setPasswordMinimumNumeric(any(), anyInt())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setPasswordMinimumNonLetter(any(), anyInt())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setPasswordMinimumLetters(any(), anyInt())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setPasswordMinimumLowerCase(any(), anyInt())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setPasswordMinimumUpperCase(any(), anyInt())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setPasswordMinimumSymbols(any(), anyInt())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setRequiredPasswordComplexity(anyInt())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setUninstallBlocked(any(), any(), anyBoolean())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setPreferentialNetworkServiceEnabled(anyBoolean())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setPersonalAppsSuspended(any(), anyBoolean())
-
-            // Used by PasswordRequirementsTest
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).getPasswordMinimumLength(any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).getPasswordMinimumNumeric(any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).getPasswordMinimumLetters(any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).getPasswordMinimumUpperCase(any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).getPasswordMinimumLowerCase(any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).getPasswordMinimumNonLetter(any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).getPasswordMinimumSymbols(any())
-
-            // Used by SecurityLoggingTest
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).getDelegatedScopes(any(), any())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setPasswordExpirationTimeout(any(), anyLong())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setPasswordHistoryLength(any(), anyInt())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setMaximumFailedPasswordsForWipe(any(), anyInt())
-
-            // Used by AccessibilityServicesTest
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .getPermittedAccessibilityServices(any<ComponentName>())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .getPermittedAccessibilityServices(any<Int>())
-
-            // Used by InputMethodsTest
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).getPermittedInputMethods(any())
-
-            // Used by CommonCriteriaModeTest
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setCommonCriteriaModeEnabled(any(), anyBoolean())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).isCommonCriteriaModeEnabled(any())
-
-            // Used by AppRestrictionsDelegateTest
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .getApplicationRestrictions(any(), any())
-
-            // Used by PackageAccessDelegateTest
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).isApplicationHidden(any(), any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).isPackageSuspended(any(), any())
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setPackagesSuspended(any(), any(), anyBoolean())
-
-            // Used by PermissionGrantDelegateTest
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .getPermissionGrantState(any(), any(), any())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).getPermissionPolicy(any())
-
-            // Used by BlockUninstallDelegateTest
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).isUninstallBlocked(any(), any())
-
-            // Used By DelegationTest
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).getDelegatePackages(any(), any())
-
-            // Used by TrustAgentInfoTest
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .getTrustAgentConfiguration(any(), any())
-
-            // Used by BackupServiceActiveTest
-            doAnswer(answer)
-                .`when`<DevicePolicyManager?>(spy)
-                .setBackupServiceEnabled(any(), anyBoolean())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).isBackupServiceEnabled(any())
-
-            // Used by PendingSystemUpdateTest
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).notifyPendingSystemUpdate(anyLong())
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).getPendingSystemUpdate(any())
-
-            // Used by AffiliationTest (GTS)
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).getAffiliationIds(any())
-
-            // Used by LockScreenInfoTest
-            doAnswer(answer).`when`<DevicePolicyManager?>(spy).getDeviceOwnerLockScreenInfo()
-
-            // TODO(b/176993670): add more methods below as tests are converted
-        } catch (e: Exception) {
-            // Should never happen, but needs to be catch as some methods declare checked exceptions
-            Log.wtf("Exception setting mocks", e)
-        }
-
-        sSpies.put(context, spy)
+        sSpies.put(context, devicePolicyManagerSpy)
         Log.d(
             TAG,
             "getWrapper(): returning new spy for context " +
                 "$context (${context.getPackageName()}) and user $userId",
         )
 
-        return spy
+        return devicePolicyManagerSpy
+    }
+
+    private fun KStubbing<DevicePolicyManager>.setUpStubs(answer: Answer<*>) {
+        // Please search for existing methods before adding new ones. A potential duplicate
+        // may already exist.
+        // Note: Ref. b/441373957 - this method is (artificially) split into individual methods
+        // because otherwise it is right at the edge of the dex method size limit. Adding something
+        // like coverage sends it over the edge, resulting in [MethodTooLargeException].
+        setUpCommonMethods(answer)
+        setUpTimeTestMethods(answer)
+        setUpUserControllerDisabledPackagesTestMethods(answer)
+        setUpDeviceOwnerProvisioningTestMethods(answer)
+        setUpCtsVerifierTestMethods(answer)
+        setUpDevicePolicySafetyCheckerIntegrationTestMethods(answer)
+        setUpListForegroundAffiliatedUsersTestMethods(answer)
+        setUpUserSessionTestMethods(answer)
+        setUpSuspendPackageTestMethods(answer)
+        setUpPrivacyDeviceOwnerTestMethods(answer)
+        setUpAdminActionBookkeepingTestMethods(answer)
+        setUpPrivateDnsPolicyTestMethods(answer)
+        setUpStorageEncryptionTestMethods(answer)
+        setUpAdminConfiguredNetworksTestMethods(answer)
+        setUpSecurityLoggingTestMethods(answer)
+        setUpWifiTestMethods(answer)
+        setUpFactoryResetProtectionPolicyTestMethods(answer)
+        setUpDefaultSmsApplicationTestMethods(answer)
+        setUpOverrideApnTestMethods(answer)
+        setUpDevicePolicyLoggingTestMethods(answer)
+        setUpPasswordRequirementsTestMethods(answer)
+        setUpAccessibilityServicesTestMethods(answer)
+        setUpInputMethodsTestMethods(answer)
+        setUpCommonCriteriaModeTestMethods(answer)
+        setUpApplicationRestrictionsDelegateTestMethods(answer)
+        setUpPackageAccessDelegateTestMethods(answer)
+        setUpPermissionGrantDelegateTestMethods(answer)
+        setUpBlockUninstallDelegateTestMethods(answer)
+        setUpDelegationTestMethods(answer)
+        setUpTrustAgentInfoTestMethods(answer)
+        setUpBackupServiceActiveTestMethods(answer)
+        setUpPendingSystemUpdateTestMethods(answer)
+        setUpAffiliationTestMethods(answer)
+        setUpLockScreenInfoTestMethods(answer)
+        // TODO(b/176993670): add more methods below as tests are converted
+    }
+
+    private fun KStubbing<DevicePolicyManager>.setUpLockScreenInfoTestMethods(answer: Answer<*>) {
+        // Used by LockScreenInfoTest
+        on { getDeviceOwnerLockScreenInfo() } doAnswer answer
+    }
+
+    private fun KStubbing<DevicePolicyManager>.setUpAffiliationTestMethods(answer: Answer<*>) {
+        // Used by AffiliationTest (GTS)
+        on { getAffiliationIds(anyOrNull()) } doAnswer answer
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun KStubbing<DevicePolicyManager>.setUpPendingSystemUpdateTestMethods(
+        answer: Answer<*>
+    ) {
+        // Used by PendingSystemUpdateTest
+        on { notifyPendingSystemUpdate(any()) } doAnswer answer
+        on { getPendingSystemUpdate(anyOrNull()) } doAnswer answer
+    }
+
+    private fun KStubbing<DevicePolicyManager>.setUpBackupServiceActiveTestMethods(
+        answer: Answer<*>
+    ) {
+        // Used by BackupServiceActiveTest
+        on { setBackupServiceEnabled(anyOrNull(), any()) } doAnswer answer
+        on { isBackupServiceEnabled(anyOrNull()) } doAnswer answer
+    }
+
+    private fun KStubbing<DevicePolicyManager>.setUpTrustAgentInfoTestMethods(answer: Answer<*>) {
+        // Used by TrustAgentInfoTest
+        on { getTrustAgentConfiguration(anyOrNull(), anyOrNull()) } doAnswer answer
+    }
+
+    private fun KStubbing<DevicePolicyManager>.setUpDelegationTestMethods(answer: Answer<*>) {
+        // Used By DelegationTest
+        on { getDelegatePackages(anyOrNull(), anyOrNull()) } doAnswer answer
+    }
+
+    private fun KStubbing<DevicePolicyManager>.setUpBlockUninstallDelegateTestMethods(
+        answer: Answer<*>
+    ) {
+        // Used by BlockUninstallDelegateTest
+        on { isUninstallBlocked(anyOrNull(), anyOrNull()) } doAnswer answer
+    }
+
+    private fun KStubbing<DevicePolicyManager>.setUpPermissionGrantDelegateTestMethods(
+        answer: Answer<*>
+    ) {
+        // Used by PermissionGrantDelegateTest
+        on { getPermissionGrantState(anyOrNull(), anyOrNull(), anyOrNull()) } doAnswer answer
+        on { getPermissionPolicy(anyOrNull()) } doAnswer answer
+    }
+
+    private fun KStubbing<DevicePolicyManager>.setUpPackageAccessDelegateTestMethods(
+        answer: Answer<*>
+    ) {
+        // Used by PackageAccessDelegateTest
+        on { isApplicationHidden(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { isPackageSuspended(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { setPackagesSuspended(anyOrNull(), anyOrNull(), any()) } doAnswer answer
+    }
+
+    private fun KStubbing<DevicePolicyManager>.setUpApplicationRestrictionsDelegateTestMethods(
+        answer: Answer<*>
+    ) {
+        // Used by AppRestrictionsDelegateTest
+        on { getApplicationRestrictions(anyOrNull(), anyOrNull()) } doAnswer answer
+    }
+
+    private fun KStubbing<DevicePolicyManager>.setUpCommonCriteriaModeTestMethods(
+        answer: Answer<*>
+    ) {
+        // Used by CommonCriteriaModeTest
+        on { setCommonCriteriaModeEnabled(anyOrNull(), any()) } doAnswer answer
+        on { isCommonCriteriaModeEnabled(anyOrNull()) } doAnswer answer
+    }
+
+    private fun KStubbing<DevicePolicyManager>.setUpInputMethodsTestMethods(answer: Answer<*>) {
+        // Used by InputMethodsTest
+        on { getPermittedInputMethods(anyOrNull()) } doAnswer answer
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun KStubbing<DevicePolicyManager>.setUpAccessibilityServicesTestMethods(
+        answer: Answer<*>
+    ) {
+        // Used by AccessibilityServicesTest
+        on { getPermittedAccessibilityServices(any<ComponentName>()) } doAnswer answer
+        on { getPermittedAccessibilityServices(any<Int>()) } doAnswer answer
+    }
+
+    // Suppressing deprecation warnings since we are setting stub responses on deprecated methods.
+    @Suppress("DEPRECATION")
+    private fun KStubbing<DevicePolicyManager>.setUpPasswordRequirementsTestMethods(
+        answer: Answer<*>
+    ) {
+        // Used by PasswordRequirementsTest
+        on { getPasswordMinimumLength(anyOrNull()) } doAnswer answer
+        on { getPasswordMinimumNumeric(anyOrNull()) } doAnswer answer
+        on { getPasswordMinimumLetters(anyOrNull()) } doAnswer answer
+        on { getPasswordMinimumUpperCase(anyOrNull()) } doAnswer answer
+        on { getPasswordMinimumLowerCase(anyOrNull()) } doAnswer answer
+        on { getPasswordMinimumNonLetter(anyOrNull()) } doAnswer answer
+        on { getPasswordMinimumSymbols(anyOrNull()) } doAnswer answer
+    }
+
+    // Suppressing deprecation warnings since we are setting stub responses on deprecated methods.
+    @Suppress("DEPRECATION")
+    private fun KStubbing<DevicePolicyManager>.setUpDevicePolicyLoggingTestMethods(
+        answer: Answer<*>
+    ) {
+        // Used for DevicePolicyLoggingTest
+        on { getAutoTimeEnabled(anyOrNull()) } doAnswer answer
+        on { setPasswordMinimumLength(anyOrNull(), any()) } doAnswer answer
+        on { setPasswordMinimumNumeric(anyOrNull(), any()) } doAnswer answer
+        on { setPasswordMinimumNonLetter(anyOrNull(), any()) } doAnswer answer
+        on { setPasswordMinimumLetters(anyOrNull(), any()) } doAnswer answer
+        on { setPasswordMinimumLowerCase(anyOrNull(), any()) } doAnswer answer
+        on { setPasswordMinimumUpperCase(anyOrNull(), any()) } doAnswer answer
+        on { setPasswordMinimumSymbols(anyOrNull(), any()) } doAnswer answer
+        on { setRequiredPasswordComplexity(any()) } doAnswer answer
+        on { setUninstallBlocked(anyOrNull(), anyOrNull(), any()) } doAnswer answer
+        on { setPreferentialNetworkServiceEnabled(any()) } doAnswer answer
+        on { setPersonalAppsSuspended(anyOrNull(), any()) } doAnswer answer
+    }
+
+    private fun KStubbing<DevicePolicyManager>.setUpOverrideApnTestMethods(answer: Answer<*>) {
+        // Used by OverrideApnTest
+        on { addOverrideApn(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { updateOverrideApn(anyOrNull(), any(), anyOrNull()) } doAnswer answer
+        on { removeOverrideApn(anyOrNull(), any()) } doAnswer answer
+        on { getOverrideApns(anyOrNull()) } doAnswer answer
+        on { isOverrideApnEnabled(anyOrNull()) } doAnswer answer
+    }
+
+    private fun KStubbing<DevicePolicyManager>.setUpDefaultSmsApplicationTestMethods(
+        answer: Answer<*>
+    ) {
+        // Used by DefaultSmsApplicationTest
+        on { setDefaultSmsApplication(anyOrNull(), anyOrNull()) } doAnswer answer
+    }
+
+    private fun KStubbing<DevicePolicyManager>.setUpFactoryResetProtectionPolicyTestMethods(
+        answer: Answer<*>
+    ) {
+        // Used by FactoryResetProtectionPolicyTest
+        on { getFactoryResetProtectionPolicy(anyOrNull()) } doAnswer answer
+    }
+
+    private fun KStubbing<DevicePolicyManager>.setUpWifiTestMethods(answer: Answer<*>) {
+        // Used by WifiTest
+        on { getWifiMacAddress(anyOrNull()) } doAnswer answer
+    }
+
+    private fun KStubbing<DevicePolicyManager>.setUpSecurityLoggingTestMethods(answer: Answer<*>) {
+        // Used by SecurityLoggingTest
+        on { isSecurityLoggingEnabled(anyOrNull()) } doAnswer answer
+        on { setDelegatedScopes(anyOrNull(), anyOrNull(), anyOrNull()) } doAnswer answer
+        on { retrieveSecurityLogs(anyOrNull()) } doAnswer answer
+        on { getDelegatedScopes(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { setPasswordExpirationTimeout(anyOrNull(), any()) } doAnswer answer
+        on { setPasswordHistoryLength(anyOrNull(), any()) } doAnswer answer
+        on { setMaximumFailedPasswordsForWipe(anyOrNull(), any()) } doAnswer answer
+    }
+
+    private fun KStubbing<DevicePolicyManager>.setUpAdminConfiguredNetworksTestMethods(
+        answer: Answer<*>
+    ) {
+        // Used by AdminConfiguredNetworksTest
+        on { setConfiguredNetworksLockdownState(anyOrNull(), any()) } doAnswer answer
+        on { hasLockdownAdminConfiguredNetworks(anyOrNull()) } doAnswer answer
+    }
+
+    // Suppressing deprecation warnings since we are setting stub responses on deprecated methods.
+    @Suppress("DEPRECATION")
+    private fun KStubbing<DevicePolicyManager>.setUpStorageEncryptionTestMethods(
+        answer: Answer<*>
+    ) {
+        // Used by StorageEncryptionTest
+        on { getStorageEncryptionStatus() } doAnswer answer
+        on { setStorageEncryption(anyOrNull(), any()) } doAnswer answer
+    }
+
+    private fun KStubbing<DevicePolicyManager>.setUpPrivateDnsPolicyTestMethods(answer: Answer<*>) {
+        // Used by PrivateDnsPolicyTest
+        on { getGlobalPrivateDnsHost(anyOrNull()) } doAnswer answer
+        on { getGlobalPrivateDnsMode(anyOrNull()) } doAnswer answer
+        on { setGlobalPrivateDnsModeSpecifiedHost(anyOrNull(), anyOrNull()) } doAnswer answer
+    }
+
+    private fun KStubbing<DevicePolicyManager>.setUpAdminActionBookkeepingTestMethods(
+        answer: Answer<*>
+    ) {
+        // Used by AdminActionBookkeepingTest
+        on { deviceOwnerOrganizationName } doAnswer answer
+        on { setOrganizationName(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { retrieveSecurityLogs(anyOrNull()) } doAnswer answer
+        on { lastSecurityLogRetrievalTime } doAnswer answer
+        on { lastBugReportRequestTime } doAnswer answer
+        on { isDeviceManaged } doAnswer answer
+        on { isCurrentInputMethodSetByOwner } doAnswer answer
+        on { installCaCert(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { getOwnerInstalledCaCerts(anyOrNull()) } doAnswer answer
+        on { retrievePreRebootSecurityLogs(anyOrNull()) } doAnswer answer
+        on { lastNetworkLogRetrievalTime } doAnswer answer
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun KStubbing<DevicePolicyManager>.setUpPrivacyDeviceOwnerTestMethods(
+        answer: Answer<*>
+    ) {
+        // Used by PrivacyDeviceOwnerTest
+        on { getDeviceOwner() } doAnswer answer
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun KStubbing<DevicePolicyManager>.setUpSuspendPackageTestMethods(answer: Answer<*>) {
+        // Used by SuspendPackageTest
+        on { getPolicyExemptApps() } doAnswer answer
+    }
+
+    private fun KStubbing<DevicePolicyManager>.setUpUserSessionTestMethods(answer: Answer<*>) {
+        // Used by UserSessionTest
+        on { getStartUserSessionMessage(anyOrNull()) } doAnswer answer
+        on { setStartUserSessionMessage(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { getEndUserSessionMessage(anyOrNull()) } doAnswer answer
+        on { setEndUserSessionMessage(anyOrNull(), anyOrNull()) } doAnswer answer
+    }
+
+    private fun KStubbing<DevicePolicyManager>.setUpListForegroundAffiliatedUsersTestMethods(
+        answer: Answer<*>
+    ) {
+        // Used by ListForegroundAffiliatedUsersTest
+        on { listForegroundAffiliatedUsers() } doAnswer answer
+    }
+
+    private fun KStubbing<DevicePolicyManager>.setUpDevicePolicySafetyCheckerIntegrationTestMethods(
+        answer: Answer<*>
+    ) {
+        // Used by DevicePolicySafetyCheckerIntegrationTest
+        on {
+            createAndManageUser(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), any())
+        } doAnswer answer
+        on { lockNow() } doAnswer answer
+        on { lockNow(any()) } doAnswer answer
+        on { logoutUser(anyOrNull()) } doAnswer answer
+        on { reboot(anyOrNull()) } doAnswer answer
+        on { removeActiveAdmin(anyOrNull()) } doAnswer answer
+        on { removeKeyPair(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { requestBugreport(anyOrNull()) } doAnswer answer
+        on { setAlwaysOnVpnPackage(anyOrNull(), anyOrNull(), any(), anyOrNull()) } doAnswer answer
+        on { setApplicationHidden(anyOrNull(), anyOrNull(), any()) } doAnswer answer
+        on { setApplicationRestrictions(anyOrNull(), anyOrNull(), anyOrNull()) } doAnswer answer
+        on { setCameraDisabled(anyOrNull(), any()) } doAnswer answer
+        on { setFactoryResetProtectionPolicy(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { setGlobalPrivateDnsModeOpportunistic(anyOrNull()) } doAnswer answer
+        on { setKeepUninstalledPackages(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { setLockTaskFeatures(anyOrNull(), any()) } doAnswer answer
+        on { setMasterVolumeMuted(anyOrNull(), any()) } doAnswer answer
+        on { setOverrideApnsEnabled(anyOrNull(), any()) } doAnswer answer
+        on { setPermissionPolicy(anyOrNull(), any()) } doAnswer answer
+        on { setRestrictionsProvider(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { setSystemUpdatePolicy(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { setTrustAgentConfiguration(anyOrNull(), anyOrNull(), anyOrNull()) } doAnswer answer
+        on { startUserInBackground(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { stopUser(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { switchUser(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { wipeData(any(), anyOrNull()) } doAnswer answer
+        on { wipeData(any()) } doAnswer answer
+    }
+
+    // Suppressing deprecation warnings since we are setting stub responses on deprecated methods.
+    @Suppress("DEPRECATION")
+    private fun KStubbing<DevicePolicyManager>.setUpCtsVerifierTestMethods(answer: Answer<*>) {
+        // Used by CtsVerifier
+        on { addUserRestriction(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { clearUserRestriction(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { clearDeviceOwnerApp(anyOrNull()) } doAnswer answer
+        on { setKeyguardDisabledFeatures(anyOrNull(), any()) } doAnswer answer
+        on { setPasswordQuality(anyOrNull(), any()) } doAnswer answer
+        on { setMaximumTimeToLock(anyOrNull(), any()) } doAnswer answer
+        on { setPermittedAccessibilityServices(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { setPermittedInputMethods(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { setDeviceOwnerLockScreenInfo(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { setKeyguardDisabled(anyOrNull(), any()) } doAnswer answer
+        on { setAutoTimeRequired(anyOrNull(), any()) } doAnswer answer
+        on { setStatusBarDisabled(anyOrNull(), any()) } doAnswer answer
+        on { setOrganizationName(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { setSecurityLoggingEnabled(anyOrNull(), any()) } doAnswer answer
+        on { setPermissionGrantState(anyOrNull(), anyOrNull(), anyOrNull(), any()) } doAnswer answer
+        on { clearPackagePersistentPreferredActivities(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { setAlwaysOnVpnPackage(anyOrNull(), anyOrNull(), any()) } doAnswer answer
+        on { setRecommendedGlobalProxy(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { uninstallCaCert(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { setSecureSetting(anyOrNull(), anyOrNull(), anyOrNull()) } doAnswer answer
+        on { setAffiliationIds(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { setStartUserSessionMessage(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { setEndUserSessionMessage(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { setLogoutEnabled(anyOrNull(), any()) } doAnswer answer
+        on { removeUser(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { setMinimumRequiredWifiSecurityLevel(any()) } doAnswer answer
+        on { setWifiSsidPolicy(anyOrNull()) } doAnswer answer
+    }
+
+    private fun KStubbing<DevicePolicyManager>.setUpDeviceOwnerProvisioningTestMethods(
+        answer: Answer<*>
+    ) {
+        // Used by DeviceOwnerProvisioningTest
+        on { enableSystemApp(any<ComponentName>(), any<String>()) } doAnswer answer
+        on { enableSystemApp(any<ComponentName>(), any<Intent>()) } doAnswer answer
+        on { canAdminGrantSensorsPermissions() } doAnswer answer
+    }
+
+    private fun KStubbing<DevicePolicyManager>.setUpUserControllerDisabledPackagesTestMethods(
+        answer: Answer<*>
+    ) {
+        // Used by UserControlDisabledPackagesTest
+        on { setUserControlDisabledPackages(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { getUserControlDisabledPackages(anyOrNull()) } doAnswer answer
+    }
+
+    private fun KStubbing<DevicePolicyManager>.setUpTimeTestMethods(answer: Answer<*>) {
+        // Used by SetTimeTest
+        on { setTime(anyOrNull(), any()) } doAnswer answer
+        on { setTimeZone(anyOrNull(), anyOrNull()) } doAnswer answer
+        on { setGlobalSetting(anyOrNull(), anyOrNull(), anyOrNull()) } doAnswer answer
+    }
+
+    private fun KStubbing<DevicePolicyManager>.setUpCommonMethods(answer: Answer<*>) {
+        on { isAdminActive(anyOrNull()) } doAnswer answer
+        on { isDeviceOwnerApp(anyOrNull()) } doAnswer answer
+        on { isManagedProfile(anyOrNull()) } doAnswer answer
+        on { isProfileOwnerApp(anyOrNull()) } doAnswer answer
+        on { isAffiliatedUser(anyOrNull()) } doAnswer answer
     }
 }
