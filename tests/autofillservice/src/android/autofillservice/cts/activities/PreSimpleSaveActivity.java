@@ -55,10 +55,19 @@ public class PreSimpleSaveActivity extends AbstractAutoFillActivity {
         mPreInput = findViewById(R.id.preInput);
         mSubmit = findViewById(R.id.submit);
 
-        mSubmit.setOnClickListener((v) -> {
-            finish();
-            startActivity(new Intent(this, SimpleSaveActivity.class));
-        });
+        // Start SimpleSaveActivity before finishing PreSimpleSaveActivity instead of finishing
+        // PreSimpleSaveActivity before starting SimpleSaveActivity.
+        // If we finish PreSimpleSaveActivity before starting SimpleSaveActivity,
+        // in multi window environment (e.g. Automotive targets with multiple root tasks involved),
+        // finishing PreSimpleSaveActivity can trigger Save UI to steal top-resumed focus.
+        // If SimpleSaveActivity is not yet started, its resume attempt can be aborted and stuck in
+        // INITIALIZING util Save UI is dismissed, causing CTS timeouts.
+        // Starting SimpleSaveActivity first can prevent this race.
+        mSubmit.setOnClickListener(
+                (v) -> {
+                    startActivity(new Intent(this, SimpleSaveActivity.class));
+                    finish();
+                });
     }
 
     /**
