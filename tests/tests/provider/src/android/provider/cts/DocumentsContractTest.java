@@ -70,6 +70,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 import android.os.UserHandle;
@@ -82,6 +83,7 @@ import android.provider.DocumentsProvider;
 import android.provider.Flags;
 
 import androidx.test.InstrumentationRegistry;
+import androidx.test.filters.SdkSuppress;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
@@ -513,6 +515,7 @@ public class DocumentsContractTest {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DOCUMENTS_TRASH_API)
     public void testTrashDocument() throws Exception {
         doReturn(DOC_RESULT).when(mProvider).trashDocument(DOC_RED);
@@ -521,6 +524,7 @@ public class DocumentsContractTest {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DOCUMENTS_TRASH_API)
     public void testQueryTrashDocuments() throws Exception {
         final Cursor res = new MatrixCursor(new String[0]);
@@ -532,6 +536,7 @@ public class DocumentsContractTest {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DOCUMENTS_TRASH_API)
     public void testRestoreDocumentFromTrash() throws Exception {
         doReturn(DOC_RESULT).when(mProvider).restoreDocumentFromTrash(DOC_RED, DOC_GREEN);
