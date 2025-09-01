@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 8.4.0-alpha08" type="baseline" client="" dependencies="true" name="" variant="all" version="8.4.0-alpha08">
+
+    <issue
+        id="MissingCheckFlagsRule"
+        message="Class `StreamingRoleBehaviorTest` uses @RequiresFlagsEnabled or @RequiresFlagsDisabled and must have a CheckFlagsRule."
+        errorLine1="public class StreamingRoleBehaviorTest {"
+        errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/tests/virtualdevice/core/src/android/virtualdevice/cts/core/StreamingRoleBehaviorTest.java"
+            line="52"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="MissingCheckFlagsRule"
+        message="Class `VirtualDeviceManagerBasicTest` uses @RequiresFlagsEnabled or @RequiresFlagsDisabled and must have a CheckFlagsRule."
+        errorLine1="public class VirtualDeviceManagerBasicTest {"
+        errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/tests/virtualdevice/core/src/android/virtualdevice/cts/core/VirtualDeviceManagerBasicTest.java"
+            line="84"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="MissingCheckFlagsRule"
+        message="Class `VirtualDevicePowerTest` uses @RequiresFlagsEnabled or @RequiresFlagsDisabled and must have a CheckFlagsRule."
+        errorLine1="public class VirtualDevicePowerTest {"
+        errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/tests/virtualdevice/core/src/android/virtualdevice/cts/core/VirtualDevicePowerTest.java"
+            line="72"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="MissingCheckFlagsRule"
+        message="Class `VirtualDisplayTest` uses @RequiresFlagsEnabled or @RequiresFlagsDisabled and must have a CheckFlagsRule."
+        errorLine1="public class VirtualDisplayTest {"
+        errorLine2="             ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/tests/virtualdevice/core/src/android/virtualdevice/cts/core/VirtualDisplayTest.java"
+            line="57"
+            column="14"/>
+    </issue>
+
+</issues>
