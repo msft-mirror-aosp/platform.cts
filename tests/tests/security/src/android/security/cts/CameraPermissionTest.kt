@@ -28,6 +28,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.res.CameraCompatibilityInfo;
 import android.hardware.Camera
 import android.hardware.ICameraClient
 import android.hardware.ICameraService
@@ -602,7 +603,7 @@ class CameraPermissionTest {
             cameraManager.getCameraIdList()[0],
             0 /*oomScoreOffset*/,
             context.applicationInfo.targetSdkVersion,
-            ICameraService.ROTATION_OVERRIDE_NONE,
+            CameraCompatibilityInfo.Builder().build(),
             clientAttribution,
             DEVICE_POLICY_DEFAULT,
             false)
@@ -632,7 +633,7 @@ class CameraPermissionTest {
             DummyCameraClient(),
             /* cameraId= */ 0,
             context.applicationInfo.targetSdkVersion,
-            ICameraService.ROTATION_OVERRIDE_NONE,
+            CameraCompatibilityInfo.Builder().build(),
             /* forceSlowJpegMode= */ false,
             clientAttribution,
             DEVICE_POLICY_DEFAULT)
