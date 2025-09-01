@@ -95,6 +95,7 @@ import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.view.inputmethod.Flags;
 import android.view.inputmethod.InputMethod;
+import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.cts.util.AutoCloseableWrapper;
 import android.view.inputmethod.cts.util.EndToEndImeTestBase;
@@ -2631,6 +2632,101 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             notificationManager.cancelAll();
             // Hide notification shade, if it was not properly closed
             targetContext.sendBroadcast(new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS));
+        }
+    }
+
+
+
+    /**
+     * Verifies that after clearing the data of the IME, it can be shown again by clicking on the
+     * the editText.
+     */
+    @Test
+    @RequireNotVisibleBackgroundUsers(reason = "More investigation needed why this test is flaky "
+            + "on auto MUMD passenger. Tracking bug: b/445100097")
+    public void testImeUnbindsOnImePackageCleared() throws Exception {
+        final String marker = getTestMarker();
+        AtomicReference<EditText> editTextRef = new AtomicReference<>();
+        final TestActivity testActivity = TestActivity.startSync(activity -> {
+            final LinearLayout layout = new LinearLayout(activity);
+            layout.setOrientation(LinearLayout.VERTICAL);
+            layout.setGravity(Gravity.BOTTOM);
+            final EditText editText = new EditText(activity);
+            editTextRef.set(editText);
+            editText.setHint("focused editText");
+            editText.requestFocus();
+            editText.setPrivateImeOptions(marker);
+            layout.addView(editText);
+            return layout;
+        });
+
+        final InputMethodManager inputManager = testActivity.getSystemService(
+                InputMethodManager.class);
+        assertNotNull(inputManager);
+        final List<InputMethodInfo> enabledImes = inputManager.getEnabledInputMethodList();
+        try {
+            final var editText = editTextRef.get();
+            final var display = editText.getContext().getDisplay();
+
+            try (var session = MockImeSession.create(mInstrumentation.getContext(),
+                    mInstrumentation.getUiAutomation(),
+                    new ImeSettings.Builder().setSuppressDeleteSettings(true))) {
+                final var stream = session.openEventStream();
+
+                // disable all other IMEs
+                for (var ime : enabledImes) {
+                    if (!ime.getPackageName().equals(session.getMockImePackageName())) {
+                        SystemUtil.runShellCommand(
+                                "ime disable --user " + mUserHelper.getUserId() + " "
+                                        + ime.getPackageName());
+                    }
+                }
+
+                expectImeInvisible(TIMEOUT);
+
+                expectEvent(stream, eventMatcher("onCreate"), TIMEOUT);
+                expectEvent(stream, eventMatcher("bindInput"), TIMEOUT);
+                expectEvent(stream, eventMatcher("onStartInput"), TIMEOUT);
+                // Show IME
+                TestUtils.runOnMainSync(() -> {
+                    editText.getRootView().getWindowInsetsController().show(ime());
+                });
+                expectEvent(stream, showSoftInputMatcher(0), TIMEOUT);
+                expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+                expectImeVisible(TIMEOUT);
+
+                // Clearing the IME package should hide it.
+                SystemUtil.runShellCommand("pm clear --user " + mUserHelper.getUserId() + " "
+                        + session.getMockImePackageName());
+                expectImeInvisible(TIMEOUT);
+            }
+
+            // Re-start MockIme, it should show after tapping on the editText again
+            try (var session = MockImeSession.create(mInstrumentation.getContext(),
+                    mInstrumentation.getUiAutomation(),
+                    new ImeSettings.Builder().setSuppressDeleteSettings(true))) {
+                final var stream = session.openEventStream();
+
+                expectImeInvisible(TIMEOUT);
+
+                try (var touch = new UinputTouchScreen(mInstrumentation, display)) {
+                    // Tap the editor again and check that the IME is showing
+                    touch.tapOnViewCenter(editText);
+
+                    expectEvent(stream, showSoftInputMatcher(0), TIMEOUT);
+                    expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+                    expectImeVisible(TIMEOUT);
+
+                    // another show request should not result in a showSoftInput
+                    touch.tapOnViewCenter(editText);
+                    notExpectEvent(stream, showSoftInputMatcher(0), NOT_EXPECT_TIMEOUT);
+                    notExpectEvent(stream, editorMatcher("onStartInputView", marker),
+                            NOT_EXPECT_TIMEOUT);
+                }
+            }
+        } finally {
+            // restore all previous IMEs
+            SystemUtil.runShellCommand("ime reset --user " + mUserHelper.getUserId());
         }
     }
 
