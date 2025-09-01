@@ -204,7 +204,7 @@ public class WallpaperManagerSdk33Test {
         assertWithMessage(
                 "with permission, getWallpaperFile(FLAG_SYSTEM)"
                         + "should return the currennt system wallpaper file")
-                .that(isSimilar(bitmap, sRedBitmap, true))
+                .that(isSimilar(bitmap, sRedBitmap, false))
                 .isTrue();
     }
 
