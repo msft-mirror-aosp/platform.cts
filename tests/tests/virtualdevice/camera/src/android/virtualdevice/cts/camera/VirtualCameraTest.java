@@ -64,6 +64,7 @@ import android.companion.virtual.camera.VirtualCameraConfig;
 import android.companion.virtual.camera.VirtualCameraSessionConfig;
 import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
+import android.content.res.CameraCompatibilityInfo;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
@@ -478,8 +479,8 @@ public class VirtualCameraTest {
         assertThrows(
                 RuntimeException.class,
                 () ->
-                        Camera.getCameraInfo(
-                                cameraId, vdContext, CameraManager.ROTATION_OVERRIDE_NONE, info));
+                        Camera.getCameraInfo(cameraId, vdContext,
+                                new CameraCompatibilityInfo.Builder().build(), info));
     }
 
     @Test
@@ -493,7 +494,8 @@ public class VirtualCameraTest {
 
         assertThrows(
                 RuntimeException.class,
-                () -> Camera.open(cameraId, vdContext, CameraManager.ROTATION_OVERRIDE_NONE));
+                () -> Camera.open(cameraId, vdContext,
+                        new CameraCompatibilityInfo.Builder().build()));
     }
 
     @Parameters(method = "getAllSensorOrientations")
@@ -698,8 +700,8 @@ public class VirtualCameraTest {
         assertThat(Camera.getNumberOfCameras(vdContext)).isEqualTo(1);
 
         Camera.CameraInfo info = new Camera.CameraInfo();
-        Camera.getCameraInfo(/* cameraId= */ 0, vdContext, CameraManager.ROTATION_OVERRIDE_NONE,
-                info);
+        Camera.getCameraInfo(/* cameraId= */ 0, vdContext,
+                new CameraCompatibilityInfo.Builder().build(), info);
         assertThat(info.facing).isEqualTo(Camera.CameraInfo.CAMERA_FACING_FRONT);
         assertThat(info.orientation).isEqualTo(SENSOR_ORIENTATION_0);
     }
@@ -715,7 +717,7 @@ public class VirtualCameraTest {
             Camera camera = null;
             try {
                 camera = Camera.open(/* cameraId= */ 0, vdContext,
-                        CameraManager.ROTATION_OVERRIDE_NONE);
+                        new CameraCompatibilityInfo.Builder().build());
                 camera.setPreviewSurface(imageReader.getSurface());
 
                 camera.startPreview();
