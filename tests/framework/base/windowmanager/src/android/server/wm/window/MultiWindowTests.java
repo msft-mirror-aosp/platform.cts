@@ -50,6 +50,8 @@ import android.content.res.Resources;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.CommandSession.ActivityCallback;
 import android.server.wm.LaunchActivityBuilder;
@@ -64,6 +66,7 @@ import com.android.window.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -73,6 +76,9 @@ import org.junit.Test;
 @Presubmit
 @android.server.wm.annotation.Group2
 public class MultiWindowTests extends ActivityManagerTestBase {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     @Override
