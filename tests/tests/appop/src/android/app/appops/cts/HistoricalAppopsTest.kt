@@ -21,6 +21,7 @@ import android.app.AppOpsManager.HistoricalOp
 import android.app.AppOpsManager.HistoricalOps
 import android.app.AppOpsManager.OPSTR_REQUEST_DELETE_PACKAGES
 import android.app.AppOpsManager.OP_FLAGS_ALL
+import android.os.Build
 import android.os.Process
 import android.os.SystemClock
 import android.permission.flags.Flags
@@ -38,6 +39,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 import java.util.function.Consumer
 import org.junit.After
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -66,6 +68,11 @@ class HistoricalAppopsTest {
 
     @Before
     fun setUpTest() {
+        // This test doesn't pass on sqlite impl, as addHistoricalOps and
+        // getHistoricalOpsFromDiskRaw  test APIs are not implemented.
+        // SQLite is verified by new HistoricalRegistryTest.
+        assumeTrue(Build.VERSION.SDK_INT_FULL < Build.VERSION_CODES_FULL.BAKLAVA_1)
+
         appOpsManager = context.getSystemService(AppOpsManager::class.java)!!
         packageName = context.packageName!!
         runWithShellPermissionIdentity {
