@@ -27,8 +27,10 @@ import android.content.Context
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.ImageFormat
+import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CameraMetadata
+import android.platform.test.annotations.RequiresFlagsEnabled
 import android.view.Surface
 import android.virtualdevice.cts.camera.util.VirtualCameraUtils
 import android.virtualdevice.cts.camera.util.VirtualCameraUtils.BACK_CAMERA_ID
@@ -142,10 +144,56 @@ class VirtualCameraCameraXTest {
     @Test
     @Parameters(method = "getAllLensFacingDirections")
     fun virtualDeviceContext_takePicture(lensFacing: Int) {
+        verifyCameraXTakePicture(lensFacing = lensFacing)
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
+    @Parameters(method = "getAllLensFacingDirections")
+    fun virtualDeviceContext_takePicture_withCharacteristics(lensFacing: Int) {
+        val characteristics =
+            CameraCharacteristics.Builder(
+                VirtualCameraConfig.DEFAULT_VIRTUAL_CAMERA_CHARACTERISTICS
+            )
+                .set(CameraCharacteristics.LENS_FACING, lensFacing)
+                .build()
+        verifyCameraXTakePicture(lensFacing = lensFacing, characteristics = characteristics)
+    }
+
+    @Test
+    @Parameters(method = "getAllLensFacingDirections")
+    fun virtualDeviceContext_availableCameraInfos_returnsVirtualCameras(lensFacing: Int) {
+        createVirtualCamera(lensFacing = lensFacing)
+
+        verifyCameraXAvailable(lensFacing)
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
+    @Parameters(method = "getAllLensFacingDirections")
+    fun virtualDeviceContext_availableCameraInfos_returnsVirtualCameras_withCharacteristics(
+        lensFacing: Int
+    ) {
+        val characteristics =
+            CameraCharacteristics.Builder(
+                VirtualCameraConfig.DEFAULT_VIRTUAL_CAMERA_CHARACTERISTICS
+            )
+                .set(CameraCharacteristics.LENS_FACING, lensFacing)
+                .build()
+        createVirtualCamera(characteristics = characteristics)
+
+        verifyCameraXAvailable(lensFacing)
+    }
+
+    private fun verifyCameraXTakePicture(
+        lensFacing: Int,
+        characteristics: CameraCharacteristics? = null
+    ) {
         val golden = loadBitmapFromRaw(R.raw.golden_camerax_virtual_camera)
 
         createVirtualCamera(
-            lensFacing = lensFacing
+            lensFacing = lensFacing,
+            characteristics = characteristics
         ) { surface ->
             val canvas: Canvas = surface.lockCanvas(null)
             canvas.drawBitmap(golden, 0f, 0f, null)
@@ -156,9 +204,7 @@ class VirtualCameraCameraXTest {
 
         initCameraXProvider(vdContext!!, cameraSelector)
 
-        val imageCapture = ImageCapture.Builder()
-            .setFlashMode(FLASH_MODE_OFF)
-            .build()
+        val imageCapture = ImageCapture.Builder().setFlashMode(FLASH_MODE_OFF).build()
 
         val imageFile = takeAndSavePicture(cameraSelector, imageCapture)
         assertThat(imageFile.exists()).isTrue()
@@ -172,11 +218,7 @@ class VirtualCameraCameraXTest {
         )
     }
 
-    @Test
-    @Parameters(method = "getAllLensFacingDirections")
-    fun virtualDeviceContext_availableCameraInfos_returnsVirtualCameras(lensFacing: Int) {
-        createVirtualCamera(lensFacing = lensFacing)
-
+    private fun verifyCameraXAvailable(lensFacing: Int) {
         val cameraSelector = CameraSelector.Builder()
             .requireLensFacing(lensFacing)
             .build()
@@ -256,7 +298,8 @@ class VirtualCameraCameraXTest {
         inputWidth: Int = VIRTUAL_CAMERA_WIDTH,
         inputHeight: Int = VIRTUAL_CAMERA_HEIGHT,
         inputFormat: Int = ImageFormat.YUV_420_888,
-        lensFacing: Int = CameraMetadata.LENS_FACING_BACK,
+        lensFacing: Int? = null,
+        characteristics: CameraCharacteristics? = null,
         surfaceWriter: (Surface) -> Unit = {}
     ): VirtualCamera? {
         val cameraCallBack = object : VirtualCameraCallback {
@@ -286,8 +329,14 @@ class VirtualCameraCameraXTest {
         val config = VirtualCameraConfig.Builder("CameraXVirtualCamera")
             .addStreamConfig(inputWidth, inputHeight, inputFormat, 30)
             .setVirtualCameraCallback(sameThreadExecutor, cameraCallBack)
-            .setSensorOrientation(VirtualCameraConfig.SENSOR_ORIENTATION_0)
-            .setLensFacing(lensFacing)
+            .setSensorOrientation(VirtualCameraConfig.SENSOR_ORIENTATION_0).apply {
+                if (lensFacing != null) {
+                    setLensFacing(lensFacing)
+                }
+                if (characteristics != null) {
+                    setCameraCharacteristics(characteristics)
+                }
+            }
             .build()
         try {
             return virtualDevice!!.createVirtualCamera(config)
