@@ -30,6 +30,7 @@ import static org.junit.Assume.assumeTrue;
 
 import android.incrementalinstall.common.Consts;
 import android.platform.test.annotations.LargeTest;
+import android.platform.test.annotations.PlatinumTest;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.ddmlib.Log;
@@ -48,7 +49,6 @@ import com.google.common.truth.Truth;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -63,9 +63,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+@PlatinumTest(focusArea = "pm")
 @RunWith(DeviceJUnit4ClassRunner.class)
-@Ignore("b/422161071")
 public class IncrementalInstallTest extends BaseHostJUnit4Test {
 
     private static final String FEATURE_INCREMENTAL_DELIVERY =
@@ -147,17 +149,16 @@ public class IncrementalInstallTest extends BaseHostJUnit4Test {
 
     @Test
     public void testBaseApkMissingSignatureAdbInstall() throws Exception {
+        assumeTrue(adbBinarySupportsIncrementalWithMissingSignature());
         String newApkName = String.format("base%d.apk", new Random().nextInt());
         // Create a copy of original apk but not its idsig.
         copyTestFile(TEST_APP_BASE_APK_NAME, null, newApkName);
         // Make sure it installs.
-        Truth.assertThat(
-                installWithAdbInstaller(TEST_APP_BASE_APK_NAME)).contains(INSTALL_SUCCESS_OUTPUT);
+        Truth.assertThat(installWithAdbInstaller(newApkName)).contains(INSTALL_SUCCESS_OUTPUT);
         verifyPackageInstalled(TEST_APP_PACKAGE_NAME);
         verifyInstallationTypeAndVersion(TEST_APP_PACKAGE_NAME, /* isIncfs= */ true,
                 TEST_APP_V1_VERSION);
         validateAppLaunch(TEST_APP_PACKAGE_NAME, ON_CREATE_COMPONENT);
-
     }
 
     @Test
@@ -456,5 +457,25 @@ public class IncrementalInstallTest extends BaseHostJUnit4Test {
     private boolean adbBinarySupportsIncremental() throws Exception {
         return !installWithAdbInstaller(TEST_APP_BASE_APK_NAME).contains(
                 "Unknown option --incremental");
+    }
+
+    private boolean adbBinarySupportsIncrementalWithMissingSignature() throws Exception {
+        String adbVersionOutput =
+                new RunUtil().runTimedCmd(DEFAULT_TEST_TIMEOUT_MS, "adb", "--version").getStdout();
+        Pattern pattern = Pattern.compile("Version .*-(\\d+)");
+        Matcher matcher = pattern.matcher(adbVersionOutput);
+
+        if (matcher.find()) {
+            String versionStr = matcher.group(1);
+            int version = Integer.parseInt(versionStr);
+            // Commit b813134 removed the support for incremental with missing signature, and commit
+            // 60985ba added it back.
+            // 13278306 is the last known version that doesn't include b813134, and 14012923 is the
+            // first known version that includes 60985ba.
+            return version <= 13278306 || version >= 14012923;
+        } else {
+            // Not a standard version (probably a local build). Assuming it the latest version.
+            return true;
+        }
     }
 }
