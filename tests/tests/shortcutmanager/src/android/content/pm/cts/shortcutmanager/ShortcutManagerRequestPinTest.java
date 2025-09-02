@@ -20,6 +20,8 @@ import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.retryUntil;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.setDefaultLauncher;
 
+import android.app.ActivityOptions;
+import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -31,6 +33,8 @@ import android.content.pm.ShortcutManager;
 import android.content.pm.cts.shortcutmanager.common.Constants;
 import android.content.pm.cts.shortcutmanager.common.ReplyUtil;
 import android.os.PersistableBundle;
+import android.os.Process;
+import android.server.wm.WindowManagerStateHelper;
 import android.util.Log;
 
 import com.android.compatibility.common.util.CddTest;
@@ -44,6 +48,8 @@ public class ShortcutManagerRequestPinTest extends ShortcutManagerCtsTestsBase {
 
     private static final String SHORTCUT_ID = "s12345";
     private static final String HIDDEN_SHORTCUT_ID = "s24680";
+
+    protected WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
 
     @CddTest(requirement="[3.8.1/C-2-1],[3.8.1/C-3-1]")
     public void testIsRequestPinShortcutSupported() {
@@ -106,7 +112,7 @@ public class ShortcutManagerRequestPinTest extends ShortcutManagerCtsTestsBase {
             Log.i(TAG, "Waiting for shortcut to be visible to launcher...");
             retryUntil(() -> {
                 final List<ShortcutInfo> shortcuts = getLauncherApps().getShortcuts(query,
-                        android.os.Process.myUserHandle());
+                        Process.myUserHandle());
                 if (shortcuts == null) {
                     // Launcher not responded yet.
                     return false;
@@ -170,7 +176,7 @@ public class ShortcutManagerRequestPinTest extends ShortcutManagerCtsTestsBase {
             Log.i(TAG, "Waiting for shortcut to be visible to launcher...");
             retryUntil(() -> {
                 final List<ShortcutInfo> shortcuts = getLauncherApps().getShortcuts(query,
-                        android.os.Process.myUserHandle());
+                        Process.myUserHandle());
                 if (shortcuts == null) {
                     // Launcher not responded yet.
                     return false;
@@ -232,7 +238,7 @@ public class ShortcutManagerRequestPinTest extends ShortcutManagerCtsTestsBase {
             Log.i(TAG, "Waiting for shortcut to be visible to launcher...");
             retryUntil(() -> {
                 final List<ShortcutInfo> shortcuts = getLauncherApps().getShortcuts(query,
-                        android.os.Process.myUserHandle());
+                        Process.myUserHandle());
                 if (shortcuts == null) {
                     // Launcher not responded yet.
                     return false;
@@ -282,7 +288,7 @@ public class ShortcutManagerRequestPinTest extends ShortcutManagerCtsTestsBase {
             Log.i(TAG, "Waiting for shortcut to be visible to launcher...");
             retryUntil(() -> {
                 final List<ShortcutInfo> shortcuts = getLauncherApps().getShortcuts(query,
-                        android.os.Process.myUserHandle());
+                        Process.myUserHandle());
                 if (shortcuts == null) {
                     // Launcher not responded yet.
                     return false;
@@ -375,6 +381,85 @@ public class ShortcutManagerRequestPinTest extends ShortcutManagerCtsTestsBase {
         });
     }
 
-    // TODO Various other cases (already pinned, etc)
-    // TODO Various error cases (missing mandatory fields, etc)
+    /**
+     * Tests that {@link ShortcutManager#requestPinShortcut} allows launching an activity directly
+     * as the pin result callback.
+     */
+    public void testRequestPinShortcut_directActivityLaunch() {
+        Log.i(TAG, "testRequestPinShortcut: package4 requesting pin on launcher1, "
+            + "callback launches cts activity");
+        setDefaultLauncher(getInstrumentation(), mLauncherContext1);
+
+        final ComponentName targetActivity = new ComponentName(
+            "android.content.pm.cts.shortcutmanager",
+            "android.content.pm.cts.shortcutmanager.MyActivity"
+        );
+        final PendingIntent callback = PendingIntent.getActivity(
+            getTestContext(), 0, new Intent().setComponent(targetActivity),
+            PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE);
+
+        final ComponentName requestPinActivity = new ComponentName(
+            "android.content.pm.cts.shortcutmanager.packages.package4",
+            "android.content.pm.cts.shortcutmanager.packages.RequestPinShortcutActivity"
+        );
+        ReplyUtil.invokeAndWaitForReply(getTestContext(), (replyAction) -> {
+            final Intent requestIntent = new Intent().setComponent(requestPinActivity)
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .putExtra(Constants.EXTRA_REPLY_ACTION, replyAction)
+                .putExtra(Constants.EXTRA_TARGET_INTENT, callback.getIntentSender());
+            getTestContext().startActivity(requestIntent);
+        });
+
+        boolean result = mWmState.waitForFocusedActivity(targetActivity);
+        assertTrue("Did not find focused activity: " + targetActivity, result);
+    }
+
+    /**
+     * Tests that {@link ShortcutManager#requestPinShortcut} does not allow indirectly launching an
+     * activity through a service trampoline.
+     */
+    public void testRequestPinShortcut_indirectActivityLaunch() {
+        Log.i(TAG, "testRequestPinShortcut: package4 requesting pin on launcher1, "
+            + "callback launches package4 service trampoline to cts activity");
+        setDefaultLauncher(getInstrumentation(), mLauncherContext1);
+
+        final ComponentName targetActivity = new ComponentName(
+            "android.content.pm.cts.shortcutmanager",
+            "android.content.pm.cts.shortcutmanager.MyActivity"
+        );
+        final ComponentName trampolineService = new ComponentName(
+            "android.content.pm.cts.shortcutmanager.packages.package4",
+            "android.content.pm.cts.shortcutmanager.packages.BalService"
+        );
+        final ComponentName requestPinActivity = new ComponentName(
+            "android.content.pm.cts.shortcutmanager.packages.package4",
+            "android.content.pm.cts.shortcutmanager.packages.RequestPinShortcutActivity"
+        );
+        ReplyUtil.invokeAndWaitForReply(getTestContext(), (trampolineReplyAction) -> {
+            final PendingIntent target = PendingIntent.getActivity(getTestContext(), 0,
+                new Intent().setComponent(targetActivity),
+                PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE,
+                ActivityOptions.makeBasic()
+                    .setPendingIntentCreatorBackgroundActivityStartMode(
+                        ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOW_ALWAYS)
+                    .toBundle());
+            final PendingIntent trampoline = PendingIntent.getService(
+                getTestContext(), 0,
+                new Intent().setComponent(trampolineService)
+                    .putExtra(Constants.EXTRA_REPLY_ACTION, trampolineReplyAction)
+                    .putExtra(Constants.EXTRA_TARGET_INTENT, target.getIntentSender()),
+                PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE);
+            ReplyUtil.invokeAndWaitForReply(getTestContext(), (confirmPinReplyAction) -> {
+                final Intent requestIntent = new Intent().setComponent(requestPinActivity)
+                    .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    .putExtra(Constants.EXTRA_REPLY_ACTION, confirmPinReplyAction)
+                    .putExtra(Constants.EXTRA_TARGET_INTENT, trampoline.getIntentSender());
+                getTestContext().startActivity(requestIntent);
+                // waits for confirm pin activity to respond
+            });
+            // waits for trampoline service to respond after it has launched the target activity.
+        });
+        boolean result = mWmState.waitForFocusedActivity(targetActivity);
+        assertFalse("Should not able to launch background activity", result);
+    }
 }

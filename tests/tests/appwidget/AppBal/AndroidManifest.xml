@@ -36,10 +36,6 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name="android.appwidget.cts.appbal.EmptyActivity"
-            android:exported="true" />
-
         <service
             android:name="android.appwidget.cts.appbal.BalService"
             android:exported="true" />
