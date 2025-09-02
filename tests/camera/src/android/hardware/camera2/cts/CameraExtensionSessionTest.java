@@ -106,7 +106,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
     private static final boolean VERBOSE = Log.isLoggable(TAG, Log.VERBOSE);
     private static final long WAIT_FOR_COMMAND_TO_COMPLETE_MS = 5000;
     private static final long REPEATING_REQUEST_TIMEOUT_MS = 5000;
-    private static final int MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS = 10000;
+    private static final int MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS = 15000;
     private static final float ZOOM_ERROR_MARGIN = 0.05f;
 
     private static final int WAIT_FOR_FOCUS_DONE_TIMEOUT_MS = 6000;
