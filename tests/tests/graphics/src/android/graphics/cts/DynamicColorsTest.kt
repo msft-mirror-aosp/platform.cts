@@ -19,6 +19,7 @@ package android.graphics.cts
 import android.R
 import android.app.UiModeManager
 import android.content.Context
+import android.content.theming.ThemeStyle
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.cts.utils.Material2021SpecMatcher
@@ -63,7 +64,6 @@ import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import com.android.compatibility.common.util.FeatureUtil
 import com.android.compatibility.common.util.SystemUtil.runShellCommand
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
-import com.android.systemui.monet.Style
 import com.google.ux.material.libmonet.hct.Hct
 import java.io.File
 import java.io.Serializable
@@ -93,12 +93,12 @@ class DynamicColorsTest(
     private val style: String,
     private val contrast: String,
 ) {
-    val isSupportedDevice =!(
-        FeatureUtil.isTV() ||
-        FeatureUtil.isWatch() ||
-        FeatureUtil.isAutomotive() ||
-        /* TODO:b/362682063 - Remove this once the bug is fixed */
-        UserManager.isHeadlessSystemUserMode())
+    val isSupportedDevice =
+        !(FeatureUtil.isTV() ||
+            FeatureUtil.isWatch() ||
+            FeatureUtil.isAutomotive() ||
+            /* TODO:b/362682063 - Remove this once the bug is fixed */
+            UserManager.isHeadlessSystemUserMode())
 
     private val mContext: Context = getInstrumentation().targetContext
     private val isOldSpec: Boolean =
@@ -139,13 +139,13 @@ class DynamicColorsTest(
             val dataList: MutableList<Array<Serializable>> = mutableListOf()
             val styles =
                 intArrayOf(
-                    Style.SPRITZ,
-                    Style.TONAL_SPOT,
-                    Style.VIBRANT,
-                    Style.EXPRESSIVE,
-                    Style.RAINBOW,
-                    Style.FRUIT_SALAD,
-                    Style.MONOCHROMATIC,
+                    ThemeStyle.SPRITZ,
+                    ThemeStyle.TONAL_SPOT,
+                    ThemeStyle.VIBRANT,
+                    ThemeStyle.EXPRESSIVE,
+                    ThemeStyle.RAINBOW,
+                    ThemeStyle.FRUIT_SALAD,
+                    ThemeStyle.MONOCHROMATIC,
                 )
             val colors =
                 listOf("FFB9577A", "FFB16407", "FF6E7F10", "FF008673", "FF007FB4", "FF8267C2")
@@ -154,7 +154,7 @@ class DynamicColorsTest(
             contrastModes.forEach { mode ->
                 colors.forEach { color ->
                     styles.forEach { style ->
-                        dataList.add(arrayOf(color, Style.name(style), mode))
+                        dataList.add(arrayOf(color, ThemeStyle.name(style), mode))
                     }
                 }
             }
