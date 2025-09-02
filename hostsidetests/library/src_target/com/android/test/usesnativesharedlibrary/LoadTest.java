@@ -16,21 +16,23 @@
 
 package com.android.test.usesnativesharedlibrary;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
 
 import android.os.Build;
+
+import androidx.test.core.app.ApplicationProvider;
+
+import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.PropertyUtil;
 
-import androidx.test.core.app.ApplicationProvider;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
@@ -41,6 +43,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 /**
  * Tests if native shared libs are loadable or un-loadable as expected. The list of loadable libs is
  * in the asset file <code>available.txt</code> and the list of un-loadable libs is in the asset
@@ -114,6 +117,28 @@ public class LoadTest {
                 , unexpected, is(Collections.emptyList()));
     }
 
+    private static String getLoadedLibraryPath(String libraryName) throws Exception {
+        String mappedName = System.mapLibraryName(libraryName);
+        try (BufferedReader reader = new BufferedReader(new FileReader("/proc/self/maps"))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                // A line in /proc/self/maps looks like:
+                // 7e924d6000-7e924d7000 r--p 00000000 103:0c 12345 /path/to/lib.so
+                if (line.endsWith(mappedName)) {
+                    // The path is the last token on the line.
+                    String[] parts = line.split("\\s+");
+                    return parts[parts.length - 1];
+                }
+            }
+        }
+        throw new IllegalStateException(mappedName + " not found in the memory maps");
+    }
+
+    private static boolean isLibraryFromApex(String lib) throws Exception {
+        String path = getLoadedLibraryPath(lib);
+        return path.startsWith("/apex/");
+    }
+
     /**
      * Tests if libs listed in unavailable.txt are all non-loadable
      */
@@ -125,14 +150,21 @@ public class LoadTest {
         for (String lib : libNamesFromAssetFile("unavailable.txt")) {
             try {
                 System.loadLibrary(lib);
+                // Due to a bug in libnativeloader, public libraries from APEXes are always made
+                // available even when they are not declared with <uses-native-library> until
+                // Android 16 (Baklava).
+                if (ApiLevelUtil.isAtMost("Baklava") && isLibraryFromApex(lib)) {
+                    continue;
+                }
                 loadedLibs.add("lib" + lib + ".so");
             } catch (UnsatisfiedLinkError e) {
                 // This is expected
             } catch (Throwable t) {
                 unexpectedFailures.add(t.getMessage());
             }
-        };
-        assertThat("Some unavailable libraries were loaded", loadedLibs, is(Collections.emptyList()));
+        }
+        assertThat(
+                "Some unavailable libraries were loaded", loadedLibs, is(Collections.emptyList()));
         assertThat("Unexpected errors occurred", unexpectedFailures, is(Collections.emptyList()));
     }
 }
