@@ -20,6 +20,7 @@ import android.service.settings.preferences.SettingsPreferenceMetadata
 import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.FrameworkMethodWithParameter
 import com.android.bedstead.harrier.ParameterizedTestWithArgumentGenerator
+import com.android.bedstead.nene.types.OptionalBoolean
 import com.android.bedstead.settings.SettingsPreferenceMetadataParameter.Companion.PREFERENCE_FILTER_LAUNCH_INTENT_NOT_NULL
 import com.android.bedstead.settings.SettingsPreferenceMetadataParameter.Companion.PREFERENCE_FILTER_READ_PERMISSIONS_NOT_EMPTY
 import com.android.bedstead.settings.SettingsPreferenceMetadataParameter.Companion.PREFERENCE_FILTER_WRITE_PERMISSIONS_NOT_EMPTY
@@ -50,6 +51,7 @@ class SettingsParameterizedTestWithArgumentGenerator(
         frameworkMethod: FrameworkMethod
     ): List<FrameworkMethod> = clientComponent.allMetadata(packageName)
         .applyWriteSensitivityFilter(writeSensitivity)
+        .applyIsWritableFilter(isWritable)
         .applyOtherFilters(otherFilters)
         .applySkipUnsupportedPreferences(skipUnsupportedPreferences)
         .map { metadata ->
@@ -65,6 +67,18 @@ class SettingsParameterizedTestWithArgumentGenerator(
             }
         }
         return this
+    }
+
+    private fun List<SettingsPreferenceMetadata>.applyIsWritableFilter(
+        isWritable: OptionalBoolean
+    ): List<SettingsPreferenceMetadata> {
+        return if (isWritable == OptionalBoolean.ANY) {
+            this
+        } else {
+            filter {
+                it.isWritable == isWritable.toBoolean()
+            }
+        }
     }
 
     private fun List<SettingsPreferenceMetadata>.applyOtherFilters(
