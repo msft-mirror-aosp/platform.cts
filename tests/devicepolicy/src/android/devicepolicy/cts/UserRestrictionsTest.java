@@ -42,8 +42,8 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.StringTestParameter;
-import com.android.bedstead.harrier.policies.AffiliatedProfileOwnerOnlyUserRestrictions;
-import com.android.bedstead.harrier.policies.UserRestrictions;
+import com.android.bedstead.enterprise.policies.AffiliatedProfileOwnerOnlyUserRestrictions;
+import com.android.bedstead.enterprise.policies.UserRestrictions;
 import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.devicepolicy.DeviceOwner;
@@ -236,7 +236,7 @@ public final class UserRestrictionsTest {
     }
 
     @CanSetPolicyTest(
-            policy = com.android.bedstead.harrier.policies.DeviceOwnerOnlyUserRestrictions.class)
+            policy = com.android.bedstead.enterprise.policies.DeviceOwnerOnlyUserRestrictions.class)
     @Postsubmit(reason = "new test")
     public void hasUserRestriction_clearUserRestriction_restrictionIsRemoved(
             @AllDpcAllowedUserRestrictions String restriction) {
@@ -323,7 +323,7 @@ public final class UserRestrictionsTest {
     }
 
     @CannotSetPolicyTest(
-            policy = com.android.bedstead.harrier.policies.DeviceOwnerOnlyUserRestrictions.class)
+            policy = com.android.bedstead.enterprise.policies.DeviceOwnerOnlyUserRestrictions.class)
     @Postsubmit(reason = "new test")
     @RequireNotHeadlessSystemUserMode(
             reason = "Since ag/I94c63d0492034af39608c3d81700f71e89e37d0e we special case main user "

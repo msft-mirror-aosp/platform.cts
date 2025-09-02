@@ -40,7 +40,7 @@ import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
-import com.android.bedstead.harrier.policies.LostMode;
+import com.android.bedstead.enterprise.policies.LostMode;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.location.LocationProvider;
 import com.android.bedstead.nene.location.Locations;

@@ -31,8 +31,8 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.enterprise.annotations.PolicyArgument;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.policies.KeyguardDisabledFeatures;
-import com.android.bedstead.harrier.policies.KeyguardDisabledFeaturesForOrgOwnedParentProfileOwner;
+import com.android.bedstead.enterprise.policies.KeyguardDisabledFeatures;
+import com.android.bedstead.enterprise.policies.KeyguardDisabledFeaturesForOrgOwnedParentProfileOwner;
 import com.android.bedstead.nene.TestApis;
 
 import org.junit.ClassRule;

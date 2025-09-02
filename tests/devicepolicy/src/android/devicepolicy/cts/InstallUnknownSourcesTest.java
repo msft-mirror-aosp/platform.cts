@@ -31,8 +31,8 @@ import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.policies.DisallowInstallUnknownSources;
-import com.android.bedstead.harrier.policies.DisallowInstallUnknownSourcesGlobally;
+import com.android.bedstead.enterprise.policies.DisallowInstallUnknownSources;
+import com.android.bedstead.enterprise.policies.DisallowInstallUnknownSourcesGlobally;
 import com.android.bedstead.nene.TestApis;
 import com.android.compatibility.common.util.ApiTest;
 

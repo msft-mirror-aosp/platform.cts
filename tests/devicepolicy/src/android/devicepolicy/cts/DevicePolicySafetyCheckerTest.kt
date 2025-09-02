@@ -24,11 +24,10 @@ import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireFeature
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
 import com.android.bedstead.enterprise.dpc
-import com.android.bedstead.harrier.policies.LockNow
+import com.android.bedstead.enterprise.policies.LockNow
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.devicepolicy.CommonDevicePolicy
 import com.android.bedstead.nene.devicepolicy.CommonDevicePolicy.DevicePolicyOperation.OPERATION_LOCK_NOW
-import com.android.bedstead.nene.devicepolicy.CommonDevicePolicy.OperationSafetyReason.OPERATION_SAFETY_REASON_DRIVING_DISTRACTION
 import com.android.bedstead.nene.packages.CommonPackages
 import com.android.compatibility.common.util.ApiTest
 import com.google.common.truth.Truth
@@ -36,7 +35,6 @@ import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.testng.Assert
 import org.testng.Assert.assertThrows
 
 @RunWith(BedsteadJUnit4::class)

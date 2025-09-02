@@ -38,8 +38,8 @@ import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
-import com.android.bedstead.harrier.policies.DisallowNetworkReset;
-import com.android.bedstead.harrier.policies.DisallowPrivateDnsConfig;
+import com.android.bedstead.enterprise.policies.DisallowNetworkReset;
+import com.android.bedstead.enterprise.policies.DisallowPrivateDnsConfig;
 import com.android.bedstead.nene.TestApis;
 
 import org.junit.After;

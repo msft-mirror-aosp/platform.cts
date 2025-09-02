@@ -44,8 +44,8 @@ import com.android.bedstead.multiuser.annotations.RequireRunOnPrimaryUser;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
-import com.android.bedstead.harrier.policies.GetNearbyAppStreamingPolicy;
-import com.android.bedstead.harrier.policies.SetNearbyAppStreamingPolicy;
+import com.android.bedstead.enterprise.policies.GetNearbyAppStreamingPolicy;
+import com.android.bedstead.enterprise.policies.SetNearbyAppStreamingPolicy;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
 

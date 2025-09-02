@@ -37,7 +37,7 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
-import com.android.bedstead.harrier.policies.CreateAndManageUser;
+import com.android.bedstead.enterprise.policies.CreateAndManageUser;
 import com.android.bedstead.multiuser.annotations.EnsureCanAddUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.users.UserReference;

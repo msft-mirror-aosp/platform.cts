@@ -28,7 +28,7 @@ import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.policies.AffiliationIds;
+import com.android.bedstead.enterprise.policies.AffiliationIds;
 import com.android.bedstead.remotedpc.RemotePolicyManager;
 import com.android.modules.utils.ModifiedUtf8;
 

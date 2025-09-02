@@ -34,7 +34,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
-import com.android.bedstead.harrier.policies.Wallpaper;
+import com.android.bedstead.enterprise.policies.Wallpaper;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
