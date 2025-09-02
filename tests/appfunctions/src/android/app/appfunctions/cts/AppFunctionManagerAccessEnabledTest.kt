@@ -56,10 +56,10 @@ import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest
 import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile
 import com.android.bedstead.enterprise.dpc
+import com.android.bedstead.enterprise.policies.AppFunctionsPolicy
 import com.android.bedstead.enterprise.workProfile
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
-import com.android.bedstead.enterprise.policies.AppFunctionsPolicy
 import com.android.bedstead.multiuser.additionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasPrivateProfile
@@ -109,10 +109,51 @@ class AppFunctionManagerAccessEnabledTest {
             "3000",
         )
 
+    @get:Rule
+    val setAgentAllowlistRule: DeviceConfigStateChangerRule =
+        DeviceConfigStateChangerRule(
+            context,
+            "machine_learning",
+            "allowlisted_app_functions_agents",
+            context.packageName,
+        )
+
     private val context: Context
         get() = ApplicationProvider.getApplicationContext()
 
     private lateinit var mManager: AppFunctionManager
+
+    @Before
+    fun setup() = doBlocking {
+        TestAppFunctionServiceLifecycleReceiver.reset()
+        val manager = context.getSystemService(AppFunctionManager::class.java)
+        assumeNotNull(manager)
+        mManager = manager
+        runWithShellPermission(Manifest.permission.MANAGE_APP_FUNCTION_ACCESS) {
+            assumeTrue(mManager.validAgents.contains(context.packageName))
+        }
+        retryAssert {
+            // Doing containsAtLeast instead of containsExactly here in case there app preloaded
+            // apps having app functions.
+            assertThat(getAllStaticMetadataPackages())
+                .containsAtLeast(CURRENT_PKG, TEST_HELPER_PKG, TEST_SIDECAR_HELPER_PKG)
+            // required permission because runtime metadata is only visible to owner package
+            runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+                assertThat(getAllRuntimeMetadataPackages())
+                    .containsAtLeast(CURRENT_PKG, TEST_HELPER_PKG, TEST_SIDECAR_HELPER_PKG)
+            }
+        }
+    }
+
+    @After
+    fun resetEnabledStatus() = doBlocking {
+        setAppFunctionEnabled(mManager, "add", AppFunctionManager.APP_FUNCTION_STATE_DEFAULT)
+        setAppFunctionEnabled(
+            mManager,
+            "add_disabledByDefault",
+            AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
+        )
+    }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
@@ -362,36 +403,6 @@ class AppFunctionManagerAccessEnabledTest {
                 revokeAppFunctionAccess(CURRENT_PKG, CURRENT_PKG)
             }
         }
-    }
-
-    @Before
-    fun setup() = doBlocking {
-        TestAppFunctionServiceLifecycleReceiver.reset()
-        val manager = context.getSystemService(AppFunctionManager::class.java)
-        assumeNotNull(manager)
-        mManager = manager
-        retryAssert {
-            // Doing containsAtLeast instead of containsExactly here in case there app preloaded
-            // apps having app functions.
-            assertThat(getAllStaticMetadataPackages())
-                .containsAtLeast(CURRENT_PKG, TEST_HELPER_PKG, TEST_SIDECAR_HELPER_PKG)
-            // required permission because runtime metadata is only visible to owner package
-            runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-                assertThat(getAllRuntimeMetadataPackages())
-                    .containsAtLeast(CURRENT_PKG, TEST_HELPER_PKG, TEST_SIDECAR_HELPER_PKG)
-            }
-        }
-    }
-
-    @Before
-    @After
-    fun resetEnabledStatus() = doBlocking {
-        setAppFunctionEnabled(mManager, "add", AppFunctionManager.APP_FUNCTION_STATE_DEFAULT)
-        setAppFunctionEnabled(
-            mManager,
-            "add_disabledByDefault",
-            AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
-        )
     }
 
     @Test
@@ -1403,6 +1414,7 @@ class AppFunctionManagerAccessEnabledTest {
                 assertProcessState(isBfgs = false)
             } finally {
                 cancellationSignal.cancel()
+                assertServiceDestroyed()
             }
         }
     }
@@ -1431,6 +1443,7 @@ class AppFunctionManagerAccessEnabledTest {
                 assertProcessState(isBfgs = true)
             } finally {
                 cancellationSignal.cancel()
+                assertServiceDestroyed()
                 revokeAppFunctionAccess(CURRENT_PKG, CURRENT_PKG)
             }
         }
