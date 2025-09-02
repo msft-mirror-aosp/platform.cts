@@ -77,6 +77,7 @@ import android.os.RemoteException;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresDevice;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
@@ -110,6 +111,7 @@ import androidx.annotation.Nullable;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.PollingCheck;
@@ -117,6 +119,7 @@ import com.android.cts.input.UinputTouchDevice;
 import com.android.cts.input.UinputTouchScreen;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.MockImeSession;
+import com.android.window.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -2236,5 +2239,102 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         assertWindowFocused(mEmbeddedView, false);
         // assert host has focus
         assertWindowFocused(mSurfaceView, true);
+    }
+
+    @ApiTest(
+            apis = {
+                "android.view.SurfaceControlViewHost#setView",
+                "android.view.SurfaceControlViewHost#relayout",
+                "android.view.SurfaceControlViewHost.LayoutParams#LayoutParams",
+                "android.view.SurfaceControlViewHost.LayoutParams#setFocusable"
+            })
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SCVH_SET_FOCUSABLE)
+    public void testLayoutParams_setFocusable() throws Throwable {
+        mEmbeddedView = new Button(mActivity);
+
+        final SurfaceControlViewHost.LayoutParams embeddedLayoutParams =
+                new SurfaceControlViewHost.LayoutParams(
+                        mEmbeddedViewWidth, mEmbeddedViewHeight, true /* focusable */);
+        mViewInitializer = (host, view) -> host.setView(view, embeddedLayoutParams);
+
+        addSurfaceViewAbove(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
+        mInstrumentation.waitForIdleSync();
+        waitUntilEmbeddedViewDrawn();
+
+        // The embedded view should be focusable by default.
+        requestSurfaceViewFocus();
+        assertWindowFocused(mEmbeddedView, true);
+        assertWindowFocused(mSurfaceView, false);
+
+        // Make the embedded view non-focusable.
+        mActivityRule.runOnUiThread(
+                () -> {
+                    SurfaceControlViewHost.LayoutParams lp =
+                            new SurfaceControlViewHost.LayoutParams(
+                                    mEmbeddedViewWidth,
+                                    mEmbeddedViewHeight,
+                                    /* focusable= */ false);
+                    mVr.relayout(lp);
+                });
+        mInstrumentation.waitForIdleSync();
+
+        // The embedded view should not be focusable.
+        requestSurfaceViewFocus();
+        assertWindowFocused(mEmbeddedView, false);
+        assertWindowFocused(mSurfaceView, true);
+
+        // Make the embedded view focusable again.
+        mActivityRule.runOnUiThread(
+                () -> {
+                    SurfaceControlViewHost.LayoutParams lp =
+                            new SurfaceControlViewHost.LayoutParams(
+                                    mEmbeddedViewWidth, mEmbeddedViewHeight, /* focusable= */ true);
+                    mVr.relayout(lp);
+                });
+        mInstrumentation.waitForIdleSync();
+
+        // The embedded view should be focusable.
+        requestSurfaceViewFocus();
+        assertWindowFocused(mEmbeddedView, true);
+        assertWindowFocused(mSurfaceView, false);
+    }
+
+    @ApiTest(
+            apis = {
+                "android.view.SurfaceControlViewHost#relayout",
+                "android.view.SurfaceControlViewHost#getLayoutParams",
+                "android.view.SurfaceControlViewHost.LayoutParams#LayoutParams",
+                "android.view.SurfaceControlViewHost.LayoutParams#isFocusable",
+                "android.view.SurfaceControlViewHost.LayoutParams#getWidth",
+                "android.view.SurfaceControlViewHost.LayoutParams#getHeight"
+            })
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SCVH_SET_FOCUSABLE)
+    public void testGetLayoutParams() throws Throwable {
+        mEmbeddedView = new Button(mActivity);
+        addSurfaceViewAbove(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
+        mInstrumentation.waitForIdleSync();
+        waitUntilEmbeddedViewDrawn();
+
+        // Check default layout params.
+        SurfaceControlViewHost.LayoutParams lp = mVr.getLayoutParams();
+        assertEquals(mEmbeddedViewWidth, lp.getWidth());
+        assertEquals(mEmbeddedViewHeight, lp.getHeight());
+        assertTrue(lp.isFocusable());
+
+        // Change layout params and check again.
+        mActivityRule.runOnUiThread(
+                () -> {
+                    SurfaceControlViewHost.LayoutParams newLp =
+                            new SurfaceControlViewHost.LayoutParams(200, 300, false);
+                    mVr.relayout(newLp);
+                });
+        mInstrumentation.waitForIdleSync();
+
+        lp = mVr.getLayoutParams();
+        assertEquals(200, lp.getWidth());
+        assertEquals(300, lp.getHeight());
+        assertFalse(lp.isFocusable());
     }
 }
