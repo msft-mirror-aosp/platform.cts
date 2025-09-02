@@ -16,6 +16,7 @@
 
 package android.view.inputmethod.cts;
 
+import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
 import static android.inputmethodservice.InputMethodService.DISALLOW_INPUT_METHOD_INTERFACE_OVERRIDE;
@@ -1244,7 +1245,16 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
             final ImeEventStream stream = imeSession.openEventStream();
 
             final var activity =
-                    createTestActivity(SOFT_INPUT_STATE_ALWAYS_HIDDEN, /* autoRequestFocus */ true);
+                    new TestActivity.Starter()
+                            .asNewTask()
+                            .withWindowingMode(WINDOWING_MODE_FULLSCREEN)
+                            .startSync(
+                                    act ->
+                                            createLayout(
+                                                    SOFT_INPUT_STATE_ALWAYS_HIDDEN,
+                                                    act,
+                                                    /* autoRequestFocus= */ true),
+                                    TestActivity.class);
             final var decorView = activity.getWindow().getDecorView();
             int imeHeight = decorView.getRootWindowInsets().getInsets(ime()).bottom;
 
