@@ -15,6 +15,9 @@
  */
 package com.android.compatibility.common.util;
 
+import static java.lang.reflect.Modifier.isPublic;
+import static java.lang.reflect.Modifier.isStatic;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -25,9 +28,7 @@ import android.drm.DrmManagerClient;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.media.Image;
-import android.media.Image.Plane;
 import android.media.MediaCodec;
-import android.media.MediaCodec.BufferInfo;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecInfo.CodecCapabilities;
 import android.media.MediaCodecInfo.VideoCapabilities;
@@ -37,37 +38,25 @@ import android.media.MediaFormat;
 import android.net.Uri;
 import android.os.BatteryManager;
 import android.os.Build;
-import android.os.SystemProperties;
 import android.os.ParcelFileDescriptor;
+import android.os.SystemProperties;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.util.Range;
 import android.util.Size;
-import android.view.WindowManager;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.compatibility.common.util.DeviceReportLog;
-import com.android.compatibility.common.util.ResultType;
-import com.android.compatibility.common.util.ResultUnit;
-
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.RandomAccessFile;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
-
-import static java.lang.reflect.Modifier.isPublic;
-import static java.lang.reflect.Modifier.isStatic;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
-import static junit.framework.Assert.assertTrue;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.RandomAccessFile;
 
 public class MediaUtils {
     private static final String TAG = "MediaUtils";
@@ -214,16 +203,8 @@ public class MediaUtils {
      *  ------------------- HELPER METHODS FOR CHECKING CODEC SUPPORT -------------------
      */
 
-    public static boolean isGoogle(String codecName) {
-        codecName = codecName.toLowerCase();
-        return codecName.startsWith("omx.google.")
-                || codecName.startsWith("c2.android.")
-                || codecName.startsWith("c2.google.");
-    }
-
     // returns the list of codecs that support any one of the formats
-    private static String[] getCodecNames(
-            boolean isEncoder, Boolean isGoog, MediaFormat... formats) {
+    private static String[] getCodecNames(boolean isEncoder, MediaFormat... formats) {
         ArrayList<String> result = new ArrayList<>();
         for (MediaCodecInfo info : sMCL.getCodecInfos()) {
             if (info.isAlias()) {
@@ -231,9 +212,6 @@ public class MediaUtils {
                 continue;
             }
             if (info.isEncoder() != isEncoder) {
-                continue;
-            }
-            if (isGoog != null && isGoogle(info.getName()) != isGoog) {
                 continue;
             }
 
@@ -255,47 +233,24 @@ public class MediaUtils {
         return result.toArray(new String[result.size()]);
     }
 
-    /* Use isGoog = null to query all decoders */
-    public static String[] getDecoderNames(/* Nullable */ Boolean isGoog, MediaFormat... formats) {
-        return getCodecNames(false /* isEncoder */, isGoog, formats);
-    }
-
     public static String[] getDecoderNames(MediaFormat... formats) {
-        return getCodecNames(false /* isEncoder */, null /* isGoog */, formats);
-    }
-
-    /* Use isGoog = null to query all decoders */
-    public static String[] getEncoderNames(/* Nullable */ Boolean isGoog, MediaFormat... formats) {
-        return getCodecNames(true /* isEncoder */, isGoog, formats);
+        return getCodecNames(false /* isEncoder */, formats);
     }
 
     public static String[] getEncoderNames(MediaFormat... formats) {
-        return getCodecNames(true /* isEncoder */, null /* isGoog */, formats);
+        return getCodecNames(true /* isEncoder */, formats);
     }
 
     public static String[] getDecoderNamesForMime(String mime) {
         MediaFormat format = new MediaFormat();
         format.setString(MediaFormat.KEY_MIME, mime);
-        return getCodecNames(false /* isEncoder */, null /* isGoog */, format);
+        return getCodecNames(false /* isEncoder */, format);
     }
 
     public static String[] getEncoderNamesForMime(String mime) {
         MediaFormat format = new MediaFormat();
         format.setString(MediaFormat.KEY_MIME, mime);
-        return getCodecNames(true /* isEncoder */, null /* isGoog */, format);
-    }
-
-    public static void verifyNumCodecs(
-            int count, boolean isEncoder, Boolean isGoog, MediaFormat... formats) {
-        String desc = (isEncoder ? "encoders" : "decoders") + " for "
-                + (formats.length == 1 ? formats[0].toString() : Arrays.toString(formats));
-        if (isGoog != null) {
-            desc = (isGoog ? "Google " : "non-Google ") + desc;
-        }
-
-        String[] codecs = getCodecNames(isEncoder, isGoog, formats);
-        assertTrue("test can only verify " + count + " " + desc + "; found " + codecs.length + ": "
-                + Arrays.toString(codecs), codecs.length <= count);
+        return getCodecNames(true /* isEncoder */, format);
     }
 
     public static MediaCodec getDecoder(MediaFormat format) {
