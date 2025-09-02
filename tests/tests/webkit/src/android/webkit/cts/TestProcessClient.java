@@ -135,7 +135,7 @@ class TestProcessClient extends Assert implements AutoCloseable, ServiceConnecti
             result = mService.run(runnableClass.getName());
         }
         Throwable exception =
-                (Throwable) result.getSerializable(TestProcessService.REPLY_EXCEPTION_KEY);
+                result.getSerializable(TestProcessService.REPLY_EXCEPTION_KEY, Throwable.class);
         if (exception != null) {
             throw exception;
         }
