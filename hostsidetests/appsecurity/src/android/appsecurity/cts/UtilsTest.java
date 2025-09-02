@@ -37,6 +37,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+import javax.annotation.Nullable;
+
 /** Run as {@code atest AppSecurityHostUnitTestCases:UtilsTest}. */
 public final class UtilsTest {
 
@@ -51,12 +53,9 @@ public final class UtilsTest {
         assertThrows(NullPointerException.class, () -> getAllUsers(null));
     }
 
-    // TODO(b/380907032): add tests for invalid cases like empty users (current code doesn't handle
-    // it)
-
     @Test
-    public void testGetAllUsers_oneUser() throws Exception {
-        mockListUsers(USER_SYSTEM);
+    public void testGetAllUsers_nullUsers() throws Exception {
+        mockListUsers(null);
 
         expect.withMessage("getAllUsers()")
                 .that(getAllUsers(mMockDevice))
@@ -65,10 +64,78 @@ public final class UtilsTest {
     }
 
     @Test
-    public void testGetMultipleUsers_hsum_mainUserFirst() throws Exception {
-        mockHsum(true);
-        mockMainUserId(42);
-        mockListUsers(USER_SYSTEM, 4, 8, 15, 16, 23, 42);
+    public void testGetAllUsers_emptyUsers() throws Exception {
+        mockListUsers();
+
+        expect.withMessage("getAllUsers()")
+                .that(getAllUsers(mMockDevice))
+                .asList()
+                .containsExactly(USER_SYSTEM);
+    }
+
+    @Test
+    public void testGetAllUsers_currentUserNotFound() throws Exception {
+        mockCurrentUser(108);
+        mockListUsers(4, 8, 15, USER_SYSTEM, 16, 23, 42);
+
+        expect.withMessage("getAllUsers()")
+                .that(getAllUsers(mMockDevice))
+                .asList()
+                .containsExactly(USER_SYSTEM, 4, 8, 15, 16, 23, 42)
+                .inOrder();
+    }
+
+    @Test
+    public void testGetAllUsers_currentUserAndSystemUserNotFound() throws Exception {
+        mockCurrentUser(108);
+        mockListUsers(4, 8, 15, 16, 23, 42);
+
+        expect.withMessage("getAllUsers()")
+                .that(getAllUsers(mMockDevice))
+                .asList()
+                .containsExactly(USER_SYSTEM, 4, 8, 15, 16, 23, 42)
+                .inOrder();
+    }
+
+    @Test
+    public void testGetAllUsers_oneUser() throws Exception {
+        mockCurrentUser(42);
+        mockListUsers(42);
+
+        expect.withMessage("getAllUsers()")
+                .that(getAllUsers(mMockDevice))
+                .asList()
+                .containsExactly(42);
+    }
+
+    @Test
+    public void testGetMultipleUsers_currentUserFirst() throws Exception {
+        mockCurrentUser(4);
+        mockListUsers(4, 8, 15, 16, 23, 42);
+
+        expect.withMessage("getAllUsers()")
+                .that(getAllUsers(mMockDevice))
+                .asList()
+                .containsExactly(4, 8, 15, 16, 23, 42)
+                .inOrder();
+    }
+
+    @Test
+    public void testGetMultipleUsers_currentUserOnMiddle() throws Exception {
+        mockCurrentUser(16);
+        mockListUsers(4, 8, 15, 16, 23, 42);
+
+        expect.withMessage("getAllUsers()")
+                .that(getAllUsers(mMockDevice))
+                .asList()
+                .containsExactly(16, 4, 8, 15, 23, 42)
+                .inOrder();
+    }
+
+    @Test
+    public void testGetMultipleUsers_currentUserLast() throws Exception {
+        mockCurrentUser(42);
+        mockListUsers(4, 8, 15, 16, 23, 42);
 
         expect.withMessage("getAllUsers()")
                 .that(getAllUsers(mMockDevice))
@@ -77,47 +144,16 @@ public final class UtilsTest {
                 .inOrder();
     }
 
-    @Test
-    public void testGetMultipleUsers_interactivehsum_mainUserFirst() throws Exception {
-        mockInteractiveHsum(true);
-        mockMainUserId(42);
-        mockListUsers(USER_SYSTEM, 4, 8, 15, 16, 23, 42);
-
-        expect.withMessage("getAllUsers()")
-                .that(getAllUsers(mMockDevice))
-                .asList()
-                .containsExactly(USER_SYSTEM, 4, 8, 15, 16, 23, 42)
-                .inOrder();
-    }
-
-    @Test
-    public void testGetMultipleUsers_nonHsum_systemUserFirst() throws Exception {
-        mockHsum(false);
-        mockMainUserId(42);
-        mockListUsers(USER_SYSTEM, 4, 8, 15, 16, 23, 42);
-
-        expect.withMessage("getAllUsers()")
-                .that(getAllUsers(mMockDevice))
-                .asList()
-                .containsExactly(USER_SYSTEM, 4, 8, 15, 16, 23, 42)
-                .inOrder();
-    }
-
-    private void mockListUsers(int... userIds) throws DeviceNotAvailableException {
+    private void mockListUsers(@Nullable int... userIds) throws DeviceNotAvailableException {
+        if (userIds == null) {
+            when(mMockDevice.listUsers()).thenReturn(null);
+            return;
+        }
         var ids = Arrays.stream(userIds).boxed().collect(Collectors.toCollection(ArrayList::new));
         when(mMockDevice.listUsers()).thenReturn(ids);
     }
 
-    private void mockHsum(boolean value) throws DeviceNotAvailableException {
-        when(mMockDevice.isHeadlessSystemUserMode()).thenReturn(value);
-    }
-
-    private void mockInteractiveHsum(boolean value) throws DeviceNotAvailableException {
-        mockHsum(true);
-        when(mMockDevice.canSwitchToHeadlessSystemUser()).thenReturn(value);
-    }
-
-    private void mockMainUserId(int userId) throws DeviceNotAvailableException {
-        when(mMockDevice.getMainUserId()).thenReturn(userId);
+    private void mockCurrentUser(int userId) throws DeviceNotAvailableException {
+        when(mMockDevice.getCurrentUser()).thenReturn(userId);
     }
 }
