@@ -148,7 +148,7 @@ class AndroidApiInjectionSettings(private val configuration: Configuration) : Ho
         configuration.getInjectRules().forEach({
             rule ->
             if (classNodes.sourceJarFile.matches(rule.pattern)) {
-                return apiClass.mayAndroidApiClass(rule.apiPrefixes) &&
+                return apiClass.mayAndroidApiClass(rule.apiPrefixes + API_CLASS_PREFIXES) &&
                         callerClass.mayAndroidApiCallerClass(rule.callerPrefixes)
             }
         })

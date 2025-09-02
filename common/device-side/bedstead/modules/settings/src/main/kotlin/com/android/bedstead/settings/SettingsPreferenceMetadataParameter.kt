@@ -18,6 +18,7 @@ package com.android.bedstead.settings
 import android.service.settings.preferences.SettingsPreferenceMetadata
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestWithArgumentGenerator
+import com.android.bedstead.nene.types.OptionalBoolean
 
 /**
  * Mark a [SettingsPreferenceMetadata] parameter as being parameterised with all available
@@ -39,6 +40,12 @@ annotation class SettingsPreferenceMetadataParameter(
      * Generates test only for preferences with any of these write sensitivity values.
      */
     val writeSensitivity: IntArray = [],
+
+    /**
+     * If the value is different than ANY, preferences will be filtered using
+     * [SettingsPreferenceMetadata.isWritable] value.
+     */
+    val isWritable: OptionalBoolean = OptionalBoolean.ANY,
 
     /**
      * Generates test only for preferences that meet all of the declared filters.

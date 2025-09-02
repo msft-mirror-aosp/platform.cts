@@ -54,15 +54,17 @@ public class OverrideConfigTests extends ActivityManagerTestBase {
         rotationSession.set(ROTATION_0);
         separateTestJournal();
         resizeActivityTask(LOG_CONFIGURATION_ACTIVITY, 0, 0, 100, 100);
-        new ActivityLifecycleCounts(LOG_CONFIGURATION_ACTIVITY).assertCountWithRetry(
-                "Expected to observe configuration change when resizing",
-                countSpec(ActivityCallback.ON_CONFIGURATION_CHANGED, CountSpec.EQUALS, 1));
+        new ActivityLifecycleCounts(LOG_CONFIGURATION_ACTIVITY)
+                .assertCountWithRetry(
+                        "Expected to observe configuration change when resizing",
+                        ActivityCallback.ON_CONFIGURATION_CHANGED.hasCountEquals(1));
 
         separateTestJournal();
         rotationSession.set(ROTATION_180);
-        new ActivityLifecycleCounts(LOG_CONFIGURATION_ACTIVITY).assertCountWithRetry(
-                "Not expected to observe configuration change after flip rotation",
-                countSpec(ActivityCallback.ON_CONFIGURATION_CHANGED, CountSpec.EQUALS, 0));
+        new ActivityLifecycleCounts(LOG_CONFIGURATION_ACTIVITY)
+                .assertCountWithRetry(
+                        "Not expected to observe configuration change after flip rotation",
+                        ActivityCallback.ON_CONFIGURATION_CHANGED.hasCountEquals(0));
     }
 }
 
