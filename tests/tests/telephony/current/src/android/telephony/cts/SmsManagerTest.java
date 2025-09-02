@@ -45,9 +45,10 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeTrue;
+import static org.junit.Assert.fail;
 
 import android.Manifest;
 import android.annotation.NonNull;
@@ -344,12 +345,14 @@ public class SmsManagerTest {
                 mActivityManager.forceStopPackage(SMS_RETRIEVER_APP)
         );
 
-        assertFalse("[RERUN] SIM card does not provide phone number. Use a suitable SIM Card.",
+        assumeFalse("SIM card does not provide phone number. Use a suitable SIM Card.",
                 TextUtils.isEmpty(mDestAddr));
 
         String mccmnc = mTelephonyManager.getSimOperator();
         int carrierId = mTelephonyManager.getSimCarrierId();
-        assertFalse("[RERUN] Carrier [carrier-id: " + carrierId + "] does not support "
+        assumeFalse("Carrier [carrier-id: "
+                        + carrierId
+                        + "] does not support "
                         + "loop back messages. Use another carrier.",
                 CarrierCapability.UNSUPPORT_LOOP_BACK_MESSAGES.contains(carrierId));
 
@@ -478,12 +481,12 @@ public class SmsManagerTest {
     }
 
     private void testSendAndReceiveMessages(boolean defaultSmsApp) throws Exception {
-        assertFalse("[RERUN] SIM card does not provide phone number. Use a suitable SIM Card.",
+        assumeFalse("SIM card does not provide phone number. Use a suitable SIM Card.",
                 TextUtils.isEmpty(mDestAddr));
 
         String mccmnc = mTelephonyManager.getSimOperator();
         int carrierId = mTelephonyManager.getSimCarrierId();
-        assertFalse("[RERUN] Carrier [carrier-id: " + carrierId + "] does not support "
+        assumeFalse("Carrier [carrier-id: " + carrierId + "] does not support "
                         + "loop back messages. Use another carrier.",
                 CarrierCapability.UNSUPPORT_LOOP_BACK_MESSAGES.contains(carrierId));
 

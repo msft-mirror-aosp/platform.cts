@@ -23,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
@@ -365,7 +366,7 @@ public class MmsTest {
         } finally {
             getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
         }
-        assertFalse("[RERUN] SIM card does not provide phone number. Use a suitable SIM Card.",
+        assumeFalse("SIM card does not provide phone number. Use a suitable SIM Card.",
                 TextUtils.isEmpty(selfNumber));
 
         Log.i(TAG, "testSendMmsMessage");
@@ -409,7 +410,7 @@ public class MmsTest {
 
         if (expectedErrorResultCode == Activity.RESULT_OK) {
             int carrierId = mTelephonyManager.getSimCarrierId();
-            assertFalse("[RERUN] Carrier [carrier-id: " + carrierId + "] does not support "
+            assumeFalse("Carrier [carrier-id: " + carrierId + "] does not support "
                             + "loop back messages. Use another carrier.",
                     CarrierCapability.UNSUPPORT_LOOP_BACK_MESSAGES.contains(carrierId));
         }
