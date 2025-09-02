@@ -27,6 +27,7 @@ import android.os.IBinder;
 import android.os.IInterface;
 import android.os.Parcel;
 import android.os.RemoteException;
+import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
 
@@ -34,6 +35,7 @@ import com.android.compatibility.common.util.ApiTest;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
+import java.util.List;
 
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class BinderIntegrationTest extends ActivityTestsBase {
@@ -335,6 +337,10 @@ public class BinderIntegrationTest extends ActivityTestsBase {
             }
         };
 
+        // Kill any cached processes first, from any previous tests
+        assertTrue(
+                "Couldn't terminate background processes",
+                ensureBackgroundProcessNotAlive(":remote"));
         // Connect to EmptyService in another process
         final Intent remoteIntent = new Intent(IEmptyService.class.getName());
         remoteIntent.setPackage(getContext().getPackageName());
@@ -367,17 +373,10 @@ public class BinderIntegrationTest extends ActivityTestsBase {
         // Unbind and kill background processes
         getContext().unbindService(serviceConnection);
 
-        // Can take a couple of seconds for the proc state to drop
-        final int nAttempts = 5;
-        for (int trials = 0; trials < nAttempts; trials++) {
-            getContext().getSystemService(ActivityManager.class).killBackgroundProcesses(
-                    getContext().getPackageName()
-            );
-            // Try for a total of DELAY_MSEC * nAttempts. Make sure this is below 30 seconds total
-            if (died.block(DELAY_MSEC)) {
-                break;
-            }
-        }
+        assertTrue(
+                "Couldn't terminate background processes",
+                ensureBackgroundProcessNotAlive(":remote"));
+        died.block(DELAY_MSEC);
 
         // Clean up
         if (token != null && recipient != null) {
@@ -388,6 +387,29 @@ public class BinderIntegrationTest extends ActivityTestsBase {
                 + died.block(1)  // Check if it got binder death yet or timed out
                 + ", mEmptyService=" + mEmptyService, // Check if the service was disconnected
                 token, mWhichBinderDied);
+    }
+
+    private boolean ensureBackgroundProcessNotAlive(String processSuffix) {
+        final ActivityManager am = getContext().getSystemService(ActivityManager.class);
+        boolean isProcessAlive = true;
+        int attempts = 5;
+        while (isProcessAlive && attempts-- > 0) {
+            isProcessAlive = false;
+            List<ActivityManager.RunningAppProcessInfo> processes = am.getRunningAppProcesses();
+            for (ActivityManager.RunningAppProcessInfo process : processes) {
+                if (process.processName.endsWith(processSuffix)) {
+                    isProcessAlive = true;
+                    break;
+                }
+            }
+            if (isProcessAlive) {
+                am.killBackgroundProcesses(getContext().getPackageName());
+                SystemClock.sleep(1000);
+            } else {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static class MockIInterface implements IInterface {
