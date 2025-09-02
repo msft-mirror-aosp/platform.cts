@@ -29,6 +29,7 @@ import android.location.cts.common.SoftAssert;
 import android.location.cts.common.TestLocationListener;
 import android.location.cts.common.TestLocationManager;
 import android.location.cts.common.TestMeasurementUtil;
+import android.location.cts.common.TestUtils;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.util.Log;
 
@@ -135,8 +136,12 @@ public class GnssLocationValuesTest {
      */
     @Test
     public void testRequestWhenLocationSettingOff() throws Exception {
-        getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(WRITE_SECURE_SETTINGS);
         LocationManager locationManager = mTestLocationManager.getLocationManager();
+        if (!TestUtils.deviceHasGpsFeature(mContext)) {
+            Log.i(TAG, "Skip the test since GPS is not supported on the device.");
+            return;
+        }
+        getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(WRITE_SECURE_SETTINGS);
         boolean wasEnabled = locationManager.isLocationEnabled();
         try {
             // Set location setting off
