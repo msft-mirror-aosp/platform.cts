@@ -30,8 +30,6 @@ import androidx.test.runner.AndroidJUnit4;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.Arrays;
-
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class CombinedVibrationTest {
@@ -45,11 +43,6 @@ public class CombinedVibrationTest {
             CombinedVibration.startParallel()
                     .addVibrator(1, TEST_EFFECT)
                     .addVibrator(2, TEST_EFFECT)
-                    .combine();
-    private static final CombinedVibration TEST_SEQUENTIAL =
-            CombinedVibration.startSequential()
-                    .addNext(TEST_MONO)
-                    .addNext(1, TEST_EFFECT, /* delay= */ 100)
                     .combine();
 
     @Test
@@ -111,81 +104,6 @@ public class CombinedVibrationTest {
     }
 
     @Test
-    public void testCreateSequential() {
-        CombinedVibration.Sequential sequential =
-                (CombinedVibration.Sequential) CombinedVibration.startSequential()
-                        .addNext(TEST_MONO)
-                        .addNext(TEST_STEREO, /* delay= */ 100)
-                        .addNext(1, TEST_EFFECT)
-                        .combine();
-        assertEquals(
-                Arrays.asList(TEST_MONO, TEST_STEREO,
-                        CombinedVibration.startParallel().addVibrator(1,
-                                TEST_EFFECT).combine()),
-                sequential.getEffects());
-        assertEquals(-1, sequential.getDuration());
-    }
-
-    @Test
-    public void testStartSequentialEmptyCombinationIsInvalid() {
-        try {
-            CombinedVibration.startSequential().combine();
-            fail("Illegal combination, should throw IllegalStateException");
-        } catch (IllegalStateException expected) {
-        }
-    }
-
-    @Test
-    public void testSequentialEquals() {
-        CombinedVibration otherSequential =
-                CombinedVibration.startSequential()
-                        .addNext(TEST_MONO)
-                        .addNext(1, TEST_EFFECT, /* delay= */ 100)
-                        .combine();
-        assertEquals(TEST_SEQUENTIAL, otherSequential);
-        assertEquals(TEST_SEQUENTIAL.hashCode(), otherSequential.hashCode());
-    }
-
-    @Test
-    public void testSequentialNotEqualsDifferentEffects() {
-        CombinedVibration otherSequential =
-                CombinedVibration.startSequential()
-                        .addNext(TEST_STEREO)
-                        .combine();
-        assertNotEquals(TEST_SEQUENTIAL, otherSequential);
-    }
-
-    @Test
-    public void testSequentialNotEqualsDifferentOrder() {
-        CombinedVibration otherSequential =
-                CombinedVibration.startSequential()
-                        .addNext(1, TEST_EFFECT, /* delay= */ 100)
-                        .addNext(TEST_MONO)
-                        .combine();
-        assertNotEquals(TEST_SEQUENTIAL, otherSequential);
-    }
-
-    @Test
-    public void testSequentialNotEqualsDifferentDelays() {
-        CombinedVibration otherSequential =
-                CombinedVibration.startSequential()
-                        .addNext(TEST_MONO)
-                        .addNext(1, TEST_EFFECT, /* delay= */ 1)
-                        .combine();
-        assertNotEquals(TEST_SEQUENTIAL, otherSequential);
-    }
-
-    @Test
-    public void testSequentialNotEqualsDifferentVibrator() {
-        CombinedVibration otherSequential =
-                CombinedVibration.startSequential()
-                        .addNext(TEST_MONO)
-                        .addNext(5, TEST_EFFECT, /* delay= */ 100)
-                        .combine();
-        assertNotEquals(TEST_SEQUENTIAL, otherSequential);
-    }
-
-    @Test
     public void testParcelingParallelMono() {
         Parcel p = Parcel.obtain();
         TEST_MONO.writeToParcel(p, 0);
@@ -204,19 +122,9 @@ public class CombinedVibrationTest {
     }
 
     @Test
-    public void testParcelingSequential() {
-        Parcel p = Parcel.obtain();
-        TEST_SEQUENTIAL.writeToParcel(p, 0);
-        p.setDataPosition(0);
-        CombinedVibration parceled = CombinedVibration.CREATOR.createFromParcel(p);
-        assertEquals(TEST_SEQUENTIAL, parceled);
-    }
-
-    @Test
     public void testDescribeContents() {
         TEST_MONO.describeContents();
         TEST_STEREO.describeContents();
-        TEST_SEQUENTIAL.describeContents();
     }
 
     @SuppressWarnings("ReturnValueIgnored")
@@ -224,7 +132,6 @@ public class CombinedVibrationTest {
     public void testToString() {
         TEST_MONO.toString();
         TEST_STEREO.toString();
-        TEST_SEQUENTIAL.toString();
     }
 
     @Test
@@ -259,35 +166,6 @@ public class CombinedVibrationTest {
                 .addVibrator(1, VibrationEffect.createWaveform(new long[]{1}, new int[]{1}, 0))
                 .addVibrator(2, VibrationEffect.get(VibrationEffect.EFFECT_CLICK))
                 .addVibrator(3, VibrationEffect.createOneShot(100, 100))
-                .combine();
-        assertEquals(Long.MAX_VALUE, effect.getDuration());
-    }
-
-    @Test
-    public void testSequentialCombinationDuration() {
-        CombinedVibration effect = CombinedVibration.startSequential()
-                .addNext(1, VibrationEffect.createOneShot(10, 100), /* delay= */ 1)
-                .addNext(1, VibrationEffect.createOneShot(10, 100), /* delay= */ 1)
-                .addNext(1, VibrationEffect.createOneShot(10, 100), /* delay= */ 1)
-                .combine();
-        assertEquals(33, effect.getDuration());
-    }
-
-    @Test
-    public void testSequentialCombinationUnknownDuration() {
-        CombinedVibration effect = CombinedVibration.startSequential()
-                .addNext(1, VibrationEffect.get(VibrationEffect.EFFECT_CLICK))
-                .addNext(1, VibrationEffect.createOneShot(100, 100))
-                .combine();
-        assertEquals(-1, effect.getDuration());
-    }
-
-    @Test
-    public void testSequentialCombinationRepeatingDuration() {
-        CombinedVibration effect = CombinedVibration.startSequential()
-                .addNext(1, VibrationEffect.createWaveform(new long[]{1}, new int[]{1}, 0))
-                .addNext(1, VibrationEffect.get(VibrationEffect.EFFECT_CLICK))
-                .addNext(1, VibrationEffect.createOneShot(100, 100))
                 .combine();
         assertEquals(Long.MAX_VALUE, effect.getDuration());
     }
