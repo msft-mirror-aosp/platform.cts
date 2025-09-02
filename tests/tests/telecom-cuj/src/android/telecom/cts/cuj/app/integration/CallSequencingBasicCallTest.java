@@ -82,7 +82,6 @@ public class CallSequencingBasicCallTest extends BaseAppVerifier {
      * same phone account case.
      */
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_ADD_DROPS_FG_EXTRA_DIFF_ACCOUNTS})
     public void testAnswerIncomingDropsFg_BothManaged() throws Exception {
         if (!mShouldTestTelecom) {
             return;
