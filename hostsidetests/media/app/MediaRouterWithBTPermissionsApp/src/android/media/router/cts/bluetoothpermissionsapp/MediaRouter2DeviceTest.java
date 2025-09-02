@@ -43,6 +43,7 @@ import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_5;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeFalse;
 
 import android.Manifest;
 import android.app.Activity;
@@ -71,6 +72,7 @@ import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.UserHelper;
 import com.android.media.flags.Flags;
 
 import com.google.common.truth.Correspondence;
@@ -129,6 +131,7 @@ public class MediaRouter2DeviceTest {
     private ComponentName mPlaceholderComponentName;
     private Activity mScreenOnActivity;
     private UiAutomation mUiAutomation;
+    private UserHelper mUserHelper;
 
     @Before
     public void setUp() throws Exception {
@@ -136,6 +139,7 @@ public class MediaRouter2DeviceTest {
         mExecutor = Executors.newSingleThreadExecutor();
         mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         mPlaceholderComponentName = new ComponentName(mContext, PlaceholderActivity.class);
+        mUserHelper = new UserHelper(mContext);
     }
 
     private void launchScreenOnActivity() {
@@ -312,6 +316,10 @@ public class MediaRouter2DeviceTest {
     @Test
     public void requestScan_withOnScreenScan_withScreenOff_doesNotScan()
             throws InterruptedException {
+        assumeFalse(
+                "Skip test on multi-display devices, until per-display power is supported",
+                mUserHelper.isVisibleBackgroundUserSupported());
+
         mUiAutomation.adoptShellPermissionIdentity(Manifest.permission.DEVICE_POWER);
 
         PowerManager pm = mContext.getSystemService(PowerManager.class);
