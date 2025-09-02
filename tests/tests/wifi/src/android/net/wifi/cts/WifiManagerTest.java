@@ -2710,6 +2710,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         List<String> uniquePackageNames = holding
                 .stream()
                 .map(pi -> pi.packageName)
+                .filter(packageName -> !packageName.equals("com.android.shell"))
                 .distinct()
                 .collect(Collectors.toList());
 
