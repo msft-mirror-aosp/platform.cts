@@ -827,8 +827,8 @@ public final class MockIme extends InputMethodService {
                             .build());
         }
 
-        if (mSettings.isOnBackCallbackEnabled()) {
-            getApplicationInfo().setEnableOnBackInvokedCallback(true);
+        if (!mSettings.isOnBackCallbackEnabled()) {
+            getApplicationInfo().setEnableOnBackInvokedCallback(false);
         }
 
         getTracer().onCreate(() -> {

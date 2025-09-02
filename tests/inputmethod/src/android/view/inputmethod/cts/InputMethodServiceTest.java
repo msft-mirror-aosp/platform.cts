@@ -280,10 +280,11 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
     }
 
     private void verifyImeConsumesBackButton(int backDisposition) throws Exception {
-        try (MockImeSession imeSession = MockImeSession.create(
-                InstrumentationRegistry.getInstrumentation().getContext(),
-                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-                new ImeSettings.Builder())) {
+        try (MockImeSession imeSession =
+                MockImeSession.create(
+                        InstrumentationRegistry.getInstrumentation().getContext(),
+                        InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                        new ImeSettings.Builder().setOnBackCallbackEnabled(false))) {
             final ImeEventStream stream = imeSession.openEventStream();
 
             final TestActivity testActivity =
@@ -294,7 +295,6 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
             final ImeCommand command = imeSession.callSetBackDisposition(backDisposition);
             expectCommand(stream, command, TIMEOUT);
 
-            testActivity.setIgnoreBackKey(true);
             assertEquals(0,
                     (long) getOnMainSync(() -> testActivity.getOnBackPressedCallCount()));
             mInstrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
