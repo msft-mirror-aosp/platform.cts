@@ -45,6 +45,7 @@ public class WebcamTestActivity extends PassFailButtons.Activity {
 
     private static final String RESULT_PASS = "PASS";
     private static final String RESULT_FAIL = "FAIL";
+    private static final String RESULT_FORCE_PASS = "FORCE_PASS";
 
     private final ResultReceiver mResultsReceiver = new ResultReceiver();
     private boolean mReceiverRegistered = false;
@@ -143,6 +144,19 @@ public class WebcamTestActivity extends PassFailButtons.Activity {
             } else if (RESULT_FAIL.equals(results)) {
                 mTestState = TestState.RESULTS_RECEIVED;
                 mResultsFromScript = RESULT_FAIL;
+            } else if (RESULT_FORCE_PASS.equals(results)) {
+                mTestState = TestState.RESULTS_RECEIVED;
+                Log.w(
+                        TAG,
+                        "Webcam test failed, but passing unconditionally for devices "
+                                + "with vendor api <= Android 2025Q4.");
+                Toast.makeText(
+                                WebcamTestActivity.this,
+                                "Webcam test script failed. Passing unconditionally. Make sure to"
+                                    + " manually verify Webcam functionality.",
+                                Toast.LENGTH_LONG)
+                        .show();
+                mResultsFromScript = RESULT_PASS;
             } else {
                 Log.w(
                         TAG,
@@ -208,25 +222,6 @@ public class WebcamTestActivity extends PassFailButtons.Activity {
         if (mReceiverRegistered) {
             unregisterReceiver(mResultsReceiver);
         }
-    }
-
-    @Override
-    public void setTestResultAndFinish(boolean passed) {
-        // This test was broken until 25Q2, and passed unconditionally. As we cannot change
-        // the test to fail in a minor version, pass the test unconditionally until 25Q4.
-        if (!passed && Build.VERSION.SDK_INT_FULL <= Build.VERSION_CODES_FULL.BAKLAVA) {
-            Log.w(TAG, "Webcam test failed, but passing unconditionally until API 36.0.");
-            Toast.makeText(
-                            this,
-                            "Test passes unconditionally until API 36. Passing the test for now,"
-                                + " but this will likely cause a failure starting API 36.1.",
-                            Toast.LENGTH_LONG)
-                    .show();
-            super.setTestResultAndFinish(true);
-            return;
-        }
-
-        super.setTestResultAndFinish(passed);
     }
 
     private void updateButtonsAndInstructions() {
