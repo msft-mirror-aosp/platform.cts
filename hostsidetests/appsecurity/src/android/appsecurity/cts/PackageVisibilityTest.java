@@ -16,6 +16,8 @@
 
 package android.appsecurity.cts;
 
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -23,6 +25,8 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
 import android.platform.test.annotations.Presubmit;
 
+import com.android.tradefed.device.UserInfo;
+import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.util.RunUtil;
 
@@ -31,12 +35,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-/**
- * Tests for visibility of packages installed in one user, in a different user.
- */
+import java.util.Arrays;
+
+/** Tests for visibility of packages installed in one user, in a different user. */
 @Presubmit
 @RunWith(DeviceJUnit4ClassRunner.class)
-public class PackageVisibilityTest extends BaseAppSecurityTest {
+public final class PackageVisibilityTest extends BaseAppSecurityTest {
 
     private static final String TINY_APK = "CtsPkgInstallTinyApp.apk";
     private static final String TINY_PKG = "android.appsecurity.cts.tinyapp";
@@ -54,6 +58,8 @@ public class PackageVisibilityTest extends BaseAppSecurityTest {
     public void setUpPackage() throws Exception {
 
         mUsers = Utils.prepareMultipleUsers(getDevice());
+        CLog.d("initial users: %s", Arrays.toString(mUsers));
+
         mOldVerifierValue =
                 getDevice().executeShellCommand("settings get global package_verifier_enable");
         getDevice().executeShellCommand("settings put global package_verifier_enable 0");
@@ -75,18 +81,24 @@ public class PackageVisibilityTest extends BaseAppSecurityTest {
     public void testUninstalledPackageVisibility_full() throws Exception {
         testUninstalledPackageVisibility(false);
     }
+
     @Test
     @AppModeInstant(reason = "'instant' portion of the hostside test")
     public void testUninstalledPackageVisibility_instant() throws Exception {
         testUninstalledPackageVisibility(true);
     }
+
     private void testUninstalledPackageVisibility(boolean instant) throws Exception {
         if (!mSupportsMultiUser) {
             return;
         }
 
-        int userId = mUsers[1];
-        assertTrue(userId > 0);
+        // mUsers starts with the current user, which would be the "secondary" user on HSUM
+        int userIndex = getDevice().isHeadlessSystemUserMode() ? 0 : 1;
+        int userId = mUsers[userIndex];
+        assertWithMessage("id of user[%s] (on %s)", userIndex, Arrays.toString(mUsers))
+                .that(userId)
+                .isGreaterThan(UserInfo.USER_SYSTEM);
         getDevice().startUser(userId, /* waitFlag= */ true);
         installTestAppForUser(TEST_APK, userId);
         installTestAppForUser(TEST_APK, mPrimaryUserId);
