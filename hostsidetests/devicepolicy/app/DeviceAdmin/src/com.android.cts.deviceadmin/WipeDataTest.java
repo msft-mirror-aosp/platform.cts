@@ -23,11 +23,14 @@ public final class WipeDataTest extends BaseDeviceAdminTest {
 
     // Caution: this test will wipe the device's data if it fails
     public void testWipeDataThrowsSecurityException() {
+        int userId = mContext.getUserId();
         try {
-            Log.i(TAG, "Calling wipeData() on " + dpm);
+            Log.i(TAG, "Calling wipeData() on user " + userId + " using " + dpm);
             dpm.wipeData(/* flags= */ 0);
-            fail("wipeData didn't throw expected SecurityException. Managed to kick off factory"
-                    + " reset process");
+            fail(
+                    "wipeData didn't throw expected SecurityException on user "
+                            + userId
+                            + ". Managed to kick off factory reset process");
         } catch (SecurityException expected) {
             Log.v(TAG, "Got exception as expected: " + expected);
         }

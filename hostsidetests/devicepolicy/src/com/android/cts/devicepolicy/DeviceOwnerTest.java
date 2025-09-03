@@ -20,7 +20,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeNotNull;
 
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.FlakyTest;
@@ -102,12 +101,6 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     public void setUp() throws Exception {
         super.setUp();
 
-        if (isHeadlessSystemUserMode()) {
-            assumeNotNull(
-                    "Devices in headless system user mode require a main user to set a device"
-                            + " owner.",
-                    getDevice().getMainUserId());
-        }
         installAndSetDeviceOwner(DEVICE_OWNER_APK, DEVICE_OWNER_PKG, ADMIN_RECEIVER_TEST_CLASS);
 
         // Enable the notification listener
@@ -548,11 +541,11 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
         }
 
         int adminVersion = 24;
-        // NOTE: the restriction must be set on primary user as it will launch SetPolicyActivity,
+        // NOTE: the restriction must be set on current user as it will launch SetPolicyActivity,
         // but the admin must be installed on USER_SYSTEM, otherwise wipeData() on headless system
         // user mode would wipe the current user (instead of factory resetting the device)
         changeUserRestrictionOrFail("no_factory_reset", true, mDeviceOwnerUserId, DEVICE_OWNER_PKG);
-        int adminUserId = mDeviceOwnerUserId;
+        int adminUserId = USER_SYSTEM;
 
         String deviceAdminPkg = DeviceAdminHelper.getDeviceAdminApkPackage(adminVersion);
         String deviceAdminReceiver = DeviceAdminHelper.getAdminReceiverComponent(adminVersion);
