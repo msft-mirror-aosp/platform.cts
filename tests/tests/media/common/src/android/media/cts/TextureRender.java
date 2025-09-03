@@ -70,6 +70,30 @@ public class TextureRender {
             "  gl_FragColor = texture2D(sTexture, vTextureCoord);\n" +
             "}\n";
 
+    private static final String VERTEX_SHADER_YUV =
+            "#version 300 es\n" +
+            "uniform mat4 uMVPMatrix;\n" +
+            "uniform mat4 uSTMatrix;\n" +
+            "in vec4 aPosition;\n" +
+            "in vec4 aTextureCoord;\n" +
+            "out vec2 vTextureCoord;\n" +
+            "void main() {\n" +
+            "  gl_Position = uMVPMatrix * aPosition;\n" +
+            "  vTextureCoord = (uSTMatrix * aTextureCoord).xy;\n" +
+            "}\n";
+
+    private static final String FRAGMENT_SHADER_YUV =
+            "#version 300 es\n" +
+            "#extension GL_OES_EGL_image_external : require\n" +
+            "#extension GL_EXT_YUV_target : require\n" +
+            "precision mediump float;\n" +      // highp here doesn't seem to matter
+            "uniform __samplerExternal2DY2YEXT uTexSampler;\n" +
+            "in vec2 vTextureCoord;\n" +
+            "out vec4 outColor;\n" +
+            "void main() {\n" +
+            "    outColor = texture(uTexSampler, vTextureCoord);\n" +
+            "}\n";
+
     private float[] mMVPMatrix = new float[16];
     private float[] mSTMatrix = new float[16];
 
@@ -79,6 +103,7 @@ public class TextureRender {
     private int muSTMatrixHandle;
     private int maPositionHandle;
     private int maTextureHandle;
+    private boolean mUseYuvSampling = false;
     private boolean mSecureMode = false;
 
     private static int GL_TEXTURE_PROTECTED_EXT = 0x8BFA;
@@ -95,6 +120,10 @@ public class TextureRender {
         mTriangleVertices.put(mTriangleVerticesData).position(0);
 
         Matrix.setIdentityM(mSTMatrix, 0);
+    }
+
+    public void setUseYuvSampling(boolean useYuvSampling) {
+        mUseYuvSampling = useYuvSampling;
     }
 
     public int getTextureId() {
@@ -141,7 +170,11 @@ public class TextureRender {
      * Initializes GL state.  Call this after the EGL surface has been created and made current.
      */
     public void surfaceCreated() {
-        mProgram = createProgram(VERTEX_SHADER, FRAGMENT_SHADER);
+        if (!mUseYuvSampling) {
+            mProgram = createProgram(VERTEX_SHADER, FRAGMENT_SHADER);
+        } else {
+            mProgram = createProgram(VERTEX_SHADER_YUV, FRAGMENT_SHADER_YUV);
+        }
         if (mProgram == 0) {
             throw new RuntimeException("failed creating program");
         }
@@ -177,7 +210,7 @@ public class TextureRender {
         checkGlError("glBindTexture mTextureID");
 
         GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MIN_FILTER,
-                GLES20.GL_NEAREST);
+                GLES20.GL_LINEAR);
         GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MAG_FILTER,
                 GLES20.GL_LINEAR);
         GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_S,

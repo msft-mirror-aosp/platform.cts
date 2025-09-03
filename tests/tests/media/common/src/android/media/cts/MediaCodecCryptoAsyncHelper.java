@@ -150,7 +150,8 @@ public class MediaCodecCryptoAsyncHelper {
             int width, int height, boolean useHighBitDepth, boolean secure) {
         OutputSurface outputSurface = null;
         try {
-            outputSurface = new OutputSurface(width, height, useHighBitDepth, secure);
+            outputSurface = new OutputSurface(width, height, useHighBitDepth,
+                    secure, false /* useYuvSampling */);
         } catch (RuntimeException e) {
             // Relaxing EGL errors as these tests are not meant
             // to test EGL.
