@@ -1536,8 +1536,8 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
         final BlockingDeque<MediaTimestamp> timestamps = new LinkedBlockingDeque<>();
         mMediaPlayer.setOnMediaTimeDiscontinuityListener(
                 (mp, timestamp) -> {
-                    mOnMediaTimeDiscontinuityCalled.signal();
                     timestamps.add(timestamp);
+                    mOnMediaTimeDiscontinuityCalled.signal();
                 });
         mMediaPlayer.setDisplay(mActivity.getSurfaceHolder());
         mMediaPlayer.prepare();
