@@ -137,7 +137,11 @@ class BluetoothConnector(
                     )
                 } while (isOpen)
             } catch (e: IOException) {
-                throw RuntimeException(e)
+                if (isOpen) {
+                    Log.d(TAG, "Server thread encountered an error while listening.")
+                    throw RuntimeException(e)
+                }
+                Log.d(TAG, "Server thread exiting.")
             }
         }
 
@@ -147,8 +151,8 @@ class BluetoothConnector(
             try {
                 Log.d(TAG, "Closing server socket.")
                 cdm.detachSystemDataTransport(associationId)
-                mServerSocket.close()
                 isOpen = false
+                mServerSocket.close()
             } catch (e: IOException) {
                 throw RuntimeException(e)
             }

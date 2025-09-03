@@ -52,6 +52,9 @@ class BaseTestClass(base_test.BaseTestClass):
 
     def teardown_test(self):
         """Clean up tests"""
+        self.primary.cdm.detachAllSockets()
+        self.secondary.cdm.detachAllSockets()
+
         self.primary.cdm.disassociateAll()
         self.secondary.cdm.disassociateAll()
 
