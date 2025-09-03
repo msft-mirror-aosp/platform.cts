@@ -305,7 +305,7 @@ public class WindowInputTests {
 
             mInstrumentation.waitForIdleSync();
             PollingCheck.waitFor(TOUCH_EVENT_PROPAGATION_TIMEOUT,
-                    () -> previousCount + 1 == mClickCount);
+                    () -> previousCount + 1 == mClickCount, "Timed out waiting for click " + i);
         }
         assertEquals("Wrong number of clicks", totalClicks, mClickCount);
     }
