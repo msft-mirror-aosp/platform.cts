@@ -25,6 +25,7 @@ public class Constants {
 
     public static final String EXTRA_METHOD = "method";
     public static final String EXTRA_REPLY_ACTION = "reply_action";
+    public static final String EXTRA_TARGET_INTENT = "target_intent";
 
     public static final String TEST_SET_DYNAMIC_SHORTCUTS = "testSetDynamicShortcuts";
     public static final String TEST_ADD_DYNAMIC_SHORTCUTS = "testAddDynamicShortcuts";

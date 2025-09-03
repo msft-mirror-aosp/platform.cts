@@ -578,7 +578,8 @@ class PreviewDistortionTest(its_base_test.ItsBaseTest):
       if arc_distortion_err is None:
         no_markers_msg = f'Unable to find all ArUco markers in {img_name}'
         if has_ultrawide:
-          raise AssertionError(f'{no_markers_msg} with ultrawide camera')
+          raise AssertionError(f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}'
+                               f'\n\n{no_markers_msg} with ultrawide camera')
         logging.debug(no_markers_msg)
       else:
         if arc_distortion_err > _ARUCO_DIST_TOL:

@@ -27,6 +27,7 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeNotNull;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
@@ -547,7 +548,7 @@ public class VisualVoicemailServiceTest {
             String text,
             boolean expectVvmSms) {
         int carrierId = mTelephonyManager.getSimCarrierId();
-        assertFalse("[RERUN] Carrier [carrier-id: " + carrierId + "] does not support "
+        assumeFalse("Carrier [carrier-id: " + carrierId + "] does not support "
                         + "loop back messages. Use another carrier.",
                 CarrierCapability.UNSUPPORT_LOOP_BACK_MESSAGES.contains(carrierId));
 

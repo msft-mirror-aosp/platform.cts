@@ -178,8 +178,6 @@ public class VoiceInteractionServiceTest {
     })
     @EnsureHasPrivateProfile
     @Test
-    @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
-            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void onHandleScreenShotAndAssist_privateProfile_failed() throws Exception {
         try (TestAppInstance unused = startActivityAndShowSession(
                 privateProfile(sDeviceState))) {

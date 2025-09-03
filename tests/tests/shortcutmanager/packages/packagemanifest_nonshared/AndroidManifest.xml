@@ -34,5 +34,10 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity-alias>
+        <service android:name=".BalService"
+            android:exported="true" />
+        <activity android:name=".RequestPinShortcutActivity"
+            android:exported="true">
+        </activity>
     </application>
 </manifest>

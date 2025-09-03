@@ -663,8 +663,6 @@ public final class UserManagerTest {
             "android.os.UserManager#isProfile",
             "android.os.UserManager#isUserOfType",
             "android.os.UserManager#getUserBadge"})
-    @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
-            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testPrivateProfile() throws Exception {
         UserHandle userHandle = null;
 
@@ -1228,8 +1226,6 @@ public final class UserManagerTest {
     @EnsureHasPrivateProfile
     @EnsureHasPermission({MODIFY_QUIET_MODE})
     @AppModeFull
-    @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
-            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testRequestQuietModeOnPrivateProfile_shouldSendProfileUnavailableBroadcast() {
         final UserHandle profileHandle = privateProfile(sDeviceState).userHandle();
         presetQuietModeStatus(false, profileHandle);
@@ -1243,8 +1239,6 @@ public final class UserManagerTest {
     @EnsureHasPrivateProfile
     @EnsureHasPermission({MODIFY_QUIET_MODE})
     @AppModeFull
-    @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
-            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testRequestQuietModeOnPrivateProfile_disableQuietMode_needUserCredentials() {
         UserReference privateProfile = privateProfile(sDeviceState);
         final UserHandle profileHandle = privateProfile.userHandle();
@@ -1257,8 +1251,6 @@ public final class UserManagerTest {
     @Test
     @EnsureHasWorkProfile
     @EnsureHasPermission({MODIFY_QUIET_MODE})
-    @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
-            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testRequestQuietModeOnManaged_shouldSendProfileUnavailableBroadcast() {
         final UserHandle profileHandle = workProfile(sDeviceState).userHandle();
         presetQuietModeStatus(false, profileHandle);
@@ -1272,8 +1264,6 @@ public final class UserManagerTest {
     @Test
     @EnsureHasWorkProfile
     @EnsureHasPermission({MODIFY_QUIET_MODE})
-    @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
-            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testRequestQuietModeOnManaged_shouldSendProfileAvailableBroadcast() {
         final UserHandle profileHandle = workProfile(sDeviceState).userHandle();
         presetQuietModeStatus(true, profileHandle);
@@ -1315,8 +1305,6 @@ public final class UserManagerTest {
     @RequireRunOnPrivateProfile
     @ApiTest(apis = {"android.os.UserManager#getProfileLabel"})
     @EnsureHasPermission({CREATE_USERS, INTERACT_ACROSS_USERS})
-    @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
-            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testPrivateProfileLabel_shouldNotBeNull() {
         final UserManager umOfProfile = sContext.getSystemService(UserManager.class);
         assert umOfProfile != null;
