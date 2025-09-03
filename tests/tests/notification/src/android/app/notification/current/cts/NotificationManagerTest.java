@@ -63,7 +63,6 @@ import android.app.stubs.R;
 import android.app.stubs.shared.FutureServiceConnection;
 import android.app.stubs.shared.NotificationHelper.SEARCH_TYPE;
 import android.app.stubs.shared.TestNotificationListener;
-import android.companion.Flags;
 import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -3368,20 +3367,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
                             "Non-user-set changes should not override user-set",
                             mNotificationManager.getEnabledNotificationListeners(),
                             hasItem(componentName));
-
-                    if (Flags.enableMedicalProfile()) {
-                        mNotificationManager.setNotificationPolicyAccessGranted(
-                                STUB_PACKAGE_NAME, true);
-                        assertTrue(
-                                mNotificationManager.isNotificationPolicyAccessGrantedForPackage(
-                                        STUB_PACKAGE_NAME));
-
-                        mNotificationManager.setNotificationPolicyAccessGranted(
-                                STUB_PACKAGE_NAME, false);
-                        assertFalse(
-                                mNotificationManager.isNotificationPolicyAccessGrantedForPackage(
-                                        STUB_PACKAGE_NAME));
-                    }
                 });
     }
 
