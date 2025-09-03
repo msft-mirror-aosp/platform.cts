@@ -38,6 +38,10 @@ java_test_host {
         "platformprotos",
         "flag-junit-host",
         "android.multiuser.flags-aconfig-java-host",
+        // NOTE: -axt below is needed by BackupPreparer, while the non-axt version above
+        // is needed by ProtoUtils. Ideally one should be enough, but that would require
+        // fixing these libs
+        "compatibility-host-util-axt",
     ],
     device_common_data: [
         ":AdbBackupApp",
