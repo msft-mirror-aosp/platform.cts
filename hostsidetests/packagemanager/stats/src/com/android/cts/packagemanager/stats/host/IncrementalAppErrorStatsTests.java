@@ -139,7 +139,7 @@ public final class IncrementalAppErrorStatsTests extends DeviceTestCase implemen
                 atomTag,  /*uidInAttributionChain=*/false);
 
         DeviceUtils.runActivity(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
-                "StatsdCtsForegroundActivity", "action", "action.crash");
+                "StatsdCtsForegroundActivity", "action", "action.crash", 2_000);
         RunUtil.getDefault().sleep(METRICS_WAIT_MILLISECONDS);
         // Sorted list of events in order in which they occurred.
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
@@ -185,7 +185,7 @@ public final class IncrementalAppErrorStatsTests extends DeviceTestCase implemen
 
         try (AutoCloseable a = DeviceUtils.withActivity(getDevice(),
                 DeviceUtils.STATSD_ATOM_TEST_PKG, "ANRActivity", null, null)) {
-            RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+            RunUtil.getDefault().sleep(2_000);
             getDevice().executeShellCommand(
                     "am broadcast -a action_anr -p " + DeviceUtils.STATSD_ATOM_TEST_PKG);
             RunUtil.getDefault().sleep(ANR_WAIT_MILLS);
