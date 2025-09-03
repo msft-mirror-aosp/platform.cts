@@ -694,6 +694,25 @@ public class BitmapRegionDecoderTest {
         assertNotNull(scaledRegion);
     }
 
+    @Test
+    @DisabledOnRavenwood(blockedBy = MediaUtils.class)
+    public void testAvif() throws IOException {
+        if (!MediaUtils.hasDecoder(MediaFormat.MIMETYPE_VIDEO_AV1)) {
+            // AVIF support is optional when AV1 decoder is not supported.
+            return;
+        }
+        InputStream is = obtainInputStream(R.raw.avif_yuv_420_8bit);
+        BitmapRegionDecoder decoder = BitmapRegionDecoder.newInstance(is);
+        Bitmap region = decoder.decodeRegion(new Rect(0, 0, 32, 32), null);
+        assertNotNull(region);
+
+        // Make sure that scaling works.
+        Options opts = new BitmapFactory.Options();
+        opts.inSampleSize = 2;
+        Bitmap scaledRegion = decoder.decodeRegion(new Rect(0, 0, 32, 32), opts);
+        assertNotNull(scaledRegion);
+    }
+
     @Test(expected = NullPointerException.class)
     public void testNullParcelFileDescriptor() throws IOException {
         ParcelFileDescriptor pfd = null;
