@@ -40,6 +40,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.os.Build
 import android.os.IBinder
 import android.permission.flags.Flags
 import android.platform.test.annotations.AppModeFull
@@ -60,6 +61,7 @@ import java.util.concurrent.locks.ReentrantLock
 import java.util.function.Consumer
 import org.junit.After
 import org.junit.Assert
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -116,6 +118,9 @@ class DiscreteAppopsTest {
 
     @Before
     fun setUpTest() {
+        // This test doesn't pass on sqlite impl, as offsetHistory test API is not implemented.
+        // SQLite impl is verified by new HistoricalRegistryTest.
+        assumeTrue(Build.VERSION.SDK_INT_FULL < Build.VERSION_CODES_FULL.BAKLAVA_1)
         appOpsManager = context.getSystemService(AppOpsManager::class.java)!!
         activityManager = context.getSystemService(ActivityManager::class.java)!!
         runWithShellPermissionIdentity {
