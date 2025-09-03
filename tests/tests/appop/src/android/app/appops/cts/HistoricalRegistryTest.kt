@@ -258,6 +258,34 @@ class HistoricalRegistryTest {
         }
     }
 
+    @Test
+    fun appOpRejectEventsAreNotIncludedInDiscreteOps() {
+        val opNames = listOf(SHORT_INTERVAL_OP)
+        runWithShellPermissionIdentity {
+            appOpsManager.setUidMode(SHORT_INTERVAL_OP, testUid, MODE_IGNORED)
+        }
+        eventually {
+            assertWithMessage("$SHORT_INTERVAL_OP mode should be MODE_IGNORED ")
+                .that(appOpsManager.checkOp(SHORT_INTERVAL_OP, testUid, testPackageName))
+                .isEqualTo(MODE_IGNORED)
+        }
+        noteOpWithShellIdentity(SHORT_INTERVAL_OP, testUid, testPackageName)
+
+        val historicalOps = getHistoricalOps(historyFlag = HISTORY_FLAGS_ALL, opNames = opNames)
+        // discrete ops shouldn't include rejected events.
+        val discreteOps = convertHistoricalOpsToDiscreteAccessEvents(historicalOps)
+        assertThat(discreteOps.size).isEqualTo(0)
+
+        // reject events are part of aggregated ops.
+        val aggregatedOps = convertHistoricalOpsToAggregatedAccessEvents(historicalOps)
+        assertThat(aggregatedOps.size).isEqualTo(1)
+        val appOpEvent = aggregatedOps.first()
+        assertThat(appOpEvent.opName).isEqualTo(SHORT_INTERVAL_OP)
+        assertThat(appOpEvent.totalDurationMillis).isEqualTo(0)
+        assertThat(appOpEvent.accessCount).isEqualTo(0)
+        assertThat(appOpEvent.rejectCount).isEqualTo(1)
+    }
+
     private fun setAppOpHistoryParameters(mode: Int) {
         runWithShellPermissionIdentity {
             appOpsManager.setHistoryParameters(mode, 15 * 60 * 1000, 10)
