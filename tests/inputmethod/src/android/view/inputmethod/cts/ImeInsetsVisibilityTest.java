@@ -16,6 +16,8 @@
 
 package android.view.inputmethod.cts;
 
+import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
+import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.content.Intent.ACTION_CLOSE_SYSTEM_DIALOGS;
 import static android.content.Intent.FLAG_RECEIVER_FOREGROUND;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
@@ -35,6 +37,7 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.showSoftInputMatch
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
 import android.app.Instrumentation;
@@ -322,36 +325,65 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
     }
 
     /**
-     * Test the IME window won't cover the editor when the app creates a panel window to receive
-     * the IME insets.
+     * Test the IME window won't cover the editor when the app creates a panel window to receive the
+     * IME insets.
      *
-     * <p>Regression test for Bug 195765264 and Bug 152304051.</p>
+     * <p>Regression test for Bug 195765264 and Bug 152304051.
      */
     @Test
-    public void testEditorWontCoveredByImeWhenInputWindowBehindPanel() throws Exception {
+    public void testEditorWontCoveredByImeWhenInputWindowBehindPanel_fullscreenWindow()
+            throws Exception {
+        runEditorWontCoveredByImeWhenInputWindowBehindPanel(WINDOWING_MODE_FULLSCREEN);
+    }
+
+    /**
+     * Test the IME window won't cover the editor when the app creates a panel window to receive the
+     * IME insets.
+     *
+     * <p>Regression test for Bug 195765264 and Bug 152304051.
+     */
+    @Test
+    public void testEditorWontCoveredByImeWhenInputWindowBehindPanel_freeformWindow()
+            throws Exception {
+        assumeTrue(isFreeformSupported());
+        runEditorWontCoveredByImeWhenInputWindowBehindPanel(WINDOWING_MODE_FREEFORM);
+    }
+
+    private void runEditorWontCoveredByImeWhenInputWindowBehindPanel(int windowingMode)
+            throws Exception {
         try (MockImeSession imeSession = MockImeSession.create(
                 mInstrumentation.getContext(),
                 mInstrumentation.getUiAutomation(),
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
             final String marker = getTestMarker();
-            // Launch a test activity with SOFT_INPUT_ADJUST_NOTHING to not resize by IME insets.
             final AtomicReference<EditText> editTextRef = new AtomicReference<>();
-            final TestActivity testActivity = TestActivity.startSync(activity -> {
-                final LinearLayout layout = new LinearLayout(activity);
-                layout.setOrientation(LinearLayout.VERTICAL);
-                layout.setGravity(Gravity.BOTTOM);
-                final EditText editText = new EditText(activity);
-                editText.setHint("focused editText");
-                editText.setPrivateImeOptions(marker);
-                // Initial editor visibility as GONE for testing IME visibility controlled by panel.
-                editText.setVisibility(View.GONE);
-                editTextRef.set(editText);
-                layout.addView(editText);
-                activity.getWindow().setSoftInputMode(
-                        WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING);
-                return layout;
-            });
+
+            // Launch a test activity with SOFT_INPUT_ADJUST_NOTHING to not resize by IME insets.
+            final TestActivity testActivity =
+                    new TestActivity.Starter()
+                            .asNewTask()
+                            .withWindowingMode(windowingMode)
+                            .startSync(
+                                    activity -> {
+                                        final LinearLayout layout = new LinearLayout(activity);
+                                        layout.setOrientation(LinearLayout.VERTICAL);
+                                        layout.setGravity(Gravity.BOTTOM);
+                                        final EditText editText = new EditText(activity);
+                                        editText.setHint("focused editText");
+                                        editText.setPrivateImeOptions(marker);
+                                        // Initial editor visibility as GONE for testing IME
+                                        // visibility controlled by panel.
+                                        editText.setVisibility(View.GONE);
+                                        editTextRef.set(editText);
+                                        layout.addView(editText);
+                                        activity.getWindow()
+                                                .setSoftInputMode(
+                                                        WindowManager.LayoutParams
+                                                                .SOFT_INPUT_ADJUST_NOTHING);
+                                        return layout;
+                                    },
+                                    TestActivity.class);
             final EditText editText = editTextRef.get();
             // Create a panel window to receive IME insets for adjusting editText position.
             final View panelView = TestUtils.getOnMainSync(() -> {

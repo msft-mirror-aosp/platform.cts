@@ -81,6 +81,13 @@ public abstract class EndToEndImeTestBase {
                 && pm.hasSystemFeature(FEATURE_CAR_SPLITSCREEN_MULTITASKING);
     }
 
+    /** Returns {@code true} if device supports freeform window management. */
+    public static boolean isFreeformSupported() {
+        final var instrumentation = InstrumentationRegistry.getInstrumentation();
+        final var pm = instrumentation.getTargetContext().getPackageManager();
+        return pm.hasSystemFeature(PackageManager.FEATURE_FREEFORM_WINDOW_MANAGEMENT);
+    }
+
     /**
      * Whether verbose ImeTracker logging was enabled prior to running the tests,
      * used to handle reverting the state when the test run ends.
