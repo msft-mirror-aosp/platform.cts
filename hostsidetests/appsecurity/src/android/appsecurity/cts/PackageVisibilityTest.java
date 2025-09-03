@@ -16,8 +16,6 @@
 
 package android.appsecurity.cts;
 
-import static com.google.common.truth.Truth.assertWithMessage;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -25,7 +23,6 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
 import android.platform.test.annotations.Presubmit;
 
-import com.android.tradefed.device.UserInfo;
 import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.util.RunUtil;
@@ -93,12 +90,7 @@ public final class PackageVisibilityTest extends BaseAppSecurityTest {
             return;
         }
 
-        // mUsers starts with the current user, which would be the "secondary" user on HSUM
-        int userIndex = getDevice().isHeadlessSystemUserMode() ? 0 : 1;
-        int userId = mUsers[userIndex];
-        assertWithMessage("id of user[%s] (on %s)", userIndex, Arrays.toString(mUsers))
-                .that(userId)
-                .isGreaterThan(UserInfo.USER_SYSTEM);
+        int userId = Utils.getFirstNonSystemUserId(mUsers);
         getDevice().startUser(userId, /* waitFlag= */ true);
         installTestAppForUser(TEST_APK, userId);
         installTestAppForUser(TEST_APK, mPrimaryUserId);
