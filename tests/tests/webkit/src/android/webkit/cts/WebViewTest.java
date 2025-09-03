@@ -49,6 +49,7 @@ import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
 import android.util.DisplayMetrics;
+import android.util.Pair;
 import android.view.KeyEvent;
 import android.view.ViewGroup;
 import android.view.ViewParent;
@@ -840,31 +841,32 @@ public class WebViewTest extends SharedWebViewTest {
     @Test
     public void testSetPictureListener() {
         final class MyPictureListener extends WaitablePictureListener {
-            public WebView mWebView;
-            public Picture mPicture;
+            final BlockingQueue<Pair<WebView, Picture>> mParameterQueue =
+                    new LinkedBlockingQueue<>();
 
             @Override
             public void onNewPicture(WebView view, Picture picture) {
-                this.mWebView = view;
-                this.mPicture = picture;
-                // Call the super method last, since that notifies the queue, which should happen
-                // after the fields in this class have been set.
+                mParameterQueue.add(Pair.create(view, picture));
+                // Notify anyone waiting after saving the parameters.
                 super.onNewPicture(view, picture);
             }
         }
 
         final MyPictureListener listener = new MyPictureListener();
         mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
-        final String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
+        final String url = mWebServer.getAssetUrl(TestHtmlConstants.SMALL_IMG_URL);
         mOnUiThread.setPictureListener(listener);
         mOnUiThread.loadUrlAndWaitForCompletion(url);
         listener.waitForNextCall();
-        assertEquals(mWebView, listener.mWebView);
-        assertNull(listener.mPicture);
-
-        final String newUrl = mWebServer.getAssetUrl(TestHtmlConstants.SMALL_IMG_URL);
-        mOnUiThread.loadUrlAndWaitForCompletion(newUrl);
-        listener.waitForNextCall();
+        List<Pair<WebView, Picture>> parameters = new ArrayList<>();
+        listener.mParameterQueue.drainTo(parameters);
+        assertFalse(parameters.isEmpty());
+        for (Pair<WebView, Picture> parameter : parameters) {
+            assertNotNull("Call to onNewPicture had null WebView parameter", parameter.first);
+            assertNull(
+                    "The pictureListener is deprecated, and the picture should always be null",
+                    parameter.second);
+        }
     }
 
     @Test
