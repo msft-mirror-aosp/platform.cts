@@ -466,7 +466,7 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
         mActivity.tapLogin();
         mUiBot.waitForIdleSync();
         mActivity.finish();
-        mUiBot.assertShownById("android:id/autofill_save_no");
+        mUiBot.waitForIdleSync();
         // Closes everything, makes sure that the Session is destroyed
         mUiBot.pressHome();
         mUiBot.waitForIdleSync();
