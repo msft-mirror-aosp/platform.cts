@@ -246,6 +246,21 @@ public final class Utils {
         return users;
     }
 
+    /**
+     * Gets the id of the first user that is not the {@link USER_SYSTEM system user}.
+     *
+     * @throws IllegalArgumentException if {@code userIds} doesn't have such user.
+     */
+    public static int getFirstNonSystemUserId(int... userIds) {
+        Objects.requireNonNull(userIds, "userIds cannot be null");
+        for (int userId : userIds) {
+            if (userId != USER_SYSTEM) {
+                return userId;
+            }
+        }
+        throw new IllegalArgumentException("Not found. Users: " + Arrays.toString(userIds));
+    }
+
     public static void waitForBootCompleted(ITestDevice device) throws Exception {
         for (int i = 0; i < 45; i++) {
             if (isBootCompleted(device)) {
