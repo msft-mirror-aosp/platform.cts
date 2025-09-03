@@ -244,6 +244,7 @@ class AppOpDefinitionTest {
             APP_OPS[AppOpsManager.OPSTR_READ_CELL_IDENTITY] = 165
             APP_OPS[AppOpsManager.OPSTR_READ_CELL_INFO] = 166
             APP_OPS[AppOpsManager.OPSTR_COMPUTER_CONTROL] = 167
+            APP_OPS[AppOpsManager.OPSTR_READ_OTP_SMS] = 168
         }
     }
 }

@@ -45,10 +45,10 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeTrue;
-import static org.junit.Assert.fail;
 
 import android.Manifest;
 import android.annotation.NonNull;
@@ -170,6 +170,7 @@ public class SmsManagerTest {
     private TelephonyManager mTelephonyManager;
     private SubscriptionManager mSubscriptionManager;
     private RoleManager mRoleManager;
+    private AppOpsManager mAppOpsManager;
     private ActivityManager mActivityManager;
     private String mDestAddr;
     private String mText;
@@ -220,6 +221,7 @@ public class SmsManagerTest {
         mSubscriptionManager = mContext.getSystemService(SubscriptionManager.class);
         mActivityManager = mContext.getSystemService(ActivityManager.class);
         mRoleManager = mContext.getSystemService(RoleManager.class);
+        mAppOpsManager = mContext.getSystemService(AppOpsManager.class);
         mText = "This is a test message";
 
         executeWithShellPermissionIdentity(() -> {
@@ -1255,6 +1257,26 @@ public class SmsManagerTest {
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS_API})
     @EnsureHasNoDeviceOwner
+    public void testGetSmsOtpTrustedAppIds_appWithReadOtpSmsTrusted() throws Exception {
+        try {
+            setReadSmsOtpAppOp(AppOpsManager.MODE_ALLOWED);
+            Set<String> newTrustedAppIds =
+                    callWithTrustedSmsReadPermissions(
+                            () -> SmsManager.getSmsOtpTrustedPackages(mContext, null));
+            assertTrue(
+                    "Expected app with "
+                            + AppOpsManager.OPSTR_READ_OTP_SMS
+                            + " app op to be in trusted list",
+                    newTrustedAppIds.contains(mSelfPackageName));
+
+        } finally {
+            setReadSmsOtpAppOp(AppOpsManager.MODE_DEFAULT);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS_API})
+    @EnsureHasNoDeviceOwner
     public void testGetSmsOtpTrustedAppIds_standardAppNotIncluded() throws Exception {
         Set<String> trustedAppIds =
                 callWithTrustedSmsReadPermissions(
@@ -1365,6 +1387,26 @@ public class SmsManagerTest {
                     addRoleHolder(roleName, oldHolder);
                 }
             }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS_API})
+    @EnsureHasNoDeviceOwner
+    public void testIsAppTrustedForSmsOtp_appWithReadOtpSmsTrusted() throws Exception {
+        try {
+            setReadSmsOtpAppOp(AppOpsManager.MODE_ALLOWED);
+            assertTrue(
+                    "Expected app with "
+                            + AppOpsManager.OPSTR_READ_OTP_SMS
+                            + " app op to be trusted",
+                    callWithTrustedSmsReadPermissions(
+                            () ->
+                                    SmsManager.isAppTrustedForSmsOtp(
+                                            mContext, mSelfPackageName, mSelfUid)));
+
+        } finally {
+            setReadSmsOtpAppOp(AppOpsManager.MODE_DEFAULT);
         }
     }
 
@@ -1583,6 +1625,15 @@ public class SmsManagerTest {
                                     latch.countDown();
                                 }));
         latch.await();
+    }
+
+    private void setReadSmsOtpAppOp(int mode) {
+        runWithShellPermissionIdentity(
+                () -> mAppOpsManager.setUidMode(AppOpsManager.OP_READ_OTP_SMS, mSelfUid, mode));
+        int newMode =
+                mAppOpsManager.checkOpNoThrow(
+                        AppOpsManager.OPSTR_READ_OTP_SMS, mSelfUid, mSelfPackageName);
+        assertEquals("Expected mode to be " + mode + ", was " + newMode, mode, newMode);
     }
 
     @SuppressLint("MissingPermission")
