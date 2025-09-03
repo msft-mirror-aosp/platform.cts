@@ -214,6 +214,11 @@ public class EncoderBlockModelTest {
             usage |= HardwareBuffer.USAGE_CPU_WRITE_OFTEN;
             if (mediaCodec.getCodecInfo().isHardwareAccelerated()) {
                 usage |= HardwareBuffer.USAGE_VIDEO_ENCODE;
+                // the internal color format of apv encode is 10 bit 422. hw components seem to use
+                // gpu acceleration for converting 420 8-bit input to desired internal color format
+                if (mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_APV)) {
+                    usage |= HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE;
+                }
             }
             if (!HardwareBuffer.isSupported(
                     kWidth, kHeight, HardwareBuffer.YCBCR_420_888, 1 /* layer */, usage)) {
