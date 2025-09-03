@@ -808,7 +808,8 @@ public abstract class AppSearchSessionCtsTestBase {
                                         .get());
         Throwable cause = exception.getCause();
         assertThat(cause).isInstanceOf(AppSearchException.class);
-        assertThat(cause.getMessage())
+        assertThat(cause)
+                .hasMessageThat()
                 .isEqualTo(
                         "Too many properties to be indexed, max "
                                 + "number of properties allowed: "
@@ -892,7 +893,7 @@ public abstract class AppSearchSessionCtsTestBase {
                                         .get());
         Throwable cause = exception.getCause();
         assertThat(cause).isInstanceOf(AppSearchException.class);
-        assertThat(cause.getMessage()).contains("Too many properties to be indexed");
+        assertThat(cause).hasMessageThat().contains("Too many properties to be indexed");
     }
 
     @Test
@@ -987,7 +988,7 @@ public abstract class AppSearchSessionCtsTestBase {
         assertThat(
                         ((AppSearchSchema.DocumentPropertyConfig) properties.get(5))
                                 .shouldIndexNestedProperties())
-                .isEqualTo(true);
+                .isTrue();
     }
 
     @Test
@@ -1199,7 +1200,7 @@ public abstract class AppSearchSessionCtsTestBase {
 
         assertThat(getSchemaResponse.getSchemas()).containsExactly(AppSearchEmail.SCHEMA);
         assertThat(getSchemaResponse.getPubliclyVisibleSchemas())
-                .isEqualTo(ImmutableMap.of("builtin:Email", pkg));
+                .containsExactly("builtin:Email", pkg);
 
         AppSearchEmail email =
                 new AppSearchEmail.Builder("namespace", "id1")
@@ -1241,10 +1242,11 @@ public abstract class AppSearchSessionCtsTestBase {
                 assertThrows(
                         UnsupportedOperationException.class,
                         () -> mDb1.setSchemaAsync(request).get());
-        assertThat(e.getMessage())
+        assertThat(e)
+                .hasMessageThat()
                 .isEqualTo(
-                        "Publicly visible schema are not supported on this "
-                                + "AppSearch implementation.");
+                        "Publicly visible schema are not supported on "
+                                + "this AppSearch implementation.");
     }
 
     @Test
@@ -1280,7 +1282,7 @@ public abstract class AppSearchSessionCtsTestBase {
         GetSchemaResponse getSchemaResponse = mDb1.getSchemaAsync().get();
         assertThat(getSchemaResponse.getSchemas()).containsExactly(AppSearchEmail.SCHEMA);
         assertThat(getSchemaResponse.getSchemaTypesVisibleToConfigs())
-                .isEqualTo(ImmutableMap.of("builtin:Email", ImmutableSet.of(config1, config2)));
+                .containsExactly("builtin:Email", ImmutableSet.of(config1, config2));
     }
 
     @Test
@@ -1303,7 +1305,8 @@ public abstract class AppSearchSessionCtsTestBase {
                 assertThrows(
                         UnsupportedOperationException.class,
                         () -> mDb1.setSchemaAsync(request).get());
-        assertThat(e.getMessage())
+        assertThat(e)
+                .hasMessageThat()
                 .isEqualTo(
                         "Schema visible to config are not supported on"
                                 + " this AppSearch implementation.");
@@ -1373,7 +1376,8 @@ public abstract class AppSearchSessionCtsTestBase {
                 assertThrows(
                         UnsupportedOperationException.class,
                         () -> mDb1.setSchemaAsync(request).get());
-        assertThat(e.getMessage())
+        assertThat(e)
+                .hasMessageThat()
                 .isEqualTo(
                         "LongProperty.INDEXING_TYPE_RANGE is not "
                                 + "supported on this AppSearch implementation.");
@@ -1466,10 +1470,11 @@ public abstract class AppSearchSessionCtsTestBase {
                 assertThrows(
                         UnsupportedOperationException.class,
                         () -> mDb1.setSchemaAsync(request).get());
-        assertThat(e.getMessage())
+        assertThat(e)
+                .hasMessageThat()
                 .isEqualTo(
-                        "StringPropertyConfig.JOINABLE_VALUE_TYPE_QUALIFIED_ID is not supported on"
-                            + " this AppSearch implementation.");
+                        "StringPropertyConfig.JOINABLE_VALUE_TYPE_QUALIFIED_ID is "
+                                + "not supported on this AppSearch implementation.");
     }
 
     @Test
@@ -2779,7 +2784,7 @@ public abstract class AppSearchSessionCtsTestBase {
             for (SearchResult result : results) {
                 documents.add(result.getGenericDocument());
             }
-        } while (results.size() > 0);
+        } while (!results.isEmpty());
 
         // check all document presents
         assertThat(documents).containsExactlyElementsIn(emailSet);
@@ -4172,7 +4177,7 @@ public abstract class AppSearchSessionCtsTestBase {
                         .isEqualTo(ApplicationProvider.getApplicationContext().getPackageName());
                 documents.add(result.getGenericDocument());
             }
-        } while (results.size() > 0);
+        } while (!results.isEmpty());
         assertThat(documents).hasSize(1);
     }
 
@@ -4213,7 +4218,7 @@ public abstract class AppSearchSessionCtsTestBase {
                 assertThat(result.getDatabaseName()).isEqualTo(DB_NAME_1);
                 documents.add(result.getGenericDocument());
             }
-        } while (results.size() > 0);
+        } while (!results.isEmpty());
         assertThat(documents).hasSize(1);
 
         // Schema registration for another database
@@ -4242,7 +4247,7 @@ public abstract class AppSearchSessionCtsTestBase {
                 assertThat(result.getDatabaseName()).isEqualTo(DB_NAME_2);
                 documents.add(result.getGenericDocument());
             }
-        } while (results.size() > 0);
+        } while (!results.isEmpty());
         assertThat(documents).hasSize(1);
     }
 
@@ -4853,7 +4858,7 @@ public abstract class AppSearchSessionCtsTestBase {
             for (SearchResult result : results) {
                 documents.add(result.getGenericDocument());
             }
-        } while (results.size() > 0);
+        } while (!results.isEmpty());
 
         assertThat(pageCount).isEqualTo(4); // 3 (upper(10/4)) + 1 (final empty page)
         assertThat(documents).hasSize(10);
@@ -4935,7 +4940,7 @@ public abstract class AppSearchSessionCtsTestBase {
             for (SearchResult result : results) {
                 documents.add(result.getGenericDocument());
             }
-        } while (results.size() > 0);
+        } while (!results.isEmpty());
 
         assertThat(pageCount).isEqualTo(4); // 3 (upper(13/5)) + 1 (final empty page)
         assertThat(documents).hasSize(13);
@@ -5036,7 +5041,7 @@ public abstract class AppSearchSessionCtsTestBase {
             for (SearchResult result : results) {
                 documents.add(result.getGenericDocument());
             }
-        } while (results.size() > 0);
+        } while (!results.isEmpty());
 
         assertThat(pageCount).isEqualTo(5); // 4 (upper(28/7)) + 1 (final empty page)
         assertThat(documents).hasSize(28);
@@ -6103,17 +6108,17 @@ public abstract class AppSearchSessionCtsTestBase {
         assertThat(results.get(0).getGenericDocument().getId()).isEqualTo("id2");
         List<SearchResult.MatchInfo> matchInfos = results.get(0).getMatchInfos();
         assertThat(matchInfos).hasSize(3);
-        assertThat(matchInfos.get(0).getSnippet()).isEqualTo("I like red");
-        assertThat(matchInfos.get(1).getSnippet()).isEqualTo("I like");
-        assertThat(matchInfos.get(2).getSnippet()).isEqualTo("I like blue");
+        assertThat(matchInfos.get(0).getSnippet().toString()).isEqualTo("I like red");
+        assertThat(matchInfos.get(1).getSnippet().toString()).isEqualTo("I like");
+        assertThat(matchInfos.get(2).getSnippet().toString()).isEqualTo("I like blue");
 
         // Check result 2
         assertThat(results.get(1).getGenericDocument().getId()).isEqualTo("id1");
         matchInfos = results.get(1).getMatchInfos();
         assertThat(matchInfos).hasSize(3);
-        assertThat(matchInfos.get(0).getSnippet()).isEqualTo("I like cats");
-        assertThat(matchInfos.get(1).getSnippet()).isEqualTo("I like dogs");
-        assertThat(matchInfos.get(2).getSnippet()).isEqualTo("I like");
+        assertThat(matchInfos.get(0).getSnippet().toString()).isEqualTo("I like cats");
+        assertThat(matchInfos.get(1).getSnippet().toString()).isEqualTo("I like dogs");
+        assertThat(matchInfos.get(2).getSnippet().toString()).isEqualTo("I like");
 
         // Check result 2
         assertThat(results.get(2).getGenericDocument().getId()).isEqualTo("id3");
@@ -6591,7 +6596,7 @@ public abstract class AppSearchSessionCtsTestBase {
         assertThat(matchInfo.getFullText()).isEqualTo(japanese);
         assertThat(matchInfo.getExactMatchRange())
                 .isEqualTo(new SearchResult.MatchRange(/* start= */ 44, /* end= */ 45));
-        assertThat(matchInfo.getExactMatch()).isEqualTo("は");
+        assertThat(matchInfo.getExactMatch().toString()).isEqualTo("は");
 
         if (!mDb1.getFeatures().isFeatureSupported(Features.SEARCH_RESULT_MATCH_INFO_SUBMATCH)) {
             assertThrows(UnsupportedOperationException.class, matchInfo::getSubmatchRange);
@@ -6599,7 +6604,7 @@ public abstract class AppSearchSessionCtsTestBase {
         } else {
             assertThat(matchInfo.getSubmatchRange())
                     .isEqualTo(new SearchResult.MatchRange(/* start= */ 44, /* end= */ 45));
-            assertThat(matchInfo.getSubmatch()).isEqualTo("は");
+            assertThat(matchInfo.getSubmatch().toString()).isEqualTo("は");
         }
     }
 
@@ -7485,7 +7490,8 @@ public abstract class AppSearchSessionCtsTestBase {
                                                 .setJoinSpec(
                                                         new JoinSpec.Builder("entityId").build())
                                                 .build()));
-        assertThat(e.getMessage())
+        assertThat(e)
+                .hasMessageThat()
                 .isEqualTo(
                         "JoinSpec not allowed in removeByQuery, " + "but JoinSpec was provided.");
     }
@@ -7529,7 +7535,6 @@ public abstract class AppSearchSessionCtsTestBase {
 
         // Create a same-thread database by inject an executor which could help us maintain the
         // execution order of those async tasks.
-        Context context = ApplicationProvider.getApplicationContext();
         AppSearchSessionShim sameThreadDb =
                 createSearchSessionAsync("sameThreadDb", MoreExecutors.newDirectExecutorService())
                         .get();
@@ -8313,7 +8318,7 @@ public abstract class AppSearchSessionCtsTestBase {
         assertThat(matches.get(0).getPropertyPathObject())
                 .isEqualTo(new PropertyPath("prop.subject"));
         assertThat(matches.get(0).getFullText()).isEqualTo("This is the body");
-        assertThat(matches.get(0).getExactMatch()).isEqualTo("body");
+        assertThat(matches.get(0).getExactMatch().toString()).isEqualTo("body");
     }
 
     @Test
@@ -8454,9 +8459,9 @@ public abstract class AppSearchSessionCtsTestBase {
         assertThat(matches).hasSize(1);
         assertThat(matches.get(0).getPropertyPath()).isEqualTo("body");
         assertThat(matches.get(0).getFullText()).isEqualTo(sicilianMessage);
-        assertThat(matches.get(0).getExactMatch()).isEqualTo("🐟");
+        assertThat(matches.get(0).getExactMatch().toString()).isEqualTo("🐟");
         if (mDb1.getFeatures().isFeatureSupported(Features.SEARCH_RESULT_MATCH_INFO_SUBMATCH)) {
-            assertThat(matches.get(0).getSubmatch()).isEqualTo("🐟");
+            assertThat(matches.get(0).getSubmatch().toString()).isEqualTo("🐟");
         }
     }
 
@@ -8519,7 +8524,7 @@ public abstract class AppSearchSessionCtsTestBase {
         // Plain tokenization will produce the following tokens for
         // "Alex Saveliev <alex.sav@google.com>" : ["Alex", "Saveliev", "<", "alex.sav",
         // "google.com", ">"]. So "com" will not match any of the tokens produced.
-        assertThat(sr.getNextPageAsync().get()).hasSize(0);
+        assertThat(sr.getNextPageAsync().get()).isEmpty();
     }
 
     @Test
@@ -8548,7 +8553,9 @@ public abstract class AppSearchSessionCtsTestBase {
                                                         .addSchemas(emailSchema)
                                                         .build())
                                         .get());
-        assertThat(e.getMessage()).isEqualTo("tokenizerType is out of range of [0, 1] (too high)");
+        assertThat(e)
+                .hasMessageThat()
+                .isEqualTo("tokenizerType is out of range of [0, 1] (too high)");
     }
 
     @Test
@@ -9419,8 +9426,8 @@ public abstract class AppSearchSessionCtsTestBase {
 
         assertThat(resultsWithoutPropertyWeights.get(0).getGenericDocument()).isEqualTo(email1);
         assertThat(resultsWithoutPropertyWeights.get(1).getGenericDocument()).isEqualTo(email2);
-        assertThat(expectedResults.get(0).getGenericDocument()).isEqualTo(email1);
-        assertThat(expectedResults.get(1).getGenericDocument()).isEqualTo(email2);
+        assertThat(email1).isEqualTo(expectedResults.get(0).getGenericDocument());
+        assertThat(email2).isEqualTo(expectedResults.get(1).getGenericDocument());
 
         // The ranking signal for results with no property path and weights set should be equal
         // to the ranking signal for results with explicitly set default weights.
@@ -10058,7 +10065,8 @@ public abstract class AppSearchSessionCtsTestBase {
                                                 .setJoinSpec(js)
                                                 .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
                                                 .build()));
-        assertThat(e.getMessage())
+        assertThat(e)
+                .hasMessageThat()
                 .isEqualTo("JoinSpec is not available on this AppSearch " + "implementation.");
     }
 
@@ -11317,7 +11325,7 @@ public abstract class AppSearchSessionCtsTestBase {
                                                 "worksFor", "Organization")
                                         .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
                                         .setShouldIndexNestedProperties(false)
-                                        .addIndexableNestedProperties(Collections.singleton("name"))
+                                        .addIndexableNestedProperties(ImmutableSet.of("name"))
                                         .build())
                         .build();
         AppSearchSchema organizationSchema =
@@ -11520,7 +11528,7 @@ public abstract class AppSearchSessionCtsTestBase {
                                                 "worksFor", "Organization")
                                         .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
                                         .setShouldIndexNestedProperties(false)
-                                        .addIndexableNestedProperties(Collections.singleton("name"))
+                                        .addIndexableNestedProperties(ImmutableSet.of("name"))
                                         .build())
                         .build();
         AppSearchSchema organizationSchema =
@@ -11621,7 +11629,7 @@ public abstract class AppSearchSessionCtsTestBase {
                                                 "worksFor", "Organization")
                                         .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
                                         .setShouldIndexNestedProperties(false)
-                                        .addIndexableNestedProperties(Collections.singleton("name"))
+                                        .addIndexableNestedProperties(ImmutableSet.of("name"))
                                         .build())
                         .build();
         AppSearchSchema organizationSchema =
@@ -11675,7 +11683,7 @@ public abstract class AppSearchSessionCtsTestBase {
                                                 "worksFor", "Organization")
                                         .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
                                         .setShouldIndexNestedProperties(false)
-                                        .addIndexableNestedProperties(Collections.singleton("name"))
+                                        .addIndexableNestedProperties(ImmutableSet.of("name"))
                                         .build())
                         .build();
         AppSearchSchema organizationSchema =
@@ -11750,7 +11758,7 @@ public abstract class AppSearchSessionCtsTestBase {
                                 .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
                                 .build());
         outDocuments = convertSearchResultsToDocuments(searchResults);
-        assertThat(outDocuments).hasSize(0);
+        assertThat(outDocuments).isEmpty();
     }
 
     @Test
