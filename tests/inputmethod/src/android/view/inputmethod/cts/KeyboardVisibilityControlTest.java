@@ -72,6 +72,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Color;
+import android.graphics.Insets;
 import android.graphics.Rect;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
@@ -2418,6 +2419,93 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             expectEventWithKeyValue(stream, "onWindowVisibilityChanged", "visible", View.GONE,
                     TIMEOUT);
             expectImeInvisible(TIMEOUT);
+        }
+    }
+
+    /**
+     * A regression Test for Bug 420907225
+     * 1. Open two activities in horizontal split screen.
+     * 2. Click on editText and verify that the correct insets have been dispatched only once.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SET_SOURCE_INVISIBLE_ON_MULTI_WINDOW_MODE)
+    public void testImeOnApplyWindowInsetsListenerInSplitScreen() throws Throwable {
+        assumeTrue(TestUtils.supportsSplitScreenMultiWindow());
+
+        try (var orientationSession = new FixedDeviceOrientationSession(Orientation.LANDSCAPE);
+            final MockImeSession imeSession = MockImeSession.create(mInstrumentation.getContext(),
+                     mInstrumentation.getUiAutomation(), new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+            final TestActivity splitPrimaryActivity = TestActivity.startSync(LinearLayout::new);
+
+            // Launch another test activity in split-screen with
+            final AtomicReference<EditText> editTextRef = new AtomicReference<>();
+            final String marker = getTestMarker(FIRST_EDIT_TEXT_TAG);
+            final TestActivity splitSecondaryActivity =
+                    new TestActivity.Starter().asMultipleTask().withAdditionalFlags(
+                            Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT).startSync(splitPrimaryActivity,
+                            activity -> {
+                                LinearLayout layout = new LinearLayout(activity);
+                                activity.getWindow().setSoftInputMode(
+                                        SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+
+                                final EditText editText = new EditText(activity);
+                                editText.setHint("This is editText1");
+                                editText.setPrivateImeOptions(marker);
+
+                                editTextRef.set(editText);
+                                layout.addView(editText);
+                                return layout;
+                            }, TestActivity.class);
+            final var wmState = new WindowManagerStateHelper();
+            final var editText = editTextRef.get();
+            final var display = editText.getContext().getDisplay();
+
+            // Make sure device orientation is set to landscape after split screen was opened and
+            // wait for transition to end.
+            orientationSession.setDeviceOrientation(Orientation.LANDSCAPE);
+            wmState.waitForAppTransitionIdleOnDisplay(display.getDisplayId());
+            wmState.waitForActivityState(splitSecondaryActivity.getComponentName(),
+                    WindowManagerStateHelper.STATE_RESUMED);
+
+            notExpectEvent(stream, eventMatcher("onStartInputView"), NOT_EXPECT_TIMEOUT);
+            expectImeInvisible(TIMEOUT);
+
+            /*
+             * Since this test relies on window focus with multiple windows involved, we need to
+             * use a global method of emulating touch that goes through the entire pipeline. This
+             * ensures that the window manager is aware of the tap that occurred, and provides
+             * window focus to the tapped window.
+             */
+            try (var touch = new UinputTouchScreen(mInstrumentation, display)) {
+                // Tap on the test activity to make sure it is focussed
+                touch.tapOnViewCenter(splitSecondaryActivity.getWindow().getDecorView());
+                TestUtils.waitOnMainUntil(
+                        splitSecondaryActivity.getWindow().getDecorView()::hasWindowFocus, TIMEOUT);
+
+                final AtomicInteger counter = new AtomicInteger(0);
+                final Insets[] lastImeInsets = new Insets[1];
+
+                // Focus the 1st editor and show the IME with WindowInsets API.
+                splitSecondaryActivity.runOnUiThread(() -> {
+                    // Show IME with WindowInsets API and register onApplyWindowInsetsListener
+                    splitSecondaryActivity.getWindow().getDecorView().setOnApplyWindowInsetsListener(
+                            (v, insets) -> {
+                                counter.incrementAndGet();
+                                lastImeInsets[0] = insets.getInsets(WindowInsets.Type.ime());
+                                return v.onApplyWindowInsets(insets);
+                            });
+                    editText.requestFocus();
+                    editText.getWindowInsetsController().show(WindowInsets.Type.ime());
+                });
+                expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+                expectImeVisible(TIMEOUT);
+
+                mInstrumentation.waitForIdleSync();
+                assertEquals("Insets should only be dispatched once", 1, counter.get());
+                assertNotEquals("Received IME insets should be greater than zero",
+                        Insets.NONE, lastImeInsets[0]);
+            }
         }
     }
 
