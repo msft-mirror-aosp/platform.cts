@@ -16,22 +16,10 @@
 
 package android.graphics.cts
 
-import android.R
-import android.app.UiModeManager
-import android.content.Context
+import android.app.UiModeManager.MODE_NIGHT_YES
 import android.content.theming.ThemeStyle
-import android.graphics.Bitmap
 import android.graphics.Color
-import android.graphics.cts.utils.Material2021SpecMatcher
-import android.os.Environment
-import android.os.UserManager
 import android.platform.test.annotations.DisabledOnRavenwood
-import android.provider.Settings
-import android.testing.PollingCheck
-import android.view.View
-import android.view.ViewGroup
-import androidx.activity.ComponentActivity
-import androidx.annotation.NonNull
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -43,48 +31,23 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color as ComposeColor
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.view.drawToBitmap
-import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
-import com.android.compatibility.common.util.FeatureUtil
-import com.android.compatibility.common.util.SystemUtil.runShellCommand
-import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.google.ux.material.libmonet.hct.Hct
-import java.io.File
 import java.io.Serializable
-import kotlin.math.abs
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeoutOrNull
-import org.junit.AfterClass
 import org.junit.Assume.assumeTrue
-import org.junit.BeforeClass
-import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.RuleChain
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
-import platform.test.screenshot.GoldenPathManager
-import platform.test.screenshot.PathConfig
-import platform.test.screenshot.PathElementNoContext
-import platform.test.screenshot.ScreenshotAsserterConfig
-import platform.test.screenshot.ScreenshotTestRule
-import platform.test.screenshot.matchers.PixelPerfectMatcher
 
 @RunWith(Parameterized::class)
 @DisabledOnRavenwood(reason = "Cannot instantiate Parameterized runner")
@@ -92,68 +55,18 @@ class DynamicColorsTest(
     private val color: String,
     private val style: String,
     private val contrast: String,
-) {
-    val isSupportedDevice =
-        !(FeatureUtil.isTV() ||
-            FeatureUtil.isWatch() ||
-            FeatureUtil.isAutomotive() ||
-            /* TODO:b/362682063 - Remove this once the bug is fixed */
-            UserManager.isHeadlessSystemUserMode())
-
-    private val mContext: Context = getInstrumentation().targetContext
-    private val isOldSpec: Boolean =
-        mContext.resources.getIdentifier("system_primary_dim_light", "color", "android") == 0
-
-    private val allTokenNames = if (isOldSpec) TOKEN_NAMES_2021 else TOKENS_NAMES_2025
-
-    /** The output directory for generated goldens */
-    @NonNull
-    private val outDir: File =
-        File(Environment.getExternalStorageDirectory(), "android.graphics.cts")
-
-    private val goldenPathManager =
-        GoldenPathManager(
-            appContext = mContext,
-            assetsPathRelativeToBuildRoot = "cts/tests/tests/graphics/assets/",
-            deviceLocalPath = outDir.path,
-            pathConfig =
-                PathConfig(
-                    PathElementNoContext("spec", true) {
-                        if (isOldSpec) "libmonet_2021" else "libmonet_2025"
-                    }
-                ),
-        )
-
-    private val screenshotTestRule = ScreenshotTestRule(goldenPathManager)
-    private val composeTestRule = createAndroidComposeRule<ComponentActivity>()
-
-    @get:Rule
-    val ruleChain: RuleChain = RuleChain.outerRule(composeTestRule).around(screenshotTestRule)
+) : BasePaletteTest() {
 
     companion object {
-        private var initialContrast: Float = 0f
-
         @JvmStatic
         @Parameterized.Parameters(name = "{2}_{0}_{1}")
         fun testData(): List<Array<Serializable>> {
             val dataList: MutableList<Array<Serializable>> = mutableListOf()
-            val styles =
-                intArrayOf(
-                    ThemeStyle.SPRITZ,
-                    ThemeStyle.TONAL_SPOT,
-                    ThemeStyle.VIBRANT,
-                    ThemeStyle.EXPRESSIVE,
-                    ThemeStyle.RAINBOW,
-                    ThemeStyle.FRUIT_SALAD,
-                    ThemeStyle.MONOCHROMATIC,
-                )
-            val colors =
-                listOf("FFB9577A", "FFB16407", "FF6E7F10", "FF008673", "FF007FB4", "FF8267C2")
             val contrastModes = listOf("low", "medium", "high")
 
             contrastModes.forEach { mode ->
-                colors.forEach { color ->
-                    styles.forEach { style ->
+                COLORS.forEach { color ->
+                    STYLES.forEach { style ->
                         dataList.add(arrayOf(color, ThemeStyle.name(style), mode))
                     }
                 }
@@ -165,208 +78,70 @@ class DynamicColorsTest(
         @JvmStatic
         @Parameterized.BeforeParam
         fun setup(color: String, style: String, contrast: String) {
-            val context = getInstrumentation().targetContext
+            assumeTrue(isSupportedDevice)
+
             val contrastValue =
                 when (contrast) {
                     "low" -> 0.0f
                     "medium" -> 0.5f
                     else -> 1.0f
                 }
-
-            if (abs(getCurrentContrastLevel() - contrastValue) > 0.01f) {
-                runShellCommand("settings put secure contrast_level $contrastValue")
-                PollingCheck.waitFor(POLLING_TIMEOUT_MS) {
-                    abs(getCurrentContrastLevel() - contrastValue) < 0.01f
-                }
-            }
-
-            val jsonString =
-                """
-                {
-                    "android.theme.customization.system_palette":"$color",
-                    "android.theme.customization.accent_color":"$color",
-                    "android.theme.customization.color_source":"preset",
-                    "android.theme.customization.theme_style":"$style"
-                }
-                """
-                    .trimIndent()
-
-            val currentJson =
-                Settings.Secure.getString(
-                    context.contentResolver,
-                    Settings.Secure.THEME_CUSTOMIZATION_OVERLAY_PACKAGES,
-                )
-
-            if (currentJson != jsonString) {
-                val keyColorBefore =
-                    context.getColor(R.color.system_palette_key_color_primary_dark).toHexString()
-                runWithShellPermissionIdentity {
-                    Settings.Secure.putString(
-                        context.contentResolver,
-                        Settings.Secure.THEME_CUSTOMIZATION_OVERLAY_PACKAGES,
-                        jsonString,
-                    )
-                }
-                PollingCheck.waitFor(POLLING_TIMEOUT_MS) {
-                    val newColor =
-                        context
-                            .getColor(R.color.system_palette_key_color_primary_dark)
-                            .toHexString()
-                    keyColorBefore != newColor
-                }
-            }
+            applyTheme(color, style, contrastValue, MODE_NIGHT_YES)
         }
-
-        @JvmStatic
-        @BeforeClass
-        fun before() {
-            initialContrast = getCurrentContrastLevel()
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun tearDown() {
-            runShellCommand("settings put secure contrast_level $initialContrast")
-        }
-
-        private fun getCurrentContrastLevel(): Float =
-            getInstrumentation().targetContext.getSystemService(UiModeManager::class.java).contrast
     }
 
     @Test
     fun testDynamicColors() {
-        assumeTrue(isSupportedDevice)
-
         val goldenName = "Dynamic_${contrast}_${color}_$style".replace("#", "")
-        screenshotTestRule
-            .createScreenshotAsserter(
-                ScreenshotAsserterConfig(
-                    matcher = if (isOldSpec) Material2021SpecMatcher() else PixelPerfectMatcher(),
-                    captureStrategy = ::generateTokenBitmap,
-                )
-            )
-            .assertGoldenImage(goldenName)
-    }
-
-    private fun generateTokenBitmap(): Bitmap {
-        val allSwatches = arrayListOf<SwatchData>()
-
-        allTokenNames.forEach { tokenName ->
-            val typeGroup =
-                if (tokenName.contains("_fixed")) {
-                    listOf(GroupType.FIXED)
-                } else {
-                    listOf(GroupType.LIGHT, GroupType.DARK)
-                }
-
-            typeGroup.forEach { type ->
-                val suffix = if (type != GroupType.FIXED) "_" + type.name.lowercase() else ""
-                val resourceName = "system_$tokenName$suffix"
-                val colorValue = getColorByName(mContext, resourceName).toArgb()
-                val colorHct = Hct.fromInt(colorValue)
-                allSwatches.add(
-                    SwatchData(
-                        type,
-                        tokenName.toCamelCase(),
-                        "${
-                            String.format("#%08x", colorValue).uppercase()
-                        } | $colorHct",
-                        colorValue,
-                        colorHct.tone > 50,
-                    )
-                )
-            }
-        }
-
-        val deferredBitmap = CompletableDeferred<Bitmap>()
-
-        composeTestRule.setContent {
-            CompositionLocalProvider(
-                LocalDensity provides Density(density = 0.5f, fontScale = 1.0f)
-            ) {
-                DynamicColorsTable(
-                    title =
-                        "${DynamicColorsTest::class.simpleName} - " +
-                            "spec: ${if (isOldSpec) "2021" else "2025"} | " +
-                            "seed: $color | " +
-                            "style: $style | " +
-                            "contrast: $contrast",
-                    color = color,
-                    allSwatches = allSwatches,
-                )
-            }
-        }
-
-        composeTestRule.runOnIdle {
-            try {
-                val activity = composeTestRule.activity
-                val contentView = activity.findViewById<ViewGroup>(R.id.content)
-                val composeView =
-                    findComposeView(contentView)
-                        ?: throw IllegalStateException("ComposeView not found")
-
-                val widthSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-                val heightSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-
-                composeView.measure(widthSpec, heightSpec)
-                composeView.layout(0, 0, composeView.measuredWidth, composeView.measuredHeight)
-
-                deferredBitmap.complete(composeView.drawToBitmap())
-            } catch (e: Exception) {
-                deferredBitmap.completeExceptionally(e)
-            }
-        }
-
-        return runBlocking {
-            withTimeoutOrNull(5000L) { deferredBitmap.await() }
-                ?: throw IllegalStateException("Bitmap capture timed out with CompletableDeferred")
-        }
-    }
-
-    private fun findComposeView(viewGroup: ViewGroup): ComposeView? {
-        for (i in 0 until viewGroup.childCount) {
-            val child = viewGroup.getChildAt(i)
-            if (child is ComposeView) {
-                return child
-            } else if (child is ViewGroup) {
-                val result = findComposeView(child)
-                if (result != null) return result
-            }
-        }
-        return null
-    }
-
-    data class SwatchData(
-        val type: GroupType,
-        val heading: String,
-        val info: String,
-        val colorValue: Int,
-        val isTextDark: Boolean,
-    )
-
-    enum class GroupType {
-        DARK,
-        LIGHT,
-        FIXED,
-    }
-
-    private fun String.toCamelCase(): String =
-        split('_').let { parts ->
-            parts.first() + parts.drop(1).joinToString("") { it.replaceFirstChar(Char::titlecase) }
-        }
-
-    private fun getColorByName(context: Context, colorName: String): Color {
-        val colorId = context.resources.getIdentifier(colorName, "color", "android")
-        return Color.valueOf(context.getColor(colorId))
+        val bitmap = generateBitmap { DynamicColorsTable(color, style, contrast) }
+        assertGoldenImage(bitmap, goldenName)
     }
 }
 
+private data class SwatchData(
+    val type: GroupType,
+    val heading: String,
+    val info: String,
+    val colorValue: Int,
+    val isTextDark: Boolean,
+)
+
+enum class GroupType {
+    DARK,
+    LIGHT,
+    FIXED,
+}
+
 @Composable
-private fun DynamicColorsTable(
-    title: String,
-    color: String,
-    allSwatches: List<DynamicColorsTest.SwatchData>,
-) {
+private fun DynamicColorsTable(color: String, style: String, contrast: String) {
+    val allSwatches = arrayListOf<SwatchData>()
+    val allTokenNames = if (BasePaletteTest.isOldSpec) TOKEN_NAMES_2021 else TOKENS_NAMES_2025
+
+    allTokenNames.forEach { tokenName ->
+        val typeGroup =
+            if (tokenName.contains("_fixed")) {
+                listOf(GroupType.FIXED)
+            } else {
+                listOf(GroupType.LIGHT, GroupType.DARK)
+            }
+
+        typeGroup.forEach { type ->
+            val suffix = if (type != GroupType.FIXED) "_" + type.name.lowercase() else ""
+            val resourceName = "system_$tokenName$suffix"
+            val colorValue = getColorByName(BasePaletteTest.context, resourceName).toArgb()
+            val colorHct = Hct.fromInt(colorValue)
+            allSwatches.add(
+                SwatchData(
+                    type,
+                    tokenName.toCamelCase(),
+                    "#${String.format("%08x", colorValue).uppercase()} | $colorHct",
+                    colorValue,
+                    colorHct.tone > 50,
+                )
+            )
+        }
+    }
+
     val groupedSwatches = allSwatches.groupBy { it.type }
     val seedColor = ComposeColor(Color.parseColor("#$color"))
     val titleTextColor =
@@ -399,19 +174,24 @@ private fun DynamicColorsTable(
         modifier = Modifier.background(seedColor).padding(pagePadding).width(IntrinsicSize.Max),
     ) {
         Text(
-            text = title,
+            text =
+                "${DynamicColorsTest::class.simpleName} - " +
+                    "spec: ${if (BasePaletteTest.isOldSpec) "2021" else "2025"} | " +
+                    "seed: $color | " +
+                    "style: $style | " +
+                    "contrast: $contrast",
             color = titleTextColor,
             style = titleTextStyle,
             modifier = Modifier.fillMaxWidth(),
         )
 
         Row(verticalAlignment = Alignment.Top, modifier = Modifier.height(IntrinsicSize.Max)) {
-            DynamicColorsTest.GroupType.entries.forEach { groupType ->
+            GroupType.entries.forEach { groupType ->
                 val groupBackgroundColor =
                     when (groupType) {
-                        DynamicColorsTest.GroupType.DARK -> ComposeColor.DarkGray
-                        DynamicColorsTest.GroupType.LIGHT -> ComposeColor.LightGray
-                        DynamicColorsTest.GroupType.FIXED -> ComposeColor.Gray
+                        GroupType.DARK -> ComposeColor.DarkGray
+                        GroupType.LIGHT -> ComposeColor.LightGray
+                        GroupType.FIXED -> ComposeColor.Gray
                     }
                 Column(
                     verticalArrangement = Arrangement.spacedBy(swatchPadding),
@@ -433,7 +213,7 @@ private fun DynamicColorsTable(
 
 @Composable
 private fun SwatchItem(
-    swatch: DynamicColorsTest.SwatchData,
+    swatch: SwatchData,
     headingTextStyle: TextStyle,
     infoTextStyle: TextStyle,
     padding: Dp,
@@ -449,8 +229,6 @@ private fun SwatchItem(
         Text(swatch.info, style = infoTextStyle, color = textColor)
     }
 }
-
-private const val POLLING_TIMEOUT_MS = 6000L
 
 // Pre 2025 tokens
 private val TOKEN_NAMES_2021 =

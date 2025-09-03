@@ -103,6 +103,7 @@
         </provider>
 
         <activity android:name="androidx.activity.ComponentActivity"
+            android:configChanges="assetsPaths|uiMode"
             android:exported="true" />
     </application>
 

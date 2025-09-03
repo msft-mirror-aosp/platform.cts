@@ -17,58 +17,30 @@
 package android.graphics.cts
 
 import android.R
-import android.app.UiModeManager
 import android.app.UiModeManager.MODE_NIGHT_NO
 import android.app.UiModeManager.MODE_NIGHT_YES
 import android.content.Context
 import android.content.theming.ThemeStyle
-import android.content.theming.ThemeStyle.EXPRESSIVE
-import android.content.theming.ThemeStyle.FRUIT_SALAD
-import android.content.theming.ThemeStyle.MONOCHROMATIC
-import android.content.theming.ThemeStyle.RAINBOW
-import android.content.theming.ThemeStyle.SPRITZ
-import android.content.theming.ThemeStyle.TONAL_SPOT
-import android.content.theming.ThemeStyle.VIBRANT
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
-import android.graphics.cts.utils.Material2021SpecMatcher
-import android.os.Environment
-import android.os.UserManager
 import android.platform.test.annotations.DisabledOnRavenwood
-import android.provider.Settings
 import androidx.annotation.ColorInt
-import androidx.annotation.NonNull
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.core.graphics.ColorUtils
-import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import com.android.compatibility.common.util.CddTest
-import com.android.compatibility.common.util.FeatureUtil
-import com.android.compatibility.common.util.SystemUtil.runShellCommand
-import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.google.common.truth.Truth.assertWithMessage
 import com.google.ux.material.libmonet.contrast.Contrast
 import com.google.ux.material.libmonet.hct.Hct
-import java.io.File
 import java.io.Serializable
 import kotlin.math.ceil
-import org.junit.AfterClass
 import org.junit.Assert
-import org.junit.Assume.assumeTrue
-import org.junit.BeforeClass
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
-import platform.test.screenshot.GoldenPathManager
-import platform.test.screenshot.PathConfig
-import platform.test.screenshot.PathElementNoContext
-import platform.test.screenshot.ScreenshotAsserterConfig
-import platform.test.screenshot.ScreenshotTestRule
-import platform.test.screenshot.matchers.PixelPerfectMatcher
 
 @RunWith(Parameterized::class)
 @DisabledOnRavenwood(reason = "Cannot instantiate Parameterized runner")
@@ -76,111 +48,17 @@ class SystemPaletteTest(
     private val color: String,
     private val style: String,
     private val mode: String,
-) {
-    val mContext: Context = getInstrumentation().targetContext
-
-    val isSupportedDevice =
-        !(FeatureUtil.isTV() ||
-            FeatureUtil.isWatch() ||
-            FeatureUtil.isAutomotive() ||
-            /* TODO:b/362682063 - Remove this once the bug is fixed */
-            UserManager.isHeadlessSystemUserMode())
-
-    val isOldSpec: Boolean =
-        mContext.resources.getIdentifier("system_primary_dim_light", "color", "android") == 0
-
-    /** The output directory for generated goldens */
-    @NonNull
-    private val outDir: File =
-        File(Environment.getExternalStorageDirectory(), "android.graphics.cts")
-
-    private val goldenPathManager =
-        GoldenPathManager(
-            appContext = mContext,
-            assetsPathRelativeToBuildRoot = "cts/tests/tests/graphics/assets/",
-            deviceLocalPath = outDir.path,
-            pathConfig =
-                PathConfig(
-                    PathElementNoContext("spec", true) {
-                        if (isOldSpec) "libmonet_2021" else "libmonet_2025"
-                    }
-                ),
-        )
-
-    @get:Rule val screenshotTestRule = ScreenshotTestRule(goldenPathManager)
+) : BasePaletteTest() {
 
     @OptIn(ExperimentalStdlibApi::class)
     companion object {
-
-        private var initialContrast: Float = 0f
-
         @JvmStatic
         @Parameterized.BeforeParam
         fun setup(color: String, style: String, mode: String) {
-            val context = getInstrumentation().targetContext
-            val uiModeManager = context.getSystemService(UiModeManager::class.java)
-
             val isTestingNightMode = mode == "dark"
-            val currentMode = uiModeManager.nightMode == MODE_NIGHT_YES
             val expectedMode = if (isTestingNightMode) MODE_NIGHT_YES else MODE_NIGHT_NO
 
-            if (currentMode != isTestingNightMode) {
-                runWithShellPermissionIdentity { uiModeManager.nightMode = expectedMode }
-
-                assumeTrue(uiModeManager.nightMode == expectedMode)
-            }
-
-            val currentJson =
-                Settings.Secure.getString(
-                    context.contentResolver,
-                    Settings.Secure.THEME_CUSTOMIZATION_OVERLAY_PACKAGES,
-                )
-
-            val jsonString =
-                "{\"android.theme.customization.system_palette\":\"${color}\"," +
-                    "\"android.theme.customization.theme_style\":\"${style}\"}"
-
-            val keyColorBefore =
-                context.getColor(R.color.system_palette_key_color_primary_dark).toHexString()
-
-            if (currentJson != jsonString) {
-                runWithShellPermissionIdentity {
-                    Settings.Secure.putString(
-                        context.contentResolver,
-                        Settings.Secure.THEME_CUSTOMIZATION_OVERLAY_PACKAGES,
-                        jsonString,
-                    )
-                }
-            }
-
-            // checks for color changes
-            for (i in 0..30) {
-                val keyColorAfter =
-                    context.getColor(R.color.system_palette_key_color_primary_dark).toHexString()
-
-                if (keyColorBefore != keyColorAfter) {
-                    break
-                }
-
-                Thread.sleep(100L)
-            }
-        }
-
-        @JvmStatic
-        @BeforeClass
-        fun setUp() {
-            initialContrast =
-                getInstrumentation()
-                    .targetContext
-                    .getSystemService(UiModeManager::class.java)
-                    .contrast
-            runShellCommand("settings put secure contrast_level 0.0")
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun tearDown() {
-            runShellCommand("settings put secure contrast_level $initialContrast")
+            applyTheme(color, style, 0.0f, expectedMode)
         }
 
         @Parameterized.Parameters(name = "{2}_{0}_{1}")
@@ -189,23 +67,12 @@ class SystemPaletteTest(
             val dataList: MutableList<Array<Serializable>> = mutableListOf()
 
             listOf("dark", "light").forEach { mode ->
-                listOf("FFB9577A", "FFB16407", "FF6E7F10", "FF008673", "FF007FB4", "FF8267C2")
-                    .forEach { color ->
-                        intArrayOf(
-                                SPRITZ,
-                                TONAL_SPOT,
-                                VIBRANT,
-                                EXPRESSIVE,
-                                RAINBOW,
-                                FRUIT_SALAD,
-                                MONOCHROMATIC,
-                            )
-                            .forEach { style ->
-                                dataList.add(arrayOf(color, ThemeStyle.name(style), mode))
-                            }
+                COLORS.forEach { color ->
+                    STYLES.forEach { style ->
+                        dataList.add(arrayOf(color, ThemeStyle.name(style), mode))
                     }
+                }
             }
-
             return dataList
         }
     }
@@ -213,18 +80,9 @@ class SystemPaletteTest(
     @Test
     @CddTest(requirements = ["3.8.6/C-1-4,C-1-5,C-1-6"])
     fun testSystemPalette() {
-        assumeTrue(isSupportedDevice)
-
         val goldenName = "Palette_${mode}_${color}_$style".replace("#", "")
-
-        screenshotTestRule
-            .createScreenshotAsserter(
-                ScreenshotAsserterConfig(
-                    matcher = if (isOldSpec) Material2021SpecMatcher() else PixelPerfectMatcher(),
-                    captureStrategy = { generatePaletteBitmap() },
-                )
-            )
-            .assertGoldenImage(goldenName)
+        val bitmap = generatePaletteBitmap()
+        assertGoldenImage(bitmap, goldenName)
     }
 
     @Test
@@ -583,7 +441,7 @@ class SystemPaletteTest(
     // Helper Classes
 
     private class ContrastTester
-    private constructor(var mContext: Context, vararg var mForegrounds: Int) {
+    private constructor(val mContext: Context, vararg val mForegrounds: Int) {
         var mBgGroups = ArrayList<Background>()
 
         fun checkContrastLevels(): ArrayList<String> {
@@ -652,7 +510,7 @@ class SystemPaletteTest(
         }
     }
 
-    private class BulkContrastTester private constructor(vararg testsArgs: ContrastTester) {
+    private class BulkContrastTester private constructor(vararg val testsArgs: ContrastTester) {
         private val tests = testsArgs
         private val errorMessages: MutableList<String> = mutableListOf()
 
