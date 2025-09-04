@@ -48,7 +48,14 @@ internal class GenericManagerWrapper : ServiceManagerWrapper<GenericManager>() {
         // all methods (for example, using Java's DynamicProxy), but given that DpmWrapper will
         // eventually go away, it's not worth the effort
         val genericManagerMock =
-            mock<GenericManager> { on { getSecureIntSettings(anyOrNull()) } doAnswer answer }
+            mock<GenericManager> {
+                try {
+                    on { getSecureIntSettings(anyOrNull()) } doAnswer answer
+                } catch (e: Exception) {
+                    // TODO(b/443066410): A bunch of CTS tests throw exceptions without this.
+                    Log.wtf("Exception setting mocks", e)
+                }
+            }
 
         val identificationString =
             "GenericManagerWrapper#${System.identityHashCode(genericManagerMock)}"
