@@ -491,10 +491,10 @@ public final class ScreenCaptureDisabledTest {
                 "android.app.admin.DevicePolicyManager#setPolicy",
                 "android.app.admin.DevicePolicyManager#getScreenCaptureDisabled",
                 "android.app.admin.DevicePolicyManager#POLICY_SCOPE_DEVICE",
-                "android.app.admin.PolicyIdentifier#SCREEN_CAPTURE_DISABLED"
+                "android.app.admin.PolicyIdentifier#SCREEN_CAPTURE"
             })
     @RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING)
-    public void setPolicy_deviceScope_true_works() {
+    public void setPolicy_deviceScope_blocked_works() {
         boolean isParentInstance = dpc(sDeviceState).isParentInstance();
         if (isParentInstance) {
             // TODO(b/434655549): Support the parent scope.
@@ -504,10 +504,10 @@ public final class ScreenCaptureDisabledTest {
 
         dpc(sDeviceState)
                 .devicePolicyManager()
-                .setBooleanPolicy(
-                        PolicyIdentifier.SCREEN_CAPTURE_DISABLED.getId(),
+                .setIntegerPolicy(
+                        PolicyIdentifier.SCREEN_CAPTURE.getId(),
                         DevicePolicyManager.POLICY_SCOPE_DEVICE,
-                        Boolean.valueOf(true));
+                        PolicyIdentifier.SCREEN_CAPTURE_BLOCKED);
 
         assertThat(sLocalDevicePolicyManager.getScreenCaptureDisabled(/* admin= */ null)).isTrue();
     }
@@ -520,10 +520,10 @@ public final class ScreenCaptureDisabledTest {
                 "android.app.admin.DevicePolicyManager#setPolicy",
                 "android.app.admin.DevicePolicyManager#getScreenCaptureDisabled",
                 "android.app.admin.DevicePolicyManager#POLICY_SCOPE_DEVICE",
-                "android.app.admin.PolicyIdentifier#SCREEN_CAPTURE_DISABLED"
+                "android.app.admin.PolicyIdentifier#SCREEN_CAPTURE"
             })
     @RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING)
-    public void setPolicy_deviceScope_false_works() {
+    public void setPolicy_deviceScope_allowed_works() {
         boolean isParentInstance = dpc(sDeviceState).isParentInstance();
         if (isParentInstance) {
             // TODO(b/434655549): Support the parent scope.
@@ -533,10 +533,10 @@ public final class ScreenCaptureDisabledTest {
 
         dpc(sDeviceState)
                 .devicePolicyManager()
-                .setBooleanPolicy(
-                        PolicyIdentifier.SCREEN_CAPTURE_DISABLED.getId(),
+                .setIntegerPolicy(
+                        PolicyIdentifier.SCREEN_CAPTURE.getId(),
                         DevicePolicyManager.POLICY_SCOPE_DEVICE,
-                        Boolean.valueOf(false));
+                        PolicyIdentifier.SCREEN_CAPTURE_ALLOWED);
 
         assertThat(sLocalDevicePolicyManager.getScreenCaptureDisabled(/* admin= */ null)).isFalse();
     }
@@ -549,10 +549,10 @@ public final class ScreenCaptureDisabledTest {
                 "android.app.admin.DevicePolicyManager#setPolicy",
                 "android.app.admin.DevicePolicyManager#getScreenCaptureDisabled",
                 "android.app.admin.DevicePolicyManager#POLICY_SCOPE_USER",
-                "android.app.admin.PolicyIdentifier#SCREEN_CAPTURE_DISABLED"
+                "android.app.admin.PolicyIdentifier#SCREEN_CAPTURE"
             })
     @RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING)
-    public void setPolicy_userScope_true_works() {
+    public void setPolicy_userScope_blocked_works() {
         boolean isParentInstance = dpc(sDeviceState).isParentInstance();
         if (isParentInstance) {
             // TODO(b/434655549): Support the parent scope.
@@ -562,11 +562,10 @@ public final class ScreenCaptureDisabledTest {
 
         dpc(sDeviceState)
                 .devicePolicyManager()
-                .setBooleanPolicy(
-                        PolicyIdentifier.SCREEN_CAPTURE_DISABLED.getId(),
+                .setIntegerPolicy(
+                        PolicyIdentifier.SCREEN_CAPTURE.getId(),
                         DevicePolicyManager.POLICY_SCOPE_USER,
-                        Boolean.valueOf(true));
-
+                        PolicyIdentifier.SCREEN_CAPTURE_BLOCKED);
 
         assertThat(sLocalDevicePolicyManager.getScreenCaptureDisabled(/* admin= */ null)).isTrue();
     }
@@ -579,10 +578,10 @@ public final class ScreenCaptureDisabledTest {
                 "android.app.admin.DevicePolicyManager#setPolicy",
                 "android.app.admin.DevicePolicyManager#getScreenCaptureDisabled",
                 "android.app.admin.DevicePolicyManager#POLICY_SCOPE_USER",
-                "android.app.admin.PolicyIdentifier#SCREEN_CAPTURE_DISABLED"
+                "android.app.admin.PolicyIdentifier#SCREEN_CAPTURE"
             })
     @RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING)
-    public void setPolicy_userScope_false_works() {
+    public void setPolicy_userScope_allowed_works() {
         boolean isParentInstance = dpc(sDeviceState).isParentInstance();
         if (isParentInstance) {
             // TODO(b/434655549): Support the parent scope.
@@ -592,10 +591,10 @@ public final class ScreenCaptureDisabledTest {
 
         dpc(sDeviceState)
                 .devicePolicyManager()
-                .setBooleanPolicy(
-                        PolicyIdentifier.SCREEN_CAPTURE_DISABLED.getId(),
+                .setIntegerPolicy(
+                        PolicyIdentifier.SCREEN_CAPTURE.getId(),
                         DevicePolicyManager.POLICY_SCOPE_USER,
-                        Boolean.valueOf(false));
+                        PolicyIdentifier.SCREEN_CAPTURE_ALLOWED);
 
         assertThat(sLocalDevicePolicyManager.getScreenCaptureDisabled(/* admin= */ null)).isFalse();
     }
