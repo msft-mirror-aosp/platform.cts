@@ -426,7 +426,11 @@
 
         <activity android:name="android.server.wm.window.WindowPolicyTests$PortraitTestActivity"
                   android:configChanges="resourcesUnused"
-                  android:screenOrientation="portrait"/>
+                  android:screenOrientation="portrait">
+            <property
+                android:name="android.window.PROPERTY_COMPAT_ALLOW_SAFE_REGION_LETTERBOXING"
+                android:value="false"/>
+        </activity>
 
         <activity android:name="android.server.wm.window.WindowPolicyTests$LandscapeTestActivity"
                   android:configChanges="resourcesUnused"
