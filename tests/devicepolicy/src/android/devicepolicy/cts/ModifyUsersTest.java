@@ -29,7 +29,7 @@ import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
-import com.android.bedstead.harrier.policies.DisallowAddUser;
+import com.android.bedstead.enterprise.policies.DisallowAddUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.compatibility.common.util.ApiTest;
 

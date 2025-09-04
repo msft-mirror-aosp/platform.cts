@@ -19,10 +19,14 @@ import static com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.FEATUR
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assume.assumeTrue;
+
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresAdditionalFeatures;
 import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil.CLog;
+
+import com.google.common.base.Preconditions;
 
 import org.junit.Test;
 
@@ -102,8 +106,21 @@ public final class UserRestrictionsTest extends BaseDeviceOwnerTest {
         }
     }
 
+    private void assumeInitialUserIsTheMainUser() throws DeviceNotAvailableException {
+        // TODO(b/441123807): temporary hac^H^H^Hworkaround as no_usb_file_transfer currently cannot
+        // be set on "secondary" users, even though the feature itself is now available to them
+        Integer mainUserId = getDevice().getMainUserId();
+        assumeTrue("temporarily disabled on mainless-user device", mainUserId != null);
+        Preconditions.checkState(
+                mainUserId == mInitialUser,
+                "initial user (%s) is not the main user (%s)",
+                mInitialUser,
+                mainUserId);
+    }
+
     @Test
     public void testUserRestrictions_primaryProfileOwnerOnly() throws Exception {
+        assumeInitialUserIsTheMainUser();
         setPoAsUser(mInitialUser);
 
         try {
@@ -235,6 +252,7 @@ public final class UserRestrictionsTest extends BaseDeviceOwnerTest {
     @Test
     public void testUserRestrictions_layering_profileOwnerNoLeaking() throws Exception {
         assumeSupportsMultiUser();
+        assumeInitialUserIsTheMainUser();
 
         // Set PO on the initial user.
         setPoAsUser(mInitialUser);

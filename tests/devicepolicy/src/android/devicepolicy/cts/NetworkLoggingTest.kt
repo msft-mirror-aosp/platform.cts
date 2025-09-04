@@ -35,8 +35,8 @@ import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.UserType.ADDITIONAL_USER
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
-import com.android.bedstead.harrier.policies.GlobalNetworkLogging
-import com.android.bedstead.harrier.policies.NetworkLogging
+import com.android.bedstead.enterprise.policies.GlobalNetworkLogging
+import com.android.bedstead.enterprise.policies.NetworkLogging
 import com.android.bedstead.multiuser.additionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser

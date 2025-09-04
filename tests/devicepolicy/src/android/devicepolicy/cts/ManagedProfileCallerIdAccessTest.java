@@ -40,7 +40,7 @@ import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
-import com.android.bedstead.harrier.policies.ManagedProfileContactAccess;
+import com.android.bedstead.enterprise.policies.ManagedProfileContactAccess;
 import com.android.bedstead.nene.TestApis;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.internal.R;

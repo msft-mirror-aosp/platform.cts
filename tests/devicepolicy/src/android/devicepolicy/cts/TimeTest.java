@@ -43,11 +43,11 @@ import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.policies.AutoTimeEnabled;
-import com.android.bedstead.harrier.policies.AutoTimeRequired;
-import com.android.bedstead.harrier.policies.AutoTimeZoneEnabled;
-import com.android.bedstead.harrier.policies.DisallowConfigDateTime;
-import com.android.bedstead.harrier.policies.Time;
+import com.android.bedstead.enterprise.policies.AutoTimeEnabled;
+import com.android.bedstead.enterprise.policies.AutoTimeRequired;
+import com.android.bedstead.enterprise.policies.AutoTimeZoneEnabled;
+import com.android.bedstead.enterprise.policies.DisallowConfigDateTime;
+import com.android.bedstead.enterprise.policies.Time;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
 import com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject;
 import com.android.bedstead.nene.TestApis;
@@ -786,7 +786,7 @@ public final class TimeTest {
     }
 
     @Postsubmit(reason = "New test")
-    @PolicyAppliesTest(policy = com.android.bedstead.harrier.policies.TimeZone.class)
+    @PolicyAppliesTest(policy = com.android.bedstead.enterprise.policies.TimeZone.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setTimeZone")
     public void setTimeZone_timeZoneIsSet() {
         boolean originalAutoTimeZoneEnabledValue = dpc(sDeviceState).devicePolicyManager()
@@ -828,7 +828,7 @@ public final class TimeTest {
     }
 
     @Postsubmit(reason = "New test")
-    @PolicyDoesNotApplyTest(policy = com.android.bedstead.harrier.policies.TimeZone.class)
+    @PolicyDoesNotApplyTest(policy = com.android.bedstead.enterprise.policies.TimeZone.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setTimeZone")
     public void setTimeZone_doesNotApply_timeZoneIsNotSet() {
         boolean originalAutoTimeZoneEnabledValue = dpc(sDeviceState).devicePolicyManager()
@@ -856,7 +856,7 @@ public final class TimeTest {
     }
 
     @Postsubmit(reason = "New test")
-    @PolicyAppliesTest(policy = com.android.bedstead.harrier.policies.TimeZone.class)
+    @PolicyAppliesTest(policy = com.android.bedstead.enterprise.policies.TimeZone.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setTimeZone")
     public void setTimeZone_autoTimeZoneIsEnabled_returnsFalse() {
         boolean originalAutoTimeZoneEnabledValue = dpc(sDeviceState).devicePolicyManager()
@@ -884,7 +884,7 @@ public final class TimeTest {
     }
 
     @Postsubmit(reason = "New test")
-    @CannotSetPolicyTest(policy = com.android.bedstead.harrier.policies.TimeZone.class,
+    @CannotSetPolicyTest(policy = com.android.bedstead.enterprise.policies.TimeZone.class,
             includeNonDeviceAdminStates = false)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setTimeZone")
     public void setTimeZone_notAllowed_throwsException() {

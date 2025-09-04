@@ -51,8 +51,8 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature;
 import com.android.bedstead.harrier.annotations.RequireFeature;
-import com.android.bedstead.harrier.policies.PasswordQuality;
-import com.android.bedstead.harrier.policies.ResetPasswordWithToken;
+import com.android.bedstead.enterprise.policies.PasswordQuality;
+import com.android.bedstead.enterprise.policies.ResetPasswordWithToken;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
 import com.android.bedstead.nene.TestApis;
 

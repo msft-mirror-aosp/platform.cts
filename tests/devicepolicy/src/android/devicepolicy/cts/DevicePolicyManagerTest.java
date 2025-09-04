@@ -48,7 +48,7 @@ import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.policies.DisallowAirplaneMode;
+import com.android.bedstead.enterprise.policies.DisallowAirplaneMode;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.permissions.CommonPermissions;

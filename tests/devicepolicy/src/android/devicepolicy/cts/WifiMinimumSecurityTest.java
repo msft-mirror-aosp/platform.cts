@@ -35,7 +35,7 @@ import com.android.bedstead.harrier.annotations.IntTestParameter;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
-import com.android.bedstead.harrier.policies.WifiMinimumSecurity;
+import com.android.bedstead.enterprise.policies.WifiMinimumSecurity;
 import com.android.bedstead.remotedpc.RemotePolicyManager;
 
 import org.junit.Before;

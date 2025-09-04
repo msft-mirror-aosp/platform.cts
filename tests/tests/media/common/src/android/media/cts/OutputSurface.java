@@ -182,36 +182,39 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
             checkEglError("EGL_PROTECTED_CONTENT_EXT not supported");
         }
 
+        boolean eglChooseConfigOk = false;
+        boolean eglCreateContextOk = false;
+        EGLConfig[] configs = new EGLConfig[1];
+        int[] numConfigs = new int[1];
         // Configure EGL for pbuffer and OpenGL ES 2.0.  We want enough RGB bits
         // to be able to tell if the frame is reasonable.
         int eglColorSize = useHighBitDepth ? 10 : 8;
-        int eglAlphaSize = useHighBitDepth ? 2 : 0;
-        int[] configAttribList = {
-                EGL14.EGL_RED_SIZE, eglColorSize,
-                EGL14.EGL_GREEN_SIZE, eglColorSize,
-                EGL14.EGL_BLUE_SIZE, eglColorSize,
-                EGL14.EGL_ALPHA_SIZE, eglAlphaSize,
-                EGL14.EGL_RENDERABLE_TYPE, EGL14.EGL_OPENGL_ES2_BIT,
-                EGL14.EGL_SURFACE_TYPE, EGL14.EGL_PBUFFER_BIT,
-                EGL14.EGL_NONE
-        };
-        EGLConfig[] configs = new EGLConfig[1];
-        int[] numConfigs = new int[1];
-        if (!EGL14.eglChooseConfig(mEGLDisplay, configAttribList, 0, configs, 0, configs.length,
-                numConfigs, 0) || numConfigs[0] == 0) {
-            String message = "Unable to find EGL config supporting renderable-type:ES2 "
-                    + "surface-type:pbuffer r:" + eglColorSize + " g:" + eglColorSize
-                    + " b:" + eglColorSize + " a:" + eglAlphaSize + ".";
-            // When eglChooseConfig fails for RGBA10102, skip high bit depth testing as it is not
-            // mandatory for devices to support this configuration.
-            assumeFalse(message + " Skipping the test for high bit depth case", useHighBitDepth);
-            throw new RuntimeException(message);
-        }
+        int eglAlphaSize = useHighBitDepth ? 2 : 8;
+        mEGLESVersion = (useHighBitDepth || useYuvSampling) ? 3 : 2;
+        int EGL_OPENGL_ES3_BIT_KHR = 0x40;
+        for (; mEGLESVersion > 1; mEGLESVersion--) {
+            int renderType = mEGLESVersion == 3 ? EGL_OPENGL_ES3_BIT_KHR : EGL14.EGL_OPENGL_ES2_BIT;
+            int[] configAttribList = {
+                    EGL14.EGL_RED_SIZE, eglColorSize,
+                    EGL14.EGL_GREEN_SIZE, eglColorSize,
+                    EGL14.EGL_BLUE_SIZE, eglColorSize,
+                    EGL14.EGL_ALPHA_SIZE, eglAlphaSize,
+                    EGL14.EGL_RENDERABLE_TYPE, renderType,
+                    EGL14.EGL_SURFACE_TYPE, EGL14.EGL_PBUFFER_BIT,
+                    EGL14.EGL_NONE
+            };
 
-        boolean eglContextCreateOk = false;
-        // Configure context for OpenGL ES 3.0/2.0.
-        mEGLESVersion = useYuvSampling ? 3 : 2;
-        do {
+            if (!EGL14.eglChooseConfig(mEGLDisplay, configAttribList, 0, configs, 0, configs.length,
+                    numConfigs, 0) || numConfigs[0] == 0) {
+                String message = "Unable to find EGL config supporting renderable-type: ES"
+                        + mEGLESVersion + " surface-type:pbuffer r:" + eglColorSize
+                        + " g:" + eglColorSize + " b:" + eglColorSize + " a:" + eglAlphaSize;
+                Log.d(TAG, message);
+                continue;
+            }
+
+            eglChooseConfigOk = true;
+
             int[] contextAttribList;
             if (!mSecureMode) {
                 contextAttribList = new int[] {
@@ -228,13 +231,18 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
             mEGLContext = EGL14.eglCreateContext(mEGLDisplay, configs[0], EGL14.EGL_NO_CONTEXT,
                     contextAttribList, 0);
             if (mEGLContext != EGL14.EGL_NO_CONTEXT && EGL14.EGL_SUCCESS == EGL14.eglGetError()) {
-                eglContextCreateOk = true;
+                eglCreateContextOk = true;
                 break;
             }
-            mEGLESVersion--;
-        } while (mEGLESVersion > 1);
+        }
 
-        if (!eglContextCreateOk) {
+        if (!eglChooseConfigOk) {
+            // when eglChooseConfig fails for RGBA1010102, skip high bit depth testing as it is
+            // not mandatory for devices to support this configuration
+            assumeFalse("GPU Driver does not support RGBA1010102, skipping HBD testing",
+                    useHighBitDepth);
+        }
+        if (!eglCreateContextOk) {
             throw new RuntimeException("null context");
         }
 

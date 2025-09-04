@@ -30,7 +30,7 @@ import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
 import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
 import com.android.bedstead.enterprise.dpc
 import com.android.bedstead.enterprise.dpcOnly
-import com.android.bedstead.harrier.policies.RequestBugReport
+import com.android.bedstead.enterprise.policies.RequestBugReport
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder
 import com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat
 import com.android.bedstead.multiuser.additionalUser

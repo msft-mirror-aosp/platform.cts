@@ -16,6 +16,7 @@
 package android.appsecurity.cts;
 
 import static android.appsecurity.cts.Utils.getAllUsers;
+import static android.appsecurity.cts.Utils.getFirstNonSystemUserId;
 
 import static com.android.tradefed.device.UserInfo.USER_SYSTEM;
 
@@ -142,6 +143,43 @@ public final class UtilsTest {
                 .asList()
                 .containsExactly(42, 4, 8, 15, 16, 23)
                 .inOrder();
+    }
+
+    @Test
+    public void testGetFirstNonSystemUserId_null() {
+        assertThrows(NullPointerException.class, () -> getFirstNonSystemUserId(null));
+    }
+
+    @Test
+    public void testGetFirstNonSystemUserId_notFound() {
+        var thrown = assertThrows(IllegalArgumentException.class, () -> getFirstNonSystemUserId());
+        expect.withMessage("exception message")
+                .that(thrown)
+                .hasMessageThat()
+                .isEqualTo("Not found. Users: []");
+
+        thrown =
+                assertThrows(
+                        IllegalArgumentException.class, () -> getFirstNonSystemUserId(USER_SYSTEM));
+        expect.withMessage("exception message")
+                .that(thrown)
+                .hasMessageThat()
+                .isEqualTo("Not found. Users: [0]");
+    }
+
+    @Test
+    public void testGetFirstNonSystemUserId() {
+        expect.withMessage("getFirstNonSystemUserId(42)")
+                .that(getFirstNonSystemUserId(42))
+                .isEqualTo(42);
+
+        expect.withMessage("getFirstNonSystemUserId(%s, 42)", USER_SYSTEM)
+                .that(getFirstNonSystemUserId(USER_SYSTEM, 42))
+                .isEqualTo(42);
+
+        expect.withMessage("getFirstNonSystemUserId(42, %s)", USER_SYSTEM)
+                .that(getFirstNonSystemUserId(42, USER_SYSTEM))
+                .isEqualTo(42);
     }
 
     private void mockListUsers(@Nullable int... userIds) throws DeviceNotAvailableException {

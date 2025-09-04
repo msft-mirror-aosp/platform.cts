@@ -59,7 +59,7 @@ import com.android.bedstead.enterprise.dpc
 import com.android.bedstead.enterprise.workProfile
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
-import com.android.bedstead.harrier.policies.AppFunctionsPolicy
+import com.android.bedstead.enterprise.policies.AppFunctionsPolicy
 import com.android.bedstead.multiuser.additionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasPrivateProfile
@@ -67,7 +67,6 @@ import com.android.bedstead.multiuser.annotations.RequireRunOnPrivateProfile
 import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnPrimaryUser
 import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnSecondaryUser
 import com.android.bedstead.multiuser.privateProfile
-import com.android.bedstead.multiuser.secondaryUser
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.utils.ShellCommand

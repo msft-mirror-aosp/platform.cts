@@ -23,6 +23,7 @@ import static android.app.Activity.RESULT_OK;
 import static android.app.AppOpsManager.MODE_ALLOWED;
 import static android.app.AppOpsManager.MODE_DEFAULT;
 import static android.app.AppOpsManager.MODE_ERRORED;
+import static android.app.Notification.EXTRA_PREFER_SMALL_ICON;
 import static android.app.Notification.FLAG_FOREGROUND_SERVICE;
 import static android.app.Notification.FLAG_NO_CLEAR;
 import static android.app.Notification.FLAG_USER_INITIATED_JOB;
@@ -3411,6 +3412,49 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
         assertEquals(NotificationListenerService.REASON_CHANNEL_REMOVED,
                 getCancellationReason(key));
+    }
+
+    @Test
+    public void testPreferSmallIcon_noPermission() throws Exception {
+        int id = 99;
+        Bundle extras = new Bundle();
+        extras.putBoolean(EXTRA_PREFER_SMALL_ICON, true);
+        final Notification notification =
+                new Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+                        .setSmallIcon(R.drawable.black)
+                        .setExtras(extras)
+                        .build();
+        mNotificationManager.notify(id, notification);
+
+        StatusBarNotification sbn =
+                mNotificationHelper.findPostedNotification(null, id, SEARCH_TYPE.APP);
+        assertNotNull(sbn);
+
+        assertFalse(sbn.getNotification().extras.containsKey(Notification.EXTRA_PREFER_SMALL_ICON));
+    }
+
+    @Test
+    public void testPreferSmallIcon_hasPermission() throws Exception {
+        int id = 99;
+        Bundle extras = new Bundle();
+        extras.putBoolean(EXTRA_PREFER_SMALL_ICON, true);
+        final Notification notification =
+                new Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+                        .setSmallIcon(R.drawable.black)
+                        .setExtras(extras)
+                        .build();
+
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    mNotificationManager.notify(id, notification);
+                },
+                Manifest.permission.PACKAGE_VERIFICATION_AGENT);
+
+        StatusBarNotification sbn =
+                mNotificationHelper.findPostedNotification(null, id, SEARCH_TYPE.APP);
+        assertNotNull(sbn);
+
+        assertTrue(sbn.getNotification().extras.getBoolean(Notification.EXTRA_PREFER_SMALL_ICON));
     }
 
     @Test

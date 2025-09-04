@@ -28,9 +28,9 @@ import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
-import com.android.bedstead.harrier.policies.DisallowRemoveUser
-import com.android.bedstead.harrier.policies.DisallowUserSwitch
-import com.android.bedstead.harrier.policies.ReceiveUserCallbacks
+import com.android.bedstead.enterprise.policies.DisallowRemoveUser
+import com.android.bedstead.enterprise.policies.DisallowUserSwitch
+import com.android.bedstead.enterprise.policies.ReceiveUserCallbacks
 import com.android.bedstead.multiuser.additionalUser
 import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser

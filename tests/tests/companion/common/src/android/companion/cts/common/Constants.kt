@@ -4,10 +4,12 @@ import android.Manifest
 import android.companion.AssociationRequest.DEVICE_PROFILE_APP_STREAMING
 import android.companion.AssociationRequest.DEVICE_PROFILE_AUTOMOTIVE_PROJECTION
 import android.companion.AssociationRequest.DEVICE_PROFILE_COMPUTER
+import android.companion.AssociationRequest.DEVICE_PROFILE_FITNESS_TRACKER
 import android.companion.AssociationRequest.DEVICE_PROFILE_GLASSES
 import android.companion.AssociationRequest.DEVICE_PROFILE_NEARBY_DEVICE_STREAMING
 import android.companion.AssociationRequest.DEVICE_PROFILE_VIRTUAL_DEVICE
 import android.companion.AssociationRequest.DEVICE_PROFILE_WATCH
+import android.companion.Flags;
 import android.net.MacAddress
 import android.os.Handler
 import android.os.HandlerThread
@@ -17,6 +19,9 @@ import java.util.concurrent.Executor
 /** Set of all supported CDM Device Profiles. */
 val DEVICE_PROFILES = buildSet {
     add(DEVICE_PROFILE_WATCH)
+    if (Flags.bandDeviceProfile()) {
+        add(DEVICE_PROFILE_FITNESS_TRACKER)
+    }
     add(DEVICE_PROFILE_GLASSES)
     add(DEVICE_PROFILE_NEARBY_DEVICE_STREAMING)
     add(DEVICE_PROFILE_COMPUTER)
@@ -29,6 +34,9 @@ val DEVICE_PROFILES = buildSet {
 
 val DEVICE_PROFILE_TO_NAME = buildMap {
     put(DEVICE_PROFILE_WATCH, "WATCH")
+    if (Flags.bandDeviceProfile()) {
+        put(DEVICE_PROFILE_FITNESS_TRACKER, "FITNESS_TRACKER")
+    }
     put(DEVICE_PROFILE_GLASSES, "GLASSES")
     put(DEVICE_PROFILE_NEARBY_DEVICE_STREAMING, "NEARBY_DEVICE_STREAMING")
     put(DEVICE_PROFILE_COMPUTER, "COMPUTER")
@@ -41,6 +49,9 @@ val DEVICE_PROFILE_TO_NAME = buildMap {
 
 val DEVICE_PROFILE_TO_PERMISSION = buildMap {
     put(DEVICE_PROFILE_WATCH, Manifest.permission.REQUEST_COMPANION_PROFILE_WATCH)
+    if (Flags.bandDeviceProfile()) {
+        put(DEVICE_PROFILE_FITNESS_TRACKER, Manifest.permission.REQUEST_COMPANION_PROFILE_WATCH)
+    }
     put(DEVICE_PROFILE_APP_STREAMING, Manifest.permission.REQUEST_COMPANION_PROFILE_APP_STREAMING)
     put(
         DEVICE_PROFILE_AUTOMOTIVE_PROJECTION,
@@ -57,6 +68,12 @@ val DEVICE_PROFILE_TO_PERMISSION = buildMap {
             DEVICE_PROFILE_VIRTUAL_DEVICE,
             Manifest.permission.REQUEST_COMPANION_PROFILE_VIRTUAL_DEVICE
         )
+    }
+}
+
+val DEVICE_PROFILE_ALIAS_TO_ROLE = buildMap {
+    if (Flags.bandDeviceProfile()) {
+        put(DEVICE_PROFILE_FITNESS_TRACKER, DEVICE_PROFILE_WATCH)
     }
 }
 
