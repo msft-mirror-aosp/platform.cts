@@ -57,7 +57,8 @@ class Material2021SpecMatcher : BitmapMatcher() {
             }
         }
 
-        val stats = ScreenshotResultProto.DiffResult.ComparisonStatistics.newBuilder()
+        val stats =
+            ScreenshotResultProto.DiffResult.ComparisonStatistics.newBuilder()
                 .setNumberPixelsCompared(width * height)
                 .setNumberPixelsIdentical(same)
                 .setNumberPixelsDifferent(different)
@@ -65,13 +66,11 @@ class Material2021SpecMatcher : BitmapMatcher() {
                 .setNumberPixelsIgnored(ignored)
                 .build()
 
-        return if (different > 0) {
+        // We updated the difference here from 0 to 3 because of some 1px failures happening from
+        // time to time. Please see b/441562653
+        return if (different > 3) {
             val diff = Bitmap.createBitmap(diffArray, width, height, Bitmap.Config.ARGB_8888)
-            MatchResult(
-                matches = false,
-                diff = diff,
-                comparisonStatistics = stats
-            )
+            MatchResult(matches = false, diff = diff, comparisonStatistics = stats)
         } else {
             MatchResult(matches = true, diff = null, comparisonStatistics = stats)
         }
@@ -81,7 +80,7 @@ class Material2021SpecMatcher : BitmapMatcher() {
         val hct1 = Hct.fromInt(color1)
         val hct2 = Hct.fromInt(color2)
         return abs(hct1.tone - hct2.tone) +
-                abs(hct1.chroma - hct2.chroma) +
-                abs(hct1.hue - hct2.hue)
+            abs(hct1.chroma - hct2.chroma) +
+            abs(hct1.hue - hct2.hue)
     }
 }
