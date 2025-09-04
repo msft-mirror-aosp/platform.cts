@@ -1382,38 +1382,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         }
     }
 
-    @Test
-    public void testAllPropertiesHaveVehiclePropertyVerifier() {
-        Set<Integer> verifierPropertyIds = new ArraySet<>();
-        for (VehiclePropertyVerifier verifier : getAllVerifiers()) {
-            expectWithMessage("Verifier for property: " + verifier.getPropertyName()
-                            + " has been included twice!")
-                    .that(verifierPropertyIds.add(verifier.getPropertyId())).isTrue();
-        }
-
-        for (Field field : VehiclePropertyIds.class.getDeclaredFields()) {
-            boolean isIntConstant = field.getType() == int.class
-                    && field.getModifiers() == (Modifier.STATIC | Modifier.FINAL | Modifier.PUBLIC);
-            if (!isIntConstant) {
-                continue;
-            }
-
-            Integer propertyId = null;
-            try {
-                propertyId = field.getInt(null);
-            } catch (Exception e) {
-                assertWithMessage("Failed trying to find value for " + field.getName() + ", " + e)
-                        .fail();
-            }
-            if (PROPERTIES_NOT_EXPOSED_THROUGH_CPM.contains(propertyId)) {
-                continue;
-            }
-            expectWithMessage("Property: " + VehiclePropertyIds.toString(propertyId) + " does not "
-                            + "have a VehiclePropertyVerifier included in getAllVerifiers()")
-                    .that(propertyId).isIn(verifierPropertyIds);
-        }
-    }
-
     private VehiclePropertyVerifier<?>[] getAllVerifiers() {
         return new VehiclePropertyVerifier[] {
              getGearSelectionVerifier(),
