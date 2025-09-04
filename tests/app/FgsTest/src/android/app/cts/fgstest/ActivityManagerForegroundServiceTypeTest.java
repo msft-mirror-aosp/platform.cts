@@ -214,19 +214,51 @@ public final class ActivityManagerForegroundServiceTypeTest {
 
             executeShellCommand(
                     "telecom set-system-dialer " + TEST_COMP_TARGET_FGS_ALL_TYPE.flattenToString());
-
             // Confirm we did the test override.
             TelecomManager telecomManager = mContext.getSystemService(TelecomManager.class);
             assertEquals(
                     "Could not override the system dialer for test purposes.",
-                    TEST_PKG_NAME_TARGET,
+                    TEST_COMP_TARGET_FGS_ALL_TYPE.getPackageName(),
                     telecomManager.getSystemDialerPackage());
 
-            // We should be able to start the FGS in the test app because it is the system dialer.
-            startAndStopFgsType(
-                    TEST_COMP_TARGET_FGS_ALL_TYPE,
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL,
-                    null);
+            // Get the required "all permissions" for the policy.
+            TestPermissionInfo[] allOfPermissions = null;
+            final ForegroundServiceTypePolicy policy =
+                    ForegroundServiceTypePolicy.getDefaultPolicy();
+            final ForegroundServiceTypePolicyInfo info =
+                    policy.getForegroundServiceTypePolicyInfo(
+                            ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL,
+                            ServiceInfo.FOREGROUND_SERVICE_TYPE_NONE);
+
+            final String permFlag = info.getPermissionEnforcementFlagForTest();
+            try (DeviceConfigStateHelper helper = new DeviceConfigStateHelper("activity_manager")) {
+                // Enable the permission check.
+                enablePermissionEnforcement(true, TEST_COMP_TARGET_FGS_ALL_TYPE.getPackageName());
+                if (permFlag != null) {
+                    helper.set(permFlag, "true");
+                }
+                assertEquals(
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL,
+                        info.getForegroundServiceType());
+                allOfPermissions =
+                        triagePermissions(
+                                info.getRequiredAllOfPermissionsForTest(mTargetContext)
+                                        .orElse(null));
+
+                // Granting just the all-of permissions will give the service the
+                // android.permission.FOREGROUND_SERVICE_PHONE_CALL permission it requires.
+                // The fact we made this the system dialer fulfils the "any" permission requirement.
+                grantPermissions(allOfPermissions, TEST_COMP_TARGET_FGS_ALL_TYPE.getPackageName());
+
+                // At this point the service should be able to start and stop.
+                startAndStopFgsType(
+                        TEST_COMP_TARGET_FGS_ALL_TYPE,
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL,
+                        null);
+            } finally {
+                resetPermissions(allOfPermissions, TEST_COMP_TARGET_FGS_ALL_TYPE.getPackageName());
+                enablePermissionEnforcement(false, TEST_COMP_TARGET_FGS_ALL_TYPE.getPackageName());
+            }
         } finally {
             // Clear the system dialer override.
             executeShellCommand("telecom set-system-dialer default");
