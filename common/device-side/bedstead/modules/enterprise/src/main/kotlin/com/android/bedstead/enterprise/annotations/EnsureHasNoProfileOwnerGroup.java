@@ -16,7 +16,7 @@
 
 package com.android.bedstead.enterprise.annotations;
 
-import static com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner.DO_PO_PRIORITY;
+import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.DO_PO_PRIORITY;
 
 import com.android.bedstead.harrier.annotations.meta.RepeatingAnnotation;
 
