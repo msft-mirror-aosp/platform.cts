@@ -70,6 +70,7 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
         new HostTestCategory("Wi-Fi Tests")
                 .addTest("CtsWifiAwareTests", "CtsWifiAwareTests")
                 .addTest("CtsWifiSoftApTestCases", "CtsWifiSoftApTestCases")
+                .addTest("CtsWifiDirectTests", "CtsWifiDirectTests")
     };
 
     // The action to identify the broadcast Intent.
