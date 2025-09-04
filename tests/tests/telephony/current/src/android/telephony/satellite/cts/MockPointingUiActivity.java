@@ -34,12 +34,16 @@ public class MockPointingUiActivity extends Activity {
             "android.telephony.satellite.cts.MOCK_POINTING_UI_ACTIVITY_STARTED";
 
     private static final String TAG = "MockPointingUiActivity";
+    static final String EXTRA_IS_EMERGENCY = "isEmergency";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "onCreate");
         super.onCreate(savedInstanceState);
+        Intent launchIntent = getIntent();
+        boolean isEmergency = launchIntent.getBooleanExtra(EXTRA_IS_EMERGENCY, false);
         Intent intent = new Intent();
+        intent.putExtra(EXTRA_IS_EMERGENCY, isEmergency);
         intent.setAction(ACTION_MOCK_POINTING_UI_ACTIVITY_STARTED);
         getContext().sendBroadcast(intent);
         finish();

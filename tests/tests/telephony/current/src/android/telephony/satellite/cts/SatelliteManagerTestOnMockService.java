@@ -2179,6 +2179,132 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         revokeSatellitePermission();
     }
 
+    // testFrameworkStateUpdateBeforeAndAfterCallbackSent
+    @Test
+    public void testFrameworkStateUpdateBeforeAndAfterCallbackSent() throws Exception {
+        logd("testSendDatagramForEmergency_noRaceCondition");
+        grantSatellitePermission();
+        assertTrue(isSatelliteProvisioned());
+
+        // Disable satellite initially
+        if (isSatelliteEnabled()) {
+            requestSatelliteEnabled(false);
+            assertFalse(isSatelliteEnabled());
+        }
+
+        SatelliteModemStateCallbackTest stateCallback = new SatelliteModemStateCallbackTest();
+        sSatelliteManager.registerForModemStateChanged(
+                getContext().getMainExecutor(), stateCallback);
+        assertTrue(stateCallback.waitUntilResult(1));
+
+        assertTrue(sMockSatelliteServiceManager.overrideSatellitePointingUiClassName());
+        sMockSatelliteServiceManager.clearMockPointingUiActivityStatusChanges();
+
+        for (int i = 0; i < 20; i++) {
+            // Enable satellite with emergency mode
+            logd(
+                    "testFrameworkStateUpdateBeforeAndAfterCallbackSent: enabling"
+                            + " satellite with real and emergency mode..."
+                            + i);
+            requestSatelliteEnabledwithEmergencyMode(true, false, true, SATELLITE_RESULT_SUCCESS);
+            assertTrue(isSatelliteEnabled());
+            verifyEmergencyMode(true);
+            assertTrue(stateCallback.waitForEmergencyModeChanged(1));
+            assertTrue(stateCallback.getEmergencyMode());
+
+            // Send satellite datagram
+            logd(
+                    "testFrameworkStateUpdateBeforeAndAfterCallbackSent: sending"
+                            + " satellite datagram in emergency mode ... "
+                            + i);
+            String mText = "This is a test datagram message from user";
+            SatelliteDatagram datagram = new SatelliteDatagram(mText.getBytes());
+            LinkedBlockingQueue<Integer> sendDatagramResultListenerEmergency =
+                    new LinkedBlockingQueue<>(1);
+            sMockSatelliteServiceManager.clearMockPointingUiActivityStatusChanges();
+            sMockSatelliteServiceManager.clearSentSatelliteDatagramInfo();
+            sSatelliteManager.sendDatagram(
+                    DATAGRAM_TYPE_SOS_MESSAGE,
+                    datagram,
+                    true,
+                    getContext().getMainExecutor(),
+                    sendDatagramResultListenerEmergency::offer);
+
+            // Wait for mock PUI to be started and verify emergency mode
+            assertTrue(sMockSatelliteServiceManager.waitForEventMockPointingUiActivityStarted(1));
+            assertTrue(sMockSatelliteServiceManager.getPuiEmergencyMode());
+
+            Integer sendDatagramResultEmergency =
+                    sendDatagramResultListenerEmergency.poll(TIMEOUT, TimeUnit.MILLISECONDS);
+            assertNotNull(
+                    "sendDatagram should have received a result", sendDatagramResultEmergency);
+            assertEquals(
+                    SatelliteManager.SATELLITE_RESULT_SUCCESS, (int) sendDatagramResultEmergency);
+
+            // Wait for the satellite modem to be fully idle or not connected.
+            assertTrue(stateCallback.waitUntilModemIdleOrNotConnected());
+
+            // Disable Satellite and clean up
+            logd("testFrameworkStateUpdateBeforeAndAfterCallbackSent: disabling satellite");
+            requestSatelliteEnabled(false);
+            assertTrue(stateCallback.waitUntilModemOff());
+            assertTrue(stateCallback.waitForEmergencyModeChanged(1));
+            assertFalse(stateCallback.getEmergencyMode());
+            stateCallback.clearModemStates();
+
+            // enable satellite with non emergency mode
+            logd(
+                    "testFrameworkStateUpdateBeforeAndAfterCallbackSent: enabling"
+                            + " satellite with real and non-emergency mode..."
+                            + i);
+            requestSatelliteEnabledwithEmergencyMode(true, false, false, SATELLITE_RESULT_SUCCESS);
+            assertTrue(isSatelliteEnabled());
+            verifyEmergencyMode(false);
+            assertFalse(stateCallback.getEmergencyMode());
+
+            // send datagram in non emergency mdoe
+            // Send satellite datagram
+            logd(
+                    "testFrameworkStateUpdateBeforeAndAfterCallbackSent: sending"
+                            + " satellite datagram in non-emergency mode ... "
+                            + i);
+            LinkedBlockingQueue<Integer> sendDatagramResultListenerNonEmergency =
+                    new LinkedBlockingQueue<>(1);
+            sMockSatelliteServiceManager.clearMockPointingUiActivityStatusChanges();
+            sMockSatelliteServiceManager.clearSentSatelliteDatagramInfo();
+            sSatelliteManager.sendDatagram(
+                    DATAGRAM_TYPE_SOS_MESSAGE,
+                    datagram,
+                    true,
+                    getContext().getMainExecutor(),
+                    sendDatagramResultListenerNonEmergency::offer);
+
+            // Wait for mock PUI to be started and verify emergency mode
+            assertTrue(sMockSatelliteServiceManager.waitForEventMockPointingUiActivityStarted(1));
+            assertFalse(sMockSatelliteServiceManager.getPuiEmergencyMode());
+
+            Integer sendDatagramResultNonEmergency =
+                    sendDatagramResultListenerNonEmergency.poll(TIMEOUT, TimeUnit.MILLISECONDS);
+            assertNotNull(
+                    "sendDatagram should have received a result", sendDatagramResultNonEmergency);
+            assertEquals(
+                    SatelliteManager.SATELLITE_RESULT_SUCCESS,
+                    (int) sendDatagramResultNonEmergency);
+
+            // Wait for the satellite modem to be fully idle or not connected.
+            assertTrue(stateCallback.waitUntilModemIdleOrNotConnected());
+
+            // disable satellite and clean up
+            logd("testFrameworkStateUpdateBeforeAndAfterCallbackSent: disabling satellite");
+            requestSatelliteEnabled(false);
+            assertTrue(stateCallback.waitUntilModemOff());
+            stateCallback.clearModemStates();
+            sMockSatelliteServiceManager.clearMockPointingUiActivityStatusChanges();
+        }
+        sSatelliteManager.unregisterForModemStateChanged(stateCallback);
+        assertTrue(sMockSatelliteServiceManager.restoreSatellitePointingUiClassName());
+        revokeSatellitePermission();
+    }
 
     @Test
     public void testReceiveSatelliteDatagram() {
