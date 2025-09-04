@@ -513,28 +513,57 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     /**
      * This test ensures that the custom IME back callbacks cannot be registered in the app process
      * while the IME is not visible. It also verifies that the custom IME back callbacks get
-     * registered in the app process as soon as the IME gets visible.
+     * registered in the app process as soon as the IME gets visible (when the app has
+     * enableOnBackInvokedCallback=true).
      */
     @Test
     @RequiresFlagsEnabled(FLAG_IME_BACK_CALLBACK_LEAK_PREVENTION)
     public void testCustomImeBackCallbackNotRegisteredUntilSystemCallbackRegistered()
             throws Exception {
-        verifyCustomImeBackCallbackRegistration(/* verifyUnregistration= */ false);
+        verifyCustomImeBackCallbackRegistration(
+                /* verifyUnregistration= */ false, /* appRequestsBackCallback */ true);
+    }
+
+    /**
+     * This test ensures that the custom IME back callbacks cannot be registered in the app process
+     * while the IME is not visible. It also verifies that the custom IME back callbacks get
+     * registered in the app process as soon as the IME gets visible (when the app has
+     * enableOnBackInvokedCallback=false).
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_IME_BACK_CALLBACK_LEAK_PREVENTION)
+    public void testCustomImeBackCallbackNotRegisteredUntilSystemCallbackRegistered_legacyApp()
+            throws Exception {
+        verifyCustomImeBackCallbackRegistration(
+                /* verifyUnregistration= */ false, /* appRequestsBackCallback */ false);
     }
 
     /**
      * This test ensures that any registered custom IME back callbacks get cleared in the app
-     * process when the IME gets hidden.
+     * process when the IME gets hidden (when the app has enableOnBackInvokedCallback=true).
      */
     @Test
     @RequiresFlagsEnabled(FLAG_IME_BACK_CALLBACK_LEAK_PREVENTION)
     public void testCustomImeBackCallbackUnregisteredWhenSystemCallbackUnregistered()
             throws Exception {
-        verifyCustomImeBackCallbackRegistration(/* verifyUnregistration= */ true);
+        verifyCustomImeBackCallbackRegistration(
+                /* verifyUnregistration= */ true, /* appRequestsBackCallback */ true);
+    }
+
+    /**
+     * This test ensures that any registered custom IME back callbacks get cleared in the app
+     * process when the IME gets hidden (when the app has enableOnBackInvokedCallback=false).
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_IME_BACK_CALLBACK_LEAK_PREVENTION)
+    public void testCustomImeBackCallbackUnregisteredWhenSystemCallbackUnregistered_legacyApp()
+            throws Exception {
+        verifyCustomImeBackCallbackRegistration(
+                /* verifyUnregistration= */ true, /* appRequestsBackCallback */ false);
     }
 
     private void verifyCustomImeBackCallbackRegistration(
-             boolean verifyUnregistration) throws Exception {
+            boolean verifyUnregistration, boolean appRequestsBackCallback) throws Exception {
         final Instrumentation instrumentation = mInstrumentation;
         final Context context = instrumentation.getTargetContext();
         final boolean onBackCallbackEnabled =
@@ -549,14 +578,18 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             final ImeEventStream stream = imeSession.openEventStream();
             final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final AtomicInteger appBackCallbackInvocationCount = new AtomicInteger();
-            context.getApplicationInfo().setEnableOnBackInvokedCallback(true);
+            context.getApplicationInfo().setEnableOnBackInvokedCallback(appRequestsBackCallback);
             final EditText editText = launchTestActivity(marker);
             final TestActivity testActivity = (TestActivity) editText.getContext();
-            testActivity
-                    .getOnBackInvokedDispatcher()
-                    .registerOnBackInvokedCallback(
-                            OnBackInvokedDispatcher.PRIORITY_DEFAULT,
-                            appBackCallbackInvocationCount::getAndIncrement);
+            if (appRequestsBackCallback) {
+                testActivity
+                        .getOnBackInvokedDispatcher()
+                        .registerOnBackInvokedCallback(
+                                OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                                appBackCallbackInvocationCount::getAndIncrement);
+            } else {
+                testActivity.setIgnoreBackKey(true);
+            }
 
             // register custom back callback while IME is invisible
             imeSession.registerCustomImeBackCallback();
@@ -568,7 +601,11 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             // Verify that custom back callback is not registered in app process yet (by pressing
             // back key and expecting app's back callback to be called)
             instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
-            assertEquals(1, appBackCallbackInvocationCount.get());
+            assertEquals(
+                    1,
+                    appRequestsBackCallback
+                            ? appBackCallbackInvocationCount.get()
+                            : testActivity.getOnBackPressedCallCount());
 
             // Now show the IME
             final InputMethodManager imm = testActivity.getSystemService(InputMethodManager.class);
@@ -604,7 +641,11 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             // Verify that custom back callback is no longer registered in app process (by pressing
             // back key and expecting app's back callback to be called)
             instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
-            assertEquals(2, appBackCallbackInvocationCount.get());
+            assertEquals(
+                    2,
+                    appRequestsBackCallback
+                            ? appBackCallbackInvocationCount.get()
+                            : testActivity.getOnBackPressedCallCount());
         } finally {
             context.getApplicationInfo().setEnableOnBackInvokedCallback(onBackCallbackEnabled);
         }
