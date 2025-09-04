@@ -40,7 +40,7 @@ import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireUsbDataSignalingCanBeDisabled;
-import com.android.bedstead.harrier.policies.SetUsbDataSignaling;
+import com.android.bedstead.enterprise.policies.SetUsbDataSignaling;
 
 import org.junit.ClassRule;
 import org.junit.Ignore;

@@ -37,7 +37,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireTargetSdkVersion;
-import com.android.bedstead.harrier.policies.CredentialManagerPolicy;
+import com.android.bedstead.enterprise.policies.CredentialManagerPolicy;
 import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.testapp.TestApp;

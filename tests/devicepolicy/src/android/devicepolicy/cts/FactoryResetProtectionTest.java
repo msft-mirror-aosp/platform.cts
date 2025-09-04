@@ -35,7 +35,7 @@ import com.android.bedstead.harrier.annotations.RequireFactoryResetProtectionPol
 import com.android.bedstead.harrier.annotations.RequireSystemServiceAvailable;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
-import com.android.bedstead.harrier.policies.FactoryResetProtection;
+import com.android.bedstead.enterprise.policies.FactoryResetProtection;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
 import com.android.bedstead.nene.utils.ParcelTest;
 import com.android.bedstead.nene.utils.XmlTest;

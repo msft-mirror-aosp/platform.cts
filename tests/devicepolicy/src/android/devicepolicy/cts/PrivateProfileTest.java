@@ -35,7 +35,7 @@ import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
-import com.android.bedstead.harrier.policies.DisallowAddPrivateProfile;
+import com.android.bedstead.enterprise.policies.DisallowAddPrivateProfile;
 import com.android.bedstead.multiuser.annotations.EnsureHasNoPrivateProfile;
 import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport;
 import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;

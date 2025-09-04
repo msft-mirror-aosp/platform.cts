@@ -31,7 +31,7 @@ import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.policies.SupportMessage;
+import com.android.bedstead.enterprise.policies.SupportMessage;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
 import com.android.bedstead.remotedpc.RemotePolicyManager;
 

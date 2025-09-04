@@ -30,7 +30,7 @@ import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.policies.DisallowAdjustVolume;
+import com.android.bedstead.enterprise.policies.DisallowAdjustVolume;
 import com.android.bedstead.nene.TestApis;
 import com.android.compatibility.common.util.ApiTest;
 

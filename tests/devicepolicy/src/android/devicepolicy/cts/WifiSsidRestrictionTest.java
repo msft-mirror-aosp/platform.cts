@@ -33,7 +33,7 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
-import com.android.bedstead.harrier.policies.WifiSsidRestriction;
+import com.android.bedstead.enterprise.policies.WifiSsidRestriction;
 import com.android.bedstead.remotedpc.RemotePolicyManager;
 
 import org.junit.Before;

@@ -59,8 +59,8 @@ import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.IntTestParameter
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireFeature
-import com.android.bedstead.harrier.policies.LockTask
-import com.android.bedstead.harrier.policies.LockTaskFinance
+import com.android.bedstead.enterprise.policies.LockTask
+import com.android.bedstead.enterprise.policies.LockTaskFinance
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder
 import com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat
 import com.android.bedstead.nene.TestApis
@@ -69,7 +69,6 @@ import com.android.bedstead.nene.utils.Poll
 import com.android.bedstead.testapp.TestAppActivity
 import com.android.bedstead.testapps.testApps
 import com.android.compatibility.common.util.ApiTest
-import com.android.compatibility.common.util.SystemUtil
 import com.android.eventlib.truth.EventLogsSubject.assertThat
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage

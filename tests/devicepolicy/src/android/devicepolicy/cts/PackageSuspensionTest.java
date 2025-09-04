@@ -38,7 +38,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.policies.SuspendPackage;
+import com.android.bedstead.enterprise.policies.SuspendPackage;
 import com.android.bedstead.testapp.TestAppInstance;
 
 import org.junit.Before;

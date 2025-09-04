@@ -36,8 +36,8 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireTelephonySupport;
-import com.android.bedstead.harrier.policies.EmbeddedSubscription;
-import com.android.bedstead.harrier.policies.EmbeddedSubscriptionSwitchAfterDownload;
+import com.android.bedstead.enterprise.policies.EmbeddedSubscription;
+import com.android.bedstead.enterprise.policies.EmbeddedSubscriptionSwitchAfterDownload;
 import com.android.bedstead.nene.utils.BlockingPendingIntent;
 import com.android.compatibility.common.util.ApiTest;
 

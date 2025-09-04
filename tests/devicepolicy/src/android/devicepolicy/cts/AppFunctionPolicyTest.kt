@@ -27,7 +27,7 @@ import com.android.bedstead.enterprise.annotations.PolicyAppliesTest
 import com.android.bedstead.enterprise.dpc
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
-import com.android.bedstead.harrier.policies.AppFunctionsPolicy
+import com.android.bedstead.enterprise.policies.AppFunctionsPolicy
 import com.android.compatibility.common.util.ApiTest
 import com.google.common.truth.Truth.assertThat
 import org.junit.ClassRule

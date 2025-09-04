@@ -37,7 +37,7 @@ import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
-import com.android.bedstead.harrier.policies.TrustAgentInfo;
+import com.android.bedstead.enterprise.policies.TrustAgentInfo;
 import com.android.bedstead.nene.TestApis;
 import com.android.compatibility.common.util.ApiTest;
 
