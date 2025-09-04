@@ -17,6 +17,7 @@ package com.android.bedstead.enterprise.annotations
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestGenerator
+import com.android.bedstead.harrier.annotations.meta.BedsteadTest
 import com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4
 import com.google.auto.value.AutoAnnotation
 import kotlin.reflect.KClass
@@ -33,6 +34,7 @@ import kotlin.reflect.KClass
 @Retention(AnnotationRetention.RUNTIME)
 @RequiresBedsteadJUnit4
 @UsesParameterizedTestGenerator(UsesParameterizedTestGenerator.ENTERPRISE)
+@BedsteadTest
 annotation class CanSetPolicyTest(
     /**
      * The policy being tested.

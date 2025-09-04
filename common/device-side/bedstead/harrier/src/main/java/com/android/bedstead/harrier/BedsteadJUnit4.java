@@ -18,14 +18,12 @@ package com.android.bedstead.harrier;
 
 import androidx.annotation.Nullable;
 
-import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest;
-import com.android.bedstead.enterprise.annotations.MostRestrictiveCoexistenceTest;
 import com.android.bedstead.harrier.annotations.AnnotationCostRunPrecedence;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
-import com.android.bedstead.harrier.annotations.HiddenApiTest;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestGenerator;
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestWithArgumentGenerator;
+import com.android.bedstead.harrier.annotations.meta.BedsteadTest;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 import com.android.bedstead.harrier.annotations.meta.RepeatingAnnotation;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeNone;
@@ -36,7 +34,6 @@ import com.android.bedstead.multiuser.annotations.RequireRunOnPrimaryUser;
 import com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.types.OptionalBoolean;
-import com.android.bedstead.performanceanalyzer.annotations.PerformanceTest;
 
 import com.google.auto.value.AutoAnnotation;
 import com.google.common.collect.ImmutableMap;
@@ -352,11 +349,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     private static List<FrameworkMethod> getBasicTests(TestClass testClass) {
         return testClass.getAnnotatedMethods().stream().filter(
                 method -> method.getAnnotation(Test.class) != null
-                        || method.getAnnotation(MostRestrictiveCoexistenceTest.class) != null
-                        || method.getAnnotation(MostImportantCoexistenceTest.class) != null
-                        || method.getAnnotation(HiddenApiTest.class) != null
-                        || method.getAnnotation(PerformanceTest.class) != null
-                        || isMethodAnnotatedIndirectly(method, UsesParameterizedTestGenerator.class)
+                        || isMethodAnnotatedIndirectly(method, BedsteadTest.class)
         ).collect(Collectors.toList());
     }
 

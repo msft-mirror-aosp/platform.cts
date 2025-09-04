@@ -19,7 +19,7 @@ package com.android.bedstead.harrier.annotations;
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.PRECEDENCE_NOT_IMPORTANT;
 
 import com.android.bedstead.harrier.UserType;
-import com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4;
+import com.android.bedstead.harrier.annotations.meta.BedsteadTest;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -32,8 +32,8 @@ import java.lang.annotation.Target;
 // TODO(b/217858437): Enable indirect usage
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@RequiresBedsteadJUnit4
 @UsesParameterizedTestGenerator(UsesParameterizedTestGenerator.MULTI_USER)
+@BedsteadTest
 public @interface UserTest {
     UserType[] value();
 
