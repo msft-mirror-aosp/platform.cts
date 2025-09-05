@@ -123,3 +123,5 @@ android.content.pm.ArchivedPackageInfo
 android.telephony.euicc.EuiccManager
 android.media.projection.MediaProjection
 android.app.HandoffActivityDataRequestInfo
+android.content.Context.BindServiceFlags
+android.content.Context.UpdateBindingParams
