@@ -22,7 +22,6 @@ import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.EXPAND_SPLIT
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.HINGE_SPLIT_ATTRS;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.createSplitPairRuleBuilder;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.startActivityAndVerifySplitAttributes;
-import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertFinishing;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertResumed;
 
 import static com.android.compatibility.common.util.PollingCheck.waitFor;
@@ -415,10 +414,6 @@ public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
         final String tag = "testSplitAttributesCalculatorInvocation_acrossDisplays";
         final InvocationVerifier verifier = new InvocationVerifier(tag);
 
-        // Filter out empty SplitInfo and ActivityStack to make test more robust.
-        mSplitInfoConsumer.setDropValuePredicate(List::isEmpty);
-        mActivityStackCallback.setDropValuePredicate(List::isEmpty);
-
         // Set the calculator function before the split pair launch.
         mActivityEmbeddingComponent.setSplitAttributesCalculator(verifier);
 
@@ -453,11 +448,18 @@ public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
         final DisplayContent display = MultiDisplayTestHelper
                 .createLandscapeLargeScreenSimulatedDisplay(createManagedVirtualDisplaySession());
 
+        // Filter out empty SplitInfo and ActivityStack to make test more robust.
+        mSplitInfoConsumer.setDropValuePredicate(List::isEmpty);
+        // Filter out ActivityStacks that not in split.
+        mActivityStackCallback.setDropValuePredicate(stacks -> stacks.size() <= 1);
+
         // Finish A and B in case Activity launches to the main display unexpectedly.
         activityA.finish();
         activityB.finish();
-        waitAndAssertFinishing(activityA);
-        waitAndAssertFinishing(activityB);
+
+        mWmState.waitFor(
+                wmState -> getRootTask(activityA.getTaskId()) == null,
+                "Task of Activity A and B must be removed.");
 
         // Launch Activity C and D split to secondary display and verify that the split pair matches
         // defaultSplitAttributes.
@@ -472,8 +474,9 @@ public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
                 mSplitInfoConsumer,
                 mActivityStackCallback);
 
-        verifier.waitAndAssertFunctionApplied("The calculator function must be called due to"
-                + " split pair launch on secondary display.");
+        verifier.waitAndAssertFunctionApplied(
+                "The calculator function must be called due to"
+                        + " split pair launch on secondary display.");
 
         // Reset the callbacks
         mSplitInfoConsumer.setDropValuePredicate(null);
