@@ -46,7 +46,9 @@ import android.util.Pair;
 import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.core.content.FileProvider;
+
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
 import com.android.cts.verifier.ArrayTestListAdapter;
@@ -54,6 +56,12 @@ import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.DialogTestListActivity;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.TestResult;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.junit.rules.TestName;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileDescriptor;
@@ -83,10 +91,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.junit.rules.TestName;
 
 /**
  * Test for Camera features that require that the camera be aimed at a specific test scene.
@@ -738,9 +742,13 @@ public class ItsTestActivity extends DialogTestListActivity {
             String resultKey = result.split(":")[0].strip();
             String strValue = result.split(":")[1].strip();
 
+            // Do not write "None" due to incompatibility with various protobuf
+            // types.
             if (strValue.equalsIgnoreCase("None")) {
-                obj.put(resultKey, strValue);
-            } else if (floatKeys.stream().anyMatch(resultKey::contains)) {
+                return;
+            }
+
+            if (floatKeys.stream().anyMatch(resultKey::contains)) {
                 float value = Float.parseFloat(strValue);
                 obj.put(resultKey, value);
             } else if (booleanKeys.stream().anyMatch(resultKey::contains)) {
@@ -885,7 +893,7 @@ public class ItsTestActivity extends DialogTestListActivity {
                             Collections.emptyList());
                 }
                 if (previewZoomMetricsMatches) {
-                    List<String> floatKeys = Arrays.asList("_variations");
+                    List<String> floatKeys = Arrays.asList("_variation");
                     parsePerfMetrics(perfMetricsResult, obj, floatKeys, Collections.emptyList(),
                             Collections.emptyList());
                 }
@@ -951,9 +959,11 @@ public class ItsTestActivity extends DialogTestListActivity {
         if (parts.length == 2) {
             String key = parts[0].trim().replaceFirst(TEST_PATTERN, "");
             String value = parts[1].trim();
+            // TODO: b/442698260: value must be float/double
             Log.i(TAG, "Key: " + key);
             Log.i(TAG, "Value: " + value);
-            obj.put(key, value);
+            float valueF = Float.parseFloat(value);
+            obj.put(key, valueF);
         } else {
             Log.i(TAG, "Invalid output string");
         }
