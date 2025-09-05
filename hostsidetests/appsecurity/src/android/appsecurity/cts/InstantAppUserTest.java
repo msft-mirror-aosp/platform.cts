@@ -76,7 +76,7 @@ public class InstantAppUserTest extends BaseHostJUnit4Test {
         }
         mPrimaryUserId = getDevice().getPrimaryUserId();
         mStartingUserId = getDevice().getCurrentUser();
-        mSecondaryUserId = users[1];
+        mSecondaryUserId = Utils.getFirstNonSystemUserId(users);
         getDevice().switchUser(mSecondaryUserId);
         uninstallTestPackages();
         installTestPackages();
