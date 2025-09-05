@@ -19,10 +19,6 @@ package android.security.net.config.cts;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.security.Flags;
 import android.security.NetworkSecurityPolicy;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -32,11 +28,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
-@RequiresFlagsEnabled(Flags.FLAG_CERTIFICATE_TRANSPARENCY_CONFIGURATION)
 public class CertificateTransparencyTest {
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private final NetworkSecurityPolicy mInstance = NetworkSecurityPolicy.getInstance();
 
