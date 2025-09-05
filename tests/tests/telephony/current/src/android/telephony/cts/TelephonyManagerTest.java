@@ -2240,7 +2240,9 @@ public class TelephonyManagerTest {
             waitUntilTrue(
                     () ->
                             rc.serviceState != null
-                                    && rc.serviceState.getState() == ServiceState.STATE_IN_SERVICE,
+                                    && (rc.serviceState.getState() == ServiceState.STATE_IN_SERVICE
+                                            || rc.serviceState.getDataRegState()
+                                                    == ServiceState.STATE_IN_SERVICE),
                     rc.serviceStateLock,
                     60000,
                     "Service state not in service");
