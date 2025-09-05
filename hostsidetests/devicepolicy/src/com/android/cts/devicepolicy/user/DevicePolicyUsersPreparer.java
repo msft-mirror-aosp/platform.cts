@@ -21,13 +21,13 @@ import static com.android.tradefed.device.UserInfo.USER_SYSTEM;
 
 import android.platform.test.flag.junit.host.DeviceFlags;
 
+import com.android.compatibility.common.util.BaseSwitchFullUserTargetPreparer;
 import com.android.compatibility.common.util.UserUtil;
 import com.android.ddmlib.Log.LogLevel;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.invoker.TestInformation;
 import com.android.tradefed.log.LogUtil.CLog;
-import com.android.tradefed.targetprep.BaseTargetPreparer;
 import com.android.tradefed.targetprep.BuildError;
 import com.android.tradefed.targetprep.TargetSetupError;
 
@@ -51,14 +51,15 @@ import javax.annotation.Nullable;
  * <p><b>NOTE:</b> callers <b>MUST</b> include {@link DevicePolicyUsersTargetPreparer} in their
  * {@code AndroidTest.xml}.
  */
-public final class DevicePolicyUsersPreparer extends BaseTargetPreparer {
+public final class DevicePolicyUsersPreparer extends BaseSwitchFullUserTargetPreparer {
 
     private static @Nullable UsersOracle sOracle;
 
     @Override
     public void setUp(TestInformation testInformation)
             throws TargetSetupError, BuildError, DeviceNotAvailableException {
-        sOracle = new UsersOracle(testInformation.getDevice());
+        super.setUp(testInformation);
+        sOracle = new UsersOracle(testInformation.getDevice(), getPreparedUserId());
         try {
             // Log what it will return...
             logAndDisplay(
@@ -78,6 +79,7 @@ public final class DevicePolicyUsersPreparer extends BaseTargetPreparer {
     public void tearDown(TestInformation testInformation, Throwable e)
             throws DeviceNotAvailableException {
         sOracle = null;
+        super.tearDown(testInformation, e);
     }
 
     /** Gets the id of the current user when the test module started. */
@@ -142,9 +144,10 @@ public final class DevicePolicyUsersPreparer extends BaseTargetPreparer {
         private final boolean mSupportsProfilesForAll;
         private final boolean mSupportsDeviceOwnerForAll;
 
-        private UsersOracle(ITestDevice device) throws DeviceNotAvailableException {
+        private UsersOracle(ITestDevice device, int initialCurrentUserId)
+                throws DeviceNotAvailableException {
             mIsHsum = device.isHeadlessSystemUserMode();
-            mInitialCurrentUserId = device.getCurrentUser();
+            mInitialCurrentUserId = initialCurrentUserId;
             mPreExistingUserIds = device.getUserInfos().keySet();
             mMainUserId = device.getMainUserId();
             mSupportsProfilesForAll = new UserUtil(device).isProfilesOnNonMainUserSupported();
