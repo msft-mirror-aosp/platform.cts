@@ -237,7 +237,9 @@ public class RingtoneTest {
 
         Uri uri = RingtoneManager.getValidRingtoneUri(mContext);
         assertNotNull("ringtone was unexpectedly null", uri);
-        RingtoneManager.setActualDefaultRingtoneUri(mContext, RingtoneManager.TYPE_RINGTONE, uri);
+        Uri uriWithUser = ContentProvider.maybeAddUserId(uri, mContext.getUserId());
+        RingtoneManager.setActualDefaultRingtoneUri(
+                mContext, RingtoneManager.TYPE_RINGTONE, uriWithUser);
         assertNotNull(mRingtone.getTitle(mContext));
         final AudioAttributes ringtoneAa = new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE).
