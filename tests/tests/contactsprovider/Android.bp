@@ -45,8 +45,3 @@ android_test {
     ],
     per_testcase_directory: true,
 }
-
-filegroup {
-    name: "TestDataBuilder",
-    srcs: ["src/android/provider/cts/contacts/ContactsContract_TestDataBuilder.java"],
-}
