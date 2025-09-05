@@ -320,6 +320,14 @@ public class CarrierConfigManagerTest {
                                     CarrierConfigManager
                                             .KEY_SATELLITE_SUPPORTED_MSG_APPS_STRING_ARRAY),
                     new String[]{"com.google.android.apps.messaging"});
+            assertTrue("KEY_SATELLITE_SUPPORTED_EMERGENCY_PLMN_STRING_ARRAY "
+                    + "doesn't match static default.", config.getStringArray(
+                    CarrierConfigManager.KEY_SATELLITE_SUPPORTED_EMERGENCY_PLMN_STRING_ARRAY)
+                    .length == 0);
+            assertTrue("KEY_SATELLITE_SUPPORTED_DISASTER_PLMN_STRING_ARRAY "
+                    + "doesn't match static default.", config.getStringArray(
+                    CarrierConfigManager.KEY_SATELLITE_SUPPORTED_DISASTER_PLMN_STRING_ARRAY)
+                    .length == 0);
 
             assertArrayEquals("KEY_CAPABILITIES_EXEMPT_FROM_SINGLE_DC_CHECK_INT_ARRAY"
                             + " doesn't match static default.",

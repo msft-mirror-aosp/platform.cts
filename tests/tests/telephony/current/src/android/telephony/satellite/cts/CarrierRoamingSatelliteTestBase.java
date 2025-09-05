@@ -67,6 +67,7 @@ import com.google.common.collect.ImmutableList;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
@@ -597,6 +598,11 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
                 EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_SOS);
         }
         sMockSatelliteServiceManager.setSatelliteIgnorePlmnListFromStorage(false);
+        // Clear the emergency and disaster PLMNs to avoid interference with the test.
+        bundle.putStringArray(CarrierConfigManager
+                .KEY_SATELLITE_SUPPORTED_EMERGENCY_PLMN_STRING_ARRAY, new String[0]);
+        bundle.putStringArray(CarrierConfigManager
+                .KEY_SATELLITE_SUPPORTED_DISASTER_PLMN_STRING_ARRAY, new String[0]);
         overrideCarrierConfig(subId, bundle);
     }
 
@@ -611,6 +617,48 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         bundle.putString(
                 CarrierConfigManager.ImsServiceEntitlement.KEY_ENTITLEMENT_SERVER_URL_STRING,
                 EntilementStatusResponseGenerator.MOCK_ENTITLEMENT_SERVER_URL);
+        overrideCarrierConfig(subId, bundle);
+    }
+
+    protected static void enableEmergencyAndDisasterServicesSupport(int slotId,
+            @NonNull Map<String, List<Integer>> supportedEmergencyServices,
+            @NonNull Map<String, List<Integer>> supportedDisasterServices) throws Exception {
+        int subId = SubscriptionManager.getSubscriptionId(slotId);
+        logd(TAG, "enableEmergencyAndDisasterPlmnsSupport subId:" + subId);
+        assertTrue(isActiveSubId(subId));
+
+        String carrierPlmn = sMockModemManager.getSimInfo(slotId,
+                MockModemConfigBase.SimInfoChangedResult.SIM_INFO_TYPE_MCC_MNC);
+        int[] carrierSupportedServices = {
+          NetworkRegistrationInfo.SERVICE_TYPE_SMS,
+          NetworkRegistrationInfo.SERVICE_TYPE_EMERGENCY,
+          NetworkRegistrationInfo.SERVICE_TYPE_MMS
+        };
+        PersistableBundle bundle = new PersistableBundle();
+        PersistableBundle plmnBundle = new PersistableBundle();
+        plmnBundle.putIntArray(carrierPlmn, carrierSupportedServices);
+
+        for (Map.Entry<String, List<Integer>> entry : supportedEmergencyServices.entrySet()) {
+            int[] supportedServices = entry.getValue().stream()
+                                  .mapToInt(Integer::intValue)
+                                  .toArray();
+            plmnBundle.putIntArray(entry.getKey(), supportedServices);
+        }
+        for (Map.Entry<String, List<Integer>> entry : supportedDisasterServices.entrySet()) {
+            int[] supportedServices = entry.getValue().stream()
+                                  .mapToInt(Integer::intValue)
+                                  .toArray();
+            plmnBundle.putIntArray(entry.getKey(), supportedServices);
+        }
+        bundle.putPersistableBundle(
+                CarrierConfigManager.KEY_CARRIER_SUPPORTED_SATELLITE_SERVICES_PER_PROVIDER_BUNDLE,
+                plmnBundle);
+        bundle.putStringArray(CarrierConfigManager
+                .KEY_SATELLITE_SUPPORTED_EMERGENCY_PLMN_STRING_ARRAY,
+                supportedEmergencyServices.keySet().toArray(new String[0]));
+        bundle.putStringArray(CarrierConfigManager
+                .KEY_SATELLITE_SUPPORTED_DISASTER_PLMN_STRING_ARRAY,
+                supportedDisasterServices.keySet().toArray(new String[0]));
         overrideCarrierConfig(subId, bundle);
     }
 
@@ -1256,7 +1304,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         }
     }
 
-    private static EntilementStatusResponseGenerator prepareValidDisabledEntitlementStatus() {
+    protected static EntilementStatusResponseGenerator prepareValidDisabledEntitlementStatus() {
         logd(TAG, "prepareValidDisabledEntitlementStatus");
         EntilementStatusResponseGenerator entilementStatusResponseGenerator =
                 new EntilementStatusResponseGenerator();
@@ -1268,7 +1316,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         return entilementStatusResponseGenerator;
     }
 
-    private static EntilementStatusResponseGenerator prepareValidEnabledEntitlementStatus(
+    protected static EntilementStatusResponseGenerator prepareValidEnabledEntitlementStatus(
             boolean isConstrained) {
         logd(TAG, "prepareValidEnabledEntitlementStatus");
         EntilementStatusResponseGenerator entilementStatusResponseGenerator =
@@ -1287,7 +1335,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         return entilementStatusResponseGenerator;
     }
 
-    private static void waitForAccessRestrictionReason(int subId,
+    protected static void waitForAccessRestrictionReason(int subId,
         @SatelliteManager.SatelliteCommunicationRestrictionReason int expectedRestrictionReason) {
         logd(TAG, "waitForAccessRestrictionReason: subId=" + subId
                 + ", expectedRestrictionReason=" + expectedRestrictionReason);
@@ -1306,7 +1354,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         assertThat(i).isLessThan(maxRetry);
     }
 
-    private static void waitForAccessRestrictionReasonToBeRemoved(int subId,
+    protected static void waitForAccessRestrictionReasonToBeRemoved(int subId,
         @SatelliteManager.SatelliteCommunicationRestrictionReason int expectedRestrictionReason) {
         logd(TAG, "waitForAccessRestrictionReasonToBeRemoved: subId=" + subId
                 + ", expectedRestrictionReason=" + expectedRestrictionReason);
@@ -1325,7 +1373,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         assertThat(i).isLessThan(maxRetry);
     }
 
-    private static void waitForSatelliteEnabledForCarrier(int slotId) {
+    protected static void waitForSatelliteEnabledForCarrier(int slotId) {
         logd(TAG, "waitForSatelliteEnabledForCarrier: slotId=" + slotId);
         if (getIsSatelliteEnabledForCarrierInMockService(slotId)) {
             return;
@@ -1342,7 +1390,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         assertThat(i).isLessThan(maxRetry);
     }
 
-    private static void waitForSatelliteDisabledForCarrier(int slotId) {
+    protected static void waitForSatelliteDisabledForCarrier(int slotId) {
         logd(TAG, "waitForSatelliteDisabledForCarrier: slotId=" + slotId);
         if (!getIsSatelliteEnabledForCarrierInMockService(slotId)) {
                 return;
@@ -1359,7 +1407,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         assertThat(i).isLessThan(maxRetry);
     }
 
-    private static void waitForCarrierPlmnListConfigured(
+    protected static void waitForCarrierPlmnListConfigured(
         int slotId, List<String> expectedCarrierPlmnList) {
         logd(TAG, "waitForCarrierPlmnListConfigured: slotId=" + slotId
                 + ", expectedCarrierPlmnList=" + String.join(", ", expectedCarrierPlmnList));
@@ -1377,7 +1425,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         assertThat(i).isLessThan(maxRetry);
     }
 
-    private static void waitForCarrierPlmnListAvailableInTelephony(
+    protected static void waitForCarrierPlmnListAvailableInTelephony(
         int subId, List<String> expectedCarrierPlmnList) {
         logd(TAG, "waitForCarrierPlmnListAvailableInTelephony: subId=" + subId
                 + ", expectedCarrierPlmnList=" + String.join(", ", expectedCarrierPlmnList));

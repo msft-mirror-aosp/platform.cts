@@ -26,6 +26,14 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.CarrierConfigManager;
 
+import android.telephony.NetworkRegistrationInfo;
+import android.telephony.SubscriptionManager;
+import android.telephony.mockmodem.MockModemConfigBase;
+import android.telephony.satellite.SatelliteManager;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -56,8 +64,6 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
 
         TimeUnit.MILLISECONDS.sleep(30000);
         beforeAllCarrierRoamingTestsBase();
-        setUpAutoConnectTestEnvironment(
-            SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT, PHONE_NUMBER_0, true);
     }
 
     /**
@@ -68,8 +74,6 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
     public static void afterAllTests() throws Exception {
         logd(TAG, "afterAllTests");
         if (!shouldTestSatelliteWithMockService()) return;
-
-        cleanUpMockSim(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT, true);
         afterAllCarrierRoamingTestsBase();
     }
 
@@ -77,11 +81,15 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
     public void setUp() throws Exception {
         logd(TAG, "setUp()");
         assumeTrue(shouldTestSatelliteWithMockService());
+        setUpAutoConnectTestEnvironment(
+            SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT, PHONE_NUMBER_0, true);
     }
 
     @After
     public void tearDown() throws Exception {
         logd(TAG, "tearDown()");
+        assumeTrue(shouldTestSatelliteWithMockService());
+        cleanUpMockSim(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT, true);
     }
 
     @Test
@@ -154,5 +162,63 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
         logd(TAG, "testNoConstrainedNetworkConnection");
         if (!shouldTestSatelliteWithMockService()) return;
         testNoSatelliteConstrainedNetworkConnection_WithBandwidthNotConstrainedCapability(SLOT_ID_0);
+    }
+
+    @Test
+    public void testConfigureEmergencyAndDisasterPlmns() throws Exception {
+        logd(TAG, "testConfigureEmergencyAndDisasterPlmns");
+        if (!shouldTestSatelliteWithMockService()) return;
+
+        assertTrue(sMockSatelliteServiceManager
+                .overrideSatelliteEntilementQueryConditions(true, true));
+        assertTrue(sMockSatelliteServiceManager.setSatelliteIgnorePlmnListFromStorage(true));
+        try {
+            logd(TAG, "testConfigureEmergencyAndDisasterPlmns: test entitlement disabled");
+            int subId = SubscriptionManager.getSubscriptionId(SLOT_ID_0);
+            sMockModemManager.clearEventOnSetSatellitePlmn();
+            sMockModemManager.clearEventOnSetSatelliteEnabledForCarrier();
+            sMockSatelliteServiceManager.clearEventOnSetSatellitePlmn();
+            sMockSatelliteServiceManager.clearEventOnSetSatelliteEnabledForCarrier();
+            prepareValidDisabledEntitlementStatus();
+            enableSatelliteEntitlementSupport(subId);
+
+            // Telephony should have requested the modem to disable satellite for the carrier.
+            waitForAccessRestrictionReason(subId,
+                    SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_ENTITLEMENT);
+            waitForSatelliteDisabledForCarrier(SLOT_ID_0);
+            // Verify that the PLMN list come from carrier config.
+            String satellitePlmn = sMockModemManager.getSimInfo(SLOT_ID_0,
+                MockModemConfigBase.SimInfoChangedResult.SIM_INFO_TYPE_MCC_MNC);
+            List<String> expectedTelephonyCarrierPlmnList = new ArrayList<>();
+            List<String> expectedConfiguredCarrierPlmnList = new ArrayList<>();
+            expectedTelephonyCarrierPlmnList.add(satellitePlmn);
+            expectedConfiguredCarrierPlmnList.add(satellitePlmn);
+            waitForCarrierPlmnListConfigured(SLOT_ID_0, expectedConfiguredCarrierPlmnList);
+            waitForCarrierPlmnListAvailableInTelephony(subId, expectedTelephonyCarrierPlmnList);
+
+            // Enable emergency and disaster services support for the carrier.
+            logd(TAG, "testConfigureEmergencyAndDisasterPlmns: test emergency and disaster"
+                    + " services enabled");
+            expectedConfiguredCarrierPlmnList.clear();
+            expectedConfiguredCarrierPlmnList.add("00101");
+            expectedConfiguredCarrierPlmnList.add("10101");
+            expectedTelephonyCarrierPlmnList.add("00101");
+            expectedTelephonyCarrierPlmnList.add("10101");
+            enableEmergencyAndDisasterServicesSupport(SLOT_ID_0,
+                    ImmutableMap.of("00101", ImmutableList.of(
+                            NetworkRegistrationInfo.SERVICE_TYPE_EMERGENCY_SMS)),
+                    ImmutableMap.of("10101", ImmutableList.of(
+                            NetworkRegistrationInfo.SERVICE_TYPE_SMS)));
+            waitForSatelliteEnabledForCarrier(SLOT_ID_0);
+            waitForCarrierPlmnListConfigured(SLOT_ID_0, expectedConfiguredCarrierPlmnList);
+            waitForCarrierPlmnListAvailableInTelephony(subId, expectedTelephonyCarrierPlmnList);
+        } finally {
+            logd(TAG, "testConfigureEmergencyAndDisasterPlmns: restore test environment");
+            sMockSatelliteServiceManager
+                .overrideSatelliteEntilementQueryConditions(false, false);
+            sMockSatelliteServiceManager
+                .overrideSatelliteEntilementStatusResponseForCtsTest(null, false);
+            sMockSatelliteServiceManager.setSatelliteIgnorePlmnListFromStorage(false);
+        }
     }
 }
