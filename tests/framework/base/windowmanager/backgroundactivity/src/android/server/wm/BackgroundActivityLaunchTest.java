@@ -23,6 +23,7 @@ import static android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOW_I
 import static android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_DENIED;
 import static android.app.AppOpsManager.MODE_ALLOWED;
 import static android.app.AppOpsManager.MODE_ERRORED;
+import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 import static android.server.wm.ShellCommandHelper.executeShellCommand;
 import static android.server.wm.UiDeviceUtils.pressHomeButton;
@@ -1606,7 +1607,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         secondIntent.putExtra(StartPendingIntentActivityExtra.PENDING_INTENT, pi);
         secondIntent.putExtra(
                 StartPendingIntentActivityExtra.START_BUNDLE,
-                ActivityOptions.makeBasic()
+                makeFullscreenOptions()
                         .setPendingIntentBackgroundActivityStartMode(balMode)
                         .toBundle());
         mContext.startActivity(secondIntent);
@@ -1643,7 +1644,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         for (String extraTrueName : extraTrueNames) {
             intent.putExtra(extraTrueName, true);
         }
-        mContext.startActivity(intent);
+        mContext.startActivity(intent, makeFullscreenOptions().toBundle());
         recordTaskStateDump("startActivity " + intent);
     }
 
@@ -1661,7 +1662,8 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     private static void startBackgroundActivity(TestServiceClient service, ComponentName component)
             throws Exception {
         service.startActivityIntent(
-                new Intent().setComponent(component).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                new Intent().setComponent(component).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                makeFullscreenOptions().toBundle());
     }
 
     private void startBackgroundActivity(
@@ -1704,7 +1706,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     private void startViaApp(ComponentName serviceComponent, Intent intent) {
         try {
             TestServiceClient serviceA = getTestService(serviceComponent);
-            serviceA.startActivityIntent(intent);
+            serviceA.startActivityIntent(intent, makeFullscreenOptions().toBundle());
         } catch (Exception e) {
             throw new AssertionError("Failed to start " + intent + " via " + serviceComponent, e);
         }
@@ -1717,5 +1719,11 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         } catch (Exception e) {
             throw new AssertionError("Failed to start " + intent + " via " + serviceComponent, e);
         }
+    }
+
+    private static ActivityOptions makeFullscreenOptions() {
+        final ActivityOptions launchOptions = ActivityOptions.makeBasic();
+        launchOptions.setLaunchWindowingMode(WINDOWING_MODE_FULLSCREEN);
+        return launchOptions;
     }
 }
