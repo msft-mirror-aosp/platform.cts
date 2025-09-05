@@ -31,6 +31,8 @@ import com.android.cts.input.inputeventmatchers.withActionButton
 import com.android.cts.input.inputeventmatchers.withMotionAction
 import com.android.cts.input.inputeventmatchers.withSource
 import com.android.cts.input.inputeventmatchers.withToolType
+import kotlin.math.ceil
+import kotlin.math.max
 import org.hamcrest.CoreMatchers.allOf
 import org.hamcrest.Matcher
 import org.junit.Before
@@ -65,8 +67,14 @@ class MouseToTouchCompatChangeTest {
             windowCenter.y = bounds.centerY()
         }
 
+        val mouseMinMovePx = desktopMouseRule.getMouseMinMovePx(DEFAULT_DISPLAY)
         // Move twice to make sure at least one event is dispatched before the test starts.
-        desktopMouseRule.move(DEFAULT_DISPLAY, windowCenter.x - 1, windowCenter.y - 1)
+        // Use ceil() to ensure coord moves from windowCenter even with mouseMinMovePx < 1f
+        desktopMouseRule.move(
+            DEFAULT_DISPLAY,
+            windowCenter.x - ceil(mouseMinMovePx.dx).toInt(),
+            windowCenter.y - ceil(mouseMinMovePx.dy).toInt()
+        )
         desktopMouseRule.move(DEFAULT_DISPLAY, windowCenter.x, windowCenter.y)
 
         // DesktopMouseRule splits move into multiple deltas. Consume events until it reaches the
@@ -82,8 +90,8 @@ class MouseToTouchCompatChangeTest {
                     )
                 )
             val coordsNearCenter: Boolean =
-                (Math.abs(event.rawX - windowCenter.x) < 1f) &&
-                        (Math.abs(event.rawY - windowCenter.y) < 1f)
+                (Math.abs(event.rawX - windowCenter.x) < max(1f, mouseMinMovePx.dx)) &&
+                        (Math.abs(event.rawY - windowCenter.y) < max(1f, mouseMinMovePx.dy))
         } while (!coordsNearCenter)
         eventVerifier.assertNoEvents()
     }
