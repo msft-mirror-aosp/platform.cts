@@ -404,6 +404,9 @@
     },
     {
       "name": "CtsUpdateOwnershipEnforcementTestCases"
+    },
+    {
+      "name": "CtsPackageInstallerCUJDeveloperVerificationTestCases"
     }
   ],
   "desktop-presubmit": [
