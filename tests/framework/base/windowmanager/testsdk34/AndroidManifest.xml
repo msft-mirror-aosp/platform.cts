@@ -42,6 +42,11 @@
             android:label="WindowSdk34Test.TestActivity"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
             android:exported="true" />
+
+        <!-- Manifest merging is disabled for the CtsWindowManagerSdk34TestCases, so we declare
+             activities used by the androidx.test.core library manually. -->
+        <activity android:name="androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity"
+                  android:exported="true"/>
     </application>
 
     <instrumentation

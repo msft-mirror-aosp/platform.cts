@@ -19,6 +19,8 @@ package android.server.wm.insets;
 import static org.junit.Assert.assertEquals;
 
 import android.app.Activity;
+import android.app.ActivityOptions;
+import android.app.WindowConfiguration;
 import android.content.Intent;
 import android.graphics.Insets;
 import android.graphics.Rect;
@@ -29,11 +31,12 @@ import android.view.Window;
 import android.view.WindowInsets;
 
 import androidx.annotation.Nullable;
-import androidx.test.rule.ActivityTestRule;
-
-import org.junit.Rule;
+import androidx.lifecycle.Lifecycle;
+import androidx.test.core.app.ActivityScenario;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class DecorInsetTestsBase {
 
@@ -42,10 +45,7 @@ public class DecorInsetTestsBase {
     public static final String ARG_LAYOUT_FULLSCREEN = "flagLayoutFullscreen";
     public static final String ARG_LAYOUT_HIDE_NAV = "flagLayoutHideNav";
 
-    @Rule
-    public ActivityTestRule<TestActivity> mDecorActivity = new ActivityTestRule<>(
-            TestActivity.class, false /* initialTouchMode */,
-            false /* launchActivity */);
+    protected TestActivity mActivity;
 
     public static class TestActivity extends Activity {
         WindowInsets mLastContentInsets;
@@ -107,16 +107,30 @@ public class DecorInsetTestsBase {
         }
     }
 
-    public void assertContentViewLocationMatchesInsets() {
-        TestActivity activity = mDecorActivity.getActivity();
+    protected ActivityScenario<TestActivity> launchTestActivityInFullscreen(Intent intent) {
+        final String targetPackage =
+                InstrumentationRegistry.getInstrumentation().getTargetContext().getPackageName();
+        intent.setClassName(targetPackage, TestActivity.class.getName());
 
-        Insets insetsConsumedByDecor = Insets.subtract(
-                systemWindowInsetsOrZero(activity.mLastDecorInsets),
-                systemWindowInsetsOrZero(activity.mLastContentInsets));
-        Rect expectedContentRect = rectInWindow(activity.getWindow().getDecorView());
+        final ActivityOptions options = ActivityOptions.makeBasic();
+        options.setLaunchWindowingMode(WindowConfiguration.WINDOWING_MODE_FULLSCREEN);
+        final ActivityScenario<TestActivity> scenario =
+                ActivityScenario.launch(intent, options.toBundle());
+        final AtomicReference<TestActivity> activity = new AtomicReference<>();
+        scenario.moveToState(Lifecycle.State.RESUMED).onActivity(activity::set);
+        mActivity = activity.get();
+        return scenario;
+    }
+
+    protected void assertContentViewLocationMatchesInsets() {
+        Insets insetsConsumedByDecor =
+                Insets.subtract(
+                        systemWindowInsetsOrZero(mActivity.mLastDecorInsets),
+                        systemWindowInsetsOrZero(mActivity.mLastContentInsets));
+        Rect expectedContentRect = rectInWindow(mActivity.getWindow().getDecorView());
         insetRect(expectedContentRect, insetsConsumedByDecor);
 
-        Rect actualContentRect = rectInWindow(activity.findViewById(android.R.id.content));
+        Rect actualContentRect = rectInWindow(mActivity.findViewById(android.R.id.content));
 
         assertEquals("Decor consumed " + insetsConsumedByDecor + ", content rect:",
                 expectedContentRect, actualContentRect);

@@ -34,6 +34,11 @@
             android:showWhenLocked="true"
             android:turnScreenOn="true"
             android:keepScreenOn="true" />
+
+        <!-- Manifest merging is disabled for the CtsWindowManagerSdk29TestCases, so we declare
+             activities used by the androidx.test.core library manually. -->
+        <activity android:name="androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity"
+                  android:exported="true"/>
     </application>
 
     <instrumentation
