@@ -52,10 +52,15 @@ internal class HardwarePropertiesManagerWrapper :
         // we wouldn't need Mockito and could wrap the calls using java's DynamicProxy
         val hardwarePropertiesManagerSpy =
             spy(manager) {
-                // Used by HardwarePropertiesManagerTest
-                on { cpuUsages } doAnswer answer
-                on { getDeviceTemperatures(any(), any()) } doAnswer answer
-                on { fanSpeeds } doAnswer answer
+                try {
+                    // Used by HardwarePropertiesManagerTest
+                    on { cpuUsages } doAnswer answer
+                    on { getDeviceTemperatures(any(), any()) } doAnswer answer
+                    on { fanSpeeds } doAnswer answer
+                } catch (e: Exception) {
+                    // TODO(b/443066410): A bunch of CTS tests throw exceptions without this.
+                    Log.wtf("Exception setting mocks", e)
+                }
             }
 
         val identificationHashCode = System.identityHashCode(hardwarePropertiesManagerSpy)

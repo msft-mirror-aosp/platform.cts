@@ -55,18 +55,23 @@ internal class WifiManagerWrapper : ServiceManagerWrapper<WifiManager>() {
         // we wouldn't need Mockito and could wrap the calls using java's DynamicProxy
         val wifiManagerSpy =
             spy(manager) {
-                // Used by WifiConfigCreator
-                on { addNetwork(anyOrNull()) } doAnswer answer
-                on { enableNetwork(any(), any()) } doAnswer answer
-                on { removeNetwork(any()) } doAnswer answer
-                on { configuredNetworks } doAnswer answer
-                on { updateNetwork(anyOrNull()) } doAnswer answer
-                on { saveConfiguration() } doAnswer answer
-                on { isWifiEnabled } doAnswer answer
-                on { setWifiEnabled(any()) } doAnswer answer
+                try {
+                    // Used by WifiConfigCreator
+                    on { addNetwork(anyOrNull()) } doAnswer answer
+                    on { enableNetwork(any(), any()) } doAnswer answer
+                    on { removeNetwork(any()) } doAnswer answer
+                    on { configuredNetworks } doAnswer answer
+                    on { updateNetwork(anyOrNull()) } doAnswer answer
+                    on { saveConfiguration() } doAnswer answer
+                    on { isWifiEnabled } doAnswer answer
+                    on { setWifiEnabled(any()) } doAnswer answer
 
-                // Used by WifiNetworkConfigurationWithoutFineLocationPermissionTest
-                on { callerConfiguredNetworks } doAnswer answer
+                    // Used by WifiNetworkConfigurationWithoutFineLocationPermissionTest
+                    on { callerConfiguredNetworks } doAnswer answer
+                } catch (e: Exception) {
+                    // TODO(b/443066410): A bunch of CTS tests throw exceptions without this.
+                    Log.wtf("Exception setting mocks", e)
+                }
             }
 
         val identificationString = "WifiManagerWrapper#${System.identityHashCode(wifiManagerSpy)}"

@@ -51,8 +51,13 @@ internal class UserManagerWrapper : ServiceManagerWrapper<UserManager>() {
         // we wouldn't need Mockito and could wrap the calls using java's DynamicProxy
         val userManagerSpy =
             spy(manager) {
-                // Used by HardwarePropertiesManagerTest
-                on { getApplicationRestrictions(anyOrNull()) } doAnswer answer
+                try {
+                    // Used by HardwarePropertiesManagerTest
+                    on { getApplicationRestrictions(anyOrNull()) } doAnswer answer
+                } catch (e: Exception) {
+                    // TODO(b/443066410): A bunch of CTS tests throw exceptions without this.
+                    Log.wtf("Exception setting mocks", e)
+                }
             }
 
         val identificationString = "UserManagerWrapper#${System.identityHashCode(userManagerSpy)}"
