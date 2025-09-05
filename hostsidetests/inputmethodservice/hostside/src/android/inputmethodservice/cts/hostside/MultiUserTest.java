@@ -181,6 +181,13 @@ public class MultiUserTest extends BaseHostJUnit4Test {
 
         switchUser(secondaryUserId);
 
+        // In a headless system, the current user will be stopped automatically after switching to
+        // a new user unless the current user is the headless primary user (user ID 0). The main
+        // user should be alive to ensure proper execution of the tests.
+        if (getDevice().isHeadlessSystemUserMode()) {
+            getDevice().startUser(mainUserId, true /* waitFlag */);
+        }
+
         assertIme1NotExistInApiResult(mainUserId);
         assertIme1ExistsInApiResult(secondaryUserId);
         assertIme1ImplicitlyEnabledSubtypeNotExist(mainUserId);
