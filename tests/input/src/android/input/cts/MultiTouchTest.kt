@@ -23,7 +23,6 @@ import android.graphics.PointF
 import android.server.wm.WindowManagerStateHelper
 import android.view.MotionEvent
 import android.view.View
-import android.view.WindowManager.LayoutParams.FLAG_SPLIT_TOUCH
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
@@ -54,11 +53,7 @@ class MultiTouchTest {
     @Parameterized.Parameter(0)
     var orientation = 0
 
-    @JvmField
     @Parameterized.Parameter(1)
-    var flags = 0
-
-    @Parameterized.Parameter(2)
     lateinit var testName: String
 
     @Before
@@ -70,7 +65,6 @@ class MultiTouchTest {
                 .setComponent(activityName)
                 .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                 .putExtra(CaptureEventActivity.EXTRA_FIXED_ORIENTATION, orientation)
-                .putExtra(CaptureEventActivity.EXTRA_WINDOW_FLAGS, flags)
 
         activity = instrumentation.startActivitySync(intent, bundle) as CaptureEventActivity
 
@@ -125,18 +119,11 @@ class MultiTouchTest {
 
     companion object {
         @JvmStatic
-        @Parameterized.Parameters(name = "{2}")
+        @Parameterized.Parameters(name = "{1}")
         fun parameters() = arrayOf<Array<Any>>(
-            arrayOf(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT, 0, "PORTRAIT"),
-            arrayOf(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT, FLAG_SPLIT_TOUCH, "PORTRAIT_SPLIT"),
-            arrayOf(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE, 0, "LANDSCAPE"),
-            arrayOf(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE, FLAG_SPLIT_TOUCH, "LANDSCAPE_SPLIT"),
-            arrayOf(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE, 0, "REVERSE_LANDSCAPE"),
-            arrayOf(
-                ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE,
-                FLAG_SPLIT_TOUCH,
-                "REVERSE_LANDSCAPE_SPLIT",
-            )
+            arrayOf(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT, "PORTRAIT"),
+            arrayOf(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE, "LANDSCAPE"),
+            arrayOf(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE, "REVERSE_LANDSCAPE"),
         )
 
         @JvmStatic

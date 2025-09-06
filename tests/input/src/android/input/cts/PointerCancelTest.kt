@@ -140,7 +140,6 @@ class PointerCancelTest {
         val layoutParams = WindowManager.LayoutParams(
                 WindowManager.LayoutParams.TYPE_APPLICATION,
                 WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
-                        or WindowManager.LayoutParams.FLAG_SPLIT_TOUCH
         )
         layoutParams.x = 0
         layoutParams.y = 0
