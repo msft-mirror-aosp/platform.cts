@@ -23,6 +23,8 @@ import static android.server.biometrics.cts.FingerprintHostsideConstants.FINGERP
 import static android.server.biometrics.cts.FingerprintHostsideConstants.FINGERPRINT_ENROLL_ACQUIRED_MESSAGES;
 import static android.server.biometrics.cts.FingerprintHostsideConstants.FINGERPRINT_ENROLL_ACQUIRED_MESSAGES_AIDL;
 
+import static com.android.server.security.authenticationpolicy.SecureLockDeviceExtensionAtoms.SECURE_LOCK_DEVICE_STATE_CHANGED_FIELD_NUMBER;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import android.cts.statsdatom.lib.AtomTestUtils;
@@ -42,6 +44,8 @@ import com.android.os.StatsLog;
 import com.android.os.hardware.biometrics.BiometricEnumerated;
 import com.android.os.hardware.biometrics.BiometricUnenrolled;
 import com.android.os.hardware.biometrics.BiometricsExtensionAtoms;
+import com.android.server.security.authenticationpolicy.SecureLockDeviceExtensionAtoms;
+import com.android.server.security.authenticationpolicy.SecureLockDeviceStateChanged;
 import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.util.RunUtil;
 
@@ -70,6 +74,7 @@ public class BiometricsAtomsTests extends BiometricDeviceTestCase {
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
         BiometricsExtensionAtoms.registerAllExtensions(mRegistry);
+        SecureLockDeviceExtensionAtoms.registerAllExtensions(mRegistry);
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
     }
 
@@ -311,6 +316,52 @@ public class BiometricsAtomsTests extends BiometricDeviceTestCase {
         }
     }
 
+    @NonApiTest(
+            exemptionReasons = {},
+            justification = "METRIC")
+    public void testSecureLockDeviceStateChangedAtom() throws Exception {
+        if (!hasAidlBiometrics()) {
+            CLog.w("Skipping test - no AIDL biometrics on device");
+            return;
+        }
+
+        final SensorInfo sensorInfo = getSensorInfo();
+        if (!sensorInfo.hasStrongFingerprintSensor()) {
+            CLog.i("Skipping test - no strong fingerprint sensor on device");
+            return;
+        }
+
+        final List<StatsLog.EventMetricData> data =
+                runOnDevice(
+                        "testSecureLockDeviceStateChanged",
+                        new int[] {SECURE_LOCK_DEVICE_STATE_CHANGED_FIELD_NUMBER});
+
+        List<SecureLockDeviceStateChanged> secureLockDeviceAtoms =
+                filterSecureLockDeviceAtoms(data);
+
+        assertThat(secureLockDeviceAtoms).hasSize(4);
+        assertSecureLockDeviceEnabledAtomData(
+                secureLockDeviceAtoms.get(0),
+                /* expectedEnabled= */ true,
+                /* expectedEventType= */ SecureLockDeviceStateChanged.SecureLockDeviceEventType
+                        .ENABLED);
+        assertSecureLockDeviceEnabledAtomData(
+                secureLockDeviceAtoms.get(1),
+                /* expectedEnabled= */ false,
+                /* expectedEventType= */ SecureLockDeviceStateChanged.SecureLockDeviceEventType
+                        .DISABLED_MANUALLY);
+        assertSecureLockDeviceEnabledAtomData(
+                secureLockDeviceAtoms.get(2),
+                /* expectedEnabled= */ true,
+                /* expectedEventType= */ SecureLockDeviceStateChanged.SecureLockDeviceEventType
+                        .ENABLED);
+        assertSecureLockDeviceEnabledAtomData(
+                secureLockDeviceAtoms.get(3),
+                /* expectedEnabled= */ false,
+                /* expectedEventType= */ SecureLockDeviceStateChanged.SecureLockDeviceEventType
+                        .DISABLED_TWO_FACTOR_AUTHENTICATION);
+    }
+
     private void assertAuthenticateAtomData(
             AtomsProto.BiometricAuthenticated atom) throws Exception {
         assertThat(atom.getState()).isEqualTo(AtomsProto.BiometricAuthenticated.State.CONFIRMED);
@@ -319,6 +370,14 @@ public class BiometricsAtomsTests extends BiometricDeviceTestCase {
         assertThat(atom.getSessionId()).isGreaterThan(0);
         assertThat(atom.getSessionType()).isEqualTo(SessionTypeEnum.SESSION_TYPE_BIOMETRIC_PROMPT);
         assertThat(atom.getClient()).isEqualTo(ClientEnum.CLIENT_BIOMETRIC_PROMPT);
+    }
+
+    private void assertSecureLockDeviceEnabledAtomData(
+            SecureLockDeviceStateChanged atom,
+            boolean expectedEnabled,
+            SecureLockDeviceStateChanged.SecureLockDeviceEventType expectedEventType) {
+        assertThat(atom.getEnabled()).isEqualTo(expectedEnabled);
+        assertThat(atom.getEventType()).isEqualTo(expectedEventType);
     }
 
     // check enrollment acquired messages match the fixed values in the test
@@ -410,6 +469,24 @@ public class BiometricsAtomsTests extends BiometricDeviceTestCase {
                     }
                     return false;
                 })
+                .collect(Collectors.toList());
+    }
+
+    private static List<SecureLockDeviceStateChanged> filterSecureLockDeviceAtoms(
+            List<StatsLog.EventMetricData> data) {
+        return data.stream()
+                .filter(
+                        d ->
+                                d.getAtom()
+                                        .hasExtension(
+                                                SecureLockDeviceExtensionAtoms
+                                                        .secureLockDeviceStateChanged))
+                .map(
+                        d ->
+                                d.getAtom()
+                                        .getExtension(
+                                                SecureLockDeviceExtensionAtoms
+                                                        .secureLockDeviceStateChanged))
                 .collect(Collectors.toList());
     }
 
