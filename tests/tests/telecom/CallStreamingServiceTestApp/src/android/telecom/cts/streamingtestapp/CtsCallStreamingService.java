@@ -39,6 +39,7 @@ public class CtsCallStreamingService extends CallStreamingService {
 
     @Override
     public void onCallStreamingStarted(StreamingCall call) {
+        super.onCallStreamingStarted(call);
         Log.i(LOG_TAG, "onCallStreamingStarted: id=" + call.getExtras());
         sStreamingCall = call;
         sCallBundle = new Bundle();
@@ -48,12 +49,14 @@ public class CtsCallStreamingService extends CallStreamingService {
 
     @Override
     public void onCallStreamingStopped() {
+        super.onCallStreamingStopped();
         Log.i(LOG_TAG, "onCallStreamingStopped received");
         sCallStreamingStoppedLatch.countDown();
     }
 
     @Override
     public void onCallStreamingStateChanged(int state) {
+        super.onCallStreamingStateChanged(state);
         Log.i(LOG_TAG, "onCallStreamingStateChanged received: state=" + state);
         sLastStreamingState = state;
         sCallStreamingStateChangedLatch.countDown();

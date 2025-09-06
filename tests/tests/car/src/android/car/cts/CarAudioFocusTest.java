@@ -17,6 +17,7 @@
 package android.car.cts;
 
 import static android.Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED;
+import static android.car.cts.utils.CarAudioUtils.usageToString;
 import static android.car.media.CarAudioManager.AUDIO_FEATURE_DYNAMIC_ROUTING;
 import static android.media.AudioManager.AUDIOFOCUS_GAIN;
 import static android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK;
@@ -766,31 +767,6 @@ public final class CarAudioFocusTest extends AbstractCarTestCase {
                     .that(Looper.myLooper()).isEqualTo(Looper.getMainLooper());
             mFocusChange = focusChange;
             mChangeEventSignal.release();
-        }
-    }
-
-    private static String usageToString(int usage) {
-        switch(usage) {
-            case AudioAttributes.USAGE_UNKNOWN:
-                return "USAGE_UNKNOWN";
-            case AudioAttributes.USAGE_MEDIA:
-                return "USAGE_MEDIA";
-            case AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE:
-                return "USAGE_ASSISTANCE_NAVIGATION_GUIDANCE";
-            case AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY:
-                return "USAGE_ASSISTANCE_ACCESSIBILITY";
-            case AudioAttributes.USAGE_NOTIFICATION_RINGTONE:
-                return "USAGE_NOTIFICATION_RINGTONE";
-            case AudioAttributes.USAGE_VOICE_COMMUNICATION:
-                return "USAGE_VOICE_COMMUNICATION";
-            case AudioAttributes.USAGE_ALARM:
-                return "USAGE_ALARM";
-            case AudioAttributes.USAGE_NOTIFICATION:
-                return "USAGE_NOTIFICATION";
-            case AudioAttributes.USAGE_ASSISTANCE_SONIFICATION:
-                return "USAGE_ASSISTANCE_SONIFICATION";
-            default:
-                return "usage not tested " + usage;
         }
     }
 

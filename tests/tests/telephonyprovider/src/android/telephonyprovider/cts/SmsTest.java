@@ -45,9 +45,11 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.annotation.SuppressLint;
+import android.app.ActivityManager;
 import android.app.PendingIntent;
 import android.app.role.RoleManager;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
@@ -55,7 +57,9 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Process;
+import android.os.RemoteCallback;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -76,12 +80,14 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CarrierPrivilegeUtils;
 import com.android.compatibility.common.util.SystemUtil;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -100,6 +106,9 @@ public class SmsTest {
     private RoleManager mRoleManager;
     private SmsTestHelper mSmsTestHelper;
     private BroadcastReceiver mSmsRetrieverReceiver;
+    private static final String APP_THAT_RETURNS_RETRIEVER_HASH =
+            "android.telephony.cts.smsretriever";
+    private ActivityManager mActivityManager;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -137,6 +146,7 @@ public class SmsTest {
                 // Ignored, as it's never called in this test
             }
         };
+        mActivityManager = mContext.getSystemService(ActivityManager.class);
     }
 
     /**
@@ -699,6 +709,21 @@ public class SmsTest {
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
     @EnsureHasNoDeviceOwner
+    public void testOtpSms_retrieverHashOwningAppCanRead() {
+        final String message = TEST_OTP_SMS_BODY + " " + getSelfSmsRetrieverHash();
+        Uri inserted = mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(TEST_ADDRESS,
+                message, System.currentTimeMillis());
+        try {
+            stopBeingDefaultSmsApp();
+            assertSmsPresence(inserted, message, true);
+        } finally {
+            ensureDefaultSmsApp();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    @EnsureHasNoDeviceOwner
     public void testOtpSms_standardAppCanReadAfterOtpHidingTimeExpires() {
         final String message = getSmsRetrieverOtpMessage();
         long expiredOtpHidingTime =
@@ -798,7 +823,8 @@ public class SmsTest {
         SystemUtil.eventually(() -> assertSmsOtpColumn(inserted, OTP_TYPE_NONE));
     }
 
-    private String getSmsRetrieverHash() {
+    // Gets the retriever hash belong to itself
+    private String getSelfSmsRetrieverHash() {
         Context context = getInstrumentation().getContext();
         Intent intent = new Intent("android.telephony.cts.action.SMS_RETRIEVED")
                 .setPackage(context.getPackageName());
@@ -806,6 +832,31 @@ public class SmsTest {
                 PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_MUTABLE_UNAUDITED);
         return SmsManager.getDefault().createAppSpecificSmsTokenWithPackageInfo(
                 "testprefix1,testprefix2", pIntent);
+    }
+
+    // Gets the retriever hash belong to a test app: APP_THAT_RETURNS_RETRIEVER_HASH
+    private String getSmsRetrieverHash() {
+        SystemUtil.runWithShellPermissionIdentity(() ->
+                mActivityManager.forceStopPackage(APP_THAT_RETURNS_RETRIEVER_HASH)
+        );
+        CompletableFuture<Bundle> callbackResult = new CompletableFuture<>();
+        mContext.startActivity(new Intent()
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .setComponent(new ComponentName(
+                        APP_THAT_RETURNS_RETRIEVER_HASH,
+                        APP_THAT_RETURNS_RETRIEVER_HASH + ".MainActivity"))
+                .putExtra("callback", new RemoteCallback(callbackResult::complete)));
+        Bundle bundle;
+        try {
+            bundle = callbackResult.get(200, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        String token = bundle.getString("token");
+        Assert.assertNotNull(bundle.getString("class"));
+        Assert.assertTrue(bundle.getString("class").startsWith(APP_THAT_RETURNS_RETRIEVER_HASH));
+        assertNotNull(token);
+        return token;
     }
 
     private String getSmsRetrieverOtpMessage() {

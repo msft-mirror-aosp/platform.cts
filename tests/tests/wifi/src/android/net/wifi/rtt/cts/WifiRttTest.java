@@ -264,8 +264,8 @@ public class WifiRttTest extends TestBase {
         List<RangingResult> allResults = new ArrayList<>();
         int numFailures = 0;
         int distanceSum = 0;
-        int distanceMin = 0;
-        int distanceMax = 0;
+        int distanceMin = Integer.MAX_VALUE;
+        int distanceMax = Integer.MIN_VALUE;
         int[] statuses = new int[NUM_OF_RTT_ITERATIONS];
         int[] distanceMms = new int[NUM_OF_RTT_ITERATIONS];
         int[] distanceStdDevMms = new int[NUM_OF_RTT_ITERATIONS];
@@ -309,13 +309,8 @@ public class WifiRttTest extends TestBase {
                             result.is80211mcMeasurement());
                 }
                 distanceSum += result.getDistanceMm();
-                if (i == 0) {
-                    distanceMin = result.getDistanceMm();
-                    distanceMax = result.getDistanceMm();
-                } else {
-                    distanceMin = Math.min(distanceMin, result.getDistanceMm());
-                    distanceMax = Math.max(distanceMax, result.getDistanceMm());
-                }
+                distanceMin = Math.min(distanceMin, result.getDistanceMm());
+                distanceMax = Math.max(distanceMax, result.getDistanceMm());
 
                 assertTrue("Wi-Fi RTT results: invalid RSSI on iteration " + i,
                         result.getRssi() >= MIN_VALID_RSSI);
@@ -402,8 +397,8 @@ public class WifiRttTest extends TestBase {
         List<RangingResult> allResults = new ArrayList<>();
         int numFailures = 0;
         int distanceSum = 0;
-        int distanceMin = 0;
-        int distanceMax = 0;
+        int distanceMin = Integer.MAX_VALUE;
+        int distanceMax = Integer.MIN_VALUE;
         int[] statuses = new int[NUM_OF_RTT_ITERATIONS];
         int[] distanceMms = new int[NUM_OF_RTT_ITERATIONS];
         int[] distanceStdDevMms = new int[NUM_OF_RTT_ITERATIONS];
@@ -452,13 +447,8 @@ public class WifiRttTest extends TestBase {
                     assertTrue("Ranging should be authenticated", result.isRangingAuthenticated());
                 }
                 distanceSum += result.getDistanceMm();
-                if (i == 0) {
-                    distanceMin = result.getDistanceMm();
-                    distanceMax = result.getDistanceMm();
-                } else {
-                    distanceMin = Math.min(distanceMin, result.getDistanceMm());
-                    distanceMax = Math.max(distanceMax, result.getDistanceMm());
-                }
+                distanceMin = Math.min(distanceMin, result.getDistanceMm());
+                distanceMax = Math.max(distanceMax, result.getDistanceMm());
 
                 assertTrue("Wi-Fi RTT results: invalid RSSI on iteration " + i,
                         result.getRssi() >= MIN_VALID_RSSI);

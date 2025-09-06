@@ -7800,5 +7800,6 @@ You should be prompted to select credentials; choose the ones you just installed
         <item>CtsUwbMultiDeviceUwbManagerTests</item>
         <item>CtsWifiAwareTests</item>
         <item>CtsWifiSoftApTestCases</item>
+        <item>CtsWifiDirectTests</item>
     </string-array>
 </resources>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Copyright (C) 2025 The Android Open Source Project
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--
+      The string resource names here have a suffix indicating if the value has a default value,
+      a value behind a flag that is not negated, and a value behind a flag that is negated.
+
+      Thus text101 means there is a default value, no non-negated value, and a negated value.
+    -->
+
+    <string name="text110">unflagged</string>
+    <string name="text110" android:featureFlag="android.content.res.always_false">plain</string>
+
+    <string name="text101">unflagged</string>
+    <string name="text101" android:featureFlag="!android.content.res.always_false">negated</string>
+
+    <string name="text111">unflagged</string>
+    <string name="text111" android:featureFlag="android.content.res.always_false">plain</string>
+    <string name="text111" android:featureFlag="!android.content.res.always_false">negated</string>
+
+    <string name="text010" android:featureFlag="android.content.res.always_false">plain</string>
+
+    <string name="text001" android:featureFlag="!android.content.res.always_false">negated</string>
+
+    <string name="text011" android:featureFlag="android.content.res.always_false">plain</string>
+    <string name="text011" android:featureFlag="!android.content.res.always_false">negated</string>
+
+</resources>

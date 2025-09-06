@@ -102,7 +102,7 @@ public class ManagedConnection extends Connection {
 
     @Override
     public void onStateChanged(int callState) {
-
+        Log.i(TAG, "onStateChanged=" + callState);
     }
 
     @Override
