@@ -22,6 +22,7 @@ import android.autofillservice.cts.testcore.OneTimeTextWatcher;
 import android.autofillservice.cts.testcore.Visitor;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.text.TextUtils;
@@ -53,7 +54,7 @@ public class LoginActivity extends AbstractAutoFillActivity {
 
     private static final String TAG = "LoginActivity";
     private static final long LOGIN_TIMEOUT_MS = 1000;
-    private static final long VIEW_CHANGE_WAIT_MS = 10;
+    private static long sViewChangeWaitMs;
 
     public static final String ID_USERNAME_CONTAINER = "username_container";
     public static final String AUTHENTICATION_MESSAGE = "Authentication failed. D'OH!";
@@ -102,6 +103,9 @@ public class LoginActivity extends AbstractAutoFillActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(getContentView());
+
+        sViewChangeWaitMs =
+                getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE) ? 100 : 10;
 
         mUsernameContainer = findViewById(R.id.username_container);
         mLoginButton = findViewById(R.id.login);
@@ -295,7 +299,7 @@ public class LoginActivity extends AbstractAutoFillActivity {
     public void onUsername(Visitor<EditText> v) {
         Log.d(TAG, "onUsername()");
         syncRunOnUiThread(() -> v.visit(mUsernameEditText));
-        SystemClock.sleep(VIEW_CHANGE_WAIT_MS);
+        SystemClock.sleep(sViewChangeWaitMs);
     }
 
     @Override

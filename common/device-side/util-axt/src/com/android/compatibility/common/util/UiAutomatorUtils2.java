@@ -183,6 +183,15 @@ public class UiAutomatorUtils2 {
                     }
                     if (isAtEnd) {
                         if (wasScrolledUpAlready) {
+                            if (start + timeoutMs > System.currentTimeMillis()) {
+                                Log.v(LOG_TAG, "Retrying before timeout is reached");
+                                view = null;
+                                isAtEnd = false;
+                                wasScrolledUpAlready = false;
+                                scrolledPastCollapsibleToolbar = false;
+                                viewHeight = -1;
+                                continue;
+                            }
                             return null;
                         }
                         scrollable.scrollToBeginning(Integer.MAX_VALUE);

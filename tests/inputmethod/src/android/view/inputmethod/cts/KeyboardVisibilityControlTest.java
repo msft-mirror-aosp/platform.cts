@@ -2038,6 +2038,10 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
             expectImeVisible(TIMEOUT);
 
+            // Compatibility layer may cause multiple onStartInput events when TestActivity is
+            // created. Clear out the stream events to make sure only new events are detected.
+            stream.skipAll();
+
             TestUtils.runOnMainSync(
                     () -> {
                         editTextRef.get().getWindowInsetsController().hide(ime());

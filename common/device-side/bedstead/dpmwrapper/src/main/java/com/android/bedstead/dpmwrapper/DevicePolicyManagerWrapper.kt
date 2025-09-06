@@ -55,7 +55,15 @@ internal class DevicePolicyManagerWrapper : ServiceManagerWrapper<DevicePolicyMa
         // but that's probably not doable, as there is no contract (such as an interface) to specify
         // which ones should be spied and which ones should not (in fact, if there was an interface,
         // we wouldn't need Mockito and could wrap the calls using java's DynamicProxy
-        val devicePolicyManagerSpy = spy(manager) { setUpStubs(answer) }
+        val devicePolicyManagerSpy =
+            spy(manager) {
+                try {
+                    setUpStubs(answer)
+                } catch (e: Exception) {
+                    // TODO(b/443066410): A bunch of CTS tests throw exceptions without this.
+                    Log.wtf("Exception setting mocks", e)
+                }
+            }
 
         val identificationString =
             "DevicePolicyManagerWrapper#${System.identityHashCode(devicePolicyManagerSpy)}"

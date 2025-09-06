@@ -929,7 +929,7 @@ public class ActivityEmbeddingUtil {
                 "There must exactly one ActivityStack containing Activity:"
                         + activity
                         + ", but was "
-                        + filteredActivityStacks,
+                        + activityStacks,
                 1,
                 filteredActivityStacks.size());
     }

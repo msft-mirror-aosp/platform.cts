@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package android.app.cts;
+package android.app.cts.sysui;
 
 import static android.Manifest.permission.WRITE_SECURE_SETTINGS;
 import static android.app.UiModeManager.MODE_NIGHT_AUTO;

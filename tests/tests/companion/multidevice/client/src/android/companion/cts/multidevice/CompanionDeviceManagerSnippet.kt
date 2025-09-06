@@ -132,6 +132,17 @@ class CompanionDeviceManagerSnippet : Snippet {
     }
 
     /**
+     * Returns the association info for the given association ID.
+     */
+    @Rpc(description = "Get association info.")
+    @Throws(Exception::class)
+    fun getAssociationInfo(associationId: Int): AssociationInfo {
+        return companionDeviceManager.myAssociations
+                .first { it.id == associationId }
+    }
+
+
+    /**
      * Disassociate an association with given ID.
      */
     @Rpc(description = "Disassociate device.")

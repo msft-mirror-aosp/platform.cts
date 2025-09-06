@@ -140,6 +140,7 @@ java_test_host {
         ":CtsStatsdAdpfApp2",
         ":CtsExternalServiceService",
         ":CtsMediaProjectionTestCases",
+        ":CtsDisplayTestCases",
         ":CtsPropertyCompatAllowUserAspectRatioOverrideOptInApp",
         ":CtsSimpleApp",
         ":CtsStatsdAlarmHelper",

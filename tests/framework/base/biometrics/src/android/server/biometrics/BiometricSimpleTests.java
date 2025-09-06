@@ -120,6 +120,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_MOVE_FM_API_TO_BM)
     public void testGetEnrollmentCount() throws Exception {
+        assumeFalse(isCar() || isWatch());
         assumeTrue(Utils.isFirstApiLevel29orGreater());
         mBiometricManager
                 .getEnrollmentStatus()

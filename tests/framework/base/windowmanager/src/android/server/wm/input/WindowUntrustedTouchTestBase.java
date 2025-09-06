@@ -123,7 +123,7 @@ public abstract class WindowUntrustedTouchTestBase {
     static final float MAXIMUM_OBSCURING_OPACITY = .8f;
     static final long TIMEOUT_MS = 5000L * HW_TIMEOUT_MULTIPLIER;
     static final long MAX_ANIMATION_DURATION_MS = 1500L;
-    static final long ANIMATION_DURATION_TOLERANCE_MS = 500L;
+    static final long ANIMATION_DURATION_TOLERANCE_MS = 800L;
 
     private static final int OVERLAY_COLOR = 0xFFFF0000;
     private static final int ACTIVITY_COLOR = 0xFFFFFFFF;

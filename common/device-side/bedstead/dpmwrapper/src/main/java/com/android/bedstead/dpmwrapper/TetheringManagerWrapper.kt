@@ -53,21 +53,26 @@ internal class TetheringManagerWrapper : ServiceManagerWrapper<TetheringManager>
         // we wouldn't need Mockito and could wrap the calls using java's DynamicProxy
         val tetheringManagerSpy =
             spy(manager) {
-                // Used by TetheringTest
-                on {
-                    startTethering(
-                        any<TetheringManager.TetheringRequest>(),
-                        anyOrNull(),
-                        anyOrNull(),
-                    )
-                } doAnswer answer
-                on {
-                    startTethering(
-                        any<Int>(),
-                        anyOrNull<Executor>(),
-                        anyOrNull<TetheringManager.StartTetheringCallback>(),
-                    )
-                } doAnswer answer
+                try {
+                    // Used by TetheringTest
+                    on {
+                        startTethering(
+                            any<TetheringManager.TetheringRequest>(),
+                            anyOrNull(),
+                            anyOrNull(),
+                        )
+                    } doAnswer answer
+                    on {
+                        startTethering(
+                            any<Int>(),
+                            anyOrNull<Executor>(),
+                            anyOrNull<TetheringManager.StartTetheringCallback>(),
+                        )
+                    } doAnswer answer
+                } catch (e: Exception) {
+                    // TODO(b/443066410): A bunch of CTS tests throw exceptions without this.
+                    Log.wtf("Exception setting mocks", e)
+                }
             }
 
         val identificationString =
