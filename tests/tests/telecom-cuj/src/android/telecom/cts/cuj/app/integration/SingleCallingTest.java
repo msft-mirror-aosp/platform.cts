@@ -27,6 +27,10 @@ import static android.telecom.Call.STATE_DISCONNECTED;
 import static android.telecom.Call.STATE_HOLDING;
 import static android.telecom.Call.STATE_RINGING;
 import static android.telecom.Call.STATE_SIMULATED_RINGING;
+import static android.telecom.Call.AUDIO_PROCESSING_USE_CASE_ASK_TO_HOLD;
+import static android.telecom.Call.AUDIO_PROCESSING_USE_CASE_CALL_SCREENING;
+import static android.telecom.Call.AUDIO_PROCESSING_USE_CASE_UNKNOWN;
+import static android.telecom.Call.AUDIO_PROCESSING_USE_CASE_VOICEMAIL;
 import static android.telecom.cts.apps.ShellCommandExecutor.COMMAND_WAIT_FOR_AUDIO_ACTIVE;
 import static android.telecom.cts.apps.ShellCommandExecutor.COMMAND_WAIT_FOR_AUDIO_OPS_COMPLETE;
 import static android.telecom.cts.apps.ShellCommandExecutor.executeShellCommand;
@@ -157,6 +161,38 @@ public class SingleCallingTest extends BaseAppVerifier {
             answerViaInCallServiceAndVerify(mt, VideoProfile.STATE_AUDIO_ONLY);
             setCallStateAndVerify(managedApp, mt, STATE_HOLDING);
             setCallStateAndVerify(managedApp, mt, STATE_DISCONNECTED);
+        } finally {
+            tearDownApp(managedApp);
+        }
+    }
+
+    /**
+     * Verifies that an incoming call in AUDIO_PROCESSING is disconnected if its ConnectionService
+     * attempts an illegal state transition.
+     *
+     * <p>This test simulates the primary bug scenario where a call being screened is illegitimately
+     * moved to a state like STATE_HOLDING. The expected behavior is for the framework to intervene
+     * and disconnect the call, preventing a "zombie call" state with no audio.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_PREVENT_ILLEGAL_AUDIO_PROCESSING_EXIT)
+    @Test
+    public void testIllegalExitFromAudioProcessingForIncomingCall() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        AppControlWrapper managedApp = null;
+        try {
+            managedApp = bindToApp(ManagedConnectionServiceApp);
+            String mt = addIncomingCallAndVerify(managedApp);
+            verifyCallIsInState(mt, STATE_RINGING);
+            enterBackgroundAudioProcessingViaInCallServiceAndVerify(
+                    mt, AUDIO_PROCESSING_USE_CASE_CALL_SCREENING);
+            assertAudioMode(AudioManager.MODE_CALL_SCREENING);
+            // unwanted action: switch to another call state w/out
+            // proper call audio processing exit
+            setCallState(managedApp, mt, STATE_HOLDING);
+            // Telecom will intentionally disconnect the call
+            verifyCallIsInState(mt, STATE_DISCONNECTED); // expected state
         } finally {
             tearDownApp(managedApp);
         }
