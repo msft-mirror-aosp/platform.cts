@@ -54,6 +54,7 @@ import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
 import android.telecom.cts.apps.AvailableEndpointsTransaction;
 import android.telecom.cts.apps.BooleanTransaction;
+import android.telecom.cts.apps.CallControlExtras;
 import android.telecom.cts.apps.CallEndpointTransaction;
 import android.telecom.cts.apps.CallExceptionTransaction;
 import android.telecom.cts.apps.IAppControl;
@@ -282,6 +283,7 @@ public class ManagedAppControl extends Service {
                     // tested when referenced
                     resetConnectionFields();
                 }
+
                 @Override
                 public CallExceptionTransaction transitionCallStateTo(
                         String id, int state, boolean expectSuccess, Bundle extras) {
@@ -311,18 +313,24 @@ public class ManagedAppControl extends Service {
                                 Log.i(TAG, "transitionCallStateTo: setOnHold");
                             }
                             case STATE_DISCONNECTED -> {
-                                connection.setCallToDisconnected(getApplicationContext());
+                                if (CallControlExtras.hasDisconnectCauseExtra(extras)) {
+                                    connection.setCallToDisconnected(
+                                            getApplicationContext(),
+                                            CallControlExtras.getDisconnectCauseFromExtras(extras));
+                                } else {
+                                    connection.setCallToDisconnected(getApplicationContext());
+                                }
                                 Log.i(TAG, "transitionCallStateTo: setDisconnected");
                                 mIdToConnection.remove(id);
                             }
                             case STATE_AUDIO_PROCESSING -> {
-                              connection.setCallToAudioProcessing(
-                                  extras.getInt(EXTRA_TELECOM_AUDIO_PROCESSING_USE_CASE));
-                              Log.i(TAG, "transitionCallStateTo: setAudioProcessing");
+                                connection.setCallToAudioProcessing(
+                                        extras.getInt(EXTRA_TELECOM_AUDIO_PROCESSING_USE_CASE));
+                                Log.i(TAG, "transitionCallStateTo: setAudioProcessing");
                             }
                             case STATE_SIMULATED_RINGING -> {
-                              connection.setCallToSimulatedRinging();
-                              Log.i(TAG, "transitionCallStateTo: setSimulatedRinging");
+                                connection.setCallToSimulatedRinging();
+                                Log.i(TAG, "transitionCallStateTo: setSimulatedRinging");
                             }
                         }
                         Log.i(TAG, "transitionCallStateTo: done");
@@ -372,18 +380,27 @@ public class ManagedAppControl extends Service {
 
                 @Override
                 public NoDataTransaction setConnectionProperties(String callId, int properties) {
-                  Log.i(TAG, "setConnectionProperties: callId=" + callId + ", properties="
-                      + Connection.propertiesToString(properties));
-                  try {
-                    List<String> stackTrace = createStackTraceList(
-                        CLASS_NAME + ".setConnectionProperties(" + callId + ", " + properties
-                            + ")");
-                    ManagedConnection connection = getConnectionOrThrow(callId, stackTrace);
-                    connection.updateConnectionProperties(properties);
-                    return new NoDataTransaction(TestAppTransaction.Success);
-                  } catch (TestAppException e) {
-                    return new NoDataTransaction(TestAppTransaction.Failure, e);
-                  }
+                    Log.i(
+                            TAG,
+                            "setConnectionProperties: callId="
+                                    + callId
+                                    + ", properties="
+                                    + Connection.propertiesToString(properties));
+                    try {
+                        List<String> stackTrace =
+                                createStackTraceList(
+                                        CLASS_NAME
+                                                + ".setConnectionProperties("
+                                                + callId
+                                                + ", "
+                                                + properties
+                                                + ")");
+                        ManagedConnection connection = getConnectionOrThrow(callId, stackTrace);
+                        connection.updateConnectionProperties(properties);
+                        return new NoDataTransaction(TestAppTransaction.Success);
+                    } catch (TestAppException e) {
+                        return new NoDataTransaction(TestAppTransaction.Failure, e);
+                    }
                 }
 
                 @Override
