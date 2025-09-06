@@ -218,22 +218,12 @@ fun withRawCoords(pt: Point, epsilon: Float = EPSILON): Matcher<MotionEvent> {
     return withRawCoords(PointF(pt), epsilon)
 }
 
-fun withSource(source: Int): Matcher<MotionEvent> = object : TypeSafeMatcher<MotionEvent>() {
+fun withSource(source: Int): Matcher<InputEvent> = object : TypeSafeMatcher<InputEvent>() {
     override fun describeTo(description: Description) {
         description.appendText("With source = 0x${source.toString(16)}")
     }
 
-    override fun matchesSafely(event: MotionEvent): Boolean {
-        return event.source == source
-    }
-}
-
-fun withKeySource(source: Int): Matcher<KeyEvent> = object : TypeSafeMatcher<KeyEvent>() {
-    override fun describeTo(description: Description) {
-        description.appendText("With source = 0x${source.toString(16)}")
-    }
-
-    override fun matchesSafely(event: KeyEvent): Boolean {
+    override fun matchesSafely(event: InputEvent): Boolean {
         return event.source == source
     }
 }
@@ -366,7 +356,6 @@ fun withPointerIdForPointerIndex(index: Int, pointerId: Int): Matcher<MotionEven
             )
         }
     }
-
 
 fun withKeyCode(keyCode: Int): Matcher<KeyEvent> = object : TypeSafeMatcher<KeyEvent>() {
     override fun describeTo(description: Description) {

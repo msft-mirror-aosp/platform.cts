@@ -21,15 +21,12 @@ import static com.android.cts.input.EvdevInputEventCodes.KEY_2;
 import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withDeviceId;
 import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withKeyAction;
 import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withKeyCode;
-import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withKeySource;
 import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withRepeatCount;
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withSource;
 
-import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.Matchers.allOf;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 import android.Manifest;
@@ -166,12 +163,14 @@ public class InputDeviceMultiDeviceKeyEventTest {
         assertNotEquals(keyCode, KeyEvent.KEYCODE_UNKNOWN);
 
         KeyEvent receivedKeyEvent = getKeyEvent(RETRY_COUNT);
-        assertThat(receivedKeyEvent, allOf(
-            withKeySource(InputDevice.SOURCE_KEYBOARD),
-            withDeviceId(mInputManagerDeviceIds[deviceId]),
-            withKeyAction(action),
-            withKeyCode(keyCode),
-            withRepeatCount(repeatCount)));
+        assertThat(
+                receivedKeyEvent,
+                allOf(
+                        withSource(InputDevice.SOURCE_KEYBOARD),
+                        withDeviceId(mInputManagerDeviceIds[deviceId]),
+                        withKeyAction(action),
+                        withKeyCode(keyCode),
+                        withRepeatCount(repeatCount)));
     }
 
     /**
