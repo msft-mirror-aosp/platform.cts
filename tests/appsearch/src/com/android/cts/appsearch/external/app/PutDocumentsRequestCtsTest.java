@@ -60,7 +60,8 @@ public class PutDocumentsRequestCtsTest {
                         .addTakenActionGenericDocuments(takenActionGenericDocument);
         IllegalArgumentException e =
                 assertThrows(IllegalArgumentException.class, () -> builder.build());
-        assertThat(e.getMessage())
+        assertThat(e)
+                .hasMessageThat()
                 .isEqualTo(
                         "Document id "
                                 + takenActionGenericDocument.getId()

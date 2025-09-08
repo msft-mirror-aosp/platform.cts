@@ -756,7 +756,8 @@ public class SearchSpecCtsTest {
                                                 SearchSpec.RANKING_STRATEGY_JOIN_AGGREGATE_SCORE)
                                         .build());
 
-        assertThat(e.getMessage())
+        assertThat(e)
+                .hasMessageThat()
                 .isEqualTo(
                         "Attempting to rank based on joined documents, but"
                                 + " no JoinSpec provided");
@@ -775,7 +776,8 @@ public class SearchSpecCtsTest {
                                                 SearchSpec.RANKING_STRATEGY_CREATION_TIMESTAMP)
                                         .setJoinSpec(joinSpec)
                                         .build());
-        assertThat(e.getMessage())
+        assertThat(e)
+                .hasMessageThat()
                 .isEqualTo(
                         "Aggregate scoring strategy has been set in the "
                                 + "nested JoinSpec, but ranking strategy is not "
@@ -837,10 +839,9 @@ public class SearchSpecCtsTest {
         SearchSpec searchSpec =
                 new SearchSpec.Builder()
                         .addFilterSchemas("ParentType")
-                        .addProjection(
-                                SearchSpec.SCHEMA_TYPE_WILDCARD, Collections.singletonList("TypeA"))
+                        .addProjection(SearchSpec.SCHEMA_TYPE_WILDCARD, ImmutableList.of("TypeA"))
                         .addFilterProperties(
-                                SearchSpec.SCHEMA_TYPE_WILDCARD, Collections.singletonList("TypeB"))
+                                SearchSpec.SCHEMA_TYPE_WILDCARD, ImmutableList.of("TypeB"))
                         .build();
 
         assertThat(searchSpec.getFilterSchemas()).containsExactly("ParentType");
@@ -878,7 +879,7 @@ public class SearchSpecCtsTest {
 
         assertThat(rebuild.getJoinSpec()).isNotNull();
         assertThat(rebuild.getJoinSpec().getChildPropertyExpression()).isEqualTo("entitySchema");
-        assertThat(rebuild.getJoinSpec().getNestedQuery()).isEqualTo("");
+        assertThat(rebuild.getJoinSpec().getNestedQuery()).isEmpty();
         assertThat(rebuild.getJoinSpec().getNestedSearchSpec().getFilterSchemas())
                 .containsExactly("CallAction");
     }
