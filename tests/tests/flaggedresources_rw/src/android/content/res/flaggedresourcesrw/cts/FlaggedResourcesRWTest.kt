@@ -18,6 +18,7 @@ package android.content.res.flaggedresourcesrw.cts
 
 import android.app.LocaleConfig
 import android.content.res.Flags
+import android.content.res.Resources
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -30,6 +31,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -39,12 +41,12 @@ import org.junit.runner.RunWith
 class FlaggedResourcesRWTest {
     @get:Rule
     val mCheckFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+    val context = InstrumentationRegistry.getInstrumentation().getTargetContext()
+    val resources = context.getResources()
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_LAYOUT_READWRITE_FLAGS)
     fun testEnabledFlagStays() {
-        val context = InstrumentationRegistry.getInstrumentation().getTargetContext()
-        val resources = context.getResources()
         val inflater = LayoutInflater.from(context)
         val rootView = inflater.inflate(R.layout.layout, null) as LinearLayout
         assertNull(rootView.findViewById<TextView>(R.id.text1))
@@ -59,9 +61,21 @@ class FlaggedResourcesRWTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_LAYOUT_READWRITE_FLAGS)
     fun testLocaleConfig() {
-        val context = InstrumentationRegistry.getInstrumentation().getTargetContext()
         val localeConfig = LocaleConfig.fromContextIgnoringOverride(context)
         val list = localeConfig.supportedLocales
         assertEquals("en-US,ja,en-GB", list!!.toLanguageTags())
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_RESOURCE_READWRITE_FLAGS)
+    fun testFlaggedStrings() {
+        assertEquals("unflagged", resources.getString(R.string.text110))
+        assertEquals("negated", resources.getString(R.string.text101))
+        assertEquals("negated", resources.getString(R.string.text111))
+        assertThrows(Resources.NotFoundException::class.java) {
+            resources.getString(R.string.text010)
+        }
+        assertEquals("negated", resources.getString(R.string.text001))
+        assertEquals("negated", resources.getString(R.string.text011))
     }
 }

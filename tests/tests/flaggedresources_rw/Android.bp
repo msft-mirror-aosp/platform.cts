@@ -45,6 +45,9 @@ android_test {
         "mockito-target-minus-junit4",
         "truth",
     ],
+    flags_packages: [
+        "android.content.res.flags-aconfig",
+    ],
     resource_dirs: [
         "res",
     ],
