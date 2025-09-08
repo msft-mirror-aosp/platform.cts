@@ -21,6 +21,7 @@ import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrec
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
+import com.android.bedstead.harrier.annotations.meta.BedsteadTest;
 import com.android.queryable.annotations.Query;
 import com.android.queryable.annotations.StringQuery;
 
@@ -47,6 +48,7 @@ import java.lang.annotation.Target;
         query = @Query(packageName = @StringQuery(
                 isEqualTo = "com.android.bedstead.testapp.TestOnlyDeviceAdminTestApp")))
 @UsesAnnotationExecutor(UsesAnnotationExecutor.ENTERPRISE)
+@BedsteadTest
 public @interface MostRestrictiveCoexistenceTest {
 
     String DPC_1 = "dpc1";

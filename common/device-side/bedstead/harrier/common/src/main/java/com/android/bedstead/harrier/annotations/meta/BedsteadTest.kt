@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,18 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.android.bedstead.harrier.annotations.meta
 
-package com.android.bedstead.harrier
-
-import org.junit.ClassRule
-import org.junit.Rule
-import org.junit.runner.RunWith
-
-/** A test base wrapping bedstead setup for convenience. */
-@RunWith(BedsteadJUnit4::class)
-abstract class BedsteadTest {
-    companion object {
-        /** Access bedstead managed [DeviceState]. */
-        @JvmField @ClassRule @Rule val deviceState: DeviceState = DeviceState()
-    }
-}
+/**
+ * A meta-annotation that allows creating custom test annotations.
+ *
+ * This allows test methods to be detected without the standard `@Test` annotation.
+ * Simply create your own annotation and annotate it with `@BedsteadTest`. Any method
+ * using your custom annotation will then be treated as a test.
+ */
+@Target(AnnotationTarget.ANNOTATION_CLASS)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class BedsteadTest
