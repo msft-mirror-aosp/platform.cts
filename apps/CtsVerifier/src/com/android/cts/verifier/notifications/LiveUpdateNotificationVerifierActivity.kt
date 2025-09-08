@@ -26,11 +26,16 @@ import android.app.RemoteInput
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
 import android.content.res.Resources
 import android.graphics.drawable.Icon
+import android.provider.Settings
+import android.provider.Settings.EXTRA_APP_PACKAGE
 import android.view.View
 import android.view.ViewGroup
 import com.android.cts.verifier.R
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 open class LiveUpdateNotificationVerifierActivity : InteractiveVerifierActivity() {
 
@@ -39,190 +44,387 @@ open class LiveUpdateNotificationVerifierActivity : InteractiveVerifierActivity(
     override fun getInstructionsResource(): Int = R.string.live_update_notification_test_info
 
     override fun createTestItems(): List<InteractiveTestCase> = listOf(
-        liveUpdatePriorityTestCase(),
-        liveUpdateAppearanceTestCase(),
-        liveUpdateStatusBarChipTestCase(),
-        liveUpdateDemotionOffAndOnTestCase(),
-        liveUpdateRemoteInputTestCase(),
-        liveUpdateContextualActionsTestCase()
+        enableLiveUpdateStep(),
+        disableLiveUpdateStep(),
+        enableLiveUpdateStep(),
+        assertOngoingPromotionStep(),
+        verifyLiveUpdateIsExpandedStep(),
+        verifyLiveUpdateTextAppearanceStep(),
+        verifyLiveUpdateRendersActionStep(),
+        verifyLiveUpdateNotRenderReplyActionsStep(),
+        verifyLiveUpdateNotRenderContextualActionsStep(),
+        demoteLiveUpdateStep(),
+        verifyDemotedLiveUpdateIsExpandableStep(),
+        verifyDemotedLiveUpdateTextStylingStep(),
+        verifyDemotedLiveUpdateRendersActionStep(),
+        verifyDemotedLiveUpdateRendersReplayActionsStep(),
+        verifyDemotedLiveUpdateRendersContextualActionsStep(),
+        enableLiveUpdateStep(),
+        verifyLiveUpdatePriorityStep(),
+        verifyLiveUpdateStatusBarChipStep(),
+        verifyLiveUpdateStatusBarChipChronometerStep(),
+        verifyLiveUpdateStatusBarChipTimerStep(),
     )
 
-    private fun liveUpdatePriorityTestCase() = LiveUpdateTestCase(
-        channelId = "LUNVA.LiveUpdatePriorityTestCase",
+    // region Steps
+    private fun enableLiveUpdateStep() =
+        EnableOrDisablePromotionStep(R.string.live_update_enable_step, expectedEnabled = true)
+
+    private fun disableLiveUpdateStep() =
+        EnableOrDisablePromotionStep(R.string.live_update_disable_step, expectedEnabled = false)
+
+    private fun demoteLiveUpdateStep() =
+        DemoteLiveUpdateNotificationStep(R.string.live_update_demote_step)
+
+    private fun assertOngoingPromotionStep() =
+        AssertOngoingPromotionStep(
+            R.string.live_update_promoted_ongoing_set,
+            expectedEnabled = true
+        )
+
+    private fun verifyLiveUpdateIsExpandedStep() = LiveUpdateUserVerificationBase(
+        instructionsText = R.string.live_update_notification_appearance_expanded,
+        onBefore = {
+            if (!mNm.canPostPromotedNotifications()) {
+                logFail(
+                    "CTS Verifier app should be able to post a live update to verify this step."
+                )
+                status = FAIL
+                next()
+            } else {
+                mNm.notify(
+                    NOTIFICATION_ID,
+                    NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
+                        .build()
+                )
+            }
+        }
+    )
+
+    private fun verifyLiveUpdateTextAppearanceStep() = LiveUpdateUserVerificationBase(
+        instructionsText = R.string.live_update_notification_appearance_text_styling,
+        onBefore = {
+            if (!mNm.canPostPromotedNotifications()) {
+                logFail(
+                    "CTS Verifier app should be able to post a live update to verify this step."
+                )
+                status = FAIL
+                next()
+            } else {
+                mNm.notify(
+                    NOTIFICATION_ID,
+                    NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
+                        .build()
+                )
+            }
+        }
+    )
+
+    private fun verifyLiveUpdateRendersActionStep() = LiveUpdateUserVerificationBase(
+        instructionsText = R.string.live_update_notification_appearance_action,
+        onBefore = {
+            if (!mNm.canPostPromotedNotifications()) {
+                logFail(
+                    "CTS Verifier app should be able to post a live update to verify this step."
+                )
+                status = FAIL
+                next()
+            } else {
+                mNm.notify(
+                    NOTIFICATION_ID,
+                    NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
+                        .build()
+                )
+            }
+        }
+    )
+
+    private fun verifyLiveUpdateNotRenderReplyActionsStep() = LiveUpdateUserVerificationBase(
+        instructionsText = R.string.live_update_notification_appearance_reply_action,
+        onBefore = {
+            if (!mNm.canPostPromotedNotifications()) {
+                logFail(
+                    "CTS Verifier app should be able to post a live update to verify this step."
+                )
+                status = FAIL
+                next()
+            } else {
+                mNm.notify(
+                    NOTIFICATION_ID,
+                    NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
+                        .build()
+                )
+            }
+        }
+    )
+
+    private fun verifyLiveUpdateNotRenderContextualActionsStep() = LiveUpdateUserVerificationBase(
+        instructionsText = R.string.live_update_notification_appearance_reply_contextual_action,
+        onBefore = {
+            if (!mNm.canPostPromotedNotifications()) {
+                logFail(
+                    "CTS Verifier app should be able to post a live update to verify this step."
+                )
+                status = FAIL
+                next()
+            } else {
+                mNm.notify(
+                    NOTIFICATION_ID,
+                    NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
+                        .build()
+                )
+            }
+        }
+    )
+
+    private fun verifyDemotedLiveUpdateIsExpandableStep() = LiveUpdateUserVerificationBase(
+        instructionsText = R.string.live_update_notification_demoted_appearance_expander,
+        onBefore = {
+            if (mNm.canPostPromotedNotifications()) {
+                logFail(
+                    "CTS Verifier app should not be able to post a live update to verify this step."
+                )
+                status = FAIL
+                next()
+            } else {
+                mNm.notify(
+                    NOTIFICATION_ID,
+                    NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
+                        .build()
+                )
+            }
+        }
+    )
+
+    private fun verifyDemotedLiveUpdateTextStylingStep() = LiveUpdateUserVerificationBase(
+        instructionsText = R.string.live_update_notification_demoted_appearance_text_styling,
+        onBefore = {
+            if (mNm.canPostPromotedNotifications()) {
+                logFail(
+                    "CTS Verifier app should not be able to post a live update to verify this step."
+                )
+                status = FAIL
+                next()
+            } else {
+                mNm.notify(
+                    NOTIFICATION_ID,
+                    NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
+                        .build()
+                )
+            }
+        }
+    )
+
+    private fun verifyDemotedLiveUpdateRendersActionStep() = LiveUpdateUserVerificationBase(
+        instructionsText = R.string.live_update_notification_demoted_appearance_action,
+        onBefore = {
+            if (mNm.canPostPromotedNotifications()) {
+                logFail(
+                    "CTS Verifier app should not be able to post a live update to verify this step."
+                )
+                status = FAIL
+                next()
+            } else {
+                mNm.notify(
+                    NOTIFICATION_ID,
+                    NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
+                        .build()
+                )
+            }
+        }
+    )
+
+    private fun verifyDemotedLiveUpdateRendersReplayActionsStep() = LiveUpdateUserVerificationBase(
+        instructionsText = R.string.live_update_notification_demoted_appearance_reply_action,
+        onBefore = {
+            if (mNm.canPostPromotedNotifications()) {
+                logFail(
+                    "CTS Verifier app should not be able to post a live update to verify this step."
+                )
+                status = FAIL
+                next()
+            } else {
+                mNm.notify(
+                    NOTIFICATION_ID,
+                    NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
+                        .build()
+                )
+            }
+        }
+    )
+
+    private fun verifyDemotedLiveUpdateRendersContextualActionsStep(
+    ) = LiveUpdateUserVerificationBase(
+        instructionsText = R.string.live_update_notification_demoted_appearance_contextual_action,
+        onBefore = {
+            if (mNm.canPostPromotedNotifications()) {
+                logFail(
+                    "CTS Verifier app should not be able to post a live update to verify this step."
+                )
+                status = FAIL
+                next()
+            } else {
+                mNm.notify(
+                    NOTIFICATION_ID,
+                    NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
+                        .build()
+                )
+            }
+        }
+    )
+
+    private fun verifyLiveUpdatePriorityStep() = LiveUpdateUserVerificationBase(
         instructionsText = R.string.live_update_notification_priority,
-        createLiveUpdate = {
-            Notification.Builder(mContext, channelId)
-                .setSmallIcon(R.drawable.ic_stat_charlie)
-                .setContentTitle("Updating Your App")
-                .setContentText("40% complete")
-                .setOngoing(true)
-                .setRequestPromotedOngoing(true)
-                .setStyle(
-                    Notification.ProgressStyle().setProgress(40)
-                )
-                .build()
-        },
-        beforeCreateLiveUpdate = {
-            val notification =
-                Notification.Builder(mContext, channelId)
-                    .setSmallIcon(R.drawable.ic_stat_charlie)
-                    .setContentTitle("Not Live Update")
-                    .setContentText("This notification is not a Live Update")
+        onBefore = {
+            val liveUpdate =
+                NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
                     .build()
-            mNm.notify(NOTIFICATION_ID + 1, notification)
-        }
-    )
 
-    private fun liveUpdateAppearanceTestCase() = LiveUpdateTestCase(
-        channelId = "LUNVA.LiveUpdateAppearanceTestCase",
-        instructionsText = R.string.live_update_notification_appearance,
-        createLiveUpdate = {
-            Notification.Builder(mContext, channelId)
+            val nonLiveUpdate = Notification.Builder(mContext, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_stat_charlie)
-                .setContentTitle("Styled Texts")
-                .setContentText(getText(R.string.live_update_notification_styled_text))
-                .setOngoing(true)
-                .setRequestPromotedOngoing(true)
-                .setStyle(
-                    Notification.ProgressStyle().setProgress(40)
-                )
+                .setContentTitle("Not Live Update")
+                .setContentText("This notification is not a Live Update")
                 .build()
+
+            mNm.notify(NOTIFICATION_ID, liveUpdate)
+            mNm.notify(NOTIFICATION_ID + 1, nonLiveUpdate)
         }
     )
 
-    private fun liveUpdateStatusBarChipTestCase() = LiveUpdateTestCase(
-        channelId = "LUNVA.LiveUpdateStatusBarChipTestCase",
+    private fun verifyLiveUpdateStatusBarChipStep() = LiveUpdateUserVerificationBase(
         instructionsText = R.string.live_update_notification_status_bar_chip,
-        createLiveUpdate = {
-            val launchIntent = PendingIntent.getActivity(
-                /* context = */
-                applicationContext,
-                /* requestCode = */
-                0,
-                /* intent = */
-                Intent(
-                    applicationContext,
-                LiveUpdateNotificationVerifierActivity::class.java
-                ),
-                /* flags = */
-                PendingIntent.FLAG_IMMUTABLE
-            )
-            Notification.Builder(mContext, channelId)
-                .setSmallIcon(R.drawable.ic_stat_charlie)
-                .setContentTitle("Status Bar Chip")
-                .setContentText("This notification is a Live Update.")
-                .setShortCriticalText("test")
-                .setOngoing(true)
-                .setContentIntent(launchIntent)
-                .setRequestPromotedOngoing(true)
-                .build()
+        onBefore = {
+            val notification =
+                NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
+                    .setContentTitle("Status Bar Chip")
+                    .setShortCriticalText("test")
+                    .setContentIntent(getLaunchPendingIntent())
+                    .build()
+            mNm.notify(NOTIFICATION_TAG, NOTIFICATION_ID, notification)
         }
     )
 
-    private fun liveUpdateDemotionOffAndOnTestCase() = LiveUpdateTestCase(
-        channelId = "LUNVA.LiveUpdateDemotionOffAndOnTestCase",
-        instructionsText = R.string.live_update_notification_demotion_off_and_on,
-        createLiveUpdate = {
-            Notification.Builder(mContext, channelId)
-                .setSmallIcon(R.drawable.ic_stat_charlie)
-                .setContentTitle("Demotion Menu")
-                .setContentText("This notification is a Live Update.")
-                .setOngoing(true)
-                .setRequestPromotedOngoing(true)
-                .build()
+    private fun verifyLiveUpdateStatusBarChipTimerStep() = LiveUpdateUserVerificationBase(
+        instructionsText = R.string.live_update_notification_status_bar_chip_timer,
+        onBefore = {
+            val timer =
+                NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
+                    .setContentTitle("Status Bar Chip Timer")
+                    .setShowWhen(true)
+                    .setWhen(Instant.now().plus(3, ChronoUnit.MINUTES).toEpochMilli())
+                    .setContentIntent(getLaunchPendingIntent())
+                    .build()
+            mNm.notify(NOTIFICATION_ID, timer)
         }
     )
 
-    private fun liveUpdateRemoteInputTestCase() = LiveUpdateTestCase(
-        channelId = "LUNVA.LiveUpdateRemoteInputTestCase",
-        instructionsText = R.string.live_update_notification_remote_input,
-        createLiveUpdate = {
-            val remoteInput: RemoteInput = RemoteInput.Builder("AnyKey")
-                .setLabel("label")
-                .build()
+    private fun verifyLiveUpdateStatusBarChipChronometerStep() = LiveUpdateUserVerificationBase(
+        instructionsText = R.string.live_update_notification_status_bar_chip_chronometer,
+        onBefore = {
+            val chronometer =
+                NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
+                    .setContentTitle("Status Bar Chip Chronometer")
+                    .setUsesChronometer(true)
+                    .setContentIntent(getLaunchPendingIntent())
+                    .build()
+            mNm.notify(NOTIFICATION_ID, chronometer)
+        }
+    )
 
-            val replyIntent = Intent(mContext, LiveUpdateNoOpReplyReceiver::class.java)
+    private fun getLaunchPendingIntent(): PendingIntent {
+        val launchIntent =
+            Intent(applicationContext, LiveUpdateNotificationVerifierActivity::class.java)
+        return PendingIntent.getActivity(
+            applicationContext,
+            0,
+            launchIntent,
+            PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+    // endregion
 
-            val replyPendingIntent: PendingIntent = PendingIntent.getBroadcast(
-                mContext,
+    private object NotificationFactory {
+
+        fun createLiveUpdateNotificationBuilder(
+            context: Context,
+            channelId: String
+        ): Notification.Builder {
+            return Notification.Builder(context, channelId)
+                .setSmallIcon(R.drawable.ic_stat_charlie)
+                .setContentTitle("Hello World!")
+                .setContentText(context.getText(R.string.live_update_notification_styled_text))
+                .setOngoing(true)
+                .setRequestPromotedOngoing(true)
+                .setStyle(Notification.ProgressStyle().setProgress(40))
+                .addAction(createContextualAction(context))
+                .addAction(createRemoteInputAction(context))
+                .addAction(createNormalAction(context))
+        }
+
+        private fun createRemoteInputAction(context: Context): Notification.Action {
+            val remoteInput = RemoteInput.Builder("AnyKey").setLabel("label").build()
+            val replyIntent = Intent(context, LiveUpdateNoOpReplyReceiver::class.java)
+            val replyPendingIntent = PendingIntent.getBroadcast(
+                context,
                 1000,
                 replyIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
             )
-
-            val remoteInputAction: Notification.Action = Notification.Action.Builder(
-                null,
-                "Reply",
-                replyPendingIntent
-            ).addRemoteInput(remoteInput)
-                .setAllowGeneratedReplies(false).build()
-
-            Notification.Builder(mContext, channelId)
-                .setSmallIcon(R.drawable.ic_stat_charlie)
-                .setContentTitle("Remote Input")
-                .setContentText("This notification is a Live Update.")
-                .setOngoing(true)
-                .setRequestPromotedOngoing(true)
-                .addAction(remoteInputAction)
+            return Notification.Action.Builder(null, "Reply", replyPendingIntent)
+                .addRemoteInput(remoteInput)
+                .setAllowGeneratedReplies(false)
                 .build()
         }
-    )
 
-    private fun liveUpdateContextualActionsTestCase() = LiveUpdateTestCase(
-        channelId = "LUNVA.LiveUpdateContextualActionsTestCase",
-        instructionsText = R.string.live_update_notification_contextual_action,
-        createLiveUpdate = {
-            val contextualAction: Notification.Action = Notification.Action.Builder(
-                Icon.createWithResource(mContext, R.drawable.transit_e_icon),
-                "Ok",
-                PendingIntent.getBroadcast(
-                    mContext,
-                    0,
-                    Intent(mContext, BroadcastReceiver::class.java),
-                    PendingIntent.FLAG_MUTABLE
-                ),
+        private fun createContextualAction(context: Context): Notification.Action {
+            val intent = Intent(context, BroadcastReceiver::class.java)
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                0,
+                intent,
+                PendingIntent.FLAG_MUTABLE
+            )
+            return Notification.Action.Builder(
+                Icon.createWithResource(context, R.drawable.transit_s_icon),
+                "Share",
+                pendingIntent
             ).setContextual(true).setAllowGeneratedReplies(false).build()
-
-            Notification.Builder(mContext, channelId)
-                .setSmallIcon(R.drawable.ic_stat_charlie)
-                .setContentTitle("Contextual Actions")
-                .setContentText("This notification is a Live Update.")
-                .setOngoing(true)
-                .setRequestPromotedOngoing(true)
-                .addAction(contextualAction)
-                .build()
         }
-    )
 
-     protected inner class LiveUpdateTestCase(
-        val channelId: String,
+        private fun createNormalAction(context: Context): Notification.Action {
+            val intent = Intent(context, BroadcastReceiver::class.java)
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                0,
+                intent,
+                PendingIntent.FLAG_MUTABLE
+            )
+            return Notification.Action.Builder(
+                Icon.createWithResource(context, R.drawable.transit_e_icon),
+                "Open",
+                pendingIntent
+            ).build()
+        }
+    }
+
+    protected open inner class LiveUpdateUserVerificationBase(
         @StringRes private val instructionsText: Int,
-        private val createLiveUpdate: LiveUpdateTestCase.() -> Notification,
         @DrawableRes private val instructionsImage: Int = Resources.ID_NULL,
-        private val beforeCreateLiveUpdate: (LiveUpdateTestCase.() -> Unit)? = null
+        private val onBefore: LiveUpdateUserVerificationBase.() -> Unit
     ) : InteractiveTestCase() {
-        private var mView: View? = null
+        protected var view: View? = null
 
         override fun inflate(parent: ViewGroup?): View? {
-            mView = createPassFailItem(parent, instructionsText, instructionsImage)
-            setButtonsEnabled(mView, false)
-            return mView
+            view = createPassFailItem(parent, instructionsText, instructionsImage)
+            setButtonsEnabled(view, false)
+            return view
         }
 
-        protected override fun setUp() {
+        override fun setUp() {
+            mNm.createNotificationChannel(CHANNEL)
+            onBefore()
+            setButtonsEnabled(view, false)
             super.setUp()
-            mNm.createNotificationChannel(this.getChannel())
-            beforeCreateLiveUpdate?.invoke(this@LiveUpdateTestCase)
-            val notification = this.createLiveUpdate()
-            require(
-                notification.hasPromotableCharacteristics()
-            ) {
-                "Invalid notification: Missing promotable characteristics."
-            }
-            mNm.notify(NOTIFICATION_ID, notification)
-            setButtonsEnabled(mView, true)
-            status = READY
-            next()
         }
 
         override fun autoStart(): Boolean {
@@ -230,28 +432,174 @@ open class LiveUpdateNotificationVerifierActivity : InteractiveVerifierActivity(
         }
 
         protected override fun test() {
-            setButtonsEnabled(mView, true)
-            // In all tests we post a notification and ask the user to confirm that its appearance
-            // matches expectations.
+            setButtonsEnabled(view, true)
             status = WAIT_FOR_USER
             next()
         }
 
-        protected override fun tearDown() {
-            mNm.cancelAll()
-            mNm.deleteNotificationChannel(this.getChannel().id)
+        override fun tearDown() {
+            cleanUpNotifications()
             delay()
             super.tearDown()
         }
-
-        protected fun getChannel(): NotificationChannel = NotificationChannel(
-            channelId,
-            channelId,
-            NotificationManager.IMPORTANCE_DEFAULT
-        )
     }
 
     class LiveUpdateNoOpReplyReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) = Unit
+    }
+
+    private inner class EnableOrDisablePromotionStep(
+        @StringRes private val instructionRes: Int,
+        private val expectedEnabled: Boolean
+    ) : InteractiveTestCase() {
+        private lateinit var view: View
+
+        override fun inflate(parent: ViewGroup): View {
+            view = createUserItem(parent, R.string.live_update_open_settings, instructionRes)
+            setButtonsEnabled(view, false)
+            return view
+        }
+
+        override fun setUp() {
+            status = READY
+            setButtonsEnabled(view, true)
+            next()
+        }
+
+        override fun autoStart(): Boolean = true
+
+        override fun test() {
+            val intent = Intent(Settings.ACTION_APP_NOTIFICATION_PROMOTION_SETTINGS)
+            if (intent.resolveActivity(mPackageManager) == null) {
+                logFail("no settings activity")
+                status = FAIL
+            } else if (mNm.canPostPromotedNotifications() == expectedEnabled) {
+                status = PASS
+            } else {
+                status = WAIT_FOR_USER
+            }
+            next()
+        }
+
+        override fun getIntent(): Intent {
+            return Intent(Settings.ACTION_APP_NOTIFICATION_PROMOTION_SETTINGS)
+                .addFlags(FLAG_ACTIVITY_CLEAR_TASK)
+                .putExtra(EXTRA_APP_PACKAGE, mContext.packageName)
+        }
+    }
+
+    private inner class DemoteLiveUpdateNotificationStep(
+        @StringRes private val instructionRes: Int,
+    ) : InteractiveTestCase() {
+
+        private lateinit var view: View
+        override fun inflate(parent: ViewGroup): View {
+            view = createAutoItem(parent, instructionRes)
+            return view
+        }
+
+        override fun setUp() {
+            mNm.createNotificationChannel(CHANNEL)
+            mNm.notify(
+                NOTIFICATION_TAG,
+                NOTIFICATION_ID,
+                NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
+                    .build()
+            )
+            super.setUp()
+        }
+
+        override fun test() {
+            val notification = getLiveUpdateNotification()
+            if (notification == null) {
+                logFail("Posted Notification Not Found")
+                status = FAIL
+            } else {
+                val isDemoted =
+                    (notification.flags and Notification.FLAG_PROMOTED_ONGOING) != 0
+                if (!isDemoted) {
+                    status = PASS
+                    next()
+                } else {
+                    status = RETEST
+                    delay()
+                }
+            }
+        }
+
+        override fun tearDown() {
+            cleanUpNotifications()
+            delay()
+            super.tearDown()
+        }
+    }
+
+    private inner class AssertOngoingPromotionStep(
+        @StringRes private val instructionRes: Int,
+        private val expectedEnabled: Boolean
+    ) : InteractiveTestCase() {
+        private lateinit var view: View
+
+        override fun inflate(parent: ViewGroup): View {
+            view = createAutoItem(parent, instructionRes)
+            return view
+        }
+
+        override fun setUp() {
+            mNm.createNotificationChannel(CHANNEL)
+            val notification =
+                NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
+                    .setContentTitle("Updating Your App")
+                    .setContentText("40% complete")
+                    .build()
+            mNm.notify(NOTIFICATION_TAG, NOTIFICATION_ID, notification)
+            super.setUp()
+        }
+
+        override fun test() {
+            val notification = getLiveUpdateNotification()
+            if (notification == null) {
+                logFail("Posted Notification Not Found")
+                status = FAIL
+            } else {
+                val isPromotedOngoingFlagSet =
+                    (notification.flags and Notification.FLAG_PROMOTED_ONGOING) != 0
+                if (isPromotedOngoingFlagSet == expectedEnabled) {
+                    status = PASS
+                    next()
+                } else {
+                    status = RETEST
+                    delay()
+                }
+            }
+        }
+
+        override fun tearDown() {
+            cleanUpNotifications()
+            delay()
+            super.tearDown()
+        }
+
+        override fun autoStart(): Boolean = true
+    }
+
+    private fun cleanUpNotifications() {
+        mNm.cancelAll()
+        mNm.deleteNotificationChannel(CHANNEL_ID)
+    }
+
+    private fun getLiveUpdateNotification(): Notification? {
+        return mNm.activeNotifications.firstOrNull { NOTIFICATION_TAG == it.tag }?.notification
+    }
+
+    private companion object {
+        private const val CHANNEL_ID = "LiveUpdatesTest"
+        private const val NOTIFICATION_TAG = "PromotedNotifTag"
+
+        private val CHANNEL = NotificationChannel(
+            CHANNEL_ID,
+            CHANNEL_ID,
+            NotificationManager.IMPORTANCE_DEFAULT
+        )
     }
 }
