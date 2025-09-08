@@ -777,6 +777,11 @@ public class SmsTest {
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
     @EnsureHasNoDeviceOwner
     public void testOtpSms_appWithCarrierPrivilegeCanRead() throws Exception {
+        assumeTrue(
+                "Skipping test: No valid default subscription ID found.",
+                SubscriptionManager.isValidSubscriptionId(
+                        SubscriptionManager.getDefaultSubscriptionId()));
+
         final String message = getSmsRetrieverOtpMessage();
         assumeTrue(
                 mContext.getPackageManager()
