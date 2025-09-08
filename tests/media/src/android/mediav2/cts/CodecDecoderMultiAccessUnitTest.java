@@ -163,18 +163,23 @@ public class CodecDecoderMultiAccessUnitTest extends CodecDecoderMultiAccessUnit
             {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_48kHz_aac_lc.m4a"},
             {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_48kHz_aac_lc.m4a"},
             {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_48kHz_aac_lc.m4a"},
-
-            {MediaFormat.MIMETYPE_AUDIO_AC3, "audio/ac3_200_48kHz_256.mp4"},
-            {MediaFormat.MIMETYPE_AUDIO_AC3, "audio/ac3_510_48kHz_256.mp4"},
-
-            {MediaFormat.MIMETYPE_AUDIO_AC4, "audio/ac4_510_48hkz_96.mp4"},
-            {MediaFormat.MIMETYPE_AUDIO_AC4, "audio/ac4_510_48kHz_128.mp4"},
-            {MediaFormat.MIMETYPE_AUDIO_AC4, "audio/ac4_510_48kHz_256.mp4"},
-
-            {MediaFormat.MIMETYPE_AUDIO_EAC3, "audio/eac3_200_48kHz_256.mp4"},
-            {MediaFormat.MIMETYPE_AUDIO_EAC3, "audio/eac3_510_48kHz_256.mp4"},
     }));
 
+    static {
+        if (IS_AFTER_B) {
+            exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
+                    {MediaFormat.MIMETYPE_AUDIO_AC3, "audio/ac3_200_48kHz_256.mp4"},
+                    {MediaFormat.MIMETYPE_AUDIO_AC3, "audio/ac3_510_48kHz_256.mp4"},
+
+                    {MediaFormat.MIMETYPE_AUDIO_AC4, "audio/ac4_510_48kHz_96.mp4"},
+                    {MediaFormat.MIMETYPE_AUDIO_AC4, "audio/ac4_510_48kHz_128.mp4"},
+                    {MediaFormat.MIMETYPE_AUDIO_AC4, "audio/ac4_510_48kHz_256.mp4"},
+
+                    {MediaFormat.MIMETYPE_AUDIO_EAC3, "audio/eac3_200_48kHz_256.mp4"},
+                    {MediaFormat.MIMETYPE_AUDIO_EAC3, "audio/eac3_510_48kHz_256.mp4"},
+            }));
+        }
+    }
 
     private final String mReconfigFile;
 
