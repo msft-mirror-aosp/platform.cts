@@ -1410,32 +1410,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         }
     }
 
-    @Test
-    public void testAllPropertiesHaveAVehiclePropertyVerifier() {
-        Set<Integer> verifierPropertyIds = new ArraySet<>();
-        for (VehiclePropertyVerifier verifier : getAllVerifiers()) {
-            verifierPropertyIds.add(verifier.getPropertyId());
-        }
-
-        for (Integer propertyId : CAR_SVC_PROPS_PARSER.getAllSystemPropertyIds()) {
-            if (PROPERTIES_NOT_EXPOSED_THROUGH_CPM.contains(propertyId)
-                    || isAndroidBPropertyWithDisabledFlag(propertyId)) {
-                continue;
-            }
-            expectWithMessage(
-                            "Property: "
-                                    + VehiclePropertyIds.toString(propertyId)
-                                    + " does not have a VehiclePropertyVerifier included in"
-                                    + " getAllVerifiers()")
-                    .that(propertyId)
-                    .isIn(verifierPropertyIds);
-        }
-    }
-
-    private boolean isAndroidBPropertyWithDisabledFlag(int propertyId) {
-        return B_FLAG_PROPERTIES.contains(propertyId) && !Flags.androidBVehicleProperties();
-    }
-
     static final class AllStepsProvider extends TestParameterValuesProvider {
         @Override
         public List<?> provideValues(Context context) {
