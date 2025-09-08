@@ -45,6 +45,9 @@ public class DeveloperVerificationTestBase extends InstallationTestBase {
     @Override
     public void tearDown() throws Exception {
         uninstallPackage(EMPTY_TEST_APP_PACKAGE_NAME);
+        // Clear any developer verification experiment configuration for all potential test apps
+        clearDeveloperVerificationResult(TEST_APP_PACKAGE_NAME);
+        clearDeveloperVerificationResult(EMPTY_TEST_APP_PACKAGE_NAME);
         super.tearDown();
     }
 
@@ -139,5 +142,10 @@ public class DeveloperVerificationTestBase extends InstallationTestBase {
                         Arrays.stream(results)
                                 .mapToObj(String::valueOf)
                                 .collect(Collectors.joining(" "))));
+    }
+
+    private static void clearDeveloperVerificationResult(String packageName) {
+        SystemUtil.runShellCommand(
+                String.format("pm clear-developer-verification-result %s", packageName));
     }
 }

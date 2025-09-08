@@ -107,12 +107,14 @@ public final class CarPowerTestService extends Service {
     }
 
     private void initManagers(Car car, boolean ready) {
+        Log.i(TAG, "Car service connection state changed. Ready: " + ready);
         synchronized (mLock) {
             if (ready) {
                 mCarPowerManager = (CarPowerManager) car.getCarManager(
                         Car.POWER_SERVICE);
                 Log.i(TAG, "initManagers() completed");
             } else {
+                Log.w(TAG, "Connection to Car service lost!");
                 mCarPowerManager = null;
                 Log.wtf(TAG, "initManagers() set to be null");
             }
@@ -363,6 +365,8 @@ public final class CarPowerTestService extends Service {
             synchronized (mLock) {
                 mPowerManager = mCarPowerManager;
             }
+            // Clear the list to prevent state from leaking between test runs.
+            mReceivedStates.clear();
         }
 
         List<Integer> await() throws InterruptedException {

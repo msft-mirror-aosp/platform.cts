@@ -21,6 +21,7 @@ import static com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyM
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
+import com.android.bedstead.harrier.annotations.meta.BedsteadTest;
 import com.android.queryable.annotations.IntegerQuery;
 import com.android.queryable.annotations.Query;
 import com.android.queryable.annotations.StringQuery;
@@ -47,6 +48,7 @@ import java.lang.annotation.Target;
                 isEqualTo = "com.android.bedstead.testapp.NotEmptyTestApp"),
                 targetSdkVersion = @IntegerQuery(isGreaterThanOrEqualTo = 34)))
 @UsesAnnotationExecutor(UsesAnnotationExecutor.ENTERPRISE)
+@BedsteadTest
 public @interface MostImportantCoexistenceTest {
 
     String MORE_IMPORTANT = "more_important";

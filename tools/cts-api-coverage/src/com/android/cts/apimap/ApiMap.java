@@ -46,7 +46,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -163,8 +165,10 @@ public final class ApiMap {
         if (hasApiMode(modeTypes)) {
             apiCoverage.resolveInheritedMethods();
         }
+
         ExecutorService service = Executors.newFixedThreadPool(parallelism);
-        List<Future<CallGraphManager>> tasks = new ArrayList<>();
+        ExecutorCompletionService<CallGraphManager> completionService =
+                new ExecutorCompletionService<>(service);
 
         XmlWriter xmlWriter = new XmlWriter();
         xmlWriter.registerXmlGenerators(modeTypes);
@@ -172,14 +176,21 @@ public final class ApiMap {
             String moduleName = jar.getKey();
             int dotIndex = moduleName.lastIndexOf('.');
             moduleName = (dotIndex == -1) ? moduleName : moduleName.substring(0, dotIndex);
-            tasks.add(scanJarFile(service, jar.getValue(), moduleName, apiCoverage, modeTypes));
-            // Clear tasks when there are too many in the blocking queue to avoid memory issue.
-            if (tasks.size() > parallelism * 5) {
-                executeTasks(tasks, xmlWriter);
-                tasks.clear();
+            completionService.submit(
+                    scanJarFile(jar.getValue(), moduleName, apiCoverage, modeTypes));
+        }
+        for (int i = 0; i < jars.size(); i++) {
+            try {
+                Future<CallGraphManager> completedFuture = completionService.take();
+                CallGraphManager callGraphManager = completedFuture.get();
+                xmlWriter.generateModuleData(callGraphManager.getModule());
+            } catch (ExecutionException e) {
+                System.out.println("Task was completed unsuccessfully.");
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                System.out.println("Thread was interrupted before the task completed.");
             }
         }
-        executeTasks(tasks, xmlWriter);
         service.shutdown();
 
         xmlWriter.generateApiData(apiCoverage);
@@ -195,21 +206,6 @@ public final class ApiMap {
         return modeTypes.contains(ModeType.API_MAP) || modeTypes.contains(ModeType.XTS_API_INHERIT);
     }
 
-    /** Executes given tasks. */
-    private static void executeTasks(List<Future<CallGraphManager>> tasks, XmlWriter xmlWriter) {
-        for (Future<CallGraphManager> task : tasks) {
-            try {
-                CallGraphManager callGraphManager = task.get();
-                xmlWriter.generateModuleData(callGraphManager.getModule());
-            } catch (ExecutionException e) {
-                System.out.println("Task was completed unsuccessfully.");
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                System.out.println("Thread was interrupted before the task completed.");
-            }
-        }
-    }
-
     /** Gets the argument or prints out the usage and exits. */
     private static String getExpectedArg(String[] args, int index) {
         if (index < args.length) {
@@ -223,66 +219,55 @@ public final class ApiMap {
     /**
      * Scans classes inside the jar file and adds coverage statistics.
      *
-     * @param service executor service
      * @param filePath jar file to be analyzed
      * @param moduleName test module name
      * @param apiCoverage object to which the coverage statistics will be added to
      * @param modeTypes a list of analysis modes
      */
-    private static Future<CallGraphManager> scanJarFile(
-            ExecutorService service,
-            Path filePath,
-            String moduleName,
-            ApiCoverage apiCoverage,
-            List<ModeType> modeTypes) {
-        return service.submit(
-                () -> {
-                    ModuleProfile moduleProfile = new ModuleProfile(moduleName);
-                    try (ZipFile zipSrc = new ZipFile(filePath.toString())) {
-                        Enumeration<? extends ZipEntry> srcEntries = zipSrc.entries();
-                        while (srcEntries.hasMoreElements()) {
-                            ZipEntry entry = srcEntries.nextElement();
-                            ZipEntry newEntry = new ZipEntry(entry.getName());
-                            newEntry.setTime(entry.getTime());
-                            BufferedInputStream bis =
-                                    new BufferedInputStream(zipSrc.getInputStream(entry));
-                            String className = entry.getName();
-                            if (!className.endsWith(".class")) {
-                                continue;
-                            }
-                            Pair<String, String> packageClass =
-                                    Utils.getPackageClassFromASM(
-                                            className.substring(0, className.length() - 6));
-                            if (ignoreClass(
-                                    packageClass.getFirst(),
-                                    packageClass.getSecond(),
-                                    apiCoverage)) {
-                                continue;
-                            }
-                            ClassReader cr = new ClassReader(bis);
-                            ClassProfile classProfile =
-                                    moduleProfile.getOrCreateClass(
-                                            packageClass.getFirst(),
-                                            packageClass.getSecond(),
-                                            apiCoverage);
-                            ClassAnalyzer visitor =
-                                    new ClassAnalyzer(classProfile, moduleProfile, apiCoverage);
-                            cr.accept(visitor, 0);
-                        }
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
+    private static Callable<CallGraphManager> scanJarFile(
+            Path filePath, String moduleName, ApiCoverage apiCoverage, List<ModeType> modeTypes) {
+        return () -> {
+            ModuleProfile moduleProfile = new ModuleProfile(moduleName);
+            try (ZipFile zipSrc = new ZipFile(filePath.toString())) {
+                Enumeration<? extends ZipEntry> srcEntries = zipSrc.entries();
+                while (srcEntries.hasMoreElements()) {
+                    ZipEntry entry = srcEntries.nextElement();
+                    ZipEntry newEntry = new ZipEntry(entry.getName());
+                    newEntry.setTime(entry.getTime());
+                    BufferedInputStream bis = new BufferedInputStream(zipSrc.getInputStream(entry));
+                    String className = entry.getName();
+                    if (!className.endsWith(".class")) {
+                        continue;
                     }
-                    CallGraphManager callGraphManager = new CallGraphManager(moduleProfile);
-                    if (modeTypes.contains(ModeType.API_MAP)) {
-                        callGraphManager.resolveInheritedMethods(apiCoverage);
-                        callGraphManager.resolveOverriddenAbstractApiMethods(apiCoverage);
-                        callGraphManager.resolveCoveredApis(apiCoverage);
-                    } else if (modeTypes.contains(ModeType.XTS_API_INHERIT)) {
-                        callGraphManager.resolveInheritedApiMethods(apiCoverage);
-                        callGraphManager.resolveOverriddenAbstractApiMethods(apiCoverage);
+                    Pair<String, String> packageClass =
+                            Utils.getPackageClassFromASM(
+                                    className.substring(0, className.length() - 6));
+                    if (ignoreClass(
+                            packageClass.getFirst(), packageClass.getSecond(), apiCoverage)) {
+                        continue;
                     }
-                    return callGraphManager;
-                });
+                    ClassReader cr = new ClassReader(bis);
+                    ClassProfile classProfile =
+                            moduleProfile.getOrCreateClass(
+                                    packageClass.getFirst(), packageClass.getSecond(), apiCoverage);
+                    ClassAnalyzer visitor =
+                            new ClassAnalyzer(classProfile, moduleProfile, apiCoverage);
+                    cr.accept(visitor, 0);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            CallGraphManager callGraphManager = new CallGraphManager(moduleProfile);
+            if (modeTypes.contains(ModeType.API_MAP)) {
+                callGraphManager.resolveInheritedMethods(apiCoverage);
+                callGraphManager.resolveOverriddenAbstractApiMethods(apiCoverage);
+                callGraphManager.resolveCoveredApis(apiCoverage);
+            } else if (modeTypes.contains(ModeType.XTS_API_INHERIT)) {
+                callGraphManager.resolveInheritedApiMethods(apiCoverage);
+                callGraphManager.resolveOverriddenAbstractApiMethods(apiCoverage);
+            }
+            return callGraphManager;
+        };
     }
 
     private static ApiCoverage getApiCoverage(Set<String> apiXmlPaths)

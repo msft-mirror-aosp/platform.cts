@@ -18,7 +18,7 @@ package com.android.bedstead.harrier.annotations;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.PRECEDENCE_NOT_IMPORTANT;
 
-import com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4;
+import com.android.bedstead.harrier.annotations.meta.BedsteadTest;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -32,7 +32,7 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
-@RequiresBedsteadJUnit4
+@BedsteadTest
 public @interface HiddenApiTest {
      /**
      * Priority sets the order that annotations will be resolved.

@@ -26,7 +26,6 @@ import com.google.common.truth.Truth
 import org.junit.Assert
 import org.junit.ClassRule
 import org.junit.Rule
-import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
@@ -42,7 +41,6 @@ class PreferenceForcedIntoStateTest {
         valueType = SettingsPreferenceValue.TYPE_BOOLEAN,
         valueToSet = "true"
     )
-    @Test
     fun getPreferenceForcedIntoState_sensitivityNone() {
         deviceState.getCurrentlySetPreferenceValue(
             screenKey = "accessibility_color_and_motion",
@@ -60,7 +58,6 @@ class PreferenceForcedIntoStateTest {
         valueType = SettingsPreferenceValue.TYPE_BOOLEAN,
         valueToSet = "true"
     )
-    @Test
     fun getPreferenceForcedIntoState_sensitivityExpectPostConfirmation() {
         deviceState.getCurrentlySetPreferenceValue(
             screenKey = "bluetooth_switchbar_screen",
@@ -78,7 +75,6 @@ class PreferenceForcedIntoStateTest {
         valueType = SettingsPreferenceValue.TYPE_BOOLEAN,
         valueToSet = "true"
     )
-    @Test
     fun getPreferenceForcedIntoState_sensitivityDeeplinkOnly() {
         deviceState.getCurrentlySetPreferenceValue(
             screenKey = "accessibility_color_and_motion",
@@ -96,7 +92,6 @@ class PreferenceForcedIntoStateTest {
         valueType = SettingsPreferenceValue.TYPE_BOOLEAN,
         valueToSet = "true"
     )
-    @Test
     fun getPreferenceForcedIntoState_sensitivityNoDirectAccess() {
         deviceState.getCurrentlySetPreferenceValue(
             screenKey = "accessibility_color_and_motion",

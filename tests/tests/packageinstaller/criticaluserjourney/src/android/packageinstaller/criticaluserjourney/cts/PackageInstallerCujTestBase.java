@@ -96,7 +96,6 @@ public class PackageInstallerCujTestBase {
     public static final String EMPTY_TEST_APK_NAME = "CtsEmptyTestApp.apk";
     public static final String EMPTY_TEST_APK_V2_NAME = "CtsEmptyTestAppV2.apk";
     public static final String TEST_APP_LABEL = "Installer CUJ Test App";
-    public static final String EMPTY_TEST_APP_LABEL = "Empty Test App";
     public static final String TEST_APP_PACKAGE_NAME =
             "android.packageinstaller.cts.cuj.app";
     public static final String TEST_NO_LAUNCHER_ACTIVITY_APK_NAME =

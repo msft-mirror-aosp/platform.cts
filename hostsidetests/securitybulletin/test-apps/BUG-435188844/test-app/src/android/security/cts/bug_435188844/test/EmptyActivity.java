@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier
+package android.security.cts.bug_435188844.test;
 
-import org.junit.ClassRule
-import org.junit.Rule
-import org.junit.runner.RunWith
+import android.app.Activity;
+import android.os.Bundle;
 
-/** A test base wrapping bedstead setup for convenience. */
-@RunWith(BedsteadJUnit4::class)
-abstract class BedsteadTest {
-    companion object {
-        /** Access bedstead managed [DeviceState]. */
-        @JvmField @ClassRule @Rule val deviceState: DeviceState = DeviceState()
+import androidx.annotation.Nullable;
+
+public class EmptyActivity extends Activity {
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        finish();
     }
 }

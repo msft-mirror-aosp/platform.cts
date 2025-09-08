@@ -18,6 +18,7 @@ package com.android.bedstead.harrier.annotations;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.PRECEDENCE_NOT_IMPORTANT;
 
+import com.android.bedstead.harrier.annotations.meta.BedsteadTest;
 import com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4;
 
 import java.lang.annotation.ElementType;
@@ -35,6 +36,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @RequiresBedsteadJUnit4
 @UsesParameterizedTestGenerator(UsesParameterizedTestGenerator.MULTI_USER)
+@BedsteadTest
 public @interface CrossUserTest {
     UserPair[] value() default {};
 
