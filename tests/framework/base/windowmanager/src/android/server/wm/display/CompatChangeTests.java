@@ -672,8 +672,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     })
     @RequiresFlagsEnabled({
         Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING,
-        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT_API,
-        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT
+        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT_API
     })
     public void
             testCameraCompatSimulateReqOrientation_propTrue_overrideNotSet_cameraCompatAllowed() {
@@ -699,8 +698,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     })
     @RequiresFlagsEnabled({
         Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING,
-        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT_API,
-        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT
+        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT_API
     })
     public void
             testCameraCompatSimReqOrientation_propFalse_overrideNotSet_cameraCompatNotAllowed() {
@@ -725,8 +723,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     })
     @RequiresFlagsEnabled({
         Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING,
-        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT_API,
-        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT
+        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT_API
     })
     public void
             testCameraCompatSimulateReqOrientation_propNotSet_overrideNotSet_camCompatAllowed() {
@@ -752,8 +749,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     })
     @RequiresFlagsEnabled({
         Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING,
-        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT_API,
-        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT
+        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT_API
     })
     public void
             testCameraCompatSimReqOrientation_propNotSet_disabledByOverride_camCompatNotAllowed() {
@@ -783,8 +779,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     })
     @RequiresFlagsEnabled({
         Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING,
-        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT_API,
-        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT
+        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT_API
     })
     public void
             testCameraCompatSimReqOrientation_propTrue_disabledByOverride_cameraCompatNotAllowed() {
@@ -814,8 +809,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     })
     @RequiresFlagsEnabled({
         Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING,
-        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT_API,
-        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT
+        Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING_OPT_OUT_API
     })
     public void
             testCameraCompatSimReqOrientation_propFalse_disabledOverride_cameraCompatNotAllowed() {
