@@ -17,10 +17,10 @@
 package android.telephony.ims.cts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
 
 import android.os.Parcel;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -89,6 +89,7 @@ public class ImsRegistrationAttributesTest {
         assertEquals(reasonHeaderCause, attr.getSipDetails().getReasonHeaderCause());
         assertEquals(reasonHeaderText, attr.getSipDetails().getReasonHeaderText());
         assertEquals(callId, attr.getSipDetails().getCallId());
+        assertNull(attr.getPcscfAddress());
 
         //LTE
         attr = new ImsRegistrationAttributes.Builder(
@@ -102,6 +103,7 @@ public class ImsRegistrationAttributesTest {
         assertNotNull(attr.getFeatureTags());
         assertEquals(0, attr.getFeatureTags().size());
         assertNull(attr.getSipDetails());
+        assertNull(attr.getPcscfAddress());
 
         // cross sim
         attr = new ImsRegistrationAttributes.Builder(
@@ -116,6 +118,7 @@ public class ImsRegistrationAttributesTest {
         assertNotNull(attr.getFeatureTags());
         assertEquals(0, attr.getFeatureTags().size());
         assertNull(attr.getSipDetails());
+        assertNull(attr.getPcscfAddress());
 
         // NR
         attr = new ImsRegistrationAttributes.Builder(
@@ -130,6 +133,7 @@ public class ImsRegistrationAttributesTest {
         assertNotNull(attr.getFeatureTags());
         assertEquals(0, attr.getFeatureTags().size());
         assertNull(attr.getSipDetails());
+        assertNull(attr.getPcscfAddress());
     }
 
     @Test
@@ -151,6 +155,7 @@ public class ImsRegistrationAttributesTest {
         assertNotNull(attr.getFeatureTags());
         assertEquals(0, attr.getFeatureTags().size());
         assertNull(attr.getSipDetails());
+        assertNull(attr.getPcscfAddress());
 
         // emergency call without emergency registration
         attr = new ImsRegistrationAttributes.Builder(
@@ -169,6 +174,7 @@ public class ImsRegistrationAttributesTest {
         assertNotNull(attr.getFeatureTags());
         assertEquals(0, attr.getFeatureTags().size());
         assertNull(attr.getSipDetails());
+        assertNull(attr.getPcscfAddress());
     }
 
     @Test
@@ -193,6 +199,7 @@ public class ImsRegistrationAttributesTest {
         assertEquals(attr.getAttributeFlags(), unparcelledAttr.getAttributeFlags());
         assertEquals(attr.getFeatureTags(), unparcelledAttr.getFeatureTags());
         assertNull(unparcelledAttr.getSipDetails());
+        assertNull(unparcelledAttr.getPcscfAddress());
     }
 
     @Test
@@ -234,5 +241,53 @@ public class ImsRegistrationAttributesTest {
         assertEquals(debugInfo.getReasonHeaderCause(), unparcelledDetails.getReasonHeaderCause());
         assertEquals(debugInfo.getReasonHeaderText(), unparcelledDetails.getReasonHeaderText());
         assertEquals(debugInfo.getCallId(), unparcelledDetails.getCallId());
+        assertNull(unparcelledAttr.getPcscfAddress());
+    }
+
+    @Test
+    public void testParcelUnparcelWithPcscfAddress() {
+        String pcscfAddress = "201.123.456.789";
+        SipDetails debugInfo =
+                new SipDetails.Builder(SipDetails.METHOD_REGISTER)
+                        .setCSeq(1)
+                        .setSipResponseCode(200, "OK")
+                        .setSipResponseReasonHeader(10, "CallBusy")
+                        .setCallId("callId")
+                        .build();
+
+        ArraySet<String> featureTags = new ArraySet<>();
+        featureTags.add("+g.3gpp.icsi-ref=\"urn%3Aurn-7%3A3gpp-service.ims.icsi.oma.cpm.msg\"");
+        featureTags.add("+g.3gpp.icsi-ref=\"urn%3Aurn-7%3A3gpp-service.ims.icsi.oma.cpm.session\"");
+        featureTags.add("+g.gsma.callcomposer");
+        ImsRegistrationAttributes attr =
+                new ImsRegistrationAttributes.Builder(
+                                ImsRegistrationImplBase.REGISTRATION_TECH_IWLAN)
+                        .setFeatureTags(featureTags)
+                        .setSipDetails(debugInfo)
+                        .setPcscfAddress(pcscfAddress)
+                        .build();
+
+        Parcel parcel = Parcel.obtain();
+        attr.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+        ImsRegistrationAttributes unparcelledAttr =
+                ImsRegistrationAttributes.CREATOR.createFromParcel(parcel);
+        parcel.recycle();
+
+        assertEquals(attr.getRegistrationTechnology(), unparcelledAttr.getRegistrationTechnology());
+        assertEquals(attr.getTransportType(), unparcelledAttr.getTransportType());
+        assertEquals(attr.getAttributeFlags(), unparcelledAttr.getAttributeFlags());
+        assertEquals(attr.getFeatureTags(), unparcelledAttr.getFeatureTags());
+
+        SipDetails unparcelledDetails = unparcelledAttr.getSipDetails();
+
+        assertEquals(debugInfo.getMethod(), unparcelledDetails.getMethod());
+        assertEquals(debugInfo.getCSeq(), unparcelledDetails.getCSeq());
+        assertEquals(debugInfo.getResponseCode(), unparcelledDetails.getResponseCode());
+        assertEquals(debugInfo.getResponsePhrase(), unparcelledDetails.getResponsePhrase());
+        assertEquals(debugInfo.getReasonHeaderCause(), unparcelledDetails.getReasonHeaderCause());
+        assertEquals(debugInfo.getReasonHeaderText(), unparcelledDetails.getReasonHeaderText());
+        assertEquals(debugInfo.getCallId(), unparcelledDetails.getCallId());
+        assertEquals(attr.getPcscfAddress(), unparcelledAttr.getPcscfAddress());
     }
 }
