@@ -315,7 +315,6 @@ public class KeyguardLockedTests extends KeyguardTestBase {
         assertTrue(ActivityManagerTestBase.isDisplayOn(DEFAULT_DISPLAY));
     }
 
-    @RequiresFlagsEnabled(com.android.window.flags.Flags.FLAG_FIX_SHOW_WHEN_LOCKED_SYNC_TIMEOUT)
     @Test
     public void testShowWhenLockedActivity_removeAttr_hideImmediately() {
         final var lockScreenSession = createManagedLockScreenSession();
