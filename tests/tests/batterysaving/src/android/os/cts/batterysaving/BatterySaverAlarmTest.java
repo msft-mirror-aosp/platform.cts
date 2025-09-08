@@ -96,6 +96,7 @@ public class BatterySaverAlarmTest extends BatterySavingTestBase {
 
     private final AtomicInteger mAlarmCount = new AtomicInteger();
     private final AtomicInteger mLastAlarmRequestCode = new AtomicInteger(5);
+    private volatile String mTargetPackage;
 
     private final BroadcastReceiver mAlarmReceiver = new BroadcastReceiver() {
         @Override
@@ -119,7 +120,11 @@ public class BatterySaverAlarmTest extends BatterySavingTestBase {
     }
 
     @After
-    public void tearDown() throws IOException {
+    public void tearDown() throws Exception {
+        if (mTargetPackage != null) {
+            stopPackage(mTargetPackage);
+            mTargetPackage = null;
+        }
         resetAlarmManagerConstants();
         getContext().unregisterReceiver(mAlarmReceiver);
     }
@@ -198,12 +203,12 @@ public class BatterySaverAlarmTest extends BatterySavingTestBase {
 
     @Test
     public void testAllowWhileIdleThrottled() throws Exception {
-        final String targetPackage = APP_25_PACKAGE;
+        mTargetPackage = APP_25_PACKAGE;
 
         runDumpsysBatteryUnplug();
         enableBatterySaver(true);
 
-        stopPackage(targetPackage);
+        stopPackage(mTargetPackage);
 
         SystemClock.sleep(ALLOW_WHILE_IDLE_COMPAT_WINDOW);
         // First quota alarms shouldn't be throttled, as there were no alarms in the past window.
@@ -212,7 +217,7 @@ public class BatterySaverAlarmTest extends BatterySavingTestBase {
         long lastTriggerElapsed = 0;
         for (int i = 0; i < ALLOW_WHILE_IDLE_QUOTA_PRE_S; i++) {
             lastTriggerElapsed = firstTrigger + (i * ONE_SECOND);
-            scheduleAlarm(targetPackage, AlarmManager.ELAPSED_REALTIME_WAKEUP, lastTriggerElapsed);
+            scheduleAlarm(mTargetPackage, AlarmManager.ELAPSED_REALTIME_WAKEUP, lastTriggerElapsed);
         }
         sleepUninterruptiblyUntil(lastTriggerElapsed);
         PollingCheck.waitFor(POLLING_WAIT_MILLIS,
@@ -232,8 +237,8 @@ public class BatterySaverAlarmTest extends BatterySavingTestBase {
                 "Not enough time remaining in window to reliably test throttling",
                 triggerElapsed3 + WAIT_SLOP_FOR_ABSENCE < nextAllowedMinElapsed);
 
-        scheduleAlarm(targetPackage, AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerElapsed2);
-        scheduleAlarm(targetPackage, AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerElapsed3);
+        scheduleAlarm(mTargetPackage, AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerElapsed2);
+        scheduleAlarm(mTargetPackage, AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerElapsed3);
 
         sleepUninterruptiblyUntil(triggerElapsed3);
         assertEquals(
@@ -252,15 +257,15 @@ public class BatterySaverAlarmTest extends BatterySavingTestBase {
 
     @Test
     public void testAllowWhileIdleNotThrottledInFgs() throws Exception {
-        final String targetPackage = APP_25_PACKAGE;
+        mTargetPackage = APP_25_PACKAGE;
 
         runDumpsysBatteryUnplug();
         enableBatterySaver(true);
 
-        stopPackage(targetPackage);
+        stopPackage(mTargetPackage);
 
         // Start an FG service, which should exempt from any throttling.
-        startService(targetPackage, true);
+        startService(mTargetPackage, true);
 
         final int overQuota = 10;
         // Should be significantly higher than the quota we've set.
@@ -270,7 +275,7 @@ public class BatterySaverAlarmTest extends BatterySavingTestBase {
         long lastTriggerElapsed = 0;
         for (int i = 0; i < overQuota; i++) {
             lastTriggerElapsed = SystemClock.elapsedRealtime() + (i + 1) * 100;
-            scheduleAlarm(targetPackage, AlarmManager.ELAPSED_REALTIME_WAKEUP, lastTriggerElapsed);
+            scheduleAlarm(mTargetPackage, AlarmManager.ELAPSED_REALTIME_WAKEUP, lastTriggerElapsed);
         }
         sleepUninterruptiblyUntil(lastTriggerElapsed);
         PollingCheck.waitFor(
@@ -279,22 +284,22 @@ public class BatterySaverAlarmTest extends BatterySavingTestBase {
                 "Allow-while-idle alarms shouldn't be throttled in battery saver after FG service"
                         + " started");
 
-        stopService(targetPackage);
+        stopService(mTargetPackage);
     }
 
     @Test
     public void testAlarmsThrottled_unblockedOnFgs() throws Exception {
-        final String targetPackage = APP_25_PACKAGE;
+        mTargetPackage = APP_25_PACKAGE;
 
         runDumpsysBatteryUnplug();
         enableBatterySaver(true);
 
-        stopPackage(targetPackage);
+        stopPackage(mTargetPackage);
 
         // When battery saver is enabled, alarms should be blocked.
         final long triggerElapsed = SystemClock.elapsedRealtime() + ONE_SECOND;
         scheduleAlarm(
-                targetPackage,
+                mTargetPackage,
                 AlarmManager.ELAPSED_REALTIME_WAKEUP,
                 triggerElapsed,
                 /* whileIdle= */ false,
@@ -304,24 +309,24 @@ public class BatterySaverAlarmTest extends BatterySavingTestBase {
                 "Non-while-idle alarm should be blocked in battery saver", 0, mAlarmCount.get());
 
         // Start an FG service -> should unblock the alarm.
-        startService(targetPackage, true);
+        startService(mTargetPackage, true);
         PollingCheck.waitFor(POLLING_WAIT_MILLIS, () -> mAlarmCount.get() == 1,
                 "Alarm should fire for an FG app");
     }
 
     @Test
     public void testAlarmsThrottled_unblockedOnBsDisabled() throws Exception {
-        final String targetPackage = APP_25_PACKAGE;
+        mTargetPackage = APP_25_PACKAGE;
 
         runDumpsysBatteryUnplug();
         enableBatterySaver(true);
 
-        stopPackage(targetPackage);
+        stopPackage(mTargetPackage);
 
         // When battery saver is enabled, alarms should be blocked.
         final long triggerElapsed = SystemClock.elapsedRealtime() + ONE_SECOND;
         scheduleAlarm(
-                targetPackage,
+                mTargetPackage,
                 AlarmManager.ELAPSED_REALTIME_WAKEUP,
                 triggerElapsed,
                 /* whileIdle= */ false,
