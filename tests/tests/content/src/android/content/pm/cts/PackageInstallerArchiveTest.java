@@ -70,6 +70,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -976,6 +977,9 @@ public class PackageInstallerArchiveTest {
     @RequiresFlagsEnabled(Flags.FLAG_ARCHIVING)
     public void startUnarchival_appIsNotDefaultLauncher_permissionDeniedForUnarchival()
             throws NameNotFoundException, ExecutionException, InterruptedException {
+        assumeTrue(
+                "The test case doesn't run on the build is larger than Android B.",
+                Build.VERSION.SDK_INT_FULL <= Build.VERSION_CODES_FULL.BAKLAVA);
         installPackage(PACKAGE_NAME, APK_PATH);
         runWithShellPermissionIdentity(
                 () -> {
