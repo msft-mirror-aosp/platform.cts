@@ -16,6 +16,7 @@
 
 package android.server.wm.jetpack.embedding;
 
+import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.assertValidSplit;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertNotResumed;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertResumed;
@@ -183,7 +184,10 @@ public class MultiDisplayActivityEmbeddingPlaceholderTests
         waitAndAssertNotResumed(PLACEHOLDER_ACTIVITY_ID);
 
         final int displayId = getMainDisplayId();
-        launchActivityOnDisplay(primaryActivityOnSecondaryDisplay.getComponentName(), displayId,
+        launchActivityOnDisplay(
+                primaryActivityOnSecondaryDisplay.getComponentName(),
+                WINDOWING_MODE_FULLSCREEN,
+                displayId,
                 CliIntentExtra.extraString(KEY_ACTIVITY_ID, PRIMARY_ACTIVITY_ID));
         final Activity primaryActivityOnMainDisplay = getResumedActivityById(PRIMARY_ACTIVITY_ID,
                 displayId);
