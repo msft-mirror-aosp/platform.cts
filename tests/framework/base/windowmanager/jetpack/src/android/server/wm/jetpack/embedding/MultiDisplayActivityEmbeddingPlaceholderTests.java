@@ -179,7 +179,7 @@ public class MultiDisplayActivityEmbeddingPlaceholderTests
         final Activity primaryActivityOnSecondaryDisplay = startFullScreenActivityNewTask(
                 TestActivityWithId.class, PRIMARY_ACTIVITY_ID, mTestHelper.getSecondaryDisplayId());
 
-        waitAndAssertResumedAndFillsTask(primaryActivityOnSecondaryDisplay);
+        waitAndAssertActivityResumedAndNotEmbedded(primaryActivityOnSecondaryDisplay);
         waitAndAssertNotResumed(PLACEHOLDER_ACTIVITY_ID);
 
         final int displayId = getMainDisplayId();
