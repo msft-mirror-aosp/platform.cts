@@ -216,11 +216,8 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
             switchUser(secondaryUser);
             runDeviceTestsAsUser("testVerifyLockedAndDismiss", secondaryUser);
         } finally {
-            // Remove secure lock screens and tear down test app
-            switchUser(secondaryUser);
-            runDeviceTestsAsUser("testTearDown", secondaryUser);
+            runTestTearDownForUsers(users);
             switchUser(initialUser);
-            runDeviceTestsAsUser("testTearDown", initialUser);
 
             deviceClearLskf();
         }
@@ -269,11 +266,8 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
             switchUser(secondaryUser);
             runDeviceTestsAsUser("testVerifyUnlockedAndDismiss", secondaryUser);
         } finally {
-            // Remove secure lock screens and tear down test app
-            switchUser(secondaryUser);
-            runDeviceTestsAsUser("testTearDown", secondaryUser);
+            runTestTearDownForUsers(users);
             switchUser(initialUser);
-            runDeviceTestsAsUser("testTearDown", initialUser);
 
             deviceClearLskf();
         }
@@ -612,6 +606,23 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
     private void runDeviceTestsAsUser(String testMethodName, int userId)
             throws DeviceNotAvailableException {
         Utils.runDeviceTests(getDevice(), PKG, CLASS, testMethodName, userId);
+    }
+
+    private void runTestTearDownForUsers(int[] userIds) throws Exception {
+        int rebootUserId = getDevice().getCurrentUser();
+
+        // Unlock the screen for the current user first because the switching to another one while
+        // the current user is still locked may fail.
+        runDeviceTestsAsUser("testTearDown", rebootUserId);
+
+        for (int userId : userIds) {
+            if (userId == rebootUserId) {
+                continue;
+            }
+
+            switchUser(userId);
+            runDeviceTestsAsUser("testTearDown", userId);
+        }
     }
 
     private boolean isSupportedSDevice() throws Exception {

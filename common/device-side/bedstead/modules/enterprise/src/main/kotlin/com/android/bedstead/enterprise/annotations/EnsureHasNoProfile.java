@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.multiuser.annotations;
+package com.android.bedstead.enterprise.annotations;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.MIDDLE;
 
-import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
+import com.android.bedstead.multiuser.annotations.EnsureHasNoCloneProfile;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

@@ -16,7 +16,7 @@
 
 package com.android.bedstead.enterprise.annotations
 
-import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner.DO_PO_PRIORITY
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.DO_PO_PRIORITY
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.UserType.INSTRUMENTED_USER
 import com.android.bedstead.harrier.annotations.RequireFeature

@@ -16,7 +16,7 @@
 
 package com.android.bedstead.enterprise.annotations;
 
-import static com.android.bedstead.enterprise.annotations.EnsureHasDelegate.ENSURE_HAS_DELEGATE_PRIORITY;
+import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.ENSURE_HAS_DELEGATE_PRIORITY;
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp;

@@ -16,7 +16,6 @@
 
 package android.cts.statsdatom.bluetooth;
 
-import com.android.tradefed.util.RunUtil;
 import static com.google.common.truth.Truth.assertThat;
 
 import android.cts.statsdatom.lib.AtomTestUtils;
@@ -24,12 +23,12 @@ import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
 
-import com.android.internal.os.StatsdConfigProto;
 import com.android.os.AtomsProto;
 import com.android.os.StatsLog;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.testtype.DeviceTestCase;
 import com.android.tradefed.testtype.IBuildReceiver;
+import com.android.tradefed.util.RunUtil;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -40,7 +39,11 @@ import java.util.Set;
 public class BluetoothStatsTests extends DeviceTestCase implements IBuildReceiver {
     private static final String FEATURE_BLUETOOTH_LE = "android.hardware.bluetooth_le";
 
+    private static final int AID_BLUETOOTH = 1002;
+
     private IBuildInfo mCtsBuild;
+
+    private String[] mExtraAllowedLogSources = new String[1];
 
     @Override
     protected void setUp() throws Exception {
@@ -49,6 +52,12 @@ public class BluetoothStatsTests extends DeviceTestCase implements IBuildReceive
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
         DeviceUtils.installStatsdTestApp(getDevice(), mCtsBuild);
+
+        // For HSUM devices, the default allowed source "AID_BLUETOOTH" doesn't work because it is
+        // for user 0.
+        // This finds the Bluetooth package name and adds to the config allow list.
+        mExtraAllowedLogSources[0] = DeviceUtils.getPkgNameFromAid(getDevice(), AID_BLUETOOTH);
+
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
     }
 
@@ -76,8 +85,13 @@ public class BluetoothStatsTests extends DeviceTestCase implements IBuildReceive
         final int expectedWait = 3_000;
         // Add state sets to the list in order.
         List<Set<Integer>> stateSet = Arrays.asList(onState, offState);
-        ConfigUtils.uploadConfigForPushedAtomWithUid(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
-                atomTag, /*useAttributionChain=*/ true);
+
+        ConfigUtils.uploadConfigForPushedAtomWithUid(
+                getDevice(),
+                DeviceUtils.STATSD_ATOM_TEST_PKG,
+                mExtraAllowedLogSources,
+                atomTag,
+                /* useAttributionChain= */ true);
 
         DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(), ".AtomTests", "testBleScanUnoptimized");
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
@@ -99,8 +113,12 @@ public class BluetoothStatsTests extends DeviceTestCase implements IBuildReceive
         final int maxTimeDiffMillis = 3_000;
         // Add state sets to the list in order.
         List<Set<Integer>> stateSet = Arrays.asList(onState, offState);
-        ConfigUtils.uploadConfigForPushedAtomWithUid(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
-                atomTag, /*useAttributionChain=*/ true);
+        ConfigUtils.uploadConfigForPushedAtomWithUid(
+                getDevice(),
+                DeviceUtils.STATSD_ATOM_TEST_PKG,
+                mExtraAllowedLogSources,
+                atomTag,
+                /* useAttributionChain= */ true);
 
         DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(), ".AtomTests", "testBleScanUnoptimized");
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
@@ -134,8 +152,12 @@ public class BluetoothStatsTests extends DeviceTestCase implements IBuildReceive
         final int maxTimeDiffMillis = 3_000;
         // Add state sets to the list in order.
         List<Set<Integer>> stateSet = Arrays.asList(onState, offState);
-        ConfigUtils.uploadConfigForPushedAtomWithUid(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
-                atomTag, /*useAttributionChain=*/ true);
+        ConfigUtils.uploadConfigForPushedAtomWithUid(
+                getDevice(),
+                DeviceUtils.STATSD_ATOM_TEST_PKG,
+                mExtraAllowedLogSources,
+                atomTag,
+                /* useAttributionChain= */ true);
 
         DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(), ".AtomTests",
                 "testBleScanOpportunistic");

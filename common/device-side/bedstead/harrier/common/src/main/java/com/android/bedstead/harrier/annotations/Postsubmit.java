@@ -18,7 +18,7 @@ package com.android.bedstead.harrier.annotations;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.PRECEDENCE_NOT_IMPORTANT;
 
-import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile;
+import com.android.bedstead.multiuser.annotations.RequireRunOnCloneProfile;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -28,7 +28,7 @@ import java.lang.annotation.Target;
 /**
  * Marks that a test method should not be run as part of multi-user presubmit, as defined by
  * tests using multi-user annotations that opt them into presubmit, like
- * {@link RequireRunOnWorkProfile}.
+ * {@link RequireRunOnCloneProfile}.
  *
  * <p>This annotation should be used on any new tests running in a multi-user module. Only after
  * the test has been in postsubmit for some time, demonstrating it is fast and reliable, should the

@@ -70,7 +70,7 @@ import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.harrier.annotations.UserPair;
 import com.android.bedstead.harrier.annotations.UserTest;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
-import com.android.bedstead.multiuser.annotations.EnsureHasNoProfile;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoProfile;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.appops.AppOpsMode;
 import com.android.bedstead.nene.packages.Package;

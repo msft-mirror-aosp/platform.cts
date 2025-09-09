@@ -52,6 +52,7 @@ import android.car.hardware.property.CarPropertyManager.SetPropertyCallback;
 import android.car.hardware.property.CarPropertyManager.SetPropertyRequest;
 import android.car.hardware.property.CarPropertyManager.SetPropertyResult;
 import android.car.hardware.property.CarPropertyManager.SupportedValuesChangeCallback;
+import android.car.hardware.property.DetailedErrorCode;
 import android.car.hardware.property.ErrorState;
 import android.car.hardware.property.MinMaxSupportedValue;
 import android.car.hardware.property.PropertyNotAvailableAndRetryException;
@@ -262,6 +263,19 @@ public class VehiclePropertyVerifier<T> {
                     PropertyNotAvailableErrorCode.NOT_AVAILABLE_SPEED_HIGH,
                     PropertyNotAvailableErrorCode.NOT_AVAILABLE_POOR_VISIBILITY,
                     PropertyNotAvailableErrorCode.NOT_AVAILABLE_SAFETY);
+    private static final ImmutableSet<Integer> ASYNC_GENERAL_ERROR_CODES =
+            ImmutableSet.of(
+                    CarPropertyManager.STATUS_ERROR_INTERNAL_ERROR,
+                    CarPropertyManager.STATUS_ERROR_NOT_AVAILABLE,
+                    CarPropertyManager.STATUS_ERROR_TIMEOUT);
+    private static final ImmutableSet<Integer> ASYNC_DETAILED_ERROR_CODES =
+            ImmutableSet.of(
+                    DetailedErrorCode.NO_DETAILED_ERROR_CODE,
+                    DetailedErrorCode.NOT_AVAILABLE_DISABLED,
+                    DetailedErrorCode.NOT_AVAILABLE_SPEED_LOW,
+                    DetailedErrorCode.NOT_AVAILABLE_SPEED_HIGH,
+                    DetailedErrorCode.NOT_AVAILABLE_POOR_VISIBILITY,
+                    DetailedErrorCode.NOT_AVAILABLE_SAFETY);
     private static final boolean CAR_PROPERTY_SUPPORTED_VALUE_FLAG =
             isAtLeastB() && Flags.carPropertySupportedValue();
     private static final List<Integer> VALID_CAR_PROPERTY_VALUE_STATUSES =
@@ -3893,9 +3907,8 @@ public class VehiclePropertyVerifier<T> {
                 assertWithMessage(
                                 "Received "
                                         + (mGetPropertyResultsCount - mCountDownLatch.getCount())
-                                        + " onSuccess(s), expected "
-                                        + mGetPropertyResultsCount
-                                        + " onSuccess(s)")
+                                        + " onSuccess and onFailure callbacks, expected "
+                                        + mGetPropertyResultsCount)
                         .that(mCountDownLatch.await(5, TimeUnit.SECONDS))
                         .isTrue();
             } catch (InterruptedException e) {
@@ -3953,9 +3966,8 @@ public class VehiclePropertyVerifier<T> {
                 assertWithMessage(
                                 "Received "
                                         + (mSetPropertyResultsCount - mCountDownLatch.getCount())
-                                        + " onSuccess(s), expected "
-                                        + mSetPropertyResultsCount
-                                        + " onSuccess(s)")
+                                        + " onSuccess and onFailure callbacks, expected "
+                                        + mSetPropertyResultsCount)
                         .that(mCountDownLatch.await(5, TimeUnit.SECONDS))
                         .isTrue();
             } catch (InterruptedException e) {
@@ -4063,6 +4075,19 @@ public class VehiclePropertyVerifier<T> {
                                         + " requestId: "
                                         + propertyAsyncError)
                         .fail();
+            }
+            assertThat(propertyAsyncError.getPropertyId()).isEqualTo(mPropertyId);
+            assertThat(propertyAsyncError.getAreaId())
+                    .isEqualTo(requestIdToAreaIdMap.get(requestId));
+            assertThat(propertyAsyncError.getErrorCode()).isIn(ASYNC_GENERAL_ERROR_CODES);
+
+            int vendorErrorCode = propertyAsyncError.getVendorErrorCode();
+            assertThat(vendorErrorCode).isAtLeast(VENDOR_ERROR_CODE_MINIMUM_VALUE);
+            assertThat(vendorErrorCode).isAtMost(VENDOR_ERROR_CODE_MAXIMUM_VALUE);
+
+            if (isAtLeastV()) {
+                assertThat(propertyAsyncError.getDetailedErrorCode())
+                        .isIn(ASYNC_DETAILED_ERROR_CODES);
             }
         }
     }
@@ -4184,6 +4209,19 @@ public class VehiclePropertyVerifier<T> {
                                             + "requestId: "
                                             + propertyAsyncError)
                             .fail();
+                }
+                assertThat(propertyAsyncError.getPropertyId()).isEqualTo(mPropertyId);
+                assertThat(propertyAsyncError.getAreaId())
+                        .isEqualTo(requestIdToAreaIdMap.get(requestId));
+                assertThat(propertyAsyncError.getErrorCode()).isIn(ASYNC_GENERAL_ERROR_CODES);
+
+                int vendorErrorCode = propertyAsyncError.getVendorErrorCode();
+                assertThat(vendorErrorCode).isAtLeast(VENDOR_ERROR_CODE_MINIMUM_VALUE);
+                assertThat(vendorErrorCode).isAtMost(VENDOR_ERROR_CODE_MAXIMUM_VALUE);
+
+                if (isAtLeastV()) {
+                    assertThat(propertyAsyncError.getDetailedErrorCode())
+                            .isIn(ASYNC_DETAILED_ERROR_CODES);
                 }
             }
         }

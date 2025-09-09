@@ -302,6 +302,38 @@ public final class DeviceUtils {
     }
 
     /**
+     * Returns the package name from the AID.
+     *
+     * @param device The test device.
+     * @param aid Android ID of the package.
+     * @return The package name associated with the AID.
+     * @throws Error if no package is found for the given AID.
+     */
+    public static String getPkgNameFromAid(ITestDevice device, int aid)
+            throws DeviceNotAvailableException {
+        // Execute the adb command to list packages filtered by the specific UID.
+        String commandOutput = device.executeShellCommand("cmd package list packages --uid " + aid);
+
+        // A UID can be shared, resulting in multiple lines. We'll parse the first valid one.
+        final String[] lines = commandOutput.split("\\R+");
+        for (final String line : lines) {
+            if (line.startsWith("package:")) {
+                // The package name starts after "package:"
+                final int pkgStartIndex = line.indexOf(':') + 1;
+                // The package name ends before the space leading to "uid:..."
+                int pkgEndIndex = line.indexOf(' ', pkgStartIndex);
+
+                return line.substring(pkgStartIndex, pkgEndIndex);
+            }
+        }
+
+        throw new Error(
+                String.format(
+                        "Could not find package name for UID: %d from output: '%s'",
+                        aid, commandOutput));
+    }
+
+    /**
      * Determines if the device has the given features.
      *
      * @param feature name of the feature (e.g. "android.hardware.bluetooth")

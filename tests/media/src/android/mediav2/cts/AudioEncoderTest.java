@@ -121,8 +121,13 @@ public class AudioEncoderTest extends CodecEncoderTestBase {
                 if (supportedSampleRates != null) {
                     sampleRates = combineUnique(sampleRates, supportedSampleRates);
                 }
-                Range<Integer>[] supportedChannelCountRanges =
-                        audioCaps.getInputChannelCountRanges();
+                Range<Integer>[] supportedChannelCountRanges;
+                if (IS_AT_LEAST_S) {
+                    supportedChannelCountRanges = audioCaps.getInputChannelCountRanges();
+                } else {
+                    supportedChannelCountRanges =
+                            new Range[]{Range.create(1, audioCaps.getMaxInputChannelCount())};
+                }
                 for (Range<Integer> supportedChannelCountRange : supportedChannelCountRanges) {
                     channelCounts = combineUnique(channelCounts,
                             IntStream.range(supportedChannelCountRange.getLower(),

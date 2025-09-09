@@ -5,8 +5,10 @@ package {
 filegroup {
     name: "bedstead-enterprise-common-srcs",
     srcs: [
-        "src/main/kotlin/com/android/bedstead/enterprise/annotations/**/*.kt",
-        "src/main/kotlin/com/android/bedstead/enterprise/annotations/**/*.java",
+        "src/main/kotlin/com/android/bedstead/enterprise/annotations/EnsureHasNoDelegate.java",
+        "src/main/kotlin/com/android/bedstead/enterprise/annotations/EnsureHasWorkProfile.kt",
+        "src/main/kotlin/com/android/bedstead/enterprise/annotations/EnsureHasNoDeviceOwner.java",
+        "src/main/kotlin/com/android/bedstead/enterprise/annotations/RequireRunOnWorkProfile.kt",
     ],
 }
 

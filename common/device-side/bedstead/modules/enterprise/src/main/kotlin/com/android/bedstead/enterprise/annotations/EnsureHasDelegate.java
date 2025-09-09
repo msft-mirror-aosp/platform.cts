@@ -16,7 +16,7 @@
 
 package com.android.bedstead.enterprise.annotations;
 
-import static com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner.DO_PO_PRIORITY;
+import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.ENSURE_HAS_DELEGATE_PRIORITY;
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp;
@@ -42,9 +42,6 @@ import java.lang.annotation.Target;
 @UsesAnnotationExecutor(UsesAnnotationExecutor.ENTERPRISE)
 public @interface EnsureHasDelegate {
 
-    /** The default key used for the testapp installed as delegate */
-    String DELEGATE_KEY = "delegate";
-
     // TODO(276740719): Add support for customisable delegates
 //    /**
 //     * The key used to identify this delegate.
@@ -52,8 +49,6 @@ public @interface EnsureHasDelegate {
 //     * <p>This can be used with {@link AdditionalQueryParameters} to modify the requirements for
 //     * the delegate. */
 //    String key() default DELEGATE_KEY;
-
-    int ENSURE_HAS_DELEGATE_PRIORITY = DO_PO_PRIORITY + 1; // Should run after setting DO/PO
 
     enum AdminType {
         DEVICE_OWNER,

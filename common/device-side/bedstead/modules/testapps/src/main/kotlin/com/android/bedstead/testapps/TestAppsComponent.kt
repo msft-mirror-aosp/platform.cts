@@ -15,7 +15,6 @@
  */
 package com.android.bedstead.testapps
 
-import com.android.bedstead.enterprise.annotations.EnsureHasDelegate
 import com.android.bedstead.harrier.AnnotationExecutorUtil
 import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.annotations.EnsureTestAppDoesNotHavePermission
@@ -136,7 +135,7 @@ class TestAppsComponent : DeviceStateComponent {
         if (additionalQueryParameters.isNotEmpty()) {
             Assume.assumeFalse(
                 "b/276740719 - we don't support custom delegates",
-                EnsureHasDelegate.DELEGATE_KEY == key
+                DELEGATE_KEY == key
             )
         }
         val pkg = packages().find(testApp.packageName())
@@ -236,5 +235,10 @@ class TestAppsComponent : DeviceStateComponent {
 
     fun addQueryParameters(annotation: AdditionalQueryParameters) {
         _additionalQueryParameters[annotation.forTestApp] = annotation.query
+    }
+
+    companion object {
+        /** The default key used for the testapp installed as delegate  */
+        const val DELEGATE_KEY: String = "delegate"
     }
 }
