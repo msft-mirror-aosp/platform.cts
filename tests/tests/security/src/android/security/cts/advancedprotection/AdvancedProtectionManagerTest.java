@@ -33,8 +33,10 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnPrimaryUser;
 import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnSecondaryUser;
+import com.android.bedstead.nene.TestApis;
 import com.android.compatibility.common.util.ApiTest;
 
+import org.junit.Assume;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -81,6 +83,7 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
     @Test
     @IncludeRunOnSecondaryUser
     public void testEnableProtection_secondaryUser_throws() {
+        Assume.assumeFalse(TestApis.users().current().isAdmin());
         assertThrows(SecurityException.class, () -> mManager.setAdvancedProtectionEnabled(true));
     }
 
