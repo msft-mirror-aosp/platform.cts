@@ -51,6 +51,7 @@ private val MEANINGLESS_API_CALLER_CLASS_PREFIXES = listOf(
     "androidx/test/",
     "androidx/tracing/Trace",
     "com/android/tradefed",
+    "org/junit/rules/TestWatcher",
 )
 
 // Potential Android API classes.
