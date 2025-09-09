@@ -224,8 +224,16 @@ public class UserRestrictionsParentTest extends InstrumentationTestCase {
                 mDevicePolicyManager.getParentProfileInstance(ADMIN_RECEIVER_COMPONENT);
         assertNotNull(parentDevicePolicyManager);
 
-        int locationMode = Settings.Secure.getIntForUser(mContentResolver,
-                Settings.Secure.LOCATION_MODE, UserHandle.USER_SYSTEM);
+        Integer locationMode;
+        try {
+            locationMode =
+                    Settings.Secure.getIntForUser(
+                            mContentResolver,
+                            Settings.Secure.LOCATION_MODE,
+                            UserHandle.USER_SYSTEM);
+        } catch (Settings.SettingNotFoundException e) {
+            locationMode = null;
+        }
 
         for (String restriction : PROFILE_OWNER_ORGANIZATION_OWNED_LOCAL_RESTRICTIONS) {
             try {
@@ -248,8 +256,13 @@ public class UserRestrictionsParentTest extends InstrumentationTestCase {
         // Restore the location mode setting after adding and removing the
         // DISALLOW_SHARE_LOCATION user restriction. This is because, modifying this user
         // restriction causes the location mode setting to be turned off.
-        Settings.Secure.putIntForUser(mContentResolver, Settings.Secure.LOCATION_MODE, locationMode,
-                UserHandle.USER_SYSTEM);
+        if (locationMode != null) {
+            Settings.Secure.putIntForUser(
+                    mContentResolver,
+                    Settings.Secure.LOCATION_MODE,
+                    locationMode,
+                    UserHandle.USER_SYSTEM);
+        }
     }
 
     private static final Set<String> PROFILE_OWNER_ORGANIZATION_OWNED_GLOBAL_RESTRICTIONS =
