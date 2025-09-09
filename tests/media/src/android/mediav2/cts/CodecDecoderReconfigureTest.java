@@ -143,12 +143,6 @@ public class CodecDecoderReconfigureTest extends CodecDecoderTestBase {
                 "bbb_520x390_1mbps_30fps_vp9.webm", CODEC_ALL},
             {MediaFormat.MIMETYPE_VIDEO_AV1, "bbb_340x280_768kbps_30fps_av1.mp4",
                 "bbb_520x390_1mbps_30fps_av1.mp4", CODEC_ALL},
-            {MediaFormat.MIMETYPE_AUDIO_AC3, "audio/ac3_510_48kHz_256.mp4",
-                "audio/ac3_200_48kHz_128.mp4", CODEC_OPTIONAL},
-            {MediaFormat.MIMETYPE_AUDIO_AC4, "audio/ac4_510_48kHz_256.mp4",
-                "audio/ac4_200_48kHz_48.mp4", CODEC_OPTIONAL},
-            {MediaFormat.MIMETYPE_AUDIO_EAC3, "audio/eac3_510_48kHz_256.mp4",
-                "audio/eac3_200_48kHz_128.mp4", CODEC_OPTIONAL},
         }));
         // Framework P010 support added with android T.
         // These codecs are not required to support P010, but if they advertise support,
@@ -203,6 +197,16 @@ public class CodecDecoderReconfigureTest extends CodecDecoderTestBase {
             exhaustiveArgsList.addAll(Arrays.asList(new Object[][] {
                     {MediaFormat.MIMETYPE_VIDEO_APV, "pattern_640x480_30fps_16mbps_apv_10bit.mp4",
                             "pattern_1280x720_30fps_30mbps_apv_10bit.mp4", CODEC_OPTIONAL},
+            }));
+        }
+        if (IS_AFTER_B) {
+            exhaustiveArgsList.addAll(Arrays.asList(new Object[][] {
+                    {MediaFormat.MIMETYPE_AUDIO_AC3, "audio/ac3_510_48kHz_256.mp4",
+                            "audio/ac3_200_48kHz_128.mp4", CODEC_OPTIONAL},
+                    {MediaFormat.MIMETYPE_AUDIO_AC4, "audio/ac4_510_48kHz_256.mp4",
+                            "audio/ac4_200_48kHz_48.mp4", CODEC_OPTIONAL},
+                    {MediaFormat.MIMETYPE_AUDIO_EAC3, "audio/eac3_510_48kHz_256.mp4",
+                            "audio/eac3_200_48kHz_128.mp4", CODEC_OPTIONAL},
             }));
         }
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, true);

@@ -739,26 +739,6 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
                         null, -1.0f, -1L, 44100, 2, -1, -1, CODEC_DEFAULT},
                 {MEDIA_TYPE_AAC, new String[]{"audio/bbb_2ch_48kHz_usac.m4a"},
                         null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_DEFAULT},
-
-                // ac3
-                {MEDIA_TYPE_AC3, new String[]{"audio/ac3_200_48kHz_128.mp4"},
-                        null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
-                {MEDIA_TYPE_AC3, new String[]{"audio/ac3_200_48kHz_256.mp4"},
-                        null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
-
-                // ac4
-                {MEDIA_TYPE_AC4, new String[]{"audio/ac4_200_48kHz_48.mp4"},
-                        null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
-                {MEDIA_TYPE_AC4, new String[]{"audio/ac4_510_48hkz_96.mp4"},
-                        null, -1.0f, -1L, 48000, 6, -1, -1, CODEC_OPTIONAL},
-                {MEDIA_TYPE_AC4, new String[]{"audio/ac4_510_48kHz_128.mp4"},
-                        null, -1.0f, -1L, 48000, 6, -1, -1, CODEC_OPTIONAL},
-
-                // eac3
-                {MEDIA_TYPE_EAC3, new String[]{"audio/eac3_200_48kHz_128.mp4"},
-                        null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
-                {MEDIA_TYPE_EAC3, new String[]{"audio/eac3_200_48kHz_256.mp4"},
-                        null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
         }));
         if (IS_AT_LEAST_U) {
             exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
@@ -776,6 +756,29 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
                     {MEDIA_TYPE_RAW, new String[]{"audio/highres_2ch_192kHz.wav"},
                             "audio/highres_2ch_192kHz_s16le_5s.raw", 0.0f, -1L, 192000, 2, -1, -1,
                             CODEC_ALL},
+            }));
+        }
+        if (IS_AFTER_B) {
+            exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
+                    // ac3
+                    {MEDIA_TYPE_AC3, new String[]{"audio/ac3_200_48kHz_128.mp4"},
+                            null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
+                    {MEDIA_TYPE_AC3, new String[]{"audio/ac3_200_48kHz_256.mp4"},
+                            null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
+
+                    // ac4
+                    {MEDIA_TYPE_AC4, new String[]{"audio/ac4_200_48kHz_48.mp4"},
+                            null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
+                    {MEDIA_TYPE_AC4, new String[]{"audio/ac4_510_48kHz_96.mp4"},
+                            null, -1.0f, -1L, 48000, 6, -1, -1, CODEC_OPTIONAL},
+                    {MEDIA_TYPE_AC4, new String[]{"audio/ac4_510_48kHz_128.mp4"},
+                            null, -1.0f, -1L, 48000, 6, -1, -1, CODEC_OPTIONAL},
+
+                    // eac3
+                    {MEDIA_TYPE_EAC3, new String[]{"audio/eac3_200_48kHz_128.mp4"},
+                            null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
+                    {MEDIA_TYPE_EAC3, new String[]{"audio/eac3_200_48kHz_256.mp4"},
+                            null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
             }));
         }
 
