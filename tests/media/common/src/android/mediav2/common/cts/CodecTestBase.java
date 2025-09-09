@@ -125,10 +125,7 @@ public abstract class CodecTestBase {
     public static final boolean IS_BEFORE_U = !IS_AT_LEAST_U;
     public static final boolean IS_AT_LEAST_V =
             ApiLevelUtil.isAtLeast(Build.VERSION_CODES.VANILLA_ICE_CREAM);
-    //TODO(b/248315681) Change to a proper condition
-    public static final boolean IS_AT_LEAST_B =
-            ApiLevelUtil.isAfter(Build.VERSION_CODES.VANILLA_ICE_CREAM)
-                || ApiLevelUtil.codenameEquals("Baklava");
+    public static final boolean IS_AT_LEAST_B = ApiLevelUtil.isAtLeast(Build.VERSION_CODES.BAKLAVA);
     public static final boolean FIRST_SDK_IS_AT_LEAST_T =
             ApiLevelUtil.isFirstApiAtLeast(Build.VERSION_CODES.TIRAMISU);
     public static final boolean FIRST_SDK_IS_AT_LEAST_V =
