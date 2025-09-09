@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.app.cts;
+package android.app.cts.sysui;
 
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
