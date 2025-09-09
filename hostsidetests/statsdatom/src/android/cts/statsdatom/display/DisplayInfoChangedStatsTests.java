@@ -20,14 +20,14 @@ import static android.cts.statsdatom.display.DisplayTestUtils.DISPLAY_TEST_APK;
 import static android.cts.statsdatom.display.DisplayTestUtils.DISPLAY_TEST_PKG;
 import static android.cts.statsdatom.display.DisplayTestUtils.TEST_CLASS_DISPLAY_EVENT;
 import static android.cts.statsdatom.display.DisplayTestUtils.TIMEOUT_MS;
-import static android.cts.statsdatom.display.DisplayTestUtils.getCurrentAccelerometerRotationMode;
-import static android.cts.statsdatom.display.DisplayTestUtils.getCurrentBrightnessLevel;
-import static android.cts.statsdatom.display.DisplayTestUtils.getCurrentBrightnessMode;
-import static android.cts.statsdatom.display.DisplayTestUtils.getCurrentUserRotationMode;
-import static android.cts.statsdatom.display.DisplayTestUtils.setAccelerometerRotationMode;
-import static android.cts.statsdatom.display.DisplayTestUtils.setAutoBrightnessMode;
-import static android.cts.statsdatom.display.DisplayTestUtils.setScreenBrightnessLevel;
-import static android.cts.statsdatom.display.DisplayTestUtils.setUserRotationMode;
+import static android.cts.statsdatom.lib.DeviceUtils.getCurrentAccelerometerRotationMode;
+import static android.cts.statsdatom.lib.DeviceUtils.getCurrentBrightnessLevel;
+import static android.cts.statsdatom.lib.DeviceUtils.getCurrentBrightnessMode;
+import static android.cts.statsdatom.lib.DeviceUtils.getCurrentUserRotationMode;
+import static android.cts.statsdatom.lib.DeviceUtils.setAccelerometerRotationMode;
+import static android.cts.statsdatom.lib.DeviceUtils.setAutoBrightnessMode;
+import static android.cts.statsdatom.lib.DeviceUtils.setScreenBrightnessLevel;
+import static android.cts.statsdatom.lib.DeviceUtils.setUserRotationMode;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -78,15 +78,10 @@ public class DisplayInfoChangedStatsTests extends BaseHostJUnit4Test implements 
         assertThat(mCtsBuild).isNotNull();
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
+        DeviceUtils.turnScreenOn(getDevice());
         DeviceUtils.installStatsdTestApp(getDevice(), mCtsBuild);
         DeviceUtils.installTestApp(getDevice(), DISPLAY_TEST_APK, DISPLAY_TEST_PKG, mCtsBuild);
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
-        DeviceUtils.turnScreenOn(getDevice());
-
-        ConfigUtils.uploadConfigForPushedAtom(
-                getDevice(),
-                DeviceUtils.STATSD_ATOM_TEST_PKG,
-                DisplayExtensionAtoms.DISPLAY_INFO_CHANGED_FIELD_NUMBER);
     }
 
     @After
@@ -106,6 +101,23 @@ public class DisplayInfoChangedStatsTests extends BaseHostJUnit4Test implements 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_LOGGING_FOR_DISPLAY_EVENTS)
     public void testDisplayEventBrightnessReported() throws Exception {
+        // Only run if we have a valid ambient light sensor.
+        if (!DeviceUtils.checkDeviceFor(getDevice(), "checkValidLightSensor")) {
+            return;
+        }
+
+        // Don't run if there is no app that has permission to access slider usage.
+        if (!DeviceUtils.checkDeviceFor(getDevice(), "checkBrightnessSliderPermission")) {
+            return;
+        }
+
+        DeviceUtils.turnScreenOn(getDevice());
+        // Upload config to collect DisplayInfoChanged event
+        ConfigUtils.uploadConfigForPushedAtom(
+                getDevice(),
+                DeviceUtils.STATSD_ATOM_TEST_PKG,
+                DisplayExtensionAtoms.DISPLAY_INFO_CHANGED_FIELD_NUMBER);
+
         int brightnessLevelBeforeTest = getCurrentBrightnessLevel(getDevice());
         int brightnessModeBeforeTest = getCurrentBrightnessMode(getDevice());
         setAutoBrightnessMode(getDevice(), 0);
@@ -154,6 +166,12 @@ public class DisplayInfoChangedStatsTests extends BaseHostJUnit4Test implements 
         if (!DeviceUtils.checkDeviceFor(getDevice(), "checkPortraitOrientationSupported")) {
             return;
         }
+
+        // Upload config to collect DisplayInfoChanged event
+        ConfigUtils.uploadConfigForPushedAtom(
+                getDevice(),
+                DeviceUtils.STATSD_ATOM_TEST_PKG,
+                DisplayExtensionAtoms.DISPLAY_INFO_CHANGED_FIELD_NUMBER);
 
         int accelerometerRotationBeforeTest = getCurrentAccelerometerRotationMode(getDevice());
 
@@ -221,8 +239,17 @@ public class DisplayInfoChangedStatsTests extends BaseHostJUnit4Test implements 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_LOGGING_FOR_DISPLAY_EVENTS)
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ENABLE_LOGGING_FOR_DISPLAY_EVENTS,
+        Flags.FLAG_DISPLAY_LISTENER_PERFORMANCE_IMPROVEMENTS
+    })
     public void testDisplayEventStateReported() throws Exception {
+        // Upload config to collect DisplayInfoChanged event
+        ConfigUtils.uploadConfigForPushedAtom(
+                getDevice(),
+                DISPLAY_TEST_PKG,
+                DisplayExtensionAtoms.DISPLAY_INFO_CHANGED_FIELD_NUMBER);
+
         // This test changes display state 2 times.
         runDeviceTests(DISPLAY_TEST_PKG, TEST_CLASS_DISPLAY_EVENT, "testDisplayStateChangedEvent");
         assertDisplayEvent(

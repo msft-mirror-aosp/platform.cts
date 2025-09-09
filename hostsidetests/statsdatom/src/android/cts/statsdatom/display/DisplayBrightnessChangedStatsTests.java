@@ -16,10 +16,10 @@
 
 package android.cts.statsdatom.display;
 
-import static android.cts.statsdatom.display.DisplayTestUtils.getCurrentBrightnessLevel;
-import static android.cts.statsdatom.display.DisplayTestUtils.getCurrentBrightnessMode;
-import static android.cts.statsdatom.display.DisplayTestUtils.setAutoBrightnessMode;
-import static android.cts.statsdatom.display.DisplayTestUtils.setScreenBrightnessLevel;
+import static android.cts.statsdatom.lib.DeviceUtils.getCurrentBrightnessLevel;
+import static android.cts.statsdatom.lib.DeviceUtils.getCurrentBrightnessMode;
+import static android.cts.statsdatom.lib.DeviceUtils.setAutoBrightnessMode;
+import static android.cts.statsdatom.lib.DeviceUtils.setScreenBrightnessLevel;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -76,6 +76,7 @@ public class DisplayBrightnessChangedStatsTests extends DeviceTestCase implement
             return;
         }
 
+        DeviceUtils.turnScreenOn(getDevice());
         // Upload config to collect DisplayBrightnessChanged event.
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 AtomsProto.Atom.DISPLAY_BRIGHTNESS_CHANGED_FIELD_NUMBER);
