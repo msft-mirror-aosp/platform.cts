@@ -25,12 +25,10 @@ java_library {
     platform_apis: true,
     srcs: [
         "src/main/java/**/*.java",
-        "src/main/java/**/*.kt",
     ],
     static_libs: [
         "androidx.localbroadcastmanager_localbroadcastmanager",
-        "compatibility-device-util-axt",
-        "mockito-kotlin-nodeps",
         "mockito-target-minus-junit4",
+        "compatibility-device-util-axt",
     ],
 }

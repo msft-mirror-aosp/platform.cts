@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 The Android Open Source Project
+ * Copyright (C) 2021 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.bedstead.dpmwrapper
+package com.android.bedstead.dpmwrapper;
 
-import android.provider.Settings
+import android.provider.Settings.SettingNotFoundException;
 
-/** Generic manager used for use cases that are not handled by existing ones. */
-interface GenericManager {
-    /** Gets a [Settings.Secure] integer setting. */
-    @Throws(Settings.SettingNotFoundException::class)
-    fun getSecureIntSettings(setting: String?): Int
+/**
+ * Generic manager used for use cases that are not handled by existing ones.
+ *
+ */
+public interface GenericManager {
+
+    /**
+     * Gets a {@link android.provider.Settings.Secure} integer setting.
+     */
+    int getSecureIntSettings(String setting) throws SettingNotFoundException;
 }
