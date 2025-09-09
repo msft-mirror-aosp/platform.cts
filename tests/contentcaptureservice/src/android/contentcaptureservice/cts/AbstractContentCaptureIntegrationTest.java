@@ -102,6 +102,7 @@ public abstract class AbstractContentCaptureIntegrationTest {
                 } finally {
                     Log.v(mTag, "@mServiceDisablerRule: safelyDisableService()");
                     safelyDisableService();
+                    disableServiceWatcher();
                 }
             }
         };
@@ -110,12 +111,18 @@ public abstract class AbstractContentCaptureIntegrationTest {
     private void safelyDisableService() {
         try {
             resetService();
+        } catch (Throwable t) {
+            Log.e(TAG, "error disabling service", t);
+        }
+    }
 
+    private void disableServiceWatcher() {
+        try {
             if (mServiceWatcher != null) {
                 mServiceWatcher.waitOnDestroy();
             }
         } catch (Throwable t) {
-            Log.e(TAG, "error disabling service", t);
+            Log.e(TAG, "error disabling service watcher", t);
         }
     }
 
