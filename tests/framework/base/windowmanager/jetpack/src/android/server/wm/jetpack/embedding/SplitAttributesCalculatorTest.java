@@ -407,8 +407,6 @@ public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
      * secondary display.
      */
     @Test
-    @RequireNotAutomotive(
-            reason = "Automotive constrains where activities are launched TODO:(b/430427912")
     public void testSplitAttributesCalculatorInvocation_acrossDisplays()
             throws InterruptedException {
         assumeTrue(supportsMultiDisplay());
