@@ -25,6 +25,8 @@ import android.content.IntentFilter
 import android.content.theming.ThemeStyle
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Typeface
 import android.os.Environment
 import android.provider.Settings
 import android.view.View
@@ -32,9 +34,26 @@ import android.view.ViewGroup
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Color as ComposeColor
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.IntrinsicMeasurable
+import androidx.compose.ui.layout.IntrinsicMeasureScope
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.Measurable
+import androidx.compose.ui.layout.MeasurePolicy
+import androidx.compose.ui.layout.MeasureResult
+import androidx.compose.ui.layout.MeasureScope
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.core.view.drawToBitmap
 import androidx.test.platform.app.InstrumentationRegistry
@@ -44,6 +63,7 @@ import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionId
 import java.io.File
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
+import kotlin.math.roundToInt
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
@@ -224,3 +244,107 @@ fun String.toCamelCase(): String =
     split('_').let { parts ->
         parts.first() + parts.drop(1).joinToString("") { it.replaceFirstChar(Char::titlecase) }
     }
+
+@Composable
+fun AliasedText(
+    text: String,
+    color: ComposeColor,
+    style: TextStyle,
+    modifier: Modifier = Modifier
+) {
+    val density = LocalDensity.current
+    val textSizePx = remember(density, style.fontSize) { with(density) { style.fontSize.toPx() } }
+
+    // Create a native typeface from the Compose style
+    val nativeTypeface = remember(style.fontWeight) {
+        val nativeWeight =
+            if (style.fontWeight == FontWeight.Bold) Typeface.BOLD else Typeface.NORMAL
+        Typeface.create(Typeface.MONOSPACE, nativeWeight)
+    }
+
+    // Updates paint  only when inputs change
+    val nativePaint = remember(color, textSizePx, nativeTypeface, style.textAlign) {
+        Paint().apply {
+            this.isAntiAlias = false
+            this.color = color.toArgb()
+            this.textSize = textSizePx
+            this.typeface = nativeTypeface
+            this.textAlign = when (style.textAlign) {
+                TextAlign.Center -> Paint.Align.CENTER
+                TextAlign.End -> Paint.Align.RIGHT
+                else -> Paint.Align.LEFT
+            }
+        }
+    }
+
+    val measurePolicy = remember(nativePaint, text) {
+        object : MeasurePolicy {
+            // Pre-calculate text dimensions using the native paint
+            private val textWidth: Float by lazy { nativePaint.measureText(text) }
+            private val fontMetrics: Paint.FontMetrics by lazy { nativePaint.fontMetrics }
+            private val textHeight: Float by lazy { fontMetrics.descent - fontMetrics.ascent }
+
+            override fun IntrinsicMeasureScope.maxIntrinsicWidth(
+                measurables: List<IntrinsicMeasurable>,
+                height: Int
+            ): Int {
+                return textWidth.roundToInt()
+            }
+
+            override fun IntrinsicMeasureScope.minIntrinsicWidth(
+                measurables: List<IntrinsicMeasurable>,
+                height: Int
+            ): Int = maxIntrinsicWidth(measurables, height)
+
+            override fun IntrinsicMeasureScope.maxIntrinsicHeight(
+                measurables: List<IntrinsicMeasurable>,
+                width: Int
+            ): Int {
+                return textHeight.roundToInt()
+            }
+
+            override fun IntrinsicMeasureScope.minIntrinsicHeight(
+                measurables: List<IntrinsicMeasurable>,
+                width: Int
+            ): Int = maxIntrinsicHeight(measurables, width)
+
+            override fun MeasureScope.measure(
+                measurables: List<Measurable>,
+                constraints: Constraints
+            ): MeasureResult {
+                val width = textWidth.roundToInt().coerceIn(
+                    constraints.minWidth,
+                    constraints.maxWidth
+                )
+                val height = textHeight.roundToInt().coerceIn(
+                    constraints.minHeight,
+                    constraints.maxHeight
+                )
+
+                return layout(width, height) {}
+            }
+        }
+    }
+
+    // Create the Layout composable. Just measures and draws itself
+    Layout(
+        content = {},
+        measurePolicy = measurePolicy,
+        modifier = modifier.drawBehind {
+            val xPos = when (nativePaint.textAlign) {
+                Paint.Align.CENTER -> size.width / 2f
+                Paint.Align.RIGHT -> size.width
+                else -> 0f
+            }
+
+            val yPos = -nativePaint.fontMetrics.ascent
+
+            drawContext.canvas.nativeCanvas.drawText(
+                text,
+                xPos,
+                yPos,
+                nativePaint
+            )
+        }
+    )
+}
