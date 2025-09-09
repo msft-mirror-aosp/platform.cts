@@ -65,6 +65,54 @@ public class DeveloperVerificationViaIntentCujTest extends DeveloperVerification
     }
 
     @Test
+    public void newInstall_launchGrantPermission_policyOpen_Timeout_userAbort_failed()
+            throws Exception {
+        setDeveloperVerificationResult(
+                TEST_APP_PACKAGE_NAME,
+                DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_OPEN,
+                RESPONSE_INCOMPLETE_TIMEOUT);
+
+        startInstallationViaIntent();
+
+        grantPermissionAndAbortOnDeveloperVerificationDialog(
+                /* isBypassAllowed= */ true, /* isAppUpdating= */ false);
+
+        assertTestPackageNotInstalled();
+    }
+
+    @Test
+    public void newInstall_launchGrantPermission_policyOpen_Disconnect_userAbort_failed()
+            throws Exception {
+        setDeveloperVerificationResult(
+                TEST_APP_PACKAGE_NAME,
+                DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_OPEN,
+                RESPONSE_INCOMPLETE_DISCONNECT);
+
+        startInstallationViaIntent();
+
+        grantPermissionAndAbortOnDeveloperVerificationDialog(
+                /* isBypassAllowed= */ true, /* isAppUpdating= */ false);
+
+        assertTestPackageNotInstalled();
+    }
+
+    @Test
+    public void newInstall_launchGrantPermission_policyOpen_Infeasible_userAbort_failed()
+            throws Exception {
+        setDeveloperVerificationResult(
+                TEST_APP_PACKAGE_NAME,
+                DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_OPEN,
+                RESPONSE_INCOMPLETE_INFEASIBLE);
+
+        startInstallationViaIntent();
+
+        grantPermissionAndAbortOnDeveloperVerificationDialog(
+                /* isBypassAllowed= */ true, /* isAppUpdating= */ false);
+
+        assertTestPackageNotInstalled();
+    }
+
+    @Test
     public void newInstall_launchGrantPermission_policyOpen_VerificationFailure_userAbort_failed()
             throws Exception {
         setDeveloperVerificationResult(
@@ -111,6 +159,51 @@ public class DeveloperVerificationViaIntentCujTest extends DeveloperVerification
     }
 
     @Test
+    public void newInstall_launchGrantPermission_policyOpen_Timeout_userBypass_success()
+            throws Exception {
+        setDeveloperVerificationResult(
+                TEST_APP_PACKAGE_NAME,
+                DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_OPEN,
+                RESPONSE_INCOMPLETE_TIMEOUT);
+
+        startInstallationViaIntent();
+
+        grantPermissionAndBypassOnDeveloperVerificationDialog(/* isAppUpdating= */ false);
+
+        assertTestPackageInstalled();
+    }
+
+    @Test
+    public void newInstall_launchGrantPermission_policyOpen_Disconnect_userBypass_success()
+            throws Exception {
+        setDeveloperVerificationResult(
+                TEST_APP_PACKAGE_NAME,
+                DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_OPEN,
+                RESPONSE_INCOMPLETE_DISCONNECT);
+
+        startInstallationViaIntent();
+
+        grantPermissionAndBypassOnDeveloperVerificationDialog(/* isAppUpdating= */ false);
+
+        assertTestPackageInstalled();
+    }
+
+    @Test
+    public void newInstall_launchGrantPermission_policyOpen_Infeasible_userBypass_success()
+            throws Exception {
+        setDeveloperVerificationResult(
+                TEST_APP_PACKAGE_NAME,
+                DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_OPEN,
+                RESPONSE_INCOMPLETE_INFEASIBLE);
+
+        startInstallationViaIntent();
+
+        grantPermissionAndBypassOnDeveloperVerificationDialog(/* isAppUpdating= */ false);
+
+        assertTestPackageInstalled();
+    }
+
+    @Test
     public void newInstall_launchGrantPermission_policyClosed_UnknownError_userAbort_failed()
             throws Exception {
         setDeveloperVerificationResult(
@@ -133,6 +226,54 @@ public class DeveloperVerificationViaIntentCujTest extends DeveloperVerification
                 TEST_APP_PACKAGE_NAME,
                 DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_CLOSED,
                 RESPONSE_INCOMPLETE_NETWORK);
+
+        startInstallationViaIntent();
+
+        grantPermissionAndAbortOnDeveloperVerificationDialog(
+                /* isBypassAllowed= */ false, /* isAppUpdating= */ false);
+
+        assertTestPackageNotInstalled();
+    }
+
+    @Test
+    public void newInstall_launchGrantPermission_policyClosed_Timeout_userAbort_failed()
+            throws Exception {
+        setDeveloperVerificationResult(
+                TEST_APP_PACKAGE_NAME,
+                DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_CLOSED,
+                RESPONSE_INCOMPLETE_TIMEOUT);
+
+        startInstallationViaIntent();
+
+        grantPermissionAndAbortOnDeveloperVerificationDialog(
+                /* isBypassAllowed= */ false, /* isAppUpdating= */ false);
+
+        assertTestPackageNotInstalled();
+    }
+
+    @Test
+    public void newInstall_launchGrantPermission_policyClosed_Disconnect_userAbort_failed()
+            throws Exception {
+        setDeveloperVerificationResult(
+                TEST_APP_PACKAGE_NAME,
+                DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_CLOSED,
+                RESPONSE_INCOMPLETE_DISCONNECT);
+
+        startInstallationViaIntent();
+
+        grantPermissionAndAbortOnDeveloperVerificationDialog(
+                /* isBypassAllowed= */ false, /* isAppUpdating= */ false);
+
+        assertTestPackageNotInstalled();
+    }
+
+    @Test
+    public void newInstall_launchGrantPermission_policyClosed_Infeasible_userAbort_failed()
+            throws Exception {
+        setDeveloperVerificationResult(
+                TEST_APP_PACKAGE_NAME,
+                DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_CLOSED,
+                RESPONSE_INCOMPLETE_INFEASIBLE);
 
         startInstallationViaIntent();
 
@@ -215,6 +356,63 @@ public class DeveloperVerificationViaIntentCujTest extends DeveloperVerification
     }
 
     @Test
+    public void update_launchGrantPermission_policyOpen_Timeout_userAbort_failed()
+            throws Exception {
+        installTestPackage();
+
+        setDeveloperVerificationResult(
+                TEST_APP_PACKAGE_NAME,
+                DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_OPEN,
+                RESPONSE_INCOMPLETE_TIMEOUT);
+
+        startInstallationUpdateViaIntent();
+
+        grantPermissionAndAbortOnDeveloperVerificationDialog(
+                /* isBypassAllowed= */ true, /* isAppUpdating= */ true);
+
+        // Assert that the currently installed version is still the old version
+        assertTestPackageInstalled();
+    }
+
+    @Test
+    public void update_launchGrantPermission_policyOpen_Disconnect_userAbort_failed()
+            throws Exception {
+        installTestPackage();
+
+        setDeveloperVerificationResult(
+                TEST_APP_PACKAGE_NAME,
+                DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_OPEN,
+                RESPONSE_INCOMPLETE_DISCONNECT);
+
+        startInstallationUpdateViaIntent();
+
+        grantPermissionAndAbortOnDeveloperVerificationDialog(
+                /* isBypassAllowed= */ true, /* isAppUpdating= */ true);
+
+        // Assert that the currently installed version is still the old version
+        assertTestPackageInstalled();
+    }
+
+    @Test
+    public void update_launchGrantPermission_policyOpen_Infeasible_userAbort_failed()
+            throws Exception {
+        installTestPackage();
+
+        setDeveloperVerificationResult(
+                TEST_APP_PACKAGE_NAME,
+                DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_OPEN,
+                RESPONSE_INCOMPLETE_INFEASIBLE);
+
+        startInstallationUpdateViaIntent();
+
+        grantPermissionAndAbortOnDeveloperVerificationDialog(
+                /* isBypassAllowed= */ true, /* isAppUpdating= */ true);
+
+        // Assert that the currently installed version is still the old version
+        assertTestPackageInstalled();
+    }
+
+    @Test
     public void update_launchGrantPermission_policyOpen_VerificationFailure_userAbort_failed()
             throws Exception {
         installTestPackage();
@@ -268,6 +466,57 @@ public class DeveloperVerificationViaIntentCujTest extends DeveloperVerification
     }
 
     @Test
+    public void update_launchGrantPermission_policyOpen_Timeout_userBypass_success()
+            throws Exception {
+        installTestPackage();
+
+        setDeveloperVerificationResult(
+                TEST_APP_PACKAGE_NAME,
+                DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_OPEN,
+                RESPONSE_INCOMPLETE_TIMEOUT);
+
+        startInstallationUpdateViaIntent();
+
+        grantPermissionAndBypassOnDeveloperVerificationDialog(/* isAppUpdating= */ true);
+
+        assertTestPackageVersion2Installed();
+    }
+
+    @Test
+    public void update_launchGrantPermission_policyOpen_Disconnect_userBypass_success()
+            throws Exception {
+        installTestPackage();
+
+        setDeveloperVerificationResult(
+                TEST_APP_PACKAGE_NAME,
+                DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_OPEN,
+                RESPONSE_INCOMPLETE_DISCONNECT);
+
+        startInstallationUpdateViaIntent();
+
+        grantPermissionAndBypassOnDeveloperVerificationDialog(/* isAppUpdating= */ true);
+
+        assertTestPackageVersion2Installed();
+    }
+
+    @Test
+    public void update_launchGrantPermission_policyOpen_Infeasible_userBypass_success()
+            throws Exception {
+        installTestPackage();
+
+        setDeveloperVerificationResult(
+                TEST_APP_PACKAGE_NAME,
+                DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_OPEN,
+                RESPONSE_INCOMPLETE_INFEASIBLE);
+
+        startInstallationUpdateViaIntent();
+
+        grantPermissionAndBypassOnDeveloperVerificationDialog(/* isAppUpdating= */ true);
+
+        assertTestPackageVersion2Installed();
+    }
+
+    @Test
     public void update_launchGrantPermission_policyClosed_UnknownError_userAbort_failed()
             throws Exception {
         installTestPackage();
@@ -295,6 +544,63 @@ public class DeveloperVerificationViaIntentCujTest extends DeveloperVerification
                 TEST_APP_PACKAGE_NAME,
                 DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_CLOSED,
                 RESPONSE_INCOMPLETE_NETWORK);
+
+        startInstallationUpdateViaIntent();
+
+        grantPermissionAndAbortOnDeveloperVerificationDialog(
+                /* isBypassAllowed= */ false, /* isAppUpdating= */ true);
+
+        // Assert that the currently installed version is still the old version
+        assertTestPackageInstalled();
+    }
+
+    @Test
+    public void update_launchGrantPermission_policyClosed_Timeout_userAbort_failed()
+            throws Exception {
+        installTestPackage();
+
+        setDeveloperVerificationResult(
+                TEST_APP_PACKAGE_NAME,
+                DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_CLOSED,
+                RESPONSE_INCOMPLETE_TIMEOUT);
+
+        startInstallationUpdateViaIntent();
+
+        grantPermissionAndAbortOnDeveloperVerificationDialog(
+                /* isBypassAllowed= */ false, /* isAppUpdating= */ true);
+
+        // Assert that the currently installed version is still the old version
+        assertTestPackageInstalled();
+    }
+
+    @Test
+    public void update_launchGrantPermission_policyClosed_Disconnect_userAbort_failed()
+            throws Exception {
+        installTestPackage();
+
+        setDeveloperVerificationResult(
+                TEST_APP_PACKAGE_NAME,
+                DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_CLOSED,
+                RESPONSE_INCOMPLETE_DISCONNECT);
+
+        startInstallationUpdateViaIntent();
+
+        grantPermissionAndAbortOnDeveloperVerificationDialog(
+                /* isBypassAllowed= */ false, /* isAppUpdating= */ true);
+
+        // Assert that the currently installed version is still the old version
+        assertTestPackageInstalled();
+    }
+
+    @Test
+    public void update_launchGrantPermission_policyClosed_Infeasible_userAbort_failed()
+            throws Exception {
+        installTestPackage();
+
+        setDeveloperVerificationResult(
+                TEST_APP_PACKAGE_NAME,
+                DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_CLOSED,
+                RESPONSE_INCOMPLETE_INFEASIBLE);
 
         startInstallationUpdateViaIntent();
 
