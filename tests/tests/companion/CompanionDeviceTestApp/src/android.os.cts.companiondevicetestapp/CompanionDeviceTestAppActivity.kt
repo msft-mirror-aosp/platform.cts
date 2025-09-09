@@ -26,6 +26,7 @@ import android.bluetooth.BluetoothManager
 import android.bluetooth.le.ScanResult
 import android.companion.AssociationRequest
 import android.companion.AssociationRequest.DEVICE_PROFILE_GLASSES
+import android.companion.AssociationRequest.DEVICE_PROFILE_MEDICAL
 import android.companion.AssociationRequest.DEVICE_PROFILE_WATCH
 import android.companion.BluetoothDeviceFilter
 import android.companion.CompanionDeviceManager
@@ -63,6 +64,7 @@ class CompanionDeviceTestAppActivity : Activity() {
     val singleCheckbox by lazy { CheckBox(this).apply { text = "Single Device" } }
     val watchCheckbox by lazy { CheckBox(this).apply { text = "Watch" } }
     val glassesCheckbox by lazy { CheckBox(this).apply { text = "Glasses" } }
+    val medicalCheckbox by lazy { CheckBox(this).apply { text = "Medical" } }
 
     val cdm: CompanionDeviceManager by lazy { val java = CompanionDeviceManager::class.java
         getSystemService(java)!! }
@@ -93,6 +95,7 @@ class CompanionDeviceTestAppActivity : Activity() {
             addView(singleCheckbox)
             addView(watchCheckbox)
             addView(glassesCheckbox)
+            addView(medicalCheckbox)
 
             addView(cdmButton("Associate") {
                 if (singleCheckbox.isChecked) {
@@ -103,6 +106,9 @@ class CompanionDeviceTestAppActivity : Activity() {
                 }
                 if (glassesCheckbox.isChecked) {
                     setDeviceProfile(DEVICE_PROFILE_GLASSES)
+                }
+                if (medicalCheckbox.isChecked) {
+                    setDeviceProfile(DEVICE_PROFILE_MEDICAL)
                 }
                 addDeviceFilter(BluetoothDeviceFilter.Builder().apply {
                     if (!nameFilter.text.isEmpty()) {
@@ -115,7 +121,8 @@ class CompanionDeviceTestAppActivity : Activity() {
                 text = "Request notifications"
                 setOnClickListener {
                     cdm.requestNotificationAccess(
-                            ComponentName(ctx, NotificationListener::class.java))
+                            ComponentName(ctx, NotificationListener::class.java)
+                    )
                 }
             })
             addView(Button(ctx).apply {
@@ -145,7 +152,8 @@ class CompanionDeviceTestAppActivity : Activity() {
                         val associationId = associationInfo.id
                         toast("requestSystemDataTransfer $associationId")
                         val intentSender = cdm.buildPermissionTransferUserConsentIntent(
-                                associationId)
+                                associationId
+                        )
                         if (intentSender != null) {
                             startIntentSender(intentSender, null, 0, 0, 0)
                         }
@@ -175,7 +183,8 @@ class CompanionDeviceTestAppActivity : Activity() {
             text = label
 
             setOnClickListener {
-                cdm.associate(AssociationRequest.Builder()
+                cdm.associate(
+                    AssociationRequest.Builder()
                         .apply { initReq() }
                         .build(),
                         object : CompanionDeviceManager.Callback() {
@@ -190,7 +199,8 @@ class CompanionDeviceTestAppActivity : Activity() {
                                 }
                             }
                         },
-                        mainHandler)
+                        mainHandler
+                )
             }
         }
     }

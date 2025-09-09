@@ -6,6 +6,7 @@ import android.companion.AssociationRequest.DEVICE_PROFILE_AUTOMOTIVE_PROJECTION
 import android.companion.AssociationRequest.DEVICE_PROFILE_COMPUTER
 import android.companion.AssociationRequest.DEVICE_PROFILE_FITNESS_TRACKER
 import android.companion.AssociationRequest.DEVICE_PROFILE_GLASSES
+import android.companion.AssociationRequest.DEVICE_PROFILE_MEDICAL
 import android.companion.AssociationRequest.DEVICE_PROFILE_NEARBY_DEVICE_STREAMING
 import android.companion.AssociationRequest.DEVICE_PROFILE_VIRTUAL_DEVICE
 import android.companion.AssociationRequest.DEVICE_PROFILE_WATCH
@@ -23,6 +24,9 @@ val DEVICE_PROFILES = buildSet {
         add(DEVICE_PROFILE_FITNESS_TRACKER)
     }
     add(DEVICE_PROFILE_GLASSES)
+    if (Flags.enableMedicalProfile()) {
+        add(DEVICE_PROFILE_MEDICAL)
+    }
     add(DEVICE_PROFILE_NEARBY_DEVICE_STREAMING)
     add(DEVICE_PROFILE_COMPUTER)
     add(DEVICE_PROFILE_APP_STREAMING)
@@ -38,6 +42,9 @@ val DEVICE_PROFILE_TO_NAME = buildMap {
         put(DEVICE_PROFILE_FITNESS_TRACKER, "FITNESS_TRACKER")
     }
     put(DEVICE_PROFILE_GLASSES, "GLASSES")
+    if (Flags.enableMedicalProfile()) {
+        put(DEVICE_PROFILE_MEDICAL, "MEDICAL")
+    }
     put(DEVICE_PROFILE_NEARBY_DEVICE_STREAMING, "NEARBY_DEVICE_STREAMING")
     put(DEVICE_PROFILE_COMPUTER, "COMPUTER")
     put(DEVICE_PROFILE_APP_STREAMING, "APP_STREAMING")
@@ -58,6 +65,9 @@ val DEVICE_PROFILE_TO_PERMISSION = buildMap {
         Manifest.permission.REQUEST_COMPANION_PROFILE_AUTOMOTIVE_PROJECTION
     )
     put(DEVICE_PROFILE_GLASSES, Manifest.permission.REQUEST_COMPANION_PROFILE_GLASSES)
+    if (Flags.enableMedicalProfile()) {
+        put(DEVICE_PROFILE_MEDICAL, Manifest.permission.REQUEST_COMPANION_PROFILE_MEDICAL)
+    }
     put(
         DEVICE_PROFILE_NEARBY_DEVICE_STREAMING,
         Manifest.permission.REQUEST_COMPANION_PROFILE_NEARBY_DEVICE_STREAMING
