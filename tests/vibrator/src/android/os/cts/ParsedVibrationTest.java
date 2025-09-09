@@ -16,8 +16,6 @@
 
 package android.os.cts;
 
-import static android.os.vibrator.Flags.FLAG_VIBRATION_XML_APIS;
-
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeFalse;
@@ -27,7 +25,6 @@ import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.os.VibratorManager;
 import android.os.vibrator.persistence.ParsedVibration;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
@@ -50,7 +47,6 @@ import java.util.Arrays;
 @ApiTest(apis = {
         "android.os.vibrator.persistence.ParsedVibration#resolve",
 })
-@RequiresFlagsEnabled(FLAG_VIBRATION_XML_APIS)
 public class ParsedVibrationTest {
 
     private static final VibrationEffect ONE_SHOT_DEFAULT_AMPLITUDE =
