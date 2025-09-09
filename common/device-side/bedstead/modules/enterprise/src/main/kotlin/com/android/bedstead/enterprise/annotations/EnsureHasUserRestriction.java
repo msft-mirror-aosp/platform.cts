@@ -16,7 +16,7 @@
 
 package com.android.bedstead.enterprise.annotations;
 
-import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.LATE;
+import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.ENSURE_HAS_USER_RESTRICTION_PRIORITY;
 import static com.android.bedstead.nene.packages.CommonPackages.FEATURE_DEVICE_ADMIN;
 
 import com.android.bedstead.harrier.UserType;
@@ -48,8 +48,6 @@ import java.lang.annotation.Target;
 @RequireFeature(FEATURE_DEVICE_ADMIN)
 @UsesAnnotationExecutor(UsesAnnotationExecutor.ENTERPRISE)
 public @interface EnsureHasUserRestriction {
-
-    int ENSURE_HAS_USER_RESTRICTION_PRIORITY = LATE;
 
     /** The restriction to be set. */
     String value();

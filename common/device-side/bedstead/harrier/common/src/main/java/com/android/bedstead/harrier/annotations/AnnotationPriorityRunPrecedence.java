@@ -36,4 +36,10 @@ public final class AnnotationPriorityRunPrecedence {
     public static final int LAST = Integer.MAX_VALUE;
 
     public static final int REQUIRE_RUN_ON_PRECEDENCE = EARLY - 1;
+
+    //region frequently re-used priorities (that could belong to other modules)
+    public static final int ENSURE_HAS_USER_RESTRICTION_PRIORITY = LATE;
+    public static final int DO_PO_PRIORITY = MIDDLE;
+    public static final int ENSURE_HAS_DELEGATE_PRIORITY = DO_PO_PRIORITY + 1; // Should run after setting DO/PO
+    //endregion
 }

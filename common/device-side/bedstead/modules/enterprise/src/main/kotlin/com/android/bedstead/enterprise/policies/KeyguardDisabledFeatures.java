@@ -33,7 +33,7 @@ import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.INHER
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_KEYGUARD;
 
 import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
-import com.android.bedstead.harrier.PolicyArguments;
+import com.android.bedstead.enterprise.PolicyArguments;
 
 import java.util.Set;
 

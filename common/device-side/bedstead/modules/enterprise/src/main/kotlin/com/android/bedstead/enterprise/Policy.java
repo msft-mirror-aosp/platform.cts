@@ -16,7 +16,6 @@
 
 package com.android.bedstead.enterprise;
 
-import static com.android.bedstead.enterprise.annotations.EnsureHasDelegate.DELEGATE_KEY;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_AFFILIATED_PROFILE_OWNER;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_AFFILIATED_PROFILE_OWNER_PROFILE;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_AFFILIATED_PROFILE_OWNER_USER;
@@ -59,6 +58,7 @@ import static com.android.bedstead.nene.devicepolicy.CommonDevicePolicy.DELEGATI
 import static com.android.bedstead.nene.devicepolicy.CommonDevicePolicy.DELEGATION_PERMISSION_GRANT;
 import static com.android.bedstead.nene.devicepolicy.CommonDevicePolicy.DELEGATION_SECURITY_LOGGING;
 import static com.android.bedstead.testapp.TestAppQueryBuilder.queryBuilder;
+import static com.android.bedstead.testapps.TestAppsComponent.DELEGATE_KEY;
 import static com.android.xts.root.annotations.RequireRootInstrumentationKt.requireRootInstrumentation;
 
 import com.android.bedstead.enterprise.annotations.EnsureHasDelegate;
@@ -98,7 +98,6 @@ import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnUna
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnUnaffiliatedProfileOwnerAdditionalUser;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DynamicParameterizedAnnotation;
-import com.android.bedstead.harrier.EnterprisePolicyWrapper;
 import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.EnsureTestAppDoesNotHavePermission;
 import com.android.bedstead.harrier.annotations.EnsureTestAppHasAppOp;
