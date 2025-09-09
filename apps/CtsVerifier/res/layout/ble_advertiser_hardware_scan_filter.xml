@@ -38,12 +38,14 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content">
                 <Button android:id="@+id/ble_advertiser_scannable_start"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_weight="1"
                         android:text="@string/ble_advertiser_start"/>
                 <Button android:id="@+id/ble_advertiser_scannable_stop"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_weight="1"
                         android:text="@string/ble_advertiser_stop"/>
             </LinearLayout>
             <TextView android:text="@string/ble_advertiser_unscannable"
@@ -56,12 +58,14 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content">
                 <Button android:id="@+id/ble_advertiser_unscannable_start"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_weight="1"
                         android:text="@string/ble_advertiser_start"/>
                 <Button android:id="@+id/ble_advertiser_unscannable_stop"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_weight="1"
                         android:text="@string/ble_advertiser_stop"/>
             </LinearLayout>
 
