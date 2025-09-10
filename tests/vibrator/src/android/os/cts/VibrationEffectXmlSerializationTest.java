@@ -26,7 +26,6 @@ import static android.os.VibrationEffect.EFFECT_CLICK;
 import static android.os.vibrator.Flags.FLAG_NORMALIZED_PWLE_EFFECTS;
 import static android.os.vibrator.Flags.FLAG_PRIMITIVE_COMPOSITION_ABSOLUTE_DELAY;
 import static android.os.vibrator.Flags.FLAG_VENDOR_VIBRATION_EFFECTS;
-import static android.os.vibrator.Flags.FLAG_VIBRATION_XML_APIS;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -76,7 +75,6 @@ import javax.xml.parsers.ParserConfigurationException;
         "android.os.vibrator.persistence.VibrationXmlParser#parse",
         "android.os.vibrator.persistence.VibrationXmlSerializer#serialize"
 })
-@RequiresFlagsEnabled(FLAG_VIBRATION_XML_APIS)
 public class VibrationEffectXmlSerializationTest {
 
     @Rule
