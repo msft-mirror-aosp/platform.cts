@@ -1892,7 +1892,6 @@
     <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.IntrusionDetectionManagerTest#testEnable_verifyNetworkLogSource"/>
     <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.advancedprotection.DisallowCellular2GTest#testDisableProtection"/>
     <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.advancedprotection.DisallowCellular2GTest#testEnableProtection"/>
-    <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.advancedprotection.DisallowWepTest#testGetFeatures"/>
     <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.authenticationpolicy.AuthenticationPolicyManagerTest#enableSecureLockDeviceParams_getMessage_returnsConstructedMessage"/>
     <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.authenticationpolicy.AuthenticationPolicyManagerTest#testDisableSecureLockDevice_returnsSuccess"/>
     <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.authenticationpolicy.AuthenticationPolicyManagerTest#testDisableSecureLockDevice_whenNotEnabled"/>

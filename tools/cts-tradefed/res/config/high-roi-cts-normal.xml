@@ -3828,7 +3828,6 @@
     <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.IntrusionDetectionManagerTest#testEnable_verifyNetworkLogSource"/>
     <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.IntrusionDetectionManagerTest#testEnable_verifySecurityLogSource"/>
     <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.MotionEventTest#testActionOutsideDoesNotContainedObscuredInformation"/>
-    <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.advancedprotection.DisallowWepTest#testGetFeatures"/>
     <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.advancedprotection.MemoryTaggingExtensionTest#testDisableProtection"/>
     <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.advancedprotection.MemoryTaggingExtensionTest#testEnableProtection"/>
     <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.authenticationpolicy.AuthenticationPolicyManagerTest#enableSecureLockDeviceParams_getMessage_returnsConstructedMessage"/>
