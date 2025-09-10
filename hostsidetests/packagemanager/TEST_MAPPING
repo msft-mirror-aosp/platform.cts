@@ -64,6 +64,9 @@
     },
     {
       "name": "CtsAppMetadataHostTestCases"
+    },
+    {
+      "name": "CtsDeveloperVerificationHostTestCases"
     }
   ]
 }

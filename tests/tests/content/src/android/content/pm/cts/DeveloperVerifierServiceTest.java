@@ -21,12 +21,14 @@ import static android.content.pm.PackageInstaller.DEVELOPER_VERIFICATION_POLICY_
 import static android.content.pm.PackageInstaller.DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_OPEN;
 import static android.content.pm.PackageInstaller.DEVELOPER_VERIFICATION_POLICY_NONE;
 import static android.content.pm.PackageInstaller.DEVELOPER_VERIFICATION_USER_RESPONSE_INSTALL_ANYWAY;
+import static android.content.pm.PackageManager.MATCH_SYSTEM_ONLY;
 import static android.content.pm.verify.developer.DeveloperVerificationSession.DEVELOPER_VERIFICATION_INCOMPLETE_UNKNOWN;
 import static android.content.pm.verify.developer.DeveloperVerificationStatus.APP_METADATA_VERIFICATION_STATUS_BAD;
 import static android.content.pm.verify.developer.DeveloperVerificationStatus.APP_METADATA_VERIFICATION_STATUS_UNDEFINED;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeTrue;
 import static org.testng.Assert.expectThrows;
 
 import android.content.ComponentName;
@@ -35,6 +37,7 @@ import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageInstaller;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.content.pm.SigningDetails;
 import android.content.pm.SigningInfo;
 import android.content.pm.verify.developer.DeveloperVerificationSession;
@@ -55,6 +58,7 @@ import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.Rule;
@@ -64,6 +68,7 @@ import org.junit.runner.RunWith;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -104,13 +109,33 @@ public class DeveloperVerifierServiceTest {
                 android.Manifest.permission.DEVELOPER_VERIFICATION_AGENT);
     }
 
+    @CddTest(requirements = {"9.18/C-1-1"})
     @Test
-    public void testSetVerificationPolicyFails() throws Exception {
+    public void testGetVerificationServiceProvider() throws Exception {
         // Anyone can check the system verifier package name as it's not protected by any permission
         final ComponentName verifierComponentName =
                 mPackageInstaller.getDeveloperVerificationServiceProvider();
         final String verifierPackageName =
                 verifierComponentName == null ? null : verifierComponentName.getPackageName();
+        assumeTrue(verifierPackageName != null);
+        // The verifier package, if exists, must have a service that is bound to the system and
+        // implement DeveloperVerifierService and registered with an intent filter that matches the
+        // action VERIFY_DEVELOPER.
+        final Intent intent = new Intent(PackageManager.ACTION_VERIFY_DEVELOPER);
+        intent.setPackage(verifierPackageName);
+        final List<ResolveInfo> matches =
+                mPackageManager.queryIntentServices(intent, MATCH_SYSTEM_ONLY);
+        assertThat(matches).isNotEmpty();
+        assertThat(matches).hasSize(1);
+        // There should only be one match since the intent specified the package name
+        ResolveInfo ri = matches.getFirst();
+        assertThat(ri.getComponentInfo()).isNotNull();
+        assertThat(ri.getComponentInfo().packageName).isEqualTo(verifierPackageName);
+    }
+
+    @CddTest(requirements = {"9.18/C-2-1"})
+    @Test
+    public void testSetVerificationPolicyFails() throws Exception {
         // Test changing verification policy without permission
         expectThrows(
                 SecurityException.class,
