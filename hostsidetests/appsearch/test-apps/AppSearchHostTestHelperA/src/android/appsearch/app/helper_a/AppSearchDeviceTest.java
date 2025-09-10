@@ -16,52 +16,61 @@
 
 package android.appsearch.app.helper_a;
 
+import static android.app.appsearch.testutil.AppSearchTestUtils.calculateDigest;
 import static android.app.appsearch.testutil.AppSearchTestUtils.checkIsBatchResultSuccess;
 import static android.app.appsearch.testutil.AppSearchTestUtils.doGet;
-
 import static com.google.common.truth.Truth.assertThat;
-
 import static org.testng.Assert.expectThrows;
 
 import android.Manifest;
 import android.app.UiAutomation;
 import android.app.appsearch.AppSearchBatchResult;
+import android.app.appsearch.AppSearchBlobHandle;
 import android.app.appsearch.AppSearchManager;
 import android.app.appsearch.AppSearchResult;
 import android.app.appsearch.AppSearchSchema;
+import android.app.appsearch.AppSearchSchema.EmbeddingPropertyConfig;
+import android.app.appsearch.AppSearchSchema.PropertyConfig;
+import android.app.appsearch.AppSearchSchema.StringPropertyConfig;
 import android.app.appsearch.AppSearchSessionShim;
+import android.app.appsearch.EmbeddingVector;
 import android.app.appsearch.GenericDocument;
 import android.app.appsearch.GetByDocumentIdRequest;
+import android.app.appsearch.OpenBlobForReadResponse;
+import android.app.appsearch.OpenBlobForWriteResponse;
 import android.app.appsearch.PackageIdentifier;
 import android.app.appsearch.PutDocumentsRequest;
+import android.app.appsearch.SearchResult;
 import android.app.appsearch.SearchResultsShim;
 import android.app.appsearch.SearchSpec;
 import android.app.appsearch.SetSchemaRequest;
 import android.app.appsearch.testutil.AppSearchSessionShimImpl;
 import android.os.Bundle;
+import android.os.ParcelFileDescriptor;
 import android.util.Log;
-
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
-
 import com.android.appsearch.flags.Flags;
-
+import com.google.common.collect.ImmutableSet;
 import com.google.common.io.BaseEncoding;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-
+import java.io.File;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 @RunWith(AndroidJUnit4.class)
 public class AppSearchDeviceTest {
+    private static final String TAG = "AppSearchDeviceTest";
 
     private static final String DB_NAME = "";
     private static final String NAMESPACE = "namespace";
@@ -86,12 +95,42 @@ public class AppSearchDeviceTest {
                             .build())
                     .build();
 
+    // Schema registration
+    private static final AppSearchSchema STRESS_TEST_SCHEMA =
+            new AppSearchSchema.Builder("Email")
+                    .addProperty(
+                            new StringPropertyConfig.Builder("body")
+                                    .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                    .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                    .setIndexingType(StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                    .build())
+                    .addProperty(
+                            new AppSearchSchema.BlobHandlePropertyConfig.Builder("blob")
+                                    .setCardinality(
+                                            AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL)
+                                    .setDescription("this is a blob.")
+                                    .build())
+                    .addProperty(
+                            new EmbeddingPropertyConfig.Builder("embedding1")
+                                    .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
+                                    .setIndexingType(
+                                            EmbeddingPropertyConfig.INDEXING_TYPE_SIMILARITY)
+                                    .build())
+                    .addProperty(
+                            new EmbeddingPropertyConfig.Builder("embedding2")
+                                    .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
+                                    .setIndexingType(
+                                            EmbeddingPropertyConfig.INDEXING_TYPE_SIMILARITY)
+                                    .build())
+                    .build();
+
     private static final GenericDocument DOCUMENT =
             new GenericDocument.Builder<>(NAMESPACE, ID, SCHEMA.getSchemaType())
                     .setPropertyString("subject", "testPut example1")
                     .setCreationTimestampMillis(12345L)
                     .build();
 
+    private static final String PKG_A = "android.appsearch.app.helper_a";
     private static final String PKG_B = "android.appsearch.app.helper_b";
 
     // To generate, run `apksigner` on the build APK. e.g.
@@ -104,6 +143,11 @@ public class AppSearchDeviceTest {
     // building the apk and running apksigner
     private static final byte[] PKG_B_CERT_SHA256 = BaseEncoding.base16().decode(
             "3D7A1AAE7AE8B9949BE93E071F3702AA38695B0F99B5FC4B2E8B364AC78FFDB2");
+
+    private static final int STRESS_TEST_MAX_NUM_DOCS = 4000;
+    private static final int STRESS_TEST_MAX_NUM_SESSIONS = 10;
+    private static final int STRESS_TEST_MAX_NUM_BODY_LENGTH = 5000;
+    private static final String STRESS_TEST_NAMESPACE = "stress_test_namespace";
 
     private AppSearchSessionShim mDb;
     private UiAutomation mUiAutomation;
@@ -261,6 +305,160 @@ public class AppSearchDeviceTest {
                         new PutDocumentsRequest.Builder().addGenericDocuments(DOCUMENT).build()));
         assertThat(result.getSuccesses()).containsExactly(ID, /*v0=*/null);
         assertThat(result.getFailures()).isEmpty();
+    }
+
+    // Put a large number of docs, with embeddings and blobs, in different sessions.
+    @Test
+    public void setUpStressTestDbs() throws Exception {
+        for (int i = 0; i < STRESS_TEST_MAX_NUM_SESSIONS; ++i) {
+            AppSearchSessionShim db =
+                    AppSearchSessionShimImpl.createSearchSessionAsync(
+                                    new AppSearchManager.SearchContext.Builder("my_test_db" + i)
+                                            .build())
+                            .get();
+            populateStressTestData("my_test_db" + i, db);
+            db.close();
+        }
+    }
+
+    @Test
+    public void verifyStressTestDbs() throws Exception {
+        for (int i = 0; i < STRESS_TEST_MAX_NUM_SESSIONS; ++i) {
+            String dbName = "my_test_db" + i;
+            Log.i(TAG, "Verifying db " + dbName);
+            AppSearchSessionShim db =
+                    AppSearchSessionShimImpl.createSearchSessionAsync(
+                                    new AppSearchManager.SearchContext.Builder(dbName).build())
+                            .get();
+
+            // Normal text search.
+            SearchResultsShim shimResults =
+                    db.search(
+                            "test",
+                            new SearchSpec.Builder()
+                                    .setResultCountPerPage(STRESS_TEST_MAX_NUM_DOCS)
+                                    .build());
+            List<SearchResult> searchResults = shimResults.getNextPageAsync().get();
+            assertThat(searchResults).hasSize(STRESS_TEST_MAX_NUM_DOCS);
+
+            // Embedding search
+            EmbeddingVector searchEmbedding =
+                    new EmbeddingVector(new float[] {1, -1, -1, 1, -1}, "my_model_v1");
+            SearchSpec embeddingSearchSpec =
+                    new SearchSpec.Builder()
+                            .setDefaultEmbeddingSearchMetricType(
+                                    SearchSpec.EMBEDDING_SEARCH_METRIC_TYPE_DOT_PRODUCT)
+                            .addEmbeddingParameters(searchEmbedding)
+                            .setRankingStrategy(
+                                    "sum(this.matchedSemanticScores(getEmbeddingParameter(0)))")
+                            .setListFilterQueryLanguageEnabled(true)
+                            .setResultCountPerPage(STRESS_TEST_MAX_NUM_DOCS)
+                            .build();
+            shimResults =
+                    db.search(
+                            "semanticSearch(getEmbeddingParameter(0), -1, 1)", embeddingSearchSpec);
+            searchResults = shimResults.getNextPageAsync().get();
+            assertThat(searchResults).hasSize(STRESS_TEST_MAX_NUM_DOCS);
+
+            // Check blob
+            byte[] data = "hello world".getBytes(StandardCharsets.UTF_8);
+            byte[] digest = calculateDigest(data);
+            AppSearchBlobHandle handle =
+                    AppSearchBlobHandle.createWithSha256(
+                            digest, PKG_A, dbName, STRESS_TEST_NAMESPACE);
+            OpenBlobForReadResponse response =
+                    db.openBlobForReadAsync(ImmutableSet.of(handle)).get();
+            assertThat(response.getResult().getSuccesses()).hasSize(1);
+
+            shimResults.close();
+        }
+    }
+
+    @Test
+    public void clearStressTestDbs() throws Exception {
+        for (int i = 0; i < STRESS_TEST_MAX_NUM_SESSIONS; ++i) {
+            String dbName = "my_test_db" + i;
+            Log.i(TAG, "Clearing db " + dbName);
+            AppSearchSessionShim db =
+                    AppSearchSessionShimImpl.createSearchSessionAsync(
+                                    new AppSearchManager.SearchContext.Builder(dbName).build())
+                            .get();
+            byte[] data = "hello world".getBytes(StandardCharsets.UTF_8);
+            byte[] digest = calculateDigest(data);
+            AppSearchBlobHandle handle =
+                    AppSearchBlobHandle.createWithSha256(
+                            digest, PKG_A, dbName, STRESS_TEST_NAMESPACE);
+            db.removeBlobAsync(ImmutableSet.of(handle)).get();
+            db.setSchemaAsync(new SetSchemaRequest.Builder().setForceOverride(true).build()).get();
+            db.close();
+        }
+    }
+
+    private void populateStressTestData(String dbName, AppSearchSessionShim db) throws Exception {
+        // schema registration
+        db.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(STRESS_TEST_SCHEMA).build())
+                .get();
+
+        // Commit a blob
+        byte[] data = "hello world".getBytes(StandardCharsets.UTF_8);
+        byte[] digest = calculateDigest(data);
+        AppSearchBlobHandle handle =
+                AppSearchBlobHandle.createWithSha256(digest, PKG_A, dbName, STRESS_TEST_NAMESPACE);
+        try (OpenBlobForWriteResponse writeResponse =
+                db.openBlobForWriteAsync(ImmutableSet.of(handle)).get()) {
+            AppSearchBatchResult<AppSearchBlobHandle, ParcelFileDescriptor> writeResult =
+                    writeResponse.getResult();
+            writeResponse.getResult();
+            for (Map.Entry<AppSearchBlobHandle, AppSearchResult<ParcelFileDescriptor>> entry :
+                    writeResult.getFailures().entrySet()) {
+                Log.e(
+                        TAG,
+                        "Failed to write blob "
+                                + entry.getKey()
+                                + ": "
+                                + entry.getValue().getErrorMessage());
+            }
+            assertThat(writeResult.isSuccess()).isTrue();
+
+            ParcelFileDescriptor writePfd = writeResult.getSuccesses().get(handle);
+            try (OutputStream outputStream =
+                    new ParcelFileDescriptor.AutoCloseOutputStream(writePfd)) {
+                outputStream.write(data);
+                outputStream.flush();
+            }
+        }
+        assertThat(db.commitBlobAsync(ImmutableSet.of(handle)).get().getResult().isSuccess())
+                .isTrue();
+
+        // Put documents
+        char[] bigBodyChars = new char[STRESS_TEST_MAX_NUM_BODY_LENGTH];
+        for (int i = 0; i < STRESS_TEST_MAX_NUM_BODY_LENGTH; ++i) {
+            bigBodyChars[i] = (char) ('a' + i % 26);
+            if (i % 49 == 13) {
+                bigBodyChars[i] = ' ';
+            }
+        }
+        String bigBody = new String(bigBodyChars);
+        PutDocumentsRequest.Builder putDocumentsRequestBuilder = new PutDocumentsRequest.Builder();
+        ArrayList<GenericDocument> docs = new ArrayList<>(STRESS_TEST_MAX_NUM_DOCS);
+        for (int i = 0; i < STRESS_TEST_MAX_NUM_DOCS; ++i) {
+            GenericDocument doc =
+                    new GenericDocument.Builder<>(STRESS_TEST_NAMESPACE, "id" + i, "Email")
+                            .setPropertyString("body", bigBody + " test")
+                            .setPropertyBlobHandle("blob", handle)
+                            .setPropertyEmbedding(
+                                    "embedding1",
+                                    new EmbeddingVector(
+                                            new float[] {-0.1f, 0.2f, -0.3f, -0.4f, 0.5f},
+                                            "my_model_v1"))
+                            .setPropertyEmbedding(
+                                    "embedding2",
+                                    new EmbeddingVector(
+                                            new float[] {0.6f, 0.7f, -0.8f}, "my_model_v2"))
+                            .build();
+            docs.add(doc);
+        }
+        db.putAsync(putDocumentsRequestBuilder.addGenericDocuments(docs).build()).get();
     }
 
     @Test
