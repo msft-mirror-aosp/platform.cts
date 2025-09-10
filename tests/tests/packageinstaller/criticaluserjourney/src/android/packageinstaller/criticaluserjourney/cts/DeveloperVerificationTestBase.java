@@ -31,6 +31,9 @@ public class DeveloperVerificationTestBase extends InstallationTestBase {
     static final int RESPONSE_COMPLETE_WITH_REJECT = 2;
     static final int RESPONSE_INCOMPLETE_UNKNOWN = 3;
     static final int RESPONSE_INCOMPLETE_NETWORK = 4;
+    static final int RESPONSE_INCOMPLETE_TIMEOUT = 5;
+    static final int RESPONSE_INCOMPLETE_DISCONNECT = 6;
+    static final int RESPONSE_INCOMPLETE_INFEASIBLE = 7;
 
     @Before
     @Override
