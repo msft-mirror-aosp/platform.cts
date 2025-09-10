@@ -1664,8 +1664,9 @@ public class AppWidgetTest extends AppWidgetTestCase {
             waitForCallCount(invocationCounter, 2);
 
             // Change the font scale
-            float currentScale = Float.parseFloat(mFontScale.get());
-            mFontScale.set(String.valueOf(currentScale + 0.5));
+            final float currentScale = Float.parseFloat(mFontScale.get());
+            final float newScale = currentScale + 0.5f;
+            mFontScale.set(String.format("%.1f", newScale));
 
             // Wait for onUpdate
             waitForCallCount(invocationCounter, 3);
