@@ -97,11 +97,6 @@ abstract class BaseHostTestCase extends BaseHostJUnit4Test {
         return (stderr == null || stderr.trim().isEmpty());
     }
 
-    protected static boolean supportsMultipleUsers(ITestDevice device)
-            throws DeviceNotAvailableException {
-        return device.getMaxNumberOfUsersSupported() > 1;
-    }
-
     protected static boolean usesSdcardFs(ITestDevice device) throws Exception {
         CommandResult out = device.executeShellV2Command("cat /proc/mounts");
         assertThat(isSuccessful(out)).isTrue();

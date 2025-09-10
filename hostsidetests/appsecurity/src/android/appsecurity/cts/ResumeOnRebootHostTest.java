@@ -86,7 +86,7 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
     // This is the PIN set in EncryptionAppTest.testSetUp()
     private static final String DEFAULT_PIN = "1234";
 
-    private boolean mSupportsMultiUser;
+    private boolean mSupportsSecondaryUsers;
     private String mOriginalVerifyAdbInstallerSetting = null;
 
     @Rule(order = 0)
@@ -104,7 +104,8 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
         assertNotNull(getAbi());
         assertNotNull(getBuild());
 
-        mSupportsMultiUser = getDevice().getMaxNumberOfUsersSupported() > 1;
+        mSupportsSecondaryUsers =
+                getDevice().getMaxNumberOfUsersSupported("android.os.usertype.full.SECONDARY") > 0;
 
         normalizeUserStates();
         setScreenStayOnValue(true);
@@ -179,7 +180,7 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
     public void resumeOnReboot_TwoUsers_SingleUserUnlock_Success() throws Exception {
         assumeTrue("Device isn't at least S or has no lock screen", isSupportedSDevice());
         assumeTrue("Device does not support file-based encryption", supportFileBasedEncryption());
-        assumeSupportsMultiUser();
+        assumeSupportsSecondaryUsers();
 
         int[] users = prepareUsers(2);
         int initialUser = users[0];
@@ -227,7 +228,7 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
     public void resumeOnReboot_TwoUsers_BothUserUnlock_Success() throws Exception {
         assumeTrue("Device isn't at least S or has no lock screen", isSupportedSDevice());
         assumeTrue("Device does not support file-based encryption", supportFileBasedEncryption());
-        assumeSupportsMultiUser();
+        assumeSupportsSecondaryUsers();
 
         int[] users = prepareUsers(2);
         int initialUser = users[0];
@@ -714,7 +715,7 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
         return Utils.prepareMultipleUsers(getDevice(), users);
     }
 
-    private void assumeSupportsMultiUser() {
-        assumeTrue("Device doesn't support multi-user", mSupportsMultiUser);
+    private void assumeSupportsSecondaryUsers() {
+        assumeTrue("Device doesn't support multi-user", mSupportsSecondaryUsers);
     }
 }

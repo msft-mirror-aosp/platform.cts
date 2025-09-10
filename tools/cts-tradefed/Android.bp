@@ -52,7 +52,11 @@ compatibility_test_suite_package {
     build_metadata: true,
     phony_deps: [
         "cts-verifier",
-    ],
+        "cts_platform_releases_check",
+    ] + select(release_flag("RELEASE_PLATFORM_VERSION_CODENAME"), {
+        "REL": [],
+        default: ["cts_platform_version_check"],
+    }),
 }
 
 phony_rule {

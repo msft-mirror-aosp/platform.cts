@@ -141,6 +141,13 @@ public class FeatureUtil {
         return isXlarge || isSevenInchTablet;
     }
 
+    /** Returns true if the device is a desktop. */
+    public static boolean isDesktop() {
+        // If the device's build characteristics include "desktop", then it's a desktop.
+        return Arrays.asList(SystemProperties.get("ro.build.characteristics").split(","))
+                .contains("desktop");
+    }
+
     /** Returns true if the device is a low ram device:
      *  1. API level &gt;= O_MR1
      *  2. device has feature LOW_RAM_FEATURE

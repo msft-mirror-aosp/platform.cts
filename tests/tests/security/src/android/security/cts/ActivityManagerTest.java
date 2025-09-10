@@ -57,10 +57,18 @@ import java.util.concurrent.Callable;
 @RunWith(AndroidJUnit4.class)
 public class ActivityManagerTest extends StsExtraBusinessLogicTestCase {
 
-    private boolean canSupportMultiuser() {
-        String output = ShellUtils.runShellCommand("pm get-max-users");
-        if (output.contains("Maximum supported users:")) {
-            return Integer.parseInt(output.split(": ", 2)[1].trim()) > 1;
+    private boolean canSupportSecondaryUsers() {
+        if (!android.multiuser.Flags.consistentMaxUsers()) {
+            String output = ShellUtils.runShellCommand("pm get-max-users");
+            if (output.contains("Maximum supported users:")) {
+                return Integer.parseInt(output.split(": ", 2)[1].trim()) > 1;
+            }
+            return false;
+        }
+        String output = ShellUtils.runShellCommand(
+                "pm get-max-users --user-type android.os.usertype.full.SECONDARY");
+        if (output.contains("Maximum supported users")) {
+            return Integer.parseInt(output.split(": ", 2)[1].trim()) > 0;
         }
         return false;
     }
@@ -69,7 +77,7 @@ public class ActivityManagerTest extends StsExtraBusinessLogicTestCase {
     @Test
     public void testActivityManager_registerUidChangeObserver_onlyNoInteractAcrossPermission()
             throws Exception {
-        if (!canSupportMultiuser()) {
+        if (!canSupportSecondaryUsers()) {
             return;
         }
         String out = "";
@@ -100,7 +108,7 @@ public class ActivityManagerTest extends StsExtraBusinessLogicTestCase {
     @Test
     public void testActivityManager_registerUidChangeObserver_allPermission()
             throws Exception {
-        if (!canSupportMultiuser()) {
+        if (!canSupportSecondaryUsers()) {
             return;
         }
         String out = "";

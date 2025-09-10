@@ -18,6 +18,7 @@ package android.host.multiuser;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assume.assumeNotNull;
+import static org.junit.Assume.assumeTrue;
 
 import android.host.multiuser.BaseMultiUserTest.SupportsMultiUserRule;
 
@@ -30,6 +31,8 @@ import org.junit.runner.RunWith;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
 public final class CreateUsersPermissionTest extends BaseMultiUserTest {
+
+    private static final String SECONDARY_USER_TYPE = "android.os.usertype.full.SECONDARY";
 
     @Rule
     public final SupportsMultiUserRule mSupportsMultiUserRule = new SupportsMultiUserRule(this);
@@ -53,6 +56,10 @@ public final class CreateUsersPermissionTest extends BaseMultiUserTest {
 
     @Test
     public void testCanCreateRestrictedUser() throws Exception {
+        assumeTrue(
+                "Device does not support restricted profiles",
+                getDevice().getMaxNumberOfUsersSupported("android.os.usertype.full.RESTRICTED")
+                        > 0);
         Integer parentUser = getDevice().getMainUserId();
         // Only devices with a main user can have a restricted profile
         assumeNotNull(parentUser);
@@ -62,18 +69,14 @@ public final class CreateUsersPermissionTest extends BaseMultiUserTest {
     @CddTest(requirement="9.5/A-1-3")
     @Test
     public void testCanCreateGuestUserWhenUserLimitReached() throws Exception {
-        assumeIsAutomotive();
-
         // Remove existing guest user
         int guestUserId = getGuestUser();
         if (guestUserId != -1) {
             getDevice().removeUser(guestUserId);
         }
         // Add new users until user limit reached
-        int maxUsers = getDevice().getMaxNumberOfUsersSupported();
-        int userCount = getDevice().listUsers().size();
-        int numUsersToCreate = maxUsers - userCount;
-        for (int i = 0; i < numUsersToCreate; i++) {
+        int maxUsers = getDevice().getMaxNumberOfUsersSupported(SECONDARY_USER_TYPE);
+        while (getDevice().getRemainingCreatableUserCount(SECONDARY_USER_TYPE) > 0) {
             // tearDown will removed non-fixed users
             getDevice().createUser(
                     "TestUser_" + System.currentTimeMillis() /* name */,
@@ -81,8 +84,8 @@ public final class CreateUsersPermissionTest extends BaseMultiUserTest {
                     false /* ephemeral */);
         }
         createGuestUser();
-        userCount = getDevice().listUsers().size();
+        int userCount = getDevice().listUsers().size();
         assertWithMessage("User count should be greater than max users due to added guest user")
-                .that(userCount).isGreaterThan(maxUsers);
+                .that(userCount).isGreaterThan(maxUsers + 1); // + 1 to count system user
     }
 }

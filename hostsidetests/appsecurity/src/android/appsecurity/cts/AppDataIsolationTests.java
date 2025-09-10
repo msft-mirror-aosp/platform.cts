@@ -362,12 +362,13 @@ public class AppDataIsolationTests extends BaseAppSecurityTest {
     }
 
     private void assumeCanCreateUser() throws DeviceNotAvailableException {
-        assumeTrue("Test requires multi-user support", mSupportsMultiUser);
+        assumeTrue("Test requires multi-user support", mSupportsSecondaryUsers);
         // If we're already at the user limit, e.g. when running the test in a secondary user,
         // then we can't create another one.
-        int currentUserCount = getDevice().listUsers().size();
-        assumeTrue("Test requires creating another user",
-                getDevice().getMaxNumberOfUsersSupported() > currentUserCount);
+        assumeTrue(
+                "Test requires creating another user",
+                getDevice().getRemainingCreatableUserCount("android.os.usertype.full.SECONDARY")
+                        > 0);
     }
 
     private void runDeviceTests(String pkgName, String testClassName, String testMethodName,

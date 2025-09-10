@@ -42,6 +42,7 @@ private fun <T> peekEvent(queue: BlockingQueue<T>, timeout: Duration): T? {
 }
 
 class BlockingQueueEventVerifier(val queue: BlockingQueue<InputEvent>) {
+    @JvmOverloads
     fun assertReceivedMotion(matcher: Matcher<MotionEvent>, msg: String? = null): MotionEvent {
         val event = getEventOfType(MotionEvent::class.java, msg)
         assertThat(msg ?: "MotionEvent checks", event, matcher)
@@ -66,9 +67,10 @@ class BlockingQueueEventVerifier(val queue: BlockingQueue<InputEvent>) {
     }
 
     @JvmOverloads
-    fun assertReceivedKey(matcher: Matcher<KeyEvent>, msg: String? = null) {
+    fun assertReceivedKey(matcher: Matcher<KeyEvent>, msg: String? = null): KeyEvent {
         val event = getEventOfType(KeyEvent::class.java, msg)
         assertThat(msg ?: "KeyEvent checks", event, matcher)
+        return event
     }
 
     fun assertNoEvents() {

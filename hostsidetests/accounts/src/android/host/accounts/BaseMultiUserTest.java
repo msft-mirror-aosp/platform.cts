@@ -41,8 +41,9 @@ public class BaseMultiUserTest implements IDeviceTest {
     private static final String FEATURE_AUTOMOTIVE = "feature:android.hardware.type.automotive";
     private static final String FEATURE_MANAGED_USERS = "android.software.managed_users";
 
-    /** Whether multi-user is supported. */
-    protected boolean mSupportsMultiUser;
+    /** Whether managed profiles are supported. */
+    protected boolean mSupportsManagedProfiles;
+
     protected boolean mSupportsManagedUsers;
     protected int mInitialUserId;
     protected int mPrimaryUserId;
@@ -54,7 +55,8 @@ public class BaseMultiUserTest implements IDeviceTest {
 
     @Before
     public void setUp() throws Exception {
-        mSupportsMultiUser = getDevice().getMaxNumberOfUsersSupported() > 1;
+        mSupportsManagedProfiles =
+                getDevice().getMaxNumberOfUsersSupported("android.os.usertype.profile.MANAGED") > 0;
         mSupportsManagedUsers = getDevice().hasFeature(FEATURE_MANAGED_USERS);
 
         mInitialUserId = getDevice().getCurrentUser();

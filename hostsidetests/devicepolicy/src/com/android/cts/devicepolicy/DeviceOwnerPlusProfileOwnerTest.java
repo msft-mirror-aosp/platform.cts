@@ -133,7 +133,7 @@ public final class DeviceOwnerPlusProfileOwnerTest extends BaseDeviceOwnerTest {
     @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
             + "user mode")
     public void testBindDeviceAdminServiceAsUser_secondaryUser() throws Exception {
-        assumeCanCreateAdditionalUsers(1);
+        assumeCanCreateAdditionalSecondaryUsers(1);
 
         int secondaryUserId = setupManagedSecondaryUser();
 
@@ -159,7 +159,7 @@ public final class DeviceOwnerPlusProfileOwnerTest extends BaseDeviceOwnerTest {
     @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
             + "user mode")
     public void testWipeData_secondaryUser() throws Exception {
-        assumeCanCreateAdditionalUsers(1);
+        assumeCanCreateAdditionalSecondaryUsers(1);
 
         int secondaryUserId = setupManagedSecondaryUser();
         addDisallowRemoveUserRestriction();
@@ -254,7 +254,7 @@ public final class DeviceOwnerPlusProfileOwnerTest extends BaseDeviceOwnerTest {
 
     /** Returns the user id of the newly created secondary user */
     private int setupManagedSecondaryUser() throws Exception {
-        assertTrue("Cannot create 1 additional user", canCreateAdditionalUsers(1));
+        assertTrue("Cannot create 1 additional user", canCreateAdditionalSecondaryUsers(1));
 
         runDeviceTestsAsUser(
                 COMP_DPC_PKG,

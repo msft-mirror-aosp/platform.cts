@@ -21,8 +21,6 @@ import android.Manifest.permission.QUERY_USERS
 import android.app.supervision.SupervisionManager
 import android.app.supervision.flags.Flags
 import android.content.Intent
-import android.platform.test.annotations.AppModeFull
-import androidx.test.ext.junit.rules.ActivityScenarioRule
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.annotations.RequireNotAutomotive
@@ -36,15 +34,12 @@ import com.android.xts.root.annotations.RequireRootInstrumentation
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.TruthJUnit.assume
 import kotlin.test.assertFailsWith
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
 @RequireFlagsEnabled(Flags.FLAG_SUPERVISION_MANAGER_APIS)
 class SupervisionStateTest : BaseSupervisionTest() {
-    @get:Rule
-    val activityRule = ActivityScenarioRule(MainActivity::class.java)
 
     @Test
     @ApiTest(apis = ["android.app.supervision.SupervisionManager#isSupervisionEnabled"])

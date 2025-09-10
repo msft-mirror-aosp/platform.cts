@@ -32,7 +32,8 @@ import java.util.HashMap;
 public abstract class BaseAppSecurityTest extends BaseHostJUnit4Test {
 
     /** Whether multi-user is supported. */
-    protected boolean mSupportsMultiUser;
+    protected boolean mSupportsSecondaryUsers;
+
     protected int mPrimaryUserId;
     /** Users we shouldn't delete in the tests */
     private ArrayList<Integer> mFixedUsers;
@@ -41,7 +42,8 @@ public abstract class BaseAppSecurityTest extends BaseHostJUnit4Test {
     public void setUpBaseAppSecurityTest() throws Exception {
         Assert.assertNotNull(getBuild()); // ensure build has been set before test is run.
 
-        mSupportsMultiUser = getDevice().getMaxNumberOfUsersSupported() > 1;
+        mSupportsSecondaryUsers =
+                getDevice().getMaxNumberOfUsersSupported("android.os.usertype.full.SECONDARY") > 0;
         mPrimaryUserId = getDevice().getPrimaryUserId();
         mFixedUsers = new ArrayList<>();
         mFixedUsers.add(mPrimaryUserId);

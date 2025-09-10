@@ -2697,7 +2697,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
 
     /**
      * Verify that the {@link android.Manifest.permission#WIFI_SET_DEVICE_MOBILITY_STATE} permission
-     * is held by at most one application.
+     * is held by at most one application except for shell and carrier wifi app.
      */
     @Test
     public void testWifiSetDeviceMobilityStatePermission() {
@@ -2711,6 +2711,8 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 .stream()
                 .map(pi -> pi.packageName)
                 .filter(packageName -> !packageName.equals("com.android.shell"))
+                .filter(packageName ->
+                        !packageName.equals("com.google.android.apps.carrier.carrierwifi"))
                 .distinct()
                 .collect(Collectors.toList());
 

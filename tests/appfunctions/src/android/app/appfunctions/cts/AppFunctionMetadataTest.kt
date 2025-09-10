@@ -16,10 +16,12 @@
 package android.app.appfunctions.cts
 
 import android.Manifest
+import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.AppFunctionRuntimeMetadata
 import android.app.appfunctions.cts.AppSearchUtils.collectAllSearchResults
 import android.app.appfunctions.flags.Flags
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
+import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
 import android.app.appsearch.GlobalSearchSessionShim
 import android.app.appsearch.SearchResultsShim
 import android.app.appsearch.SearchSpec
@@ -41,9 +43,10 @@ import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
 import org.junit.After
+import org.junit.Assume.assumeNotNull
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.ClassRule
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -71,6 +74,24 @@ class AppFunctionMetadataTest {
             "execute_app_function_timeout_millis",
             "1000",
         )
+
+    @get:Rule
+    val setAgentAllowlistRule: DeviceConfigStateChangerRule =
+        DeviceConfigStateChangerRule(
+            context,
+            "machine_learning",
+            "allowlisted_app_functions_agents",
+            context.packageName,
+        )
+
+    @Before
+    fun assumeValidAgent() = doBlocking {
+        val manager = context.getSystemService(AppFunctionManager::class.java)
+        assumeNotNull(manager)
+        runWithShellPermission(Manifest.permission.MANAGE_APP_FUNCTION_ACCESS) {
+            assumeTrue(manager.validAgents.contains(context.packageName))
+        }
+    }
 
     @Before
     @After
@@ -193,14 +214,12 @@ class AppFunctionMetadataTest {
     @Test
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
-    @Ignore("b/420892441 - Enable when allowlist enforcement is added")
     fun installPackageWithAppFunction_notValidAgent_runtimeMetadataNotVisible() = doBlocking {
+        clearAgentAllowlist()
+
         installPackage(TEST_APP_A_V2_PATH)
 
-        // TODO(b/420892441): Use ADB command to remove CTS package from the allowlist
-        retryAssert {
-            assertThat(queryAppFunctionInfos(TEST_APP_A_PKG).isEmpty())
-        }
+        retryAssert { assertThat(queryAppFunctionInfos(TEST_APP_A_PKG).isEmpty()) }
     }
 
     private fun installPackage(path: String) {
@@ -218,6 +237,12 @@ class AppFunctionMetadataTest {
 
     private fun uninstallPackage(packageName: String) {
         SystemUtil.runShellCommand("pm uninstall $packageName")
+    }
+
+    private fun clearAgentAllowlist() {
+        SystemUtil.runShellCommand(
+            "device_config delete machine_learning allowlisted_app_functions_agents"
+        )
     }
 
     private fun queryAppFunctionInfos(packageName: String): List<AppFunctionInfo> {

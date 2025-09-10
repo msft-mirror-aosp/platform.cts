@@ -707,10 +707,11 @@ public final class Users {
     /**
      * Gets the maximum number of users supported by the device
      */
+    // TODO(b/442891661); This needs to be overhauled, as there is no longer a global user maximum.
     public int getMaxNumberOfUsersSupported() {
         try {
             return ShellCommand.builder("pm get-max-users")
-                    .validate((output) -> output.startsWith("Maximum supported users:"))
+                    .validate((output) -> output.startsWith("Maximum supported"))
                     .executeAndParseOutput((output) ->
                             Integer.parseInt(output.split(": ", 2)[1].trim())
                     );

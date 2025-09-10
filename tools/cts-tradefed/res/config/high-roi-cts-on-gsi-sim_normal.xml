@@ -16,30 +16,50 @@
 <configuration description="Run high ROI CTS-ON-GSI sim_normal tests.">
     <include name="cts-on-gsi"/>
     <!-- CtsHostsideNetworkTests -->
-    <option name="compatibility:include-filter" value="CtsHostsideNetworkTests com.android.cts.net.HostsideVpnTests#testAlwaysMeteredVpnWithNonNullUnderlyingNetwork"/>
-    <option name="compatibility:include-filter" value="CtsHostsideNetworkTests com.android.cts.net.HostsideVpnTests#testAlwaysMeteredVpnWithNullUnderlyingNetwork"/>
-    <option name="compatibility:include-filter" value="CtsHostsideNetworkTests com.android.cts.net.HostsideVpnTests#testB141603906"/>
-    <option name="compatibility:include-filter" value="CtsHostsideNetworkTests com.android.cts.net.HostsideVpnTests#testChangeUnderlyingNetworks"/>
-    <option name="compatibility:include-filter" value="CtsHostsideNetworkTests com.android.cts.net.HostsideVpnTests#testDownloadWithDownloadManagerDisallowed"/>
+    <option name="compatibility:include-filter" value="CtsHostsideNetworkTests com.android.cts.net.HostsideVpnTests#testAppAllowed"/>
+    <option name="compatibility:include-filter" value="CtsHostsideNetworkTests com.android.cts.net.HostsideVpnTests#testAppDisallowed"/>
+    <option name="compatibility:include-filter" value="CtsHostsideNetworkTests com.android.cts.net.HostsideVpnTests#testDefault"/>
+    <option name="compatibility:include-filter" value="CtsHostsideNetworkTests com.android.cts.net.HostsideVpnTests#testExcludedRoutes"/>
+    <option name="compatibility:include-filter" value="CtsHostsideNetworkTests com.android.cts.net.HostsideVpnTests#testIncludedRoutes"/>
+    <option name="compatibility:include-filter" value="CtsHostsideNetworkTests com.android.cts.net.HostsideVpnTests#testInterleavedRoutes"/>
     <!-- CtsJobSchedulerTestCases -->
-    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.ConnectivityConstraintTest#testBgExpeditedJobDoesNotBypassDataSaver"/>
-    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.ConnectivityConstraintTest#testBgNonUiJobDoesNotBypassDataSaverWhenUiJobRunning"/>
-    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.ConnectivityConstraintTest#testBgUiJobBypassesDataSaver"/>
-    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.ConnectivityConstraintTest#testCellularConstraintExecutedAndStopped"/>
-    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.ConnectivityConstraintTest#testCellularConstraintExecutedAndStopped_Foreground"/>
+    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.BatteryConstraintTest#testBatteryNotLowConstraintExecutes_withoutPower"/>
+    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.ComponentConstraintTest#testComponentDisabledAndReenabledAfterSchedule"/>
+    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.ComponentConstraintTest#testScheduleAfterComponentEnabled"/>
+    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.ConnectivityConstraintTest#testConnectivityConstraintExecutes_transitionNetworks"/>
+    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.ConnectivityConstraintTest#testJobParametersNetwork"/>
+    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.ConnectivityConstraintTest#testJobUidState"/>
+    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.DataTransferTest#testUpdateEstimatedNetworkBytes"/>
+    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.DataTransferTest#testUpdateTransferredNetworkBytes"/>
+    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.ExpeditedJobTest#testJobUidState_noRequiredNetwork"/>
+    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.ExpeditedJobTest#testJobUidState_withRequiredNetwork"/>
+    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.JobParametersTest#testClipData"/>
+    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.JobParametersTest#testExpedited"/>
+    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.JobParametersTest#testExtras"/>
+    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.JobParametersTest#testNamespaceJobParameters"/>
+    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.JobParametersTest#testStopReason"/>
+    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.JobParametersTest#testStopReasonAbandonedJob"/>
+    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.JobParametersTest#testUserInitiated"/>
+    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.JobSchedulingTest#testPendingJobReason_charging"/>
+    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.JobSchedulingTest#testPendingJobReason_connectivity"/>
+    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.JobSchedulingTest#testPendingJobReasons_connectivity"/>
+    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.JobThrottlingTest#testAllowWhileIdleJobInTempallowlist"/>
+    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.JobThrottlingTest#testJobsInRestrictedBucket_WithRequiredNetwork"/>
+    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.JobThrottlingTest#testRestrictedJobAllowedInPowerAllowlist"/>
+    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.JobWorkItemTest#testAllInfoGivenToJob"/>
+    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.NotificationTest#testNotificationJobEndDetach"/>
+    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.NotificationTest#testNotificationJobEndRemove"/>
     <!-- CtsNetTestCases -->
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.ConnectivitySettingsManagerTest#testGetNetworkAvoidBadWifiWithCarrierAwareSettings"/>
-    <option name="compatibility:include-filter" value="CtsNetTestCases android.net.ConnectivitySettingsManagerTest#testGetNetworkAvoidBadWifiWithCarrierConfig"/>
-    <option name="compatibility:include-filter" value="CtsNetTestCases android.net.ConnectivitySettingsManagerTest#testGetNetworkAvoidBadWifiWithSettings"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.ConnectivitySettingsManagerTest#testSetNetworkAvoidBadWifiWithSettings"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.ConnectivitySettingsManagerTest#testShouldShowAvoidBadWifiToggleWithCarrierConfig"/>
-    <option name="compatibility:include-filter" value="CtsNetTestCases android.net.ConnectivitySettingsManagerTest#testShouldShowAvoidBadWifiToggleWithSettings"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.BatteryStatsManagerTest#testReportNetworkInterfaceForTransports"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.ConnectivityManagerTest#testFirewallCloseSocketAllowlistChainOtherUid"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.ConnectivityManagerTest#testFirewallCloseSocketDenylistChainOtherUid"/>
+    <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.ConnectivityManagerTest#testGetMultipathPreference"/>
+    <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.ConnectivityManagerTest#testSetAvoidUnvalidated"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.DnsResolverTapTest#testCancellation"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.EthernetManagerTest#testCallbacks_doNotIncludeNcmOnlyInterfaces"/>
-    <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.EthernetManagerTest#testCallbacks_withRunningInterfaces"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.EthernetManagerTest#testEnableDisableInterface_ncmOnlyInterface"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.EthernetManagerTest#testGetInterfaceList_doesNotIncludeNcmOnlyInterfaces"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.EthernetManagerTest#testLocalNcmNetwork"/>
@@ -48,27 +68,19 @@
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.EthernetManagerTest#testRequestTetheredNetwork_doesNotReturnNcmOnlyInterface"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.EthernetManagerTest#testUpdateConfiguration_callbacksForMissingInterface"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.EthernetManagerTest#testUpdateConfiguration_forNcmOnlyInterface"/>
+    <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.NetworkAgentTest#testAllowedUids"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.NetworkAgentTest#testIngressToVpnAddressFiltering_VpnLegacy"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.NetworkAgentTest#testIngressToVpnAddressFiltering_VpnOem"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.NetworkAgentTest#testIngressToVpnAddressFiltering_VpnPlatform"/>
-    <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.NetworkAgentTest#testRegisterUnregisterDoesNotLeakBinderProxy"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.NetworkReservationTest#testReserveNetwork"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.NetworkSpecifierTest#testGetApplicableRedactions_defaultAlwaysReturnRedactionNone"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.NetworkSpecifierTest#testRedactWithRedactions_defaultAlwaysReturnsThis"/>
-    <option name="compatibility:include-filter" value="CtsNetTestCases android.net.netstats.NetworkTemplateTest#testGetTransportType_whenNotSetThrows"/>
-    <option name="compatibility:include-filter" value="CtsNetTestCases android.net.netstats.NetworkTemplateTest#testMultipleSetTransportTypeOverrides"/>
-    <option name="compatibility:include-filter" value="CtsNetTestCases android.net.netstats.NetworkTemplateTest#testNonTransportRule_getTransportThrows"/>
-    <option name="compatibility:include-filter" value="CtsNetTestCases android.net.netstats.NetworkTemplateTest#testSetAndGetTransportType"/>
-    <option name="compatibility:include-filter" value="CtsNetTestCases android.net.netstats.NetworkTemplateTest#testSetTransportType_withNonTransportRuleThrows"/>
     <!-- CtsPermissionPolicyTestCases -->
     <option name="compatibility:include-filter" value="CtsPermissionPolicyTestCases android.permissionpolicy.cts.PermissionPolicyTest#platformPermissionPolicyIsUnaltered"/>
+    <option name="compatibility:include-filter" value="CtsPermissionPolicyTestCases android.permissionpolicy.cts.PrivappPermissionsTest#privappPermissionsNeedToBeWhitelisted"/>
     <!-- CtsPermissionTestCases -->
     <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.DeviceStateAppFunctionServiceTest#onExecuteFunction_withInvalidFunctionIdentifier_returnsFunctionNotFoundError"/>
     <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.DeviceStateAppFunctionServiceTest#onExecuteFunction_withValidIdentifier_returnsSuccessfulResponse"/>
-    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.LocationAccessCheckTest#notificationIsNotShownAfterAppDoesNotRequestLocationAnymore"/>
-    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.LocationAccessCheckTest#notificationIsShown"/>
-    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.LocationAccessCheckTest#notificationIsShownAgainAfterUninstallAndReinstall"/>
-    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.LocationAccessCheckTest#notificationOnClickOpensSafetyCenter"/>
     <!-- CtsStatsdAtomHostTestCases -->
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.alarm.AlarmStatsTests#testListenerAlarmScheduled"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appcompatstate.AppCompatStateStatsTests#testMinAspectRatioPortraitActivityDeviceStateClosedToOpened"/>
@@ -76,9 +88,16 @@
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appcompatstate.AppCompatStateStatsTests#testNonResizablePortraitActivitySwitchedToOpenedThenMinAspectRatioActivity"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appcompatstate.ReachabilityStateStatsTests#testHorizontalReachability"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appcompatstate.ReachabilityStateStatsTests#testVerticalReachability"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_crossUser_success"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_failed_uncaughtClientException"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_platformManager_platformAppFunctionService_success"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_throwsException"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.apphibernation.AppHibernationStatsTest#testUserLevelAppHibernationStateChanged_fromHibernatingToNotHibernating"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.apphibernation.AppHibernationStatsTest#testUserLevelAppHibernationStateChanged_fromNotHibernatingToHibernating"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.batterystats.BatteryUsageStatsTests#testBatteryUsageStatsPerUid"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.coregraphics.GraphicsAtomTests#colorModeEvents"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.display.DisplayEventOccurredStatsTests#testDisplayEventBrightnessReportedButNoListenerRegistered"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.display.DisplayEventOccurredStatsTests#testDisplayEventStateReported"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.media.projection.MediaProjectionAtomsTests#testMediaProjectionStateChanged_appSelectorShown"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.media.projection.MediaProjectionAtomsTests#testMediaProjectionStateChanged_setupCancelled"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.media.projection.MediaProjectionAtomsTests#testMediaProjectionStateChanged_stoppedCapture"/>
@@ -87,12 +106,22 @@
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.perf.ProcStatsTests#testProcessState"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.perf.UprobeStatsTest#testUpdateDeviceIdleTempAllowlist"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.performancehintmanager.PerformanceHintManagerStatsTests#testAdpfHintSessionTidCleanupIsPushed"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.statsd.HostAtomTests#testBatteryLevel"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.performancehintmanager.PerformanceHintManagerStatsTests#testAdpfSessionSnapshotTwoAppsOnKillOneThenRestore"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.powermanager.ThermalPowerManagerStatsTests#testThermalHeadroomCalledIsPushed"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.voiceinteraction.HotwordAudioEgressEventReportedStatsTest#testDspStartedAndEnded"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.voiceinteraction.HotwordDetectorEventsStatsTest#testLogHotwordDetectorEventsForDspDetectorExternalDetectionSecurityException"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.voiceinteraction.HotwordDetectorKeyphraseTriggeredStatsTest#testLogHotwordDetectorKeyphraseTriggeredDspDetectTimeout"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.voiceinteraction.HotwordDetectorKeyphraseTriggeredStatsTest#testLogHotwordDetectorKeyphraseTriggeredDspRejected"/>
+    <!-- CtsTetheringTest -->
+    <option name="compatibility:include-filter" value="CtsTetheringTest android.net.EthernetTetheringTest#testTetheringVirtual"/>
+    <option name="compatibility:include-filter" value="CtsTetheringTest android.tethering.test.TetheringManagerTest#testTetheringUpstream"/>
     <!-- CtsVcnTestCases -->
     <option name="compatibility:include-filter" value="CtsVcnTestCases android.net.vcn.cts.VcnManagerTest#testApplyVcnNetworkPolicyDuringVcnSetup_onRestrictedNetwork"/>
     <option name="compatibility:include-filter" value="CtsVcnTestCases android.net.vcn.cts.VcnManagerTest#testApplyVcnNetworkPolicyDuringVcnSetup_onUnrestrictedNetwork"/>
     <option name="compatibility:include-filter" value="CtsVcnTestCases android.net.vcn.cts.VcnManagerTest#testApplyVcnNetworkPolicy_activeMode_onRestrictedNetwork"/>
     <option name="compatibility:include-filter" value="CtsVcnTestCases android.net.vcn.cts.VcnManagerTest#testApplyVcnNetworkPolicy_activeMode_onUnrestrictedNetwork"/>
+    <option name="compatibility:include-filter" value="CtsVcnTestCases android.net.vcn.cts.VcnManagerTest#testEnterSafeModeImmediately_safeModeDisabled"/>
     <option name="compatibility:include-filter" value="CtsVcnTestCases android.net.vcn.cts.VcnManagerTest#testExitSafeModeAfterReprovision"/>
     <option name="compatibility:include-filter" value="CtsVcnTestCases android.net.vcn.cts.VcnManagerTest#testVcnDoesNotSelectLessPreferredUnderlyingNetwork_preferMetered"/>
+    <option name="compatibility:include-filter" value="CtsVcnTestCases android.net.vcn.cts.VcnManagerTest#testVcnSafeModeOnTestNetwork_overrideTimeout"/>
 </configuration>

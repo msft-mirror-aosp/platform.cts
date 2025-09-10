@@ -165,7 +165,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     protected boolean mIsWatch;
 
     /** Whether multi-user is supported. */
-    private boolean mSupportsMultiUser;
+    private boolean mSupportsSecondaryUsers;
 
     /** Users we shouldn't delete in the tests */
     private final Set<Integer> mNonTestUserIds = new LinkedHashSet<>();
@@ -190,7 +190,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     public void setUp() throws Exception {
         assertNotNull(getBuild());  // ensure build has been set before test is run.
 
-        mSupportsMultiUser = getMaxNumberOfUsersSupported() > 1;
+        mSupportsSecondaryUsers = getMaxNumberOfSecondaryUsersSupported() > 0;
         mFixedPackages = getDevice().getInstalledPackageNames();
         mBuildHelper = new CompatibilityBuildHelper(getBuild());
         mIsWatch = hasDeviceFeature(FEATURE_WATCH);
@@ -380,8 +380,8 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         getDevice().switchUser(userId);
     }
 
-    protected int getMaxNumberOfUsersSupported() throws DeviceNotAvailableException {
-        return getDevice().getMaxNumberOfUsersSupported();
+    protected int getMaxNumberOfSecondaryUsersSupported() throws DeviceNotAvailableException {
+        return getDevice().getMaxNumberOfUsersSupported("android.os.usertype.full.SECONDARY");
     }
 
     protected int getMaxNumberOfRunningUsersSupported() throws DeviceNotAvailableException {
@@ -597,21 +597,24 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         return false;
     }
 
-    /** Checks whether it is possible to create the desired number of users. */
-    protected boolean canCreateAdditionalUsers(int numberOfUsers)
+    /** Checks whether it is possible to create the desired number of secondary users. */
+    protected boolean canCreateAdditionalSecondaryUsers(int numberOfUsers)
             throws DeviceNotAvailableException {
-        return listUsers().size() + numberOfUsers <= getMaxNumberOfUsersSupported();
+        return getDevice().getRemainingCreatableUserCount("android.os.usertype.full.SECONDARY")
+                >= numberOfUsers;
     }
 
     /**
      * Throws a {@link org.junit.AssumptionViolatedException} if it's not possible to create the
-     * desired number of users.
+     * desired number of secondary users.
      */
-    protected void assumeCanCreateAdditionalUsers(int numberOfUsers)
+    protected void assumeCanCreateAdditionalSecondaryUsers(int numberOfUsers)
             throws DeviceNotAvailableException {
-        assumeTrue("Tests needs at least " + numberOfUsers + " extra users, but device supports "
-                + "at most " + getMaxNumberOfUsersSupported(),
-                canCreateAdditionalUsers(numberOfUsers));
+        assumeTrue(
+                "Tests needs at least " + numberOfUsers
+                        + " extra users, but device supports at most "
+                        + getMaxNumberOfSecondaryUsersSupported(),
+                canCreateAdditionalSecondaryUsers(numberOfUsers));
     }
 
     /** Checks whether it is possible to start the desired number of users. */
@@ -690,14 +693,14 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     }
 
     protected final void assumeCanCreateOneManagedUser() throws DeviceNotAvailableException {
-        assumeSupportsMultiUser();
-        assumeCanCreateAdditionalUsers(1);
+        assumeSupportsSecondaryUsers();
+        assumeCanCreateAdditionalSecondaryUsers(1);
     }
 
-    protected final void assumeSupportsMultiUser() throws DeviceNotAvailableException {
+    protected final void assumeSupportsSecondaryUsers() throws DeviceNotAvailableException {
         // setup isn't always called before this method
-        mSupportsMultiUser = getMaxNumberOfUsersSupported() > 1;
-        assumeTrue("device doesn't support multiple users", mSupportsMultiUser);
+        mSupportsSecondaryUsers = getMaxNumberOfSecondaryUsersSupported() > 0;
+        assumeTrue("device doesn't support secondary users", mSupportsSecondaryUsers);
     }
 
     protected final void assumeHasWifiFeature() throws DeviceNotAvailableException {
