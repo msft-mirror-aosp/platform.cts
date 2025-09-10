@@ -46,6 +46,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
+import android.util.Log;
 import android.util.Pair;
 import android.view.Display;
 
@@ -61,7 +62,6 @@ import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -78,6 +78,7 @@ import java.util.function.Predicate;
 @MediumTest
 @RunWith(JUnitParamsRunner.class)
 public class BrightnessTest extends TestBase {
+    private static final String TAG = "BrightnessTest";
     private static final float PERCENTAGE_DELTA = 0.05f;
 
     private Map<Long, BrightnessChangeEvent> mLastReadEvents = new HashMap<>();
@@ -100,9 +101,8 @@ public class BrightnessTest extends TestBase {
         }
     }
 
-    @Ignore("b/359582534")
     @Test
-    public void testBrightnessSliderTracking() throws InterruptedException {
+    public void testBrightnessSliderTracking() {
         // Only run if we have a valid ambient light sensor.
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_SENSOR_LIGHT));
 
@@ -115,24 +115,17 @@ public class BrightnessTest extends TestBase {
                     > 0);
 
         try (var brtClosable = new BrightnessClosable()) {
-            var defaultConfig = mDisplayManager.getDefaultBrightnessConfiguration();
-            // This might be null, meaning that the device doesn't support autobrightness
-            assumeNotNull(defaultConfig);
-            setSystemSetting(Settings.System.SCREEN_BRIGHTNESS_MODE,
-                    Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
-            int mode = getSystemSetting(Settings.System.SCREEN_BRIGHTNESS_MODE);
-            assertEquals(Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC, mode);
-            waitForFirstSliderEvent();
-            setDisplayBrightness(brtClosable.getMinimumBrightness());
-
             // Update brightness
-            var newEvents = setDisplayBrightness(brtClosable.getMiddleBrightness());
+            var newEvents =
+                    brtClosable.changeBrightness(
+                            brtClosable.getMinimumBrightness(),
+                            Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
             assertEquals(1, newEvents.size());
             BrightnessChangeEvent firstEvent = newEvents.get(0);
             assertValidLuxData(firstEvent);
 
             // Update brightness again
-            newEvents = setDisplayBrightness(brtClosable.getMaximumBrightness());
+            newEvents = brtClosable.changeBrightness(brtClosable.getMaximumBrightness());
             assertEquals(1, newEvents.size());
             BrightnessChangeEvent secondEvent = newEvents.get(0);
             assertValidLuxData(secondEvent);
@@ -144,7 +137,7 @@ public class BrightnessTest extends TestBase {
     }
 
     @Test
-    public void testBrightnesSliderTrackingDecrease() throws InterruptedException {
+    public void testBrightnesSliderTrackingDecrease() {
         // Only run if we have a valid ambient light sensor.
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_SENSOR_LIGHT));
 
@@ -157,21 +150,15 @@ public class BrightnessTest extends TestBase {
                     > 0);
 
         try (var brtClosable = new BrightnessClosable()) {
-            var defaultConfig = mDisplayManager.getDefaultBrightnessConfiguration();
-            // This might be null, meaning that the device doesn't support autobrightness
-            assumeNotNull(defaultConfig);
-            setSystemSetting(Settings.System.SCREEN_BRIGHTNESS_MODE,
-                    Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
-            int mode = getSystemSetting(Settings.System.SCREEN_BRIGHTNESS_MODE);
-            assertEquals(Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC, mode);
-            waitForFirstSliderEvent();
-            setDisplayBrightness(brtClosable.getMaximumBrightness());
-            var newEvents = setDisplayBrightness(brtClosable.getMiddleBrightness());
+            var newEvents =
+                    brtClosable.changeBrightness(
+                            brtClosable.getMiddleBrightness(),
+                            Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
             assertEquals(1, newEvents.size());
             BrightnessChangeEvent firstEvent = newEvents.get(0);
             assertValidLuxData(firstEvent);
             // Update brightness again
-            newEvents = setDisplayBrightness(brtClosable.getMinimumBrightness());
+            newEvents = brtClosable.changeBrightness(brtClosable.getMinimumBrightness());
             assertEquals(1, newEvents.size());
             BrightnessChangeEvent secondEvent = newEvents.get(0);
             assertValidLuxData(secondEvent);
@@ -183,28 +170,26 @@ public class BrightnessTest extends TestBase {
     }
 
     @Test
-    public void testNoTrackingForManualBrightness() throws InterruptedException {
+    public void testNoTrackingForManualBrightness() {
         // Don't run as there is no app that has permission to access slider usage.
         assumeTrue(
                 numberOfSystemAppsWithPermission(Manifest.permission.BRIGHTNESS_SLIDER_USAGE) > 0);
 
         try (var brtClosable = new BrightnessClosable()) {
-            setSystemSetting(Settings.System.SCREEN_BRIGHTNESS_MODE,
-                    Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL);
-            int mode = getSystemSetting(Settings.System.SCREEN_BRIGHTNESS_MODE);
-            assertEquals(Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL, mode);
-            recordSliderEvents();
-            var newEvents = setDisplayBrightness(brtClosable.getMinimumBrightness());
+            var newEvents =
+                    brtClosable.changeBrightness(
+                            brtClosable.getMinimumBrightness(),
+                            Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL);
             assertTrue(newEvents.isEmpty());
             // Then change the brightness
-            newEvents = setDisplayBrightness(brtClosable.getMaximumBrightness());
+            newEvents = brtClosable.changeBrightness(brtClosable.getMaximumBrightness());
             // There shouldn't be any events.
             assertTrue(newEvents.isEmpty());
         }
     }
 
     @Test
-    public void testNoColorSampleData() throws InterruptedException {
+    public void testNoColorSampleData() {
         // Only run if we have a valid ambient light sensor.
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_SENSOR_LIGHT));
 
@@ -217,22 +202,17 @@ public class BrightnessTest extends TestBase {
                 Manifest.permission.CONFIGURE_DISPLAY_BRIGHTNESS) > 0);
 
         try (var brtClosable = new BrightnessClosable()) {
-            var defaultConfig = mDisplayManager.getDefaultBrightnessConfiguration();
-            // This might be null, meaning that the device doesn't support autobrightness
-            assumeNotNull(defaultConfig);
-            setSystemSetting(Settings.System.SCREEN_BRIGHTNESS_MODE,
-                    Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
-            int mode = getSystemSetting(Settings.System.SCREEN_BRIGHTNESS_MODE);
-            assertEquals(Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC, mode);
-
             // Set brightness config to not sample color.
             BrightnessConfiguration config =
                     new BrightnessConfiguration.Builder(
                             new float[]{0.0f, 1000.0f}, new float[]{20.0f, 500.0f})
                             .setShouldCollectColorSamples(false).build();
             mDisplayManager.setBrightnessConfiguration(config);
-            waitForFirstSliderEvent();
-            var newEvents = setDisplayBrightness(brtClosable.getMinimumBrightness());
+
+            var newEvents =
+                    brtClosable.changeBrightness(
+                            brtClosable.getMinimumBrightness(),
+                            Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
             // No color samples.
             assertEquals(0, newEvents.get(0).colorSampleDuration);
             assertNull(newEvents.get(0).colorValueBuckets);
@@ -335,9 +315,8 @@ public class BrightnessTest extends TestBase {
         }
     }
 
-
     @Test
-    public void testSliderEventsReflectCurves() throws InterruptedException {
+    public void testSliderEventsReflectCurves() {
         // Only run if we have a valid ambient light sensor.
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_SENSOR_LIGHT));
 
@@ -350,32 +329,27 @@ public class BrightnessTest extends TestBase {
 
         BrightnessConfiguration config =
                 new BrightnessConfiguration.Builder(
-                        new float[]{0.0f, 10000.0f},new float[]{15.0f, 400.0f})
-                        .setDescription("model:8").build();
+                                new float[] {0.0f, 10000.0f}, new float[] {15.0f, 400.0f})
+                        .setDescription("model:8")
+                        .build();
 
         try (var brtClosable = new BrightnessClosable()) {
-            var defaultConfig = mDisplayManager.getDefaultBrightnessConfiguration();
-            // This might be null, meaning that the device doesn't support autobrightness
-            assumeNotNull(defaultConfig);
-            setSystemSetting(Settings.System.SCREEN_BRIGHTNESS_MODE,
-                    Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
-            int mode = getSystemSetting(Settings.System.SCREEN_BRIGHTNESS_MODE);
-            assertEquals(Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC, mode);
-            waitForFirstSliderEvent();
-            setDisplayBrightness(brtClosable.getMinimumBrightness());
-
             // Update brightness while we have a custom curve.
             mDisplayManager.setBrightnessConfiguration(config);
-            var newEvents = setDisplayBrightness(brtClosable.getMiddleBrightness(),
-                    (e) -> !e.isDefaultBrightnessConfig);
+            var newEvents =
+                    brtClosable.changeBrightness(
+                            brtClosable.getMinimumBrightness(),
+                            Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC,
+                            (e) -> !e.isDefaultBrightnessConfig);
             assertFalse(newEvents.isEmpty());
             BrightnessChangeEvent firstEvent = newEvents.get(newEvents.size() - 1);
             assertValidLuxData(firstEvent);
 
             // Update brightness again now with default curve.
             mDisplayManager.setBrightnessConfiguration(null);
-            newEvents = setDisplayBrightness(brtClosable.getMaximumBrightness(),
-                    (e) -> e.isDefaultBrightnessConfig);
+            newEvents =
+                    brtClosable.changeBrightness(
+                            brtClosable.getMaximumBrightness(), (e) -> e.isDefaultBrightnessConfig);
             assertFalse(newEvents.isEmpty());
             BrightnessChangeEvent secondEvent = newEvents.get(newEvents.size() - 1);
             assertValidLuxData(secondEvent);
@@ -409,7 +383,7 @@ public class BrightnessTest extends TestBase {
     }
 
     @Test
-    public void testSetAndGetPerDisplay() throws InterruptedException{
+    public void testSetAndGetPerDisplay() {
         // Only run if we have a valid ambient light sensor.
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_SENSOR_LIGHT));
 
@@ -417,19 +391,11 @@ public class BrightnessTest extends TestBase {
                 Manifest.permission.CONFIGURE_DISPLAY_BRIGHTNESS) > 0);
 
         try (var brtClosable = new BrightnessClosable()) {
-            var defaultConfig = mDisplayManager.getDefaultBrightnessConfiguration();
-            // This might be null, meaning that the device doesn't support autobrightness
-            assumeNotNull(defaultConfig);
-            // Setup slider events.
-            setSystemSetting(Settings.System.SCREEN_BRIGHTNESS_MODE,
-                    Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
-            int mode = getSystemSetting(Settings.System.SCREEN_BRIGHTNESS_MODE);
-            assertEquals(Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC, mode);
-            waitForFirstSliderEvent();
-            setDisplayBrightness(brtClosable.getMinimumBrightness());
-
             // Get a unique display id via brightness change event
-            var newEvents = setDisplayBrightness(brtClosable.getMiddleBrightness());
+            var newEvents =
+                    brtClosable.changeBrightness(
+                            brtClosable.getMinimumBrightness(),
+                            Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
             BrightnessChangeEvent firstEvent = newEvents.get(0);
             String uniqueDisplayId = firstEvent.uniqueDisplayId;
             assertNotNull(uniqueDisplayId);
@@ -541,10 +507,6 @@ public class BrightnessTest extends TestBase {
         return packages.size();
     }
 
-    private List<BrightnessChangeEvent> getNewEvents(int expected) throws InterruptedException {
-        return getNewEvents(expected, (e) -> true);
-    }
-
     private List<BrightnessChangeEvent> getNewEvents(int expected,
             Predicate<BrightnessChangeEvent> pred) throws InterruptedException {
         List<BrightnessChangeEvent> newEvents = new ArrayList<>();
@@ -584,32 +546,8 @@ public class BrightnessTest extends TestBase {
         }
     }
 
-    private void waitForFirstSliderEvent() throws  InterruptedException {
-        recordSliderEvents();
-        // Keep changing brightness until we get an event to handle devices with sensors
-        // that take a while to warm up.
-        int brightness = 25;
-        for (int i = 0; i < 20; ++i) {
-            setSystemSetting(Settings.System.SCREEN_BRIGHTNESS, brightness);
-            brightness = brightness == 25 ? 80 : 25;
-            Thread.sleep(100);
-            if (!getNewEvents().isEmpty()) {
-                return;
-            }
-        }
-        fail("Failed to fetch first slider event. Is the ambient brightness sensor working?");
-    }
-
     private int getSystemSetting(String setting) {
         return Integer.parseInt(runShellCommand("settings get system " + setting));
-    }
-
-    private void setSystemSetting(String setting, int value) {
-        runShellCommand("settings put system " + setting + " " + value);
-    }
-
-    private List<BrightnessChangeEvent> setDisplayBrightness(float value) {
-        return setDisplayBrightness(value, (e) -> true);
     }
 
     private List<BrightnessChangeEvent> setDisplayBrightness(float value,
@@ -657,41 +595,45 @@ public class BrightnessTest extends TestBase {
 
     private class BrightnessClosable implements AutoCloseable {
         private final float mPrevBrightness;
+        private float mCurrBrightness;
         private final int mPrevBrightnessMode;
+        private int mCurrBrightnessMode;
         private final BrightnessConfiguration mPrevBrightnessConfig;
         private final float mMaxBrightness;
         private final float mMinBrightness;
-        private final PermissionClosable mControlBrightnessPermission;
+        private final PermissionClosable mConfigureBrightnessPermission;
         private final PermissionClosable mSliderPermission;
         private final PermissionContext mWriteSettingsPermission;
 
         BrightnessClosable() {
-            mControlBrightnessPermission =
+            mConfigureBrightnessPermission =
                     new PermissionClosable(Manifest.permission.CONFIGURE_DISPLAY_BRIGHTNESS);
             mSliderPermission = new PermissionClosable(Manifest.permission.BRIGHTNESS_SLIDER_USAGE);
             mWriteSettingsPermission =
                     TestApis.permissions().withPermission(Manifest.permission.WRITE_SETTINGS);
             mPrevBrightness = brightnessIntToFloat(getSystemSetting(
                     Settings.System.SCREEN_BRIGHTNESS));
+            mCurrBrightness = mPrevBrightness;
             mPrevBrightnessMode = getSystemSetting(Settings.System.SCREEN_BRIGHTNESS_MODE);
+            mCurrBrightnessMode = mPrevBrightnessMode;
             mPrevBrightnessConfig = mDisplayManager.getBrightnessConfiguration();
             // Enforce min brightness to get the system absolute min brightness
-            setDisplayBrightness(0f);
+            changeBrightness(0f, Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC, null);
             mMinBrightness = brightnessIntToFloat(getSystemSetting(
                     Settings.System.SCREEN_BRIGHTNESS));
             // Enforce max brightness to get the system absolute max brightness
-            setDisplayBrightness(1.0f);
+            changeBrightness(1.0f);
             mMaxBrightness = brightnessIntToFloat(getSystemSetting(
                     Settings.System.SCREEN_BRIGHTNESS));
+            recordSliderEvents();
         }
 
         @Override
         public void close() {
-            setDisplayBrightness(mPrevBrightness);
-            setSystemSetting(Settings.System.SCREEN_BRIGHTNESS_MODE, mPrevBrightnessMode);
+            changeBrightness(mPrevBrightness, mPrevBrightnessMode, null);
             mDisplayManager.setBrightnessConfiguration(mPrevBrightnessConfig);
             mSliderPermission.close();
-            mControlBrightnessPermission.close();
+            mConfigureBrightnessPermission.close();
             mWriteSettingsPermission.close();
         }
 
@@ -705,6 +647,52 @@ public class BrightnessTest extends TestBase {
 
         float getMiddleBrightness() {
             return (getMinimumBrightness() + getMaximumBrightness()) / 2f;
+        }
+
+        List<BrightnessChangeEvent> changeBrightness(float newBrightness) {
+            return changeBrightness(newBrightness, mCurrBrightnessMode, null);
+        }
+
+        List<BrightnessChangeEvent> changeBrightness(
+                float newBrightness, Predicate<BrightnessChangeEvent> pred) {
+            return changeBrightness(newBrightness, mCurrBrightnessMode, pred);
+        }
+
+        List<BrightnessChangeEvent> changeBrightness(float newBrightness, int newBrightnessMode) {
+            return changeBrightness(newBrightness, newBrightnessMode, null);
+        }
+
+        List<BrightnessChangeEvent> changeBrightness(
+                float newBrightness, int newBrightnessMode, Predicate<BrightnessChangeEvent> pred) {
+            if (newBrightnessMode == Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC) {
+                // This might be null, meaning that the device doesn't support autobrightness
+                assumeNotNull(mDisplayManager.getDefaultBrightnessConfiguration());
+            }
+            if (mCurrBrightnessMode != newBrightnessMode) {
+                assertTrue(
+                        "setTemporaryBrightnessMode failed",
+                        mDisplayManager.setTemporaryBrightnessMode(
+                                Display.DEFAULT_DISPLAY, newBrightnessMode));
+            } else {
+                Log.d(
+                        TAG,
+                        "no brightness mode change "
+                                + newBrightnessMode
+                                + " for brightness "
+                                + newBrightness);
+            }
+
+            List<BrightnessChangeEvent> res = List.of();
+            if (mCurrBrightness != newBrightness) {
+                res = setDisplayBrightness(newBrightness, pred != null ? pred : (e) -> true);
+            } else {
+                Log.d(
+                        TAG,
+                        "no brightness change " + newBrightness + " for mode " + newBrightnessMode);
+            }
+            mCurrBrightnessMode = newBrightnessMode;
+            mCurrBrightness = newBrightness;
+            return res;
         }
 
         /**
