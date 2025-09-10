@@ -739,20 +739,16 @@ public class StaticSharedLibsHostTests extends BaseHostJUnit4Test implements IBu
     @Test
     public void testPruneUnusedStaticSharedLibrariesWithMultiUser_reboot_fullMode()
             throws Exception {
-        final int maxUserCount = getDevice().getMaxNumberOfUsersSupported();
-        assumeTrue("The device does not support multi-user", maxUserCount > 1);
+        assumeTrue(
+                "The device does not support multi-user",
+                getDevice().getMaxNumberOfUsersSupported("android.os.usertype.full.SECONDARY") > 0);
 
-        boolean shouldCreateSecondUser = true;
-        // Check whether the current user count on the device is not less than the max user count or
-        // not. If yes, don't create the other user.
-        final int currentUserCount = getDevice().listUsers().size();
-        if (currentUserCount >= maxUserCount) {
-            String message = String.format("Current user count %s is not less than the max user"
-                    + " count %s, don't create the other user.", currentUserCount, maxUserCount);
-            LogUtil.CLog.logAndDisplay(Log.LogLevel.INFO, message);
-            shouldCreateSecondUser = false;
+        boolean shouldCreateSecondUser =
+                getDevice().getRemainingCreatableUserCount("android.os.usertype.full.SECONDARY")
+                        > 0;
+        if (!shouldCreateSecondUser) {
+            LogUtil.CLog.logAndDisplay(Log.LogLevel.INFO, "Cannot create more secondary users");
         }
-
 
         doTestPruneUnusedStaticSharedLibrariesWithMultiUser_reboot(shouldCreateSecondUser);
     }
@@ -762,24 +758,15 @@ public class StaticSharedLibsHostTests extends BaseHostJUnit4Test implements IBu
     @Test
     public void testPruneUnusedStaticSharedLibrariesWithMultiUser_reboot_instantMode()
             throws Exception {
-        // This really should be a assumeTrue(getDevice().getMaxNumberOfUsersSupported() > 1), but
-        // JUnit3 doesn't support assumptions framework.
-        // TODO: change to assumeTrue after migrating tests to JUnit4.
-        final int maxUserCount = getDevice().getMaxNumberOfUsersSupported();
-        if (!(maxUserCount > 1)) {
-            LogUtil.CLog.logAndDisplay(Log.LogLevel.INFO, "The device does not support multi-user");
-            return;
-        }
+        assumeTrue(
+                "The device does not support multi-user",
+                getDevice().getMaxNumberOfUsersSupported("android.os.usertype.full.SECONDARY") > 0);
 
-        boolean shouldCreateSecondUser = true;
-        // Check whether the current user count on the device is not less than the max user count or
-        // not. If yes, don't create the other user.
-        final int currentUserCount = getDevice().listUsers().size();
-        if (currentUserCount >= maxUserCount) {
-            String message = String.format("Current user count %s is not less than the max user"
-                    + " count %s, don't create the other user.", currentUserCount, maxUserCount);
-            LogUtil.CLog.logAndDisplay(Log.LogLevel.INFO, message);
-            shouldCreateSecondUser = false;
+        boolean shouldCreateSecondUser =
+                getDevice().getRemainingCreatableUserCount("android.os.usertype.full.SECONDARY")
+                        > 0;
+        if (!shouldCreateSecondUser) {
+            LogUtil.CLog.logAndDisplay(Log.LogLevel.INFO, "Cannot create more secondary users");
         }
 
         mInstantMode = true;

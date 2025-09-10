@@ -40,7 +40,8 @@ public class BaseContextCrossProfileTest implements IDeviceTest {
     private static final int USER_SYSTEM = 0; // From the UserHandle class.
 
     /** Whether multi-user is supported. */
-    protected boolean mSupportsMultiUser;
+    protected boolean mSupportsSecondaryUsers;
+
     protected int mInitialUserId;
     protected int mPrimaryUserId;
 
@@ -51,7 +52,8 @@ public class BaseContextCrossProfileTest implements IDeviceTest {
 
     @Before
     public void setUp() throws Exception {
-        mSupportsMultiUser = getDevice().getMaxNumberOfUsersSupported() > 1;
+        mSupportsSecondaryUsers =
+                getDevice().getMaxNumberOfUsersSupported("android.os.usertype.full.SECONDARY") > 0;
         mPrimaryUserId = getDevice().getPrimaryUserId();
         setFixedUsers();
         removeTestUsers();
@@ -65,7 +67,7 @@ public class BaseContextCrossProfileTest implements IDeviceTest {
         mFixedUsers.add(mPrimaryUserId);
 
         // Set the value of initial user ID calls in {@link #setUp}.
-        if (mSupportsMultiUser) {
+        if (mSupportsSecondaryUsers) {
             mInitialUserId = getDevice().getCurrentUser();
         }
 
@@ -80,7 +82,7 @@ public class BaseContextCrossProfileTest implements IDeviceTest {
 
     @After
     public void tearDown() throws Exception {
-        if (getDevice().getCurrentUser() != mInitialUserId) {
+        if (mSupportsSecondaryUsers && getDevice().getCurrentUser() != mInitialUserId) {
             CLog.w("User changed during test. Switching back to " + mInitialUserId);
             getDevice().switchUser(mInitialUserId);
         }

@@ -280,9 +280,8 @@ public abstract class BaseMultiUserTest extends BaseHostJUnit4Test {
         }
     }
 
-    /**
-     * Rule that skips a test if device does not support more than 1 user
-     */
+    // TODO(b/413464199): Make this specific to secondary users, but still run Guest user tests
+    /** Rule that skips a test if device does not support more than 1 user */
     protected static class SupportsMultiUserRule implements TestRule {
 
         private final BaseHostJUnit4Test mDeviceTest;

@@ -132,18 +132,14 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     public void testCreateAndManageUser_MaxUsers() throws Exception {
         assumeCanCreateOneManagedUser();
 
-        int maxUsers = getDevice().getMaxNumberOfUsersSupported();
+        int maxUsers =
+                getDevice().getMaxNumberOfUsersSupported("android.os.usertype.full.SECONDARY");
 
-        // System user is already there, so we can create up to maxUsers - 1.
-        int existingUsers = 1;
+        // On headless system user mode, there should already be a secondary user present
+        int existingUsers = isHeadlessSystemUserMode() ? 1 : 0;
 
-        // On headless user mode, current user is also there
-        if (isHeadlessSystemUserMode()) {
-            existingUsers++;
-        }
-
-        CLog.d("testCreateAndManageUser_MaxUsers(): maxUxers=%d, existingUsers=%d", maxUsers,
-                existingUsers);
+        CLog.d("testCreateAndManageUser_MaxUsers(): maxUsers=%d, existingUsers=%d",
+                maxUsers, existingUsers);
 
         for (int i = 0; i < maxUsers - existingUsers; i++) {
             executeCreateAndManageUserTest("testCreateAndManageUser");
@@ -219,25 +215,26 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     public void testCreateAndManageUser_StartInBackground_MaxRunningUsers() throws Exception {
         assumeCanStartNewUser();
 
-        int maxUsers = getDevice().getMaxNumberOfUsersSupported();
+        int maxSecondaryUsers =
+                getDevice().getMaxNumberOfUsersSupported("android.os.usertype.full.SECONDARY");
         int maxRunningUsers = getDevice().getMaxNumberOfRunningUsersSupported();
 
-        // Primary user is already running, so we can create and start up to minimum of above - 1.
-        int usersToCreateAndStart = Math.min(maxUsers, maxRunningUsers) - 1;
+        // System user is already running, so subtract 1 from maxRunningUsers
+        int usersToCreateAndStart = Math.min(maxSecondaryUsers, maxRunningUsers - 1);
 
-        // On headless user mode, system user is also running
+        // On headless user mode, an extra secondary user is also created and running
         if (isHeadlessSystemUserMode()) {
             usersToCreateAndStart--;
         }
 
-        CLog.d("testCreateAndManageUser_StartInBackground_MaxRunningUsers(): maxUxers=%d, "
-                + "maxRunningUsers=%d, usersToCreateAndStart=%d", maxUsers, maxRunningUsers,
-                usersToCreateAndStart);
+        CLog.d("testCreateAndManageUser_StartInBackground_MaxRunningUsers(): maxSecondaryUsers=%d, "
+                + "maxRunningUsers=%d, usersToCreateAndStart=%d", maxSecondaryUsers,
+                maxRunningUsers, usersToCreateAndStart);
         for (int i = 0; i < usersToCreateAndStart; i++) {
             executeCreateAndManageUserTest("testCreateAndManageUser_StartInBackground");
         }
 
-        if (maxUsers > maxRunningUsers) {
+        if (maxSecondaryUsers >= maxRunningUsers) {
             // The next startUserInBackground should return USER_OPERATION_ERROR_MAX_RUNNING_USERS.
             executeCreateAndManageUserTest(
                     "testCreateAndManageUser_StartInBackground_MaxRunningUsers");
@@ -611,7 +608,7 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
             + "user mode")
     public void testPackageInstallCache_multiUser() throws Exception {
-        assumeCanCreateAdditionalUsers(1);
+        assumeCanCreateAdditionalSecondaryUsers(1);
 
         final int userId = createAffiliatedSecondaryUser();
         CompatibilityBuildHelper buildHelper = new CompatibilityBuildHelper(getBuild());
@@ -758,7 +755,7 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     @Ignore("b/230738884")
     public void testSetUserControlDisabledPackages_multiUser_reboot_verifyPackageNotStopped()
             throws Exception {
-        assumeCanCreateAdditionalUsers(1);
+        assumeCanCreateAdditionalSecondaryUsers(1);
         final int userId = createUser();
 
         String stopBgUsersOnSwitchValue = getStopBgUsersOnSwitchProperty();
@@ -817,7 +814,7 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     @Ignore("b/204508654")
     public void testSetUserControlDisabledPackages_multiUser_reboot_verifyPackageNotFgsStopped()
             throws Exception {
-        assumeCanCreateAdditionalUsers(1);
+        assumeCanCreateAdditionalSecondaryUsers(1);
         final int userId = createUser();
 
         String stopBgUsersOnSwitchValue = getStopBgUsersOnSwitchProperty();
@@ -985,7 +982,7 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
             + "user mode")
     public void testListForegroundAffiliatedUsers_extraUser() throws Exception {
-        assumeCanCreateAdditionalUsers(1);
+        assumeCanCreateAdditionalSecondaryUsers(1);
         createAffiliatedSecondaryUser();
 
         executeDeviceOwnerTestMethod(".ListForegroundAffiliatedUsersTest",
@@ -996,7 +993,7 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
             + "user mode")
     public void testListForegroundAffiliatedUsers_notAffiliated() throws Exception {
-        assumeCanCreateAdditionalUsers(1);
+        assumeCanCreateAdditionalSecondaryUsers(1);
         int userId = createUser();
         switchUser(userId);
 
@@ -1007,7 +1004,7 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
             + "user mode")
     public void testListForegroundAffiliatedUsers_affiliated() throws Exception {
-        assumeCanCreateAdditionalUsers(1);
+        assumeCanCreateAdditionalSecondaryUsers(1);
         int userId = createAffiliatedSecondaryUser();
         switchUser(userId);
 

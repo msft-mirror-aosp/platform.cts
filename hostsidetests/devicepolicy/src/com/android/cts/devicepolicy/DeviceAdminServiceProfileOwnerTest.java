@@ -34,7 +34,7 @@ public final class DeviceAdminServiceProfileOwnerTest extends BaseDeviceAdminSer
     public void setUp() throws Exception {
         super.setUp();
 
-        assumeSupportsMultiUser();
+        assumeSupportsSecondaryUsers();
 
         mUserId = createUser();
     }

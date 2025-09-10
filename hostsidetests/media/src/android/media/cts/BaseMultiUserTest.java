@@ -246,13 +246,16 @@ public class BaseMultiUserTest extends BaseMediaHostSideTest {
         assertTestsPassed(result);
     }
 
-    /**
-     * Checks whether it is possible to create the desired number of users.
-     */
-    protected boolean canCreateAdditionalUsers(int numberOfUsers)
+    /** Checks whether it is possible to create the desired number of users. */
+    protected boolean canCreateAdditionalUsers(String userType, int numberOfUsers)
             throws DeviceNotAvailableException {
-        return getDevice().listUsers().size() + numberOfUsers <=
-                getDevice().getMaxNumberOfUsersSupported();
+        return getDevice().getRemainingCreatableUserCount(userType) >= numberOfUsers;
+    }
+
+    /** Checks whether it is possible to create the desired number of secondary users. */
+    protected boolean canCreateAdditionalSecondaryUsers(int numberOfUsers)
+            throws DeviceNotAvailableException {
+        return canCreateAdditionalUsers("android.os.usertype.full.SECONDARY", numberOfUsers);
     }
 
     /**
