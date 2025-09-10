@@ -238,7 +238,8 @@ class TorchStrengthTest(its_base_test.ItsBaseTest):
         self.lighting_cntl, self.lighting_ch, self.use_gen2)
 
   def teardown_test(self):
-    self.lighting_control_port.close()
+    if self.lighting_control_port:
+      self.lighting_control_port.close()
 
   def test_torch_strength(self):
     name_with_path = os.path.join(self.log_path, _TEST_NAME)

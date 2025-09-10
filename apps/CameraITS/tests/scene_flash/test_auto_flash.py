@@ -60,7 +60,8 @@ class AutoFlashTest(its_base_test.UiAutomatorItsBaseTest):
 
   def teardown_test(self):
     ui_interaction_utils.force_stop_app(self.dut, self.ui_app)
-    self.lighting_control_port.close()
+    if self.lighting_control_port:
+      self.lighting_control_port.close()
 
   def test_auto_flash(self):
     with its_session_utils.ItsSession(
