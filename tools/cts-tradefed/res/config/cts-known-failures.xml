@@ -409,4 +409,18 @@
     <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases[foldable:2:OPENED] android.graphics.cts.FrameRateOverrideTest#testGlobalBackpressure"/>
     <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases[foldable:1:HALF_OPENED] android.graphics.cts.FrameRateOverrideTest#testAppBackpressure"/>
     <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases[foldable:2:OPENED] android.graphics.cts.FrameRateOverrideTest#testAppBackpressure"/>
+
+    <!-- b/441197389 -->
+    <option name="compatibility:exclude-filter" value="CtsStatsdHostTestCases android.cts.statsd.alert.AnomalyDetectionTests#testPerfetto" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdHostTestCases[instant] android.cts.statsd.alert.AnomalyDetectionTests#testPerfetto" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdHostTestCases android.cts.statsd.metadata.MetadataTests#testSystemServerLossErrorCode" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdHostTestCases[instant] android.cts.statsd.metadata.MetadataTests#testSystemServerLossErrorCode" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdHostTestCases android.cts.statsd.metadata.MetadataTests#testAtomIdLossDistributionCollection" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdHostTestCases[instant] android.cts.statsd.metadata.MetadataTests#testAtomIdLossDistributionCollection" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdHostTestCases android.cts.statsd.metadata.MetadataTests#testConfigTtl" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdHostTestCases[instant] android.cts.statsd.metadata.MetadataTests#testConfigTtl" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdHostTestCases android.cts.statsd.metadata.MetadataTests#testSocketRateLimiting" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdHostTestCases[instant] android.cts.statsd.metadata.MetadataTests#testSocketRateLimiting" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdHostTestCases android.cts.statsd.metadata.MetadataTests#testAtomLossInfoCollection" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdHostTestCases[instant] android.cts.statsd.metadata.MetadataTests#testAtomLossInfoCollection" />
 </configuration>
