@@ -195,8 +195,8 @@ public class CodecRequirementsTest {
             Size finalRequiredSize = requiredSize;
             Size rotatedSize = new Size(requiredSize.getHeight(), requiredSize.getWidth());
             isSupported = selectHardwareCodecs(mMediaType, null, null, isEncoder).stream()
-                    .allMatch(codec -> MediaUtils.supports(codec, mMediaType, finalRequiredSize)
-                            && MediaUtils.supports(codec, mMediaType, rotatedSize));
+                    .filter(codec -> MediaUtils.supports(codec, mMediaType, finalRequiredSize))
+                    .allMatch(codec -> MediaUtils.supports(codec, mMediaType, rotatedSize));
             if (!isSupported) break;
         }
 
