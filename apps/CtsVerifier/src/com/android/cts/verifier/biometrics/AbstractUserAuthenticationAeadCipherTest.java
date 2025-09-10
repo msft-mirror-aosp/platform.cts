@@ -17,54 +17,36 @@
 package com.android.cts.verifier.biometrics;
 
 import android.hardware.biometrics.BiometricPrompt;
-import android.security.keystore.KeyGenParameterSpec;
-import android.security.keystore.KeyProperties;
 
-import javax.crypto.Cipher;
-import javax.crypto.KeyGenerator;
+import java.time.Duration;
 
 /**
  * An abstract base class to add Aead Cipher tests.
  */
 public abstract class AbstractUserAuthenticationAeadCipherTest
         extends AbstractUserAuthenticationTest {
-    private Cipher mCipher;
+    private AuthBoundAeadCipherTest mAuthBoundAeadCipherTest =
+            new AuthBoundAeadCipherTest();
 
     @Override
-    void createUserAuthenticationKey(String keyName, int timeout, int authType,
+    void createUserAuthenticationKey(String keyName, Duration timeout, int authType,
             boolean useStrongBox) throws Exception {
-        KeyGenParameterSpec.Builder builder = new KeyGenParameterSpec.Builder(
-                keyName, KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT);
-        builder.setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                .setUserAuthenticationRequired(true)
-                .setUserAuthenticationParameters(timeout, authType)
-                .setIsStrongBoxBacked(useStrongBox);
-
-        KeyGenerator keyGenerator = KeyGenerator.getInstance(
-                KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore");
-        keyGenerator.init(builder.build());
-        keyGenerator.generateKey();
+        mAuthBoundAeadCipherTest.createUserAuthenticationKey(
+                keyName, timeout, authType, useStrongBox);
     }
 
     @Override
     void initializeKeystoreOperation(String keyName) throws Exception {
-        mCipher = Utils.initAeadCipher(keyName);
+        mAuthBoundAeadCipherTest.initializeKeystoreOperation(keyName);
     }
 
     @Override
     BiometricPrompt.CryptoObject getCryptoObject() {
-        return new BiometricPrompt.CryptoObject(mCipher);
+        return new BiometricPrompt.CryptoObject(mAuthBoundAeadCipherTest.getCryptoObject());
     }
 
     @Override
     void doKeystoreOperation(byte[] payload) throws Exception {
-        try {
-            byte[] aad = "Test aad data".getBytes();
-            mCipher.updateAAD(aad);
-            Utils.doEncrypt(mCipher, payload);
-        } finally {
-            mCipher = null;
-        }
+        mAuthBoundAeadCipherTest.doKeystoreOperation(payload);
     }
 }

@@ -39,20 +39,20 @@ import android.widget.Toast;
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
 
+import java.time.Duration;
 import java.util.concurrent.Executor;
 
 /**
  * This is the abstract base class for testing/checking that keys generated via
  * setUserAuthenticationParameters(timeout, CREDENTIAL) can be unlocked (or not) depending on the
  * type of authenticator used. This tests various combinations of
- * {timeout, authenticator, strongbox}. Extending classes currently consist of:
- * {@link UserAuthenticationCredentialCipherTest} for testing {@link javax.crypto.Cipher}.
+ * {timeout, authenticator, strongbox}.
  */
 public abstract class AbstractUserAuthenticationTest extends PassFailButtons.Activity {
 
     private static final String TAG = "AbstractUserAuthenticationCredentialTest";
 
-    private static final int TIMED_KEY_DURATION = 3;
+    private static final int TIMED_KEY_DURATION = 15;
     private static final byte[] PAYLOAD = new byte[] {1, 2, 3, 4, 5, 6};
 
     abstract class ExpectedResults {
@@ -69,7 +69,7 @@ public abstract class AbstractUserAuthenticationTest extends PassFailButtons.Act
 
     abstract int getInstructionsResourceId();
 
-    abstract void createUserAuthenticationKey(String keyName, int timeout, int authType,
+    abstract void createUserAuthenticationKey(String keyName, Duration timeout, int authType,
             boolean useStrongBox) throws Exception;
 
     abstract ExpectedResults getExpectedResults();
@@ -156,6 +156,21 @@ public abstract class AbstractUserAuthenticationTest extends PassFailButtons.Act
                 PackageManager.FEATURE_STRONGBOX_KEYSTORE);
         final boolean noStrongBiometricHardware = !hasStrongBiometrics();
 
+        if (getTag() == UserAuthenticationCredentialTimedKeyTest.class.getName()
+                || getTag() == UserAuthenticationBiometricTimedKeyTest.class.getName()
+                || getTag()
+                        == UserAuthenticationBiometricOrCredentialTimedKeyTest.class.getName()) {
+            mCredentialPerUseButton.setVisibility(View.GONE);
+            mBiometricPerUseButton.setVisibility(View.GONE);
+            mCredentialPerUseButton_strongbox.setVisibility(View.GONE);
+            mBiometricPerUseButton_strongbox.setVisibility(View.GONE);
+        } else {
+            mCredentialTimedButton.setVisibility(View.GONE);
+            mBiometricTimedButton.setVisibility(View.GONE);
+            mCredentialTimedButton_strongbox.setVisibility(View.GONE);
+            mBiometricTimedButton_strongbox.setVisibility(View.GONE);
+        }
+
         if (!hasStrongBox) {
             mCredentialPerUseButton_strongbox.setVisibility(View.GONE);
             mCredentialTimedButton_strongbox.setVisibility(View.GONE);
@@ -174,7 +189,7 @@ public abstract class AbstractUserAuthenticationTest extends PassFailButtons.Act
 
         mCredentialPerUseButton.setOnClickListener((view) -> {
             testCredentialBoundEncryption("key1",
-                    0 /* timeout */,
+                    Duration.ofSeconds(0) /* timeout */,
                     false /* useStrongBox */,
                     Authenticators.DEVICE_CREDENTIAL,
                     getExpectedResults().shouldCredentialUnlockPerUseKey(),
@@ -184,7 +199,7 @@ public abstract class AbstractUserAuthenticationTest extends PassFailButtons.Act
 
         mCredentialTimedButton.setOnClickListener((view) -> {
             testCredentialBoundEncryption("key2",
-                    TIMED_KEY_DURATION /* timeout */,
+                    Duration.ofSeconds(TIMED_KEY_DURATION) /* timeout */,
                     false /* useStrongBox */,
                     Authenticators.DEVICE_CREDENTIAL,
                     getExpectedResults().shouldCredentialUnlockTimedKey(),
@@ -194,7 +209,7 @@ public abstract class AbstractUserAuthenticationTest extends PassFailButtons.Act
 
         mBiometricPerUseButton.setOnClickListener((view) -> {
             testCredentialBoundEncryption("key3",
-                    0 /* timeout */,
+                    Duration.ofSeconds(0) /* timeout */,
                     false /* useStrongBox */,
                     Authenticators.BIOMETRIC_STRONG,
                     getExpectedResults().shouldBiometricUnlockPerUseKey(),
@@ -204,7 +219,7 @@ public abstract class AbstractUserAuthenticationTest extends PassFailButtons.Act
 
         mBiometricTimedButton.setOnClickListener((view) -> {
             testCredentialBoundEncryption("key4",
-                    TIMED_KEY_DURATION /* timeout */,
+                    Duration.ofSeconds(TIMED_KEY_DURATION) /* timeout */,
                     false /* useStrongBox */,
                     Authenticators.BIOMETRIC_STRONG,
                     getExpectedResults().shouldBiometricUnlockTimedKey(),
@@ -216,7 +231,7 @@ public abstract class AbstractUserAuthenticationTest extends PassFailButtons.Act
 
         mCredentialPerUseButton_strongbox.setOnClickListener((view) -> {
             testCredentialBoundEncryption("key5",
-                    0 /* timeout */,
+                    Duration.ofSeconds(0) /* timeout */,
                     true /* useStrongBox */,
                     Authenticators.DEVICE_CREDENTIAL,
                     getExpectedResults().shouldCredentialUnlockPerUseKey(),
@@ -226,7 +241,7 @@ public abstract class AbstractUserAuthenticationTest extends PassFailButtons.Act
 
         mCredentialTimedButton_strongbox.setOnClickListener((view) -> {
             testCredentialBoundEncryption("key6",
-                    TIMED_KEY_DURATION /* timeout */,
+                    Duration.ofSeconds(TIMED_KEY_DURATION) /* timeout */,
                     true /* useStrongBox */,
                     Authenticators.DEVICE_CREDENTIAL,
                     getExpectedResults().shouldCredentialUnlockTimedKey(),
@@ -236,7 +251,7 @@ public abstract class AbstractUserAuthenticationTest extends PassFailButtons.Act
 
         mBiometricPerUseButton_strongbox.setOnClickListener((view) -> {
             testCredentialBoundEncryption("key7",
-                    0 /* timeout */,
+                    Duration.ofSeconds(0) /* timeout */,
                     true /* useStrongBox */,
                     Authenticators.BIOMETRIC_STRONG,
                     getExpectedResults().shouldBiometricUnlockPerUseKey(),
@@ -246,7 +261,7 @@ public abstract class AbstractUserAuthenticationTest extends PassFailButtons.Act
 
         mBiometricTimedButton_strongbox.setOnClickListener((view) -> {
             testCredentialBoundEncryption("key8",
-                    TIMED_KEY_DURATION /* timeout */,
+                    Duration.ofSeconds(TIMED_KEY_DURATION) /* timeout */,
                     true /* useStrongBox */,
                     Authenticators.BIOMETRIC_STRONG,
                     getExpectedResults().shouldBiometricUnlockTimedKey(),
@@ -268,11 +283,11 @@ public abstract class AbstractUserAuthenticationTest extends PassFailButtons.Act
         }
     }
 
-    private void testCredentialBoundEncryption(String keyName, int timeout, boolean useStrongBox,
+    private void testCredentialBoundEncryption(String keyName, Duration timeout, boolean useStrongBox,
             int allowedAuthenticators, boolean shouldKeyBeUsable, byte[] payload,
             Button testButton) {
 
-        final boolean requiresCryptoObject = timeout == 0;
+        final boolean requiresCryptoObject = timeout.toSeconds() == 0;
 
         final int canAuthenticate = mBiometricManager.canAuthenticate(allowedAuthenticators);
         if (canAuthenticate != BiometricManager.BIOMETRIC_SUCCESS) {
@@ -333,53 +348,59 @@ public abstract class AbstractUserAuthenticationTest extends PassFailButtons.Act
                 });
             }
 
-            final AuthenticationCallback callback = new AuthenticationCallback() {
-                @Override
-                public void onAuthenticationSucceeded(AuthenticationResult result) {
-                    // Key generation / initialization can depend on past authentication. Ensure
-                    // that the user has not authenticated within n+1 seconds before allowing the
-                    // next test to start.
-                    disableTestsForFewSeconds();
+            final AuthenticationCallback callback =
+                    new AuthenticationCallback() {
+                        @Override
+                        public void onAuthenticationSucceeded(AuthenticationResult result) {
+                            // Key generation / initialization can depend on past authentication.
+                            // Ensure that the user has not authenticated within n+1 seconds before
+                            // allowing the next test to start.
+                            disableTestsForDuration(timeout);
 
-                    Exception exception = null;
-                    boolean keyUsed;
-                    try {
-                        if (requiresCryptoObject) {
-                            // Test constructor CryptoObject(long operationHandle)
-                            CryptoObject newCryptoObject =
-                                    Utils.initCryptoObjectWithOperationHandle(
-                                            crypto.getOperationHandle());
-                            assertEquals(newCryptoObject.getOperationHandle(),
-                                    result.getCryptoObject().getOperationHandle());
-                        } else {
-                            initializeKeystoreOperation(keyName);
+                            Exception exception = null;
+                            boolean keyUsed;
+                            try {
+                                if (requiresCryptoObject) {
+                                    // Test constructor CryptoObject(long operationHandle)
+                                    CryptoObject newCryptoObject =
+                                            Utils.initCryptoObjectWithOperationHandle(
+                                                    crypto.getOperationHandle());
+                                    assertEquals(
+                                            newCryptoObject.getOperationHandle(),
+                                            result.getCryptoObject().getOperationHandle());
+                                }
+
+                                doKeystoreOperation(payload);
+
+                                keyUsed = true;
+                            } catch (Exception e) {
+                                keyUsed = false;
+                                exception = e;
+                            }
+
+                            if (keyUsed != shouldKeyBeUsable) {
+                                showToastAndLog(
+                                        "Test failed. shouldKeyBeUsable: "
+                                                + shouldKeyBeUsable
+                                                + " keyUsed: "
+                                                + keyUsed
+                                                + " Exception: "
+                                                + exception,
+                                        exception);
+                                if (exception != null) {
+                                    exception.printStackTrace();
+                                }
+                            } else {
+                                // Set them to invisible, because for this test, disabled actually
+                                // means something else. For the initialization of some keys, its
+                                // success/failure can depend on if the user has entered their
+                                // credential within the last "n" seconds. Those tests need to be
+                                // disabled until "n" has passed.
+                                testButton.setVisibility(View.INVISIBLE);
+                            }
+                            updatePassButton();
                         }
-
-                        doKeystoreOperation(payload);
-
-                        keyUsed = true;
-                    } catch (Exception e) {
-                        keyUsed = false;
-                        exception = e;
-                    }
-
-                    if (keyUsed != shouldKeyBeUsable) {
-                        showToastAndLog("Test failed. shouldKeyBeUsable: " + shouldKeyBeUsable
-                                + " keyUsed: " + keyUsed + " Exception: " + exception, exception);
-                        if (exception != null) {
-                            exception.printStackTrace();
-                        }
-                    } else {
-                        // Set them to invisible, because for this test, disabled actually means
-                        // something else. For the initialization of some keys, its success/failure
-                        // can depend on if the user has entered their credential within the last
-                        // "n" seconds. Those tests need to be disabled until "n" has passed.
-                        testButton.setVisibility(View.INVISIBLE);
-                    }
-                    updatePassButton();
-                }
-            };
-
+                    };
 
             final BiometricPrompt prompt = builder.build();
 
@@ -400,16 +421,23 @@ public abstract class AbstractUserAuthenticationTest extends PassFailButtons.Act
                 != BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE;
     }
 
-    private void disableTestsForFewSeconds() {
+    private void disableTestsForDuration(Duration timeout) {
         for (Button b : mButtons) {
             b.setEnabled(false);
         }
 
-        mHandler.postDelayed(() -> {
-            for (Button b : mButtons) {
-                b.setEnabled(true);
-            }
-        }, TIMED_KEY_DURATION * 1000 + 1000);
+        if (timeout.toSeconds() == 0) {
+            // Disable at least 3 seconds.
+            timeout = Duration.ofSeconds(3);
+        }
+
+        mHandler.postDelayed(
+                () -> {
+                    for (Button b : mButtons) {
+                        b.setEnabled(true);
+                    }
+                },
+                timeout.toSeconds() * 1000 + 1000);
     }
 
     private void updatePassButton() {
