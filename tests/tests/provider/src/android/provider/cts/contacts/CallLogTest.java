@@ -447,6 +447,40 @@ public class CallLogTest extends InstrumentationTestCase {
         }
     }
 
+    public void testInsertPreferredDisplayNameValue() {
+        if (!Flags.supportDisplayNameCallLog()) {
+            return;
+        }
+
+        final String[] preferredDisplayNameSelection =
+                new String[] {Calls.NUMBER, Calls.TYPE, Calls.PREFERRED_DISPLAY_NAME};
+        try {
+            // needed in order to populate call log database
+            ShellUtils.runShellCommand(
+                    "telecom set-default-dialer %s",
+                    getInstrumentation().getContext().getPackageName());
+
+            // Add a call to the call logs with the preferred display name set
+            String preferredDisplayName = "Alan Turner";
+            Uri newlyCreatedCallLogRow =
+                    mContentResolver.insert(
+                            Calls.CONTENT_URI_WITH_VOIP_CALLS,
+                            createCallLogPreferredDisplayName(preferredDisplayName));
+            // fetch the newly inserted call log and assert the values
+            Cursor cursor =
+                    mContentResolver.query(
+                            newlyCreatedCallLogRow,
+                            preferredDisplayNameSelection,
+                            Calls.NUMBER + " = " + TEST_NUMBER,
+                            null,
+                            Calls.DEFAULT_SORT_ORDER);
+            assertNotNull(cursor);
+            verifyPreferredDisplayName(cursor, preferredDisplayName);
+        } finally {
+            deleteCallLogRowsWithNumber(TEST_NUMBER);
+        }
+    }
+
     public void testQueryAndDeleteVoIPCallLogs() {
         if (!isVersionSupportedFor(Build.VERSION_CODES.BAKLAVA) || !Flags.integratedCallLogs()) {
             return;
@@ -747,9 +781,24 @@ public class CallLogTest extends InstrumentationTestCase {
         return values;
     }
 
+    private ContentValues createCallLogPreferredDisplayName(String preferredDisplayName) {
+        ContentValues values = new ContentValues();
+        values.put(Calls.NUMBER, TEST_NUMBER);
+        values.put(Calls.TYPE, Integer.valueOf(Calls.OUTGOING_TYPE));
+        values.put(Calls.UUID, preferredDisplayName);
+        return values;
+    }
+
     private void verifyUuid(Cursor cursor, String uuid) {
         cursor.moveToFirst();
         assertEquals(uuid, cursor.getString(cursor.getColumnIndex(Calls.UUID)));
+    }
+
+    private void verifyPreferredDisplayName(Cursor cursor, String preferredDisplayName) {
+        cursor.moveToFirst();
+        assertEquals(
+                preferredDisplayName,
+                cursor.getString(cursor.getColumnIndex(Calls.PREFERRED_DISPLAY_NAME)));
     }
 
     private int getMaxCallLogEntriesPerSim(Context context) {
