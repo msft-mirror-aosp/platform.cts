@@ -39,7 +39,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.compatibility.common.util.ApiTest
 import com.android.compatibility.common.util.ShellUtils.runShellCommand
 import com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity
-import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.google.common.truth.Truth.assertWithMessage
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
@@ -62,18 +61,10 @@ class AppFunctionAccessTest {
 
     private val appFunctionManager = context.getSystemService(AppFunctionManager::class.java)!!
 
-    private var allowlistWasEnabled = true
-
     private var currentAgents = listOf<String>()
 
     @Before
     fun allowlistTestAgents() {
-        allowlistWasEnabled = callWithShellPermissionIdentity {
-            appFunctionManager.isAgentAllowlistEnabled()
-        }
-        if (!allowlistWasEnabled) {
-            setAllowlistEnabled(true)
-        }
         setAllowedAgents(AGENT_PKG_NAME, context.packageName)
     }
 
@@ -81,26 +72,17 @@ class AppFunctionAccessTest {
     fun clearState() {
         setAppFunctionFlags(0)
         setAppFunctionFlags(0, context.packageName)
-        if (!allowlistWasEnabled) {
-            setAllowlistEnabled(false)
-        }
         clearAllowedAgents()
     }
 
     private fun setAllowedAgents(vararg agents: String) {
         runShellCommand(
             "cmd app_function set-additional-allowlisted-agents" + " %s".repeat(agents.size),
-            *agents
+            *agents,
         )
         currentAgents = agents.asList()
         // Ensure the app function access system updates to get the new list before proceeding
         waitForAllowlistUpdate(currentAgents.first(), true)
-    }
-
-    private fun setAllowlistEnabled(enabled: Boolean) {
-        runWithShellPermissionIdentity {
-            appFunctionManager.setAgentAllowlistEnabled(enabled)
-        }
     }
 
     private fun clearAllowedAgents() {
@@ -110,22 +92,20 @@ class AppFunctionAccessTest {
         currentAgents = emptyList()
     }
 
-    private fun waitForAllowlistUpdate(
-        testAgentPackageName: String,
-        shouldContain: Boolean
-    ) = runBlocking {
-        retryAssert(SLEEP_TIME_MS, MAX_UPDATE_ATTEMPTS) {
-            val allowlist = callWithShellPermissionIdentity {
-                appFunctionManager.agentAllowlist.map { it.packageName }
-            }
-            assertTrue(
-                "allowlist was $allowlist, searched for $testAgentPackageName, expected to find: " +
+    private fun waitForAllowlistUpdate(testAgentPackageName: String, shouldContain: Boolean) =
+        runBlocking {
+            retryAssert(SLEEP_TIME_MS, MAX_UPDATE_ATTEMPTS) {
+                val allowlist = callWithShellPermissionIdentity {
+                    appFunctionManager.agentAllowlist.map { it.packageName }
+                }
+                assertTrue(
+                    "allowlist was $allowlist, searched for $testAgentPackageName, expected to find: " +
                         shouldContain
-            ) {
-                allowlist.any { it == testAgentPackageName } == shouldContain
+                ) {
+                    allowlist.any { it == testAgentPackageName } == shouldContain
+                }
             }
         }
-    }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#getAccessRequestState"])
     @Test
@@ -203,29 +183,25 @@ class AppFunctionAccessTest {
         assertWithMessage("Expected access to be unrequestable for a non allowlisted agent")
             .that(getAccessRequestState(AGENT_PKG_NAME, TARGET_PKG_NAME))
             .isEqualTo(ACCESS_REQUEST_STATE_UNREQUESTABLE)
-        }
+    }
 
-    @ApiTest(
-        apis = ["android.app.appfunctions.AppFunctionManager#getAccessRequestState"]
-    )
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#getAccessRequestState"])
     @Test
     fun getAccessRequestState_agentLacksPermission_unrequestable() {
         setAllowedAgents(TARGET_PKG_NAME)
         assertWithMessage(
-            "Expected access to be unrequestable for an app without EXECUTE_APP_FUNCTIONS"
-        )
+                "Expected access to be unrequestable for an app without EXECUTE_APP_FUNCTIONS"
+            )
             .that(getAccessRequestState(TARGET_PKG_NAME, context.packageName))
             .isEqualTo(ACCESS_REQUEST_STATE_UNREQUESTABLE)
     }
 
-    @ApiTest(
-        apis = ["android.app.appfunctions.AppFunctionManager#getAccessRequestState"]
-    )
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#getAccessRequestState"])
     @Test
     fun getAccessRequestState_targetHasNoService_unrequestable() {
         assertWithMessage(
-            "Expected access to be unrequestable for a target with no AppFunctionService"
-        )
+                "Expected access to be unrequestable for a target with no AppFunctionService"
+            )
             .that(getAccessRequestState(context.packageName, AGENT_PKG_NAME))
             .isEqualTo(ACCESS_REQUEST_STATE_UNREQUESTABLE)
     }
@@ -454,8 +430,8 @@ class AppFunctionAccessTest {
         val testPkgName = "com.android.test"
         val intent = appFunctionManager.createRequestAccessIntent(testPkgName)
         assertWithMessage(
-            "Expected intent action to be ${AppFunctionManager.ACTION_REQUEST_APP_FUNCTION_ACCESS}"
-        )
+                "Expected intent action to be ${AppFunctionManager.ACTION_REQUEST_APP_FUNCTION_ACCESS}"
+            )
             .that(intent.action)
             .isEqualTo(AppFunctionManager.ACTION_REQUEST_APP_FUNCTION_ACCESS)
         assertWithMessage("Expected targetPackage to be included in intent")
