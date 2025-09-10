@@ -305,6 +305,54 @@ public class ImageDecoderTest {
         }
     }
 
+    @Test
+    @RequiresDevice
+    public void testDecode10BitAvifHdrWithPqColorSpace() {
+        assumeTrue(
+                "AVIF is not supported on this device, skip this test.",
+                ImageDecoder.isMimeTypeSupported("image/avif"));
+
+        try {
+            Bitmap bm =
+                    decodeUnscaledBitmap(
+                            R.raw.avif_yuv_420_10bit_pq,
+                            (decoder, info, source) -> {
+                                decoder.setAllocator(ImageDecoder.ALLOCATOR_SOFTWARE);
+                            });
+            assertNotNull(bm);
+            assertEquals(120, bm.getWidth());
+            assertEquals(160, bm.getHeight());
+            assertEquals(Bitmap.Config.RGBA_1010102, bm.getConfig());
+            assertEquals(ColorSpace.get(ColorSpace.Named.BT2020_PQ), bm.getColorSpace());
+        } catch (IOException e) {
+            fail("Failed with exception " + e);
+        }
+    }
+
+    @Test
+    @RequiresDevice
+    public void testDecode10BitAvifHdrWithHlgColorSpace() {
+        assumeTrue(
+                "AVIF is not supported on this device, skip this test.",
+                ImageDecoder.isMimeTypeSupported("image/avif"));
+
+        try {
+            Bitmap bm =
+                    decodeUnscaledBitmap(
+                            R.raw.avif_yuv_420_10bit_hlg,
+                            (decoder, info, source) -> {
+                                decoder.setAllocator(ImageDecoder.ALLOCATOR_SOFTWARE);
+                            });
+            assertNotNull(bm);
+            assertEquals(120, bm.getWidth());
+            assertEquals(160, bm.getHeight());
+            assertEquals(Bitmap.Config.RGBA_1010102, bm.getConfig());
+            assertEquals(ColorSpace.get(ColorSpace.Named.BT2020_HLG), bm.getColorSpace());
+        } catch (IOException e) {
+            fail("Failed with exception " + e);
+        }
+    }
+
     private Bitmap decodeUnscaledBitmap(
             int resId, ImageDecoder.OnHeaderDecodedListener listener) throws IOException {
         // For tests which rely on ImageDecoder *not* scaling to account for density.
