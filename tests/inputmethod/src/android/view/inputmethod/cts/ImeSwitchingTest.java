@@ -16,6 +16,7 @@
 
 package android.view.inputmethod.cts;
 
+import static android.view.inputmethod.Flags.FLAG_ENFORCE_DEVICE_POLICY_IME;
 import static android.view.inputmethod.cts.util.InputMethodVisibilityVerifier.expectImeVisible;
 import static android.view.inputmethod.cts.util.TestUtils.runOnMainSync;
 
@@ -29,7 +30,10 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.UserHandle;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.wm.LockScreenSession;
 import android.server.wm.WindowManagerStateHelper;
 import android.view.inputmethod.InputMethodManager;
@@ -45,6 +49,7 @@ import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImePackageNames;
 import com.android.cts.mockime.MockImeSession;
@@ -52,6 +57,7 @@ import com.android.cts.mockime.MockImeSession;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -235,13 +241,88 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENFORCE_DEVICE_POLICY_IME)
+    public void testDevicePolicyIme() throws Throwable {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        final var pm = context.getPackageManager();
+        assumeFalse(
+                "Automotive doesn't use device policy, skipping the test",
+                pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+
+        final InputMethodManager imm = context.getSystemService(InputMethodManager.class);
+        try {
+            testWithActivityAndTwoImes(
+                    (session1, session2, activity, editText, marker) -> {
+                        final var stream1 = session1.openEventStream();
+                        final var stream2 = session2.openEventStream();
+
+                        // Make sure that MockIme2 eventually becomes visible
+                        expectEvent(stream2, editorMatcher("onStartInput", marker), TIMEOUT);
+                        runOnMainSync(
+                                () ->
+                                        editText.getContext()
+                                                .getSystemService(InputMethodManager.class)
+                                                .showSoftInput(editText, 0));
+                        expectEvent(stream2, editorMatcher("onStartInputView", marker), TIMEOUT);
+                        expectImeVisible(TIMEOUT);
+
+                        // set MockIme1 as allowed IME.
+                        SystemUtil.runWithShellPermissionIdentity(
+                                () ->
+                                        imm.setAllowedImesByPolicyForTest(
+                                                Collections.singletonList(
+                                                        session1.getMockImePackageName())));
+
+                        // Then switch to MockIme1
+                        stream1.skipAll();
+                        imm.restartInput(editText);
+
+                        runOnMainSync(
+                                () ->
+                                        editText.getContext()
+                                                .getSystemService(InputMethodManager.class)
+                                                .showSoftInput(editText, 0));
+                        expectCommand(
+                                stream2,
+                                session2.callSwitchInputMethod(session1.getImeId()),
+                                TIMEOUT);
+                        // MockIme2 should be destroyed immediately after switching, even when the
+                        // current client doesn't have input focus.
+                        expectEvent(stream2, eventMatcher("onDestroy"), TIMEOUT);
+
+                        // Make sure that MockIme1 eventually becomes visible
+                        expectEvent(stream1, eventMatcher("onCreate"), TIMEOUT);
+                        expectEvent(stream1, editorMatcher("onStartInput", marker), TIMEOUT);
+                        expectEvent(stream1, editorMatcher("onStartInputView", marker), TIMEOUT);
+                        expectImeVisible(TIMEOUT);
+                    },
+                    true /* enforceDevicePolicy */);
+        } finally {
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> imm.setAllowedImesByPolicyForTest(null));
+        }
+    }
+
     /**
      * Starts the test activity with MockIme1 and MockIme2 enabled, and MockIme2 selected as the
      * current IME, and then runs the given test code.
      *
      * @param testRunnable the test code to run.
      */
-    private void testWithActivityAndTwoImes(@NonNull TestRunnable testRunnable) throws Exception {
+    private void testWithActivityAndTwoImes(@NonNull TestRunnable runnable) throws Exception {
+        testWithActivityAndTwoImes(runnable, false /* enforceDevicePolicy */);
+    }
+
+    /**
+     * Starts the test activity with MockIme1 and MockIme2 enabled, and MockIme2 selected as the
+     * current IME, and then runs the given test code.
+     *
+     * @param testRunnable the test code to run.
+     * @param enforceDevicePolicy {@code true} if devicePolicy should be enforced.
+     */
+    private void testWithActivityAndTwoImes(
+            @NonNull TestRunnable testRunnable, boolean enforceDevicePolicy) throws Exception {
         final var instrumentation = InstrumentationRegistry.getInstrumentation();
         try (var session1 = MockImeSession.create(
                 instrumentation.getContext(),
@@ -258,19 +339,25 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
 
             // Launch an Activity that shows up an IME.
             final var editTextRef = new AtomicReference<EditText>();
-            final var testActivity = TestActivity.startSync(activity -> {
-                final var layout = new LinearLayout(activity);
-                layout.setOrientation(LinearLayout.VERTICAL);
+            final var testActivity =
+                    TestActivity.startSync(
+                            activity -> {
+                                final var layout = new LinearLayout(activity);
+                                layout.setOrientation(LinearLayout.VERTICAL);
 
-                final var editText = new EditText(activity);
-                editText.setPrivateImeOptions(marker);
-                editText.setHint("editText");
-                editText.requestFocus();
-                layout.addView(editText);
+                                final var editText = new EditText(activity);
+                                editText.setPrivateImeOptions(marker);
+                                if (enforceDevicePolicy) {
+                                    editText.setEnforceImePolicyUser(
+                                            UserHandle.of(UserHandle.myUserId()));
+                                }
+                                editText.setHint("editText");
+                                editText.requestFocus();
+                                layout.addView(editText);
 
-                editTextRef.set(editText);
-                return layout;
-            });
+                                editTextRef.set(editText);
+                                return layout;
+                            });
 
             testRunnable.run(session1, session2, testActivity, editTextRef.get(), marker);
         }
