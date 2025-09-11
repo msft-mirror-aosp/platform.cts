@@ -18,7 +18,14 @@ package android.cts.statsdatom.display;
 
 import com.android.tradefed.device.ITestDevice;
 
+import java.util.concurrent.TimeUnit;
+
 public class DisplayTestUtils {
+
+    public static final String DISPLAY_TEST_PKG = "android.display.cts";
+    public static final String DISPLAY_TEST_APK = "CtsDisplayTestCases.apk";
+    public static final String TEST_CLASS_DISPLAY_EVENT = "android.display.cts.DisplayEventTest";
+    public static final long TIMEOUT_MS = TimeUnit.SECONDS.toMillis(10);
 
     /** Returns the current brightness level of the given device. */
     public static int getCurrentBrightnessLevel(ITestDevice device) throws Exception {
@@ -41,5 +48,27 @@ public class DisplayTestUtils {
     /** Sets the brightness mode of the given device. */
     public static void setAutoBrightnessMode(ITestDevice device, int mode) throws Exception {
         device.executeShellCommand("settings put system screen_brightness_mode " + mode);
+    }
+
+    /** Gets the user rotation mode of the given device. */
+    public static int getCurrentUserRotationMode(ITestDevice device) throws Exception {
+        return Integer.parseInt(
+                device.executeShellCommand("settings get system user_rotation").trim());
+    }
+
+    /** Sets the user rotation mode of the given device. */
+    public static void setUserRotationMode(ITestDevice device, int mode) throws Exception {
+        device.executeShellCommand("settings put system user_rotation " + mode);
+    }
+
+    /** Gets the accelerometer rotation mode of the given device. */
+    public static int getCurrentAccelerometerRotationMode(ITestDevice device) throws Exception {
+        return Integer.parseInt(
+                device.executeShellCommand("settings get system accelerometer_rotation").trim());
+    }
+
+    /** Sets the accelerometer rotation mode of the given device. */
+    public static void setAccelerometerRotationMode(ITestDevice device, int mode) throws Exception {
+        device.executeShellCommand("settings put system accelerometer_rotation " + mode);
     }
 }

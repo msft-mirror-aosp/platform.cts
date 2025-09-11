@@ -16,6 +16,10 @@
 
 package android.cts.statsdatom.display;
 
+import static android.cts.statsdatom.display.DisplayTestUtils.DISPLAY_TEST_APK;
+import static android.cts.statsdatom.display.DisplayTestUtils.DISPLAY_TEST_PKG;
+import static android.cts.statsdatom.display.DisplayTestUtils.TEST_CLASS_DISPLAY_EVENT;
+import static android.cts.statsdatom.display.DisplayTestUtils.TIMEOUT_MS;
 import static android.cts.statsdatom.display.DisplayTestUtils.getCurrentBrightnessLevel;
 import static android.cts.statsdatom.display.DisplayTestUtils.getCurrentBrightnessMode;
 import static android.cts.statsdatom.display.DisplayTestUtils.setAutoBrightnessMode;
@@ -55,15 +59,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class DisplayEventOccurredStatsTests extends BaseHostJUnit4Test implements IBuildReceiver {
-
-    private static final String DISPLAY_TEST_PKG = "android.display.cts";
-    private static final String DISPLAY_TEST_APK = "CtsDisplayTestCases.apk";
-    private static final String TEST_CLASS_DISPLAY_EVENT = "android.display.cts.DisplayEventTest";
-    private static final long TIMEOUT_MS = TimeUnit.SECONDS.toMillis(10);
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -107,7 +105,7 @@ public class DisplayEventOccurredStatsTests extends BaseHostJUnit4Test implement
         int brightnessModeBeforeTest = getCurrentBrightnessMode(getDevice());
         setAutoBrightnessMode(getDevice(), 0);
         PollingCheck.check(
-                "Brightness mode did not turn off.",
+                "Brightness mode did not change to manual.",
                 TIMEOUT_MS,
                 () -> getCurrentBrightnessMode(getDevice()) == 0);
 
