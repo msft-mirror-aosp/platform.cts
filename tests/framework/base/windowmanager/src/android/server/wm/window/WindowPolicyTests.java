@@ -58,7 +58,7 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
     @Test
     public void testWindowInsets() {
         TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
-        final TestActivity activity = startActivitySync(TestActivity.class);
+        final TestActivity activity = startActivityInFullscreenSync(TestActivity.class);
 
         runOnMainSync(() -> {
             assertEquals(
@@ -68,7 +68,11 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
         });
     }
 
-    private static void assertFillWindowBounds(TestActivity activity) {
+    private static void assertFillWindowBounds(Class<? extends TestActivity> activityClass) {
+        // The assertion expects the task does not have a caption bar so that the content view fills
+        // its window bounds. So we here launch the activity in fullscreen.
+        final TestActivity activity = startActivityInFullscreenSync(activityClass);
+
         runOnMainSync(() -> {
             assertEquals(
                     "Decor view must fill window bounds.",
@@ -95,69 +99,69 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
     public void testWindowStyleLayoutInDisplayCutoutMode_unspecified() {
         TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
         TestActivity.sStyleIdList.add(R.style.LayoutInDisplayCutoutModeUnspecified);
-        assertFillWindowBounds(startActivitySync(TestActivity.class));
+        assertFillWindowBounds(TestActivity.class);
     }
 
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_never() {
         TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
         TestActivity.sStyleIdList.add(R.style.LayoutInDisplayCutoutModeNever);
-        assertFillWindowBounds(startActivitySync(TestActivity.class));
+        assertFillWindowBounds(TestActivity.class);
     }
 
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_default() {
         TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
         TestActivity.sStyleIdList.add(R.style.LayoutInDisplayCutoutModeDefault);
-        assertFillWindowBounds(startActivitySync(TestActivity.class));
+        assertFillWindowBounds(TestActivity.class);
     }
 
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_shortEdges() {
         TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
         TestActivity.sStyleIdList.add(R.style.LayoutInDisplayCutoutModeShortEdges);
-        assertFillWindowBounds(startActivitySync(TestActivity.class));
+        assertFillWindowBounds(TestActivity.class);
     }
 
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_always() {
         TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
         TestActivity.sStyleIdList.add(R.style.LayoutInDisplayCutoutModeAlways);
-        assertFillWindowBounds(startActivitySync(TestActivity.class));
+        assertFillWindowBounds(TestActivity.class);
     }
 
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_unspecified() {
         TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
-        assertFillWindowBounds(startActivitySync(TestActivity.class));
+        assertFillWindowBounds(TestActivity.class);
     }
 
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_never() {
         TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
         TestActivity.sLayoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER;
-        assertFillWindowBounds(startActivitySync(TestActivity.class));
+        assertFillWindowBounds(TestActivity.class);
     }
 
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_default() {
         TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
         TestActivity.sLayoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT;
-        assertFillWindowBounds(startActivitySync(TestActivity.class));
+        assertFillWindowBounds(TestActivity.class);
     }
 
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_shortEdges() {
         TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
         TestActivity.sLayoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
-        assertFillWindowBounds(startActivitySync(TestActivity.class));
+        assertFillWindowBounds(TestActivity.class);
     }
 
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_always() {
         TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
         TestActivity.sLayoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
-        assertFillWindowBounds(startActivitySync(TestActivity.class));
+        assertFillWindowBounds(TestActivity.class);
     }
 
     @Test
@@ -192,7 +196,9 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
 
         runInKidsModeSync(
                 () -> {
-                    final TestActivity activity = startActivitySync(PortraitTestActivity.class);
+                    // The screenOrientation attr is considered only in fullscreen mode.
+                    final TestActivity activity =
+                            startActivityInFullscreenSync(PortraitTestActivity.class);
                     PollingCheck.waitFor(
                             TIMEOUT_NAV_BAR_MODE_CHANGED,
                             () ->
@@ -208,7 +214,9 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
 
         runInKidsModeSync(
                 () -> {
-                    final TestActivity activity = startActivitySync(LandscapeTestActivity.class);
+                    // The screenOrientation attr is considered only in fullscreen mode.
+                    final TestActivity activity =
+                            startActivityInFullscreenSync(LandscapeTestActivity.class);
                     PollingCheck.waitFor(
                             TIMEOUT_NAV_BAR_MODE_CHANGED,
                             () ->
