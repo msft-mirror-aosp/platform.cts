@@ -33,6 +33,7 @@ android_test {
         "CtsExternalServiceCommon",
         "cts-wm-util",
         "libprotobuf-java-lite",
+        "am_flags_lib",
     ],
     srcs: [
         "src/**/*.java",

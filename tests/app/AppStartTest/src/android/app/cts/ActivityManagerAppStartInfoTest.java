@@ -34,6 +34,9 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Process;
 import android.os.UserHandle;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -47,6 +50,7 @@ import com.google.errorprone.annotations.FormatMethod;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -56,9 +60,12 @@ import java.util.Map;
 
 @RunWith(AndroidJUnit4.class)
 public final class ActivityManagerAppStartInfoTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String TAG = ActivityManagerAppStartInfoTest.class.getSimpleName();
 
-    // Begin section: keep in sync with {@link ApiTestActivity}
+    // LINT.IfChange
     private static final String REQUEST_KEY_ACTION = "action";
     private static final String REQUEST_KEY_TIMESTAMP_KEY_FIRST = "timestamp_key_first";
     private static final String REQUEST_KEY_TIMESTAMP_VALUE_FIRST = "timestamp_value_first";
@@ -81,12 +88,12 @@ public final class ActivityManagerAppStartInfoTest {
     //private static final int REPLY_EXTRA_FAILURE_VALUE = 2;
 
     private static final int REPLY_STATUS_NONE = -1;
-    // End section: keep in sync with {@link ApiTestActivity}
+    // LINT.ThenChange(//hostsidetests/devicepolicy/app/StartInfoApp/src/com/android/cts/startinfoapp/TestHelper.java)
 
-    private static final String STUB_APK =
-            "/data/local/tmp/cts/content/CtsAppStartInfoApp.apk";
+    private static final String STUB_APK = "/data/local/tmp/cts/content/CtsAppStartInfoApp.apk";
     private static final String STUB_PACKAGE_NAME = "com.android.cts.startinfoapp";
     private static final String SIMPLE_ACTIVITY = ".ApiTestActivity";
+    private static final String CUSTOM_PROCESS_ACTIVITY = ".CustomProcessNameTestActivity";
 
     private static final int FIRST_TIMESTAMP_KEY =
             ApplicationStartInfo.START_TIMESTAMP_RESERVED_RANGE_DEVELOPER_START;
@@ -266,6 +273,45 @@ public final class ActivityManagerAppStartInfoTest {
                 mTestRunningUserId, // test running user ID
                 STUB_PACKAGE_NAME, STUB_PACKAGE_NAME, SIMPLE_ACTIVITY, // package/activity to start
                 REQUEST_KEY_ACTION, REQUEST_VALUE_QUERY_START); // action to perform
+
+        // Wait for complete callback
+        assertEquals(RESULT_PASS, receiver.waitForActivity());
+        receiver.close();
+
+        // Confirm that the app confirmed that it successfully obtained record.
+        assertEquals(1, receiver.mIntents.size());
+
+        Bundle extras = receiver.mIntents.get(0).getExtras();
+        assertNotNull(extras);
+
+        int status = extras.getInt(REPLY_EXTRA_STATUS_KEY, -1);
+        assertEquals(REPLY_EXTRA_SUCCESS_VALUE, status);
+    }
+
+    /**
+     * Test querying the startup of a custom process name activity.
+     *
+     * <p>This is the only test needed for custom process name as the impact of a custom process
+     * name is only on activity based starts, which need to look up the process record. Within
+     * Activity, the impact is limited to creation of the record as once the record is created, it
+     * is indexed by package name and uid, not process name.
+     */
+    @Test
+    @RequiresFlagsEnabled(com.android.server.am.Flags.FLAG_APP_START_INFO_PROCESS_NAME_FIX)
+    public void testQueryThisProcessCustomProcessName() throws Exception {
+        clearHistoricalStartInfo();
+
+        ResultReceiverFilter receiver = new ResultReceiverFilter(REPLY_ACTION_COMPLETE, 1);
+
+        // Start the app and have it query its own start info record.
+        executeShellCmd(
+                "am start --user %d -n %s/%s%s --ei %s %d",
+                mTestRunningUserId, // test running user ID
+                STUB_PACKAGE_NAME,
+                STUB_PACKAGE_NAME,
+                CUSTOM_PROCESS_ACTIVITY,
+                REQUEST_KEY_ACTION,
+                REQUEST_VALUE_QUERY_START); // action to perform
 
         // Wait for complete callback
         assertEquals(RESULT_PASS, receiver.waitForActivity());
