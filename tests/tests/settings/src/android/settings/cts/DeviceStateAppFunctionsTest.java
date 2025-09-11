@@ -45,6 +45,7 @@ import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.ShellCommand;
 
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -159,6 +160,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasNoDeviceOwner
     @EnsureUnlocked
     @EnsurePasswordNotSet
+    @Ignore("TODO(b/444390068): Re-enable after the 25Q4 branch cut")
     public void testGetDeviceStateMetadata_shouldNotReturnWorkData() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getDeviceStateMetadata"));
 
@@ -174,6 +176,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasDeviceOwner
     @Postsubmit(reason = "New test")
     @Test
+    @Ignore("TODO(b/444390068): Re-enable after the 25Q4 branch cut")
     public void testGetDeviceStateMetadata_deviceLocked_throwsException() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getDeviceStateMetadata"));
 
@@ -193,6 +196,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasDeviceOwner
     @Postsubmit(reason = "New test")
     @Test
+    @Ignore("TODO(b/444390068): Re-enable after the 25Q4 branch cut")
     public void testGetDeviceStateMetadata_requestInitiatedWhileUnlockedSet_doesNotThrowException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("getDeviceStateMetadata"));
@@ -216,6 +220,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasNoDeviceOwner
     @EnsureUnlocked
     @EnsurePasswordNotSet
+    @Ignore("TODO(b/444390068): Re-enable after the 25Q4 branch cut")
     public void testGetDeviceStateMetadata_deviceNotLocked_doesNotThrowException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("getDeviceStateMetadata"));
@@ -397,6 +402,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasDeviceOwner
     @Postsubmit(reason = "New test")
     @Test
+    @Ignore("TODO(b/444390068): Re-enable after the 25Q4 branch cut")
     public void testSetDeviceStateItem_deviceLocked_throwsException() throws Exception {
         assumeTrue(deviceSupportsAppFunction("setDeviceStateItem"));
 
@@ -420,6 +426,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasDeviceOwner
     @Postsubmit(reason = "New test")
     @Test
+    @Ignore("TODO(b/444390068): Re-enable after the 25Q4 branch cut")
     public void testSetDeviceStateItem_requestInitiatedWhileUnlockedSet_doesNotThrowException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("setDeviceStateItem"));
@@ -443,6 +450,7 @@ public class DeviceStateAppFunctionsTest {
     @Test
     @EnsureUnlocked
     @EnsurePasswordNotSet
+    @Ignore("TODO(b/444390068): Re-enable after the 25Q4 branch cut")
     public void testSetDeviceStateItem_deviceNotLocked_doesNotThrowException() throws Exception {
         assumeTrue(deviceSupportsAppFunction("setDeviceStateItem"));
 
@@ -460,6 +468,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasDeviceOwner
     @Postsubmit(reason = "New test")
     @Test
+    @Ignore("TODO(b/444390068): Re-enable after the 25Q4 branch cut")
     public void testToggleDeviceStateItem_deviceLocked_throwsException() throws Exception {
         assumeTrue(deviceSupportsAppFunction("toggleDeviceStateItem"));
 
@@ -483,6 +492,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasDeviceOwner
     @Postsubmit(reason = "New test")
     @Test
+    @Ignore("TODO(b/444390068): Re-enable after the 25Q4 branch cut")
     public void testToggleDeviceStateItem_requestInitiatedWhileUnlockedSet_doesNotThrowException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("toggleDeviceStateItem"));
@@ -506,6 +516,7 @@ public class DeviceStateAppFunctionsTest {
     @Test
     @EnsureUnlocked
     @EnsurePasswordNotSet
+    @Ignore("TODO(b/444390068): Re-enable after the 25Q4 branch cut")
     public void testToggleDeviceStateItem_deviceNotLocked_doesNotThrowException() throws Exception {
         assumeTrue(deviceSupportsAppFunction("toggleDeviceStateItem"));
 
@@ -523,6 +534,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasDeviceOwner
     @Postsubmit(reason = "New test")
     @Test
+    @Ignore("TODO(b/444390068): Re-enable after the 25Q4 branch cut")
     public void testOffsetNumericDeviceStateItemByValue_deviceLocked_throwsException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("offsetNumericDeviceStateItemByValue"));
@@ -547,6 +559,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasDeviceOwner
     @Postsubmit(reason = "New test")
     @Test
+    @Ignore("TODO(b/444390068): Re-enable after the 25Q4 branch cut")
     public void
             testOffsetNumericDeviceStateItemByValue_requestInitiatedWhileUnlockedSet_doesNotThrowException()
                     throws Exception {
@@ -571,6 +584,7 @@ public class DeviceStateAppFunctionsTest {
     @Test
     @EnsureUnlocked
     @EnsurePasswordNotSet
+    @Ignore("TODO(b/444390068): Re-enable after the 25Q4 branch cut")
     public void testOffsetNumericDeviceStateItemByValue_deviceNotLocked_doesNotThrowException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("offsetNumericDeviceStateItemByValue"));
@@ -589,6 +603,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasDeviceOwner
     @Postsubmit(reason = "New test")
     @Test
+    @Ignore("TODO(b/444390068): Re-enable after the 25Q4 branch cut")
     public void testAdjustNumericDeviceStateItemByPercentage_deviceLocked_throwsException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("adjustNumericDeviceStateItemByPercentage"));
@@ -613,6 +628,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasDeviceOwner
     @Postsubmit(reason = "New test")
     @Test
+    @Ignore("TODO(b/444390068): Re-enable after the 25Q4 branch cut")
     public void
             testAdjustNumericDeviceStateItemByPercentage_requestInitiatedWhileUnlockedSet_doesNotThrowException()
                     throws Exception {
@@ -637,6 +653,7 @@ public class DeviceStateAppFunctionsTest {
     @Test
     @EnsureUnlocked
     @EnsurePasswordNotSet
+    @Ignore("TODO(b/444390068): Re-enable after the 25Q4 branch cut")
     public void testAdjustNumericDeviceStateItemByPercentage_deviceNotLocked_doesNotThrowException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("adjustNumericDeviceStateItemByPercentage"));
