@@ -28,8 +28,6 @@ import org.junit.runner.RunWith;
 @RunWith(DeviceJUnit4ClassRunner.class)
 public final class CreateUsersPermissionTest extends BaseMultiUserTest {
 
-    private static final String SECONDARY_USER_TYPE = "android.os.usertype.full.SECONDARY";
-
     @Test
     public void testCanCreateGuestUser() throws Exception {
         assumeSupportsGuest();
@@ -71,8 +69,8 @@ public final class CreateUsersPermissionTest extends BaseMultiUserTest {
             getDevice().removeUser(guestUserId);
         }
         // Add new users until user limit reached
-        int maxUsers = getDevice().getMaxNumberOfUsersSupported(SECONDARY_USER_TYPE);
-        while (getDevice().getRemainingCreatableUserCount(SECONDARY_USER_TYPE) > 0) {
+        int maxUsers = getDevice().getMaxNumberOfUsersSupported(USER_TYPE_FULL_SECONDARY);
+        while (getDevice().getRemainingCreatableUserCount(USER_TYPE_FULL_SECONDARY) > 0) {
             // tearDown will removed non-fixed users
             getDevice().createUser(
                     "TestUser_" + System.currentTimeMillis() /* name */,
