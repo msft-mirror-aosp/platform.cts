@@ -597,4 +597,7 @@
 
     <!-- b/396351389 -->
     <option name="compatibility:exclude-filter" value="CtsAdServicesPermissionsAppOptOutEndToEndTests com.android.adservices.tests.permissions.PermissionsAppOptOutTest#testNoEnrollment_reportImpression" />
+
+    <!-- b/442290425 -->
+    <option name="compatibility:exclude-filter" value="CtsSandboxedTopicsManagerTests" />
 </configuration>
