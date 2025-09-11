@@ -24,6 +24,7 @@ import com.android.tradefed.util.CommandResult;
 public class KernelDeviceInfo extends DeviceInfo {
 
     private static final String BUILD_SYSTEM = "build_system";
+    private static final String MODULES = "modules";
 
     /**
      * This provides the device's current boot state, which represents the level of protection
@@ -35,10 +36,7 @@ public class KernelDeviceInfo extends DeviceInfo {
         KERNEL_BUILD_SYSTEM_KLEAF
     }
 
-    @Override
-    protected void collectDeviceInfo(HostInfoStore store) throws Exception {
-        ITestDevice device = getDevice();
-
+    void collectKernelBuildSystem(ITestDevice device, HostInfoStore store) throws Exception {
         CommandResult commandResult = device.executeShellV2Command("cat /proc/version");
         if (commandResult.getExitCode() != 0) {
             CLog.e("Impossible to run `cat /proc/version`");
@@ -65,5 +63,53 @@ public class KernelDeviceInfo extends DeviceInfo {
         } else {
             store.addResult(BUILD_SYSTEM, KernelBuildSystem.KERNEL_BUILD_SYSTEM_UNKNOWN.name());
         }
+    }
+
+    void collectKernelModules(ITestDevice device, HostInfoStore store) throws Exception {
+        String[] modules;
+
+        CommandResult commandResult = device.executeShellV2Command("lsmod");
+        if (commandResult.getExitCode() != 0) {
+            CLog.e("Impossible to run `lsmod`");
+            return;
+        }
+
+        String output = commandResult.getStdout();
+        if (output == null) {
+            CLog.e("Empty output");
+            return;
+        }
+
+        output = output.trim();
+        if (output.isEmpty()) {
+            CLog.e("Empty output");
+            return;
+        }
+        /*
+         * At this point, `output` is a space-separated table where the first column represents the
+         * module name.
+         */
+        modules =
+                output.lines()
+                        .skip(1) // Skips the first line (the header)
+                        .map(line -> line.split("\\s+")[0]) // Take the first row element
+                        .sorted() // Sort the elements in natural (alphabetical) order
+                        .toArray(String[]::new);
+
+        store.startArray(MODULES);
+        for (String m : modules) {
+            store.startGroup();
+            store.addResult("name", m);
+            store.endGroup();
+        }
+        store.endArray();
+    }
+
+    @Override
+    protected void collectDeviceInfo(HostInfoStore store) throws Exception {
+        ITestDevice device = getDevice();
+
+        collectKernelBuildSystem(device, store);
+        collectKernelModules(device, store);
     }
 }
