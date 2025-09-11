@@ -123,6 +123,7 @@
             android:id="@+id/relative_view10"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:fontFamily="roboto"
             android:text="@string/relative_view10"/>
 
         <!-- view11 -->
@@ -131,6 +132,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_below="@id/relative_view10"
+            android:fontFamily="roboto"
             android:text="@string/relative_view11"/>
     </RelativeLayout>
 

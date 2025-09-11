@@ -111,6 +111,7 @@ public class StaticLayoutTest {
     @Before
     public void setup() {
         mDefaultPaint = new TextPaint();
+        mDefaultPaint.setTypeface(Typeface.create("roboto", Typeface.NORMAL));
         mDefaultLayout = createDefaultStaticLayout();
     }
 
