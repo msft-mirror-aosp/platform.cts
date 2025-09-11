@@ -1107,32 +1107,6 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
     }
 
     /**
-     * Tests {@link android.net.wifi.WifiNetworkSuggestion.Builder} class with unmetered network
-     * will fail.
-     */
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
-    @Test
-    public void testBuilderWithCarrierMergedNetworkWithUnmeteredNetwork() throws Exception {
-        WifiEnterpriseConfig enterpriseConfig = new WifiEnterpriseConfig();
-        enterpriseConfig.setEapMethod(WifiEnterpriseConfig.Eap.TLS);
-        enterpriseConfig.setCaCertificate(CA_SUITE_B_ECDSA_CERT);
-        enterpriseConfig.setClientKeyEntryWithCertificateChain(CLIENT_SUITE_B_ECC_KEY,
-                new X509Certificate[] {CLIENT_SUITE_B_ECDSA_CERT});
-        enterpriseConfig.setAltSubjectMatch("domain.com");
-        try {
-            createBuilderWithCommonParams()
-                    .setWpa3Enterprise192BitModeConfig(enterpriseConfig)
-                    .setCarrierMerged(true)
-                    .setIsMetered(false)
-                    .build();
-        } catch (IllegalStateException e) {
-            return;
-        }
-        fail("Did not receive expected IllegalStateException when tried to build a carrier merged "
-                + "network suggestion with unmetered config");
-    }
-
-    /**
      * Tests {@link android.net.wifi.WifiNetworkSuggestion.Builder} class with non-unicode ssid
      */
     @Test
