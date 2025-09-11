@@ -20,17 +20,16 @@ import static com.google.common.truth.Truth.assertThat;
 
 import android.content.ComponentNameProto;
 import android.host.multiuser.BaseMultiUserTest;
+import android.platform.test.annotations.DesktopTest;
 import android.service.notification.ManagedServiceInfoProto;
 import android.service.notification.ManagedServicesProto;
 import android.service.notification.NotificationServiceDumpProto;
-import android.platform.test.annotations.DesktopTest;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.tradefed.device.CollectingByteOutputReceiver;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -44,11 +43,10 @@ public class NotificationHostTest extends BaseMultiUserTest {
 
     private static final long CONNECTION_TIMEOUT_MS = 30_000;
 
-    @Rule
-    public final SupportsMultiUserRule mSupportsMultiUserRule = new SupportsMultiUserRule(this);
-
     @Test
     public void testNotificationListenerServiceDuringUserSwitch_forPreviousUser() throws Exception {
+        assumeSupportsSecondaryUser();
+
         int userId = getDevice().createUser(
                 "TestUser_" + System.currentTimeMillis() /* name */,
                 false /* guest */,
@@ -69,6 +67,8 @@ public class NotificationHostTest extends BaseMultiUserTest {
 
     @Test
     public void testNotificationListenerServiceDuringUserSwitch_forNewUser() throws Exception {
+        assumeSupportsSecondaryUser();
+
         int userId = getDevice().createUser(
                 "TestUser_" + System.currentTimeMillis() /* name */,
                 false /* guest */,

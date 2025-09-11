@@ -62,6 +62,10 @@ public abstract class BaseMultiUserTest extends BaseHostJUnit4Test {
     protected static final long LOGCAT_POLL_INTERVAL_MS = 1000; // 1 second
     protected static final long USER_REMOVAL_COMPLETE_TIMEOUT_MS = 8 * 60 * 1000; // 8 minutes
 
+    protected static final String USER_TYPE_FULL_SECONDARY = "android.os.usertype.full.SECONDARY";
+    protected static final String USER_TYPE_FULL_GUEST = "android.os.usertype.full.GUEST";
+    protected static final String USER_TYPE_FULL_RESTRICTED = "android.os.usertype.full.RESTRICTED";
+
     /** Whether multi-user is supported. */
     protected int mInitialUserId;
     protected int mPrimaryUserId;
@@ -110,6 +114,23 @@ public abstract class BaseMultiUserTest extends BaseHostJUnit4Test {
         String message = "Cannot test " + getTestName() + " on rooted devices";
         CLog.logAndDisplay(Log.LogLevel.WARN, message);
         throw new AssumptionViolatedException(message);
+    }
+
+    private void assumeCanCreateUserOfType(String userType) throws DeviceNotAvailableException {
+        assumeTrue("Device does not support users of type " + userType,
+                getDevice().getMaxNumberOfUsersSupported(userType) > 0);
+    }
+
+    protected void assumeSupportsSecondaryUser() throws DeviceNotAvailableException {
+        assumeCanCreateUserOfType(USER_TYPE_FULL_SECONDARY);
+    }
+
+    protected void assumeSupportsGuest() throws DeviceNotAvailableException {
+        assumeCanCreateUserOfType(USER_TYPE_FULL_GUEST);
+    }
+
+    protected void assumeSupportsRestrictedUser() throws DeviceNotAvailableException {
+        assumeCanCreateUserOfType(USER_TYPE_FULL_RESTRICTED);
     }
 
     protected int createRestrictedProfile(int userId)
@@ -277,30 +298,6 @@ public abstract class BaseMultiUserTest extends BaseHostJUnit4Test {
                 return e.errorPackages;
             }
             return new HashSet<>();
-        }
-    }
-
-    // TODO(b/413464199): Make this specific to secondary users, but still run Guest user tests
-    /** Rule that skips a test if device does not support more than 1 user */
-    protected static class SupportsMultiUserRule implements TestRule {
-
-        private final BaseHostJUnit4Test mDeviceTest;
-
-        public SupportsMultiUserRule(BaseHostJUnit4Test deviceTest) {
-            mDeviceTest = deviceTest;
-        }
-
-        @Override
-        public Statement apply(Statement base, Description description) {
-            return new Statement() {
-                @Override
-                public void evaluate() throws Throwable {
-                    boolean supports = mDeviceTest.getDevice().getMaxNumberOfUsersSupported() > 1;
-                    assumeTrue("device does not support multi users", supports);
-
-                    base.evaluate();
-                }
-            };
         }
     }
 }

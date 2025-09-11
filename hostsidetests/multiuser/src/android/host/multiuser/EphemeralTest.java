@@ -25,7 +25,6 @@ import android.platform.test.annotations.Presubmit;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -49,13 +48,12 @@ public class EphemeralTest extends BaseMultiUserTest {
     private static final int REMOVE_RESULT_ERROR_USER_RESTRICTION = -2;
     private static final String DISALLOW_REMOVE_USER = "no_remove_user";
 
-    @Rule
-    public final SupportsMultiUserRule mSupportsMultiUserRule = new SupportsMultiUserRule(this);
-
     /** Test to verify ephemeral user is removed after switch out to another user. */
     @Presubmit
     @Test
     public void testSwitchAndRemoveEphemeralUser() throws Exception {
+        assumeSupportsSecondaryUser();
+
         final int ephemeralUserId = createEphemeralUser();
 
         assertSwitchToUser(ephemeralUserId);
@@ -68,6 +66,8 @@ public class EphemeralTest extends BaseMultiUserTest {
     @Presubmit
     @Test
     public void testRebootAndRemoveEphemeralUser() throws Exception {
+        assumeSupportsSecondaryUser();
+
         final int ephemeralUserId = createEphemeralUser();
 
         assertSwitchToUser(ephemeralUserId);
@@ -81,6 +81,8 @@ public class EphemeralTest extends BaseMultiUserTest {
      */
     @Test
     public void testRebootAndRemoveEphemeralUser_withAccount() throws Exception {
+        assumeSupportsSecondaryUser();
+
         final int ephemeralUserId = createEphemeralUser();
         assertSwitchToUser(ephemeralUserId);
 
@@ -113,6 +115,8 @@ public class EphemeralTest extends BaseMultiUserTest {
     @Presubmit
     @Test
     public void testRemoveUserWhenPossible_nonRunningUserRemoved() throws Exception {
+        assumeSupportsSecondaryUser();
+
         final int userId = createUser();
 
         executeRemoveUserWhenPossible(userId, /* expectedResult= */ REMOVE_RESULT_REMOVED);
@@ -131,6 +135,8 @@ public class EphemeralTest extends BaseMultiUserTest {
     @Test
     public void testRemoveUserWhenPossible_currentUserSetEphemeral_removeAfterSwitch()
             throws Exception {
+        assumeSupportsSecondaryUser();
+
         final int userId = createUser();
 
         assertSwitchToUser(userId);
@@ -153,6 +159,8 @@ public class EphemeralTest extends BaseMultiUserTest {
     @Test
     public void testRemoveUserWhenPossible_currentUserSetEphemeral_removeAfterReboot()
             throws Exception {
+        assumeSupportsSecondaryUser();
+
         final int userId = createUser();
 
         assertSwitchToUser(userId);
@@ -171,6 +179,7 @@ public class EphemeralTest extends BaseMultiUserTest {
     @Presubmit
     @Test
     public void testRemoveUserWhenPossible_devicePolicyIsSet() throws Exception {
+        assumeSupportsSecondaryUser();
         assumeTrue("Test requires device with device admin support",
                 getDevice().hasFeature(FEATURE_DEVICE_ADMIN));
         installPackage(DpcCommander.PKG_APK, /* options= */ "-t");
