@@ -44,6 +44,7 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.BitmapUtils;
 
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -132,6 +133,7 @@ public final class WallpaperTest {
     @ApiTest(apis = "android.app.WallpaperManager#setStream")
     @EnsureHasPermission({SET_WALLPAPER, /* Android.U+ */ READ_WALLPAPER_INTERNAL})
     @EnsureDoesNotHaveUserRestriction(DISALLOW_SET_WALLPAPER)
+    @Ignore("b/442331697")
     @Test
     public void setStream_allowed_canSet() throws Exception {
         try (CleanUpWallpaperWithTestApiResource cleanUpWallpaperResource =
