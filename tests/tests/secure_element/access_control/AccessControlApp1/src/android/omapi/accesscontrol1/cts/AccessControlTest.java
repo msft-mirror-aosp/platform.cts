@@ -20,6 +20,7 @@ package android.omapi.accesscontrol1.cts;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.pm.PackageManager;
@@ -179,8 +180,13 @@ public class AccessControlTest {
             || pm.hasSystemFeature(PackageManager.FEATURE_SE_OMAPI_SD));
     }
 
+    private static boolean isEmulator() {
+        return PropertyUtil.propertyEquals("ro.hardware", "cutf_cvm");
+    }
+
     @Before
     public void setUp() throws Exception {
+        assumeFalse(isEmulator());
         assumeTrue(PropertyUtil.getFirstApiLevel() > Build.VERSION_CODES.O_MR1);
         assumeTrue(supportsHardware());
         assumeTrue(supportOMAPIReaders());

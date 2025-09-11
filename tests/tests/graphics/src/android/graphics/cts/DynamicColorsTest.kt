@@ -29,7 +29,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -173,7 +172,7 @@ private fun DynamicColorsTable(color: String, style: String, contrast: String) {
         verticalArrangement = Arrangement.spacedBy(columnGap),
         modifier = Modifier.background(seedColor).padding(pagePadding).width(IntrinsicSize.Max),
     ) {
-        Text(
+        AliasedText(
             text =
                 "${DynamicColorsTest::class.simpleName} - " +
                     "spec: ${if (BasePaletteTest.isOldSpec) "2021" else "2025"} | " +
@@ -225,8 +224,8 @@ private fun SwatchItem(
         modifier =
             Modifier.fillMaxWidth().background(ComposeColor(swatch.colorValue)).padding(padding),
     ) {
-        Text(swatch.heading, style = headingTextStyle, color = textColor)
-        Text(swatch.info, style = infoTextStyle, color = textColor)
+        AliasedText(swatch.heading, style = headingTextStyle, color = textColor)
+        AliasedText(swatch.info, style = infoTextStyle, color = textColor)
     }
 }
 

@@ -18,41 +18,59 @@ package android.provider.cts.contacts.restrictfields;
 
 import static android.provider.ContactsContract.CommonDataKinds;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 import android.content.ContentProviderClient;
 import android.content.ContentResolver;
-import android.content.Context;
 import android.database.Cursor;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.ContactsContract;
 import android.provider.ContactsContract.Data;
 import android.provider.ContactsContract.RawContacts;
 import android.provider.cts.contacts.ContactsContract_TestDataBuilder;
 import android.provider.cts.contacts.ContactsContract_TestDataBuilder.TestRawContact;
-import android.test.InstrumentationTestCase;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.providers.contacts.flags.Flags;
 
-public class ContactsContract_Data_Fields_Restricted_Test extends InstrumentationTestCase {
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+@RunWith(AndroidJUnit4.class)
+public class ContactsContractDataFieldsRestrictedTest {
 
     private ContentResolver mResolver;
     private ContactsContract_TestDataBuilder mBuilder;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        mResolver = getInstrumentation().getTargetContext().getContentResolver();
+    @Rule
+    public final CheckFlagsRule checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Before
+    public void setUp() throws Exception {
+        mResolver =
+                InstrumentationRegistry.getInstrumentation()
+                        .getTargetContext()
+                        .getContentResolver();
         ContentProviderClient provider =
                 mResolver.acquireContentProviderClient(ContactsContract.AUTHORITY);
         mBuilder = new ContactsContract_TestDataBuilder(provider);
     }
 
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
+    @After
+    public void tearDown() throws Exception {
         mBuilder.cleanup();
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_RESTRICT_PII_DATA_URI_COLUMNS)
+    @Test
     public void testDataView_projection_restrictedColumnsNotPresent() throws Exception {
         TestRawContact rawContact =
                 mBuilder.newRawContact()
@@ -65,12 +83,9 @@ public class ContactsContract_Data_Fields_Restricted_Test extends Instrumentatio
                 .with(CommonDataKinds.StructuredName.DISPLAY_NAME, "test name")
                 .insert();
 
-        // Verify that the columns are not present for the current app (targeting SDK 37).
-        final Context context = getInstrumentation().getTargetContext();
-        final ContentResolver resolver = context.getContentResolver();
         // We don't need to query for the data row just created, querying for all rows
         // and getting a non-null Cursor should suffice for us.
-        try (Cursor cursor = resolver.query(Data.CONTENT_URI, null, null, null, null)) {
+        try (Cursor cursor = mResolver.query(Data.CONTENT_URI, null, null, null, null)) {
             assertNotNull(cursor);
             assertEquals(-1, cursor.getColumnIndex(RawContacts.ACCOUNT_NAME));
             assertEquals(-1, cursor.getColumnIndex(RawContacts.ACCOUNT_TYPE));

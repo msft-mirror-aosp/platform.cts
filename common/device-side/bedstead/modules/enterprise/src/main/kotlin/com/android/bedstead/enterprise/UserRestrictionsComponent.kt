@@ -22,6 +22,7 @@ import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.UserType
+import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.harrier.components.UserTypeResolver
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.TestApis.users
@@ -242,7 +243,7 @@ class UserRestrictionsComponent(locator: BedsteadServiceLocator) : DeviceStateCo
 
     @CanIgnoreReturnValue
     private fun tryClearUserRestrictionWithDeviceOwner(restriction: String): Boolean {
-        mDeviceOwnerComponent.ensureHasDeviceOwner()
+        mDeviceOwnerComponent.ensureHasDeviceOwner(failureMode = FailureMode.SKIP)
         val dpc: RemotePolicyManager = mDeviceOwnerComponent.deviceOwner()
         try {
             dpc.devicePolicyManager().clearUserRestriction(dpc.componentName(), restriction)

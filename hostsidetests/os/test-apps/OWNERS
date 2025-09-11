@@ -13,4 +13,5 @@ per-file StaticSharedLibTestApp/*=patb@google.com
 per-file StaticSharedNativeLibConsumer/*=patb@google.com
 per-file StaticSharedNativeLibProvider/*=patb@google.com
 per-file StaticSharedNativeLibProvider1/*=patb@google.com
+per-file StaticSharedLibNamesakeApp/*=patb@google.com
 

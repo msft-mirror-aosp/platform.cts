@@ -22,8 +22,10 @@ android_test {
     ],
 
     static_libs: [
+        "androidx.test.ext.junit",
         "ctstestrunner-axt",
         "contactsprovider_flags_java_lib",
+        "flag-junit",
     ],
 
     min_sdk_version: "30",

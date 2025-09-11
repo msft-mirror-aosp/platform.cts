@@ -16,6 +16,23 @@
 
 package com.android.cts.startinfoapp;
 
+import static com.android.cts.startinfoapp.TestHelper.REPLY_ACTION_COMPLETE;
+import static com.android.cts.startinfoapp.TestHelper.REPLY_EXTRA_FAILURE_VALUE;
+import static com.android.cts.startinfoapp.TestHelper.REPLY_EXTRA_SUCCESS_VALUE;
+import static com.android.cts.startinfoapp.TestHelper.REPLY_STATUS_NONE;
+import static com.android.cts.startinfoapp.TestHelper.REQUEST_KEY_ACTION;
+import static com.android.cts.startinfoapp.TestHelper.REQUEST_KEY_TIMESTAMP_KEY_FIRST;
+import static com.android.cts.startinfoapp.TestHelper.REQUEST_KEY_TIMESTAMP_KEY_LAST;
+import static com.android.cts.startinfoapp.TestHelper.REQUEST_KEY_TIMESTAMP_VALUE_FIRST;
+import static com.android.cts.startinfoapp.TestHelper.REQUEST_KEY_TIMESTAMP_VALUE_LAST;
+import static com.android.cts.startinfoapp.TestHelper.REQUEST_VALUE_ADD_TIMESTAMP;
+import static com.android.cts.startinfoapp.TestHelper.REQUEST_VALUE_CRASH;
+import static com.android.cts.startinfoapp.TestHelper.REQUEST_VALUE_LISTENER_ADD_MULTIPLE;
+import static com.android.cts.startinfoapp.TestHelper.REQUEST_VALUE_LISTENER_ADD_ONE;
+import static com.android.cts.startinfoapp.TestHelper.REQUEST_VALUE_LISTENER_ADD_REMOVE;
+import static com.android.cts.startinfoapp.TestHelper.REQUEST_VALUE_QUERY_START;
+import static com.android.cts.startinfoapp.TestHelper.reply;
+
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ApplicationStartInfo;
@@ -37,42 +54,6 @@ import java.util.function.Consumer;
  * all cases, success and failure.
  */
 public class ApiTestActivity extends Activity {
-
-    private static final String REQUEST_KEY_ACTION = "action";
-    private static final String REQUEST_KEY_TIMESTAMP_KEY_FIRST = "timestamp_key_first";
-    private static final String REQUEST_KEY_TIMESTAMP_VALUE_FIRST = "timestamp_value_first";
-    private static final String REQUEST_KEY_TIMESTAMP_KEY_LAST = "timestamp_key_last";
-    private static final String REQUEST_KEY_TIMESTAMP_VALUE_LAST = "timestamp_value_last";
-
-    // Request value for app to query and verify its own start.
-    private static final int REQUEST_VALUE_QUERY_START = 1;
-
-    // Request value for app to add the provided timestamp to start info.
-    private static final int REQUEST_VALUE_ADD_TIMESTAMP = 2;
-
-    // Request value for app to add a listener and respond when it gets triggered.
-    private static final int REQUEST_VALUE_LISTENER_ADD_ONE = 3;
-
-    // Request value for app to add 2 listeners and respond when each gets triggered.
-    private static final int REQUEST_VALUE_LISTENER_ADD_MULTIPLE = 4;
-
-    // Request value for app to add 2 listeners, remove 1, and respond success when correct one
-    // is triggered and failure if incorrect one is triggered.
-    private static final int REQUEST_VALUE_LISTENER_ADD_REMOVE = 5;
-
-    // Request value for app to immediately crash. No reply will be sent.
-    private static final int REQUEST_VALUE_CRASH = 6;
-
-    // Broadcast action to return result for request.
-    private static final String REPLY_ACTION_COMPLETE =
-            "com.android.cts.startinfoapp.ACTION_COMPLETE";
-
-    private static final String REPLY_EXTRA_STATUS_KEY = "status";
-
-    private static final int REPLY_EXTRA_SUCCESS_VALUE = 1;
-    private static final int REPLY_EXTRA_FAILURE_VALUE = 2;
-
-    private static final int REPLY_STATUS_NONE = -1;
 
     @Override
     public void onCreate(Bundle bundle) {
@@ -127,7 +108,9 @@ public class ApiTestActivity extends Activity {
         List<ApplicationStartInfo> starts = am.getHistoricalProcessStartReasons(1);
 
         boolean success = starts != null && starts.size() == 1;
-        reply(success ? REPLY_EXTRA_SUCCESS_VALUE : REPLY_EXTRA_FAILURE_VALUE);
+        reply(
+                ApiTestActivity.this,
+                success ? REPLY_EXTRA_SUCCESS_VALUE : REPLY_EXTRA_FAILURE_VALUE);
     }
 
     /**
@@ -146,7 +129,7 @@ public class ApiTestActivity extends Activity {
         am.addStartInfoTimestamp(keyFirst, valFirst);
         am.addStartInfoTimestamp(keyLast, valLast);
 
-        reply(REPLY_STATUS_NONE);
+        reply(ApiTestActivity.this, REPLY_STATUS_NONE);
     }
 
     /**
@@ -159,12 +142,13 @@ public class ApiTestActivity extends Activity {
      */
     private void addOneListener() {
         ActivityManager am = getSystemService(ActivityManager.class);
-        Consumer<ApplicationStartInfo> listener = new Consumer<ApplicationStartInfo>() {
-            @Override
-            public void accept(ApplicationStartInfo info) {
-                reply(REPLY_EXTRA_SUCCESS_VALUE);
-            }
-        };
+        Consumer<ApplicationStartInfo> listener =
+                new Consumer<ApplicationStartInfo>() {
+                    @Override
+                    public void accept(ApplicationStartInfo info) {
+                        reply(ApiTestActivity.this, REPLY_EXTRA_SUCCESS_VALUE);
+                    }
+                };
         am.addApplicationStartInfoCompletionListener(Executors.newSingleThreadScheduledExecutor(),
                 listener);
     }
@@ -181,18 +165,20 @@ public class ApiTestActivity extends Activity {
         ActivityManager am = getSystemService(ActivityManager.class);
         final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
-        Consumer<ApplicationStartInfo> listenerFirst = new Consumer<ApplicationStartInfo>() {
-            @Override
-            public void accept(ApplicationStartInfo info) {
-                reply(REPLY_EXTRA_SUCCESS_VALUE);
-            }
-        };
-        Consumer<ApplicationStartInfo> listenerSecond = new Consumer<ApplicationStartInfo>() {
-            @Override
-            public void accept(ApplicationStartInfo info) {
-                reply(REPLY_EXTRA_SUCCESS_VALUE);
-            }
-        };
+        Consumer<ApplicationStartInfo> listenerFirst =
+                new Consumer<ApplicationStartInfo>() {
+                    @Override
+                    public void accept(ApplicationStartInfo info) {
+                        reply(ApiTestActivity.this, REPLY_EXTRA_SUCCESS_VALUE);
+                    }
+                };
+        Consumer<ApplicationStartInfo> listenerSecond =
+                new Consumer<ApplicationStartInfo>() {
+                    @Override
+                    public void accept(ApplicationStartInfo info) {
+                        reply(ApiTestActivity.this, REPLY_EXTRA_SUCCESS_VALUE);
+                    }
+                };
 
         am.addApplicationStartInfoCompletionListener(executor, listenerFirst);
         am.addApplicationStartInfoCompletionListener(executor, listenerSecond);
@@ -214,36 +200,30 @@ public class ApiTestActivity extends Activity {
         final Object mLock = new Object();
         final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
-        Consumer<ApplicationStartInfo> listenerToRemove = new Consumer<ApplicationStartInfo>() {
-            @Override
-            public void accept(ApplicationStartInfo info) {
-                synchronized (mLock) {
-                    reply(REPLY_EXTRA_FAILURE_VALUE);
-                }
-            }
-        };
-        Consumer<ApplicationStartInfo> listenerToTrigger = new Consumer<ApplicationStartInfo>() {
-            @Override
-            public void accept(ApplicationStartInfo info) {
-                synchronized (mLock) {
-                    reply(REPLY_EXTRA_SUCCESS_VALUE);
-                }
-            };
-        };
+        Consumer<ApplicationStartInfo> listenerToRemove =
+                new Consumer<ApplicationStartInfo>() {
+                    @Override
+                    public void accept(ApplicationStartInfo info) {
+                        synchronized (mLock) {
+                            reply(ApiTestActivity.this, REPLY_EXTRA_FAILURE_VALUE);
+                        }
+                    }
+                };
+        Consumer<ApplicationStartInfo> listenerToTrigger =
+                new Consumer<ApplicationStartInfo>() {
+                    @Override
+                    public void accept(ApplicationStartInfo info) {
+                        synchronized (mLock) {
+                            reply(ApiTestActivity.this, REPLY_EXTRA_SUCCESS_VALUE);
+                        }
+                    }
+                    ;
+                };
 
         am.addApplicationStartInfoCompletionListener(executor, listenerToRemove);
         am.addApplicationStartInfoCompletionListener(executor, listenerToTrigger);
 
         am.removeApplicationStartInfoCompletionListener(listenerToRemove);
-    }
-
-    private void reply(int status) {
-        Intent reply = new Intent();
-        reply.setAction(REPLY_ACTION_COMPLETE);
-        if (status != REPLY_STATUS_NONE) {
-            reply.putExtra(REPLY_EXTRA_STATUS_KEY, status);
-        }
-        sendBroadcast(reply);
     }
 
     @Override

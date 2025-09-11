@@ -21,7 +21,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Handler
 import android.os.HandlerThread
-import android.os.Looper
 import android.os.SystemClock
 import android.os.SystemProperties
 import android.os.UserHandle
@@ -133,29 +132,33 @@ class IncompleteMotionTest {
 
                     val handlerThread = HandlerThread("Receive broadcast from overlay activity")
                     handlerThread.start()
-                    val looper: Looper = handlerThread.looper
-                    val handler = Handler(looper)
                     val receiver = OverlayFocusedBroadcastReceiver()
-                    val intentFilter = IntentFilter(OVERLAY_ACTIVITY_FOCUSED)
-                    activity.registerReceiver(
-                        receiver,
-                        intentFilter,
-                        null,
-                        handler,
-                        Context.RECEIVER_EXPORTED,
-                    )
+                    try {
+                        val intentFilter = IntentFilter(OVERLAY_ACTIVITY_FOCUSED)
+                        activity.registerReceiver(
+                                receiver,
+                                intentFilter,
+                                null,
+                                Handler(handlerThread.looper),
+                                Context.RECEIVER_EXPORTED,
+                        )
 
-                    // Now send hasFocus=false event to the app by launching a new focusable window
-                    startOverlayActivity()
-                    PollingCheck.waitFor { receiver.overlayActivityIsFocused() }
-                    activity.unregisterReceiver(receiver)
-                    handlerThread.quit()
-                    // We need to ensure that the focus event has been written to the app's socket
-                    // before unblocking the UI thread. Having the overlay activity receive
-                    // hasFocus=true event is a good proxy for that. However, it does not guarantee
-                    // that dispatcher has written the hasFocus=false event to the current activity.
-                    // For safety, add another small sleep here
-                    SystemClock.sleep(300)
+                        // Now send hasFocus=false event to the app by launching a new focusable
+                        // window
+                        startOverlayActivity()
+                        PollingCheck.waitFor { receiver.overlayActivityIsFocused() }
+                        // We need to ensure that the focus event has been written to the app's
+                        // socket before unblocking the UI thread. Having the overlay activity
+                        // receive hasFocus=true event is a good proxy for that. However, it does
+                        // not guarantee that dispatcher has written the hasFocus=false event to the
+                        // current activity. For safety, add another small sleep here
+                        SystemClock.sleep(300)
+                    } finally {
+                        // Polling checks above could fail, so ensure we clean up even if failure
+                        // occurs. This will keep logs tidy and streamline debugging.
+                        activity.unregisterReceiver(receiver)
+                        handlerThread.quit()
+                    }
                     resultFuture.complete(null)
                 } catch (e: Throwable) {
                     // Catch potential throwable as to not crash UI thread, rethrow and validate
@@ -165,6 +168,10 @@ class IncompleteMotionTest {
             }
             sendMoveAndFocus.join()
         }
+        // Before continuing, check that no exceptions occurred while running the
+        // instructions in the 'sendMoveAndFocus' thread. This ensures we fail with the
+        // original root cause instead of a subsequent failure.
+        resultFuture.get()
         // The default PollingCheck is 3 seconds, but this one is monitoring multiple operations
         // that will take 1 second at the fastest; if the system is running tasks in the background,
         // this would potentially cause timeouts at this point.
@@ -179,9 +186,6 @@ class IncompleteMotionTest {
         // If we wait too long here, we will cause ANR (if the platform has a bug).
         // If the MOVE event is received, however, we can stop the test.
         PollingCheck.waitFor { activity.receivedMove() }
-        // Before finishing the test, check that no exceptions occurred while running the
-        // instructions in the 'sendMoveAndFocus' thread.
-        resultFuture.get()
     }
 
     private fun sendEvent(downTime: Long, action: Int, x: Float, y: Float, sync: Boolean) {

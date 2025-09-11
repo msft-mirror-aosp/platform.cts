@@ -150,7 +150,8 @@ public class IntentLaunchActivity extends Activity {
     private static Intent getTestIntent(Context context, String action) {
         Intent intent = new Intent(context, IntentLaunchActivity.class);
         intent.setAction(action);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NEW_DOCUMENT
+                | Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
         Intent innerIntent = new Intent(context, SimpleTestActivity.class);
         intent.putExtra(EXTRA_INNER_INTENT, innerIntent);
         return intent;

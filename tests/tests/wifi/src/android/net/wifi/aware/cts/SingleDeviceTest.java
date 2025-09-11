@@ -773,6 +773,7 @@ public class SingleDeviceTest extends WifiJUnit4TestBase {
             params.setNdpSessionLimit(0);
             ShellIdentityUtils.invokeWithShellPermissions(
                     () -> mWifiAwareManager.setAwareParams(params));
+            Thread.sleep(1000);
             assertEquals(
                     deviceNdpNum,
                     mWifiAwareManager.getCharacteristics().getNumberOfSupportedDataPaths());

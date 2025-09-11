@@ -1124,13 +1124,18 @@ public class NotificationAssistantServiceTest {
     @Test
     @RequiresFlagsEnabled(android.app.Flags.FLAG_NM_SUMMARIZATION)
     public void testSummarizeNotification() throws Exception {
-        SystemUtil.runWithShellPermissionIdentity(() ->
-                mNotificationManager.allowAssistantAdjustment(KEY_SUMMARIZATION));
-
         String SHARE_SHORTCUT_ID = "shareShortcut";
         String SUMMARIZATION = "This is a summarization. It's pretty long, right? Like, two lines "
                 + "long? Maybe even a little longer?";
         setUpListeners();
+
+        mUi.adoptShellPermissionIdentity("android.permission.STATUS_BAR_SERVICE");
+        CountDownLatch adjustmentLatch
+                = mAssistant.setAllowedAdjustmentCountdown(1);
+        mNotificationManager.allowAssistantAdjustment(KEY_SUMMARIZATION);
+        adjustmentLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
+        assertThat(mAssistant.mCurrentCapabilities).contains(KEY_SUMMARIZATION);
+        mUi.dropShellPermissionIdentity();
 
         Person person = new Person.Builder()
                 .setBot(false)

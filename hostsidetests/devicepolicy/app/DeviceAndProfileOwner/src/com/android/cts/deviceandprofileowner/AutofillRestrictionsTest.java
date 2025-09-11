@@ -22,6 +22,8 @@ import static android.provider.Settings.Secure.USER_SETUP_COMPLETE;
 
 import android.content.Intent;
 
+import com.android.compatibility.common.util.PollingCheck;
+
 public class AutofillRestrictionsTest extends BaseDeviceAdminTest {
 
     private static final String SERVICE_NAME =
@@ -56,21 +58,48 @@ public class AutofillRestrictionsTest extends BaseDeviceAdminTest {
 
     public void testDisallowAutofill_allowed() throws Exception {
         enableService();
+        final long timeout = 5000;
 
-        final boolean enabledBefore = launchActivityAndGetEnabled();
-        assertTrue(enabledBefore);
+        // Wait for Autofill to become ENABLED after enabling the service.
+        // launchActivityAndGetEnabled() should return true when autofill is active.
+        try {
+            PollingCheck.waitFor(
+                    timeout,
+                    () -> {
+                        try {
+                            return launchActivityAndGetEnabled();
+                        } catch (Exception e) {
+                            throw new RuntimeException(
+                                    "Exception while checking if autofill is enabled", e);
+                        }
+                    });
+        } catch (AssertionError e) {
+            throw new AssertionError("Autofill did not become enabled within " + timeout + "ms", e);
+        }
 
         mDevicePolicyManager.addUserRestriction(ADMIN_RECEIVER_COMPONENT, DISALLOW_AUTOFILL);
 
-        // Must try a couple times because it will be disabled asynchronously.
-        for (int i = 1; i <= 15; i++) {
-            final boolean disabledAfter = !launchActivityAndGetEnabled();
-            if (disabledAfter) {
-                return;
-            }
-            Thread.sleep(100);
+        // Wait for Autofill to become DISABLED after adding the restriction.
+        // launchActivityAndGetEnabled() should return false when autofill is disabled.
+        try {
+            PollingCheck.waitFor(
+                    timeout,
+                    () -> {
+                        try {
+                            return !launchActivityAndGetEnabled();
+                        } catch (Exception e) {
+                            throw new RuntimeException(
+                                    "Exception while checking if autofill is disabled", e);
+                        }
+                    });
+        } catch (AssertionError e) {
+            throw new AssertionError(
+                    "Autofill did not become disabled within "
+                            + timeout
+                            + "ms after adding restriction",
+                    e);
         }
-        fail("Not disabled after a period of time");
+        // If PollingCheck completes without throwing, the test passes.
     }
 
     private boolean launchActivityAndGetEnabled() throws Exception {

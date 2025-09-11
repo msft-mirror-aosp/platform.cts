@@ -24,19 +24,16 @@ import android.platform.test.flag.junit.host.DeviceFlags;
 
 import com.android.compatibility.common.util.BackupHostSideUtils;
 import com.android.compatibility.common.util.BackupUtils;
-import com.android.tradefed.config.ConfigurationException;
+import com.android.compatibility.common.util.BaseSwitchFullUserTargetPreparer;
 import com.android.tradefed.config.Option;
 import com.android.tradefed.config.OptionClass;
-import com.android.tradefed.config.OptionSetter;
 import com.android.tradefed.device.CollectingOutputReceiver;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.device.UserInfo;
-import com.android.tradefed.device.UserInfo.UserType;
 import com.android.tradefed.invoker.TestInformation;
 import com.android.tradefed.log.LogUtil.CLog;
-import com.android.tradefed.targetprep.BaseTargetPreparer;
-import com.android.tradefed.targetprep.SwitchUserTargetPreparer;
+import com.android.tradefed.targetprep.BuildError;
 import com.android.tradefed.targetprep.TargetSetupError;
 import com.android.tradefed.util.RunUtil;
 
@@ -57,7 +54,7 @@ import javax.annotation.Nullable;
  * local transport. Reverts to the original state after all the tests are executed.
  */
 @OptionClass(alias = "backup-preparer")
-public final class BackupPreparer extends BaseTargetPreparer {
+public final class BackupPreparer extends BaseSwitchFullUserTargetPreparer {
     private static final long TRANSPORT_AVAILABLE_TIMEOUT_SECONDS = TimeUnit.MINUTES.toSeconds(5);
 
     @Option(name="enable-backup-if-needed", description=
@@ -80,8 +77,6 @@ public final class BackupPreparer extends BaseTargetPreparer {
     private String mOldTransport;
     private ITestDevice mDevice;
     private BackupUtils mBackupUtils;
-    private final SwitchUserTargetPreparer mSwitchUserTargetPreparer =
-            new SwitchUserTargetPreparer();
     private int mFullUserId;
 
     /**
@@ -92,16 +87,8 @@ public final class BackupPreparer extends BaseTargetPreparer {
 
     @Override
     public void setUp(TestInformation testInformation)
-            throws TargetSetupError, DeviceNotAvailableException {
-        try {
-            OptionSetter optionSetter = new OptionSetter(mSwitchUserTargetPreparer);
-            optionSetter.setOptionValue(
-                    SwitchUserTargetPreparer.OPTION_USER_TYPE, UserType.FULL.name());
-        } catch (ConfigurationException e) {
-            throw new TargetSetupError(
-                    "Could not setup SwitchUserTargetPreparer", e, mDevice.getDeviceDescriptor());
-        }
-        mSwitchUserTargetPreparer.setUp(testInformation);
+            throws TargetSetupError, BuildError, DeviceNotAvailableException {
+        super.setUp(testInformation);
 
         mDevice = testInformation.getDevice();
         mBackupUtils = BackupHostSideUtils.createBackupUtils(mDevice);
@@ -168,7 +155,7 @@ public final class BackupPreparer extends BaseTargetPreparer {
                 }
             }
         } finally {
-            mSwitchUserTargetPreparer.tearDown(testInformation, e);
+            super.tearDown(testInformation, e);
         }
     }
 

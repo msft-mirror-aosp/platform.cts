@@ -705,6 +705,8 @@ public class SatelliteManagerTestBase {
         private final Semaphore mSemaphore = new Semaphore(0);
         private final Semaphore mModemOffSemaphore = new Semaphore(0);
         private final Semaphore mModemIdleOrNotConnectedSemaphore = new Semaphore(0);
+        private boolean mIsEmergency = false;
+        private final Semaphore mEmergencyModeSemaphore = new Semaphore(0);
 
         @Override
         public void onSatelliteModemStateChanged(int state) {
@@ -735,6 +737,32 @@ public class SatelliteManagerTestBase {
                             + "releasing mModemIdleSemaphore, ex=" + ex);
                 }
             }
+        }
+
+        @Override
+        public void onEmergencyModeChanged(boolean isEmergency) {
+            logd("onEmergencyModeChanged: enabled=" + isEmergency);
+            mIsEmergency = isEmergency;
+            try {
+                mEmergencyModeSemaphore.release();
+            } catch (Exception ex) {
+                loge("onEmergencyModeChanged: Got exception, ex=" + ex);
+            }
+        }
+
+        public boolean waitForEmergencyModeChanged(int expectedNumberOfEvents) {
+            for (int i = 0; i < expectedNumberOfEvents; i++) {
+                try {
+                    if (!mEmergencyModeSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                        loge("Timeout to receive onEmergencyModeChanged");
+                        return false;
+                    }
+                } catch (Exception ex) {
+                    loge("onEmergencyModeChanged: Got exception=" + ex);
+                    return false;
+                }
+            }
+            return true;
         }
 
         public boolean waitUntilResult(int expectedNumberOfEvents) {
@@ -800,6 +828,7 @@ public class SatelliteManagerTestBase {
                 mSemaphore.drainPermits();
                 mModemOffSemaphore.drainPermits();
                 mModemIdleOrNotConnectedSemaphore.drainPermits();
+                mEmergencyModeSemaphore.drainPermits();
             }
         }
 
@@ -813,6 +842,10 @@ public class SatelliteManagerTestBase {
                     return -1;
                 }
             }
+        }
+
+        public boolean getEmergencyMode() {
+            return mIsEmergency;
         }
 
         public int getTotalCountOfModemStates() {
@@ -1515,6 +1548,28 @@ public class SatelliteManagerTestBase {
         sSatelliteManager.requestEnabled(
                 new EnableRequestAttributes.Builder(enabled).setDemoMode(demoEnabled).build(),
                 getContext().getMainExecutor(), error::offer);
+        Integer errorCode;
+        try {
+            errorCode = error.poll(TIMEOUT, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException ex) {
+            fail("requestSatelliteEnabled failed with ex=" + ex);
+            return;
+        }
+        logd("requestSatelliteEnabled: errorCode=" + errorCode);
+        assertNotNull(errorCode);
+        assertEquals(expectedError, (long) errorCode);
+    }
+
+    protected static void requestSatelliteEnabledwithEmergencyMode(
+            boolean enabled, boolean demoEnabled, boolean emergencyEnabled, int expectedError) {
+        LinkedBlockingQueue<Integer> error = new LinkedBlockingQueue<>(1);
+        sSatelliteManager.requestEnabled(
+                new EnableRequestAttributes.Builder(enabled)
+                        .setDemoMode(demoEnabled)
+                        .setEmergencyMode(emergencyEnabled)
+                        .build(),
+                getContext().getMainExecutor(),
+                error::offer);
         Integer errorCode;
         try {
             errorCode = error.poll(TIMEOUT, TimeUnit.MILLISECONDS);

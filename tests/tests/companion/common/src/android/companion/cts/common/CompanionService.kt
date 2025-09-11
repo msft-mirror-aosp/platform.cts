@@ -16,6 +16,7 @@
 
 package android.companion.cts.common
 
+import android.companion.ActionRequest
 import android.companion.AssociationInfo
 import android.companion.CompanionDeviceService
 import android.companion.DevicePresenceEvent
@@ -27,6 +28,8 @@ import android.os.ParcelUuid
 import android.util.Log
 import java.util.Collections.synchronizedMap
 import java.util.Collections.synchronizedSet
+import java.util.Queue
+import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -43,7 +46,7 @@ sealed class CompanionService<T : CompanionService<T>>(
         }
 
     var currentEvent: Int = -2
-
+    val receivedActionRequests: Queue<Pair<Int, Int>> = ConcurrentLinkedQueue()
     val connectedDevices: Collection<AssociationInfo>
         get() = _connectedDevices.values
 
@@ -83,30 +86,30 @@ sealed class CompanionService<T : CompanionService<T>>(
     }
 
     override fun onDevicePresenceEvent(devicePresenceEvent: DevicePresenceEvent) {
-        val event = devicePresenceEvent.event
-        currentEvent = event
+        currentEvent = devicePresenceEvent.event
 
         if (devicePresenceEvent.uuid == null) {
             Log.i(
                 TAG,
                 "$this.onDevicePresenceEvent(), " +
-                        "association id=${devicePresenceEvent.associationId}" + " event is: $event"
+                        "association id=${devicePresenceEvent.associationId}" +
+                        " event is: $currentEvent"
             )
 
             var associationId: Int = devicePresenceEvent.associationId
-            if (event == EVENT_BT_CONNECTED) {
+            if (currentEvent == EVENT_BT_CONNECTED) {
                 associationIdsForBtBondDevices.add(associationId)
-            } else if (event == EVENT_BT_DISCONNECTED) {
+            } else if (currentEvent == EVENT_BT_DISCONNECTED) {
                 associationIdsForBtBondDevices.remove(associationId)
                     ?: error("onDeviceDisconnected() has not been called for association with id " +
                             "${devicePresenceEvent.associationId}")
             }
         } else {
             val uuid: ParcelUuid? = devicePresenceEvent.uuid
-            Log.i(TAG, "$this.onDeviceEvent(), ParcelUuid=$uuid event is: $event")
-            if (event == EVENT_BT_CONNECTED) {
+            Log.i(TAG, "$this.onDeviceEvent(), ParcelUuid=$uuid event is: $currentEvent")
+            if (currentEvent == EVENT_BT_CONNECTED) {
                 connectedUuidDevices.add(uuid)
-            } else if (event == EVENT_BT_DISCONNECTED) {
+            } else if (currentEvent == EVENT_BT_DISCONNECTED) {
                 if (!connectedUuidDevices.remove(uuid)) {
                     error(
                         "onDeviceEvent() with event " +
@@ -117,6 +120,17 @@ sealed class CompanionService<T : CompanionService<T>>(
         }
 
         super.onDevicePresenceEvent(devicePresenceEvent)
+    }
+
+    override fun onActionRequested(
+        associationInfo: AssociationInfo,
+        request: ActionRequest,
+    ) {
+        Log.i(
+            TAG,
+            "$this.onActionRequested() associationId=${associationInfo.id}, request=$request"
+        )
+        receivedActionRequests.offer(associationInfo.id to request.action)
     }
 
     // For now, we need to "post" a Runnable that sets isBound to false to the Main Thread's
@@ -251,6 +265,54 @@ sealed class InstanceHolder<T : CompanionService<T>> {
 
     fun getCurrentEvent(): Int? {
         return instance?.currentEvent
+    }
+
+    fun clearReceivedActions() {
+        instance?.receivedActionRequests?.clear()
+    }
+
+    fun waitToActionRequest(
+        timeout: Duration = 1.seconds,
+        expectedAssociationId: Int,
+        expectedAction: Int
+    ) {
+        val found = waitFor(timeout) {
+            // Peek at the next item without removing it
+            val nextAction = instance?.receivedActionRequests?.peek()
+            if (nextAction == null) return@waitFor false
+
+            // Check if it matches what we expect
+            val (associationId, action) = nextAction
+            associationId == expectedAssociationId && action == expectedAction
+        }
+
+        if (!found) {
+            throw AssertionError(
+                "Action request with id=$expectedAssociationId and action=$expectedAction " +
+                        "has not been received. " +
+                        "Queue head is ${instance?.receivedActionRequests?.peek()}"
+            )
+        }
+        // If found, remove it from the queue
+        instance?.receivedActionRequests?.poll()
+    }
+
+    /**
+     * Asserts that no onActionRequest callback is received within a short timeout.
+     */
+    fun assertNoActionRequest(timeout: Duration = 1.seconds) {
+        // waitFor polls until the lambda returns true. We check if the queue becomes non-empty.
+        val actionWasReceived = waitFor(timeout) {
+            instance?.receivedActionRequests?.isNotEmpty() == true
+        }
+
+        // If an action was received within the timeout, it's a test failure.
+        if (actionWasReceived) {
+            throw AssertionError(
+                "onActionStateChanged was called unexpectedly. " +
+                        "Received: ${instance?.receivedActionRequests?.peek()}"
+            )
+        }
     }
 }
 

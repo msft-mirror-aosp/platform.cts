@@ -437,6 +437,51 @@ public final class DeviceUtils {
         device.executeShellCommand("input keyevent KEYCODE_SLEEP");
     }
 
+    /** Returns the current brightness level of the given device. */
+    public static int getCurrentBrightnessLevel(ITestDevice device) throws Exception {
+        return Integer.parseInt(
+                device.executeShellCommand("settings get system screen_brightness").trim());
+    }
+
+    /** Sets the brightness level of the given device. */
+    public static void setScreenBrightnessLevel(ITestDevice device, int newBrightness)
+            throws Exception {
+        device.executeShellCommand("settings put system screen_brightness " + newBrightness);
+    }
+
+    /** Returns the current brightness mode of the given device. */
+    public static int getCurrentBrightnessMode(ITestDevice device) throws Exception {
+        return Integer.parseInt(
+                device.executeShellCommand("settings get system screen_brightness_mode").trim());
+    }
+
+    /** Sets the brightness mode of the given device. */
+    public static void setAutoBrightnessMode(ITestDevice device, int mode) throws Exception {
+        device.executeShellCommand("settings put system screen_brightness_mode " + mode);
+    }
+
+    /** Gets the user rotation mode of the given device. */
+    public static int getCurrentUserRotationMode(ITestDevice device) throws Exception {
+        return Integer.parseInt(
+                device.executeShellCommand("settings get system user_rotation").trim());
+    }
+
+    /** Sets the user rotation mode of the given device. */
+    public static void setUserRotationMode(ITestDevice device, int mode) throws Exception {
+        device.executeShellCommand("settings put system user_rotation " + mode);
+    }
+
+    /** Gets the accelerometer rotation mode of the given device. */
+    public static int getCurrentAccelerometerRotationMode(ITestDevice device) throws Exception {
+        return Integer.parseInt(
+                device.executeShellCommand("settings get system accelerometer_rotation").trim());
+    }
+
+    /** Sets the accelerometer rotation mode of the given device. */
+    public static void setAccelerometerRotationMode(ITestDevice device, int mode) throws Exception {
+        device.executeShellCommand("settings put system accelerometer_rotation " + mode);
+    }
+
     public static void turnBatteryStatsAutoResetOn(ITestDevice device) throws Exception {
         device.executeShellCommand("dumpsys batterystats enable no-auto-reset");
     }
@@ -521,7 +566,6 @@ public final class DeviceUtils {
             String service, String actionValue) throws Exception {
         executeServiceAction(device, testPackage, service, actionValue);
     }
-
 
     /**
      * Runs a (background) service to perform the given action.

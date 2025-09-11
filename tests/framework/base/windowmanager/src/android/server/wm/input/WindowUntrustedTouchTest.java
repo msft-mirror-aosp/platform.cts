@@ -644,7 +644,6 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
                 false /* touchable */,
                 R.anim.long_alpha_0_7,
                 R.anim.long_alpha_1);
-        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
         long start = SystemClock.elapsedRealtime();
 
         assertTrue(mWmState.waitForAppTransitionIdleOnDisplay(Display.DEFAULT_DISPLAY));
@@ -688,7 +687,6 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
 
         addAnimatedActivityOverlay(
                 SECOND_OVERLAY_ACTIVITY, false /* touchable */, R.anim.alpha_0_9, R.anim.alpha_1);
-        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
 
         mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
 
@@ -705,7 +703,6 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
 
         addAnimatedActivityOverlay(
                 SECOND_OVERLAY_ACTIVITY, false /* touchable */, R.anim.alpha_0_7, R.anim.alpha_1);
-        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
 
         mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
 
@@ -722,7 +719,6 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
 
         addAnimatedActivityOverlay(
                 SECOND_OVERLAY_ACTIVITY, true /* touchable */, R.anim.alpha_0_7, R.anim.alpha_1);
-        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
 
         mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
 

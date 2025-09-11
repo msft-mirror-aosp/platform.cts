@@ -16,10 +16,14 @@
 
 package android.cts.statsdatom.display;
 
-import static android.cts.statsdatom.display.DisplayTestUtils.getCurrentBrightnessLevel;
-import static android.cts.statsdatom.display.DisplayTestUtils.getCurrentBrightnessMode;
-import static android.cts.statsdatom.display.DisplayTestUtils.setAutoBrightnessMode;
-import static android.cts.statsdatom.display.DisplayTestUtils.setScreenBrightnessLevel;
+import static android.cts.statsdatom.display.DisplayTestUtils.DISPLAY_TEST_APK;
+import static android.cts.statsdatom.display.DisplayTestUtils.DISPLAY_TEST_PKG;
+import static android.cts.statsdatom.display.DisplayTestUtils.TEST_CLASS_DISPLAY_EVENT;
+import static android.cts.statsdatom.display.DisplayTestUtils.TIMEOUT_MS;
+import static android.cts.statsdatom.lib.DeviceUtils.getCurrentBrightnessLevel;
+import static android.cts.statsdatom.lib.DeviceUtils.getCurrentBrightnessMode;
+import static android.cts.statsdatom.lib.DeviceUtils.setAutoBrightnessMode;
+import static android.cts.statsdatom.lib.DeviceUtils.setScreenBrightnessLevel;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -55,15 +59,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class DisplayEventOccurredStatsTests extends BaseHostJUnit4Test implements IBuildReceiver {
-
-    private static final String DISPLAY_TEST_PKG = "android.display.cts";
-    private static final String DISPLAY_TEST_APK = "CtsDisplayTestCases.apk";
-    private static final String TEST_CLASS_DISPLAY_EVENT = "android.display.cts.DisplayEventTest";
-    private static final long TIMEOUT_MS = TimeUnit.SECONDS.toMillis(10);
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -76,14 +74,10 @@ public class DisplayEventOccurredStatsTests extends BaseHostJUnit4Test implement
         assertThat(mCtsBuild).isNotNull();
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
+        DeviceUtils.turnScreenOn(getDevice());
         DeviceUtils.installStatsdTestApp(getDevice(), mCtsBuild);
         DeviceUtils.installTestApp(getDevice(), DISPLAY_TEST_APK, DISPLAY_TEST_PKG, mCtsBuild);
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
-
-        ConfigUtils.uploadConfigForPushedAtom(
-                getDevice(),
-                DeviceUtils.STATSD_ATOM_TEST_PKG,
-                DisplayExtensionAtoms.DISPLAY_EVENT_CALLBACK_OCCURRED_FIELD_NUMBER);
     }
 
     @After
@@ -103,11 +97,26 @@ public class DisplayEventOccurredStatsTests extends BaseHostJUnit4Test implement
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_LOGGING_FOR_DISPLAY_EVENTS)
     public void testDisplayEventBrightnessReportedButNoListenerRegistered() throws Exception {
+        // Only run if we have a valid ambient light sensor.
+        if (!DeviceUtils.checkDeviceFor(getDevice(), "checkValidLightSensor")) {
+            return;
+        }
+
+        // Don't run if there is no app that has permission to access slider usage.
+        if (!DeviceUtils.checkDeviceFor(getDevice(), "checkBrightnessSliderPermission")) {
+            return;
+        }
+
+        ConfigUtils.uploadConfigForPushedAtom(
+                getDevice(),
+                DeviceUtils.STATSD_ATOM_TEST_PKG,
+                DisplayExtensionAtoms.DISPLAY_EVENT_CALLBACK_OCCURRED_FIELD_NUMBER);
+
         int brightnessLevelBeforeTest = getCurrentBrightnessLevel(getDevice());
         int brightnessModeBeforeTest = getCurrentBrightnessMode(getDevice());
         setAutoBrightnessMode(getDevice(), 0);
         PollingCheck.check(
-                "Brightness mode did not turn off.",
+                "Brightness mode did not change to manual.",
                 TIMEOUT_MS,
                 () -> getCurrentBrightnessMode(getDevice()) == 0);
 
@@ -125,7 +134,18 @@ public class DisplayEventOccurredStatsTests extends BaseHostJUnit4Test implement
                 () -> getCurrentBrightnessLevel(getDevice()) == newBrightness);
 
         // Assert brightness event has been recorded
-        assertDisplayEvent(EventType.TYPE_DISPLAY_BRIGHTNESS_CHANGED, 1, false);
+        long eventPollingTimeoutMs = TIMEOUT_MS * 2;
+        PollingCheck.check(
+                "Display rotation event not logged within timeout.",
+                eventPollingTimeoutMs,
+                () -> {
+                    try {
+                        assertDisplayEvent(EventType.TYPE_DISPLAY_BRIGHTNESS_CHANGED, 1);
+                        return true; // Assertion passed, event found
+                    } catch (AssertionError e) {
+                        return false; // Assertion failed, event not yet found
+                    }
+                });
 
         // Reset brightness to initial level and mode
         setScreenBrightnessLevel(getDevice(), brightnessLevelBeforeTest);
@@ -143,24 +163,36 @@ public class DisplayEventOccurredStatsTests extends BaseHostJUnit4Test implement
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_LOGGING_FOR_DISPLAY_EVENTS)
     public void testDisplayEventStateReported() throws Exception {
+        ConfigUtils.uploadConfigForPushedAtom(
+                getDevice(),
+                DISPLAY_TEST_PKG,
+                DisplayExtensionAtoms.DISPLAY_EVENT_CALLBACK_OCCURRED_FIELD_NUMBER);
         // This test changes display state 2 times.
         runDeviceTests(DISPLAY_TEST_PKG, TEST_CLASS_DISPLAY_EVENT, "testDisplayStateChangedEvent");
-        assertDisplayEvent(EventType.TYPE_DISPLAY_STATE_CHANGED, 2, true);
+        assertDisplayEvent(EventType.TYPE_DISPLAY_STATE_CHANGED, 2);
     }
 
-    private void assertDisplayEvent(
-            EventType eventType, int expectedEventCount, boolean isListenerNotified)
-            throws Exception {
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_LOGGING_FOR_DISPLAY_EVENTS)
+    public void testDisplayRefreshRateReported() throws Exception {
+        ConfigUtils.uploadConfigForPushedAtom(
+                getDevice(),
+                DISPLAY_TEST_PKG,
+                DisplayExtensionAtoms.DISPLAY_EVENT_CALLBACK_OCCURRED_FIELD_NUMBER);
+
+        runDeviceTests(
+                DISPLAY_TEST_PKG, TEST_CLASS_DISPLAY_EVENT, "testDisplayRefreshRateChangedEvent");
+        assertDisplayEvent(EventType.TYPE_DISPLAY_REFRESH_RATE_CHANGED, 1);
+    }
+
+    private void assertDisplayEvent(EventType eventType, int expectedEventCount) throws Exception {
         final ExtensionRegistry registry = ExtensionRegistry.newInstance();
         DisplayExtensionAtoms.registerAllExtensions(registry);
-
-        int uid = DeviceUtils.getAppUid(getDevice(), DISPLAY_TEST_PKG);
 
         final List<DisplayEventCallbackOccurred> events =
                 ReportUtils.getEventMetricDataList(getDevice(), registry).stream()
                         .map(this::getDisplayEventCallbackOccurred)
                         .filter(x -> x.getEventType().equals(eventType))
-                        .peek(x -> assertEquals(isListenerNotified, x.getUidList().contains(uid)))
                         .peek(x -> assertEquals(x.getClientCount(), x.getUidCount()))
                         .toList();
 

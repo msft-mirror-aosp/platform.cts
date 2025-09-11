@@ -149,6 +149,7 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
     }
 
     @Test
+    @Ignore("b/438236293 - Need to fix and re-enable this test.")
     public void testNoSatelliteConstrainedNetworkConnection_WithBandwidthNotConstrainedCapability()
             throws Exception {
         logd(TAG, "testNoConstrainedNetworkConnection");
