@@ -24,6 +24,8 @@ import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.FailureMode
+import com.android.bedstead.harrier.annotations.RequireFeature
+import com.android.bedstead.harrier.logic
 import com.android.bedstead.multiuser.UsersComponent
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.TestApis.users
@@ -31,6 +33,7 @@ import com.android.bedstead.nene.devicepolicy.DeviceOwner
 import com.android.bedstead.nene.devicepolicy.DeviceOwnerType
 import com.android.bedstead.nene.devicepolicy.DevicePolicyController
 import com.android.bedstead.nene.exceptions.NeneException
+import com.android.bedstead.nene.packages.CommonPackages.FEATURE_DEVICE_ADMIN
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.utils.Versions
 import com.android.bedstead.remotedpc.RemoteDpc
@@ -95,6 +98,8 @@ class DeviceOwnerComponent(locator: BedsteadServiceLocator) : DeviceStateCompone
         key: String = EnsureHasDeviceOwner.DEFAULT_KEY,
         dpcQuery: TestAppQueryBuilder = TestAppProvider().query()
     ) {
+        RequireFeature(FEATURE_DEVICE_ADMIN, failureMode = failureMode).logic()
+
         // TODO(scottjonathan): Should support non-remotedpc device owner (default to remotedpc)
         var dpcQueryMutable = dpcQuery
         dpcQueryMutable.applyAnnotation(
