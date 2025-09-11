@@ -47,7 +47,6 @@ _VALID_RIGS = ['arduino', 'gen2_rotator']
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _SEC_TO_NSEC = 1_000_000_000
 
-_PROTO_DATABASE_VERSION_16_0 = '16.0'  # Base version out of android 16
 
 class FeatureCombinationTest(its_base_test.ItsBaseTest):
   """Tests camera feature combinations.
@@ -137,7 +136,6 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
     database.build_fingerprint = (
         its_session_utils.get_build_fingerprint(self.dut.serial))
     database.timestamp_in_sec = int(time.time())
-    database.version = _PROTO_DATABASE_VERSION_16_0
     database.feature_combination_for_camera.append(feature_combo_for_camera)
 
     current_time = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')

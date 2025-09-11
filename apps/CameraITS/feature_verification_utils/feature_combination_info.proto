@@ -108,9 +108,4 @@ message FeatureCombinationDatabase {
   int64 timestamp_in_sec = 2;
   // The feature combination info per primary camera
   repeated FeatureCombinationForCamera feature_combination_for_camera = 3;
-  // The version of the feature combination database, in the format of
-  // '[major_os].N' where major_os is the major OS version of the test suite,
-  // and N is an incremental integer to distinguish between different versions
-  // with the same OS release.
-  string version = 4;
 }
