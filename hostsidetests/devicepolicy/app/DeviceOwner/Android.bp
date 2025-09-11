@@ -36,7 +36,6 @@ android_test_helper_app {
     ],
     static_libs: [
         "ctstestrunner-axt",
-        "com.android.net.flags-aconfig-java",
         "compatibility-device-util-axt",
         "androidx.test.rules",
         "cts-security-test-support-library",
