@@ -165,6 +165,10 @@ class IncompleteMotionTest {
             }
             sendMoveAndFocus.join()
         }
+        // Before continuing, check that no exceptions occurred while running the
+        // instructions in the 'sendMoveAndFocus' thread. This ensures we fail with the
+        // original root cause instead of a subsequent failure.
+        resultFuture.get()
         // The default PollingCheck is 3 seconds, but this one is monitoring multiple operations
         // that will take 1 second at the fastest; if the system is running tasks in the background,
         // this would potentially cause timeouts at this point.
@@ -179,9 +183,6 @@ class IncompleteMotionTest {
         // If we wait too long here, we will cause ANR (if the platform has a bug).
         // If the MOVE event is received, however, we can stop the test.
         PollingCheck.waitFor { activity.receivedMove() }
-        // Before finishing the test, check that no exceptions occurred while running the
-        // instructions in the 'sendMoveAndFocus' thread.
-        resultFuture.get()
     }
 
     private fun sendEvent(downTime: Long, action: Int, x: Float, y: Float, sync: Boolean) {
