@@ -130,6 +130,9 @@ public class ItsTestActivity extends DialogTestListActivity {
     private static final String TABLET_NAME_KEY = "tablet_name";
     private static final int PERF_METRICS_PERMANENT_KEY_COUNT = 2; // CAM_ID_KEY, TABLET_NAME_KEY
 
+    private static final String PERF_METRICS_VERSION = "version";
+    private static final String CURRENT_PERF_METRICS_VERSION = "16.0";
+
     private static final String RESULT_PASS = "PASS";
     private static final String RESULT_FAIL = "FAIL";
     private static final String RESULT_NOT_EXECUTED = "NOT_EXECUTED";
@@ -698,6 +701,11 @@ public class ItsTestActivity extends DialogTestListActivity {
             // /sdcard/ReportLogFiles
             validatePerfMetrics();
             mReportLog.addValues(PERF_METRICS, mFinalPerfMetricsArr);
+            mReportLog.addValue(
+                    PERF_METRICS_VERSION,
+                    CURRENT_PERF_METRICS_VERSION,
+                    ResultType.NEUTRAL,
+                    ResultUnit.NONE);
             mReportLog.submit();
         }
 
