@@ -17,8 +17,6 @@ package com.android.compatibility.common.util;
 
 import static android.multiuser.Flags.FLAG_PROFILES_FOR_ALL;
 
-import android.platform.test.flag.junit.host.DeviceFlags;
-
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.log.LogUtil.CLog;
@@ -39,12 +37,12 @@ public final class UserUtil {
 
     /** Checks whether the device supports profile on non-main user. */
     public boolean isProfilesOnNonMainUserSupported() throws DeviceNotAvailableException {
-        var flags = DeviceFlags.createDeviceFlags(mTestDevice);
-        String flagValue = flags.getFlagValue(FLAG_PROFILES_FOR_ALL);
+        boolean flagValue = new FlagsUtil(mTestDevice).getBooleanFlag(FLAG_PROFILES_FOR_ALL);
         CLog.v(
                 "isProfilesOnNonMainUserSupported(): flag %s is %s",
                 FLAG_PROFILES_FOR_ALL, flagValue);
-        if (!Boolean.valueOf(flagValue)) {
+        // If the flag's disabled, it doesn't need to check the config
+        if (!flagValue) {
             return false;
         }
 

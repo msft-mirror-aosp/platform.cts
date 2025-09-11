@@ -19,9 +19,8 @@ import static android.app.admin.flags.Flags.FLAG_DEVICE_OWNER_FOR_ALL;
 
 import static com.android.tradefed.device.UserInfo.USER_SYSTEM;
 
-import android.platform.test.flag.junit.host.DeviceFlags;
-
 import com.android.compatibility.common.util.BaseSwitchFullUserTargetPreparer;
+import com.android.compatibility.common.util.FlagsUtil;
 import com.android.compatibility.common.util.UserUtil;
 import com.android.ddmlib.Log.LogLevel;
 import com.android.tradefed.device.DeviceNotAvailableException;
@@ -161,32 +160,17 @@ public final class DevicePolicyUsersPreparer extends BaseSwitchFullUserTargetPre
             mMainUserId = device.getMainUserId();
             mSupportsProfilesForAll = new UserUtil(device).isProfilesOnNonMainUserSupported();
             mIsAutomotive = device.hasFeature("android.hardware.type.automotive");
-            var flags = DeviceFlags.createDeviceFlags(device);
-            String supportsDoForAllFlag = flags.getFlagValue(FLAG_DEVICE_OWNER_FOR_ALL);
-            if (true) {
-                // TODO(b/383180991): temporary hac^H^H^H workaround as `device_config list` is
-                // returning `false` even when it's enabled; probably because the flag is new and
-                // hasn't being ramped-up to staging yet, so it's not in the build.
-                // But before removing this workaround, we need to make sure it would also work
-                // if developers manually change the flag (and same goes for
-                // UserUtils.isProfilesOnNonMainUserSupported())
-                String hackyFlagValue = device.executeShellCommand(
-                        "aflags list | grep android.app.admin.flags.device_owner_for_all");
-                mSupportsDeviceOwnerForAll = hackyFlagValue.trim().contains("enabled");
-            } else {
-                mSupportsDeviceOwnerForAll = Boolean.valueOf(supportsDoForAllFlag);
-            }
+            mSupportsDeviceOwnerForAll =
+                    new FlagsUtil(device).getBooleanFlag(FLAG_DEVICE_OWNER_FOR_ALL);
             logAndDisplay(
-                    "setUp(): isHsum=%b, initialCurrentUser=%d, mainUserId=%s, "
-                            + "supportsProfilesForAll=%b, supportsDeviceOwnerForAll=%b "
-                            + "(flag %s=%s), mIsAutomotive=%b, mPreExistingUserIds=%s",
+                    "setUp(): mIsHsum=%b, mInitialCurrentUserId=%d, mMainUserId=%s, "
+                            + "mSupportsProfilesForAll=%b, mSupportsDeviceOwnerForAll=%b, "
+                            + "mIsAutomotive=%b, mPreExistingUserIds=%s",
                     mIsHsum,
                     mInitialCurrentUserId,
                     mMainUserId,
                     mSupportsProfilesForAll,
                     mSupportsDeviceOwnerForAll,
-                    FLAG_DEVICE_OWNER_FOR_ALL,
-                    supportsDoForAllFlag,
                     mIsAutomotive,
                     mPreExistingUserIds);
         }
