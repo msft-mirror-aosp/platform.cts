@@ -54,9 +54,11 @@ class DefaultCapturePerfClassTest(its_base_test.ItsBaseTest):
       device_id = self.dut.serial
       # Check SKIP conditions
       first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
+      current_user = its_device_utils.get_current_user(device_id)
       camera_properties_utils.skip_unless(
           first_api_level >= its_session_utils.ANDROID15_API_LEVEL and
-          cam.is_primary_camera())
+          cam.is_primary_camera() and
+          current_user == its_device_utils.SYSTEM_USER)
 
       # Load chart for scene
       props = cam.get_camera_properties()
