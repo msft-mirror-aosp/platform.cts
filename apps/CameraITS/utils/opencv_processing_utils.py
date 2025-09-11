@@ -1323,41 +1323,19 @@ def mark_zoom_images_to_video(out, image_paths, test_data):
 
 
 def define_metering_rectangle_values(
-    props, top_left, top_right, bottom_right, bottom_left, w, h):
+    top_left, bottom_right, w, h):
   """Find normalized values of coordinates and return 4 metering rects.
 
   Args:
-    props: dict; camera properties object.
     top_left: coordinates; defined by aruco markers for targeted image.
-    top_right: coordinates; defined by aruco markers for targeted image.
     bottom_right: coordinates; defined by aruco markers for targeted image.
-    bottom_left: coordinates; defined by aruco markers for targeted image.
     w: int; active array width in pixels.
     h: int; active array height in pixels.
   Returns:
     meter_rects: 4 metering rectangles made of (x, y, width, height, weight).
       x, y are the top left coordinate of the metering rectangle.
   """
-  # If testing front camera, mirror coordinates either left/right or up/down
-  # Preview are flipped on device's natural orientation
-  # For sensor orientation 90 or 270, it is up or down
-  # For sensor orientation 0 or 180, it is left or right
-  if (props['android.lens.facing'] ==
-      camera_properties_utils.LENS_FACING['FRONT']):
-    if props['android.sensor.orientation'] in (90, 270):
-      tl_coordinates = (bottom_left[0], h - bottom_left[1])
-      br_coordinates = (top_right[0], h - top_right[1])
-      logging.debug('Found sensor orientation %d, flipping up down',
-                    props['android.sensor.orientation'])
-    else:
-      tl_coordinates = (w - top_right[0], top_right[1])
-      br_coordinates = (w - bottom_left[0], bottom_left[1])
-      logging.debug('Found sensor orientation %d, flipping left right',
-                    props['android.sensor.orientation'])
-    logging.debug('Mirrored top-left coordinates: %s', tl_coordinates)
-    logging.debug('Mirrored bottom-right coordinates: %s', br_coordinates)
-  else:
-    tl_coordinates, br_coordinates = top_left, bottom_right
+  tl_coordinates, br_coordinates = top_left, bottom_right
 
   # Normalize coordinates' values to construct metering rectangles
   meter_rects = [None] * NUM_AE_AWB_REGIONS
@@ -1455,9 +1433,8 @@ def define_regions(img, img_path, chart_path, props, width, height):
     regions: 4 regions of the img
   """
   # Extract chart coordinates from aruco markers
-  # TODO: b/330382627 - get chart boundary from 4 aruco markers instead of 2
   aruco_corners, aruco_ids, _ = find_aruco_markers(img, img_path)
-  tl, tr, br, bl = get_chart_boundary_from_aruco_markers(
+  tl, _, br, _ = get_chart_boundary_from_aruco_markers(
       aruco_corners, aruco_ids, img, chart_path)
 
   # Convert image coordinates to sensor coordinates for metering rectangles
@@ -1466,17 +1443,13 @@ def define_regions(img, img_path, chart_path, props, width, height):
   logging.debug('Active array size: %s', aa)
   sc_tl = image_processing_utils.convert_image_coords_to_sensor_coords(
       aa_width, aa_height, tl, width, height)
-  sc_tr = image_processing_utils.convert_image_coords_to_sensor_coords(
-      aa_width, aa_height, tr, width, height)
   sc_br = image_processing_utils.convert_image_coords_to_sensor_coords(
       aa_width, aa_height, br, width, height)
-  sc_bl = image_processing_utils.convert_image_coords_to_sensor_coords(
-      aa_width, aa_height, bl, width, height)
 
   # Define regions through ArUco markers' positions
   region_blue, region_light, region_dark, region_yellow = (
       define_metering_rectangle_values(
-          props, sc_tl, sc_tr, sc_br, sc_bl, aa_width, aa_height))
+          sc_tl, sc_br, aa_width, aa_height))
 
   # Create a dictionary of regions for testing
   regions = {
