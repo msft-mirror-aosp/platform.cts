@@ -7326,6 +7326,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 sSatelliteManager.registerForSupportedStateChanged(
                         getContext().getMainExecutor(), satelliteSupportedStateCallbackTest);
         assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerError);
+        assertTrue(satelliteSupportedStateCallbackTest.waitUntilResult(1));
 
         /* Verify redundant report is ignored */
         sendOnSatelliteSupportedStateChanged(true);
