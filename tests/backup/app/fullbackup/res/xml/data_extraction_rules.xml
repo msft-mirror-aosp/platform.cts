@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cross-platform-transfer platform="ios">
+        <platform-specific-params bundleId="bundle-id" teamId="team-id" contentVersion="1.0" />
+    </cross-platform-transfer>
+</data-extraction-rules>
