@@ -28,7 +28,6 @@ import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver
 import android.content.ContentResolver
 import android.content.Context
-import android.cts.testapisreflection.user
 import android.database.Cursor
 import android.net.Uri
 import android.os.UserHandle
@@ -44,8 +43,8 @@ import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.multiuser.additionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
-import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnPrimaryUser
-import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnSecondaryUser
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnPrimaryUser
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSecondaryUser
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.utils.ShellCommand

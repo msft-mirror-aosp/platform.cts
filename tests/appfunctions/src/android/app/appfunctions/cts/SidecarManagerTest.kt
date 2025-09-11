@@ -41,8 +41,8 @@ import androidx.test.core.app.ApplicationProvider
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
-import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnPrimaryUser
-import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnSecondaryUser
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnPrimaryUser
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSecondaryUser
 import com.android.compatibility.common.util.ApiTest
 import com.android.extensions.appfunctions.AppFunctionException as SidecarAppFunctionException
 import com.android.extensions.appfunctions.AppFunctionManager as SidecarAppFunctionManager

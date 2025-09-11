@@ -41,4 +41,14 @@ interface MultiUserToEnterpriseMediator {
      * Ensures there is no device owner on the device
      */
     fun ensureHasNoDeviceOwner()
+
+    /**
+     * Creates EnsureHasWorkProfile annotation.
+     */
+    fun getEnsureHasWorkProfileAnnotation(): Annotation
+
+    /**
+     * Creates RequireRunOnWorkProfile annotation.
+     */
+    fun getRequireRunOnWorkProfileAnnotation(): Annotation
 }

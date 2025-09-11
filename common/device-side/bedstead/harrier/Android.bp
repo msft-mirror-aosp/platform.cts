@@ -45,7 +45,6 @@ android_library {
         // TODO(329826539): Move this into a separate target
         ":bedstead-permissions-common-srcs",
 
-        ":bedstead-enterprise-common-srcs",
         ":bedstead-multiuser-common-srcs",
     ],
 

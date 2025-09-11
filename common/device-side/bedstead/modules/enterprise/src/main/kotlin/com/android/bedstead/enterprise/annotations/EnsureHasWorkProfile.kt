@@ -19,7 +19,7 @@ package com.android.bedstead.enterprise.annotations
 import com.android.bedstead.harrier.HarrierRule
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.UserType.INITIAL_USER
-import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.REQUIRE_RUN_ON_PRECEDENCE
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.ENSURE_HAS_WORK_PROFILE_PRIORITY
 import com.android.bedstead.harrier.annotations.RequireFeature
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
 import com.android.bedstead.nene.types.OptionalBoolean
@@ -81,8 +81,6 @@ annotation class EnsureHasWorkProfile(
         const val PROFILE_TYPE = "android.os.usertype.profile.MANAGED"
     }
 }
-
-const val ENSURE_HAS_WORK_PROFILE_PRIORITY = REQUIRE_RUN_ON_PRECEDENCE - 1
 
 const val DEFAULT_DPC_KEY = "profileOwner"
 

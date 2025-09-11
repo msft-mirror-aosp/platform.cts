@@ -57,8 +57,8 @@ import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.enterprise.policies.AppFunctionsPolicy
 import com.android.bedstead.multiuser.additionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
-import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnPrimaryUser
-import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnSecondaryUser
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnPrimaryUser
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSecondaryUser
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.utils.ShellCommand

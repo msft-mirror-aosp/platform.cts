@@ -16,6 +16,8 @@
 
 package com.android.bedstead.multiuser.annotations.meta;
 
+import com.android.bedstead.harrier.annotations.meta.RequireRunOnAnnotation;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -29,6 +31,7 @@ import java.lang.annotation.Target;
  */
 @Target(ElementType.ANNOTATION_TYPE)
 @Retention(RetentionPolicy.RUNTIME)
+@RequireRunOnAnnotation
 public @interface RequireRunOnProfileAnnotation {
     /** The name of the profile type which the test should be run on. */
     String value();

@@ -20,6 +20,7 @@ import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrec
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
+import com.android.bedstead.harrier.annotations.meta.RequireRunOnAnnotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -33,6 +34,7 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
+@RequireRunOnAnnotation
 @UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
 public @interface RequireRunOnVisibleBackgroundNonProfileUser {
 

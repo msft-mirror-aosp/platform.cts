@@ -19,6 +19,7 @@ package com.android.bedstead.harrier.annotations;
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.REQUIRE_RUN_ON_PRECEDENCE;
 import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 
+import com.android.bedstead.harrier.annotations.meta.RequireRunOnAnnotation;
 import com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4;
 import com.android.bedstead.nene.types.OptionalBoolean;
 
@@ -39,6 +40,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @RequiresBedsteadJUnit4
+@RequireRunOnAnnotation
 public @interface RequireRunOnInitialUser {
 
     // Note that when generating the list of tests, BedsteadJUnit4 will replace this annotation with
