@@ -152,7 +152,7 @@ public class AppCloningBaseHostTest extends BaseHostTestCase {
 
     protected static boolean supportsMoreThanTwoUsers() throws DeviceNotAvailableException {
         if (!Boolean.valueOf(DeviceFlags.createDeviceFlags(sDevice)
-                .getFlagValue("android.multiuser.decouple_max_users_from_profiles"))) {
+                .getFlagValue("android.multiuser.consistent_max_users"))) {
             return sDevice.getMaxNumberOfUsersSupported() > 2
                     && sDevice.getMaxNumberOfRunningUsersSupported() > 2;
         }

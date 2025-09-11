@@ -142,7 +142,7 @@ public final class UserManagerHostTest extends BaseMultiUserTest {
 
     private void assumeSecondaryUsersCanBeAdded(int noOfUsers) throws DeviceNotAvailableException {
         if (!Boolean.valueOf(DeviceFlags.createDeviceFlags(getDevice())
-                .getFlagValue("android.multiuser.decouple_max_users_from_profiles"))) {
+                .getFlagValue("android.multiuser.consistent_max_users"))) {
             int nonGuestUsersCount =  (int) getDevice().getUserInfos().values().stream()
                     .filter(userInfo -> !userInfo.isGuest())
                     .count();
