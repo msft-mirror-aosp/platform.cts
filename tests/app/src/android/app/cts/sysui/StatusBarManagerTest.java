@@ -20,12 +20,16 @@ import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import android.app.StatusBarManager;
 import android.app.StatusBarManager.DisableInfo;
 import android.app.UiAutomation;
 import android.content.Context;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.view.KeyEvent;
 
 import androidx.test.InstrumentationRegistry;
@@ -34,6 +38,7 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 
 import org.junit.After;
@@ -54,7 +59,11 @@ public class StatusBarManagerTest {
     @ClassRule @Rule
     public static final DeviceState sDeviceState = new DeviceState();
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String PERMISSION_STATUS_BAR = android.Manifest.permission.STATUS_BAR;
+    private static final String SLOT_MUTE = "telecom_mute";
 
     private StatusBarManager mStatusBarManager;
     private Context mContext;
@@ -89,6 +98,7 @@ public class StatusBarManagerTest {
             mStatusBarManager.setDisabledForSetup(false);
             mStatusBarManager.setExpansionDisabledForSimNetworkLock(false);
             mStatusBarManager.setNavBarMode(StatusBarManager.NAV_BAR_MODE_DEFAULT);
+            mStatusBarManager.removeIcon(SLOT_MUTE);
         }
 
         mUiAutomation.dropShellPermissionIdentity();
@@ -238,5 +248,70 @@ public class StatusBarManagerTest {
     public void testSetNavBarMode_invalid_throws() throws Exception {
         int invalidInput = -1;
         mStatusBarManager.setNavBarMode(invalidInput);
+    }
+
+    @RequiresFlagsEnabled(
+            com.android.server.telecom.flags.Flags.FLAG_RESOLVE_HIDDEN_DEPENDENCIES_TWO)
+    @ApiTest(apis = {"android.app.StatusBarManager#setIcon"})
+    @Test(expected = SecurityException.class)
+    public void testSetIcon_withoutStatusBarPermission_throws() throws Exception {
+        // We've adopted shell identity for STATUS_BAR in setUp(), so drop it now
+        mUiAutomation.dropShellPermissionIdentity();
+
+        mStatusBarManager.setIcon(SLOT_MUTE, android.R.drawable.stat_notify_call_mute, 0, null);
+    }
+
+    @RequiresFlagsEnabled(
+            com.android.server.telecom.flags.Flags.FLAG_RESOLVE_HIDDEN_DEPENDENCIES_TWO)
+    @ApiTest(apis = {"android.app.StatusBarManager#setIcon"})
+    @Test
+    public void testSetIcon_withStatusBarPermission_doesNotThrow() throws Exception {
+        // We've adopted shell identity for STATUS_BAR in setUp()
+
+        mStatusBarManager.setIcon(SLOT_MUTE, android.R.drawable.stat_notify_call_mute, 0, null);
+
+        // Nothing thrown, passed
+    }
+
+    @RequiresFlagsEnabled(
+            com.android.server.telecom.flags.Flags.FLAG_RESOLVE_HIDDEN_DEPENDENCIES_TWO)
+    @ApiTest(apis = {"android.app.StatusBarManager#removeIcon"})
+    @Test(expected = SecurityException.class)
+    public void testRemoveIcon_withoutStatusBarPermission_throws() throws Exception {
+        // We've adopted shell identity for STATUS_BAR in setUp(), so drop it now
+        mUiAutomation.dropShellPermissionIdentity();
+
+        mStatusBarManager.removeIcon(SLOT_MUTE);
+    }
+
+    @RequiresFlagsEnabled(
+            com.android.server.telecom.flags.Flags.FLAG_RESOLVE_HIDDEN_DEPENDENCIES_TWO)
+    @ApiTest(apis = {"android.app.StatusBarManager#removeIcon"})
+    @Test
+    public void testRemoveIcon_withStatusBarPermission_doesNotThrow() throws Exception {
+        // We've adopted shell identity for STATUS_BAR in setUp()
+
+        mStatusBarManager.removeIcon(SLOT_MUTE);
+        // Nothing thrown, passed
+    }
+
+    @RequiresFlagsEnabled(
+            com.android.server.telecom.flags.Flags.FLAG_RESOLVE_HIDDEN_DEPENDENCIES_TWO)
+    @ApiTest(
+            apis = {
+                "android.app.StatusBarManager#setIcon",
+                "android.app.StatusBarManager#removeIcon"
+            })
+    @Test
+    public void testSetIcon_thenRemoveIcon() throws Exception {
+        mStatusBarManager.removeIcon(SLOT_MUTE);
+        mStatusBarManager.setIcon(SLOT_MUTE, android.R.drawable.stat_notify_call_mute, 0, null);
+
+        // No exception to get the resource id of the icon
+        mStatusBarManager.getIcon(SLOT_MUTE);
+
+        mStatusBarManager.removeIcon(SLOT_MUTE);
+
+        assertThrows(IllegalArgumentException.class, () -> mStatusBarManager.getIcon(SLOT_MUTE));
     }
 }
