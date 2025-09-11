@@ -28,6 +28,6 @@ import android.service.settings.preferences.SettingsPreferenceValue
  */
 data class ChangedPreferenceState(
     val metadata: SettingsPreferenceMetadata,
-    val originalPreferenceValue: SettingsPreferenceValue?,
-    val currentPreferenceValue: SettingsPreferenceValue?
+    val originalPreferenceValue: SettingsPreferenceValue,
+    val currentPreferenceValue: SettingsPreferenceValue
 )
