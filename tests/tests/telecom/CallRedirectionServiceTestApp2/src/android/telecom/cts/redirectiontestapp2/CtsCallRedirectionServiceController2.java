@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.telecom.cts.redirectiontestapp;
+package android.telecom.cts.redirectiontestapp2;
 
 import android.app.Service;
 import android.content.ComponentName;
@@ -23,18 +23,19 @@ import android.net.Uri;
 import android.telecom.PhoneAccountHandle;
 import android.os.IBinder;
 import android.telecom.CallRedirectionService;
+import android.telecom.cts.redirectiontestapp.ICtsCallRedirectionServiceController;
 import android.util.Log;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-public class CtsCallRedirectionServiceController extends Service {
+public class CtsCallRedirectionServiceController2 extends Service {
     private static final String TAG = CallRedirectionService.class.getSimpleName();
     public static final String CONTROL_INTERFACE_ACTION =
-            "android.telecom.cts.redirectiontestapp.ACTION_CONTROL_CALL_REDIRECTION_SERVICE";
+            "android.telecom.cts.redirectiontestapp2.ACTION_CONTROL_CALL_REDIRECTION_SERVICE";
     public static final ComponentName CONTROL_INTERFACE_COMPONENT =
             ComponentName.unflattenFromString(
-                    "android.telecom.cts.redirectiontestapp/.CtsCallRedirectionServiceController");
+                    "android.telecom.cts.redirectiontestapp2/.CtsCallRedirectionServiceController2");
 
     // Constants for call redirection decisions
     public static final int NO_DECISION_YET = 0;
@@ -56,7 +57,7 @@ public class CtsCallRedirectionServiceController extends Service {
     private CountDownLatch mTimeoutNotified = new CountDownLatch(1);
     private CountDownLatch mOnPlaceCallInvoked = new CountDownLatch(1);
 
-    private static CtsCallRedirectionServiceController sCallRedirectionServiceController = null;
+    private static CtsCallRedirectionServiceController2 sCallRedirectionServiceController = null;
 
     private final IBinder mControllerInterface = new ICtsCallRedirectionServiceController.Stub() {
                 @Override
@@ -120,7 +121,7 @@ public class CtsCallRedirectionServiceController extends Service {
                 }
             };
 
-    public static CtsCallRedirectionServiceController getInstance() {
+    public static CtsCallRedirectionServiceController2 getInstance() {
         return sCallRedirectionServiceController;
     }
 
@@ -159,6 +160,10 @@ public class CtsCallRedirectionServiceController extends Service {
 
     public void setDestinationUri(Uri destinationUri) {
         mDestinationUri = destinationUri;
+    }
+
+    public void setDestinationOriginalUri(Uri destinationOriginalUri) {
+        mDestinationOriginalUri = destinationOriginalUri;
     }
 
     public boolean isConfirmFirst() {

@@ -36,7 +36,9 @@ import android.telecom.Call;
 import android.telecom.PhoneAccount;
 import android.telecom.TelecomManager;
 import android.telecom.cts.redirectiontestapp.CtsCallRedirectionService;
+import android.telecom.cts.redirectiontestapp2.CtsCallRedirectionService2;
 import android.telecom.cts.redirectiontestapp.CtsCallRedirectionServiceController;
+import android.telecom.cts.redirectiontestapp2.CtsCallRedirectionServiceController2;
 import android.telecom.cts.redirectiontestapp.ICtsCallRedirectionServiceController;
 import android.text.TextUtils;
 import android.util.Log;
@@ -109,6 +111,9 @@ public class CallRedirectionServiceTest extends BaseTelecomTestWithMockServices 
             // Remove the test app from the redirection role.
             removeRoleHolder(ROLE_CALL_REDIRECTION,
                     CtsCallRedirectionService.class.getPackage().getName());
+
+            removeRoleHolder(ROLE_CALL_REDIRECTION,
+                    CtsCallRedirectionService2.class.getPackage().getName());
 
             if (!TextUtils.isEmpty(mPreviousCallRedirectionPackage)) {
                 addRoleHolder(ROLE_CALL_REDIRECTION, mPreviousCallRedirectionPackage);
@@ -250,6 +255,27 @@ public class CallRedirectionServiceTest extends BaseTelecomTestWithMockServices 
         assertTrue(TestUtils.waitForLatchCountDown(
                 NullBindingCallRedirectionServiceController.sUnbindLatch));
     }
+
+    public void testCallRedirectionwithOriginalHandle() throws Exception {
+        if (!shouldTestTelecom(mContext) || !TestUtils.hasTelephonyFeature(mContext)) {
+            return;
+        }
+        setupControlBinder(CtsCallRedirectionServiceController2.CONTROL_INTERFACE_ACTION,
+                CtsCallRedirectionServiceController2.CONTROL_INTERFACE_COMPONENT);
+        Bundle extras = new Bundle();
+        // Ensure CTS-2 app holds the call redirection role.
+        addRoleHolder(ROLE_CALL_REDIRECTION,
+                CtsCallRedirectionService2.class.getPackage().getName());
+
+        mCallRedirectionServiceController.setRedirectCall(
+                SAMPLE_HANDLE, TestUtils.TEST_PHONE_ACCOUNT_HANDLE_2, false);
+        extras.putParcelable(TestUtils.EXTRA_PHONE_NUMBER,
+                SAMPLE_HANDLE);
+        placeAndVerifyCallByRedirection(extras, false /* cancelledByCallRedirection */);
+        assertTrue(mCallRedirectionServiceController.waitForOnPlaceCallInvoked());
+        assertEquals(SAMPLE_HANDLE, mCallRedirectionServiceController.getReceivedOriginalHandle());
+    }
+
 
     /**
      * Sets up a binder used to control the CallRedirectionServiceCtsTestApp.
