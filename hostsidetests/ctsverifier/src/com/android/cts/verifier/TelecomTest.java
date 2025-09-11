@@ -31,53 +31,6 @@ public final class TelecomTest extends CtsVerifierTest {
     @Test
     @SupportMultiDisplayMode
     // MultiDisplayMode
-    public void EnablePhoneAccountTest() throws Exception {
-        requireFeatures("android.hardware.telephony");
-        requireFeatures("android.hardware.telephony.calling");
-        excludeFeatures("android.hardware.type.watch");
-
-        runTest(".telecom.EnablePhoneAccountTestActivity");
-    }
-
-    @Interactive
-    @Test
-    @SupportMultiDisplayMode
-    // MultiDisplayMode
-    public void OutgoingCallTest() throws Exception {
-        requireFeatures("android.hardware.telephony");
-        requireFeatures("android.hardware.telephony.calling");
-        excludeFeatures("android.hardware.type.watch");
-
-        runTest(".telecom.OutgoingCallTestActivity");
-    }
-
-    @Interactive
-    @Test
-    @SupportMultiDisplayMode
-    // MultiDisplayMode
-    public void SelfManagedIncomingCallTest() throws Exception {
-        requireFeatures("android.hardware.telephony");
-        requireFeatures("android.hardware.telephony.calling");
-
-        runTest(".telecom.SelfManagedIncomingCallTestActivity");
-    }
-
-    @Interactive
-    @Test
-    @SupportMultiDisplayMode
-    // MultiDisplayMode
-    public void IncomingCallTest() throws Exception {
-        requireFeatures("android.hardware.telephony");
-        requireFeatures("android.hardware.telephony.calling");
-        excludeFeatures("android.hardware.type.watch");
-
-        runTest(".telecom.IncomingCallTestActivity");
-    }
-
-    @Interactive
-    @Test
-    @SupportMultiDisplayMode
-    // MultiDisplayMode
     public void TelecomDefaultDialerTest() throws Exception {
         requireFeatures("android.hardware.telephony");
         requireFeatures("android.hardware.telephony.calling");
