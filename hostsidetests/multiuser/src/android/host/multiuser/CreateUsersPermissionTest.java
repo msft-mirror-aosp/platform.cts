@@ -18,14 +18,10 @@ package android.host.multiuser;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assume.assumeNotNull;
-import static org.junit.Assume.assumeTrue;
-
-import android.host.multiuser.BaseMultiUserTest.SupportsMultiUserRule;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -34,11 +30,9 @@ public final class CreateUsersPermissionTest extends BaseMultiUserTest {
 
     private static final String SECONDARY_USER_TYPE = "android.os.usertype.full.SECONDARY";
 
-    @Rule
-    public final SupportsMultiUserRule mSupportsMultiUserRule = new SupportsMultiUserRule(this);
-
     @Test
     public void testCanCreateGuestUser() throws Exception {
+        assumeSupportsGuest();
         // The device may already have a guest present if it is configured with
         // config_guestUserAutoCreated. If so, skip the test.
         assumeGuestDoesNotExist();
@@ -48,6 +42,7 @@ public final class CreateUsersPermissionTest extends BaseMultiUserTest {
 
     @Test
     public void testCanCreateEphemeralUser() throws Exception {
+        assumeSupportsSecondaryUser();
         getDevice().createUser(
                 "TestUser_" + System.currentTimeMillis() /* name */,
                 false /* guest */,
@@ -56,10 +51,8 @@ public final class CreateUsersPermissionTest extends BaseMultiUserTest {
 
     @Test
     public void testCanCreateRestrictedUser() throws Exception {
-        assumeTrue(
-                "Device does not support restricted profiles",
-                getDevice().getMaxNumberOfUsersSupported("android.os.usertype.full.RESTRICTED")
-                        > 0);
+        assumeSupportsRestrictedUser();
+
         Integer parentUser = getDevice().getMainUserId();
         // Only devices with a main user can have a restricted profile
         assumeNotNull(parentUser);
@@ -69,6 +62,9 @@ public final class CreateUsersPermissionTest extends BaseMultiUserTest {
     @CddTest(requirement="9.5/A-1-3")
     @Test
     public void testCanCreateGuestUserWhenUserLimitReached() throws Exception {
+        assumeSupportsSecondaryUser();
+        assumeSupportsGuest();
+
         // Remove existing guest user
         int guestUserId = getGuestUser();
         if (guestUserId != -1) {

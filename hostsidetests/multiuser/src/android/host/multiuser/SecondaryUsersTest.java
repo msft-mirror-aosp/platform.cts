@@ -15,16 +15,14 @@
  */
 package android.host.multiuser;
 
-import com.android.tradefed.util.RunUtil;
 import static com.google.common.truth.Truth.assertWithMessage;
-
-import android.host.multiuser.BaseMultiUserTest.SupportsMultiUserRule;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
+import com.android.tradefed.util.RunUtil;
 
-import org.junit.Rule;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -43,8 +41,12 @@ public final class SecondaryUsersTest extends BaseMultiUserTest {
     private static final long WAIT_FOR_DEVICE_READY_INTERVAL_MS = 10_000;
     private static final long WAIT_FOR_BOOT_COMPLETE_INTERVAL_MINUTES = 2;
 
-    @Rule
-    public final SupportsMultiUserRule mSupportsMultiUserRule = new SupportsMultiUserRule(this);
+    @Override
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+        assumeSupportsSecondaryUser();
+    }
 
     @CddTest(requirement="9.5/A-1-2")
     @Test
