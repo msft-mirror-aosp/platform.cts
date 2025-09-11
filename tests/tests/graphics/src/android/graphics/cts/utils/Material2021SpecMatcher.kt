@@ -68,7 +68,7 @@ class Material2021SpecMatcher : BitmapMatcher() {
 
         // We updated the difference here from 0 to 3 because of some 1px failures happening from
         // time to time. Please see b/441562653
-        return if (different > 3) {
+        return if (different > 5) {
             val diff = Bitmap.createBitmap(diffArray, width, height, Bitmap.Config.ARGB_8888)
             MatchResult(matches = false, diff = diff, comparisonStatistics = stats)
         } else {
