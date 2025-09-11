@@ -1,0 +1,47 @@
+third_party {
+  identifier {
+    type: "PrebuiltByAlphabet"
+    value: "hostsidetests/appsecurity/test-apps/PrivilegedUpdateApp/apk/x86/CtsShimPrivUpgrade.apk"
+    version: "16"
+  }
+  identifier {
+    type: "PrebuiltByAlphabet"
+    value: "hostsidetests/appsecurity/test-apps/PrivilegedUpdateApp/apk/x86/CtsShimPrivUpgradeWrongSHA.apk"
+    version: "WrongSHA"
+  }
+  identifier {
+    type: "PrebuiltByAlphabet"
+    value: "hostsidetests/appsecurity/test-apps/PrivilegedUpdateApp/apk/riscv64/CtsShimPrivUpgrade.apk"
+    version: "16"
+  }
+  identifier {
+    type: "PrebuiltByAlphabet"
+    value: "hostsidetests/appsecurity/test-apps/PrivilegedUpdateApp/apk/riscv64/CtsShimPrivUpgradeWrongSHA.apk"
+    version: "WrongSHA"
+  }
+  identifier {
+    type: "PrebuiltByAlphabet"
+    value: "hostsidetests/appsecurity/test-apps/PrivilegedUpdateApp/apk/arm/CtsShimPrivUpgrade.apk"
+    version: "16"
+  }
+  identifier {
+    type: "PrebuiltByAlphabet"
+    value: "hostsidetests/appsecurity/test-apps/PrivilegedUpdateApp/apk/arm/CtsShimPrivUpgradeWrongSHA.apk"
+    version: "WrongSHA"
+  }
+  identifier {
+    type: "PrebuiltByAlphabet"
+    value: "hostsidetests/stagedinstall/testdata/apk/CtsShimTargetPSdk/x86/CtsShimTargetPSdk.apk"
+    version: "16"
+  }
+  identifier {
+    type: "PrebuiltByAlphabet"
+    value: "hostsidetests/stagedinstall/testdata/apk/CtsShimTargetPSdk/riscv64/CtsShimTargetPSdk.apk"
+    version: "16"
+  }
+  identifier {
+    type: "PrebuiltByAlphabet"
+    value: "hostsidetests/stagedinstall/testdata/apk/CtsShimTargetPSdk/arm/CtsShimTargetPSdk.apk"
+    version: "16"
+  }
+}
