@@ -39,11 +39,13 @@ import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.RunUtil;
 
 import com.google.common.io.ByteStreams;
+import com.google.common.truth.Expect;
 
 import org.junit.After;
 import org.junit.AssumptionViolatedException;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.function.ThrowingRunnable;
 import org.junit.runner.RunWith;
 
 import java.io.File;
@@ -181,6 +183,8 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     @Rule(order = -1000) // Run earlier.
     public final DeviceResponsivenessCheckerRule mDeviceResponsivenessCheckerRule =
             new DeviceResponsivenessCheckerRule(this);
+
+    @Rule public final Expect expect = Expect.create();
 
     @Rule
     public final DeviceAdminFeaturesCheckerRule mFeaturesCheckerRule =
@@ -1163,6 +1167,55 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     protected void revokePermission(String pkg, String permission, int userId) throws Exception {
         CLog.i("Revoking permission %s to package (%s) on user %d", pkg, permission, userId);
         executeShellCommand("pm revoke --user %d %s %s", userId, pkg, permission);
+    }
+
+    /**
+     * Helper method to "safely" run a test and cleanup tasks, so that exceptions thrown by the
+     * cleanup tasks don't hide exceptions thrown by the test itself.
+     *
+     */
+    protected void safeRun(ThrowingRunnable test, ThrowingRunnable... cleanUpTasks)
+            throws Exception {
+        Throwable testFailure = null;
+        List<Throwable> cleanupFailures = new ArrayList<>(cleanUpTasks.length);
+        try {
+            test.run();
+        } catch (Throwable t) {
+            testFailure = t;
+        }
+
+        for (var cleanUpTask : cleanUpTasks) {
+            try {
+                cleanUpTask.run();
+            } catch (Throwable t) {
+                cleanupFailures.add(t);
+            }
+        }
+
+        if (cleanupFailures.isEmpty() && testFailure == null) {
+            // Saul Goodman!
+            return;
+        }
+
+        if (cleanupFailures.isEmpty() && testFailure != null) {
+            // Throw testFailure directly, so failure message is preserved (without using expect)
+            if (testFailure instanceof Error) {
+                throw (Error) testFailure;
+            }
+            if (testFailure instanceof Exception) {
+                throw (Exception) testFailure;
+            }
+            // Shouldn't happen, but it doesn't hurt to check...
+            throw new AssertionError("Test failure of unexpected type", testFailure);
+        }
+
+        expect.withMessage("Test failed: %s", testFailure).fail();
+        for (int i = 0; i < cleanupFailures.size(); i++) {
+            var cleanupFailure = cleanupFailures.get(i);
+            // Unfortunately expect doesn't have a method that lets it fail with an exception, so we
+            // need to check that it's not null
+            expect.withMessage("Cleanup task#%s failed", i).that(cleanupFailure).isNull();
+        }
     }
 
     /**
