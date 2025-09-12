@@ -16,9 +16,11 @@
 
 package com.android.compatibility.common.util;
 
-import org.junit.Assert;
+import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.Scanner;
 
 /**
  * Static methods used to validate preconditions in the media CTS suite to simplify failure
@@ -27,6 +29,35 @@ import java.io.File;
 public final class Preconditions {
     private static final String TAG = "Preconditions";
 
+    private static long getDirSize(File dir) {
+        long size = 0;
+        if (dir.exists() && dir.isDirectory()) {
+            File[] files = dir.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    size += (file.isDirectory() ? getDirSize(file) : file.length());
+                }
+            }
+        }
+        return size;
+    }
+
+    private static String getDiskUsage(String path) {
+        String command = "df -k " + path;
+        StringBuilder msg = new StringBuilder(command).append("\n");
+        try {
+            Process df = Runtime.getRuntime().exec(command);
+            try (Scanner scanner = new Scanner(df.getInputStream())) {
+                while (scanner.hasNextLine()) {
+                    msg.append(scanner.nextLine()).append("\n");
+                }
+            }
+        } catch (IOException e) {
+            msg.append(e);
+        }
+        return msg.toString();
+    }
+
     /**
      * While accessing resource file, if it is not present, media codec api sometimes sends
      * obfuscated message indicating the same. Have the test run this check before accessing
@@ -34,7 +65,26 @@ public final class Preconditions {
      */
     public static void assertTestFileExists(String pathName) {
         File testFile = new File(pathName);
-        Assert.assertTrue("Test Setup Error, missing file: " + pathName, testFile.exists());
+        if (!testFile.exists()) {
+            StringBuilder msg = new StringBuilder();
+            msg.append(String.format("Test Setup Error, missing file: %s\n", pathName));
+            File parentDir = testFile.getAbsoluteFile().getParentFile();
+            // Check if assets dir exists, if it is present then get its size.
+            // Also, get disk usage for available free space
+            while (parentDir != null) {
+                String parentPath = parentDir.getPath();
+                if (parentDir.exists()) {
+                    msg.append(String.format("Assets Dir: %s, size: %d bytes\n", parentPath,
+                            getDirSize(parentDir)));
+                    msg.append(getDiskUsage(parentPath));
+                    break;
+                } else {
+                    msg.append(String.format("Assets Dir: %s, not found\n", parentPath));
+                }
+                parentDir = parentDir.getParentFile();
+            }
+            fail(msg.toString());
+        }
     }
 
     private Preconditions() {}
