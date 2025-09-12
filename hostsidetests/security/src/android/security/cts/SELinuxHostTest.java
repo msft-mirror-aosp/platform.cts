@@ -319,7 +319,13 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         }
 
         String errorString = tryRunCommand(command.toArray(new String[0]));
-        assertTrue(errorString, errorString.length() == 0);
+        assertTrue(
+                "Building vendor SEPolicy failed. "
+                        + "vendorVersion="
+                        + vendorVersion
+                        + "\n"
+                        + errorString,
+                errorString.length() == 0);
 
         synchronized (cache) {
             cache.put(device, builtPolicyFile);

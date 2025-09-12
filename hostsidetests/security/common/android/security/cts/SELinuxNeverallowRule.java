@@ -45,7 +45,8 @@ record SELinuxNeverallowRule(
         boolean launchingWithSOnly,
         boolean compatiblePropertyOnly,
         boolean userOnly,
-        boolean physicalDeviceOnly) {
+        boolean physicalDeviceOnly,
+        int vendorApiLevel) {
     private static String[] sConditions = {
         "COMPATIBLE_PROPERTY_ONLY",
         "LAUNCHING_WITH_R_ONLY",
@@ -54,14 +55,15 @@ record SELinuxNeverallowRule(
     };
     private static String sUserOnlyMarker = "SUPPRESSED_BY_USERDEBUG_OR_ENG";
 
-    SELinuxNeverallowRule(String text, Map<String, Integer> conditions) {
+    SELinuxNeverallowRule(String text, Map<String, Integer> conditions, int vendorApiLevel) {
         this(
                 cleanupRule(text),
                 (conditions.getOrDefault("LAUNCHING_WITH_R_ONLY", 0) > 0),
                 (conditions.getOrDefault("LAUNCHING_WITH_S_ONLY", 0) > 0),
                 (conditions.getOrDefault("COMPATIBLE_PROPERTY_ONLY", 0) > 0),
                 (conditions.getOrDefault("USER_ONLY", 0) > 0),
-                (conditions.getOrDefault("PHYSICAL_DEVICE_ONLY", 0) > 0));
+                (conditions.getOrDefault("PHYSICAL_DEVICE_ONLY", 0) > 0),
+                vendorApiLevel);
     }
 
     private static String cleanupRule(String rule) {
@@ -131,6 +133,11 @@ record SELinuxNeverallowRule(
     }
 
     public static List<SELinuxNeverallowRule> parsePolicy(String policy) throws Exception {
+        return parsePolicy(policy, 0);
+    }
+
+    public static List<SELinuxNeverallowRule> parsePolicy(String policy, int vendorApiLevel)
+            throws Exception {
         String patternConditions = Arrays.stream(sConditions)
                 .flatMap(condition -> Stream.of("BEGIN_" + condition, "END_" + condition))
                 .collect(Collectors.joining("|"));
@@ -172,7 +179,7 @@ record SELinuxNeverallowRule(
                     rule = rule.replaceAll(sUserOnlyMarker, "");
                     conditions.put("USER_ONLY", 1);
                 }
-                rules.add(new SELinuxNeverallowRule(rule, conditions));
+                rules.add(new SELinuxNeverallowRule(rule, conditions, vendorApiLevel));
                 conditions.put("USER_ONLY", 0);
             } else {
                 throw new Exception("Unknown rule: " + rule);
@@ -205,8 +212,27 @@ record SELinuxNeverallowRule(
             errorString.append("\n");
         }
         p.waitFor();
-        assertTrue("The following errors were encountered when validating the SELinux"
-                   + "neverallow rule:\n" + mText + "\n" + errorString,
-                   errorString.length() == 0);
+
+        String errorMessage;
+
+        if (vendorApiLevel > 0) {
+            errorMessage =
+                    "The following errors were encountered when validating the SELinux "
+                            + "neverallow rule in "
+                            + vendorApiLevel
+                            + "_general_sepolicy.conf:\n"
+                            + mText
+                            + "\n"
+                            + errorString;
+        } else {
+            errorMessage =
+                    "The following errors were encountered when validating the SELinux "
+                            + "neverallow rule:\n"
+                            + mText
+                            + "\n"
+                            + errorString;
+        }
+
+        assertTrue(errorMessage, errorString.length() == 0);
     }
 }
