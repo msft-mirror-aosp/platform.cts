@@ -214,11 +214,37 @@ public class WindowManagerState {
         mSanityCheckFocusedWindow = sanityCheckFocusedWindow;
     }
 
+    /** Return a retry reason if the retry should occur, null otherwise */
+    private String shouldRetry() {
+        if (mRootTasks.isEmpty()) {
+            return "No root tasks found";
+        }
+        if (mTopFocusedTaskId == -1) {
+            return "mTopFocusedTaskId == -1";
+        }
+        if (mWindowStates.isEmpty()) {
+            return "No windows found";
+        }
+        if (mFocusedApp == null) {
+            return "No focused app found";
+        }
+        if (mSanityCheckFocusedWindow && mFocusedWindow == null) {
+            return "No focused window found";
+        }
+        if (!mWindowFramesValid) {
+            return "Window frames not valid";
+        }
+        if ((mTopResumedActivityRecord == null || mResumedActivitiesInRootTasks.size() == 0)
+                && !mKeyguardControllerState.keyguardShowing) {
+            return "No resumed activity found and keyguard is not showing";
+        }
+        return null;
+    }
+
     public void computeState() {
         // It is possible the system is in the middle of transition to the right state when we get
         // the dump. We try a few times to get the information we need before giving up.
         int retriesLeft = 3;
-        boolean retry = false;
         byte[] dump = null;
 
         log("==============================");
@@ -226,12 +252,6 @@ public class WindowManagerState {
         log("==============================");
 
         do {
-            if (retry) {
-                log("***Incomplete AM state. Retrying...");
-                // Wait half a second between retries for activity manager to finish transitioning.
-                SystemClock.sleep(500);
-            }
-
             dump = executeShellCommand(DUMPSYS_WINDOW);
 
             try {
@@ -252,13 +272,16 @@ public class WindowManagerState {
                 }
             }
 
-            retry = mRootTasks.isEmpty() || mTopFocusedTaskId == -1 || mWindowStates.isEmpty()
-                    || mFocusedApp == null || (mSanityCheckFocusedWindow && mFocusedWindow == null)
-                    || !mWindowFramesValid
-                    || (mTopResumedActivityRecord == null
-                    || mResumedActivitiesInRootTasks.size() == 0)
-                    && !mKeyguardControllerState.keyguardShowing;
-        } while (retry && retriesLeft-- > 0);
+            final String retryReason = shouldRetry();
+            if (retryReason == null) {
+                break;
+            } else {
+
+                log("***Incomplete AM state. Sleeping and retrying. Reason: " + retryReason);
+                // Wait half a second between retries for activity manager to finish transitioning.
+                SystemClock.sleep(500);
+            }
+        } while (retriesLeft-- > 0);
 
         if (mRootTasks.isEmpty()) {
             logE("No root tasks found...");
