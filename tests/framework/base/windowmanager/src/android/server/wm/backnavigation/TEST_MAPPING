@@ -3,5 +3,10 @@
     {
       "name": "CtsWindowManagerDeviceBackNavigation"
     }
+  ],
+  "desktop-presubmit": [
+    {
+      "name": "CtsWindowManagerDeviceBackNavigation"
+    }
   ]
 }
