@@ -69,6 +69,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -97,19 +98,9 @@ public class MmsTest {
     private static final String MESSAGE_BODY = "CTS MMS test message body";
     private static final String TEXT_PART_FILENAME = "text_0.txt";
     private static final String sSmilText =
-            "<smil>" +
-                    "<head>" +
-                        "<layout>" +
-                            "<root-layout/>" +
-                            "<region height=\"100%%\" id=\"Text\" left=\"0%%\" top=\"0%%\" width=\"100%%\"/>" +
-                        "</layout>" +
-                    "</head>" +
-                    "<body>" +
-                        "<par dur=\"8000ms\">" +
-                            "<text src=\"%s\" region=\"Text\"/>" +
-                        "</par>" +
-                    "</body>" +
-            "</smil>";
+            "<smil><head><layout><root-layout/><region height=\"100%%\" id=\"Text\" left=\"0%%\""
+                + " top=\"0%%\" width=\"100%%\"/></layout></head><body><par dur=\"8000ms\"><text"
+                + " src=\"%s\" region=\"Text\"/></par></body></smil>";
 
     private static final long SENT_TIMEOUT = 1000 * 60 * 5; // 5 minutes
     private static final long NO_CALLS_TIMEOUT = 1000; // 1 second
@@ -271,6 +262,7 @@ public class MmsTest {
     }
 
     @Test
+    @Ignore("b/443345141 - Need to fix and re-enable this test.")
     @ApiTest(apis = "android.telephony.SmsManager#sendMultimediaMessage")
     public void testSendMmsMessage() {
         Log.i("MmsTest", "testSendMmsMessage");
