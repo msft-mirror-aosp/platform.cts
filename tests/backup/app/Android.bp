@@ -35,6 +35,7 @@ android_test_helper_app {
         "mts-permission",
     ],
     platform_apis: true,
+    resource_dirs: ["fullbackup/res"],
     manifest: "fullbackup/AndroidManifest.xml",
 }
 
