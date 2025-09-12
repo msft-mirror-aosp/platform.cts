@@ -190,19 +190,51 @@ public final class Utils {
      */
     public static int[] prepareMultipleUsers(ITestDevice device, int maxUsers)
             throws DeviceNotAvailableException {
+        return prepareMultipleUsers(device, maxUsers, false);
+    }
+
+    /**
+     * Prepare and return multiple full users relevant for testing.
+     */
+    public static int[] prepareMultipleFullUsers(ITestDevice device, int maxUsers)
+            throws DeviceNotAvailableException {
+        return prepareMultipleUsers(device, maxUsers, true);
+    }
+
+    /**
+     * Prepare and return multiple users relevant for testing. If {@code onlyFullUsers} is true,
+     * only full users will be prepared.
+     */
+    public static int[] prepareMultipleUsers(ITestDevice device, int maxUsers,
+            boolean onlyFullUsers) throws DeviceNotAvailableException {
+
+        if (maxUsers < 0) {
+            throw new AssertionError("Invalid negative values passed to maxUsers");
+        }
+
         final int[] userIds = getAllUsers(device);
         int currentUserId = device.getCurrentUser();
-        for (int i = 1; i < userIds.length; i++) {
-            if (i < maxUsers) {
-                device.startUser(userIds[i], true);
-            } else if (userIds[i] != currentUserId) {
-                device.stopUser(userIds[i], true, true);
+
+        final int[] preparedUserIds = new int[maxUsers];
+        int preparedUsersCount = 0;
+
+        for (int userId : userIds) {
+            if (onlyFullUsers && !isFullUser(device, userId)) {
+                continue;
+            }
+
+            if (preparedUsersCount < maxUsers) {
+                device.startUser(userId, true);
+                preparedUserIds[preparedUsersCount++] = userId;
+            } else if (userId != currentUserId) {
+                device.stopUser(userId, true, true);
             }
         }
-        if (userIds.length > maxUsers) {
-            return Arrays.copyOf(userIds, maxUsers);
+
+        if (preparedUsersCount < maxUsers) {
+            return Arrays.copyOf(preparedUserIds, preparedUsersCount);
         } else {
-            return userIds;
+            return preparedUserIds;
         }
     }
 
@@ -308,5 +340,10 @@ public final class Utils {
             output = output.trim();
         }
         return "1".equals(output);
+    }
+
+    private static boolean isFullUser(ITestDevice device, int userId)
+            throws DeviceNotAvailableException {
+        return !(device.isHeadlessSystemUserMode() && userId == USER_SYSTEM);
     }
 }

@@ -39,6 +39,7 @@ import com.android.tradefed.util.CommandResult;
 import com.android.tradefed.util.CommandStatus;
 
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -711,8 +712,14 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
         return result;
     }
 
-    private int[] prepareUsers(int users) throws DeviceNotAvailableException {
-        return Utils.prepareMultipleUsers(getDevice(), users);
+    private int[] prepareUsers(int count) throws DeviceNotAvailableException {
+        int[] preparedUsers = Utils.prepareMultipleFullUsers(getDevice(), count);
+
+        Assert.assertTrue(
+            String.format("Only %d users were prepared instead of %d", preparedUsers.length, count),
+            preparedUsers.length == count);
+
+        return preparedUsers;
     }
 
     private void assumeSupportsSecondaryUsers() {
