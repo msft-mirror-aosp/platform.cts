@@ -82,3 +82,12 @@ def start_its_test_activity(device_id):
   run(f'adb -s {device_id} shell am start -n '
       f'{ITS_TEST_ACTIVITY} --activity-brought-to-front '
       '--activity-reorder-to-front')
+
+
+def get_current_user(device_id):
+  """Returns the current user on the device."""
+  adb_command = 'am get-current-user'
+  output = run_adb_shell_command(
+      device_id, adb_command).stdout.decode('utf-8').strip()
+  logging.debug('Current user: %s', output)
+  return output

@@ -189,13 +189,13 @@ class PreviewStabilizationFoVTest(its_base_test.ItsBaseTest):
         stab_rec_obj = _collect_data(cam, preview_size, True)
 
         # Grab the unstabilized video from DUT
-        self.dut.adb.pull([ustab_rec_obj['recordedOutputPath'], log_path])
-        ustab_file_name = (ustab_rec_obj['recordedOutputPath'].split('/')[-1])
+        ustab_file_name = its_session_utils.pull_file_from_dut(
+            self.dut, ustab_rec_obj, log_path)
         logging.debug('ustab_file_name: %s', ustab_file_name)
 
         # Grab the stabilized video from DUT
-        self.dut.adb.pull([stab_rec_obj['recordedOutputPath'], log_path])
-        stab_file_name = (stab_rec_obj['recordedOutputPath'].split('/')[-1])
+        stab_file_name = its_session_utils.pull_file_from_dut(
+            self.dut, stab_rec_obj, log_path)
         logging.debug('stab_file_name: %s', stab_file_name)
 
         # Get all frames from the videos
