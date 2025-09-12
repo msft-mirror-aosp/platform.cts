@@ -301,8 +301,7 @@ public final class ConcurrentMultiUserTest {
 
     private void moveDriverDisplayToTop() throws Exception {
         float[] driverEditTextCenter = mActivity.getEditTextCenter();
-        SystemUtil.runShellCommand(
-                mUiAutomation,
+        SystemUtil.runShellCommandOrThrow(
                 String.format("input tap %f %f", driverEditTextCenter[0], driverEditTextCenter[1]));
     }
 
@@ -319,8 +318,7 @@ public final class ConcurrentMultiUserTest {
                 sendBundleAndWaitForReply(
                         TEST_ACTIVITY.getPackageName(), mPeerUserId, bundleToSend);
         final int passengerDisplayId = receivedBundle.getInt(KEY_DISPLAY_ID);
-        SystemUtil.runShellCommand(
-                mUiAutomation,
+        SystemUtil.runShellCommandOrThrow(
                 String.format(
                         "input -d %d tap %f %f",
                         passengerDisplayId,
@@ -341,8 +339,7 @@ public final class ConcurrentMultiUserTest {
 
         // Disable an IME for user1.
         InputMethodInfo imeToDisable = user1EnabledImeList.get(0);
-        SystemUtil.runShellCommand(
-                mUiAutomation,
+        SystemUtil.runShellCommandOrThrow(
                 "ime disable --user " + user1.getIdentifier() + " " + imeToDisable.getId());
         List<InputMethodInfo> user1EnabledImeList2 =
                 mInputMethodManager.getEnabledInputMethodListAsUser(user1);
@@ -367,8 +364,7 @@ public final class ConcurrentMultiUserTest {
                 .isTrue();
 
         // Enable the IME.
-        SystemUtil.runShellCommand(
-                mUiAutomation,
+        SystemUtil.runShellCommandOrThrow(
                 "ime enable --user " + user1.getIdentifier() + " " + imeToDisable.getId());
         List<InputMethodInfo> user1EnabledImeList3 =
                 mInputMethodManager.getEnabledInputMethodListAsUser(user1);
@@ -400,7 +396,7 @@ public final class ConcurrentMultiUserTest {
     private void setImeForUser(@NonNull UserHandle user1, @NonNull UserHandle user2)
             throws IOException {
         // Reset IME for user1.
-        SystemUtil.runShellCommand(mUiAutomation, "ime reset --user " + user1.getIdentifier());
+        SystemUtil.runShellCommandOrThrow("ime reset --user " + user1.getIdentifier());
 
         List<InputMethodInfo> user1EnabledImeList =
                 mInputMethodManager.getEnabledInputMethodListAsUser(user1);
@@ -415,8 +411,7 @@ public final class ConcurrentMultiUserTest {
                 anotherIme = info;
             }
         }
-        SystemUtil.runShellCommand(
-                mUiAutomation,
+        SystemUtil.runShellCommandOrThrow(
                 "ime set --user " + user1.getIdentifier() + " " + anotherIme.getId());
         InputMethodInfo user1Ime2 = mInputMethodManager.getCurrentInputMethodInfoAsUser(user1);
         InputMethodInfo user2Ime2 = mInputMethodManager.getCurrentInputMethodInfoAsUser(user2);
@@ -428,7 +423,7 @@ public final class ConcurrentMultiUserTest {
                 .isEqualTo(user2Ime);
 
         // Reset IME for user1.
-        SystemUtil.runShellCommand(mUiAutomation, "ime reset --user " + user1.getIdentifier());
+        SystemUtil.runShellCommandOrThrow("ime reset --user " + user1.getIdentifier());
         InputMethodInfo user1Ime3 = mInputMethodManager.getCurrentInputMethodInfoAsUser(user1);
         InputMethodInfo user2Ime3 = mInputMethodManager.getCurrentInputMethodInfoAsUser(user2);
         assertWithMessage("The current IME for user " + user1.getIdentifier() + " is wrong")
