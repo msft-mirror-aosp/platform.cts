@@ -6726,6 +6726,109 @@
                 android:value="android.hardware.type.watch" />
         </activity>
 
+        <activity android:name=".sharesheet.SharesheetInteractiveChooserActivity"
+            android:exported="true"
+            android:label="@string/sharesheet_interactive_chooser_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+
+            <meta-data
+                android:name="test_category"
+                android:value="@string/category_sharesheet" />
+            <meta-data
+                android:name="ApiTest"
+                android:value="android.service.chooser.ChooserManager#startSession
+                |android.service.chooser.ChooserManager#getSession
+                |android.service.chooser.ChooserSession#addStateListener
+                |android.service.chooser.ChooserSession#endSession
+                |android.service.chooser.ChooserSession#getToken
+                |android.service.chooser.ChooserSession.StateListener#onStateChanged
+                |android.service.chooser.ChooserSession.StateListener#onBoundsChanged" />
+            <meta-data android:name="display_mode" android:value="single_display_mode" />
+            <meta-data android:name="test_excluded_features"
+                android:value="android.hardware.type.watch|android.hardware.type.television|android.hardware.type.automotive" />
+        </activity>
+
+        <!-- aliases -->
+        <!-- The six SharesheetInteractiveChooserActivity activity aliases below are used as a predictable set of Chooser targets
+         for the test (i.e. the package manager will return at least 6 targets for this action and category pair).
+         The number of targets is a heuristic (based on the AOSP implementation) to possibly make Chooser be scrollable up. -->
+        <activity-alias
+            android:name=".sharesheet.InteractiveTestTarget1"
+            android:targetActivity=".sharesheet.SharesheetInteractiveChooserActivity"
+            android:enabled="true"
+            android:exported="true"
+            android:label="Target 1">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="com.android.cts.verifier.sharesheet.TEST_CATEGORY" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".sharesheet.InteractiveTestTarget2"
+            android:targetActivity=".sharesheet.SharesheetInteractiveChooserActivity"
+            android:enabled="true"
+            android:exported="true"
+            android:label="Target 2">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="com.android.cts.verifier.sharesheet.TEST_CATEGORY" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".sharesheet.InteractiveTestTarget3"
+            android:targetActivity=".sharesheet.SharesheetInteractiveChooserActivity"
+            android:enabled="true"
+            android:exported="true"
+            android:label="Target 3">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="com.android.cts.verifier.sharesheet.TEST_CATEGORY" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".sharesheet.InteractiveTestTarget4"
+            android:targetActivity=".sharesheet.SharesheetInteractiveChooserActivity"
+            android:enabled="true"
+            android:exported="true"
+            android:label="Target 4">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="com.android.cts.verifier.sharesheet.TEST_CATEGORY" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".sharesheet.InteractiveTestTarget5"
+            android:targetActivity=".sharesheet.SharesheetInteractiveChooserActivity"
+            android:enabled="true"
+            android:exported="true"
+            android:label="Target 5">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="com.android.cts.verifier.sharesheet.TEST_CATEGORY" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".sharesheet.InteractiveTestTarget6"
+            android:targetActivity=".sharesheet.SharesheetInteractiveChooserActivity"
+            android:enabled="true"
+            android:exported="true"
+            android:label="Target 6">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="com.android.cts.verifier.sharesheet.TEST_CATEGORY" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity-alias>
+        <!-- /aliases -->
+
         <provider
             android:authorities="com.android.cts.verifier.sharesheet.images"
             android:name=".sharesheet.SharesheetTestImageProvider"
