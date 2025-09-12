@@ -40,6 +40,15 @@ class AppHelper(
     fun disassociateAll() =
             runShellCommand("cmd companiondevice disassociate-all $userId $packageName")
 
+    fun setLocalMetadata(feature: String, key: String, value: String) =
+            runShellCommand("cmd companiondevice set-local-metadata $userId $feature $key $value")
+
+    fun getLocalMetadata(feature: String, key: String) =
+            runShellCommand("cmd companiondevice get-local-metadata $userId $feature $key").trim()
+
+    fun clearLocalMetadata() =
+            runShellCommand("cmd companiondevice clear-local-metadata $userId")
+
     fun isInstalled(): Boolean =
             runShellCommand("pm list packages --user $userId $packageName").isNotBlank()
 

@@ -29,6 +29,7 @@ import android.platform.test.annotations.AppModeFull
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -57,6 +58,31 @@ class BackupAndRestoreTest : CoreTestBase() {
 
         // Assert a non-null payload is generated
         assertNotNull(payload)
+    }
+
+    @Test
+    fun test_applyRestoredPayload_restoresLocalMetadata() {
+        // Set local metadata and back up
+        targetApp.clearLocalMetadata()
+        targetApp.setLocalMetadata("feat1", "key", "value")
+        targetApp.setLocalMetadata("feat2", "key", "value")
+        assertEquals("value", targetApp.getLocalMetadata("feat1", "key"))
+        assertEquals("value", targetApp.getLocalMetadata("feat2", "key"))
+        val payload = getBackupPayload(userId)
+
+        // Delete local metadata and set new metadata
+        targetApp.clearLocalMetadata()
+        targetApp.setLocalMetadata("feat2", "key", "value-new")
+        targetApp.setLocalMetadata("feat3", "key", "value")
+        assertEquals("", targetApp.getLocalMetadata("feat1", "key"))
+        assertEquals("value-new", targetApp.getLocalMetadata("feat2", "key"))
+        assertEquals("value", targetApp.getLocalMetadata("feat3", "key"))
+
+        // Assert that local metadata is restored without loss of existing metadata
+        applyRestoredPayload(payload, userId)
+        assertEquals("value", targetApp.getLocalMetadata("feat1", "key"))
+        assertEquals("value-new", targetApp.getLocalMetadata("feat2", "key"))
+        assertEquals("value", targetApp.getLocalMetadata("feat3", "key"))
     }
 
     @Test
