@@ -18,7 +18,9 @@ package android.photopicker.cts
 
 import android.content.Intent
 import android.content.res.AssetFileDescriptor
+import android.cts.photopicker.lib.LegacyPhotopickerOnly
 import android.cts.photopicker.lib.MediaType
+import android.cts.photopicker.lib.ModernPhotopickerOnly
 import android.cts.photopicker.lib.PhotoPickerTestRule
 import android.cts.photopicker.lib.TestMedia
 import android.cts.photopicker.lib.WithTestMedia
@@ -69,8 +71,39 @@ class PhotoPickerFileAccessTest {
 
     @Test
     @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
-    fun testPersistentGrant_withPickImages_succeeds() {
+    @LegacyPhotopickerOnly
+    fun testPersistentGrant_withPickImages_succeedsInLegacyPicker() {
         val resultFuture = photoPickerRule.launchPhotoPicker(Intent(MediaStore.ACTION_PICK_IMAGES))
+        photoPickerRule.selectItem(0)
+
+        val result = resultFuture.get(10, TimeUnit.SECONDS)
+        val uri = checkNotNull(result.getSelectedMedia().first())
+
+        assertCanTakePersistedGrant(uri)
+    }
+
+    @Test
+    @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
+    @ModernPhotopickerOnly
+    fun testPersistentGrant_withPickImages_succeedsInModernPicker() {
+        val resultFuture = photoPickerRule.launchPhotoPicker(Intent(MediaStore.ACTION_PICK_IMAGES))
+        photoPickerRule.selectItem(0)
+        photoPickerRule.confirmSelection()
+
+        val result = resultFuture.get(10, TimeUnit.SECONDS)
+        val uri = checkNotNull(result.getSelectedMedia().first())
+
+        assertCanTakePersistedGrant(uri)
+    }
+
+    // GET_CONTENT takeover requires a DeviceConfig override on S, so skip in CTS.
+    @SdkSuppress(excludedSdks = [Build.VERSION_CODES.S, Build.VERSION_CODES.S_V2])
+    @Test
+    @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
+    @LegacyPhotopickerOnly
+    fun testPersistentGrant_withGetContent_succeedsInLegacyPicker() {
+        val intent = Intent(Intent.ACTION_GET_CONTENT).setType("image/*")
+        val resultFuture = photoPickerRule.launchPhotoPicker(intent)
         photoPickerRule.selectItem(0)
 
         val result = resultFuture.get(10, TimeUnit.SECONDS)
@@ -83,10 +116,12 @@ class PhotoPickerFileAccessTest {
     @SdkSuppress(excludedSdks = [Build.VERSION_CODES.S, Build.VERSION_CODES.S_V2])
     @Test
     @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
-    fun testPersistentGrant_withGetContent_succeeds() {
+    @ModernPhotopickerOnly
+    fun testPersistentGrant_withGetContent_succeedsInModernPicker() {
         val intent = Intent(Intent.ACTION_GET_CONTENT).setType("image/*")
         val resultFuture = photoPickerRule.launchPhotoPicker(intent)
         photoPickerRule.selectItem(0)
+        photoPickerRule.confirmSelection()
 
         val result = resultFuture.get(10, TimeUnit.SECONDS)
         val uri = checkNotNull(result.getSelectedMedia().first())
@@ -97,8 +132,57 @@ class PhotoPickerFileAccessTest {
     @Test
     @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
-    fun testMediaStoreOpenFile_withPickImages_succeeds() {
+    @LegacyPhotopickerOnly
+    fun testMediaStoreOpenFile_withPickImages_succeedsInLegacyPicker() {
         val resultFuture = photoPickerRule.launchPhotoPicker(Intent(MediaStore.ACTION_PICK_IMAGES))
+        photoPickerRule.selectItem(0)
+
+        val result = resultFuture.get(10, TimeUnit.SECONDS)
+        val uri = checkNotNull(result.getSelectedMedia().first())
+
+        val resolver = photoPickerRule.activity.contentResolver
+        resolver.openFileDescriptor(uri, "r", CancellationSignal()).use { pfd1 ->
+            MediaStore.openFileDescriptor(resolver, uri, "r", CancellationSignal()).use { pfd2 ->
+                val size1 = Os.fstat(pfd1?.fileDescriptor).st_size
+                val size2 = Os.fstat(pfd2?.fileDescriptor).st_size
+                assertThat(size1).isEqualTo(size2)
+                assertThat(size1).isGreaterThan(0)
+            }
+        }
+    }
+
+    @Test
+    @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
+    @ModernPhotopickerOnly
+    fun testMediaStoreOpenFile_withPickImages_succeedsInModernPicker() {
+        val resultFuture = photoPickerRule.launchPhotoPicker(Intent(MediaStore.ACTION_PICK_IMAGES))
+        photoPickerRule.selectItem(0)
+        photoPickerRule.confirmSelection()
+
+        val result = resultFuture.get(10, TimeUnit.SECONDS)
+        val uri = checkNotNull(result.getSelectedMedia().first())
+
+        val resolver = photoPickerRule.activity.contentResolver
+        resolver.openFileDescriptor(uri, "r", CancellationSignal()).use { pfd1 ->
+            MediaStore.openFileDescriptor(resolver, uri, "r", CancellationSignal()).use { pfd2 ->
+                val size1 = Os.fstat(pfd1?.fileDescriptor).st_size
+                val size2 = Os.fstat(pfd2?.fileDescriptor).st_size
+                assertThat(size1).isEqualTo(size2)
+                assertThat(size1).isGreaterThan(0)
+            }
+        }
+    }
+
+    // GET_CONTENT takeover requires a DeviceConfig override on S, so skip in CTS.
+    @SdkSuppress(excludedSdks = [Build.VERSION_CODES.S, Build.VERSION_CODES.S_V2])
+    @Test
+    @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
+    @LegacyPhotopickerOnly
+    fun testMediaStoreOpenFile_withGetContent_succeedsInLegacyPicker() {
+        val intent = Intent(Intent.ACTION_GET_CONTENT).setType("image/*")
+        val resultFuture = photoPickerRule.launchPhotoPicker(intent)
         photoPickerRule.selectItem(0)
 
         val result = resultFuture.get(10, TimeUnit.SECONDS)
@@ -120,10 +204,12 @@ class PhotoPickerFileAccessTest {
     @Test
     @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
-    fun testMediaStoreOpenFile_withGetContent_succeeds() {
+    @ModernPhotopickerOnly
+    fun testMediaStoreOpenFile_withGetContent_succeedsInModernPicker() {
         val intent = Intent(Intent.ACTION_GET_CONTENT).setType("image/*")
         val resultFuture = photoPickerRule.launchPhotoPicker(intent)
         photoPickerRule.selectItem(0)
+        photoPickerRule.confirmSelection()
 
         val result = resultFuture.get(10, TimeUnit.SECONDS)
         val uri = checkNotNull(result.getSelectedMedia().first())
@@ -142,8 +228,57 @@ class PhotoPickerFileAccessTest {
     @Test
     @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
-    fun testMediaStoreOpenAssetFile_withPickImages_succeeds() {
+    @LegacyPhotopickerOnly
+    fun testMediaStoreOpenAssetFile_withPickImages_succeedsInLegacyPicker() {
         val resultFuture = photoPickerRule.launchPhotoPicker(Intent(MediaStore.ACTION_PICK_IMAGES))
+        photoPickerRule.selectItem(0)
+
+        val result = resultFuture.get(10, TimeUnit.SECONDS)
+        val uri = checkNotNull(result.getSelectedMedia().first())
+
+        val resolver = photoPickerRule.activity.contentResolver
+        resolver.openAssetFileDescriptor(uri, "r", CancellationSignal()).use {
+            afd1: AssetFileDescriptor? ->
+            MediaStore.openAssetFileDescriptor(resolver, uri, "r", CancellationSignal()).use {
+                afd2: AssetFileDescriptor? ->
+                assertThat(afd1?.length).isEqualTo(afd2?.length)
+                assertThat(afd1?.length).isGreaterThan(0)
+            }
+        }
+    }
+
+    @Test
+    @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
+    @ModernPhotopickerOnly
+    fun testMediaStoreOpenAssetFile_withPickImages_succeedsInModernPicker() {
+        val resultFuture = photoPickerRule.launchPhotoPicker(Intent(MediaStore.ACTION_PICK_IMAGES))
+        photoPickerRule.selectItem(0)
+        photoPickerRule.confirmSelection()
+
+        val result = resultFuture.get(10, TimeUnit.SECONDS)
+        val uri = checkNotNull(result.getSelectedMedia().first())
+
+        val resolver = photoPickerRule.activity.contentResolver
+        resolver.openAssetFileDescriptor(uri, "r", CancellationSignal()).use {
+            afd1: AssetFileDescriptor? ->
+            MediaStore.openAssetFileDescriptor(resolver, uri, "r", CancellationSignal()).use {
+                afd2: AssetFileDescriptor? ->
+                assertThat(afd1?.length).isEqualTo(afd2?.length)
+                assertThat(afd1?.length).isGreaterThan(0)
+            }
+        }
+    }
+
+    // GET_CONTENT takeover requires a DeviceConfig override on S, so skip in CTS.
+    @SdkSuppress(excludedSdks = [Build.VERSION_CODES.S, Build.VERSION_CODES.S_V2])
+    @Test
+    @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
+    @LegacyPhotopickerOnly
+    fun testMediaStoreOpenAssetFile_withGetContent_succeedsInLegacyPicker() {
+        val intent = Intent(Intent.ACTION_GET_CONTENT).setType("image/*")
+        val resultFuture = photoPickerRule.launchPhotoPicker(intent)
         photoPickerRule.selectItem(0)
 
         val result = resultFuture.get(10, TimeUnit.SECONDS)
@@ -165,10 +300,12 @@ class PhotoPickerFileAccessTest {
     @Test
     @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
-    fun testMediaStoreOpenAssetFile_withGetContent_succeeds() {
+    @ModernPhotopickerOnly
+    fun testMediaStoreOpenAssetFile_withGetContent_succeedsInModernPicker() {
         val intent = Intent(Intent.ACTION_GET_CONTENT).setType("image/*")
         val resultFuture = photoPickerRule.launchPhotoPicker(intent)
         photoPickerRule.selectItem(0)
+        photoPickerRule.confirmSelection()
 
         val result = resultFuture.get(10, TimeUnit.SECONDS)
         val uri = checkNotNull(result.getSelectedMedia().first())
@@ -187,9 +324,39 @@ class PhotoPickerFileAccessTest {
     @Test
     @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
-    fun testMediaStoreOpenTypedAssetFile_withPickImages_succeeds() {
+    @LegacyPhotopickerOnly
+    fun testMediaStoreOpenTypedAssetFile_withPickImages_succeedsInLegacyPicker() {
         val resultFuture = photoPickerRule.launchPhotoPicker(Intent(MediaStore.ACTION_PICK_IMAGES))
         photoPickerRule.selectItem(0)
+
+        val result = resultFuture.get(10, TimeUnit.SECONDS)
+        val uri = checkNotNull(result.getSelectedMedia().first())
+
+        val resolver = photoPickerRule.activity.contentResolver
+        resolver.openTypedAssetFileDescriptor(uri, "*/*", null, CancellationSignal()).use {
+            afd1: AssetFileDescriptor? ->
+            MediaStore.openTypedAssetFileDescriptor(
+                    resolver,
+                    uri,
+                    "*/*",
+                    null,
+                    CancellationSignal(),
+                )
+                .use { afd2: AssetFileDescriptor? ->
+                    assertThat(afd1?.length).isEqualTo(afd2?.length)
+                    assertThat(afd1?.length).isGreaterThan(0)
+                }
+        }
+    }
+
+    @Test
+    @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
+    @ModernPhotopickerOnly
+    fun testMediaStoreOpenTypedAssetFile_withPickImages_succeedsInModernPicker() {
+        val resultFuture = photoPickerRule.launchPhotoPicker(Intent(MediaStore.ACTION_PICK_IMAGES))
+        photoPickerRule.selectItem(0)
+        photoPickerRule.confirmSelection()
 
         val result = resultFuture.get(10, TimeUnit.SECONDS)
         val uri = checkNotNull(result.getSelectedMedia().first())
@@ -216,7 +383,8 @@ class PhotoPickerFileAccessTest {
     @Test
     @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
-    fun testMediaStoreOpenTypedAssetFile_withGetContent_succeeds() {
+    @LegacyPhotopickerOnly
+    fun testMediaStoreOpenTypedAssetFile_withGetContent_succeedsInLegacyPicker() {
         val intent = Intent(Intent.ACTION_GET_CONTENT).setType("image/*")
         val resultFuture = photoPickerRule.launchPhotoPicker(intent)
         photoPickerRule.selectItem(0)
@@ -240,10 +408,72 @@ class PhotoPickerFileAccessTest {
         }
     }
 
+    // GET_CONTENT takeover requires a DeviceConfig override on S, so skip in CTS.
+    @SdkSuppress(excludedSdks = [Build.VERSION_CODES.S, Build.VERSION_CODES.S_V2])
     @Test
     @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
-    fun testLocationMetadataRedacted_withPickImages_succeeds() {
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
+    @ModernPhotopickerOnly
+    fun testMediaStoreOpenTypedAssetFile_withGetContent_succeedsInModernPicker() {
+        val intent = Intent(Intent.ACTION_GET_CONTENT).setType("image/*")
+        val resultFuture = photoPickerRule.launchPhotoPicker(intent)
+        photoPickerRule.selectItem(0)
+        photoPickerRule.confirmSelection()
+
+        val result = resultFuture.get(10, TimeUnit.SECONDS)
+        val uri = checkNotNull(result.getSelectedMedia().first())
+
+        val resolver = photoPickerRule.activity.contentResolver
+        resolver.openTypedAssetFileDescriptor(uri, "*/*", null, CancellationSignal()).use { afd1 ->
+            MediaStore.openTypedAssetFileDescriptor(
+                    resolver,
+                    uri,
+                    "*/*",
+                    null,
+                    CancellationSignal(),
+                )
+                .use { afd2 ->
+                    assertThat(afd1?.length).isEqualTo(afd2?.length)
+                    assertThat(afd1?.length).isGreaterThan(0)
+                }
+        }
+    }
+
+    @Test
+    @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
+    @LegacyPhotopickerOnly
+    fun testLocationMetadataRedacted_withPickImages_succeedsInLegacyPicker() {
         val resultFuture = photoPickerRule.launchPhotoPicker(Intent(MediaStore.ACTION_PICK_IMAGES))
+        photoPickerRule.selectItem(0)
+
+        val result = resultFuture.get(10, TimeUnit.SECONDS)
+        val uri = checkNotNull(result.getSelectedMedia().first())
+
+        assertLocationMetadataIsRedacted(uri)
+    }
+
+    @Test
+    @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
+    @ModernPhotopickerOnly
+    fun testLocationMetadataRedacted_withPickImages_succeedsInModernPicker() {
+        val resultFuture = photoPickerRule.launchPhotoPicker(Intent(MediaStore.ACTION_PICK_IMAGES))
+        photoPickerRule.selectItem(0)
+        photoPickerRule.confirmSelection()
+
+        val result = resultFuture.get(10, TimeUnit.SECONDS)
+        val uri = checkNotNull(result.getSelectedMedia().first())
+
+        assertLocationMetadataIsRedacted(uri)
+    }
+
+    // GET_CONTENT takeover requires a DeviceConfig override on S, so skip in CTS.
+    @SdkSuppress(excludedSdks = [Build.VERSION_CODES.S, Build.VERSION_CODES.S_V2])
+    @Test
+    @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
+    @LegacyPhotopickerOnly
+    fun testLocationMetadataRedacted_withGetContent_succeedsInLegacyPicker() {
+        val intent = Intent(Intent.ACTION_GET_CONTENT).setType("image/*")
+        val resultFuture = photoPickerRule.launchPhotoPicker(intent)
         photoPickerRule.selectItem(0)
 
         val result = resultFuture.get(10, TimeUnit.SECONDS)
@@ -256,10 +486,12 @@ class PhotoPickerFileAccessTest {
     @SdkSuppress(excludedSdks = [Build.VERSION_CODES.S, Build.VERSION_CODES.S_V2])
     @Test
     @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
-    fun testLocationMetadataRedacted_withGetContent_succeeds() {
+    @ModernPhotopickerOnly
+    fun testLocationMetadataRedacted_withGetContent_succeedsInModernPicker() {
         val intent = Intent(Intent.ACTION_GET_CONTENT).setType("image/*")
         val resultFuture = photoPickerRule.launchPhotoPicker(intent)
         photoPickerRule.selectItem(0)
+        photoPickerRule.confirmSelection()
 
         val result = resultFuture.get(10, TimeUnit.SECONDS)
         val uri = checkNotNull(result.getSelectedMedia().first())
@@ -270,8 +502,41 @@ class PhotoPickerFileAccessTest {
     @Test
     @WithTestMedia(media = [TestMedia(type = MediaType.VIDEO)])
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
-    fun testVideoLocationMetadataRedacted_withPickImages_succeeds() {
+    @LegacyPhotopickerOnly
+    fun testVideoLocationMetadataRedacted_withPickImages_succeedsInLegacyPicker() {
         val resultFuture = photoPickerRule.launchPhotoPicker(Intent(MediaStore.ACTION_PICK_IMAGES))
+        photoPickerRule.selectItem(0)
+
+        val result = resultFuture.get(10, TimeUnit.SECONDS)
+        val uri = checkNotNull(result.getSelectedMedia().first())
+
+        assertVideoLocationMetadataIsRedacted(uri)
+    }
+
+    @Test
+    @WithTestMedia(media = [TestMedia(type = MediaType.VIDEO)])
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
+    @ModernPhotopickerOnly
+    fun testVideoLocationMetadataRedacted_withPickImages_succeedsInModernPicker() {
+        val resultFuture = photoPickerRule.launchPhotoPicker(Intent(MediaStore.ACTION_PICK_IMAGES))
+        photoPickerRule.selectItem(0)
+        photoPickerRule.confirmSelection()
+
+        val result = resultFuture.get(10, TimeUnit.SECONDS)
+        val uri = checkNotNull(result.getSelectedMedia().first())
+
+        assertVideoLocationMetadataIsRedacted(uri)
+    }
+
+    // GET_CONTENT takeover requires a DeviceConfig override on S, so skip in CTS.
+    @SdkSuppress(excludedSdks = [Build.VERSION_CODES.S, Build.VERSION_CODES.S_V2])
+    @Test
+    @WithTestMedia(media = [TestMedia(type = MediaType.VIDEO)])
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
+    @LegacyPhotopickerOnly
+    fun testVideoLocationMetadataRedacted_withGetContent_succeedsInLegacyPicker() {
+        val intent = Intent(Intent.ACTION_GET_CONTENT).setType("video/*")
+        val resultFuture = photoPickerRule.launchPhotoPicker(intent)
         photoPickerRule.selectItem(0)
 
         val result = resultFuture.get(10, TimeUnit.SECONDS)
@@ -285,10 +550,12 @@ class PhotoPickerFileAccessTest {
     @Test
     @WithTestMedia(media = [TestMedia(type = MediaType.VIDEO)])
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
-    fun testVideoLocationMetadataRedacted_withGetContent_succeeds() {
+    @ModernPhotopickerOnly
+    fun testVideoLocationMetadataRedacted_withGetContent_succeedsInModernPicker() {
         val intent = Intent(Intent.ACTION_GET_CONTENT).setType("video/*")
         val resultFuture = photoPickerRule.launchPhotoPicker(intent)
         photoPickerRule.selectItem(0)
+        photoPickerRule.confirmSelection()
 
         val result = resultFuture.get(10, TimeUnit.SECONDS)
         val uri = checkNotNull(result.getSelectedMedia().first())
