@@ -88,8 +88,8 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
                       preview_recording_obj['recordedOutputPath'])
 
         # Grab and rename the preview recordings from the save location on DUT
-        self.dut.adb.pull(
-            [preview_recording_obj['recordedOutputPath'], log_path])
+        its_session_utils.pull_file_from_dut(
+            self.dut, preview_recording_obj, log_path)
         preview_file_name = (
             preview_recording_obj['recordedOutputPath'].split('/')[-1])
         logging.debug('recorded preview name: %s', preview_file_name)
@@ -119,8 +119,8 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
                       video_recording_obj['recordedOutputPath'])
 
         # Grab and rename the video recordings from the save location on DUT
-        self.dut.adb.pull(
-            [video_recording_obj['recordedOutputPath'], log_path])
+        its_session_utils.pull_file_from_dut(
+            self.dut, video_recording_obj, log_path)
         video_file_name = (
             video_recording_obj['recordedOutputPath'].split('/')[-1])
         logging.debug('recorded video name: %s', video_file_name)

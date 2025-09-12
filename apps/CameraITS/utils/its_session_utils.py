@@ -132,6 +132,7 @@ _VALIDATE_LIGHTING_MACRO_FOV_THRESH = 110
 _VALIDATE_LIGHTING_THRESH = 0.05  # Determined empirically from scene[1:6] tests
 _VALIDATE_LIGHTING_THRESH_DARK = 0.3  # Determined empirically for night test
 _CMD_NAME_STR = 'cmdName'
+_CONTENT_URI_STR = 'contentUri'
 _OBJ_VALUE_STR = 'objValue'
 _STR_VALUE_STR = 'strValue'
 _TAG_STR = 'tag'
@@ -3284,19 +3285,34 @@ def raise_not_yet_mandated_error(message, api_level, mandated_api_level):
     raise AssertionError(f'{NOT_YET_MANDATED_MESSAGE}\n\n{message}')
 
 
-def pull_file_from_dut(dut, dut_path, log_folder):
+def pull_file_from_dut(dut, recording_obj, log_folder):
   """Pulls and returns file from dut and return file name.
 
   Args:
     dut: device under test
-    dut_path: pull file from this path
+    recording_obj: recording object sent by ItsService over socket.
     log_folder: store pulled file to this folder
 
   Returns:
     filename of file pulled from dut
   """
-  dut.adb.pull([dut_path, log_folder])
-  file_name = (dut_path.split('/')[-1])
+  dut_path = recording_obj['recordedOutputPath']
+  file_name = dut_path.split('/')[-1]
+  file_path_on_host = os.path.join(log_folder, file_name)
+  try:
+    dut.adb.pull([dut_path, log_folder])
+  except adb.AdbError as e:
+    # handle HSUM issues by reading the file directly from the content provider
+    if (
+        _CONTENT_URI_STR not in recording_obj or
+        not recording_obj[_CONTENT_URI_STR]):
+      raise AssertionError('No contentUri found in recording object') from e
+    current_user_id = its_device_utils.get_current_user(dut.serial)
+    dut.adb.shell(
+        f'content read --uri {recording_obj[_CONTENT_URI_STR]} '
+        f'--user {current_user_id} > {file_path_on_host}',
+        shell=True,
+    )
   logging.debug('%s pulled from dut', file_name)
   return file_name
 

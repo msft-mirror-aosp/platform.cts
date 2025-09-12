@@ -223,9 +223,8 @@ class PreviewAspectRatioAndCropTest(its_base_test.ItsBaseTest):
         preview_rec_obj = _collect_data(cam, preview_size)
 
         # Grab the recording from DUT
-        self.dut.adb.pull([preview_rec_obj['recordedOutputPath'], log_path])
-        preview_file_name = (
-            preview_rec_obj['recordedOutputPath'].split('/')[-1])
+        preview_file_name = its_session_utils.pull_file_from_dut(
+            self.dut, preview_rec_obj, log_path)
         logging.debug('preview_file_name: %s', preview_file_name)
         preview_size = preview_rec_obj['videoSize']
         width = int(preview_size.split('x')[0])
