@@ -115,6 +115,7 @@ final class DevicePolicyManagerWrapper
             doAnswer(answer).when(spy).removeUser(any(), any());
             doAnswer(answer).when(spy).setMinimumRequiredWifiSecurityLevel(anyInt());
             doAnswer(answer).when(spy).setWifiSsidPolicy(any());
+            doAnswer(answer).when(spy).setUsbDataSignalingEnabled(anyBoolean());
 
             // Used by DevicePolicySafetyCheckerIntegrationTest
             doAnswer(answer).when(spy).createAndManageUser(any(), any(), any(), any(), anyInt());
