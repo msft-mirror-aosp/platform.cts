@@ -75,15 +75,6 @@ public final class NetworkingTest extends CtsVerifierTest {
     @Interactive
     @Test
     // SingleDisplayMode
-    public void P2pTest() throws Exception {
-        requireFeatures("android.hardware.wifi.direct");
-
-        runTest(".p2p.P2pTestListActivity");
-    }
-
-    @Interactive
-    @Test
-    // SingleDisplayMode
     public void WifiTest() throws Exception {
         // This test could potentially be split up into sub-tests for calling directly
         requireFeatures("android.hardware.wifi");
