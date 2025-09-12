@@ -27,9 +27,11 @@ import android.app.appfunctions.AppFunctionManager.ACCESS_FLAG_USER_GRANTED
 import android.app.appfunctions.AppFunctionManager.ACCESS_REQUEST_STATE_DENIED
 import android.app.appfunctions.AppFunctionManager.ACCESS_REQUEST_STATE_GRANTED
 import android.app.appfunctions.AppFunctionManager.ACCESS_REQUEST_STATE_UNREQUESTABLE
+import android.app.appfunctions.AppFunctionManager.ACTION_REQUEST_APP_FUNCTION_ACCESS
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.permission.flags.Flags
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
@@ -39,7 +41,11 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.compatibility.common.util.ApiTest
 import com.android.compatibility.common.util.ShellUtils.runShellCommand
 import com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity
+import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.google.common.truth.Truth.assertWithMessage
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executor
+import java.util.concurrent.TimeUnit
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking
@@ -99,8 +105,8 @@ class AppFunctionAccessTest {
                     appFunctionManager.agentAllowlist.map { it.packageName }
                 }
                 assertTrue(
-                    "allowlist was $allowlist, searched for $testAgentPackageName, expected to find: " +
-                        shouldContain
+                    "allowlist was $allowlist, searched for $testAgentPackageName, " +
+                            "expected to find: " + shouldContain
                 ) {
                     allowlist.any { it == testAgentPackageName } == shouldContain
                 }
@@ -333,6 +339,50 @@ class AppFunctionAccessTest {
         }
     }
 
+    @ApiTest(
+        apis = [
+        "android.app.appfunctions.AppFunctionManager#addAccessListener",
+        "android.app.appfunctions.AppFunctionManager#removeAccessListener"
+    ]
+    )
+    @Test
+    @Throws(PackageManager.NameNotFoundException::class)
+    fun addAndRemoveAccessListener_listenerRespondsToUpdates() {
+        val latch = CountDownLatch(1)
+        val latch2 = CountDownLatch(1)
+        val listener = AppFunctionManager.OnAppFunctionAccessChangedListener { aUid ->
+            if (aUid == android.os.Process.myUid()) {
+                if (latch.count != 0L) {
+                    latch.countDown()
+                } else {
+                    latch2.countDown()
+                }
+            }
+        }
+        try {
+            val executor = Executor { it.run() }
+            runWithShellPermissionIdentity {
+                appFunctionManager.addAccessChangedListener(executor, listener)
+            }
+            setAppFunctionFlags(ACCESS_FLAG_USER_GRANTED, context.packageName, TARGET_PKG_NAME)
+            assertWithMessage(
+                "Expected to get callback"
+            ).that(latch.await(LATCH_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isEqualTo(true)
+            runWithShellPermissionIdentity {
+                appFunctionManager.removeAccessChangedListener(listener)
+            }
+            setAppFunctionFlags(0, context.packageName, TARGET_PKG_NAME)
+            assertWithMessage(
+                "Expected latch to time out waiting for a callback after removing the callback"
+            ).that(latch2.await(LATCH_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isEqualTo(false)
+        } finally {
+            // Even if we fail an assertion above, remove the listener
+            runWithShellPermissionIdentity {
+                appFunctionManager.removeAccessChangedListener(listener)
+            }
+        }
+    }
+
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#revokeSelfAccess"])
     @Test
     fun revokeSelfAccess_appliesOtherDeniedFlag() {
@@ -430,10 +480,10 @@ class AppFunctionAccessTest {
         val testPkgName = "com.android.test"
         val intent = appFunctionManager.createRequestAccessIntent(testPkgName)
         assertWithMessage(
-                "Expected intent action to be ${AppFunctionManager.ACTION_REQUEST_APP_FUNCTION_ACCESS}"
+                "Expected intent action to be ${ACTION_REQUEST_APP_FUNCTION_ACCESS}"
             )
             .that(intent.action)
-            .isEqualTo(AppFunctionManager.ACTION_REQUEST_APP_FUNCTION_ACCESS)
+            .isEqualTo(ACTION_REQUEST_APP_FUNCTION_ACCESS)
         assertWithMessage("Expected targetPackage to be included in intent")
             .that(intent.getStringExtra(Intent.EXTRA_PACKAGE_NAME))
             .isEqualTo(testPkgName)
@@ -474,5 +524,7 @@ class AppFunctionAccessTest {
         const val SLEEP_TIME_MS = 25L
 
         const val MAX_UPDATE_ATTEMPTS = 10000L / SLEEP_TIME_MS
+
+        const val LATCH_TIMEOUT_MS = 2000L
     }
 }
