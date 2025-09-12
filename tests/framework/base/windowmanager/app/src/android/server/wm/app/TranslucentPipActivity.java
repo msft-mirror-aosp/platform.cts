@@ -11,16 +11,15 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License
+ * limitations under the License.
  */
 
 package android.server.wm.app;
 
-public class LaunchIntoPinnedStackPipActivity extends PipActivity {
+public class TranslucentPipActivity extends PipActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        AlwaysFocusablePipActivity.launchAlwaysFocusablePipActivity(this, true /* newTask */,
-                true /* multiTask */);
+        enterPictureInPictureMode();
     }
 }
