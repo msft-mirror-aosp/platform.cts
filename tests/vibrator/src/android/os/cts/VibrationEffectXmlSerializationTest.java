@@ -1488,16 +1488,6 @@ public class VibrationEffectXmlSerializationTest {
                         VibrationEffect.get(VibrationEffect.EFFECT_TEXTURE_TICK),
                         writer));
         assertThat(writer.toString()).isEmpty();
-
-        // Composition with non-primitive segments
-        assertThrows(VibrationXmlSerializer.SerializationFailedException.class,
-                () -> VibrationXmlSerializer.serialize(
-                        VibrationEffect.startComposition()
-                                .addPrimitive(PRIMITIVE_CLICK)
-                                .addEffect(VibrationEffect.createPredefined(EFFECT_CLICK))
-                                .compose(),
-                        writer));
-        assertThat(writer.toString()).isEmpty();
     }
 
     @SuppressWarnings("unused") // Used in tests with @Parameters
