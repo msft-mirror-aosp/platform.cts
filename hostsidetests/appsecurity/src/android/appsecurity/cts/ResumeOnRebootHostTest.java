@@ -24,6 +24,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
@@ -104,6 +105,7 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
     public void setUp() throws Exception {
         assertNotNull(getAbi());
         assertNotNull(getBuild());
+        assertTrue("Resume on reboot needs network connectivity", getDevice().checkConnectivity());
 
         mSupportsSecondaryUsers =
                 getDevice().getMaxNumberOfUsersSupported("android.os.usertype.full.SECONDARY") > 0;
@@ -219,8 +221,6 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
             runDeviceTestsAsUser("testVerifyLockedAndDismiss", secondaryUser);
         } finally {
             runTestTearDownForUsers(users);
-            switchUser(initialUser);
-
             deviceClearLskf();
         }
     }
@@ -269,8 +269,6 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
             runDeviceTestsAsUser("testVerifyUnlockedAndDismiss", secondaryUser);
         } finally {
             runTestTearDownForUsers(users);
-            switchUser(initialUser);
-
             deviceClearLskf();
         }
     }
@@ -611,20 +609,22 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
     }
 
     private void runTestTearDownForUsers(int[] userIds) throws Exception {
-        int rebootUserId = getDevice().getCurrentUser();
+        int initialUserId = getDevice().getCurrentUser();
 
         // Unlock the screen for the current user first because the switching to another one while
         // the current user is still locked may fail.
-        runDeviceTestsAsUser("testTearDown", rebootUserId);
+        runDeviceTestsAsUser("testTearDown", initialUserId);
 
         for (int userId : userIds) {
-            if (userId == rebootUserId) {
+            if (userId == initialUserId) {
                 continue;
             }
 
             switchUser(userId);
             runDeviceTestsAsUser("testTearDown", userId);
         }
+
+        switchUser(initialUserId);
     }
 
     private boolean isSupportedSDevice() throws Exception {
