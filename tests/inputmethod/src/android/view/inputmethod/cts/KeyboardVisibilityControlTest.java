@@ -1931,6 +1931,10 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             + "UinputKeyboard to send KeyEvents to specific displays.")
     @Test
     public void testImeHiddenWhenImeLayeringTargetDelayedToShowInAppSwitch() throws Exception {
+        // In Automotive multi-window environment, the IME is linked to the display, not the
+        // activity, making this test inapplicable.
+        assumeFalse(isAutomotiveScalableUI());
+
         assumeTrue(hasRecentsScreen());
 
         try (MockImeSession imeSession = MockImeSession.create(

@@ -28,6 +28,8 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -78,9 +80,11 @@ import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
 import android.media.MediaRecorder;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.ConditionVariable;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -126,7 +130,10 @@ import org.junit.runner.Result;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.ServerSocket;
@@ -1279,6 +1286,9 @@ public class ItsService extends Service implements SensorEventListener {
             try {
                 JSONObject videoJson = new JSONObject();
                 videoJson.put("recordedOutputPath", obj.recordedOutputPath);
+                // copy file in the path to a content URI for HSUM
+                Uri destinationUri = getOutputMediaUri(obj.recordedOutputPath);
+                videoJson.put("contentUri", destinationUri.toString());
                 videoJson.put("quality", obj.quality);
                 if (obj.isFrameRateValid()) {
                     videoJson.put("videoFrameRate", obj.videoFrameRate);
@@ -1297,6 +1307,8 @@ public class ItsService extends Service implements SensorEventListener {
                 sendResponse("recordingResponse", null, videoJson, null);
             } catch (org.json.JSONException e) {
                 throw new ItsException("JSON error: ", e);
+            } catch (IOException e) {
+                throw new ItsException("IO error: ", e);
             }
         }
 
@@ -3960,6 +3972,40 @@ public class ItsService extends Service implements SensorEventListener {
 
         File mediaFile = new File(fileName);
         return mediaFile + fileExtension;
+    }
+
+    private Uri getOutputMediaUri(String recordedOutputPath) throws IOException {
+        ContentResolver resolver = getContentResolver();
+        ContentValues values = new ContentValues();
+        File recordedOutputFile = new File(recordedOutputPath);
+        String fileName = recordedOutputFile.getName();
+        String mimeType = "video/mp4";
+        if (fileName.endsWith(".3gp")) {
+            mimeType = "video/3gpp";
+        } else if (fileName.endsWith(".webm")) {
+            mimeType = "video/webm";
+        }
+        values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
+        values.put(MediaStore.MediaColumns.MIME_TYPE, mimeType);
+        values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+        Uri destinationUri = resolver.insert(
+                MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+        if (destinationUri == null) {
+            throw new IOException("Failed to create new MediaStore record.");
+        }
+        try (InputStream in = new FileInputStream(recordedOutputPath);
+                OutputStream out = resolver.openOutputStream(destinationUri)) {
+            if (out == null) {
+                throw new IOException("Failed to open output stream for " + destinationUri);
+            }
+            // Copy the file contents
+            byte[] buf = new byte[1024];
+            int len;
+            while ((len = in.read(buf)) > 0) {
+                out.write(buf, 0, len);
+            }
+        }
+        return destinationUri;
     }
 
     private void doCaptureWithFlash(JSONObject params) throws ItsException {

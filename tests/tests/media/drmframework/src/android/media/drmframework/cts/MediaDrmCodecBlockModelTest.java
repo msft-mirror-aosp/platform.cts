@@ -16,6 +16,8 @@
 
 package android.media.drmframework.cts;
 
+import static android.mediav2.common.cts.CodecTestBase.IS_AFTER_B;
+
 import static org.junit.Assume.assumeTrue;
 
 import android.content.res.AssetFileDescriptor;
@@ -91,11 +93,18 @@ public class MediaDrmCodecBlockModelTest {
     public static Collection<Object[]> input() {
         final List<Object[]> exhaustiveArgsList = new ArrayList<>(Arrays.asList(new Object[][]{
                 {MediaFormat.MIMETYPE_VIDEO_AVC, "llama_h264_main_720p_8000.mp4"},
-                {MediaFormat.MIMETYPE_VIDEO_HEVC, "llama_hevc_240p_30fps_600_cenc.mp4"},
-                {MediaFormat.MIMETYPE_VIDEO_VP8, "bbb_520x390_1mbps_30fps_vp8_cenc.webm"},
-                {MediaFormat.MIMETYPE_VIDEO_VP9, "bbb_520x390_1mbps_30fps_vp9_cenc.webm"},
-                {MediaFormat.MIMETYPE_VIDEO_AV1, "bbb_640x360_512kbps_30fps_av1_cenc.webm"},
         }));
+
+        // Block model for encrypted content was introduced in R but testing has been limited to AVC.
+        // It is expanded to cover other decoders after B.
+        if (IS_AFTER_B) {
+            exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
+                    {MediaFormat.MIMETYPE_VIDEO_HEVC, "llama_hevc_240p_30fps_600_cenc.mp4"},
+                    {MediaFormat.MIMETYPE_VIDEO_VP8, "bbb_520x390_1mbps_30fps_vp8_cenc.webm"},
+                    {MediaFormat.MIMETYPE_VIDEO_VP9, "bbb_520x390_1mbps_30fps_vp9_cenc.webm"},
+                    {MediaFormat.MIMETYPE_VIDEO_AV1, "bbb_640x360_512kbps_30fps_av1_cenc.webm"},
+            }));
+        }
         return prepareParamList(exhaustiveArgsList);
     }
 
