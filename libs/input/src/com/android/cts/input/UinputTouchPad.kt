@@ -25,62 +25,67 @@ import com.android.cts.input.EvdevInputEventCodes.Companion.EV_ABS
 import com.android.cts.input.EvdevInputEventCodes.Companion.MT_TOOL_FINGER
 import com.android.cts.input.EvdevInputEventCodes.Companion.MT_TOOL_PALM
 
-private fun createTouchPadRegisterCommand(): UinputRegisterCommand {
-    val configurationItems = listOf(
-        ConfigurationItem("UI_SET_EVBIT", listOf("EV_KEY", "EV_ABS")),
-        ConfigurationItem(
-            "UI_SET_KEYBIT",
-            listOf(
-                "BTN_LEFT",
-                "BTN_RIGHT",
-                "BTN_TOOL_FINGER",
-                "BTN_TOOL_QUINTTAP",
-                "BTN_TOUCH",
-                "BTN_TOOL_DOUBLETAP",
-                "BTN_TOOL_TRIPLETAP",
-                "BTN_TOOL_QUADTAP",
-            )
-        ),
-        ConfigurationItem(
-            "UI_SET_ABSBIT",
-            listOf(
-                "ABS_MT_SLOT",
-                "ABS_MT_TOUCH_MAJOR",
-                "ABS_MT_TOUCH_MINOR",
-                "ABS_MT_ORIENTATION",
-                "ABS_MT_POSITION_X",
-                "ABS_MT_POSITION_Y",
-                "ABS_MT_TOOL_TYPE",
-                "ABS_MT_TRACKING_ID",
-                "ABS_MT_PRESSURE",
-            )
-        ),
-        ConfigurationItem("UI_SET_PROPBIT", listOf("INPUT_PROP_POINTER", "INPUT_PROP_BUTTONPAD"))
-    )
+private fun createTouchPadRegisterCommand(name: String): UinputRegisterCommand {
+    val configurationItems =
+        listOf(
+            ConfigurationItem("UI_SET_EVBIT", listOf("EV_KEY", "EV_ABS")),
+            ConfigurationItem(
+                "UI_SET_KEYBIT",
+                listOf(
+                    "BTN_LEFT",
+                    "BTN_RIGHT",
+                    "BTN_TOOL_FINGER",
+                    "BTN_TOOL_QUINTTAP",
+                    "BTN_TOUCH",
+                    "BTN_TOOL_DOUBLETAP",
+                    "BTN_TOOL_TRIPLETAP",
+                    "BTN_TOOL_QUADTAP",
+                ),
+            ),
+            ConfigurationItem(
+                "UI_SET_ABSBIT",
+                listOf(
+                    "ABS_MT_SLOT",
+                    "ABS_MT_TOUCH_MAJOR",
+                    "ABS_MT_TOUCH_MINOR",
+                    "ABS_MT_ORIENTATION",
+                    "ABS_MT_POSITION_X",
+                    "ABS_MT_POSITION_Y",
+                    "ABS_MT_TOOL_TYPE",
+                    "ABS_MT_TRACKING_ID",
+                    "ABS_MT_PRESSURE",
+                ),
+            ),
+            ConfigurationItem(
+                "UI_SET_PROPBIT",
+                listOf("INPUT_PROP_POINTER", "INPUT_PROP_BUTTONPAD"),
+            ),
+        )
 
-    val absInfoItems = mapOf(
-        "ABS_MT_SLOT" to AbsInfo(0, 0, 9, 0, 0, 0),
-        "ABS_MT_TOUCH_MAJOR" to AbsInfo(0, 0, 1000, 0, 0, 0),
-        "ABS_MT_TOUCH_MINOR" to AbsInfo(0, 0, 1000, 0, 0, 0),
-        "ABS_MT_WIDTH_MAJOR" to AbsInfo(0, 0, 1000, 0, 0, 0),
-        "ABS_MT_WIDTH_MINOR" to AbsInfo(0, 0, 1000, 0, 0, 0),
-        "ABS_MT_ORIENTATION" to AbsInfo(0, -3, 4, 0, 0, 0),
-        "ABS_MT_POSITION_X" to AbsInfo(0, 0, 1936, 0, 0, 20),
-        "ABS_MT_POSITION_Y" to AbsInfo(0, 0, 1057, 0, 0, 20),
-        "ABS_MT_TOOL_TYPE" to AbsInfo(0, MT_TOOL_FINGER, MT_TOOL_PALM, 0, 0, 0),
-        "ABS_MT_TRACKING_ID" to AbsInfo(0, 0, 65535, 0, 0, 0),
-        "ABS_MT_PRESSURE" to AbsInfo(0, 0, 255, 0, 0, 0),
-    )
+    val absInfoItems =
+        mapOf(
+            "ABS_MT_SLOT" to AbsInfo(0, 0, 9, 0, 0, 0),
+            "ABS_MT_TOUCH_MAJOR" to AbsInfo(0, 0, 1000, 0, 0, 0),
+            "ABS_MT_TOUCH_MINOR" to AbsInfo(0, 0, 1000, 0, 0, 0),
+            "ABS_MT_WIDTH_MAJOR" to AbsInfo(0, 0, 1000, 0, 0, 0),
+            "ABS_MT_WIDTH_MINOR" to AbsInfo(0, 0, 1000, 0, 0, 0),
+            "ABS_MT_ORIENTATION" to AbsInfo(0, -3, 4, 0, 0, 0),
+            "ABS_MT_POSITION_X" to AbsInfo(0, 0, 1936, 0, 0, 20),
+            "ABS_MT_POSITION_Y" to AbsInfo(0, 0, 1057, 0, 0, 20),
+            "ABS_MT_TOOL_TYPE" to AbsInfo(0, MT_TOOL_FINGER, MT_TOOL_PALM, 0, 0, 0),
+            "ABS_MT_TRACKING_ID" to AbsInfo(0, 0, 65535, 0, 0, 0),
+            "ABS_MT_PRESSURE" to AbsInfo(0, 0, 255, 0, 0, 0),
+        )
 
     return UinputRegisterCommand(
         id = 1,
-        name = "Test Touchpad (USB)",
+        name = name,
         vid = 0x18d1,
         pid = 0xabcd,
         bus = "usb",
         port = "usb:1",
         configuration = configurationItems,
-        absInfo = absInfoItems
+        absInfo = absInfoItems,
     )
 }
 
@@ -91,13 +96,15 @@ private fun createTouchPadRegisterCommand(): UinputRegisterCommand {
 class UinputTouchPad(
     instrumentation: Instrumentation,
     display: Display,
-) : UinputTouchDevice(
-    instrumentation,
-    display,
-    createTouchPadRegisterCommand(),
-    InputDevice.SOURCE_TOUCHPAD or InputDevice.SOURCE_MOUSE,
-    MT_TOOL_FINGER,
-) {
+    name: String = "Test Touchpad (USB)",
+) :
+    UinputTouchDevice(
+        instrumentation,
+        display,
+        createTouchPadRegisterCommand(name = name),
+        InputDevice.SOURCE_TOUCHPAD or InputDevice.SOURCE_MOUSE,
+        MT_TOOL_FINGER,
+    ) {
     fun sendOrientation(slot: Int, orientation: Int) {
         uinputDevice.injectEvents(EV_ABS, ABS_MT_SLOT, slot)
         uinputDevice.injectEvents(EV_ABS, ABS_MT_ORIENTATION, orientation)

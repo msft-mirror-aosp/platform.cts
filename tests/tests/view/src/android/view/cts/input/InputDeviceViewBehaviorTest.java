@@ -17,10 +17,13 @@
 package android.view.cts.input;
 
 import static com.android.input.flags.Flags.FLAG_INPUT_DEVICE_VIEW_BEHAVIOR_API;
+import static com.android.input.flags.Flags.FLAG_INPUT_DEVICE_PRIMARY_DIRECTIONAL_MOTION_AXIS_API;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 import android.app.Instrumentation;
 import android.hardware.input.InputManager;
@@ -40,9 +43,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-/**
- * Test {@link android.view.InputDevice.ViewBehavior} functionality.
- */
+/** Test {@link android.view.InputDevice.ViewBehavior} functionality. */
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class InputDeviceViewBehaviorTest {
@@ -101,5 +102,33 @@ public class InputDeviceViewBehaviorTest {
         InputDeviceIterators.iteratorOverInvalidDeviceIds((deviceId) -> {
             assertNull(mInputManager.getInputDeviceViewBehavior(deviceId));
         });
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+        FLAG_INPUT_DEVICE_VIEW_BEHAVIOR_API,
+        FLAG_INPUT_DEVICE_PRIMARY_DIRECTIONAL_MOTION_AXIS_API
+    })
+    public void testGetPrimaryDirectionalMotionAxis_throwsNoException() {
+        InputDeviceIterators.iteratorOverEveryValidDeviceId(
+                (deviceId) -> {
+                    InputDevice.ViewBehavior viewBehavior =
+                            mInputManager.getInputDeviceViewBehavior(deviceId);
+                    assertNotNull(viewBehavior);
+
+                    if (viewBehavior.hasPrimaryDirectionalMotionAxis()) {
+                        // Test that the primary directional motion axis is a valid MotionEvent.Axis
+                        // constant. axisToString() will return the numeric value of the axis if it
+                        // is not a valid MotionEvent.Axis constant, so we can check that the string
+                        // starts
+                        // with "AXIS_" prefix.
+                        int axis = viewBehavior.getPrimaryDirectionalMotionAxis();
+                        assertTrue(MotionEvent.axisToString(axis).startsWith("AXIS_"));
+                    } else {
+                        assertThrows(
+                                IllegalStateException.class,
+                                () -> viewBehavior.getPrimaryDirectionalMotionAxis());
+                    }
+                });
     }
 }
