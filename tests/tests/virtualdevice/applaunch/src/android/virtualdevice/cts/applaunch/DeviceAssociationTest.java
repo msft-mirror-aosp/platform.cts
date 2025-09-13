@@ -39,9 +39,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
+import android.net.Uri;
 import android.platform.test.annotations.AppModeFull;
 import android.virtualdevice.cts.applaunch.AppComponents.EmptyActivity;
 import android.virtualdevice.cts.applaunch.AppComponents.SecondActivity;
+import android.virtualdevice.cts.applaunch.AppComponents.TestProvider;
 import android.virtualdevice.cts.applaunch.AppComponents.TestService;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
@@ -374,5 +376,121 @@ public class DeviceAssociationTest {
     public void serviceContext_noActivities_hasDefaultId() throws TimeoutException {
         Service service = TestService.startService(mContext);
         assertThat(service.getDeviceId()).isEqualTo(DEVICE_ID_DEFAULT);
+    }
+
+    @Test
+    public void contentProviderContext_lastActivityOnVirtualDevice_returnsVirtualDeviceId() {
+        TestProvider provider = getTestProvider();
+        mRule.startActivityOnDisplaySync(DEFAULT_DISPLAY, EmptyActivity.class);
+        mRule.startActivityOnDisplaySync(mVirtualDisplay, SecondActivity.class);
+
+        assertThat(provider.getContext().getDeviceId()).isEqualTo(mVirtualDevice.getDeviceId());
+    }
+
+    @Test
+    public void contentProviderContext_lastActivityOnDefaultDevice_returnsDefault() {
+        TestProvider provider = getTestProvider();
+        mRule.startActivityOnDisplaySync(mVirtualDisplay, EmptyActivity.class);
+        mRule.startActivityOnDisplaySync(DEFAULT_DISPLAY, SecondActivity.class);
+
+        assertThat(provider.getContext().getDeviceId()).isEqualTo(DEVICE_ID_DEFAULT);
+    }
+
+    @Test
+    public void contentProviderContext_createProviderAfterActivity_hasDeviceIdOfTopActivity() {
+        mRule.startActivityOnDisplaySync(DEFAULT_DISPLAY, EmptyActivity.class);
+        mRule.startActivityOnDisplaySync(mVirtualDisplay, SecondActivity.class);
+        TestProvider provider = getTestProvider();
+
+        assertThat(provider.getContext().getDeviceId()).isEqualTo(mVirtualDevice.getDeviceId());
+    }
+
+    @Test
+    public void contentProviderContext_createProviderAfterActivityDeviceIsClosed_returnsDefault() {
+        mRule.startActivityOnDisplaySync(DEFAULT_DISPLAY, EmptyActivity.class);
+        mRule.startActivityOnDisplaySync(mVirtualDisplay, SecondActivity.class);
+        mVirtualDevice.close();
+        mRule.assertDisplayDoesNotExist(mVirtualDisplay.getDisplay().getDisplayId());
+        TestProvider provider = getTestProvider();
+
+        assertThat(provider.getContext().getDeviceId()).isEqualTo(DEVICE_ID_DEFAULT);
+    }
+
+    @Test
+    public void contentProviderContext_noActivities_hasDefaultId() {
+        TestProvider provider = getTestProvider();
+        assertThat(provider.getContext().getDeviceId()).isEqualTo(DEVICE_ID_DEFAULT);
+    }
+
+    @Test
+    public void contentProviderContext_deviceIdChangesWhenActivityMoves() {
+        TestProvider provider = getTestProvider();
+        mRule.startActivityOnDisplaySync(DEFAULT_DISPLAY, EmptyActivity.class);
+
+        assertThat(provider.getContext().getDeviceId()).isEqualTo(DEVICE_ID_DEFAULT);
+
+        mRule.startActivityOnDisplaySync(mVirtualDisplay, SecondActivity.class);
+
+        assertThat(provider.getContext().getDeviceId()).isEqualTo(mVirtualDevice.getDeviceId());
+
+        mRule.startActivityOnDisplaySync(DEFAULT_DISPLAY, SecondActivity.class);
+
+        assertThat(provider.getContext().getDeviceId()).isEqualTo(DEVICE_ID_DEFAULT);
+    }
+
+    @Test
+    public void contentProviderContext_twoVirtualDevices_returnsIdOfLatest() {
+        TestProvider provider = getTestProvider();
+        mRule.startActivityOnDisplaySync(mVirtualDisplay, EmptyActivity.class);
+
+        assertThat(provider.getContext().getDeviceId()).isEqualTo(mVirtualDevice.getDeviceId());
+
+        VirtualDevice virtualDevice2 = mRule.createManagedVirtualDevice();
+        VirtualDisplay virtualDisplay2 =
+                mRule.createManagedVirtualDisplayWithFlags(
+                        virtualDevice2,
+                        DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                                | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
+                                | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
+
+        mRule.startActivityOnDisplaySync(virtualDisplay2, SecondActivity.class);
+        assertThat(provider.getContext().getDeviceId()).isEqualTo(virtualDevice2.getDeviceId());
+
+        mRule.startActivityOnDisplaySync(DEFAULT_DISPLAY, SecondActivity.class);
+        assertThat(provider.getContext().getDeviceId()).isEqualTo(DEVICE_ID_DEFAULT);
+    }
+
+    @Test
+    public void contentProviderContext_moveToAnotherDevice_updatesDeviceId() {
+        TestProvider provider = getTestProvider();
+        Activity activity = mRule.startActivityOnDisplaySync(mVirtualDisplay, EmptyActivity.class);
+        assertThat(provider.getContext().getDeviceId()).isEqualTo(mVirtualDevice.getDeviceId());
+
+        mVirtualDevice.close();
+        mRule.assertDisplayDoesNotExist(mVirtualDisplay.getDisplay().getDisplayId());
+        assertThat(provider.getContext().getDeviceId()).isEqualTo(DEVICE_ID_DEFAULT);
+
+        activity.finish();
+        mRule.waitAndAssertActivityRemoved(activity.getComponentName());
+
+        VirtualDevice virtualDevice2 = mRule.createManagedVirtualDevice();
+        VirtualDisplay virtualDisplay2 =
+                mRule.createManagedVirtualDisplayWithFlags(
+                        virtualDevice2,
+                        DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                                | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
+                                | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
+
+        mRule.startActivityOnDisplaySync(virtualDisplay2, EmptyActivity.class);
+        assertThat(provider.getContext().getDeviceId()).isEqualTo(virtualDevice2.getDeviceId());
+    }
+
+    private TestProvider getTestProvider() {
+        // Any content resolver call will initialize the provider if it's not already.
+        mContext.getContentResolver()
+                .call(Uri.parse("content://" + TestProvider.AUTHORITY), "nop", null, null);
+        TestProvider provider = TestProvider.getInstance();
+        assertThat(provider).isNotNull();
+        return provider;
     }
 }

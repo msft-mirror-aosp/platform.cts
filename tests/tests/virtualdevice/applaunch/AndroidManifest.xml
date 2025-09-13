@@ -74,6 +74,10 @@
             android:name="android.app.Activity"
             android:exported="false" />
         <service android:name=".AppComponents$TestService" />
+        <provider
+            android:name=".AppComponents$TestProvider"
+            android:authorities="android.virtualdevice.cts.applaunch.testprovider"
+            android:exported="false" />
     </application>
 
     <!--

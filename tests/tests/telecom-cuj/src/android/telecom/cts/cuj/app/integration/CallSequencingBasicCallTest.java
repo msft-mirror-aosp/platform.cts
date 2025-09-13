@@ -30,6 +30,7 @@ import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceAp
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.telecom.CallAttributes;
 import android.telecom.Connection;
+import android.telecom.DisconnectCause;
 import android.telecom.cts.apps.AppControlWrapper;
 import android.telecom.cts.apps.TelecomTestApp;
 import android.telecom.cts.cuj.BaseAppVerifier;
@@ -218,6 +219,88 @@ public class CallSequencingBasicCallTest extends BaseAppVerifier {
             verifyCallIsInState(callUt, STATE_DIALING);
         } finally {
             tearDownApps(Collections.unmodifiableList(Arrays.asList(firstApp, secondApp)));
+        }
+    }
+
+    /**
+     * Verify that when two calls are swapped that if a call resume fails for the bg call, that we
+     * unhold the fg call.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_AUTO_UNHOLD_ON_CALL_FAIL)
+    public void testAutoUnholdOnCallFail() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        AppControlWrapper firstApp = null;
+        AppControlWrapper secondApp = null;
+        try {
+            firstApp = bindToApp(ManagedConnectionServiceApp);
+            secondApp = bindToApp(ManagedConnectionServiceAppClone);
+            String call1 = addOutgoingCallAndVerify(firstApp);
+            verifyCallIsInState(call1, STATE_DIALING);
+            // Put the first call on hold
+            setCallStateAndVerify(firstApp, call1, STATE_HOLDING);
+            // Add a second call
+            String call2 = addOutgoingCallAndVerify(secondApp);
+            // Disconnect the call with DisconnectCause.ERROR
+            setCallStateAndVerify(secondApp, call2, STATE_DISCONNECTED, DisconnectCause.ERROR);
+            // Verify the held call is set active
+            verifyCallIsInState(call1, STATE_ACTIVE);
+
+            // Put the first call back on hold
+            setCallStateAndVerify(firstApp, call1, STATE_HOLDING);
+            // Add a new call
+            String call3 = addOutgoingCallAndVerify(secondApp);
+            // Disconnect the call with DisconnectCause.CANCELLED
+            setCallStateAndVerify(secondApp, call3, STATE_DISCONNECTED, DisconnectCause.CANCELED);
+            // Verify the held call is set active
+            verifyCallIsInState(call1, STATE_ACTIVE);
+            // Clean up calls
+            setCallStateAndVerify(firstApp, call1, STATE_DISCONNECTED);
+        } finally {
+            List<AppControlWrapper> controls = new ArrayList<>();
+            controls.add(firstApp);
+            controls.add(secondApp);
+            tearDownApps(controls);
+        }
+    }
+
+    /**
+     * Verify that when a call ends in ERROR after being set to ACTIVE, it does NOT auto-unhold a
+     * background call.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_AUTO_UNHOLD_ON_CALL_FAIL)
+    public void testNoAutoUnholdOnCallFailAfterActive() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        AppControlWrapper firstApp = null;
+        AppControlWrapper secondApp = null;
+        try {
+            firstApp = bindToApp(ManagedConnectionServiceApp);
+            secondApp = bindToApp(ManagedConnectionServiceAppClone);
+            String call1 = addOutgoingCallAndVerify(firstApp);
+            verifyCallIsInState(call1, STATE_DIALING);
+            setCallStateAndVerify(firstApp, call1, STATE_ACTIVE);
+            // Put the first call on hold
+            setCallStateAndVerify(firstApp, call1, STATE_HOLDING);
+            // Add a second call and make it active
+            String call2 = addOutgoingCallAndVerify(secondApp);
+            verifyCallIsInState(call2, STATE_DIALING);
+            setCallStateAndVerify(secondApp, call2, STATE_ACTIVE);
+            // Disconnect the second call with DisconnectCause.ERROR
+            setCallStateAndVerify(secondApp, call2, STATE_DISCONNECTED, DisconnectCause.ERROR);
+            // Verify the first call remains held
+            verifyCallIsInState(call1, STATE_HOLDING);
+            // Clean up calls
+            setCallStateAndVerify(firstApp, call1, STATE_DISCONNECTED);
+        } finally {
+            List<AppControlWrapper> controls = new ArrayList<>();
+            controls.add(firstApp);
+            controls.add(secondApp);
+            tearDownApps(controls);
         }
     }
 

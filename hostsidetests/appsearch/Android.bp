@@ -37,7 +37,6 @@ java_test_host {
         "cts",
         "general-tests",
         "mts-appsearch",
-        "mcts-appsearch",
     ],
     device_common_data: [
         ":CtsAppSearchHostTestHelperA",

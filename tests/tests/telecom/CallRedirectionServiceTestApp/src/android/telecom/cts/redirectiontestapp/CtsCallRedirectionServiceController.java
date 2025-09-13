@@ -49,6 +49,7 @@ public class CtsCallRedirectionServiceController extends Service {
     // Redirection information, only valid if decision is PLACE_REDIRECTED_CALL.
     private Uri mTargetHandle = null;
     private Uri mDestinationUri = null;
+    private Uri mDestinationOriginalUri = null;
     private PhoneAccountHandle mRedirectedPhoneAccount = null;
     private PhoneAccountHandle mOriginalPhoneAccount = null;
     private boolean mConfirmFirst = false;
@@ -102,6 +103,11 @@ public class CtsCallRedirectionServiceController extends Service {
                     } catch (InterruptedException e) {
                         return false;
                     }
+                }
+
+                @Override
+                public Uri getReceivedOriginalHandle() {
+                    return mDestinationOriginalUri;
                 }
 
                 @Override

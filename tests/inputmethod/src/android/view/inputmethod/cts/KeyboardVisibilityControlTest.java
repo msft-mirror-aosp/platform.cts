@@ -98,6 +98,8 @@ import android.view.inputmethod.InputMethod;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.cts.util.AutoCloseableWrapper;
 import android.view.inputmethod.cts.util.EndToEndImeTestBase;
+import android.view.inputmethod.cts.util.FixedDeviceOrientationSession;
+import android.view.inputmethod.cts.util.FixedDeviceOrientationSession.Orientation;
 import android.view.inputmethod.cts.util.MockTestActivityUtil;
 import android.view.inputmethod.cts.util.RequireImeCompatFlagRule;
 import android.view.inputmethod.cts.util.TestActivity;
@@ -141,7 +143,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.function.ThrowingRunnable;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -167,14 +168,6 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     private static final int NEW_KEYBOARD_HEIGHT = 400;
     private static final PreBackPressProcedure NO_OP_PRE_BACK_PRESS_PROCEDURE =
             (instrumentation, editorRef) -> {};
-
-    private static final String DISABLE_AUTO_ROTATE_CMD =
-            "settings put system accelerometer_rotation 0";
-    private static final String ENABLE_AUTO_ROTATE_CMD =
-            "settings put system accelerometer_rotation 1";
-
-    private static final String FIXED_TO_USER_ROTATION_CMD = "cmd window fixed-to-user-rotation";
-
 
     @Rule
     public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
@@ -1752,30 +1745,16 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     @Test
     @FlakyTest(bugId = 419921374)
     public void testRotateScreenWithKeyboardShownImplicitly() throws Exception {
-        // Test only when both portrait and landscape mode are supported.
-        final PackageManager pm = mInstrumentation.getTargetContext().getPackageManager();
-        assumeFalse(
-                "Screen rotation is not supported on AAOS.",
-                pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
-        assumeTrue(pm.hasSystemFeature(PackageManager.FEATURE_SCREEN_PORTRAIT));
-        assumeTrue(pm.hasSystemFeature(PackageManager.FEATURE_SCREEN_LANDSCAPE));
-        final boolean isFixedToUserRotation =
-                "enabled".equals(SystemUtil.runShellCommand(FIXED_TO_USER_ROTATION_CMD).trim());
-        assumeFalse("Device shouldn't have fixed rotation.", isFixedToUserRotation);
-
-        // Disable auto-rotate screen and set the screen orientation to portrait mode.
-        setAutoRotateScreen(false);
-        final UiDevice uiDevice = UiDevice.getInstance(mInstrumentation);
-        uiDevice.setOrientationPortrait();
-        mInstrumentation.waitForIdleSync();
-
         // Set FullscreenModePolicy as OS_DEFAULT to call the original
         // InputMethodService#onEvaluateFullscreenMode()
-        try (MockImeSession imeSession = MockImeSession.create(
-                mInstrumentation.getContext(),
-                mInstrumentation.getUiAutomation(),
-                new ImeSettings.Builder().setFullscreenModePolicy(
-                        ImeSettings.FullscreenModePolicy.OS_DEFAULT))) {
+        try (var orientationSession = new FixedDeviceOrientationSession(Orientation.PORTRAIT);
+                MockImeSession imeSession =
+                        MockImeSession.create(
+                                mInstrumentation.getContext(),
+                                mInstrumentation.getUiAutomation(),
+                                new ImeSettings.Builder()
+                                        .setFullscreenModePolicy(
+                                                ImeSettings.FullscreenModePolicy.OS_DEFAULT))) {
             final ImeEventStream stream = imeSession.openEventStream();
 
             final String marker = getTestMarker();
@@ -1807,8 +1786,7 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             expectImeVisible(TIMEOUT);
 
             // Rotate screen to landscape.
-            uiDevice.setOrientationLandscape();
-            mInstrumentation.waitForIdleSync();
+            orientationSession.setDeviceOrientation(Orientation.LANDSCAPE);
             if (android.view.inputmethod.Flags.disableImeRestoreOnActivityCreate()) {
                 // IME was not explicitly requested again, so it should not be restored.
                 expectImeInvisible(TIMEOUT);
@@ -1817,9 +1795,6 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 assertTrue("IME should be in fullscreen mode",
                         getOnMainSync(() -> imm.isFullscreenMode()));
             }
-        } finally {
-            setAutoRotateScreen(true);
-            uiDevice.setOrientationNatural();
         }
     }
 
@@ -2753,17 +2728,6 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
         }
     }
 
-
-    private void setAutoRotateScreen(boolean enable) {
-        try {
-            final Instrumentation instrumentation = mInstrumentation;
-            SystemUtil.runShellCommand(instrumentation, enable ? ENABLE_AUTO_ROTATE_CMD :
-                    DISABLE_AUTO_ROTATE_CMD);
-            instrumentation.waitForIdleSync();
-        } catch (IOException io) {
-            fail("Couldn't enable/disable auto-rotate screen");
-        }
-    }
 
     private static ImeSettings.Builder getFloatingImeSettings(@ColorInt int navigationBarColor) {
         final ImeSettings.Builder builder = new ImeSettings.Builder();

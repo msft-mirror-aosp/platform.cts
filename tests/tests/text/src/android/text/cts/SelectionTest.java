@@ -21,6 +21,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import android.graphics.Typeface;
 import android.text.Layout;
 import android.text.Selection;
 import android.text.SpanWatcher;
@@ -184,7 +185,7 @@ public class SelectionTest {
     public void testMoveLeft() {
         CharSequence text = "hello\nworld";
         SpannableStringBuilder builder = new SpannableStringBuilder(text);
-        StaticLayout layout = new StaticLayout(text, new TextPaint(), 50, null, 0, 0, false);
+        StaticLayout layout = createLayout(text, 50);
         assertEquals(-1, Selection.getSelectionStart(builder));
         assertEquals(-1, Selection.getSelectionEnd(builder));
 
@@ -212,7 +213,7 @@ public class SelectionTest {
     public void testMoveRight() {
         CharSequence text = "hello\nworld";
         SpannableStringBuilder builder = new SpannableStringBuilder(text);
-        StaticLayout layout = new StaticLayout(text, new TextPaint(), 200, null, 0, 0, false);
+        StaticLayout layout = createLayout(text, 200);
         assertEquals(-1, Selection.getSelectionStart(builder));
         assertEquals(-1, Selection.getSelectionEnd(builder));
 
@@ -244,7 +245,7 @@ public class SelectionTest {
     public void testMoveUp() {
         CharSequence text = "Google\nhello,world";
         SpannableStringBuilder builder = new SpannableStringBuilder(text);
-        StaticLayout layout = new StaticLayout(text, new TextPaint(), 200, null, 0, 0, false);
+        StaticLayout layout = createLayout(text, 200);
         assertEquals(-1, Selection.getSelectionStart(builder));
         assertEquals(-1, Selection.getSelectionEnd(builder));
 
@@ -284,8 +285,7 @@ public class SelectionTest {
     public void testMoveUpAfterTyping() {
         CharSequence text = "aaa\nmm";
         SpannableStringBuilder builder = new SpannableStringBuilder(text);
-        StaticLayout layout = new StaticLayout(builder, new TextPaint(), 200,
-                Layout.Alignment.ALIGN_NORMAL, 0, 0, false);
+        StaticLayout layout = createLayout(text, 200, Layout.Alignment.ALIGN_NORMAL);
         assertEquals(-1, Selection.getSelectionStart(builder));
         assertEquals(-1, Selection.getSelectionEnd(builder));
 
@@ -295,8 +295,7 @@ public class SelectionTest {
         assertEquals(5, Selection.getSelectionEnd(builder));
 
         builder.insert(5, "mm");
-        layout = new StaticLayout(builder, new TextPaint(), 200, Layout.Alignment.ALIGN_NORMAL,
-                0, 0, false);
+        layout = createLayout(builder, 200, Layout.Alignment.ALIGN_NORMAL);
         assertEquals(7, Selection.getSelectionStart(builder));
         assertEquals(7, Selection.getSelectionEnd(builder));
 
@@ -309,8 +308,7 @@ public class SelectionTest {
     public void testMoveUpKeepsOriginalMemoryPosition() {
         CharSequence text = "aa\nm";
         SpannableStringBuilder builder = new SpannableStringBuilder(text);
-        StaticLayout layout = new StaticLayout(builder, new TextPaint(), 200,
-                Layout.Alignment.ALIGN_NORMAL, 0, 0, false);
+        StaticLayout layout = createLayout(text, 200, Layout.Alignment.ALIGN_NORMAL);
         assertEquals(-1, Selection.getSelectionStart(builder));
         assertEquals(-1, Selection.getSelectionEnd(builder));
         assertEquals(0,
@@ -334,7 +332,7 @@ public class SelectionTest {
     public void testMoveDown() {
         CharSequence text = "hello,world\nGoogle";
         SpannableStringBuilder builder = new SpannableStringBuilder(text);
-        StaticLayout layout = new StaticLayout(text, new TextPaint(), 200, null, 0, 0, false);
+        StaticLayout layout = createLayout(text, 200);
         assertEquals(-1, Selection.getSelectionStart(builder));
         assertEquals(-1, Selection.getSelectionEnd(builder));
 
@@ -372,8 +370,7 @@ public class SelectionTest {
     public void testMoveDownAfterTyping() {
         CharSequence text = "mm\naaa";
         SpannableStringBuilder builder = new SpannableStringBuilder(text);
-        StaticLayout layout = new StaticLayout(builder, new TextPaint(), 200,
-                Layout.Alignment.ALIGN_NORMAL, 0, 0, false);
+        StaticLayout layout = createLayout(text, 200, Layout.Alignment.ALIGN_NORMAL);
         assertEquals(-1, Selection.getSelectionStart(builder));
         assertEquals(-1, Selection.getSelectionEnd(builder));
 
@@ -383,8 +380,7 @@ public class SelectionTest {
         assertEquals(1, Selection.getSelectionEnd(builder));
 
         builder.insert(1, "mm");
-        layout = new StaticLayout(builder, new TextPaint(), 200, Layout.Alignment.ALIGN_NORMAL,
-                0, 0, false);
+        layout = createLayout(builder, 200, Layout.Alignment.ALIGN_NORMAL);
         assertEquals(3, Selection.getSelectionStart(builder));
         assertEquals(3, Selection.getSelectionEnd(builder));
 
@@ -397,8 +393,7 @@ public class SelectionTest {
     public void testMoveDownKeepsOriginalMemoryPosition() {
         CharSequence text = "m\naa";
         SpannableStringBuilder builder = new SpannableStringBuilder(text);
-        StaticLayout layout = new StaticLayout(builder, new TextPaint(), 200,
-                Layout.Alignment.ALIGN_NORMAL, 0, 0, false);
+        StaticLayout layout = createLayout(text, 200, Layout.Alignment.ALIGN_NORMAL);
         assertEquals(-1, Selection.getSelectionStart(builder));
         assertEquals(-1, Selection.getSelectionEnd(builder));
         assertEquals(0,
@@ -422,8 +417,7 @@ public class SelectionTest {
     public void testMemoryPositionResetByHorizontalMovement() {
         CharSequence text = "m\naa";
         SpannableStringBuilder builder = new SpannableStringBuilder(text);
-        StaticLayout layout = new StaticLayout(builder, new TextPaint(), 200,
-                Layout.Alignment.ALIGN_NORMAL, 0, 0, false);
+        StaticLayout layout = createLayout(text, 200, Layout.Alignment.ALIGN_NORMAL);
         assertEquals(-1, Selection.getSelectionStart(builder));
         assertEquals(-1, Selection.getSelectionEnd(builder));
         assertEquals(0,
@@ -481,8 +475,7 @@ public class SelectionTest {
     public void testMemoryPositionResetByRemoveSelection() {
         CharSequence text = "m\naa";
         SpannableStringBuilder builder = new SpannableStringBuilder(text);
-        StaticLayout layout = new StaticLayout(builder, new TextPaint(), 200,
-                Layout.Alignment.ALIGN_NORMAL, 0, 0, false);
+        StaticLayout layout = createLayout(text, 200, Layout.Alignment.ALIGN_NORMAL);
         assertEquals(-1, Selection.getSelectionStart(builder));
         assertEquals(-1, Selection.getSelectionEnd(builder));
         assertEquals(0,
@@ -506,7 +499,7 @@ public class SelectionTest {
     public void testMultilineLengthMoveDown() {
         CharSequence text = "a\n\na";
         SpannableStringBuilder builder = new SpannableStringBuilder(text);
-        StaticLayout layout = new StaticLayout(text, new TextPaint(), 200, null, 0, 0, false);
+        StaticLayout layout = createLayout(text, 200);
         assertEquals(-1, Selection.getSelectionStart(builder));
         assertEquals(-1, Selection.getSelectionEnd(builder));
 
@@ -526,7 +519,7 @@ public class SelectionTest {
     public void testMultilineLengthExtendDown() {
         CharSequence text = "Google\n\nhello, world";
         SpannableStringBuilder builder = new SpannableStringBuilder(text);
-        StaticLayout layout = new StaticLayout(text, new TextPaint(), 200, null, 0, 0, false);
+        StaticLayout layout = createLayout(text, 200);
         assertEquals(-1, Selection.getSelectionStart(builder));
         assertEquals(-1, Selection.getSelectionEnd(builder));
 
@@ -548,8 +541,7 @@ public class SelectionTest {
     public void testExtendDownKeepsOriginalMemoryPosition() {
         CharSequence text = "m\naa";
         SpannableStringBuilder builder = new SpannableStringBuilder(text);
-        StaticLayout layout = new StaticLayout(builder, new TextPaint(), 200,
-                Layout.Alignment.ALIGN_NORMAL, 0, 0, false);
+        StaticLayout layout = createLayout(text, 200, Layout.Alignment.ALIGN_NORMAL);
         assertEquals(-1, Selection.getSelectionStart(builder));
         assertEquals(-1, Selection.getSelectionEnd(builder));
         assertEquals(0,
@@ -573,7 +565,7 @@ public class SelectionTest {
     public void testMultilineLengthMoveUp() {
         CharSequence text = "a\n\na";
         SpannableStringBuilder builder = new SpannableStringBuilder(text);
-        StaticLayout layout = new StaticLayout(text, new TextPaint(), 200, null, 0, 0, false);
+        StaticLayout layout = createLayout(text, 200);
         assertEquals(-1, Selection.getSelectionStart(builder));
         assertEquals(-1, Selection.getSelectionEnd(builder));
 
@@ -593,7 +585,7 @@ public class SelectionTest {
     public void testMultilineLengthExtendUp() {
         CharSequence text = "Google\n\nhello, world";
         SpannableStringBuilder builder = new SpannableStringBuilder(text);
-        StaticLayout layout = new StaticLayout(text, new TextPaint(), 200, null, 0, 0, false);
+        StaticLayout layout = createLayout(text, 200);
         assertEquals(-1, Selection.getSelectionStart(builder));
         assertEquals(-1, Selection.getSelectionEnd(builder));
 
@@ -619,8 +611,7 @@ public class SelectionTest {
     public void testExtendUpKeepsOriginalMemoryPosition() {
         CharSequence text = "aa\nm";
         SpannableStringBuilder builder = new SpannableStringBuilder(text);
-        StaticLayout layout = new StaticLayout(builder, new TextPaint(), 200,
-                Layout.Alignment.ALIGN_NORMAL, 0, 0, false);
+        StaticLayout layout = createLayout(text, 200, Layout.Alignment.ALIGN_NORMAL);
         assertEquals(-1, Selection.getSelectionStart(builder));
         assertEquals(-1, Selection.getSelectionEnd(builder));
         assertEquals(0,
@@ -644,7 +635,7 @@ public class SelectionTest {
     public void testMultilineLengthMoveDownAfterSelection() {
         CharSequence text = "aaaaa\n\naaaaa";
         SpannableStringBuilder builder = new SpannableStringBuilder(text);
-        StaticLayout layout = new StaticLayout(text, new TextPaint(), 200, null, 0, 0, false);
+        StaticLayout layout = createLayout(text, 200);
         assertEquals(-1, Selection.getSelectionStart(builder));
         assertEquals(-1, Selection.getSelectionEnd(builder));
 
@@ -675,7 +666,7 @@ public class SelectionTest {
     public void testMultilineLengthMoveUpAfterSelection() {
         CharSequence text = "aaaaa\n\naaaaa";
         SpannableStringBuilder builder = new SpannableStringBuilder(text);
-        StaticLayout layout = new StaticLayout(text, new TextPaint(), 200, null, 0, 0, false);
+        StaticLayout layout = createLayout(text, 200);
         assertEquals(-1, Selection.getSelectionStart(builder));
         assertEquals(-1, Selection.getSelectionEnd(builder));
 
@@ -753,7 +744,7 @@ public class SelectionTest {
     public void testExtendLeft() {
         CharSequence text = "Google\nhello, world";
         SpannableStringBuilder builder = new SpannableStringBuilder(text);
-        StaticLayout layout = new StaticLayout(text, new TextPaint(), 200, null, 0, 0, false);
+        StaticLayout layout = createLayout(text, 200);
         assertEquals(-1, Selection.getSelectionStart(builder));
         assertEquals(-1, Selection.getSelectionEnd(builder));
 
@@ -780,7 +771,7 @@ public class SelectionTest {
     public void testExtendRight() {
         CharSequence text = "Google\nhello, world";
         SpannableStringBuilder builder = new SpannableStringBuilder(text);
-        StaticLayout layout = new StaticLayout(text, new TextPaint(), 200, null, 0, 0, false);
+        StaticLayout layout = createLayout(text, 200);
         assertEquals(-1, Selection.getSelectionStart(builder));
         assertEquals(-1, Selection.getSelectionEnd(builder));
 
@@ -803,7 +794,7 @@ public class SelectionTest {
     public void testExtendUp() {
         CharSequence text = "Google\nhello, world";
         SpannableStringBuilder builder = new SpannableStringBuilder(text);
-        StaticLayout layout = new StaticLayout(text, new TextPaint(), 200, null, 0, 0, false);
+        StaticLayout layout = createLayout(text, 200);
         assertEquals(-1, Selection.getSelectionStart(builder));
         assertEquals(-1, Selection.getSelectionEnd(builder));
 
@@ -834,7 +825,7 @@ public class SelectionTest {
     public void testExtendDown() {
         CharSequence text = "Google\nhello, world";
         SpannableStringBuilder builder = new SpannableStringBuilder(text);
-        StaticLayout layout = new StaticLayout(text, new TextPaint(), 200, null, 0, 0, false);
+        StaticLayout layout = createLayout(text, 200);
         assertEquals(-1, Selection.getSelectionStart(builder));
         assertEquals(-1, Selection.getSelectionEnd(builder));
 
@@ -856,7 +847,7 @@ public class SelectionTest {
     public void testExtendToLeftEdge() {
         CharSequence text = "hello\nworld";
         SpannableStringBuilder builder = new SpannableStringBuilder(text);
-        StaticLayout layout = new StaticLayout(text, new TextPaint(), 50, null, 0, 0, false);
+        StaticLayout layout = createLayout(text, 50);
         assertEquals(-1, Selection.getSelectionStart(builder));
         assertEquals(-1, Selection.getSelectionEnd(builder));
 
@@ -892,7 +883,7 @@ public class SelectionTest {
     public void testExtendToRightEdge() {
         CharSequence text = "hello\nworld";
         SpannableStringBuilder builder = new SpannableStringBuilder(text);
-        StaticLayout layout = new StaticLayout(text, new TextPaint(), 50, null, 0, 0, false);
+        StaticLayout layout = createLayout(text, 50);
         assertEquals(-1, Selection.getSelectionStart(builder));
         assertEquals(-1, Selection.getSelectionEnd(builder));
 
@@ -919,7 +910,7 @@ public class SelectionTest {
     public void testMoveToLeftEdge() {
         CharSequence text = "hello\nworld";
         SpannableStringBuilder builder = new SpannableStringBuilder(text);
-        StaticLayout layout = new StaticLayout(text, new TextPaint(), 200, null, 0, 0, false);
+        StaticLayout layout = createLayout(text, 200);
         assertEquals(-1, Selection.getSelectionStart(builder));
         assertEquals(-1, Selection.getSelectionEnd(builder));
 
@@ -951,7 +942,7 @@ public class SelectionTest {
     public void testMoveToRightEdge() {
         CharSequence text = "hello\nworld";
         SpannableStringBuilder builder = new SpannableStringBuilder(text);
-        StaticLayout layout = new StaticLayout(text, new TextPaint(), 200, null, 0, 0,false);
+        StaticLayout layout = createLayout(text, 200);
         assertEquals(-1, Selection.getSelectionStart(builder));
         assertEquals(-1, Selection.getSelectionEnd(builder));
 
@@ -997,5 +988,15 @@ public class SelectionTest {
 
         Selection.removeSelection(spannable);
         assertEquals(0, latch.getCount());
+    }
+
+    private StaticLayout createLayout(CharSequence text, int width) {
+        return createLayout(text, width, null);
+    }
+
+    private StaticLayout createLayout(CharSequence text, int width, Layout.Alignment alignment) {
+        TextPaint textPaint = new TextPaint();
+        textPaint.setTypeface(Typeface.create("roboto", Typeface.NORMAL));
+        return new StaticLayout(text, textPaint, width, alignment, 0, 0, false);
     }
 }

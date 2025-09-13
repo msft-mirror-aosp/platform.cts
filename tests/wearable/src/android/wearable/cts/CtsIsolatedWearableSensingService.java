@@ -62,6 +62,9 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
     /** PersistableBundle value that represents a request to reset the service. */
     public static final String ACTION_RESET = "RESET";
 
+    /** PersistableBundle value that represents a request to System.exit(0) the service. */
+    public static final String ACTION_SYSTEM_EXIT = "EXIT";
+
     /** PersistableBundle key that represents the ID of the connection to action on. */
     public static final String BUNDLE_CONNECTION_ID_KEY = "CONNECTION_ID";
 
@@ -251,6 +254,8 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
                     reset();
                     statusConsumer.accept(WearableSensingManager.STATUS_SUCCESS);
                     return;
+                case ACTION_SYSTEM_EXIT:
+                    System.exit(0);
                 case ACTION_VERIFY_DATA_RECEIVED_FROM_WEARABLE:
                     expectedString = data.getString(EXPECTED_STRING_KEY);
                     connectionId =

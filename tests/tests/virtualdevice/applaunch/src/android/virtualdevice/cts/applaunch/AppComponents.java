@@ -18,8 +18,12 @@ package android.virtualdevice.cts.applaunch;
 
 import android.app.Activity;
 import android.app.Service;
+import android.content.ContentProvider;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
 
@@ -72,6 +76,51 @@ public class AppComponents {
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             }
             return START_STICKY;
+        }
+    }
+
+    public static class TestProvider extends ContentProvider {
+        public static final String AUTHORITY = "android.virtualdevice.cts.applaunch.testprovider";
+        private static TestProvider sInstance;
+
+        public static TestProvider getInstance() {
+            return sInstance;
+        }
+
+        @Override
+        public boolean onCreate() {
+            sInstance = this;
+            return true;
+        }
+
+        @Override
+        public Cursor query(
+                Uri uri,
+                String[] projection,
+                String selection,
+                String[] selectionArgs,
+                String sortOrder) {
+            return null;
+        }
+
+        @Override
+        public String getType(Uri uri) {
+            return null;
+        }
+
+        @Override
+        public Uri insert(Uri uri, ContentValues values) {
+            return null;
+        }
+
+        @Override
+        public int delete(Uri uri, String selection, String[] selectionArgs) {
+            return 0;
+        }
+
+        @Override
+        public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
+            return 0;
         }
     }
 }

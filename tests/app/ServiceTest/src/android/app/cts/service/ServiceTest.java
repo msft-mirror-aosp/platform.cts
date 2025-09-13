@@ -2684,6 +2684,22 @@ public final class ServiceTest {
         }
     }
 
+    /** Test getUpdateableFlags to validate no illegal updateable flags(). */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_UPDATE_SERVICE_BINDINGS)
+    public void testGetUpdateableFlags() throws Exception {
+        final Context.BindServiceFlags updateableFlags = mContext.getUpdateableFlags();
+        long expectedFlags =
+                Context.BIND_NOT_FOREGROUND
+                        | Context.BIND_ALLOW_OOM_MANAGEMENT
+                        | Context.BIND_WAIVE_PRIORITY
+                        | Context.BIND_IMPORTANT
+                        | Context.BIND_ADJUST_WITH_ACTIVITY
+                        | Context.BIND_NOT_PERCEPTIBLE;
+
+        assertThat(updateableFlags.getValue()).isEqualTo(expectedFlags);
+    }
+
     @Test
     public void testLruWhenSwitchingBetweenAppsInFreeFormWindows() {
         assumeTrue("Multi window is not supported",

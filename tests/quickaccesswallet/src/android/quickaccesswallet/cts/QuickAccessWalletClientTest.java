@@ -30,6 +30,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Icon;
 import android.location.Location;
@@ -98,6 +99,20 @@ public class QuickAccessWalletClientTest {
 
     private static final String SETTING_DISABLED = "0";
     private static final String SETTING_ENABLED = "1";
+
+    private static final int DOUBLE_TAP_POWER_MODE_CONFIG_GESTURE_DISABLED = 0;
+    private static final int DOUBLE_TAP_POWER_MODE_CONFIG_ONLY_CAMERA = 1;
+    private static final int DOUBLE_TAP_POWER_MODE_CONFIG_MULTI_TARGET = 2;
+    private static final int DOUBLE_TAP_POWER_DEFAULT_CONFIG_LAUNCH_CAMERA = 0;
+    private static final int DOUBLE_TAP_POWER_DEFAULT_CONFIG_LAUNCH_WALLET = 1;
+    private static final String DOUBLE_TAP_POWER_SETTING_GESTURE_KEY =
+            "double_tap_power_button_gesture_enabled";
+    private static final String DOUBLE_TAP_POWER_SETTING_GESTURE_DISABLED = "0";
+    private static final String DOUBLE_TAP_POWER_SETTING_GESTURE_ENABLED = "1";
+    private static final String DOUBLE_TAP_POWER_SETTING_ACTION_KEY =
+            "double_tap_power_button_gesture";
+    private static final String DOUBLE_TAP_POWER_SETTING_LAUNCH_CAMERA = "0";
+    private static final String DOUBLE_TAP_POWER_SETTING_LAUNCH_WALLET = "1";
 
     private final Context mContext = InstrumentationRegistry.getInstrumentation()
             .getTargetContext();
@@ -610,6 +625,72 @@ public class QuickAccessWalletClientTest {
         ComponentName expectedComponent = ComponentName.createRelative(mContext,
                 QuickAccessWalletSettingsActivity.class.getName());
         assertThat(settingsIntent.getComponent()).isEqualTo(expectedComponent);
+    }
+
+    /**
+     * Validates system and user settings for the double-tap power button gesture, preventing
+     * applications' reflection-based queries from failing due to OEM modifications.
+     */
+    @Test
+    public void testDoubleTapPowerGesture_validConfigsAndSettings() {
+        assertThat(
+                        Resources.getSystem()
+                                .getInteger(
+                                        Resources.getSystem()
+                                                .getIdentifier(
+                                                        "config_doubleTapPowerGestureMode",
+                                                        "integer",
+                                                        "android")))
+                .isAnyOf(
+                        DOUBLE_TAP_POWER_MODE_CONFIG_GESTURE_DISABLED,
+                        DOUBLE_TAP_POWER_MODE_CONFIG_ONLY_CAMERA,
+                        DOUBLE_TAP_POWER_MODE_CONFIG_MULTI_TARGET);
+        assertThat(
+                        Resources.getSystem()
+                                .getInteger(
+                                        Resources.getSystem()
+                                                .getIdentifier(
+                                                        "config_doubleTapPowerGesture"
+                                                                + "MultiTargetDefaultAction",
+                                                        "integer",
+                                                        "android")))
+                .isAnyOf(
+                        DOUBLE_TAP_POWER_DEFAULT_CONFIG_LAUNCH_CAMERA,
+                        DOUBLE_TAP_POWER_DEFAULT_CONFIG_LAUNCH_WALLET);
+        // The write-then-assert approach is more robust for validating setting keys and values.
+        // This method prevents failures in normal cases where the setting is null because the
+        // user has not yet interacted with it.
+        String doubleTapPowerSettingGestureState =
+                mUserSettings.get(DOUBLE_TAP_POWER_SETTING_GESTURE_KEY);
+        try {
+            mUserSettings.syncSet(
+                    DOUBLE_TAP_POWER_SETTING_GESTURE_KEY,
+                    DOUBLE_TAP_POWER_SETTING_GESTURE_DISABLED);
+            assertThat(mUserSettings.get(DOUBLE_TAP_POWER_SETTING_GESTURE_KEY))
+                    .isEqualTo(DOUBLE_TAP_POWER_SETTING_GESTURE_DISABLED);
+            mUserSettings.syncSet(
+                    DOUBLE_TAP_POWER_SETTING_GESTURE_KEY, DOUBLE_TAP_POWER_SETTING_GESTURE_ENABLED);
+            assertThat(mUserSettings.get(DOUBLE_TAP_POWER_SETTING_GESTURE_KEY))
+                    .isEqualTo(DOUBLE_TAP_POWER_SETTING_GESTURE_ENABLED);
+        } finally {
+            mUserSettings.syncSet(
+                    DOUBLE_TAP_POWER_SETTING_GESTURE_KEY, doubleTapPowerSettingGestureState);
+        }
+        String doubleTapPowerSettingActionState =
+                mUserSettings.get(DOUBLE_TAP_POWER_SETTING_ACTION_KEY);
+        try {
+            mUserSettings.syncSet(
+                    DOUBLE_TAP_POWER_SETTING_ACTION_KEY, DOUBLE_TAP_POWER_SETTING_LAUNCH_CAMERA);
+            assertThat(mUserSettings.get(DOUBLE_TAP_POWER_SETTING_ACTION_KEY))
+                    .isEqualTo(DOUBLE_TAP_POWER_SETTING_LAUNCH_CAMERA);
+            mUserSettings.syncSet(
+                    DOUBLE_TAP_POWER_SETTING_ACTION_KEY, DOUBLE_TAP_POWER_SETTING_LAUNCH_WALLET);
+            assertThat(mUserSettings.get(DOUBLE_TAP_POWER_SETTING_ACTION_KEY))
+                    .isEqualTo(DOUBLE_TAP_POWER_SETTING_LAUNCH_WALLET);
+        } finally {
+            mUserSettings.syncSet(
+                    DOUBLE_TAP_POWER_SETTING_ACTION_KEY, doubleTapPowerSettingActionState);
+        }
     }
 
     private void setServiceState(

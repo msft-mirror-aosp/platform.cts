@@ -289,6 +289,42 @@ class AttributionTest {
         }
     }
 
+    @AsbSecurityTest(cveBugId = [416490321])
+    @Test
+    fun startOpProxyWithTooManyAttributionTags() {
+        val packageName = "android.app.appops.cts.appthatexploitsattributiontags"
+
+        installApk("AppThatExploitsAttributionTags.apk")
+        sleep(1000)
+
+        val future = CompletableFuture<Boolean>()
+        val callback = RemoteCallback { result: Bundle? -> future.complete(true) }
+        val intent = Intent().setComponent(
+            ComponentName(
+                packageName,
+                "$packageName.AppOpStartProxyActivity"
+            )
+        )
+            .putExtra(EXTRA_RESULT_RECEIVER, callback)
+            .setFlags(FLAG_ACTIVITY_NEW_TASK or FLAG_ACTIVITY_CLEAR_TASK)
+
+        context.startActivity(intent)
+
+        assertThat(future.get(20, TimeUnit.SECONDS)).isTrue()
+
+        try {
+            runWithShellPermissionIdentity {
+                val packageOps = appOpsManager.getPackagesForOps(
+                    arrayOf(OPSTR_RESERVED_FOR_TESTING)
+                )
+
+                assertThat(packageOps).isNotEmpty()
+            }
+        } finally {
+            runCommand("pm uninstall --user ${context.userId} $packageName")
+        }
+    }
+
     private fun noteProxyOpForAttribution(attributionForContextCreation: String, attributionForNoteOp: String) {
         val ctx = context.createAttributionContext(attributionForContextCreation)
         val appOpsManager = ctx.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager

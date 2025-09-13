@@ -24,6 +24,8 @@ import android.content.Intent;
 
 import com.android.compatibility.common.util.PollingCheck;
 
+import java.util.concurrent.TimeUnit;
+
 public class AutofillRestrictionsTest extends BaseDeviceAdminTest {
 
     private static final String SERVICE_NAME =
@@ -58,67 +60,35 @@ public class AutofillRestrictionsTest extends BaseDeviceAdminTest {
 
     public void testDisallowAutofill_allowed() throws Exception {
         enableService();
-        final long timeout = 5000;
-
-        // Wait for Autofill to become ENABLED after enabling the service.
-        // launchActivityAndGetEnabled() should return true when autofill is active.
-        try {
-            PollingCheck.waitFor(
-                    timeout,
-                    () -> {
-                        try {
-                            return launchActivityAndGetEnabled();
-                        } catch (Exception e) {
-                            throw new RuntimeException(
-                                    "Exception while checking if autofill is enabled", e);
-                        }
-                    });
-        } catch (AssertionError e) {
-            throw new AssertionError("Autofill did not become enabled within " + timeout + "ms", e);
-        }
+        PollingCheck.waitFor(TimeUnit.SECONDS.toMillis(5), this::launchActivityAndGetEnabled);
 
         mDevicePolicyManager.addUserRestriction(ADMIN_RECEIVER_COMPONENT, DISALLOW_AUTOFILL);
-
-        // Wait for Autofill to become DISABLED after adding the restriction.
-        // launchActivityAndGetEnabled() should return false when autofill is disabled.
-        try {
-            PollingCheck.waitFor(
-                    timeout,
-                    () -> {
-                        try {
-                            return !launchActivityAndGetEnabled();
-                        } catch (Exception e) {
-                            throw new RuntimeException(
-                                    "Exception while checking if autofill is disabled", e);
-                        }
-                    });
-        } catch (AssertionError e) {
-            throw new AssertionError(
-                    "Autofill did not become disabled within "
-                            + timeout
-                            + "ms after adding restriction",
-                    e);
-        }
-        // If PollingCheck completes without throwing, the test passes.
+        PollingCheck.waitFor(TimeUnit.SECONDS.toMillis(5), () -> !launchActivityAndGetEnabled());
     }
 
-    private boolean launchActivityAndGetEnabled() throws Exception {
-        final Intent launchIntent = new Intent();
-        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        launchIntent.setClassName(AUTOFILL_PACKAGE_NAME, AUTOFILL_ACTIVITY_NAME);
-        final AutofillActivity activity = launchActivity("com.android.cts.deviceandprofileowner",
-                AutofillActivity.class, null);
-        return activity.isAutofillEnabled();
+    private boolean launchActivityAndGetEnabled() {
+        try {
+            final Intent launchIntent = new Intent();
+            launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            launchIntent.setClassName(AUTOFILL_PACKAGE_NAME, AUTOFILL_ACTIVITY_NAME);
+            final AutofillActivity activity =
+                    launchActivity(
+                            "com.android.cts.deviceandprofileowner", AutofillActivity.class, null);
+            return activity.isAutofillEnabled();
+        } catch (Exception e) {
+            throw new AssertionError(e.getCause());
+        }
     }
 
     private void enableService() throws Exception {
-        runShellCommand("settings put secure --user %d %s %d default",
-                mUserId, USER_SETUP_COMPLETE, 1);
+        runShellCommand(
+                "settings put secure --user %d %s %d default", mUserId, USER_SETUP_COMPLETE, 1);
 
         if (USES_CLONED_SETTINGS) {
             runShellCommand("settings put secure %s %s default", AUTOFILL_SERVICE, SERVICE_NAME);
         } else {
-            runShellCommand("settings put --user %d secure %s %s default",
+            runShellCommand(
+                    "settings put --user %d secure %s %s default",
                     mUserId, AUTOFILL_SERVICE, SERVICE_NAME);
         }
         waitForServiceSettingSaved(SERVICE_NAME);

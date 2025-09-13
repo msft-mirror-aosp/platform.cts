@@ -70,9 +70,9 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
   private static final int NUMBER_OF_SUBTITLE_TRACKS = 2;
   private static final Duration LOCK_DURATION = Duration.ofSeconds(5);
   private static final String MP3_SINE_ASSET_1KHZ_40DB_LONG_URI_STRING =
-      "android.resource://android.media.cujsmalltest.cts/raw/sine1khzs40dblong";
+      "android.resource://android.media.cujsmalltest.cts/raw/mp3_sine_1khz_40db_long";
   private static final String OPPUS_ASSET_URI_STRING =
-      "android.resource://android.media.cujsmalltest.cts/raw/testopus";
+      "android.resource://android.media.cujsmalltest.cts/raw/opus_sine_1khz_40db_long";
   private static final String AAC_SINE_ASSET_40DB_LONG_URI_STRING =
       "android.resource://android.media.cujsmalltest.cts/raw/sine40dblong_44k_128kbps_LC";
   private static final String MP3_SINE_GAPLESS_ASSET_URI_STRING =
@@ -213,13 +213,13 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
             .setPlayerListener(new LockPlaybackControllerTestPlayerListener(
                 Duration.ofSeconds(6) /* messagePosition */)).build(),
             "Hevc_720p_15sec_LockPlaybackTest"},
-        {CujTestParam.builder().setMediaUrls(prepareSineWave_70secAudioPlaylist())
+        {CujTestParam.builder().setMediaUrls(prepareMp3SineWave_70secAudioPlaylist())
             .setDuration(Duration.ofSeconds(70) /* clipDuration */).setOverhead(TEST_AUDIO_OVERHEAD)
             .setPlayerListener(
                 new AudioOffloadTestPlayerListener(TestType.AUDIO_OFFLOAD_TEST)).build(),
             MP3_SINE_AUDIO_OFFLOAD_TEST},
-        {CujTestParam.builder().setMediaUrls(prepareOpus_AudioPlaylist())
-            .setDuration(Duration.ofSeconds(35) /* clipDuration */).setOverhead(TEST_AUDIO_OVERHEAD)
+        {CujTestParam.builder().setMediaUrls(prepareOpusSineWave_70AudioPlaylist())
+            .setDuration(Duration.ofSeconds(70) /* clipDuration */).setOverhead(TEST_AUDIO_OVERHEAD)
             .setPlayerListener(
                 new AudioOffloadTestPlayerListener(TestType.AUDIO_OFFLOAD_TEST)).build(),
             OPUS_AUDIO_OFFLOAD_TEST},
@@ -233,15 +233,15 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
             .setPlayerListener(
                 new AudioOffloadTestPlayerListener(TestType.AUDIO_OFFLOAD_TEST)).build(),
             MP3_CONSECUTIVE_AUDIO_OFFLOAD_TEST},
-        {CujTestParam.builder().setMediaUrls(prepareOpus_AudioPlaylist())
+        {CujTestParam.builder().setMediaUrls(prepareOpusSineWave_70AudioPlaylist())
             .setDuration(Duration.ofMillis(
-                (long) (35000/PLAYBACK_RATE_FOR_SPEED_CHANGE_TEST)) /* clipDuration */)
+                (long) (70000/PLAYBACK_RATE_FOR_SPEED_CHANGE_TEST)) /* clipDuration */)
             .setOverhead(TEST_AUDIO_OVERHEAD)
             .setPlayerListener(
                 new AudioOffloadTestPlayerListener(TestType.AUDIO_OFFLOAD_SPEED_CHANGE_TEST))
                 .build(),
             OPUS_AUDIO_OFFLOAD_SPEED_CHANGE_TEST},
-        {CujTestParam.builder().setMediaUrls(prepareSineWave_70secAudioPlaylist())
+        {CujTestParam.builder().setMediaUrls(prepareMp3SineWave_70secAudioPlaylist())
             .setDuration(Duration.ofMillis(100000) /* clip Duration */)
             .setOverhead(TEST_AUDIO_OVERHEAD)
             .setPlayerListener(
@@ -382,7 +382,7 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
   /**
    * Prepare sine wave 70sec audio list.
    */
-  public static List<String> prepareSineWave_70secAudioPlaylist() {
+  public static List<String> prepareMp3SineWave_70secAudioPlaylist() {
     List<String> audioInput = Arrays.asList(
         MP3_SINE_ASSET_1KHZ_40DB_LONG_URI_STRING);
     return audioInput;
@@ -391,7 +391,7 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
   /**
    * Prepare opus audio list.
    */
-  public static List<String> prepareOpus_AudioPlaylist() {
+  public static List<String> prepareOpusSineWave_70AudioPlaylist() {
     List<String> audioInput = Arrays.asList(
         OPPUS_ASSET_URI_STRING);
     return audioInput;
