@@ -16,6 +16,7 @@
 
 package com.android.server.inputmethod.concurrentmultiuser;
 
+import static android.Manifest.permission.ACCESS_SURFACE_FLINGER;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
@@ -42,6 +43,8 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.os.Bundle;
 import android.os.UserHandle;
+import android.server.wm.BuildUtils;
+import android.server.wm.CtsWindowInfoUtils;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
 
@@ -52,7 +55,9 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireAutomotive;
 import com.android.bedstead.multiuser.annotations.RequireVisibleBackgroundUsers;
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.WindowUtil;
 
 import org.junit.After;
 import org.junit.Before;
@@ -62,8 +67,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @RunWith(BedsteadJUnit4.class)
 @RequireVisibleBackgroundUsers(
@@ -79,6 +85,8 @@ public final class ConcurrentMultiUserTest {
             new ComponentName(
                     getInstrumentation().getTargetContext().getPackageName(),
                     ConcurrentMultiUserTestActivity.class.getName());
+    private static final long TIMEOUT_MILLIS =
+            TimeUnit.SECONDS.toMillis(5) * BuildUtils.HW_TIMEOUT_MULTIPLIER;
     private final Context mContext = getInstrumentation().getTargetContext();
     private final InputMethodManager mInputMethodManager =
             mContext.getSystemService(InputMethodManager.class);
@@ -97,7 +105,9 @@ public final class ConcurrentMultiUserTest {
         // Launch driver activity.
         mActivityScenario = ActivityScenario.launch(ConcurrentMultiUserTestActivity.class);
         mActivityScenario.onActivity(activity -> mActivity = activity);
-        mUiAutomation.adoptShellPermissionIdentity(INTERACT_ACROSS_USERS_FULL);
+        WindowUtil.waitForFocus(mActivity);
+        mUiAutomation.adoptShellPermissionIdentity(
+                INTERACT_ACROSS_USERS_FULL, ACCESS_SURFACE_FLINGER);
     }
 
     @After
@@ -210,7 +220,7 @@ public final class ConcurrentMultiUserTest {
      * another user.
      */
     @Test
-    public void enableDisableImePerUser() throws IOException {
+    public void enableDisableImePerUser() throws Exception {
         UserHandle driver = UserHandle.of(mContext.getUserId());
         UserHandle passenger = UserHandle.of(mPeerUserId);
         enableDisableImeForUser(driver, passenger);
@@ -222,7 +232,7 @@ public final class ConcurrentMultiUserTest {
      * user.
      */
     @Test
-    public void setImePerUser() throws IOException {
+    public void setImePerUser() throws Exception {
         UserHandle driver = UserHandle.of(mContext.getUserId());
         UserHandle passenger = UserHandle.of(mPeerUserId);
         setImeForUser(driver, passenger);
@@ -303,6 +313,7 @@ public final class ConcurrentMultiUserTest {
         float[] driverEditTextCenter = mActivity.getEditTextCenter();
         SystemUtil.runShellCommandOrThrow(
                 String.format("input tap %f %f", driverEditTextCenter[0], driverEditTextCenter[1]));
+        CtsWindowInfoUtils.waitForStableWindowGeometry(Duration.ofMillis(TIMEOUT_MILLIS));
     }
 
     private void movePassengerDisplayToTop() throws Exception {
@@ -324,6 +335,7 @@ public final class ConcurrentMultiUserTest {
                         passengerDisplayId,
                         passengerEditTextCenter[0],
                         passengerEditTextCenter[1]));
+        CtsWindowInfoUtils.waitForStableWindowGeometry(Duration.ofMillis(TIMEOUT_MILLIS));
     }
 
     /**
@@ -331,7 +343,7 @@ public final class ConcurrentMultiUserTest {
      * has changed as expected and {@code user2} stays the same.
      */
     private void enableDisableImeForUser(@NonNull UserHandle user1, @NonNull UserHandle user2)
-            throws IOException {
+            throws Exception {
         List<InputMethodInfo> user1EnabledImeList =
                 mInputMethodManager.getEnabledInputMethodListAsUser(user1);
         List<InputMethodInfo> user2EnabledImeList =
@@ -341,23 +353,31 @@ public final class ConcurrentMultiUserTest {
         InputMethodInfo imeToDisable = user1EnabledImeList.get(0);
         SystemUtil.runShellCommandOrThrow(
                 "ime disable --user " + user1.getIdentifier() + " " + imeToDisable.getId());
+        final String imeToDisableId = imeToDisable.getId();
+        PollingCheck.waitFor(
+                TIMEOUT_MILLIS,
+                () ->
+                        !mInputMethodManager
+                                .getEnabledInputMethodListAsUser(user1)
+                                .contains(imeToDisable),
+                "disable shell command failed.");
         List<InputMethodInfo> user1EnabledImeList2 =
                 mInputMethodManager.getEnabledInputMethodListAsUser(user1);
         List<InputMethodInfo> user2EnabledImeList2 =
                 mInputMethodManager.getEnabledInputMethodListAsUser(user2);
         assertWithMessage(
-                        "User "
-                                + user1.getIdentifier()
-                                + " IME "
-                                + imeToDisable.getId()
-                                + " should be disabled")
+                "User "
+                        + user1.getIdentifier()
+                        + " IME "
+                        + imeToDisable.getId()
+                        + " should be disabled")
                 .that(user1EnabledImeList2.contains(imeToDisable))
                 .isFalse();
         assertWithMessage(
-                        "Disabling user "
-                                + user1.getIdentifier()
-                                + " IME shouldn't affect user "
-                                + user2.getIdentifier())
+                "Disabling user "
+                        + user1.getIdentifier()
+                        + " IME shouldn't affect user "
+                        + user2.getIdentifier())
                 .that(
                         user2EnabledImeList2.containsAll(user2EnabledImeList)
                                 && user2EnabledImeList.containsAll(user2EnabledImeList2))
@@ -366,23 +386,30 @@ public final class ConcurrentMultiUserTest {
         // Enable the IME.
         SystemUtil.runShellCommandOrThrow(
                 "ime enable --user " + user1.getIdentifier() + " " + imeToDisable.getId());
+        PollingCheck.waitFor(
+                TIMEOUT_MILLIS,
+                () ->
+                        mInputMethodManager
+                                .getEnabledInputMethodListAsUser(user1)
+                                .contains(imeToDisable),
+                "enable shell command failed.");
         List<InputMethodInfo> user1EnabledImeList3 =
                 mInputMethodManager.getEnabledInputMethodListAsUser(user1);
         List<InputMethodInfo> user2EnabledImeList3 =
                 mInputMethodManager.getEnabledInputMethodListAsUser(user2);
         assertWithMessage(
-                        "User "
-                                + user1.getIdentifier()
-                                + " IME "
-                                + imeToDisable.getId()
-                                + " should be enabled")
+                "User "
+                        + user1.getIdentifier()
+                        + " IME "
+                        + imeToDisable.getId()
+                        + " should be enabled")
                 .that(user1EnabledImeList3.contains(imeToDisable))
                 .isTrue();
         assertWithMessage(
-                        "Enabling user "
-                                + user1.getIdentifier()
-                                + " IME shouldn't affect user "
-                                + user2.getIdentifier())
+                "Enabling user "
+                        + user1.getIdentifier()
+                        + " IME shouldn't affect user "
+                        + user2.getIdentifier())
                 .that(
                         user2EnabledImeList2.containsAll(user2EnabledImeList3)
                                 && user2EnabledImeList3.containsAll(user2EnabledImeList2))
@@ -394,10 +421,9 @@ public final class ConcurrentMultiUserTest {
      * changed as expected and {@code user2} stays the same.
      */
     private void setImeForUser(@NonNull UserHandle user1, @NonNull UserHandle user2)
-            throws IOException {
+            throws Exception {
         // Reset IME for user1.
         SystemUtil.runShellCommandOrThrow("ime reset --user " + user1.getIdentifier());
-
         List<InputMethodInfo> user1EnabledImeList =
                 mInputMethodManager.getEnabledInputMethodListAsUser(user1);
         assumeTrue("There must be at least two IME to test", user1EnabledImeList.size() >= 2);
@@ -413,6 +439,11 @@ public final class ConcurrentMultiUserTest {
         }
         SystemUtil.runShellCommandOrThrow(
                 "ime set --user " + user1.getIdentifier() + " " + anotherIme.getId());
+        final String anotherImeId = anotherIme.getId();
+        PollingCheck.waitFor(
+                TIMEOUT_MILLIS,
+                () -> mInputMethodManager.getCurrentInputMethodInfoAsUser(user1).getId().equals(anotherImeId),
+                "set shell command failed.");
         InputMethodInfo user1Ime2 = mInputMethodManager.getCurrentInputMethodInfoAsUser(user1);
         InputMethodInfo user2Ime2 = mInputMethodManager.getCurrentInputMethodInfoAsUser(user2);
         assertWithMessage("The current IME for user " + user1.getIdentifier() + " is wrong")
