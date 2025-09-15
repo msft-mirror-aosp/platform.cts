@@ -18,7 +18,9 @@ package android.companion.cts.core
 
 import android.Manifest
 import android.companion.AssociationInfo
+import android.companion.CompanionDeviceManager.MESSAGE_ONEWAY_PCC
 import android.companion.CompanionDeviceManager.MESSAGE_REQUEST_PING
+import android.companion.Flags
 import android.companion.cts.common.MAC_ADDRESS_A
 import android.companion.cts.common.RecordingOnTransportsChangedListener
 import android.companion.cts.common.SIMPLE_EXECUTOR
@@ -122,6 +124,17 @@ class TransportsListenerTest : CoreTestBase() {
         // Same call with the USE_COMPANION_TRANSPORTS permissions should succeed.
         withShellPermissionIdentity(Manifest.permission.USE_COMPANION_TRANSPORTS) {
             cdm.sendMessage(MESSAGE_REQUEST_PING, byteArrayOf(), intArrayOf(associationId))
+        }
+
+        if (Flags.trustedDevices()) {
+            assertFailsWith(SecurityException::class) {
+                cdm.sendMessage(MESSAGE_ONEWAY_PCC, byteArrayOf(), intArrayOf(associationId))
+            }
+
+            // Same call with the USE_COMPANION_TRANSPORTS permissions should succeed.
+            withShellPermissionIdentity(Manifest.permission.ACCESS_COMPANION_MESSAGE_PCC) {
+                cdm.sendMessage(MESSAGE_ONEWAY_PCC, byteArrayOf(), intArrayOf(associationId))
+            }
         }
     }
 
