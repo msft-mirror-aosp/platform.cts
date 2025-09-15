@@ -41,6 +41,7 @@ import android.app.appsearch.GetSchemaResponse;
 import android.app.appsearch.OpenBlobForReadResponse;
 import android.app.appsearch.OpenBlobForWriteResponse;
 import android.app.appsearch.PutDocumentsRequest;
+import android.app.appsearch.RemoveBlobResponse;
 import android.app.appsearch.SchemaVisibilityConfig;
 import android.app.appsearch.SetBlobVisibilityRequest;
 import android.app.appsearch.SetSchemaRequest;
@@ -48,6 +49,7 @@ import android.app.appsearch.StorageInfo;
 import android.app.appsearch.testutil.AppSearchTestUtils;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.util.ArraySet;
 
 import androidx.test.core.app.ApplicationProvider;
 
@@ -67,6 +69,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Set;
 
 public abstract class AppSearchSessionBlobCtsTestBase {
     static final String DB_NAME_1 = "";
@@ -290,6 +293,36 @@ public abstract class AppSearchSessionBlobCtsTestBase {
                 .isEqualTo(AppSearchResult.RESULT_NOT_FOUND);
         assertThat(readResult.getFailures().get(mHandle1).getErrorMessage())
                 .contains("Cannot find the blob for handle");
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ENABLE_BLOB_STORE,
+        Flags.FLAG_ENABLE_DIRECTLY_WRITE_COMMIT_REMOVE_BLOB_RESPONSE
+    })
+    public void testRemoveAndCommittedLargeBatchBlobs() throws Exception {
+        assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
+        if (mDb1.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE)) {
+            assumeTrue(Flags.enableAppSearchManageBlobFiles());
+        }
+
+        Set<AppSearchBlobHandle> handles = new ArraySet<>();
+        for (int i = 0; i < 50; i++) {
+            byte[] data = generateRandomBytes(10); // 10 Bytes
+            byte[] digest = calculateDigest(data);
+            AppSearchBlobHandle handle =
+                    AppSearchBlobHandle.createWithSha256(
+                            digest, mPackageName, DB_NAME_1, "namespace" + i);
+            handles.add(handle);
+        }
+
+        CommitBlobResponse commitBlobResponse = mDb1.commitBlobAsync(handles).get();
+        assertFalse(commitBlobResponse.getResult().isSuccess());
+        assertThat(commitBlobResponse.getResult().getFailures()).hasSize(50);
+
+        RemoveBlobResponse removeBlobResponse = mDb1.removeBlobAsync(handles).get();
+        assertFalse(removeBlobResponse.getResult().isSuccess());
+        assertThat(removeBlobResponse.getResult().getFailures()).hasSize(50);
     }
 
     @Test
