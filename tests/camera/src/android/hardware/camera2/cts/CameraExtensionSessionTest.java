@@ -64,6 +64,8 @@ import android.os.SystemClock;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.provider.Settings;
+import android.provider.Settings.SettingNotFoundException;
 import android.util.Log;
 import android.util.Range;
 import android.util.Size;
@@ -77,6 +79,7 @@ import com.android.compatibility.common.util.DeviceReportLog;
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
 import com.android.compatibility.common.util.Stat;
+import com.android.compatibility.common.util.SystemUtil;
 import com.android.ex.camera2.blocking.BlockingExtensionSessionCallback;
 import com.android.ex.camera2.blocking.BlockingSessionCallback;
 import com.android.ex.camera2.blocking.BlockingStateCallback;
@@ -133,6 +136,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
     private CameraErrorCollector mCollector =  null;
 
     private DeviceReportLog mReportLog;
+    private int mOriginalFallbackValue;
 
     @Override
     public void setUp() throws Exception {
@@ -140,10 +144,23 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
         mTestRule = new Camera2AndroidTestRule(mContext);
         mTestRule.before();
         mCollector = new CameraErrorCollector();
+        try {
+            mOriginalFallbackValue = Settings.Secure.getInt(
+                    mContext.getContentResolver(), Settings.Secure.CAMERA_EXTENSIONS_FALLBACK);
+        } catch (SettingNotFoundException e) {
+            // Default value
+            mOriginalFallbackValue = 0;
+        }
+        SystemUtil.runWithShellPermissionIdentity(() ->
+                Settings.Secure.putInt(mContext.getContentResolver(),
+                        Settings.Secure.CAMERA_EXTENSIONS_FALLBACK, 1));
     }
 
     @Override
     public void tearDown() throws Exception {
+        SystemUtil.runWithShellPermissionIdentity(() ->
+                Settings.Secure.putInt(mContext.getContentResolver(),
+                        Settings.Secure.CAMERA_EXTENSIONS_FALLBACK, mOriginalFallbackValue));
         if (mTestRule != null) {
             mTestRule.after();
         }
