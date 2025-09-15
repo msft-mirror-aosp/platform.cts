@@ -15,4 +15,4 @@ per-file DynamicColorsTest.kt = file:platform/frameworks/base:/core/java/android
 per-file Typeface* = nona@google.com, haoyuchang@google.com, justinghan@google.com
 
 # Bug template url: https://b.corp.google.com/issues/new?component=122570&template=195524 = per-file Vulkan*.java
-per-file Vulkan*.java = ianelliott@google.com, cclao@google.com, cnorthrop@google.com, vantablack@google.com, chrisforbes@google.com
+per-file Vulkan*.java = chrisforbes@google.com, anjanasherin@google.com, nikigupta@google.com, cgopinathc@google.com, tomnom@google.com
