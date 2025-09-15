@@ -18,8 +18,8 @@ package android.content.pm.cts;
 
 
 import android.content.pm.PackageManager;
-import android.content.pm.PermissionInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.content.pm.PermissionInfo;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeFull;
 import android.test.AndroidTestCase;
@@ -37,6 +37,7 @@ public class PermissionInfoTest extends AndroidTestCase {
             + "and use custom network protocols. The browser and other applications provide means "
             + "to send data to the internet, so this permission is not required to send data to "
             + "the internet.";
+    private static final int TEST_TARGET_SDK_VERSION = 37;
 
     public void testPermissionInfo() throws NameNotFoundException {
         PackageManager pm = getContext().getPackageManager();
@@ -45,6 +46,7 @@ public class PermissionInfoTest extends AndroidTestCase {
         new PermissionInfo();
         PermissionInfo permissionInfo = pm.getPermissionInfo(PERMISSION_NAME, 0);
         permissionInfo.knownCerts = TEST_CERTS;
+        permissionInfo.requiresGeneralPurposeTargetSdkVersion = TEST_TARGET_SDK_VERSION;
         PermissionInfo infoFromExisted = new PermissionInfo(permissionInfo);
         checkInfoSame(permissionInfo, infoFromExisted);
 
@@ -67,5 +69,8 @@ public class PermissionInfoTest extends AndroidTestCase {
         assertEquals(expected.protectionLevel, actual.protectionLevel);
         assertEquals(expected.nonLocalizedDescription, actual.nonLocalizedDescription);
         assertEquals(expected.knownCerts, actual.knownCerts);
+        assertEquals(
+                expected.requiresGeneralPurposeTargetSdkVersion,
+                actual.requiresGeneralPurposeTargetSdkVersion);
     }
 }
