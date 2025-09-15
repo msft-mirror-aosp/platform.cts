@@ -1015,6 +1015,34 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
         assertNull(extras);
         mOnConnectionEventCounter.reset();
 
+        mConnection.sendConnectionEvent(Call.EVENT_PHONE_ACCOUNT_CHANGED, null);
+        mOnConnectionEventCounter.waitForCount(1, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        event = (String) (mOnConnectionEventCounter.getArgs(0)[1]);
+        extras = (Bundle) (mOnConnectionEventCounter.getArgs(0)[2]);
+        assertEquals(Call.EVENT_PHONE_ACCOUNT_CHANGED, event);
+        assertNull(extras);
+        mOnConnectionEventCounter.reset();
+
+        mConnection.setActive();
+        assertCallState(mCall, Call.STATE_ACTIVE);
+
+        // Get the current PhoneAccount for the call
+        PhoneAccountHandle currentHandle = mCall.getDetails().getAccountHandle();
+        assertNotNull(currentHandle);
+        PhoneAccount currentAccount = mTelecomManager.getPhoneAccount(currentHandle);
+        assertNotNull(currentAccount);
+
+        // Re-register the same PhoneAccount. This should trigger internal updates
+        // in Telecom and cause CallsManager to notify the Call.
+
+        mTelecomManager.registerPhoneAccount(currentAccount);
+        mOnConnectionEventCounter.waitForCount(1, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        event = (String) (mOnConnectionEventCounter.getArgs(0)[1]);
+        extras = (Bundle) (mOnConnectionEventCounter.getArgs(0)[2]);
+        assertEquals(Call.EVENT_PHONE_ACCOUNT_CHANGED, event);
+        assertNull(extras);
+        mOnConnectionEventCounter.reset();
+
         TestParcelable testParcelable = createTestParcelable();
         testBundle = createTestBundle(testParcelable);
         mConnection.sendConnectionEvent(OTT_TEST_EVENT_NAME, testBundle);
