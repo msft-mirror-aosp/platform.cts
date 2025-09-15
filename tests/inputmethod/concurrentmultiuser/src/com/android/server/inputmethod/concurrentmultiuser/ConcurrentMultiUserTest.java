@@ -87,6 +87,7 @@ public final class ConcurrentMultiUserTest {
                     ConcurrentMultiUserTestActivity.class.getName());
     private static final long TIMEOUT_MILLIS =
             TimeUnit.SECONDS.toMillis(5) * BuildUtils.HW_TIMEOUT_MULTIPLIER;
+    private static final String MOCKIME_ID = "com.android.cts.mockime/.MockIme";
     private final Context mContext = getInstrumentation().getTargetContext();
     private final InputMethodManager mInputMethodManager =
             mContext.getSystemService(InputMethodManager.class);
@@ -344,40 +345,48 @@ public final class ConcurrentMultiUserTest {
      */
     private void enableDisableImeForUser(@NonNull UserHandle user1, @NonNull UserHandle user2)
             throws Exception {
-        List<InputMethodInfo> user1EnabledImeList =
-                mInputMethodManager.getEnabledInputMethodListAsUser(user1);
         List<InputMethodInfo> user2EnabledImeList =
                 mInputMethodManager.getEnabledInputMethodListAsUser(user2);
-
-        // Disable an IME for user1.
-        InputMethodInfo imeToDisable = user1EnabledImeList.get(0);
         SystemUtil.runShellCommandOrThrow(
-                "ime disable --user " + user1.getIdentifier() + " " + imeToDisable.getId());
-        final String imeToDisableId = imeToDisable.getId();
+                "ime enable --user " + user1.getIdentifier() + " " + MOCKIME_ID);
+        List<InputMethodInfo> user1EnabledImeList =
+                mInputMethodManager.getEnabledInputMethodListAsUser(user1);
         PollingCheck.waitFor(
                 TIMEOUT_MILLIS,
                 () ->
-                        !mInputMethodManager
-                                .getEnabledInputMethodListAsUser(user1)
-                                .contains(imeToDisable),
-                "disable shell command failed.");
+                        mInputMethodManager.getEnabledInputMethodListAsUser(user1).stream()
+                                .map(InputMethodInfo::getId)
+                                .toList()
+                                .contains(MOCKIME_ID),
+                "enable shell command failed.");
+        // Disable an IME for user1.
+        SystemUtil.runShellCommandOrThrow(
+                "ime disable --user " + user1.getIdentifier() + " " + MOCKIME_ID);
         List<InputMethodInfo> user1EnabledImeList2 =
                 mInputMethodManager.getEnabledInputMethodListAsUser(user1);
         List<InputMethodInfo> user2EnabledImeList2 =
                 mInputMethodManager.getEnabledInputMethodListAsUser(user2);
-        assertWithMessage(
-                "User "
-                        + user1.getIdentifier()
-                        + " IME "
-                        + imeToDisable.getId()
-                        + " should be disabled")
-                .that(user1EnabledImeList2.contains(imeToDisable))
+        PollingCheck.waitFor(
+                TIMEOUT_MILLIS,
+                () ->
+                        !mInputMethodManager.getEnabledInputMethodListAsUser(user1).stream()
+                                .map(InputMethodInfo::getId)
+                                .toList()
+                                .contains(MOCKIME_ID),
+                "disable shell command failed.");
+
+        assertWithMessage("User " + user1.getIdentifier() + "'s MockIme should be disabled")
+                .that(
+                        user1EnabledImeList2.stream()
+                                .map(InputMethodInfo::getId)
+                                .toList()
+                                .contains(MOCKIME_ID))
                 .isFalse();
         assertWithMessage(
-                "Disabling user "
-                        + user1.getIdentifier()
-                        + " IME shouldn't affect user "
-                        + user2.getIdentifier())
+                        "Disabling user "
+                                + user1.getIdentifier()
+                                + "'s MockIme shouldn't affect user "
+                                + user2.getIdentifier())
                 .that(
                         user2EnabledImeList2.containsAll(user2EnabledImeList)
                                 && user2EnabledImeList.containsAll(user2EnabledImeList2))
@@ -385,31 +394,31 @@ public final class ConcurrentMultiUserTest {
 
         // Enable the IME.
         SystemUtil.runShellCommandOrThrow(
-                "ime enable --user " + user1.getIdentifier() + " " + imeToDisable.getId());
+                "ime enable --user " + user1.getIdentifier() + " " + MOCKIME_ID);
         PollingCheck.waitFor(
                 TIMEOUT_MILLIS,
                 () ->
-                        mInputMethodManager
-                                .getEnabledInputMethodListAsUser(user1)
-                                .contains(imeToDisable),
+                        mInputMethodManager.getEnabledInputMethodListAsUser(user1).stream()
+                                .map(InputMethodInfo::getId)
+                                .toList()
+                                .contains(MOCKIME_ID),
                 "enable shell command failed.");
         List<InputMethodInfo> user1EnabledImeList3 =
                 mInputMethodManager.getEnabledInputMethodListAsUser(user1);
         List<InputMethodInfo> user2EnabledImeList3 =
                 mInputMethodManager.getEnabledInputMethodListAsUser(user2);
-        assertWithMessage(
-                "User "
-                        + user1.getIdentifier()
-                        + " IME "
-                        + imeToDisable.getId()
-                        + " should be enabled")
-                .that(user1EnabledImeList3.contains(imeToDisable))
+        assertWithMessage("User " + user1.getIdentifier() + "'s MockIme should be enabled")
+                .that(
+                        user1EnabledImeList3.stream()
+                                .map(InputMethodInfo::getId)
+                                .toList()
+                                .contains(MOCKIME_ID))
                 .isTrue();
         assertWithMessage(
-                "Enabling user "
-                        + user1.getIdentifier()
-                        + " IME shouldn't affect user "
-                        + user2.getIdentifier())
+                        "Enabling user "
+                                + user1.getIdentifier()
+                                + "'s MockIme shouldn't affect user "
+                                + user2.getIdentifier())
                 .that(
                         user2EnabledImeList2.containsAll(user2EnabledImeList3)
                                 && user2EnabledImeList3.containsAll(user2EnabledImeList2))
