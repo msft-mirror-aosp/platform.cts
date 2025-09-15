@@ -189,6 +189,10 @@ public abstract class WindowUntrustedTouchTestBase {
             mContainer.getWindowInsetsController().hide(statusBars() | navigationBars());
             mContainer.setOnTouchListener(this::onTouchEvent);
         });
+        assertTrue(
+                "Failed to wait for activity to be on top",
+                CtsWindowInfoUtils.waitForWindowOnTop(mActivity.getWindow()));
+
         mInstrumentation = getInstrumentation();
         mContext = mInstrumentation.getContext();
         mAppSelf = mContext.getPackageName();
