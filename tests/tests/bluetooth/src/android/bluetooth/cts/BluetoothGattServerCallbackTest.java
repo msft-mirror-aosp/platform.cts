@@ -30,6 +30,7 @@ import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattServerCallback;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.GattOffloadSession;
 import android.content.Context;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -47,6 +48,9 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
 
 import java.util.UUID;
 
@@ -115,9 +119,15 @@ public class BluetoothGattServerCallbackTest {
                 @Override
                 @RequiresFlagsEnabled(Flags.FLAG_LE_SUBRATE_API)
                 public void onSubrateChange(BluetoothDevice device, int subrateMode, int status) {}
+
+                @Override
+                @RequiresFlagsEnabled(Flags.FLAG_GATT_OFFLOAD_API)
+                public void onCharacteristicsUnoffloaded(
+                        BluetoothDevice device, int sessionId, int status) {}
             };
     private final UUID TEST_UUID = UUID.fromString("0000110a-0000-1000-8000-00805f9b34fb");
     private final byte[] mBytes = new byte[] {};
+    private static final int TEST_SESSION_ID = 1;
     private Context mContext;
     private BluetoothDevice mBluetoothDevice;
     private BluetoothAdapter mAdapter;
@@ -125,6 +135,10 @@ public class BluetoothGattServerCallbackTest {
     private BluetoothGattService mBluetoothGattService;
     private BluetoothGattDescriptor mBluetoothGattDescriptor;
     private BluetoothGattCharacteristic mBluetoothGattCharacteristic;
+
+    @Mock private GattOffloadSession mGattOffloadSession;
+
+    @Rule public final MockitoRule mockito = MockitoJUnit.rule();
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -197,5 +211,15 @@ public class BluetoothGattServerCallbackTest {
                 mBluetoothDevice, BluetoothGatt.SUBRATE_MODE_BALANCED, BluetoothGatt.GATT_SUCCESS);
         mCallbacks.onSubrateChange(
                 mBluetoothDevice, BluetoothGatt.SUBRATE_MODE_HIGH, BluetoothGatt.GATT_SUCCESS);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_GATT_OFFLOAD_API)
+    @Test
+    public void characteristicsOffloadMethods() {
+        mCallbacks.onCharacteristicsOffloaded(
+                mBluetoothDevice, mGattOffloadSession, GattOffloadSession.STATUS_SUCCESS);
+
+        mCallbacks.onCharacteristicsUnoffloaded(
+                mBluetoothDevice, TEST_SESSION_ID, GattOffloadSession.STATUS_SUCCESS);
     }
 }

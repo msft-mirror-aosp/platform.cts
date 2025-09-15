@@ -57,6 +57,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemProperties;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
@@ -64,6 +65,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.ApiLevelUtil;
 
 import com.google.common.collect.Range;
@@ -830,5 +832,21 @@ public class BluetoothAdapterTest {
             BroadcastReceiver receiver, Duration timeout, Matcher<Intent>... matchers) {
         verify(receiver, timeout(timeout.toMillis()))
                 .onReceive(any(), MockitoHamcrest.argThat(AllOf.allOf(matchers)));
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_GATT_OFFLOAD_API)
+    @Test
+    public void getSupportedGattOffloadCapabilities() {
+        assumeTrue(mHasBluetooth);
+
+        assertThrows(SecurityException.class, () -> mAdapter.getSupportedGattOffloadCapabilities());
+
+        try (var p = Permissions.withPermissions(BLUETOOTH_PRIVILEGED)) {
+            assertThat(mAdapter.getSupportedGattOffloadCapabilities()).isNotNull();
+            assertThat(mAdapter.getSupportedGattOffloadCapabilities().isClientOffloadSupported())
+                    .isAnyOf(true, false);
+            assertThat(mAdapter.getSupportedGattOffloadCapabilities().isServerOffloadSupported())
+                    .isAnyOf(true, false);
+        }
     }
 }
