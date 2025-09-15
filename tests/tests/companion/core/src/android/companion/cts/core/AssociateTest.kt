@@ -16,8 +16,10 @@
 
 package android.companion.cts.core
 
+import android.Manifest.permission.REQUEST_COMPANION_SELF_MANAGED
 import android.companion.AssociationRequest
 import android.companion.CompanionDeviceManager.FLAG_CALL_METADATA
+import android.companion.CompanionDeviceManager.FLAG_UNIVERSAL_MODES
 import android.companion.DeviceId
 import android.companion.cts.common.CUSTOM_ID_A
 import android.companion.cts.common.CUSTOM_ID_B
@@ -86,6 +88,50 @@ class AssociateTest : CoreTestBase() {
         cdm.disableSystemDataSyncForTypes(associations[0].id, FLAG_CALL_METADATA)
         associations = cdm.myAssociations
         assertEquals(0, associations[0].systemDataSyncFlags and FLAG_CALL_METADATA)
+    }
+
+    @Test
+    fun test_systemDataSyncForTypes_requiresPermissionForRestrictedTypes() = with(targetApp) {
+        associate(MAC_ADDRESS_A)
+
+        fun association() = cdm.myAssociations[0]
+
+        // Attempts to interact with restricted flags without the
+        // REQUEST_COMPANION_SELF_MANAGED permission should lead to a
+        // SecurityException being thrown.
+        assertFailsWith(SecurityException::class) {
+            cdm.enableSystemDataSyncForTypes(association().id, FLAG_UNIVERSAL_MODES)
+        }
+        assertEquals(
+            0,
+            association().systemDataSyncFlags and FLAG_UNIVERSAL_MODES
+        )
+
+        // Same call with the REQUEST_COMPANION_SELF_MANAGED permissions should succeed.
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.enableSystemDataSyncForTypes(association().id, FLAG_UNIVERSAL_MODES)
+        }
+        assertEquals(
+            FLAG_UNIVERSAL_MODES,
+            association().systemDataSyncFlags and FLAG_UNIVERSAL_MODES
+        )
+
+        // Repeat for disabling the restricted flag.
+        assertFailsWith(SecurityException::class) {
+            cdm.disableSystemDataSyncForTypes(association().id, FLAG_UNIVERSAL_MODES)
+        }
+        assertEquals(
+            FLAG_UNIVERSAL_MODES,
+            association().systemDataSyncFlags and FLAG_UNIVERSAL_MODES
+        )
+
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.disableSystemDataSyncForTypes(association().id, FLAG_UNIVERSAL_MODES)
+        }
+        assertEquals(
+            0,
+            association().systemDataSyncFlags and FLAG_UNIVERSAL_MODES
+        )
     }
 
     @Test
