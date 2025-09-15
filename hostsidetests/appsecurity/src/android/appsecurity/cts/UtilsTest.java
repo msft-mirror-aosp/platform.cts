@@ -17,11 +17,17 @@ package android.appsecurity.cts;
 
 import static android.appsecurity.cts.Utils.getAllUsers;
 import static android.appsecurity.cts.Utils.getFirstNonSystemUserId;
+import static android.appsecurity.cts.Utils.prepareMultipleUsers;
+import static android.appsecurity.cts.Utils.prepareMultipleFullUsers;
 
 import static com.android.tradefed.device.UserInfo.USER_SYSTEM;
 
 import static org.junit.Assert.assertThrows;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
@@ -182,6 +188,170 @@ public final class UtilsTest {
                 .isEqualTo(42);
     }
 
+    @Test
+    public void testPrepareMultipleUsers_nullUsers() throws Exception {
+        mockListUsers(null);
+
+        expect.withMessage("prepareMultipleUsers()")
+                .that(prepareMultipleUsers(mMockDevice))
+                .asList()
+                .containsExactly(USER_SYSTEM);
+
+        verifyUsersRunningStatus(new int[]{USER_SYSTEM}, null);
+    }
+
+    @Test
+    public void testPrepareMultipleUsers_emptyUsers() throws Exception {
+        mockListUsers();
+
+        expect.withMessage("prepareMultipleUsers()")
+                .that(prepareMultipleUsers(mMockDevice))
+                .asList()
+                .containsExactly(USER_SYSTEM);
+
+        verifyUsersRunningStatus(new int[]{USER_SYSTEM}, null);
+    }
+
+    @Test
+    public void testPrepareMultipleUsers_invalidUsersCount() throws Exception {
+        mockListUsers();
+
+        assertThrows("Expected AssertionError thrown for maxUsers negative value",
+                        AssertionError.class, () -> prepareMultipleUsers(mMockDevice, -1));
+    }
+
+    @Test
+    public void testPrepareMultipleUsers_multipleUsers() throws Exception {
+        mockCurrentUser(51);
+        mockListUsers(5, 10, 33, 51, 42, 4);
+
+        expect.withMessage("prepareMultipleUsers(3)")
+                .that(prepareMultipleUsers(mMockDevice, 3))
+                .asList()
+                .containsExactly(51, 5, 10)
+                .inOrder();
+
+        verifyUsersRunningStatus(new int[]{51, 5, 10}, new int[]{33, 42, 4});
+    }
+
+    @Test
+    public void testPrepareMultipleUsers_notEnougthUsers() throws Exception {
+        mockCurrentUser(51);
+        mockListUsers(5, 10, 33, 51, 42, 4);
+
+        expect.withMessage("prepareMultipleUsers(10)")
+                .that(prepareMultipleUsers(mMockDevice, 10))
+                .asList()
+                .containsExactly(51, 5, 10, 33, 42, 4)
+                .inOrder();
+
+        verifyUsersRunningStatus(new int[]{51, 5, 10, 33, 42, 4}, null);
+    }
+
+    @Test
+    public void testPrepareMultipleFullUsers_emptyUsersOnNonHsumDevice() throws Exception {
+        mockHeadlessSystemUserMode(false);
+        mockListUsers();
+
+        expect.withMessage("prepareMultipleFullUsers(4)")
+                .that(prepareMultipleFullUsers(mMockDevice, 4))
+                .asList()
+                .containsExactly(USER_SYSTEM);
+    }
+
+    @Test
+    public void testPrepareMultipleFullUsers_emptyUsersOnHsumDevice() throws Exception {
+        mockHeadlessSystemUserMode(true);
+        mockListUsers();
+
+        expect.withMessage("prepareMultipleFullUsers(4)")
+                .that(prepareMultipleFullUsers(mMockDevice, 4))
+                .asList()
+                .isEmpty();
+    }
+
+    @Test
+    public void testPrepareMultipleFullUsers_multipleUsersOnNonHsumDevice() throws Exception {
+        mockHeadlessSystemUserMode(false);
+        mockCurrentUser(51);
+        mockListUsers(USER_SYSTEM, 5, 10, 33, 51, 42, 4);
+
+        expect.withMessage("prepareMultipleFullUsers(4)")
+                .that(prepareMultipleFullUsers(mMockDevice, 4))
+                .asList()
+                .containsExactly(51, USER_SYSTEM, 5, 10)
+                .inOrder();
+
+        verifyUsersRunningStatus(new int[]{USER_SYSTEM, 51, 5, 10}, new int[]{33, 42, 4});
+    }
+
+    @Test
+    public void testPrepareMultipleFullUsers_multipleUsersOnHsumDevice() throws Exception {
+        mockHeadlessSystemUserMode(true);
+        mockCurrentUser(51);
+        mockListUsers(USER_SYSTEM, 5, 10, 33, 51, 42, 4);
+
+        expect.withMessage("prepareMultipleFullUsers(4)")
+                .that(prepareMultipleFullUsers(mMockDevice, 4))
+                .asList()
+                .containsExactly(51, 5, 10, 33)
+                .inOrder();
+
+        verifyUsersRunningStatus(new int[]{51, 5, 10, 33}, new int[]{42, 4});
+    }
+
+    @Test
+    public void testPrepareMultipleFullUsers_nonEnoughtUsersOnNonHsumDevice() throws Exception {
+        mockHeadlessSystemUserMode(false);
+        mockCurrentUser(51);
+        mockListUsers(USER_SYSTEM, 5, 10, 33, 51, 42, 4);
+
+        expect.withMessage("prepareMultipleFullUsers(10)")
+                .that(prepareMultipleFullUsers(mMockDevice, 10))
+                .asList()
+                .containsExactly(51, USER_SYSTEM, 5, 10, 33, 42, 4)
+                .inOrder();
+
+        verifyUsersRunningStatus(new int[]{51, USER_SYSTEM, 5, 10, 33, 42, 4}, null);
+    }
+
+    @Test
+    public void testPrepareMultipleFullUsers_nonEnoughtUsersOnHsumDevice() throws Exception {
+        mockHeadlessSystemUserMode(true);
+        mockCurrentUser(51);
+        mockListUsers(USER_SYSTEM, 5, 10, 33, 51, 42, 4);
+
+        expect.withMessage("prepareMultipleFullUsers(10)")
+                .that(prepareMultipleFullUsers(mMockDevice, 10))
+                .asList()
+                .containsExactly(51, 5, 10, 33, 42, 4)
+                .inOrder();
+
+        verifyUsersRunningStatus(new int[]{51, 5, 10, 33, 42, 4}, null);
+    }
+
+    private void verifyUsersRunningStatus(int[] startedUserIds, int[] stoppedUserIds)
+            throws Exception {
+
+        if (startedUserIds != null) {
+            for (int userId : startedUserIds) {
+                verify(mMockDevice).startUser(userId, true);
+
+                verify(mMockDevice, never()).stopUser(userId);
+                verify(mMockDevice, never()).stopUser(eq(userId), anyBoolean(), anyBoolean());
+            }
+        }
+
+        if (stoppedUserIds != null) {
+            for (int userId : stoppedUserIds) {
+                verify(mMockDevice).stopUser(userId, true, true);
+
+                verify(mMockDevice, never()).startUser(userId);
+                verify(mMockDevice, never()).startUser(eq(userId), anyBoolean());
+            }
+        }
+    }
+
     private void mockListUsers(@Nullable int... userIds) throws DeviceNotAvailableException {
         if (userIds == null) {
             when(mMockDevice.listUsers()).thenReturn(null);
@@ -193,5 +363,9 @@ public final class UtilsTest {
 
     private void mockCurrentUser(int userId) throws DeviceNotAvailableException {
         when(mMockDevice.getCurrentUser()).thenReturn(userId);
+    }
+
+    private void mockHeadlessSystemUserMode(boolean enabled) throws DeviceNotAvailableException {
+        when(mMockDevice.isHeadlessSystemUserMode()).thenReturn(enabled);
     }
 }

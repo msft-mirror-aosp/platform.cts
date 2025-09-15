@@ -426,4 +426,10 @@
 
     <!-- b/444092987 -->
     <option name="compatibility:exclude-filter" value="CtsPackageManagerTestCases android.content.pm.cts.PackageManagerShellCommandIncrementalTest#testSpaceAllocatedForPackage" />
+
+    <!-- b/430974254 -->
+    <option name="compatibility:exclude-filter" value="CtsAdServicesEndToEndTests com.android.adservices.tests.cts.topics.TopicsManagerTest#testTopicsManager_runDefaultClassifier_usingGetMethodToCreateManager" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesEndToEndTests com.android.adservices.tests.cts.topics.TopicsManagerTest#testTopicsManager_runPrecomputedClassifier_encryptedTopics_usingGetManager" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesEndToEndTests com.android.adservices.tests.cts.topics.TopicsManagerTest#testTopicsManager_runDefaultClassifier" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesEndToEndTests com.android.adservices.tests.cts.topics.TopicsManagerTest#testTopicsManager_runPrecomputedClassifier_encryptedTopics" />
 </configuration>
