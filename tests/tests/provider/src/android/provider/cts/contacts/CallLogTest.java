@@ -785,7 +785,7 @@ public class CallLogTest extends InstrumentationTestCase {
         ContentValues values = new ContentValues();
         values.put(Calls.NUMBER, TEST_NUMBER);
         values.put(Calls.TYPE, Integer.valueOf(Calls.OUTGOING_TYPE));
-        values.put(Calls.UUID, preferredDisplayName);
+        values.put(Calls.PREFERRED_DISPLAY_NAME, preferredDisplayName);
         return values;
     }
 
