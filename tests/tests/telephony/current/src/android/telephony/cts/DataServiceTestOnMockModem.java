@@ -22,9 +22,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
@@ -61,6 +63,7 @@ public class DataServiceTestOnMockModem {
     private static final int LATCH_SET_USER_DATA_ROAMING_ENABLED = 1;
     private static final int LATCH_NOTIFY_IMS_DATA_NETWORK = 2;
 
+    private PackageManager mPackageManager;
     private MockModemManager mMockModemManager;
     private TelephonyManager mTelephonyManager;
     private int mTestSub = 0;
@@ -68,11 +71,18 @@ public class DataServiceTestOnMockModem {
     private boolean mInitialIsUserDataEnabled = false;
     private boolean mInitialIsUserDataRoamingEnabled = false;
 
+    private boolean mSupportTelephonyData = false;
+
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void beforeTest() throws Exception {
+        mPackageManager = getContext().getPackageManager();
+        mSupportTelephonyData =
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA);
+        assumeTrue(mSupportTelephonyData);
+
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(
@@ -124,6 +134,8 @@ public class DataServiceTestOnMockModem {
 
     @After
     public void afterTest() throws Exception {
+        if (!mSupportTelephonyData) return;
+
         if (mMockModemManager != null) {
             mMockModemManager.clearAllCalls(TEST_SLOT, DisconnectCause.POWER_OFF);
         }
@@ -178,6 +190,7 @@ public class DataServiceTestOnMockModem {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_DATA_SERVICE_NOTIFY_IMS_DATA_NETWORK)
     public void testNotifyImsDataNetwork() {
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_IMS));
         ConnectivityManager connectivityManager =
                 (ConnectivityManager) getContext().getSystemService(ConnectivityManager.class);
         NetworkRequest.Builder builder = new NetworkRequest.Builder();
