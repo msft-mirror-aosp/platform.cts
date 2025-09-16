@@ -34,6 +34,8 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.UserHandle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.LockScreenSession;
 import android.server.wm.WindowManagerStateHelper;
 import android.view.inputmethod.InputMethodManager;
@@ -67,6 +69,9 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
 
     private static final String FEATURE_TV_OPERATOR_TIER = "com.google.android.tv.operator_tier";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Rule
     public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
@@ -274,27 +279,36 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
                                                 Collections.singletonList(
                                                         session1.getMockImePackageName())));
 
-                        // Then switch to MockIme1
+                        // should switch to MockIme1
                         stream1.skipAll();
                         imm.restartInput(editText);
-
                         runOnMainSync(
                                 () ->
                                         editText.getContext()
                                                 .getSystemService(InputMethodManager.class)
                                                 .showSoftInput(editText, 0));
-                        expectCommand(
-                                stream2,
-                                session2.callSwitchInputMethod(session1.getImeId()),
-                                TIMEOUT);
-                        // MockIme2 should be destroyed immediately after switching, even when the
-                        // current client doesn't have input focus.
-                        expectEvent(stream2, eventMatcher("onDestroy"), TIMEOUT);
-
-                        // Make sure that MockIme1 eventually becomes visible
-                        expectEvent(stream1, eventMatcher("onCreate"), TIMEOUT);
                         expectEvent(stream1, editorMatcher("onStartInput", marker), TIMEOUT);
                         expectEvent(stream1, editorMatcher("onStartInputView", marker), TIMEOUT);
+
+                        // Removing policy should reset back to original IME: MockIme2.
+                        SystemUtil.runWithShellPermissionIdentity(
+                                () -> imm.setAllowedImesByPolicyForTest(null));
+
+                        stream2.skipAll();
+                        imm.restartInput(editText);
+                        runOnMainSync(
+                                () ->
+                                        editText.getContext()
+                                                .getSystemService(InputMethodManager.class)
+                                                .showSoftInput(editText, 0));
+
+                        // MockIme1 should be destroyed immediately after switching to MockIme2.
+                        expectEvent(stream1, eventMatcher("onDestroy"), TIMEOUT);
+
+                        // Make sure that MockIme2 eventually becomes visible.
+                        expectEvent(stream2, eventMatcher("onCreate"), TIMEOUT);
+                        expectEvent(stream2, editorMatcher("onStartInput", marker), TIMEOUT);
+                        expectEvent(stream2, editorMatcher("onStartInputView", marker), TIMEOUT);
                         expectImeVisible(TIMEOUT);
                     },
                     true /* enforceDevicePolicy */);
