@@ -19,6 +19,7 @@ package android.car.cts.permissiontest.am;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeFalse;
 import static org.mockito.Mockito.mock;
 
 import android.app.Activity;
@@ -35,6 +36,8 @@ import android.view.Display;
 import android.window.DisplayAreaOrganizer;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+
+import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -141,6 +144,10 @@ public class CarActivityManagerPermissionTest extends AbstractCarManagerPermissi
     @Test
     @EnsureHasPermission(Car.PERMISSION_MANAGE_CAR_SYSTEM_UI)
     public void getCarTaskViewController_requiresPermission_INTERACT_ACROSS_USERS() {
+        assumeFalse(
+                "CarTaskViewController is not available when config_isUsingAutoTaskStackWindowing"
+                        + " is enabled.",
+                isAutoTaskStackWindowingEnabled());
         SecurityException e = assertThrows(SecurityException.class,
                 () -> mCarActivityManager.getCarTaskViewController(mock(Activity.class),
                         mock(Executor.class), mock(CarTaskViewControllerCallback.class)));
@@ -151,10 +158,19 @@ public class CarActivityManagerPermissionTest extends AbstractCarManagerPermissi
     @Test
     @EnsureHasPermission(android.Manifest.permission.INTERACT_ACROSS_USERS)
     public void getCarTaskViewController_requiresPermission_PERMISSION_MANAGE_CAR_SYSTEM_UI() {
+        assumeFalse(
+                "CarTaskViewController is not available when config_isUsingAutoTaskStackWindowing"
+                        + " is enabled.",
+                isAutoTaskStackWindowingEnabled());
         SecurityException e = assertThrows(SecurityException.class,
                 () -> mCarActivityManager.getCarTaskViewController(mock(Activity.class),
                         mock(Executor.class), mock(CarTaskViewControllerCallback.class)));
 
         assertThat(e).hasMessageThat().contains(Car.PERMISSION_MANAGE_CAR_SYSTEM_UI);
+    }
+
+    private boolean isAutoTaskStackWindowingEnabled() {
+        String dumpsysOutput = SystemUtil.runShellCommandOrThrow("dumpsys car_service");
+        return dumpsysOutput.contains("IsAutoTaskStackUsed: true");
     }
 }
