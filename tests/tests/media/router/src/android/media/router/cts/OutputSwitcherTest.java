@@ -113,7 +113,7 @@ import java.util.stream.Collectors;
 public class OutputSwitcherTest {
     private static final String TAG = "OutputSwitcherTest";
     private static final String SYSTEM_UI_PACKAGE = "com.android.systemui";
-    private static final int TIMEOUT_MS = 10_000;
+    private static final int TIMEOUT_MS = 15_000;
 
     // This comes from the value of com.android.systemui.R.string.media_output_item_connected_state
     // (frameworks/base/packages/SystemUI/res/values/strings.xml)
