@@ -16,7 +16,9 @@
 package com.android.cts.devicepolicy.user;
 
 import static android.app.admin.flags.Flags.FLAG_DEVICE_OWNER_FOR_ALL;
+import static android.multiuser.Flags.FLAG_PROFILES_FOR_ALL;
 
+import static com.android.compatibility.common.util.UserUtil.CONFIG_SUPPORT_PROFILES_ON_NON_MAIN_USER;
 import static com.android.tradefed.device.UserInfo.USER_SYSTEM;
 
 import com.android.compatibility.common.util.BaseSwitchFullUserTargetPreparer;
@@ -117,6 +119,9 @@ public final class DevicePolicyUsersPreparer extends BaseSwitchFullUserTargetPre
      * Gets the ids of any user that *could* be used as parent of profiles (created by the test).
      */
     public static ImmutableList<Integer> getProfileParentUserIds() {
+        // TODO(b/374832167): we could add all full users, but given that no test is currently
+        // setting profiles in more than one user (and mostly likely tests that do so would be
+        // added on CtsDevicePolicyTestCases), we're just returning one.
         return ImmutableList.of(getOracle().getProfileParentUserId());
     }
 
@@ -160,16 +165,20 @@ public final class DevicePolicyUsersPreparer extends BaseSwitchFullUserTargetPre
             mMainUserId = device.getMainUserId();
             mSupportsProfilesForAll = new UserUtil(device).isProfilesOnNonMainUserSupported();
             mIsAutomotive = device.hasFeature("android.hardware.type.automotive");
-            mSupportsDeviceOwnerForAll =
-                    new FlagsUtil(device).getBooleanFlag(FLAG_DEVICE_OWNER_FOR_ALL);
+            FlagsUtil flagsUtil = new FlagsUtil(device);
+            mSupportsDeviceOwnerForAll = flagsUtil.getBooleanFlag(FLAG_DEVICE_OWNER_FOR_ALL);
             logAndDisplay(
                     "setUp(): mIsHsum=%b, mInitialCurrentUserId=%d, mMainUserId=%s, "
-                            + "mSupportsProfilesForAll=%b, mSupportsDeviceOwnerForAll=%b, "
+                            + "mSupportsProfilesForAll(flag %s=%b)=%B, "
+                            + "mSupportsDeviceOwnerForAll(flag %s)=%B, "
                             + "mIsAutomotive=%b, mPreExistingUserIds=%s",
                     mIsHsum,
                     mInitialCurrentUserId,
                     mMainUserId,
+                    FLAG_PROFILES_FOR_ALL,
+                    flagsUtil.getBooleanFlag(FLAG_PROFILES_FOR_ALL),
                     mSupportsProfilesForAll,
+                    FLAG_DEVICE_OWNER_FOR_ALL,
                     mSupportsDeviceOwnerForAll,
                     mIsAutomotive,
                     mPreExistingUserIds);
@@ -190,8 +199,11 @@ public final class DevicePolicyUsersPreparer extends BaseSwitchFullUserTargetPre
                 CLog.d("getDeviceOwnerUserId(): returning initial user (%d) on automotive build");
                 return mInitialCurrentUserId;
             }
-            Preconditions.checkState(mMainUserId != null,
-                    "DO not supported on mainless-user device");
+            Preconditions.checkState(
+                    mMainUserId != null,
+                    "DO not supported on mainless-user device (most likely flag %s is disabled - "
+                            + "check logs)",
+                    FLAG_DEVICE_OWNER_FOR_ALL);
             return mMainUserId;
         }
 
@@ -209,14 +221,6 @@ public final class DevicePolicyUsersPreparer extends BaseSwitchFullUserTargetPre
                 // safer (to avoid potential breakages) to simplify its logic for non-HSUM devices
                 return USER_SYSTEM;
             }
-
-            // TODO(b/374832167): we could add all full users, but given that no test is currently
-            // setting profiles in more than one user (and mostly likely tests that do so would be
-            // added on CtsDevicePolicyTestCases), we're just returning one user.
-            return mainOrCurrentUserId();
-        }
-
-        private int mainOrCurrentUserId() {
             if (mMainUserId != null) {
                 return mMainUserId;
             }
@@ -226,7 +230,12 @@ public final class DevicePolicyUsersPreparer extends BaseSwitchFullUserTargetPre
                         mInitialCurrentUserId);
                 return mInitialCurrentUserId;
             }
-            Preconditions.checkState(mSupportsProfilesForAll, "device does not have main user");
+            Preconditions.checkState(
+                    mSupportsProfilesForAll,
+                    "PO not supported on mainless-user device (either flag %s is disabled or "
+                            + "device doesn't define %s - check logs)",
+                    FLAG_PROFILES_FOR_ALL,
+                    CONFIG_SUPPORT_PROFILES_ON_NON_MAIN_USER);
             return mInitialCurrentUserId;
         }
     }
