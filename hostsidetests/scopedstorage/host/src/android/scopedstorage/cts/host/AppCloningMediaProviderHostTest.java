@@ -116,6 +116,9 @@ public class AppCloningMediaProviderHostTest extends BaseHostTestCase{
 
     private static boolean supportsCloneUsers(ITestDevice device)
             throws DeviceNotAvailableException {
+        if (device.getApiLevel() < 36) {
+            return device.getMaxNumberOfUsersSupported() > 1;
+        }
         return device.getMaxNumberOfUsersSupported("android.os.usertype.profile.CLONE") > 0;
     }
 
