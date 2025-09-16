@@ -32,6 +32,7 @@ import android.hardware.display.VirtualDisplay;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.Settings;
 import android.view.Display;
@@ -109,10 +110,13 @@ public class VirtualDeviceViewConfigurationTest {
         Flags.FLAG_VIEWCONFIGURATION_APIS,
         Flags.FLAG_DEVICE_AWARE_SETTINGS_OVERRIDE
     })
-    public void getLongPressTimeoutMillis_afterSettingChange_returnsNewValueOnVirtualDevice()
-            throws Exception {
+    @RequiresFlagsDisabled(android.multiuser.Flags.FLAG_CORE_SETTINGS_MULTI_USER)
+    public void
+            getLongPressTimeoutMillis_afterSettingChange_withoutMultiUserCoreSettings_returnsNewValueOnVirtualDevice() {
         verifyNewValueAfterSettingChange(
-                Settings.Secure.LONG_PRESS_TIMEOUT, ViewConfiguration::getLongPressTimeoutMillis);
+                UserHandle.SYSTEM,
+                Settings.Secure.LONG_PRESS_TIMEOUT,
+                ViewConfiguration::getLongPressTimeoutMillis);
     }
 
     @Test
@@ -120,10 +124,41 @@ public class VirtualDeviceViewConfigurationTest {
         Flags.FLAG_VIEWCONFIGURATION_APIS,
         Flags.FLAG_DEVICE_AWARE_SETTINGS_OVERRIDE
     })
-    public void getMultiPressTimeoutMillis_afterSettingChange_returnsNewValueOnVirtualDevice()
-            throws Exception {
+    @RequiresFlagsDisabled(android.multiuser.Flags.FLAG_CORE_SETTINGS_MULTI_USER)
+    public void
+            getMultiPressTimeoutMillis_afterSettingChange_withoutMultiUserCoreSettings_returnsNewValueOnVirtualDevice() {
         verifyNewValueAfterSettingChange(
-                Settings.Secure.MULTI_PRESS_TIMEOUT, ViewConfiguration::getMultiPressTimeoutMillis);
+                UserHandle.SYSTEM,
+                Settings.Secure.MULTI_PRESS_TIMEOUT,
+                ViewConfiguration::getMultiPressTimeoutMillis);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+        Flags.FLAG_VIEWCONFIGURATION_APIS,
+        Flags.FLAG_DEVICE_AWARE_SETTINGS_OVERRIDE,
+        android.multiuser.Flags.FLAG_CORE_SETTINGS_MULTI_USER
+    })
+    public void
+            getLongPressTimeoutMillis_afterSettingChange_withMultiUserCoreSettings_returnsNewValueOnVirtualDevice() {
+        verifyNewValueAfterSettingChange(
+                UserHandle.of(UserHandle.myUserId()),
+                Settings.Secure.LONG_PRESS_TIMEOUT,
+                ViewConfiguration::getLongPressTimeoutMillis);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+        Flags.FLAG_VIEWCONFIGURATION_APIS,
+        Flags.FLAG_DEVICE_AWARE_SETTINGS_OVERRIDE,
+        android.multiuser.Flags.FLAG_CORE_SETTINGS_MULTI_USER
+    })
+    public void
+            getMultiPressTimeoutMillis_afterSettingChange_withMultiUserCoreSettings_returnsNewValueOnVirtualDevice() {
+        verifyNewValueAfterSettingChange(
+                UserHandle.of(UserHandle.myUserId()),
+                Settings.Secure.MULTI_PRESS_TIMEOUT,
+                ViewConfiguration::getMultiPressTimeoutMillis);
     }
 
     @Test
@@ -343,18 +378,24 @@ public class VirtualDeviceViewConfigurationTest {
                 ViewConfiguration.get(activity).getScaledMaximumFlingVelocity());
     }
 
+    /**
+     * Verifies that activities on a virtual device (without any ViewConfigurationParams set) honor
+     * the default device settings.
+     */
     private void verifyNewValueAfterSettingChange(
+            UserHandle userHandle,
             String settingKey,
             Function<ViewConfiguration, Integer> viewConfigurationValueProvider) {
         final int[] defaultValue = new int[1];
         final int[] newValue = new int[1];
         final ContentResolver[] contentResolver = new ContentResolver[1];
+        // Change the setting value for the default device.
         mRule.runWithTemporaryPermission(
                 () -> {
                     Context context =
                             InstrumentationRegistry.getInstrumentation()
                                     .getTargetContext()
-                                    .createContextAsUser(UserHandle.SYSTEM, 0);
+                                    .createContextAsUser(userHandle, 0);
                     contentResolver[0] = context.getContentResolver();
                     try {
                         defaultValue[0] = Settings.Secure.getInt(contentResolver[0], settingKey);
@@ -368,6 +409,7 @@ public class VirtualDeviceViewConfigurationTest {
                 WRITE_SECURE_SETTINGS);
 
         try {
+            // Create a virtual device without any ViewConfigurationParams.
             VirtualDeviceManager.VirtualDevice virtualDevice = mRule.createManagedVirtualDevice();
             VirtualDisplay virtualDisplay =
                     mRule.createManagedVirtualDisplay(
@@ -382,6 +424,7 @@ public class VirtualDeviceViewConfigurationTest {
                     newValue[0],
                     viewConfigurationValueProvider.apply(viewconfiguration).intValue());
         } finally {
+            // Restore the setting value for the default device.
             mRule.runWithTemporaryPermission(
                     () -> {
                         Settings.Secure.putInt(contentResolver[0], settingKey, defaultValue[0]);
