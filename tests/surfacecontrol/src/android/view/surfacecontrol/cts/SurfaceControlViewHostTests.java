@@ -2251,7 +2251,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
                 "android.view.SurfaceControlViewHost.LayoutParams#setFocusable"
             })
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SCVH_SET_FOCUSABLE)
+    @RequiresFlagsEnabled(Flags.FLAG_SCVH_SET_FOCUSABLE_API)
     public void testLayoutParams_setFocusable() throws Throwable {
         mEmbeddedView = new Button(mActivity);
 
@@ -2312,7 +2312,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
                 "android.view.SurfaceControlViewHost.LayoutParams#getHeight"
             })
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SCVH_SET_FOCUSABLE)
+    @RequiresFlagsEnabled(Flags.FLAG_SCVH_SET_FOCUSABLE_API)
     public void testGetLayoutParams() throws Throwable {
         mEmbeddedView = new Button(mActivity);
         addSurfaceViewAbove(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
