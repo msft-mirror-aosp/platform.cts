@@ -2123,7 +2123,7 @@ public class KeyAttestationTest {
         } else {
             assertThat(attestationCert.getPublicKey().getAlgorithm(),
                     /*Signing key algorithm "1.3.101.112" & Agreement Key algorithm "XDH"*/
-                    either(is("1.3.101.112")).or(is("XDH")));
+                    either(is("1.3.101.112")).or(is("XDH")).or(is("EdDSA")));
         }
         assertNull(nonKeyDetailsList.getAlgorithm());
         assertEquals(ecCurve, keyDetailsList.ecCurveAsString());
