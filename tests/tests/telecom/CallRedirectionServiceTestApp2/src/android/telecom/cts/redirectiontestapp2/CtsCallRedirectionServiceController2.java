@@ -43,6 +43,7 @@ public class CtsCallRedirectionServiceController2 extends Service {
     public static final int PLACE_CALL_UNMODIFIED = 2;
     public static final int PLACE_REDIRECTED_CALL = 3;
     public static final int CANCEL_CALL = 4;
+    public static final int PLACE_CALL_TO_ALTERNATE_NUMBER = 5;
     public static final long TIMEOUT = 6000;
 
     private int mDecision = NO_DECISION_YET;
@@ -73,6 +74,17 @@ public class CtsCallRedirectionServiceController2 extends Service {
                                             boolean confirmFirst) {
                     Log.i(TAG, "redirectCall");
                     mDecision = PLACE_REDIRECTED_CALL;
+                    mTargetHandle = targetHandle;
+                    mRedirectedPhoneAccount = redirectedPhoneAccount;
+                    mConfirmFirst = confirmFirst;
+                }
+
+                @Override
+                public void setPlaceCallToAlternateNumber(Uri targetHandle,
+                        PhoneAccountHandle redirectedPhoneAccount,
+                        boolean confirmFirst) {
+                    Log.i(TAG, "placeCallToAlternateNumber");
+                    mDecision = PLACE_CALL_TO_ALTERNATE_NUMBER;
                     mTargetHandle = targetHandle;
                     mRedirectedPhoneAccount = redirectedPhoneAccount;
                     mConfirmFirst = confirmFirst;

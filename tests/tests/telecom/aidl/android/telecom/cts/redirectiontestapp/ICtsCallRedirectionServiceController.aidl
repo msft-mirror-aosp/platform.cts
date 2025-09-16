@@ -26,6 +26,9 @@ interface ICtsCallRedirectionServiceController {
     void setRedirectCall(in Uri targetHandle, in PhoneAccountHandle targetPhoneAccount,
             boolean confirmFirst);
 
+    void setPlaceCallToAlternateNumber(in Uri targetHandle,
+           in PhoneAccountHandle redirectedPhoneAccount, boolean confirmFirst);
+
     void setCancelCall();
 
     void setPlaceCallUnmodified();

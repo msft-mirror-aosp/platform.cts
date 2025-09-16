@@ -184,6 +184,65 @@ public class CallRedirectionServiceTest extends BaseTelecomTestWithMockServices 
         assertTrue(Call.STATE_DISCONNECTED != mCall.getState());
     }
 
+    public void testPlaceCallToAlternateNumber() throws Exception {
+        if (!shouldTestTelecom(mContext)) {
+            return;
+        }
+        mCallRedirectionServiceController.setPlaceCallToAlternateNumber(
+                SAMPLE_HANDLE, TestUtils.TEST_PHONE_ACCOUNT_HANDLE_2, false);
+        placeAndVerifyCallByRedirection(false /* cancelledByCallRedirection */);
+        mInCallService = mInCallCallbacks.getService();
+        assertCallDetailsConstructed(mInCallService.getLastCall(), true);
+        mCall = mInCallService.getLastCall();
+
+        // Assert that no gateway info is present, as the number is replaced directly.
+        assertNull(mCall.getDetails().getGatewayInfo());
+
+        // Assert that the handle is the alternate number provided.
+        assertEquals(SAMPLE_HANDLE, mCall.getDetails().getHandle());
+
+        // Assert that the PhoneAccountHandle is the target account provided.
+        assertEquals(TestUtils.TEST_PHONE_ACCOUNT_HANDLE_2, mCall.getDetails().getAccountHandle());
+
+        // Assert that the call is active.
+        assertTrue(Call.STATE_DISCONNECTED != mCall.getState());
+    }
+
+    public void testPlaceCallToAlternateNumberWithPostDialDigits() throws Exception {
+        if (!shouldTestTelecom(mContext)) {
+            return;
+        }
+        mCallRedirectionServiceController.setPlaceCallToAlternateNumber(
+                SAMPLE_REDIRECT_HANDLE, TestUtils.TEST_PHONE_ACCOUNT_HANDLE_2, false);
+
+        Bundle extras = new Bundle();
+        extras.putParcelable(TestUtils.EXTRA_PHONE_NUMBER, SAMPLE_HANDLE_WITH_POST_DIAL);
+
+        placeAndVerifyCallByRedirection(extras, false /* cancelledByCallRedirection */);
+        mInCallService = mInCallCallbacks.getService();
+        assertCallDetailsConstructed(mInCallService.getLastCall(), true);
+        mCall = mInCallService.getLastCall();
+
+        // Assert that no gateway info is present, as the number is replaced directly.
+        assertNull(mCall.getDetails().getGatewayInfo());
+
+        // Assert that the handle is the alternate number provided.
+        assertEquals(SAMPLE_REDIRECT_HANDLE_WITH_POST_DIAL, mCall.getDetails().getHandle());
+
+        // Assert that the PhoneAccountHandle is the target account provided.
+        assertEquals(TestUtils.TEST_PHONE_ACCOUNT_HANDLE_2, mCall.getDetails().getAccountHandle());
+
+        // The , (pause) separators get URI encoded in the call intent; compare decoded scheme to
+        // ensure proper equality for what it essentially the same thing  displayed.
+        assertEquals(Uri.decode(SAMPLE_REDIRECT_HANDLE_WITH_POST_DIAL.getSchemeSpecificPart()),
+                 Uri.decode(mCall.getDetails().getHandle().getSchemeSpecificPart()));
+
+        // Assert that the call is active.
+        assertTrue(Call.STATE_DISCONNECTED != mCall.getState());
+    }
+
+
+
     public void testCancelCall() throws Exception {
         if (!shouldTestTelecom(mContext)) {
             return;
