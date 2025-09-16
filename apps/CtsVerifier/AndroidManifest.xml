@@ -6501,6 +6501,7 @@
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="com.android.cts.verifier.sharesheet.TEST_CATEGORY" />
                 <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="test/interactive-chooser-boundary" />
             </intent-filter>
         </activity-alias>
         <activity-alias
@@ -6513,6 +6514,7 @@
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="com.android.cts.verifier.sharesheet.TEST_CATEGORY" />
                 <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="test/interactive-chooser-boundary" />
             </intent-filter>
         </activity-alias>
         <activity-alias
@@ -6525,6 +6527,7 @@
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="com.android.cts.verifier.sharesheet.TEST_CATEGORY" />
                 <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="test/interactive-chooser-boundary" />
             </intent-filter>
         </activity-alias>
         <activity-alias
@@ -6537,6 +6540,7 @@
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="com.android.cts.verifier.sharesheet.TEST_CATEGORY" />
                 <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="test/interactive-chooser-boundary" />
             </intent-filter>
         </activity-alias>
         <activity-alias
@@ -6549,6 +6553,7 @@
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="com.android.cts.verifier.sharesheet.TEST_CATEGORY" />
                 <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="test/interactive-chooser-boundary" />
             </intent-filter>
         </activity-alias>
         <activity-alias
@@ -6561,6 +6566,7 @@
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="com.android.cts.verifier.sharesheet.TEST_CATEGORY" />
                 <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="test/interactive-chooser-boundary" />
             </intent-filter>
         </activity-alias>
         <!-- /aliases -->
