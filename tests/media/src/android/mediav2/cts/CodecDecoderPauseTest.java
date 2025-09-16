@@ -16,11 +16,13 @@
 
 package android.mediav2.cts;
 
+import static android.media.audio.Flags.iamfDefinitionsApi;
 import static android.media.codec.Flags.apvSupport;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
 
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableIamf;
 
 import static org.junit.Assert.fail;
 
@@ -98,6 +100,10 @@ public class CodecDecoderPauseTest extends CodecDecoderTestBase {
                     {MediaFormat.MIMETYPE_AUDIO_EAC3, "audio/eac3_510_48kHz_256.mp4",
                             CODEC_OPTIONAL},
             }));
+        }
+        if (IS_AFTER_B && iamfDefinitionsApi() && extractorMp4EnableIamf()) {
+            exhaustiveArgsList.add(new Object[] {MediaFormat.MIMETYPE_AUDIO_IAMF,
+                    "audio/7_1_4_Opus_no_video.mp4", CODEC_OPTIONAL});
         }
 
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, false);
