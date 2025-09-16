@@ -24,6 +24,7 @@ import android.media.MediaCodecInfo;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.mediav2.common.cts.EncoderConfigParams;
+import android.os.Build;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -52,7 +53,7 @@ import java.util.stream.Stream;
  * check if the information advertised is ok. If the component is actually capable of supporting the
  * advertised information is beyond the scope of the test.
  */
-@SdkSuppress(minSdkVersion = 36)
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class NativeAMediaCodecStoreTest {

@@ -52,7 +52,7 @@ import java.util.Collection;
  * The test verifies if the component / framework output is consistent with single access unit
  * normal mode and single access unit block model mode.
  **/
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName = "VanillaIceCream")
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @AppModeFull(reason = "Instant apps cannot access the SD card")
 @RunWith(Parameterized.class)
 public class CodecDecoderBlockModelTest extends CodecDecoderBlockModelTestBase {

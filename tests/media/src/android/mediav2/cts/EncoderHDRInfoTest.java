@@ -58,7 +58,7 @@ import java.util.Objects;
  */
 @RunWith(Parameterized.class)
 // P010 support was added in Android T, hence limit the following tests to Android T and above
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU, codeName = "Tiramisu")
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
 public class EncoderHDRInfoTest extends HDREncoderTestBase {
     private static final String LOG_TAG = EncoderHDRInfoTest.class.getSimpleName();
     public static final HashMap<Long, String> HDR_DYNAMIC_INFO = new HashMap<>();

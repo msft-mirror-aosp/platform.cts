@@ -799,7 +799,7 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
      * Test setting PictureProfile instance as a parameter using MediaCodec.setParameter().
      */
     /*
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     @RequiresFlagsEnabled({FLAG_APPLY_PICTURE_PROFILES, FLAG_MEDIA_QUALITY_FW})
     @ApiTest(apis = {"android.media.MediaFormat#KEY_PICTURE_PROFILE_INSTANCE"})
     @Test

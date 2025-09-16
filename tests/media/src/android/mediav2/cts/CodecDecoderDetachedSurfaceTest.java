@@ -371,8 +371,7 @@ public class CodecDecoderDetachedSurfaceTest extends CodecDecoderTestBase {
      * This is continued till end of sequence. The test checks if the number of frames rendered
      * to each surface at the end of session is as expected.
      */
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
     @RequiresFlagsEnabled(FLAG_NULL_OUTPUT_SURFACE)
     @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_DetachedSurface",
             "android.media.MediaCodec#detachOutputSurface",
@@ -435,8 +434,7 @@ public class CodecDecoderDetachedSurfaceTest extends CodecDecoderTestBase {
      * detachOutputSurface() must work as documented. Additionally, after detaching output
      * surface, the application releases the surface and expects normal decode functionality.
      */
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
     @RequiresFlagsEnabled(FLAG_NULL_OUTPUT_SURFACE)
     @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_DetachedSurface",
             "android.media.MediaCodec#CONFIGURE_FLAG_DETACHED_SURFACE"})

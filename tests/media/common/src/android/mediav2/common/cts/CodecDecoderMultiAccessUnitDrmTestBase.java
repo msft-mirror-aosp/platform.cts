@@ -51,7 +51,7 @@ import java.util.UUID;
 /**
  * Wrapper class for trying and testing mediacodec secure decoder components in large buffer mode
  */
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName = "VanillaIceCream")
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
 public class CodecDecoderMultiAccessUnitDrmTestBase extends CodecDecoderMultiAccessUnitTestBase {
     private static final String LOG_TAG =
