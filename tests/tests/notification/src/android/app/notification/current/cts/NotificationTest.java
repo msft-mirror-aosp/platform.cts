@@ -177,9 +177,7 @@ public class NotificationTest {
                 .setGroupAlertBehavior(Notification.GROUP_ALERT_CHILDREN)
                 .setBubbleMetadata(bubble)
                 .setAllowSystemGeneratedContextualActions(ALLOW_SYS_GEN_CONTEXTUAL_ACTIONS);
-        if (Flags.apiRichOngoing()) {
-            builder.setShortCriticalText(SHORT_CRITICAL_TEXT);
-        }
+        builder.setShortCriticalText(SHORT_CRITICAL_TEXT);
         if (Flags.nmSummarization()) {
             builder.setHasSummarizedContent(true);
         }
@@ -242,9 +240,7 @@ public class NotificationTest {
         assertEquals(mNotification.getTimeoutAfter(), result.getTimeoutAfter());
         assertEquals(mNotification.getChannelId(), result.getChannelId());
         assertEquals(mNotification.getSettingsText(), result.getSettingsText());
-        if (Flags.apiRichOngoing()) {
-            assertEquals(mNotification.getShortCriticalText(), result.getShortCriticalText());
-        }
+        assertEquals(mNotification.getShortCriticalText(), result.getShortCriticalText());
         assertEquals(mNotification.getGroupAlertBehavior(), result.getGroupAlertBehavior());
         assertNotNull(result.getBubbleMetadata());
         assertEquals(mNotification.getAllowSystemGeneratedContextualActions(),
@@ -1029,7 +1025,6 @@ public class NotificationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
     public void testGetShortCriticalText_noneSet() {
         Notification n = new Notification.Builder(mContext, CHANNEL.getId()).build();
 
@@ -1037,7 +1032,6 @@ public class NotificationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
     public void testGetShortCriticalText_isSet() {
         Notification n = new Notification.Builder(mContext, CHANNEL.getId())
                 .setShortCriticalText(SHORT_CRITICAL_TEXT)
@@ -1157,7 +1151,6 @@ public class NotificationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
     public void testProgressStyle_recoverAllAttributesFromParcel() {
         final Notification.ProgressStyle expectedProgressStyle = new Notification.ProgressStyle();
         final Icon progressTrackerIcon = Icon.createWithContentUri(
@@ -1204,7 +1197,6 @@ public class NotificationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
     public void testProgressStyle_recoverAllAttributesFromNotification() {
         final Notification.ProgressStyle expectedProgressStyle = new Notification.ProgressStyle();
         final Icon progressTrackerIcon = Icon.createWithContentUri(
