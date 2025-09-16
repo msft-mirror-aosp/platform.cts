@@ -125,3 +125,4 @@ android.media.projection.MediaProjection
 android.app.HandoffActivityDataRequestInfo
 android.content.Context.BindServiceFlags
 android.content.Context.UpdateBindingParams
+android.app.admin.MultiUserDeviceProvisioningParams
