@@ -21,9 +21,12 @@ import static androidx.test.InstrumentationRegistry.getInstrumentation;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assume.assumeFalse;
 
+import android.app.UiAutomation;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Insets;
+import android.graphics.Rect;
 import android.support.test.uiautomator.By;
 import android.support.test.uiautomator.BySelector;
 import android.support.test.uiautomator.UiDevice;
@@ -32,6 +35,9 @@ import android.support.test.uiautomator.UiObjectNotFoundException;
 import android.support.test.uiautomator.UiScrollable;
 import android.support.test.uiautomator.UiSelector;
 import android.support.test.uiautomator.Until;
+import android.util.Log;
+import android.util.SparseArray;
+import android.view.accessibility.AccessibilityWindowInfo;
 import android.widget.Switch;
 
 import androidx.annotation.Nullable;
@@ -40,12 +46,16 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
 
+import java.util.List;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
 public class AutoPrivacySettingsTest {
+    private static final String TAG = AutoPrivacySettingsTest.class.getSimpleName();
+
     private static final int TIMEOUT_MS = 2000;
     private static final String ACTION_SETTINGS = "android.settings.SETTINGS";
     private static final String PRIVACY = "Privacy";
@@ -63,6 +73,11 @@ public class AutoPrivacySettingsTest {
 
     // To support dual panes in AAOS S
     private static final int MAX_NUM_SCROLLABLES = 2;
+
+    private static final int DEFAULT_DISPLAY = 0;
+
+    // uiautomator default swipe dead margin area
+    private static final double DEFAULT_SWIPE_DEADZONE_PCT = 0.1;
 
     private final Context mContext = InstrumentationRegistry.getContext();
     private final UiDevice mDevice = UiDevice.getInstance(getInstrumentation());
@@ -166,6 +181,7 @@ public class AutoPrivacySettingsTest {
                     new UiSelector().scrollable(true).instance(i));
             scrollable.setMaxSearchSwipes(10);
             try {
+                maybeAdjustSwipeDeadZone(scrollable);
                 scrollable.scrollTextIntoView(text);
             } catch (UiObjectNotFoundException e) {
                 // Ignore the exception if there's no scroll bar.
@@ -181,6 +197,62 @@ public class AutoPrivacySettingsTest {
         return foundObject;
     }
 
+    private void maybeAdjustSwipeDeadZone(UiScrollable scrollable)
+            throws UiObjectNotFoundException {
+        double maxOverlapRatio = calculateMaxSystemWindowOverlapRatio(scrollable.getBounds());
+        if (maxOverlapRatio > 0) {
+            Log.d(TAG, "Adjusting swipe dead zone due to system window overlap = "
+                    + maxOverlapRatio);
+            scrollable.setSwipeDeadZonePercentage(DEFAULT_SWIPE_DEADZONE_PCT + maxOverlapRatio);
+        }
+    }
+
+    private double calculateMaxSystemWindowOverlapRatio(Rect scrollableBounds) {
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        SparseArray<List<AccessibilityWindowInfo>> windowsOnAllDisplays =
+                uiAutomation.getWindowsOnAllDisplays();
+        List<AccessibilityWindowInfo> windows = windowsOnAllDisplays.valueAt(DEFAULT_DISPLAY);
+
+        if (windows == null) {
+            return 0.0;
+        }
+
+        double maxOverlapRatio = 0.0;
+        for (AccessibilityWindowInfo window : windows) {
+            if (window.getType() == AccessibilityWindowInfo.TYPE_SYSTEM) {
+                Rect systemWindowBounds = new Rect();
+                window.getBoundsInScreen(systemWindowBounds);
+
+                Log.d(TAG, "Checking overlap with system window = " + window);
+                double overlapRatio =
+                        calculateVerticalOverlapRatio(scrollableBounds, systemWindowBounds);
+
+                if (overlapRatio > 0) {
+                    Log.d(TAG, "Overlap with overlapRatio = " + overlapRatio);
+                    maxOverlapRatio = Math.max(maxOverlapRatio, overlapRatio);
+                }
+            }
+        }
+        return maxOverlapRatio;
+    }
+
+    /**
+     * Returns the fraction (0–1) of scrollableBounds' height that is overlapped by insetBounds.
+     */
+    private double calculateVerticalOverlapRatio(Rect scrollableBounds, Rect insetBounds) {
+        if (scrollableBounds == null || insetBounds == null) {
+            return 0.0;
+        }
+
+        if (Rect.intersects(scrollableBounds, insetBounds)) {
+            int overlapHeight = Math.min(scrollableBounds.bottom, insetBounds.bottom) -
+                    Math.max(scrollableBounds.top, insetBounds.top);
+            if (overlapHeight > 0) {
+                return (double) overlapHeight / (double) scrollableBounds.height();
+            }
+        }
+        return 0.0;
+    }
 
     /**
      * Launch the action settings screen.
