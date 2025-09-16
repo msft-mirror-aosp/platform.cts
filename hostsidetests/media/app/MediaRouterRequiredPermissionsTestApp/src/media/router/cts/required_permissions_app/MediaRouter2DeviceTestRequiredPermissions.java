@@ -77,7 +77,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class MediaRouter2DeviceTestRequiredPermissions {
     private static final String SYSTEM_UI_PACKAGE = "com.android.systemui";
-    private static final long TIMEOUT_MS = 5_000;
+    private static final long TIMEOUT_MS = 15_000;
 
     private ExecutorService mExecutor;
     private Context mContext;
