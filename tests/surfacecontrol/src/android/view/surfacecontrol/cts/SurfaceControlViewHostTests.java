@@ -275,7 +275,9 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         }
         mConnections.clear();
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
-        mTouchScreen.close();
+        if (mTouchScreen != null) {
+            mTouchScreen.close();
+        }
         Components.forceStopPackage();
     }
 
