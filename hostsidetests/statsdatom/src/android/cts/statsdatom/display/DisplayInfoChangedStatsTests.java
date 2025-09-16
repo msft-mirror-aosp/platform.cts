@@ -227,15 +227,18 @@ public class DisplayInfoChangedStatsTests extends BaseHostJUnit4Test implements 
 
         // Restore the original rotation setting
         setUserRotationMode(getDevice(), userRotationBeforeTest);
-        setAccelerometerRotationMode(getDevice(), accelerometerRotationBeforeTest);
-
         PollingCheck.check(
-                "Failed to restore original rotation settings.",
+                "Failed to restore original rotation mode.",
+                TIMEOUT_MS,
+                () -> getCurrentUserRotationMode(getDevice()) == userRotationBeforeTest);
+
+        setAccelerometerRotationMode(getDevice(), accelerometerRotationBeforeTest);
+        PollingCheck.check(
+                "Failed to restore original accelerometer mode.",
                 TIMEOUT_MS,
                 () ->
-                        getCurrentUserRotationMode(getDevice()) == userRotationBeforeTest
-                                && getCurrentAccelerometerRotationMode(getDevice())
-                                        == accelerometerRotationBeforeTest);
+                        getCurrentAccelerometerRotationMode(getDevice())
+                                == accelerometerRotationBeforeTest);
     }
 
     @Test
