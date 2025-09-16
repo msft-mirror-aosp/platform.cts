@@ -49,7 +49,6 @@ import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.wm.overlay.R;
 import android.server.wm.shared.BlockingResultReceiver;
-import android.view.Display;
 import android.view.WindowManager.LayoutParams;
 
 import androidx.test.filters.FlakyTest;
@@ -646,7 +645,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
                 R.anim.long_alpha_1);
         long start = SystemClock.elapsedRealtime();
 
-        assertTrue(mWmState.waitForAppTransitionIdleOnDisplay(Display.DEFAULT_DISPLAY));
+        assertTrue(mWmState.waitForAppTransitionIdleOnDisplay(mActivityDisplayId));
         long duration = SystemClock.elapsedRealtime() - start;
         assertThat(duration).isAtMost(MAX_ANIMATION_DURATION_MS + ANIMATION_DURATION_TOLERANCE_MS);
     }
@@ -666,14 +665,14 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         // transition in the duration of the exit animation below. Otherwise
         // waitForAppTransitionRunningOnDisplay might return immediately if this transition is not
         // done by then instead of waiting for the exit animation to start running.
-        assertTrue(mWmState.waitForAppTransitionIdleOnDisplay(Display.DEFAULT_DISPLAY));
+        assertTrue(mWmState.waitForAppTransitionIdleOnDisplay(mActivityDisplayId));
 
         sendFinishToExitAnimationActivity(
                 SECOND_EXIT_ANIMATION_ACTIVITY, EXTRA_VALUE_LONG_ANIMATION_0_7);
-        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
+        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(mActivityDisplayId));
         long start = SystemClock.elapsedRealtime();
 
-        assertTrue(mWmState.waitForAppTransitionIdleOnDisplay(Display.DEFAULT_DISPLAY));
+        assertTrue(mWmState.waitForAppTransitionIdleOnDisplay(mActivityDisplayId));
         long duration = SystemClock.elapsedRealtime() - start;
         assertThat(duration).isAtMost(MAX_ANIMATION_DURATION_MS + ANIMATION_DURATION_TOLERANCE_MS);
     }
@@ -738,11 +737,11 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         // Wait for ExitAnimationActivity open transition to complete to avoid
         // waitForAppTransitionRunningOnDisplay returning immediately if this transition is not
         // done by then instead of waiting for the exit animation to start running.
-        assertTrue(mWmState.waitForAppTransitionIdleOnDisplay(Display.DEFAULT_DISPLAY));
+        assertTrue(mWmState.waitForAppTransitionIdleOnDisplay(mActivityDisplayId));
 
         sendFinishToExitAnimationActivity(
                 SECOND_EXIT_ANIMATION_ACTIVITY, EXTRA_VALUE_ANIMATION_0_7);
-        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
+        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(mActivityDisplayId));
 
         mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
 
@@ -760,7 +759,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         addExitAnimationActivity(SECOND_EXIT_ANIMATION_ACTIVITY);
         sendFinishToExitAnimationActivity(
                 SECOND_EXIT_ANIMATION_ACTIVITY, EXTRA_VALUE_ANIMATION_0_9);
-        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
+        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(mActivityDisplayId));
 
         mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
 
@@ -778,7 +777,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         addExitAnimationActivity(SAME_UID_EXIT_ANIMATION_ACTIVITY);
         sendFinishToExitAnimationActivity(
                 SAME_UID_EXIT_ANIMATION_ACTIVITY, EXTRA_VALUE_ANIMATION_0_9);
-        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
+        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(mActivityDisplayId));
 
         mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
 
