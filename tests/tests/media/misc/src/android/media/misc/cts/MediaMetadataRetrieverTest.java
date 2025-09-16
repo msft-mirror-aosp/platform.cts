@@ -1238,9 +1238,7 @@ public class MediaMetadataRetrieverTest {
     }
 
     @Test
-    // TODO(b/296893703): Replace this with Build.VERSION_CODES.V once it exists.
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-            codeName = "VanillaIceCream")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
     public void testGetImageAtIndexAvifWithCrop() throws Exception {
         // sample_720x480_crop_20_20_680_440.avif is a 720x480 AVIF image with the crop window
         // set to left: 20 top: 20 crop width: 680 crop height: 440. The cropped image should

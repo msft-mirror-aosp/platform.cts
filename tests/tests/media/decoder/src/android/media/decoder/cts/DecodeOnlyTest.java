@@ -66,7 +66,7 @@ import java.util.function.Supplier;
 
 @MediaHeavyPresubmitTest
 @AppModeFull(reason = "There should be no instant apps specific behavior related to decoders")
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 @RunWith(AndroidJUnit4.class)
 @ApiTest(apis = {"android.media.MediaCodec#BUFFER_FLAG_DECODE_ONLY"})
 public class DecodeOnlyTest extends MediaTestBase {

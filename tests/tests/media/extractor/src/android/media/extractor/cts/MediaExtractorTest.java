@@ -149,8 +149,7 @@ public class MediaExtractorTest {
     }
 
     @RequiresFlagsEnabled(FLAG_EXTRACTOR_MP4_ENABLE_APV)
-    //TODO(b/396702301) Replace with Build.VERSION_CODES.BAKLAVA once it is defined
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM + 1, codeName = "Baklava")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     @Test
     public void testApvMediaExtractor() throws Exception {
         String testFileName = "pattern_640x480_30fps_16mbps_apv_10bit.mp4";
@@ -174,7 +173,7 @@ public class MediaExtractorTest {
     }
 
     @RequiresFlagsEnabled(FLAG_EXTRACTOR_MP4_ENABLE_IAMF)
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     @Test
     public void testIamfAacMediaExtractor() throws Exception {
         String testFileName = "7_1_4_IAMF_AAC.mp4";
@@ -197,7 +196,7 @@ public class MediaExtractorTest {
     }
 
     @RequiresFlagsEnabled(FLAG_EXTRACTOR_MP4_ENABLE_IAMF)
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     @Test
     public void testIamfFlacMediaExtractor() throws Exception {
         String testFileName = "7_1_4_IAMF_FLAC_48000.mp4";
@@ -220,7 +219,7 @@ public class MediaExtractorTest {
     }
 
     @RequiresFlagsEnabled(FLAG_EXTRACTOR_MP4_ENABLE_IAMF)
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     @Test
     public void testIamfOpusMediaExtractor() throws Exception {
         String testFileName = "7_1_4_IAMF_Opus_no_video.mp4";
@@ -243,7 +242,7 @@ public class MediaExtractorTest {
     }
 
     @RequiresFlagsEnabled(FLAG_EXTRACTOR_MP4_ENABLE_IAMF)
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     @Test
     public void testIamfPcmMediaExtractor() throws Exception {
         String testFileName = "7_1_4_IAMF_PCM16_48000_no_video.mp4";
