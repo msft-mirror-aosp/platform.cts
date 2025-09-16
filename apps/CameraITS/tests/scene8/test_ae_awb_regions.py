@@ -31,13 +31,9 @@ import video_processing_utils
 
 _AE_CHANGE_THRESH = 1  # Incorrect behavior is empirically < 0.5 percent
 _AWB_CHANGE_THRESH = 2  # Incorrect behavior is empirically < 1.5 percent
-_AE_AWB_METER_WEIGHT = 1000  # 1 - 1000 with 1000 as the highest
-_ARUCO_MARKERS_COUNT = 4
 _AE_AWB_REGIONS_AVAILABLE = 1  # Valid range is >= 0, and unavailable if 0
 _IMG_FORMAT = 'png'
-_MIRRORED_PREVIEW_SENSOR_ORIENTATIONS = (0, 180)
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
-_NUM_AE_AWB_REGIONS = 4
 _NUM_FRAMES = 4
 _PERCENTAGE = 100
 _REGION_DURATION_MS = 1800  # 1.8 seconds
@@ -246,19 +242,10 @@ class AeAwbRegions(its_base_test.ItsBaseTest):
       # Extract 1 frames per 2 seconds of preview recording
       # Meters each region of 4 (blue, light, dark, yellow) for 2 seconds
       # Unpack frames based on metering region's color
-      # If testing front camera with preview mirrored, reverse order.
       # pylint: disable=unbalanced-tuple-unpacking
-      if ((props['android.lens.facing'] ==
-           camera_properties_utils.LENS_FACING['FRONT']) and
-          props['android.sensor.orientation'] in
-          _MIRRORED_PREVIEW_SENSOR_ORIENTATIONS):
-        yellow, dark, light, blue = (
-            _extract_and_process_select_frames_from_recording(
-                log_path, file_name, video_fps))
-      else:
-        blue, light, dark, yellow = (
-            _extract_and_process_select_frames_from_recording(
-                log_path, file_name, video_fps))
+      blue, light, dark, yellow = (
+          _extract_and_process_select_frames_from_recording(
+              log_path, file_name, video_fps))
 
       # AWB Check : Verify R/B ratio change is greater than threshold
       if max_awb_regions >= _AE_AWB_REGIONS_AVAILABLE:
