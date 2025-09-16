@@ -1765,13 +1765,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(com.android.server.notification.Flags.FLAG_AUTOGROUP_SUMMARY_ICON_UPDATE)
-    public void testAutogrouping_autogroupStaysUntilAllNotificationsCanceled() throws Exception {
-        testAutogrouping_autogroupStaysUntilAllNotificationsCanceled_common(1);
-    }
-
-    @Test
-    @RequiresFlagsEnabled(com.android.server.notification.Flags.FLAG_AUTOGROUP_SUMMARY_ICON_UPDATE)
     public void testAutogrouping_autogroupStaysUntilAllNotificationsCanceled_summaryUpdated()
             throws Exception {
         assumeFalse("NotificationListeners do not support visible background users",
@@ -1829,14 +1822,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(com.android.server.notification.Flags.FLAG_AUTOGROUP_SUMMARY_ICON_UPDATE)
-    public void testAutogrouping_autogroupStaysUntilAllNotificationsAddedToGroup()
-            throws Exception {
-        testAutogrouping_autogroupStaysUntilAllNotificationsAddedToGroup_common(1);
-    }
-
-    @Test
-    @RequiresFlagsEnabled(com.android.server.notification.Flags.FLAG_AUTOGROUP_SUMMARY_ICON_UPDATE)
     public void testAutogrouping_autogroupStaysUntilAllNotificationsAddedToGroup_summaryUpdated()
             throws Exception {
         assumeFalse("NotificationListeners do not support visible background users",
@@ -2088,14 +2073,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(com.android.server.notification.Flags.FLAG_AUTOGROUP_SUMMARY_ICON_UPDATE)
-    public void testNewNotificationsAddedToAutogroup_ifOriginalNotificationsCanceled()
-            throws Exception {
-        testNewNotificationsAddedToAutogroup_ifOriginalNotificationsCanceled_common(1);
-    }
-
-    @Test
-    @RequiresFlagsEnabled(com.android.server.notification.Flags.FLAG_AUTOGROUP_SUMMARY_ICON_UPDATE)
     public void testNewNotificationsAddedToAutogroup_ifOriginalNotificationsCanceled_summaryUpdated()
             throws Exception {
         assumeFalse("NotificationListeners do not support visible background users",
