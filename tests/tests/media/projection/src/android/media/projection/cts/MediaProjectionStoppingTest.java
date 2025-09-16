@@ -21,6 +21,7 @@ import static com.android.compatibility.common.util.SystemUtil.runWithShellPermi
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
@@ -157,6 +158,11 @@ public class MediaProjectionStoppingTest {
     @RequiresFlagsEnabled(Flags.FLAG_STOP_ON_DISPLAY_REMOVAL)
     public void mediaProjectionOnConnectedDisplay_connectedDisplayRemoved_sessionStops()
             throws Exception {
+        assumeFalse(
+                InstrumentationRegistry.getInstrumentation()
+                        .getTargetContext()
+                        .getPackageManager()
+                        .isInstantApp());
         List<Integer> displays = mConnectedDisplayTestRule.setupTestDisplays(1);
 
         HandlerThread handlerThread = new HandlerThread("VirtualDisplayHandlerForTest");
@@ -190,6 +196,11 @@ public class MediaProjectionStoppingTest {
     @RequiresFlagsEnabled(Flags.FLAG_STOP_ON_DISPLAY_REMOVAL)
     public void mediaProjectionOnDefaultDisplay_connectedDisplayRemoved_sessionContinues()
             throws Exception {
+        assumeFalse(
+                InstrumentationRegistry.getInstrumentation()
+                        .getTargetContext()
+                        .getPackageManager()
+                        .isInstantApp());
         mConnectedDisplayTestRule.setupTestDisplays(1);
 
         HandlerThread handlerThread = new HandlerThread("VirtualDisplayHandlerForTest");
