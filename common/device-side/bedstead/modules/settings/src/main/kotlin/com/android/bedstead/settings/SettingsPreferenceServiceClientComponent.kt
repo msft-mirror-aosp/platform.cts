@@ -73,7 +73,7 @@ fun DeviceState.getCurrentlySetPreferenceValue(
     preferenceKey: String
 ): SettingsPreferenceValue? {
     return getSettingsPreferenceRepository(packageName)
-        .filterPreferenceStateThroughAllChangedPreferences(screenKey, preferenceKey).currentPreferenceValue
+        .findChangedPreferenceState(screenKey, preferenceKey)?.currentPreferenceValue
 }
 
 const val SETTINGS_PACKAGE_NAME = "com.android.settings"
