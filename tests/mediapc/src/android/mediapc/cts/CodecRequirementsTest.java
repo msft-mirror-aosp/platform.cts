@@ -19,9 +19,9 @@ package android.mediapc.cts;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_Format32bitABGR2101010;
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_DynamicColorAspects;
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_HlgEditing;
-import static android.mediapc.cts.CodecTestBase.getCodecInfo;
-import static android.mediapc.cts.CodecTestBase.selectHardwareCodecs;
+import static android.mediav2.common.cts.CodecTestBase.getCodecInfo;
 import static android.mediav2.common.cts.CodecTestBase.isDefaultCodec;
+import static android.mediav2.common.cts.CodecTestBase.selectHardwareCodecs;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 

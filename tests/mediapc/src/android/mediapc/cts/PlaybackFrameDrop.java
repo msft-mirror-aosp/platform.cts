@@ -17,11 +17,11 @@
 package android.mediapc.cts;
 
 import static android.mediapc.cts.FrameDropTestBase.DECODE_31S;
+import static android.mediav2.common.cts.CodecTestBase.areFormatsSupported;
 
 import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
-import android.util.Pair;
 import android.view.Surface;
 
 import java.io.File;
@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
 /**
  * The following class calculates the frame drops for the given array of testFiles playback.
  * It will do playback for at least 30 seconds worth of input data or for utmost 31 seconds.
@@ -228,7 +229,7 @@ public class PlaybackFrameDrop extends CodecDecoderTestBase {
 
         // If the decoder doesn't support the formats, then return Integer.MAX_VALUE to indicate
         // that all frames were dropped
-        if (!areFormatsSupported(mDecoderName, formats)) {
+        if (!areFormatsSupported(mDecoderName, mMediaType, formats)) {
             return Integer.MAX_VALUE;
         }
 

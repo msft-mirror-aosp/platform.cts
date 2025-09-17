@@ -19,8 +19,8 @@ package android.mediapc.cts;
 import static android.mediapc.cts.CodecTestBase.codecFilter;
 import static android.mediapc.cts.CodecTestBase.codecPrefix;
 import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
-import static android.mediapc.cts.CodecTestBase.selectCodecs;
-import static android.mediapc.cts.CodecTestBase.selectHardwareCodecs;
+import static android.mediav2.common.cts.CodecTestBase.selectCodecs;
+import static android.mediav2.common.cts.CodecTestBase.selectHardwareCodecs;
 
 import static org.junit.Assert.assertTrue;
 

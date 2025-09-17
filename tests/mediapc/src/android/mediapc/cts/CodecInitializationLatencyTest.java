@@ -16,17 +16,15 @@
 
 package android.mediapc.cts;
 
-import static android.mediapc.cts.CodecTestBase.SELECT_ALL;
-import static android.mediapc.cts.CodecTestBase.SELECT_AUDIO;
-import static android.mediapc.cts.CodecTestBase.SELECT_HARDWARE;
-import static android.mediapc.cts.CodecTestBase.SELECT_VIDEO;
 import static android.mediapc.cts.CodecTestBase.codecFilter;
 import static android.mediapc.cts.CodecTestBase.codecPrefix;
-import static android.mediapc.cts.CodecTestBase.getCodecInfo;
-import static android.mediapc.cts.CodecTestBase.getMediaTypesOfAvailableCodecs;
 import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
-import static android.mediapc.cts.CodecTestBase.selectCodecs;
-import static android.mediapc.cts.CodecTestBase.selectHardwareCodecs;
+import static android.mediav2.common.cts.CodecTestBase.areFormatsSupported;
+import static android.mediav2.common.cts.CodecTestBase.compileMediaTypesList;
+import static android.mediav2.common.cts.CodecTestBase.getCodecCapabilities;
+import static android.mediav2.common.cts.CodecTestBase.getCodecInfo;
+import static android.mediav2.common.cts.CodecTestBase.selectCodecs;
+import static android.mediav2.common.cts.CodecTestBase.selectHardwareCodecs;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -43,6 +41,7 @@ import android.mediapc.cts.common.Precondition;
 import android.mediapc.cts.common.Preconditions;
 import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Utils;
+import android.mediav2.common.cts.CodecTestBase.ComponentClass;
 import android.os.SystemClock;
 import android.util.Log;
 import android.util.Pair;
@@ -69,7 +68,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * The following test class validates the codec initialization latency (time for codec create +
@@ -194,9 +192,13 @@ public class CodecInitializationLatencyTest {
         // Prepares the params list with the required Hardware video codecs and all available
         // audio codecs present in the device.
         final List<Object[]> argsList = new ArrayList<>();
-        Set<String> mediaTypeSet = getMediaTypesOfAvailableCodecs(SELECT_VIDEO, SELECT_HARDWARE);
-        mediaTypeSet.addAll(getMediaTypesOfAvailableCodecs(SELECT_AUDIO, SELECT_ALL));
-        for (String mediaType : mediaTypeSet) {
+        ArrayList<String> mediaTypes =
+                compileMediaTypesList(
+                        ComponentClass.HARDWARE, false /* need audio */, true /* need video */);
+        mediaTypes.addAll(
+                compileMediaTypesList(
+                        ComponentClass.ALL, true /* need audio */, false /* need video */));
+        for (String mediaType : mediaTypes) {
             if (mediaTypePrefix != null && !mediaType.startsWith(mediaTypePrefix)) {
                 continue;
             }
@@ -582,7 +584,7 @@ public class CodecInitializationLatencyTest {
             formats.add(format);
             // If the decoder doesn't support the formats, then return Integer.MAX_VALUE to
             // indicate that all decode was not successful
-            if (!areFormatsSupported(mDecoderName, formats)) {
+            if (!areFormatsSupported(mDecoderName, mMediaType, formats)) {
                 return Integer.MAX_VALUE;
             }
             long enqueueTimeStamp = 0;
