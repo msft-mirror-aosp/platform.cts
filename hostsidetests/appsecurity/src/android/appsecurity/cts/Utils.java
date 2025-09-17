@@ -209,13 +209,13 @@ public final class Utils {
             boolean onlyFullUsers) throws DeviceNotAvailableException {
 
         if (maxUsers < 0) {
-            throw new AssertionError("Invalid negative values passed to maxUsers");
+            throw new IllegalArgumentException("Invalid negative values passed to maxUsers");
         }
 
         final int[] userIds = getAllUsers(device);
         int currentUserId = device.getCurrentUser();
 
-        final int[] preparedUserIds = new int[maxUsers];
+        final int[] preparedUserIds = new int[userIds.length];
         int preparedUsersCount = 0;
 
         for (int userId : userIds) {
@@ -231,7 +231,7 @@ public final class Utils {
             }
         }
 
-        if (preparedUsersCount < maxUsers) {
+        if (preparedUsersCount < preparedUserIds.length) {
             return Arrays.copyOf(preparedUserIds, preparedUsersCount);
         } else {
             return preparedUserIds;
