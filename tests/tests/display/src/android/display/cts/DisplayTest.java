@@ -24,6 +24,7 @@ import static android.view.Display.FRAME_RATE_CATEGORY_NORMAL;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static com.android.graphics.surfaceflinger.flags.Flags.FLAG_PARSE_EDID_VERSION_AND_INPUT_TYPE;
 import static com.android.server.display.feature.flags.Flags.FLAG_DISPLAY_TOPOLOGY_API;
 import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_GET_SUGGESTED_FRAME_RATE;
 import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_GET_SUPPORTED_REFRESH_RATES;
@@ -1156,9 +1157,55 @@ public class DisplayTest extends TestBase {
                 DeviceProductInfo.CONNECTION_TO_SINK_DIRECT,
                 DeviceProductInfo.CONNECTION_TO_SINK_TRANSITIVE
         );
-        assertTrue(
-                allowedConnectionToSinkValues.contains(
-                        deviceProductInfo.getConnectionToSinkType()));
+        assertThat(deviceProductInfo.getConnectionToSinkType()).isIn(allowedConnectionToSinkValues);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_PARSE_EDID_VERSION_AND_INPUT_TYPE)
+    public void testGetDeviceProductInfoWithEdidVersionAndInputType() {
+        DeviceProductInfo deviceProductInfo = mDefaultDisplay.getDeviceProductInfo();
+        assumeNotNull(deviceProductInfo);
+
+        assertNotNull(deviceProductInfo.getManufacturerPnpId());
+
+        assertNotNull(deviceProductInfo.getProductId());
+
+        final boolean isYearPresent =
+                (deviceProductInfo.getModelYear() != -1)
+                        || (deviceProductInfo.getManufactureYear() != -1);
+        assertTrue(isYearPresent);
+        int year =
+                deviceProductInfo.getModelYear() != -1
+                        ? deviceProductInfo.getModelYear()
+                        : deviceProductInfo.getManufactureYear();
+        // Verify if the model year or manufacture year is greater than or equal to 1990.
+        // This assumption is based on Section of 3.4.4 - Week and Year of Manufacture or Model Year
+        // of VESA EDID STANDARD Version 1, Revision 4
+        assertTrue(year >= 1990);
+
+        int week = deviceProductInfo.getManufactureWeek();
+        assertTrue(week == -1 || (week >= 1 && week <= 53));
+
+        List<Integer> allowedConnectionToSinkValues =
+                List.of(
+                        DeviceProductInfo.CONNECTION_TO_SINK_UNKNOWN,
+                        DeviceProductInfo.CONNECTION_TO_SINK_BUILT_IN,
+                        DeviceProductInfo.CONNECTION_TO_SINK_DIRECT,
+                        DeviceProductInfo.CONNECTION_TO_SINK_TRANSITIVE);
+        assertThat(deviceProductInfo.getConnectionToSinkType()).isIn(allowedConnectionToSinkValues);
+
+        DeviceProductInfo.EdidStructureMetadata edidStructureMetadata =
+                deviceProductInfo.getEdidStructureMetadata();
+        assertNotNull(edidStructureMetadata);
+        assertThat(edidStructureMetadata.getVersion()).isAtLeast(0);
+        assertThat(edidStructureMetadata.getRevision()).isAtLeast(0);
+
+        List<Integer> allowedInputTypeValues =
+                List.of(
+                        DeviceProductInfo.VIDEO_INPUT_TYPE_UNKNOWN,
+                        DeviceProductInfo.VIDEO_INPUT_TYPE_ANALOG,
+                        DeviceProductInfo.VIDEO_INPUT_TYPE_DIGITAL);
+        assertThat(deviceProductInfo.getVideoInputType()).isIn(allowedInputTypeValues);
     }
 
     @Test
@@ -1176,6 +1223,39 @@ public class DisplayTest extends TestBase {
         assertEquals(2000, deviceProductInfo.getModelYear());
         assertEquals(DeviceProductInfo.CONNECTION_TO_SINK_DIRECT,
                 deviceProductInfo.getConnectionToSinkType());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_PARSE_EDID_VERSION_AND_INPUT_TYPE)
+    public void testDeviceProductInfoWithBuilderAndEdidVersionAndInputType() {
+        DeviceProductInfo deviceProductInfo =
+                new DeviceProductInfo.Builder(
+                                "TTL" /* manufacturerPnpId */, "ProductId1" /* productId */)
+                        .setName("DeviceName")
+                        .setModelYear(2000)
+                        .setManufactureDate(42, 2000)
+                        .setConnectionToSinkType(DeviceProductInfo.CONNECTION_TO_SINK_DIRECT)
+                        .setEdidStructureMetadata(1, 4)
+                        .setVideoInputType(DeviceProductInfo.VIDEO_INPUT_TYPE_DIGITAL)
+                        .build();
+
+        assertEquals("DeviceName", deviceProductInfo.getName());
+        assertEquals("TTL", deviceProductInfo.getManufacturerPnpId());
+        assertEquals("ProductId1", deviceProductInfo.getProductId());
+        assertEquals(2000, deviceProductInfo.getModelYear());
+        assertEquals(42, deviceProductInfo.getManufactureWeek());
+        assertEquals(2000, deviceProductInfo.getManufactureYear());
+        assertEquals(
+                DeviceProductInfo.CONNECTION_TO_SINK_DIRECT,
+                deviceProductInfo.getConnectionToSinkType());
+
+        DeviceProductInfo.EdidStructureMetadata edidStructureMetadata =
+                deviceProductInfo.getEdidStructureMetadata();
+        assertNotNull(edidStructureMetadata);
+        assertEquals(1, edidStructureMetadata.getVersion());
+        assertEquals(4, edidStructureMetadata.getRevision());
+        assertEquals(
+                DeviceProductInfo.VIDEO_INPUT_TYPE_DIGITAL, deviceProductInfo.getVideoInputType());
     }
 
     @Test
