@@ -567,7 +567,10 @@ public class ItsService extends Service implements SensorEventListener {
                     JSONObject obj = new JSONObject();
                     JSONArray jcaCapturePaths = new JSONArray(intent.getStringArrayListExtra(
                             ItsTestActivity.JCA_CAPTURE_PATHS_TAG));
+                    JSONArray jcaCaptureUris = new JSONArray(intent.getStringArrayListExtra(
+                            ItsTestActivity.JCA_CAPTURE_URIS_TAG));
                     obj.put(ItsTestActivity.JCA_CAPTURE_PATHS_TAG, jcaCapturePaths);
+                    obj.put(ItsTestActivity.JCA_CAPTURE_URIS_TAG, jcaCaptureUris);
                     Logt.i(TAG, "Sending JCA capture paths: " + obj.toString());
                     mSocketRunnableObj.sendResponse(
                             ItsTestActivity.JCA_CAPTURE_PATHS_TAG,
