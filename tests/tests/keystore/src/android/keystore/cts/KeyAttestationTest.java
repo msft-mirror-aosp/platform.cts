@@ -115,7 +115,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
-import java.security.interfaces.ECPublicKey;
+import java.security.interfaces.ECKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.ECGenParameterSpec;
 import java.security.spec.ECParameterSpec;
@@ -2127,12 +2127,13 @@ public class KeyAttestationTest {
         }
         assertNull(nonKeyDetailsList.getAlgorithm());
         assertEquals(ecCurve, keyDetailsList.ecCurveAsString());
-        // Curve25519 Public key(X509PublicKey) cannot be cast to ECPublicKey and hence could not
-        // determine EC key parameters such as FieldFp, a, b, gx, gy, order and cofactor
+        // We can't check the ECParameterSpec for X25519 and Ed25519 public keys since Conscrypt's
+        // OpenSSLX25519PublicKey and OpenSslEdDsaPublicKey, respectively, don't implement the
+        // ECKey interface (which provides the "ECKey.getParams()" method).
         if (!ecCurve.equals("CURVE_25519")) {
             TestUtils.assertECParameterSpecEqualsIgnoreSeedIfNotPresent(
                     getECParameterSpecFor(ecCurve),
-                    ((ECPublicKey) attestationCert.getPublicKey()).getParams());
+                    ((ECKey) attestationCert.getPublicKey()).getParams());
         }
         assertNull(nonKeyDetailsList.getEcCurve());
         assertNull(keyDetailsList.getRsaPublicExponent());
