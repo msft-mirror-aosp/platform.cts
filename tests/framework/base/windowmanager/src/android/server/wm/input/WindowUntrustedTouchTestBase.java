@@ -71,7 +71,6 @@ import android.server.wm.shared.IUntrustedTouchTestService;
 import android.util.ArrayMap;
 import android.util.ArraySet;
 import android.util.Log;
-import android.view.Display;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -140,6 +139,8 @@ public abstract class WindowUntrustedTouchTestBase {
     InputManager mInputManager;
     private NotificationManager mNotificationManager;
     TestActivity mActivity;
+    int mActivityDisplayId;
+
     View mContainer;
     private Toast mToast;
     float mPreviousTouchOpacity;
@@ -192,6 +193,7 @@ public abstract class WindowUntrustedTouchTestBase {
         assertTrue(
                 "Failed to wait for activity to be on top",
                 CtsWindowInfoUtils.waitForWindowOnTop(mActivity.getWindow()));
+        mActivityDisplayId = mActivity.getDisplayId();
 
         mInstrumentation = getInstrumentation();
         mContext = mInstrumentation.getContext();
@@ -211,7 +213,7 @@ public abstract class WindowUntrustedTouchTestBase {
 
     @After
     public void tearDown() throws Throwable {
-        mWmState.waitForAppTransitionIdleOnDisplay(Display.DEFAULT_DISPLAY);
+        mWmState.waitForAppTransitionIdleOnDisplay(mActivityDisplayId);
         mTouchesReceived.set(0);
         removeOverlays();
         for (FutureConnection<IUntrustedTouchTestService> connection : mConnections.values()) {
@@ -245,8 +247,8 @@ public abstract class WindowUntrustedTouchTestBase {
     }
 
     void assertAnimationRunning() {
-        assertThat(mWmState.getDisplay(Display.DEFAULT_DISPLAY).getAppTransitionState()).isEqualTo(
-                WindowManagerStateHelper.APP_STATE_RUNNING);
+        assertThat(mWmState.getDisplay(mActivityDisplayId).getAppTransitionState())
+                .isEqualTo(WindowManagerStateHelper.APP_STATE_RUNNING);
     }
 
     /**
@@ -406,9 +408,7 @@ public abstract class WindowUntrustedTouchTestBase {
         // We're testing the opacity coming from the animation here, not the one declared in the
         // activity, so we set its opacity to 1
         addActivityOverlay(component, /* opacity */ 1, touchable, options.toBundle());
-        assertTrue(
-                mWmState.waitForAppTransitionRunningOnDisplay(
-                        mActivity.getDisplay().getDisplayId()));
+        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(mActivityDisplayId));
         animationsStarted.block();
     }
 
@@ -591,7 +591,7 @@ public abstract class WindowUntrustedTouchTestBase {
         FutureConnection<IUntrustedTouchTestService> connection =
                 new FutureConnection<>(IUntrustedTouchTestService.Stub::asInterface);
         Intent intent = new Intent();
-        intent.putExtra(EXTRA_DISPLAY_ID, mActivity.getDisplay().getDisplayId());
+        intent.putExtra(EXTRA_DISPLAY_ID, mActivityDisplayId);
         intent.setComponent(component);
         assertTrue(mContext.bindService(intent, connection, Context.BIND_AUTO_CREATE));
         return connection;
