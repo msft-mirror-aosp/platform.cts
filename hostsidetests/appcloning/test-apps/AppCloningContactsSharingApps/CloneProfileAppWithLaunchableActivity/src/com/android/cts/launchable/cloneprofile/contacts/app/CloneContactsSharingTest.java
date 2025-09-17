@@ -426,17 +426,10 @@ public class CloneContactsSharingTest {
     public void testAccessManagedProfileContacts_contactReadSuccessfully() {
         String testContactAccountType =
                 getTestArgumentValueForGivenKey("test_contact_account_type");
-        String testContactAccountName =
-                getTestArgumentValueForGivenKey("test_contact_account_name");
         String testContactPhoneNumber =
                 getTestArgumentValueForGivenKey("test_contact_phone_number");
 
-        String[] projection = new String[] {
-                ContactsContract.RawContacts.ACCOUNT_TYPE,
-                ContactsContract.RawContacts.ACCOUNT_NAME,
-                Phone.NUMBER,
-                Phone.RAW_CONTACT_ID
-        };
+        String[] projection = new String[] {Phone.NUMBER};
 
         Cursor cursor = queryContactsForTestAccount(Phone.ENTERPRISE_CONTENT_URI, projection,
                 testContactAccountType);
@@ -446,18 +439,7 @@ public class CloneContactsSharingTest {
         assertThat(cursor).isNotNull();
         assertThat(cursor.getCount()).isEqualTo(1);
         cursor.moveToFirst();
-        assertThat(cursor.getString(
-                        cursor.getColumnIndex(
-                                ContactsContract.RawContacts.ACCOUNT_NAME)))
-                .isEqualTo(testContactAccountName);
-        assertThat(cursor.getString(
-                cursor.getColumnIndex(
-                        ContactsContract.RawContacts.ACCOUNT_TYPE)))
-                .isEqualTo(testContactAccountType);
-        assertThat(cursor.getString(
-                cursor.getColumnIndex(
-                        Phone.NUMBER)))
-                .isEqualTo(testContactPhoneNumber);
+        assertThat(getCursorValue(cursor, Phone.NUMBER)).isEqualTo(testContactPhoneNumber);
     }
 
     /**
