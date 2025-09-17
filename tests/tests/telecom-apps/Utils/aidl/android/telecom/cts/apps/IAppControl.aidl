@@ -56,7 +56,7 @@ interface IAppControl {
     CallEndpointTransaction getCurrentCallEndpoint(String id);
     AvailableEndpointsTransaction getAvailableCallEndpoints(String id);
     NoDataTransaction addCall(in CallAttributes callAttributes);
-    NoDataTransaction addFailedCall(in CallAttributes callAttributes);
+    NoDataTransaction addFailedCall(in CallAttributes callAttributes, in Bundle extras);
     NoDataTransaction addFailedCallWithCreateConnectionVerify(in CallAttributes callAttributes);
     NoDataTransaction addCallWithConsumer(in CallAttributes callAttributes, in IRemoteOperationConsumer consumer);
     NoDataTransaction verifyCallWithConsumer(in CallAttributes callAttributes, in IRemoteOperationConsumer consumer);

@@ -34,11 +34,14 @@ import java.util.concurrent.CountDownLatch;
 
 public class ManagedConnectionService extends ConnectionService {
     private static final String LOG_TAG = "ManagedConnectionService";
+    private static final int INVALID_DISCONNECT_CAUSE = -1;
     public static ManagedConnectionService sConnectionService;
     public static ManagedConnection sLastConnection = null;
     public static ConnectionRequest sLastFailedRequest = null;
     public static CountDownLatch sCreateOutgoingConnectionLatch = new CountDownLatch(1);
     public static CountDownLatch sCreateIncomingConnectionLatch = new CountDownLatch(1);
+    public static String FORCE_DISCONNECT_CAUSE_KEY = "FORCE_DISCONNECT_CAUSE_KEY";
+    public static int sForceDisconnectCause = INVALID_DISCONNECT_CAUSE;
 
     @Override
     public void onBindClient(Intent intent) {
@@ -69,6 +72,11 @@ public class ManagedConnectionService extends ConnectionService {
         Log.i(LOG_TAG, String.format("onCreateOutgoingConnection: account=[%s], request=[%s]",
                 connectionManagerPhoneAccount, request));
         sCreateOutgoingConnectionLatch.countDown();
+        // Forces the connection to fail with the specified disconnect cause if it's not invalid.
+        if (sForceDisconnectCause != INVALID_DISCONNECT_CAUSE) {
+            sLastFailedRequest = request;
+            return Connection.createFailedConnection(new DisconnectCause(sForceDisconnectCause));
+        }
         // For calls from the same managed connection service, operations are handled at the
         // connection service level.
         if (getAllConnections().stream()
@@ -83,6 +91,7 @@ public class ManagedConnectionService extends ConnectionService {
                         .findFirst()
                         .ifPresent(Connection::onDisconnect);
             } else {
+                sLastFailedRequest = request;
                 return Connection.createFailedConnection(
                         new DisconnectCause(DisconnectCause.ERROR));
             }
@@ -155,5 +164,13 @@ public class ManagedConnectionService extends ConnectionService {
                 HoldableTracker.addHoldable(connection);
             }
         }
+    }
+
+    public static void setForceConnectionFailureCause(int cause) {
+        sForceDisconnectCause = cause;
+    }
+
+    public static void resetForceConnectionFailureCause() {
+        sForceDisconnectCause = INVALID_DISCONNECT_CAUSE;
     }
 }

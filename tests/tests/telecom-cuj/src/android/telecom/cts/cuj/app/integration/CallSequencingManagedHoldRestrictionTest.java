@@ -381,7 +381,7 @@ public class CallSequencingManagedHoldRestrictionTest extends BaseAppVerifier {
             throws Exception {
         AppControlWrapper wrapper = createOrGetAppWrapper(apps, app);
         Log.i(TAG, "verifyDialingCallFailed: creating failed call on app " + app);
-        addOutgoingCallAndVerifyFailure(wrapper);
+        addOutgoingCallAndVerifyFailure(wrapper, null /* extras */);
     }
 
     private AppControlWrapper createOrGetAppWrapper(

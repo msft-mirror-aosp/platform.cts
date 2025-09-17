@@ -164,10 +164,10 @@ public class AppControlWrapper {
      * This method requests the app that is bound to add a new call with the given callAttributes
      * that is expected to fail.
      */
-    public void addFailedCall(CallAttributes callAttributes) throws Exception {
+    public void addFailedCall(CallAttributes callAttributes, Bundle extras) throws Exception {
         Log.i(TAG, "addFailedCall");
         try {
-            NoDataTransaction transactionResult = mBinder.addFailedCall(callAttributes);
+            NoDataTransaction transactionResult = mBinder.addFailedCall(callAttributes, extras);
             maybeFailTest(transactionResult);
         } catch (RemoteException re) {
             handleRemoteException(re, "addCall");

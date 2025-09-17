@@ -27,6 +27,7 @@ import static android.telecom.cts.apps.TelecomTestApp.ConnectionServiceVoipAppMa
 import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceApp;
 import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceAppClone;
 
+import android.os.Bundle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.telecom.CallAttributes;
 import android.telecom.Connection;
@@ -51,6 +52,9 @@ import java.util.List;
 @RunWith(JUnit4.class)
 public class CallSequencingBasicCallTest extends BaseAppVerifier {
     public static final String TAG = CallSequencingBasicCallTest.class.getSimpleName();
+    // Used in ManagedConnectionService to facilitate a force disconnect of the connection with the
+    // specified disconnect cause.
+    private static final String FORCE_DISCONNECT_CAUSE_KEY = "FORCE_DISCONNECT_CAUSE_KEY";
 
     /**
      * Verify that for the managed case that we disallow an incoming call to be received when
@@ -241,19 +245,21 @@ public class CallSequencingBasicCallTest extends BaseAppVerifier {
             verifyCallIsInState(call1, STATE_DIALING);
             // Put the first call on hold
             setCallStateAndVerify(firstApp, call1, STATE_HOLDING);
-            // Add a second call
-            String call2 = addOutgoingCallAndVerify(secondApp);
-            // Disconnect the call with DisconnectCause.ERROR
-            setCallStateAndVerify(secondApp, call2, STATE_DISCONNECTED, DisconnectCause.ERROR);
+            Bundle extras = new Bundle();
+            // Add a second call and specify the disconnect cause (ERROR) to force disconnect the
+            // connection with.
+            extras.putInt(FORCE_DISCONNECT_CAUSE_KEY, DisconnectCause.ERROR);
+            addOutgoingCallAndVerifyFailure(secondApp, extras);
             // Verify the held call is set active
             verifyCallIsInState(call1, STATE_ACTIVE);
 
             // Put the first call back on hold
             setCallStateAndVerify(firstApp, call1, STATE_HOLDING);
+            // Add a third call and specify the disconnect cause (CANCELED)  to force disconnect the
+            // connection with.
+            extras.putInt(FORCE_DISCONNECT_CAUSE_KEY, DisconnectCause.CANCELED);
             // Add a new call
-            String call3 = addOutgoingCallAndVerify(secondApp);
-            // Disconnect the call with DisconnectCause.CANCELLED
-            setCallStateAndVerify(secondApp, call3, STATE_DISCONNECTED, DisconnectCause.CANCELED);
+            addOutgoingCallAndVerifyFailure(secondApp, extras);
             // Verify the held call is set active
             verifyCallIsInState(call1, STATE_ACTIVE);
             // Clean up calls

@@ -128,9 +128,18 @@ public class ManagedAppControl extends Service {
                 }
 
                 @Override
-                public NoDataTransaction addFailedCall(CallAttributes callAttributes) {
+                public NoDataTransaction addFailedCall(
+                        CallAttributes callAttributes, Bundle extras) {
                     Log.i(TAG, "addFailedCall: enter");
                     try {
+                        // Sets the disconnect cause of the connection to force disconnect.
+                        if (extras != null
+                                && extras.containsKey(
+                                        ManagedConnectionService.FORCE_DISCONNECT_CAUSE_KEY)) {
+                            ManagedConnectionService.setForceConnectionFailureCause(
+                                    extras.getInt(
+                                            ManagedConnectionService.FORCE_DISCONNECT_CAUSE_KEY));
+                        }
                         List<String> stackTrace =
                                 createStackTraceList(
                                         CLASS_NAME + ".addCall(" + callAttributes + ")");
@@ -669,5 +678,6 @@ public class ManagedAppControl extends Service {
         ManagedConnectionService.sCreateIncomingConnectionLatch = new CountDownLatch(1);
         ManagedConnectionService.sLastFailedRequest = null;
         ManagedConnectionService.sLastConnection = null;
+        ManagedConnectionService.resetForceConnectionFailureCause();
     }
 }
