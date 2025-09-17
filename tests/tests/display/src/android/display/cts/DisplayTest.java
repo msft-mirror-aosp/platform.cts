@@ -1156,51 +1156,26 @@ public class DisplayTest extends TestBase {
                 DeviceProductInfo.CONNECTION_TO_SINK_DIRECT,
                 DeviceProductInfo.CONNECTION_TO_SINK_TRANSITIVE
         );
-        assertThat(deviceProductInfo.getConnectionToSinkType()).isIn(allowedConnectionToSinkValues);
-
-        DeviceProductInfo.EdidStructureMetadata edidStructureMetadata =
-                deviceProductInfo.getEdidStructureMetadata();
-        assertNotNull(edidStructureMetadata);
-        assertThat(edidStructureMetadata.getVersion()).isAtLeast(0);
-        assertThat(edidStructureMetadata.getRevision()).isAtLeast(0);
-
-        List<Integer> allowedInputTypeValues =
-                List.of(
-                        DeviceProductInfo.VIDEO_INPUT_TYPE_UNKNOWN,
-                        DeviceProductInfo.VIDEO_INPUT_TYPE_ANALOG,
-                        DeviceProductInfo.VIDEO_INPUT_TYPE_DIGITAL);
-        assertThat(deviceProductInfo.getVideoInputType()).isIn(allowedInputTypeValues);
+        assertTrue(
+                allowedConnectionToSinkValues.contains(
+                        deviceProductInfo.getConnectionToSinkType()));
     }
 
     @Test
     public void testDeviceProductInfo() {
-        DeviceProductInfo deviceProductInfo =
-                new DeviceProductInfo.Builder(
-                                "TTL" /* manufacturerPnpId */, "ProductId1" /* productId */)
-                        .setName("DeviceName")
-                        .setModelYear(2000)
-                        .setManufactureDate(42, 2000)
-                        .setConnectionToSinkType(DeviceProductInfo.CONNECTION_TO_SINK_DIRECT)
-                        .setEdidStructureMetadata(1, 4)
-                        .setVideoInputType(DeviceProductInfo.VIDEO_INPUT_TYPE_DIGITAL)
-                        .build();
+        DeviceProductInfo deviceProductInfo = new DeviceProductInfo(
+                "DeviceName" /* name */,
+                "TTL" /* manufacturePnpId */,
+                "ProductId1" /* productId */,
+                2000 /* modelYear */,
+                DeviceProductInfo.CONNECTION_TO_SINK_DIRECT);
 
         assertEquals("DeviceName", deviceProductInfo.getName());
         assertEquals("TTL", deviceProductInfo.getManufacturerPnpId());
         assertEquals("ProductId1", deviceProductInfo.getProductId());
         assertEquals(2000, deviceProductInfo.getModelYear());
-        assertEquals(42, deviceProductInfo.getManufactureWeek());
-        assertEquals(2000, deviceProductInfo.getManufactureYear());
-        assertEquals(
-                DeviceProductInfo.CONNECTION_TO_SINK_DIRECT,
+        assertEquals(DeviceProductInfo.CONNECTION_TO_SINK_DIRECT,
                 deviceProductInfo.getConnectionToSinkType());
-        DeviceProductInfo.EdidStructureMetadata edidStructureMetadata =
-                deviceProductInfo.getEdidStructureMetadata();
-        assertNotNull(edidStructureMetadata);
-        assertEquals(1, edidStructureMetadata.getVersion());
-        assertEquals(4, edidStructureMetadata.getRevision());
-        assertEquals(
-                DeviceProductInfo.VIDEO_INPUT_TYPE_DIGITAL, deviceProductInfo.getVideoInputType());
     }
 
     @Test
