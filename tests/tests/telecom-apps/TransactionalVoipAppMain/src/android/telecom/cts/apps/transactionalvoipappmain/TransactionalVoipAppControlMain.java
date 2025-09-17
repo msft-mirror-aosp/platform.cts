@@ -111,7 +111,8 @@ public class TransactionalVoipAppControlMain extends Service {
                 }
 
                 @Override
-                public NoDataTransaction addFailedCall(CallAttributes callAttributes) {
+                public NoDataTransaction addFailedCall(
+                        CallAttributes callAttributes, Bundle extras) {
                     List<String> stackTrace =
                             createStackTraceList(
                                     mClassName + ".addFailedCall(" + callAttributes + ")");

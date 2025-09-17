@@ -137,7 +137,8 @@ public class VoipConnectionServiceControlMain extends Service {
                 }
 
                 @Override
-                public NoDataTransaction addFailedCall(CallAttributes callAttributes) {
+                public NoDataTransaction addFailedCall(
+                        CallAttributes callAttributes, Bundle extras) {
                     Log.i(mTag, "addFailedCall: enter");
                     try {
                         List<String> stackTrace =
@@ -336,7 +337,7 @@ public class VoipConnectionServiceControlMain extends Service {
 
                 @Override
                 public NoDataTransaction setConnectionProperties(String callId, int properties) {
-                  return new NoDataTransaction(TestAppTransaction.Success);
+                    return new NoDataTransaction(TestAppTransaction.Success);
                 }
 
                 @Override

@@ -394,16 +394,12 @@ public class BaseAppVerifier {
         return mBaseAppVerifierImpl.addAndGetNewCall(appControl, attributes, idToExclude, consumer);
     }
 
-    public void addOutgoingCallAndVerifyFailure(AppControlWrapper appControl) throws Exception {
+    public void addOutgoingCallAndVerifyFailure(AppControlWrapper appControl, Bundle extras)
+            throws Exception {
         CallAttributes outgoingAttributes =
                 mBaseAppVerifierImpl.getRandomAttributes(
                         appControl.getTelecomApps(), true /*isOutgoing*/, true /* isHoldable */);
-        mBaseAppVerifierImpl.addCallAndVerifyFailure(appControl, outgoingAttributes);
-    }
-
-    public void addOutgoingCallAndVerifyFailure(
-            AppControlWrapper appControl, CallAttributes attributes) throws Exception {
-        mBaseAppVerifierImpl.addCallAndVerifyFailure(appControl, attributes);
+        mBaseAppVerifierImpl.addCallAndVerifyFailure(appControl, outgoingAttributes, extras);
     }
 
     public void addFailedCallWithCreateConnectionVerify(

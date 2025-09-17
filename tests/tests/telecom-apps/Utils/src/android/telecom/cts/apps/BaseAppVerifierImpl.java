@@ -412,9 +412,10 @@ public class BaseAppVerifierImpl {
         return mVerifierMethods.getLastAddedCall().getDetails().getId();
     }
 
-    public void addCallAndVerifyFailure(AppControlWrapper appControl, CallAttributes attributes)
+    public void addCallAndVerifyFailure(
+            AppControlWrapper appControl, CallAttributes attributes, Bundle extras)
             throws Exception {
-        appControl.addFailedCall(attributes);
+        appControl.addFailedCall(attributes, extras);
     }
 
     public void addFailedCallWithCreateConnectionVerify(
