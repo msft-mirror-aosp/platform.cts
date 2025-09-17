@@ -112,6 +112,7 @@ import static junit.framework.Assert.assertTrue;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
 import android.app.AppOpsManager;
@@ -120,12 +121,14 @@ import android.content.ContentValues;
 import android.content.pm.ProviderInfo;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.FileUtils;
 import android.os.ParcelFileDescriptor;
 import android.os.Process;
 import android.os.storage.StorageManager;
+import android.os.SystemProperties;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.system.ErrnoException;
@@ -1082,6 +1085,7 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
 
     @Test
     public void testCreateLowerCaseDeleteUpperCase() throws Exception {
+        assumeTrue(isDeviceInitialSdkIntAtLeastR());
         File upperCase = new File(getDownloadDir(), "CREATE_LOWER_DELETE_UPPER");
         File lowerCase = new File(getDownloadDir(), "create_lower_delete_upper");
 
@@ -1090,6 +1094,7 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
 
     @Test
     public void testCreateUpperCaseDeleteLowerCase() throws Exception {
+        assumeTrue(isDeviceInitialSdkIntAtLeastR());
         File upperCase = new File(getDownloadDir(), "CREATE_UPPER_DELETE_LOWER");
         File lowerCase = new File(getDownloadDir(), "create_upper_delete_lower");
 
@@ -1098,6 +1103,7 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
 
     @Test
     public void testCreateMixedCaseDeleteDifferentMixedCase() throws Exception {
+        assumeTrue(isDeviceInitialSdkIntAtLeastR());
         File mixedCase1 = new File(getDownloadDir(), "CrEaTe_MiXeD_dElEtE_mIxEd");
         File mixedCase2 = new File(getDownloadDir(), "cReAtE_mIxEd_DeLeTe_MiXeD");
 
@@ -1106,6 +1112,7 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
 
     @Test
     public void testAndroidDataObbDoesNotForgetMount() throws Exception {
+        assumeTrue(isDeviceInitialSdkIntAtLeastR());
         File dataDir = getContext().getExternalFilesDir(null);
         File upperCaseDataDir = new File(dataDir.getPath().replace("Android/data", "ANDROID/DATA"));
 
@@ -1130,6 +1137,7 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
 
     @Test
     public void testCacheConsistencyForCaseInsensitivity() throws Exception {
+        assumeTrue(isDeviceInitialSdkIntAtLeastR());
         File upperCaseFile = new File(getDownloadDir(), "CACHE_CONSISTENCY_FOR_CASE_INSENSITIVITY");
         File lowerCaseFile = new File(getDownloadDir(), "cache_consistency_for_case_insensitivity");
 
@@ -1149,6 +1157,7 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
 
     @Test
     public void testInsertDefaultPrimaryCaseInsensitiveCheck() throws Exception {
+        assumeTrue(isDeviceInitialSdkIntAtLeastR());
         final File podcastsDir = getPodcastsDir();
         final File podcastsDirLowerCase =
                 new File(getExternalStorageDir(), Environment.DIRECTORY_PODCASTS.toLowerCase());
@@ -3279,5 +3288,17 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
         // Use a legacy app to delete this file, since it could be outside shared storage.
         Log.d(TAG, "Deleting file " + file);
         deleteFileAs(APP_D_LEGACY_HAS_RW, file.getAbsolutePath());
+    }
+
+    /**
+     * @return {@code true} if the initial SDK version of the device is at least Android R
+     */
+    public static boolean isDeviceInitialSdkIntAtLeastR() {
+        // Build.VERSION.DEVICE_INITIAL_SDK_INT is available only Android S onwards.
+        int deviceInitialSdkInt =
+                (Build.VERSION.SDK_INT >= 31)
+                        ? Build.VERSION.DEVICE_INITIAL_SDK_INT
+                        : SystemProperties.getInt("ro.product.first_api_level", 0);
+        return deviceInitialSdkInt >= Build.VERSION_CODES.R;
     }
 }
