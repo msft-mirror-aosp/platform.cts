@@ -16,12 +16,7 @@
 
 package com.android.bedstead.harrier;
 
-import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile;
-import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
-import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser;
-import com.android.bedstead.multiuser.annotations.RequireRunOnVisibleBackgroundNonProfileUser;
-import com.android.bedstead.multiuser.annotations.meta.RequireRunOnProfileAnnotation;
-import com.android.bedstead.multiuser.annotations.meta.RequireRunOnUserAnnotation;
+import com.android.bedstead.harrier.annotations.meta.RequireRunOnAnnotation;
 import com.android.bedstead.nene.types.OptionalBoolean;
 
 import com.google.common.base.Equivalence;
@@ -73,20 +68,9 @@ public final class BedsteadFrameworkMethod extends FrameworkMethod {
 
         mBedsteadJUnit4.resolveRecursiveAnnotations(annotations, mParameterizedAnnotations);
 
-        boolean hasRequireRunOnAnnotation = false;
-
-        for (Annotation annotation : annotations) {
-            if (annotation instanceof RequireRunOnUserAnnotation
-                    || annotation instanceof RequireRunOnProfileAnnotation
-                    || annotation instanceof RequireRunOnInitialUser
-                    || annotation instanceof RequireRunOnAdditionalUser
-                    || annotation instanceof RequireRunOnVisibleBackgroundNonProfileUser
-                    || annotation instanceof RequireRunOnWorkProfile
-            ) {
-                hasRequireRunOnAnnotation = true;
-                break;
-            }
-        }
+        boolean hasRequireRunOnAnnotation = annotations.stream().anyMatch(it ->
+                it.annotationType().getDeclaredAnnotation(RequireRunOnAnnotation.class) != null
+        );
 
         // If there is no RequireRunOn annotation, we'll add and resolve RequireRunOnInitialUser
         if (!hasRequireRunOnAnnotation) {

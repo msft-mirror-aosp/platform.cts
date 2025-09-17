@@ -15,6 +15,7 @@ package com.android.bedstead.enterprise.annotations
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
 import com.android.bedstead.harrier.annotations.RequireFeature
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
+import com.android.bedstead.harrier.annotations.meta.RequireRunOnAnnotation
 import com.android.bedstead.nene.packages.CommonPackages
 import com.android.bedstead.nene.types.OptionalBoolean
 import com.android.queryable.annotations.Query
@@ -43,6 +44,7 @@ import com.google.auto.value.AutoAnnotation
     AnnotationRetention.RUNTIME
 )
 @RequireFeature(CommonPackages.FEATURE_DEVICE_ADMIN)
+@RequireRunOnAnnotation
 @UsesAnnotationExecutor(UsesAnnotationExecutor.ENTERPRISE)
 annotation class RequireRunOnWorkProfile(
 
