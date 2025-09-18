@@ -66,7 +66,7 @@ public class SystemMemoryStatsTests extends DeviceTestCase implements IBuildRece
         assertThat(systemMemory.getPageTablesKb()).isAtLeast(0);
         assertThat(systemMemory.getKernelStackKb()).isAtLeast(0);
         if (PropertyUtil.getFirstApiLevel(getDevice()) >= 30) {
-            assertThat(systemMemory.getTotalIonKb()).isAtLeast(0);
+            assertThat(systemMemory.getDmabufTotalExportedKb()).isAtLeast(0);
         }
     }
 
