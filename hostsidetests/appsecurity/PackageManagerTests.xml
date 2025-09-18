@@ -34,6 +34,6 @@
     </target_preparer>
 
     <test class="com.android.compatibility.common.tradefed.testtype.JarHostTest" >
-        <option name="jar" value="CtsPackageManagerHostTestCases.jar" />
+        <option name="jar" value="{MODULE}.jar" />
     </test>
 </configuration>
