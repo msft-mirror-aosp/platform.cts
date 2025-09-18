@@ -213,11 +213,23 @@ public final class UtilsTest {
     }
 
     @Test
+    public void testPrepareMultipleUsers_emptyUsersWithHugeMaxValue() throws Exception {
+        mockListUsers();
+
+        expect.withMessage("prepareMultipleUsers(Integer.MAX_VALUE)")
+                .that(prepareMultipleUsers(mMockDevice, Integer.MAX_VALUE))
+                .asList()
+                .containsExactly(USER_SYSTEM);
+
+        verifyUsersRunningStatus(new int[]{USER_SYSTEM}, null);
+    }
+
+    @Test
     public void testPrepareMultipleUsers_invalidUsersCount() throws Exception {
         mockListUsers();
 
         assertThrows("Expected AssertionError thrown for maxUsers negative value",
-                        AssertionError.class, () -> prepareMultipleUsers(mMockDevice, -1));
+                    IllegalArgumentException.class, () -> prepareMultipleUsers(mMockDevice, -1));
     }
 
     @Test
@@ -232,6 +244,20 @@ public final class UtilsTest {
                 .inOrder();
 
         verifyUsersRunningStatus(new int[]{51, 5, 10}, new int[]{33, 42, 4});
+    }
+
+    @Test
+    public void testPrepareMultipleUsers_multipleUsersWithHugeMaxValue() throws Exception {
+        mockCurrentUser(51);
+        mockListUsers(5, 10, 33, 51, 42, 4);
+
+        expect.withMessage("prepareMultipleUsers(Integer.MAX_VALUE)")
+                .that(prepareMultipleUsers(mMockDevice, Integer.MAX_VALUE))
+                .asList()
+                .containsExactly(51, 5, 10, 33, 42, 4)
+                .inOrder();
+
+        verifyUsersRunningStatus(new int[]{51, 5, 10, 33, 42, 4}, null);
     }
 
     @Test
@@ -271,6 +297,30 @@ public final class UtilsTest {
     }
 
     @Test
+    public void testPrepareMultipleFullUsers_emptyUsersWithHugeMaxValueOnNonHsumDevice()
+        throws Exception {
+        mockHeadlessSystemUserMode(false);
+        mockListUsers();
+
+        expect.withMessage("prepareMultipleFullUsers(Integer.MAX_VALUE)")
+                .that(prepareMultipleFullUsers(mMockDevice, Integer.MAX_VALUE))
+                .asList()
+                .containsExactly(USER_SYSTEM);
+    }
+
+    @Test
+    public void testPrepareMultipleFullUsers_emptyUsersWithHugeMaxValueOnHsumDevice()
+        throws Exception {
+        mockHeadlessSystemUserMode(true);
+        mockListUsers();
+
+        expect.withMessage("prepareMultipleFullUsers(Integer.MAX_VALUE)")
+                .that(prepareMultipleFullUsers(mMockDevice, Integer.MAX_VALUE))
+                .asList()
+                .isEmpty();
+    }
+
+    @Test
     public void testPrepareMultipleFullUsers_multipleUsersOnNonHsumDevice() throws Exception {
         mockHeadlessSystemUserMode(false);
         mockCurrentUser(51);
@@ -298,6 +348,38 @@ public final class UtilsTest {
                 .inOrder();
 
         verifyUsersRunningStatus(new int[]{51, 5, 10, 33}, new int[]{42, 4});
+    }
+
+    @Test
+    public void testPrepareMultipleFullUsers_multipleUsersWithHugeMaxValueOnNonHsumDevice()
+        throws Exception {
+        mockHeadlessSystemUserMode(false);
+        mockCurrentUser(51);
+        mockListUsers(USER_SYSTEM, 5, 10, 33, 51, 42, 4);
+
+        expect.withMessage("prepareMultipleFullUsers(Integer.MAX_VALUE)")
+                .that(prepareMultipleFullUsers(mMockDevice, Integer.MAX_VALUE))
+                .asList()
+                .containsExactly(51, USER_SYSTEM, 5, 10, 33, 42, 4)
+                .inOrder();
+
+        verifyUsersRunningStatus(new int[]{51, USER_SYSTEM, 5, 10, 33, 42, 4}, null);
+    }
+
+    @Test
+    public void testPrepareMultipleFullUsers_multipleUsersWithHugeMaxValueOnHsumDevice()
+        throws Exception {
+        mockHeadlessSystemUserMode(true);
+        mockCurrentUser(51);
+        mockListUsers(USER_SYSTEM, 5, 10, 33, 51, 42, 4);
+
+        expect.withMessage("prepareMultipleFullUsers(Integer.MAX_VALUE)")
+                .that(prepareMultipleFullUsers(mMockDevice, Integer.MAX_VALUE))
+                .asList()
+                .containsExactly(51, 5, 10, 33, 42, 4)
+                .inOrder();
+
+        verifyUsersRunningStatus(new int[]{51, 5, 10, 33, 42, 4}, null);
     }
 
     @Test
@@ -330,8 +412,8 @@ public final class UtilsTest {
         verifyUsersRunningStatus(new int[]{51, 5, 10, 33, 42, 4}, null);
     }
 
-    private void verifyUsersRunningStatus(int[] startedUserIds, int[] stoppedUserIds)
-            throws Exception {
+    private void verifyUsersRunningStatus(@Nullable int[] startedUserIds,
+                                          @Nullable int[] stoppedUserIds) throws Exception {
 
         if (startedUserIds != null) {
             for (int userId : startedUserIds) {
