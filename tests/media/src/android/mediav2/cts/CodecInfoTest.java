@@ -152,8 +152,7 @@ public class CodecInfoTest {
      */
     // Some devices running versions older than Android V fail this test.
     // As this requirement was not enforced earlier, limit the test to Android V and above.
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-            codeName = "VanillaIceCream")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
     @ApiTest(apis = "android.media.MediaCodecInfo.CodecCapabilities#profileLevels")
     @Test
     public void testCodecProfileSupport() {
@@ -320,8 +319,7 @@ public class CodecInfoTest {
      */
     @Test
     @RequiresFlagsEnabled(FLAG_IN_PROCESS_SW_AUDIO_CODEC)
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-            codeName = "VanillaIceCream")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
     @ApiTest(apis = "android.media.MediaCodecInfo#getSecurityModel")
     public void testSecurityModel() {
         assertTrue("Codecs in REGULAR_CODECS list should have security model "
@@ -336,8 +334,7 @@ public class CodecInfoTest {
      * dynamic color aspects feature on CHIPSETs that set ro.board.first_api_level to V or higher.
      */
     @RequiresFlagsEnabled(FLAG_DYNAMIC_COLOR_ASPECTS)
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-            codeName = "VanillaIceCream")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
     @VsrTest(requirements = {"VSR-4.2-005.001"})
     @Test
     public void testDynamicColorAspectSupport() {

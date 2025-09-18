@@ -68,7 +68,7 @@ import java.util.Map;
  * The test runs the component in MultipleFrames mode and normal mode and expects same output for
  * a given input.
  **/
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName = "VanillaIceCream")
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @AppModeFull(reason = "Instant apps cannot access the SD card")
 @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
 @RunWith(Parameterized.class)

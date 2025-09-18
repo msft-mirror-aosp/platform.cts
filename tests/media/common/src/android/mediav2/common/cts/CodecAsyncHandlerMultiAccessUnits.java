@@ -42,7 +42,7 @@ import java.util.LinkedList;
  * callback events are registered in this object so that the client can take appropriate action
  * in time.
  */
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName = "VanillaIceCream")
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
 public class CodecAsyncHandlerMultiAccessUnits extends CodecAsyncHandler {
     @Rule

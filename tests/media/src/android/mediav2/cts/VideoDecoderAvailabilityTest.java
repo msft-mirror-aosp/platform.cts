@@ -79,7 +79,7 @@ import java.util.function.Function;
  * mediacodec callback events are registered in this object so that the client can take
  * appropriate action as desired.
  */
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
 class CodecAsyncHandlerResource extends CodecAsyncHandler {
     private boolean mResourceChangeCbReceived;
     private int mResourceChangeCbCount;
@@ -116,7 +116,7 @@ class CodecAsyncHandlerResource extends CodecAsyncHandler {
  * This class comprises of tests that validate codec resource availability apis for video decoders
  */
 @RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
 @RunWith(Parameterized.class)
 public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
     private static final String LOG_TAG = VideoDecoderAvailabilityTest.class.getSimpleName();

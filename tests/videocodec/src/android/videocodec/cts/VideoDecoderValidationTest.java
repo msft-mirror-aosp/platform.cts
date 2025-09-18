@@ -48,7 +48,7 @@ import java.util.List;
  */
 @RunWith(Parameterized.class)
 // P010 support was added in Android T, hence limit the following tests to Android T and above
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU, codeName = "Tiramisu")
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
 public class VideoDecoderValidationTest extends CodecDecoderTestBase {
     private static final String MEDIA_DIR = WorkDir.getMediaDirString();
 

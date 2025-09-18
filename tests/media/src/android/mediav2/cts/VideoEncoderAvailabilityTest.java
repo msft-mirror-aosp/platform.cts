@@ -295,7 +295,7 @@ class CodecEncoderGLSurface extends CodecTestBase {
  * This class comprises of tests that validate codec resource availability apis for video encoders
  */
 @RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
 @RunWith(Parameterized.class)
 public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
     private static final String LOG_TAG = VideoEncoderAvailabilityTest.class.getSimpleName();

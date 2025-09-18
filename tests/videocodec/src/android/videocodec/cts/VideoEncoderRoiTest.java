@@ -78,8 +78,7 @@ import java.util.function.Predicate;
  * background) information and the corresponding QP offset for various frames during encoding.
  * The encoded output is analyzed to check if the Roi information is honored.
  */
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-        "VanillaIceCream")
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @AppModeFull(reason = "Instant apps cannot access the SD card")
 @RequiresFlagsEnabled(FLAG_REGION_OF_INTEREST)
 @RunWith(Parameterized.class)

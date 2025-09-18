@@ -71,7 +71,7 @@ public class CodecUnitTest {
     @SmallTest
     // Following tests were added in Android R and are not limited to c2.android.* codecs.
     // Hence limit the tests to Android R and above and also annotate as FrameworkSpecificTest
-    @SdkSuppress(minSdkVersion = 30)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.R)
     @FrameworkSpecificTest
     public static class TestApi extends CodecTestBase {
         private final CodecDecoderBlockModelTestBase.LinearBlockWrapper
@@ -2048,8 +2048,7 @@ public class CodecUnitTest {
             mCodec.release();
         }
 
-        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-                codeName = "VanillaIceCream")
+        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
         @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec#queueInputBuffers"})
         @Test
@@ -2069,8 +2068,7 @@ public class CodecUnitTest {
             mCodec.release();
         }
 
-        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-                codeName = "VanillaIceCream")
+        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
         @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec#queueInputBuffers"})
         @Test
@@ -2089,8 +2087,7 @@ public class CodecUnitTest {
             mCodec.release();
         }
 
-        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-                codeName = "VanillaIceCream")
+        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
         @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec#queueInputBuffers"})
         @Test
@@ -2118,8 +2115,7 @@ public class CodecUnitTest {
             mCodec.release();
         }
 
-        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-                codeName = "VanillaIceCream")
+        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
         @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec#queueInputBuffers"})
         @Test
@@ -2146,8 +2142,7 @@ public class CodecUnitTest {
             mCodec.release();
         }
 
-        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-                codeName = "VanillaIceCream")
+        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
         @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec#queueInputBuffers"})
         @Test
@@ -2185,8 +2180,7 @@ public class CodecUnitTest {
             mCodec.release();
         }
 
-        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-                codeName = "VanillaIceCream")
+        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
         @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec#queueInputBuffers"})
         @Test
@@ -2213,8 +2207,7 @@ public class CodecUnitTest {
             mCodec.release();
         }
 
-        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-                codeName = "VanillaIceCream")
+        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
         @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec#queueInputBuffers"})
         @Test
@@ -2255,8 +2248,7 @@ public class CodecUnitTest {
             mCodec.release();
         }
 
-        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-                codeName = "VanillaIceCream")
+        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
         @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec#queueInputBuffers"})
         @Test
@@ -2291,8 +2283,7 @@ public class CodecUnitTest {
             mCodec.release();
         }
 
-        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-                codeName = "VanillaIceCream")
+        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
         @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec#queueInputBuffers"})
         @Test
@@ -2323,8 +2314,7 @@ public class CodecUnitTest {
             mCodec.release();
         }
 
-        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-                codeName = "VanillaIceCream")
+        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
         @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec#queueInputBuffers"})
         @Test
@@ -2445,8 +2435,7 @@ public class CodecUnitTest {
             mCodec.release();
         }
 
-        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-                codeName = "VanillaIceCream")
+        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
         @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec.QueueRequest#setMultiFrameLinearBlock"})
         @Test
@@ -2479,8 +2468,7 @@ public class CodecUnitTest {
             mCodec.release();
         }
 
-        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-                codeName = "VanillaIceCream")
+        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
         @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec.QueueRequest#setMultiFrameLinearBlock"})
         @Test
@@ -2510,8 +2498,7 @@ public class CodecUnitTest {
             mCodec.release();
         }
 
-        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-                codeName = "VanillaIceCream")
+        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
         @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec.QueueRequest#setMultiFrameLinearBlock"})
         @Test
@@ -2553,8 +2540,7 @@ public class CodecUnitTest {
             mCodec.release();
         }
 
-        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-                codeName = "VanillaIceCream")
+        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
         @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec.QueueRequest#setMultiFrameLinearBlock"})
         @Test
@@ -2584,8 +2570,7 @@ public class CodecUnitTest {
             mCodec.release();
         }
 
-        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-                codeName = "VanillaIceCream")
+        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
         @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec.QueueRequest#setMultiFrameLinearBlock"})
         @Test
@@ -2620,8 +2605,7 @@ public class CodecUnitTest {
             mCodec.release();
         }
 
-        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-                codeName = "VanillaIceCream")
+        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
         @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec.QueueRequest#setMultiFrameLinearBlock"})
         @Test
@@ -2656,8 +2640,7 @@ public class CodecUnitTest {
             mCodec.release();
         }
 
-        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-                codeName = "VanillaIceCream")
+        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
         @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec.QueueRequest#setMultiFrameLinearBlock"})
         @Test
@@ -2696,8 +2679,7 @@ public class CodecUnitTest {
             mCodec.release();
         }
 
-        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-                codeName = "VanillaIceCream")
+        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
         @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec.QueueRequest#setMultiFrameLinearBlock"})
         @Test
@@ -2742,8 +2724,7 @@ public class CodecUnitTest {
             mCodec.release();
         }
 
-        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-                codeName = "VanillaIceCream")
+        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
         @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
         @ApiTest(apis = {"android.media.MediaCodec.QueueRequest#setMultiFrameLinearBlock"})
         @Test
@@ -2822,7 +2803,7 @@ public class CodecUnitTest {
     @SmallTest
     // Following tests were added in Android R and are not limited to c2.android.* codecs.
     // Hence limit the tests to Android R and above and also annotate as FrameworkSpecificTest
-    @SdkSuppress(minSdkVersion = 30)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.R)
     @FrameworkSpecificTest
     public static class TestApiNative {
         @Rule

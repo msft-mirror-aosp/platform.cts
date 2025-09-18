@@ -258,8 +258,7 @@ public class CodecDecoderSurfaceTest extends CodecDecoderTestBase {
     @LargeTest
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
     @RequiresFlagsEnabled(FLAG_NULL_OUTPUT_SURFACE)
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-            codeName = "VanillaIceCream")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
     public void testDetachAndReattachSurface() throws IOException, InterruptedException {
         boolean[] boolStates = {true, false};
         final long pts = 0;
