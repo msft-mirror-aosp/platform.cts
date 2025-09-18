@@ -273,6 +273,15 @@ object DevicePolicy {
                 .use { devicePolicyManager(user).clearOrganizationId() }
     }
 
+    fun clearMultiUserDeviceManagement(dmrhReceiver: ComponentName) {
+        TestApis.permissions().withPermission(
+            CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS
+        ).use {
+            val dpm = devicePolicyManager(TestApis.users().system())
+            dpm.clearMultiUserDeviceManagement(dmrhReceiver)
+        }
+    }
+
     /**
      * See [DevicePolicyManager.setNextOperationSafety].
      */
