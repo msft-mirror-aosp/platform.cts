@@ -24,9 +24,12 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
+import com.android.compatibility.common.util.CddTest;
+
 import org.junit.Rule;
 import org.junit.Test;
 
+@CddTest(requirements = {"9.18/C-3-1,C-3-3"})
 @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
 public class DeveloperVerificationViaIntentCujTest extends DeveloperVerificationTestBase {
     @Rule
