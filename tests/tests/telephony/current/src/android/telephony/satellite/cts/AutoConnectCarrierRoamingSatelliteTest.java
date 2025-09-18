@@ -80,7 +80,7 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
     @Before
     public void setUp() throws Exception {
         logd(TAG, "setUp()");
-        assumeTrue(shouldTestSatelliteWithMockService());
+        if (!shouldTestSatelliteWithMockService()) return;
         setUpAutoConnectTestEnvironment(
             SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT, PHONE_NUMBER_0, true);
     }
@@ -88,7 +88,7 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
     @After
     public void tearDown() throws Exception {
         logd(TAG, "tearDown()");
-        assumeTrue(shouldTestSatelliteWithMockService());
+        if (!shouldTestSatelliteWithMockService()) return;
         cleanUpMockSim(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT, true);
     }
 
