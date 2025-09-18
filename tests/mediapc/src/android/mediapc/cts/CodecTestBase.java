@@ -16,13 +16,12 @@
 
 package android.mediapc.cts;
 
-import static android.media.MediaCodecInfo.CodecCapabilities;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible;
 import static android.mediapc.cts.common.CodecMetrics.getMetrics;
+import static android.mediav2.common.cts.CodecTestBase.areFormatsSupported;
 
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.graphics.ImageFormat;
@@ -37,12 +36,11 @@ import android.media.MediaFormat;
 import android.media.NotProvisionedException;
 import android.media.ResourceBusyException;
 import android.mediapc.cts.common.CodecMetrics;
-import android.os.Build;
+import android.mediav2.common.cts.CodecAsyncHandler;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Surface;
 
-import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Assert;
@@ -52,140 +50,11 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
-
-class CodecAsyncHandler extends MediaCodec.Callback {
-    private static final String LOG_TAG = CodecAsyncHandler.class.getSimpleName();
-    private final Lock mLock = new ReentrantLock();
-    private final Condition mCondition = mLock.newCondition();
-    private final LinkedList<Pair<Integer, MediaCodec.BufferInfo>> mCbInputQueue;
-    private final LinkedList<Pair<Integer, MediaCodec.BufferInfo>> mCbOutputQueue;
-    private MediaFormat mOutFormat;
-    private boolean mSignalledOutFormatChanged;
-    private volatile boolean mSignalledError;
-
-    CodecAsyncHandler() {
-        mCbInputQueue = new LinkedList<>();
-        mCbOutputQueue = new LinkedList<>();
-        mSignalledError = false;
-        mSignalledOutFormatChanged = false;
-    }
-
-    void clearQueues() {
-        mLock.lock();
-        mCbInputQueue.clear();
-        mCbOutputQueue.clear();
-        mLock.unlock();
-    }
-
-    void resetContext() {
-        clearQueues();
-        mOutFormat = null;
-        mSignalledOutFormatChanged = false;
-        mSignalledError = false;
-    }
-
-    @Override
-    public void onInputBufferAvailable(@NonNull MediaCodec codec, int bufferIndex) {
-        assertTrue(bufferIndex >= 0);
-        mLock.lock();
-        mCbInputQueue.add(new Pair<>(bufferIndex, (MediaCodec.BufferInfo) null));
-        mCondition.signalAll();
-        mLock.unlock();
-    }
-
-    @Override
-    public void onOutputBufferAvailable(@NonNull MediaCodec codec, int bufferIndex,
-            @NonNull MediaCodec.BufferInfo info) {
-        assertTrue(bufferIndex >= 0);
-        mLock.lock();
-        mCbOutputQueue.add(new Pair<>(bufferIndex, info));
-        mCondition.signalAll();
-        mLock.unlock();
-    }
-
-    @Override
-    public void onError(@NonNull MediaCodec codec, MediaCodec.CodecException e) {
-        mLock.lock();
-        mSignalledError = true;
-        mCondition.signalAll();
-        mLock.unlock();
-        Log.e(LOG_TAG, "received media codec error : " + e.getMessage());
-    }
-
-    @Override
-    public void onOutputFormatChanged(@NonNull MediaCodec codec, @NonNull MediaFormat format) {
-        mOutFormat = format;
-        mSignalledOutFormatChanged = true;
-        Log.i(LOG_TAG, "Output format changed: " + format.toString());
-    }
-
-    void setCallBack(MediaCodec codec, boolean isCodecInAsyncMode) {
-        if (isCodecInAsyncMode) {
-            codec.setCallback(this);
-        } else {
-            codec.setCallback(null);
-        }
-    }
-
-    Pair<Integer, MediaCodec.BufferInfo> getOutput() throws InterruptedException {
-        Pair<Integer, MediaCodec.BufferInfo> element = null;
-        mLock.lock();
-        while (!mSignalledError) {
-            if (mCbOutputQueue.isEmpty()) {
-                mCondition.await();
-            } else {
-                element = mCbOutputQueue.remove(0);
-                break;
-            }
-        }
-        mLock.unlock();
-        return element;
-    }
-
-    Pair<Integer, MediaCodec.BufferInfo> getWork() throws InterruptedException {
-        Pair<Integer, MediaCodec.BufferInfo> element = null;
-        mLock.lock();
-        while (!mSignalledError) {
-            if (mCbInputQueue.isEmpty() && mCbOutputQueue.isEmpty()) {
-                mCondition.await();
-            } else {
-                if (!mCbOutputQueue.isEmpty()) {
-                    element = mCbOutputQueue.remove(0);
-                    break;
-                }
-                if (!mCbInputQueue.isEmpty()) {
-                    element = mCbInputQueue.remove(0);
-                    break;
-                }
-            }
-        }
-        mLock.unlock();
-        return element;
-    }
-
-    boolean hasSeenError() {
-        return mSignalledError;
-    }
-
-    boolean hasOutputFormatChanged() {
-        return mSignalledOutFormatChanged;
-    }
-
-    MediaFormat getOutputFormat() {
-        return mOutFormat;
-    }
-}
 
 abstract class CodecTestBase {
     private static final String LOG_TAG = CodecTestBase.class.getSimpleName();
@@ -409,136 +278,6 @@ abstract class CodecTestBase {
                 }
             }
         }
-    }
-
-    static ArrayList<String> selectCodecs(String mediaType, ArrayList<MediaFormat> formats,
-            String[] features, boolean isEncoder) {
-        return selectCodecs(mediaType, formats, features, isEncoder, SELECT_ALL);
-    }
-
-    static ArrayList<String> selectHardwareCodecs(String mediaType, ArrayList<MediaFormat> formats,
-            String[] features, boolean isEncoder) {
-        return selectHardwareCodecs(mediaType, formats, features, isEncoder, false);
-    }
-
-    static ArrayList<String> selectHardwareCodecs(String mediaType, ArrayList<MediaFormat> formats,
-            String[] features, boolean isEncoder, boolean allCodecs) {
-        return selectCodecs(mediaType, formats, features, isEncoder, SELECT_HARDWARE, allCodecs);
-    }
-
-    static ArrayList<String> selectCodecs(String mediaType, ArrayList<MediaFormat> formats,
-            String[] features, boolean isEncoder, int selectCodecOption) {
-        return selectCodecs(mediaType, formats, features, isEncoder, selectCodecOption, false);
-    }
-
-    static ArrayList<String> selectCodecs(String mediaType, ArrayList<MediaFormat> formats,
-            String[] features, boolean isEncoder, int selectCodecOption, boolean allCodecs) {
-        int kind = allCodecs ? MediaCodecList.ALL_CODECS : MediaCodecList.REGULAR_CODECS;
-        MediaCodecList codecList = new MediaCodecList(kind);
-        MediaCodecInfo[] codecInfos = codecList.getCodecInfos();
-        ArrayList<String> listOfCodecs = new ArrayList<>();
-        for (MediaCodecInfo codecInfo : codecInfos) {
-            if (codecInfo.isEncoder() != isEncoder) continue;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && codecInfo.isAlias()) continue;
-            if (selectCodecOption == SELECT_HARDWARE && !codecInfo.isHardwareAccelerated())
-                continue;
-            else if (selectCodecOption == SELECT_SOFTWARE && !codecInfo.isSoftwareOnly())
-                continue;
-            String[] types = codecInfo.getSupportedTypes();
-            for (String type : types) {
-                if (type.equalsIgnoreCase(mediaType)) {
-                    boolean isOk = true;
-                    MediaCodecInfo.CodecCapabilities codecCapabilities =
-                            codecInfo.getCapabilitiesForType(type);
-                    if (formats != null) {
-                        for (MediaFormat format : formats) {
-                            if (!codecCapabilities.isFormatSupported(format)) {
-                                isOk = false;
-                                break;
-                            }
-                        }
-                    }
-                    if (features != null) {
-                        for (String feature : features) {
-                            if (!codecCapabilities.isFeatureSupported(feature)) {
-                                isOk = false;
-                                break;
-                            }
-                        }
-                    }
-                    if (isOk) listOfCodecs.add(codecInfo.getName());
-                }
-            }
-        }
-        return listOfCodecs;
-    }
-
-    static Set<String> getMediaTypesOfAvailableCodecs(int codecAV, int codecType) {
-        MediaCodecList codecList = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
-        MediaCodecInfo[] codecInfos = codecList.getCodecInfos();
-        Set<String> listOfMediaTypes = new HashSet<>();
-        for (MediaCodecInfo codecInfo : codecInfos) {
-            if (codecType == SELECT_HARDWARE && !codecInfo.isHardwareAccelerated()) {
-                continue;
-            }
-            if (codecType == SELECT_SOFTWARE && !codecInfo.isSoftwareOnly()) {
-                continue;
-            }
-            String[] types = codecInfo.getSupportedTypes();
-            for (String type : types) {
-                if (codecAV == SELECT_AUDIO && !type.startsWith("audio/")) {
-                    continue;
-                }
-                if (codecAV == SELECT_VIDEO && !type.startsWith("video/")) {
-                    continue;
-                }
-                listOfMediaTypes.add(type);
-            }
-        }
-        return listOfMediaTypes;
-    }
-
-    /**
-     * Returns MediaCodecInfo for the given codec name
-     */
-    public static MediaCodecInfo getCodecInfo(String codecName) {
-        for (MediaCodecInfo info : MCL_ALL.getCodecInfos()) {
-            if (info.getName().equals(codecName)) {
-                return info;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Return CodecCapabilities for the given codec name
-     */
-    public static CodecCapabilities getCodecCapabilities(String codecName, String mediaType) {
-        MediaCodecInfo.CodecCapabilities codecCapabilities =
-                getCodecInfo(codecName).getCapabilitiesForType(mediaType);
-        return codecCapabilities;
-
-    }
-
-    /**
-     * Checks if the codec supports all the given formats
-     */
-    public static boolean areFormatsSupported(String codecName, ArrayList<MediaFormat> formats) {
-        boolean isSupported = true;
-        MediaCodecInfo info = getCodecInfo(codecName);
-        if (info == null) {
-            return false;
-        }
-        for (MediaFormat format : formats) {
-            String mediaType = format.getString(MediaFormat.KEY_MIME);
-            MediaCodecInfo.CodecCapabilities codecCapabilities =
-                    info.getCapabilitiesForType(mediaType);
-            if (!codecCapabilities.isFormatSupported(format)) {
-                Log.d(LOG_TAG, "Codec: " + codecName + " doesn't support format: " + format);
-                return false;
-            }
-        }
-        return true;
     }
 }
 
@@ -1031,7 +770,7 @@ class Decode extends CodecDecoderTestBase implements Callable<CodecMetrics> {
         ArrayList<MediaFormat> formats = new ArrayList<>();
         formats.add(format);
         // If the decoder doesn't support the formats, then return 0 to indicate that decode failed
-        if (!areFormatsSupported(mDecoderName, formats)) {
+        if (!areFormatsSupported(mDecoderName, mMediaType, formats)) {
             return getMetrics(0.0, 0.0);
         }
         mCodec = MediaCodec.createByCodecName(mDecoderName);

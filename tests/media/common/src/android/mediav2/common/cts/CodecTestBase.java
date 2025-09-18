@@ -78,6 +78,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -680,7 +681,7 @@ public abstract class CodecTestBase {
      * Check if any encoder on the device supports the given feature
      */
     public static boolean isEncoderFeatureSupported(String feature) {
-        for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_REGULAR.getCodecInfos()) {
+        for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_ALL.getCodecInfos()) {
             if (!codecInfo.isEncoder()) {
                 continue;
             }
@@ -712,7 +713,7 @@ public abstract class CodecTestBase {
         if (hdrProfiles == null) {
             return false;
         }
-        for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_REGULAR.getCodecInfos()) {
+        for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_ALL.getCodecInfos()) {
             if (!codecName.equals(codecInfo.getName())) {
                 continue;
             }
@@ -884,6 +885,13 @@ public abstract class CodecTestBase {
         }
         if (!isCSDIdentical(refFormat, testFormat)) return false;
         return isFormatSimilar(refFormat, testFormat);
+    }
+
+    public static MediaCodecInfo getCodecInfo(String codecName) {
+        return Arrays.stream(MEDIA_CODEC_LIST_ALL.getCodecInfos())
+                .filter(codecInfo -> codecName.equals(codecInfo.getName()))
+                .findFirst()
+                .orElse(null);
     }
 
     public static CodecCapabilities getCodecCapabilities(String codecName, String mediaType) {
@@ -1121,6 +1129,26 @@ public abstract class CodecTestBase {
         return mediaTypes;
     }
 
+    public static ArrayList<String> compileMediaTypesList(ComponentClass selectSwitch,
+            boolean needAudio, boolean needVideo) {
+        return Arrays.stream(MEDIA_CODEC_LIST_REGULAR.getCodecInfos())
+                .filter(codecInfo -> {
+                    boolean isHardware = codecInfo.isHardwareAccelerated();
+                    boolean isSoftware = codecInfo.isSoftwareOnly();
+                    return (selectSwitch == ComponentClass.HARDWARE && isHardware)
+                            || (selectSwitch == ComponentClass.SOFTWARE && isSoftware)
+                            || (selectSwitch == ComponentClass.ALL);
+                })
+                .flatMap(codecInfo -> Arrays.stream(codecInfo.getSupportedTypes()))
+                .filter(type -> {
+                    boolean isAudioType = type.startsWith("audio/");
+                    boolean isVideoType = type.startsWith("video/");
+                    return (needAudio && isAudioType) || (needVideo && isVideoType);
+                })
+                .distinct()
+                .collect(Collectors.toCollection(ArrayList::new));
+    }
+
     public static List<Object[]> prepareParamList(List<Object[]> exhaustiveArgsList,
             boolean isEncoder, boolean needAudio, boolean needVideo, boolean mustTestAllCodecs) {
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo,
@@ -1253,43 +1281,72 @@ public abstract class CodecTestBase {
 
     public static ArrayList<String> selectCodecs(String mediaType, ArrayList<MediaFormat> formats,
             String[] features, boolean isEncoder, ComponentClass selectSwitch) {
-        MediaCodecInfo[] codecInfos = MEDIA_CODEC_LIST_REGULAR.getCodecInfos();
-        ArrayList<String> listOfCodecs = new ArrayList<>();
-        for (MediaCodecInfo codecInfo : codecInfos) {
-            if (codecInfo.isEncoder() != isEncoder) continue;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && codecInfo.isAlias()) continue;
-            if (selectSwitch == ComponentClass.HARDWARE && !codecInfo.isHardwareAccelerated()) {
-                continue;
-            } else if (selectSwitch == ComponentClass.SOFTWARE && !codecInfo.isSoftwareOnly()) {
-                continue;
-            }
-            String[] types = codecInfo.getSupportedTypes();
-            for (String type : types) {
-                if (type.equalsIgnoreCase(mediaType)) {
-                    boolean isOk = true;
-                    MediaCodecInfo.CodecCapabilities codecCapabilities =
-                            codecInfo.getCapabilitiesForType(type);
-                    if (formats != null) {
-                        for (MediaFormat format : formats) {
-                            if (!codecCapabilities.isFormatSupported(format)) {
-                                isOk = false;
-                                break;
-                            }
-                        }
+        return selectCodecs(mediaType, formats, features, isEncoder, selectSwitch, false);
+    }
+
+    public static ArrayList<String> selectHardwareCodecs(String mediaType,
+            ArrayList<MediaFormat> formats, String[] features, boolean isEncoder) {
+        return selectCodecs(mediaType, formats, features, isEncoder, ComponentClass.HARDWARE,
+                false);
+    }
+
+    public static ArrayList<String> selectHardwareCodecs(String mediaType,
+            ArrayList<MediaFormat> formats, String[] features, boolean isEncoder,
+            boolean allCodecs) {
+        return selectCodecs(mediaType, formats, features, isEncoder, ComponentClass.HARDWARE,
+                allCodecs);
+    }
+
+    /**
+     * Get list of supported codecs for the criteria provided
+     *
+     * @param mediaType The media type component must support
+     * @param formats Set of MediaFormat(s) the component must support. If there are no MediaFormat
+     *     requirements, null may be provided.
+     * @param features List of features(s) the component must support. If there are no feature
+     *     requirements, null may be provided.
+     * @param isEncoder Is component encoder or decoder
+     * @param selectSwitch The component class to select (ALL, HARDWARE, SOFTWARE).
+     * @param allCodecs True to search through all codecs, false to search through regular codecs.
+     * @return An ArrayList of codec names that match the criteria.
+     */
+    public static ArrayList<String> selectCodecs(String mediaType, ArrayList<MediaFormat> formats,
+            String[] features, boolean isEncoder, ComponentClass selectSwitch, boolean allCodecs) {
+        MediaCodecInfo[] codecInfos = allCodecs ? MEDIA_CODEC_LIST_ALL.getCodecInfos()
+                                                : MEDIA_CODEC_LIST_REGULAR.getCodecInfos();
+
+        return Arrays.stream(codecInfos)
+                .filter(codecInfo -> codecInfo.isEncoder() == isEncoder)
+                .filter(codecInfo
+                        -> Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || !codecInfo.isAlias())
+                .filter(codecInfo -> {
+                    boolean isHardware = codecInfo.isHardwareAccelerated();
+                    boolean isSoftware = codecInfo.isSoftwareOnly();
+                    return (selectSwitch == ComponentClass.HARDWARE && isHardware)
+                            || (selectSwitch == ComponentClass.SOFTWARE && isSoftware)
+                            || (selectSwitch == ComponentClass.ALL);
+                })
+                .filter(codecInfo
+                        -> Arrays.stream(codecInfo.getSupportedTypes())
+                                .anyMatch(type -> type.equalsIgnoreCase(mediaType)))
+                .filter(codecInfo -> {
+                    try {
+                        MediaCodecInfo.CodecCapabilities caps =
+                                codecInfo.getCapabilitiesForType(mediaType);
+
+                        boolean formatsSupported = formats == null
+                                || formats.stream().allMatch(caps::isFormatSupported);
+
+                        boolean featuresSupported = features == null
+                                || Arrays.stream(features).allMatch(caps::isFeatureSupported);
+
+                        return formatsSupported && featuresSupported;
+                    } catch (IllegalArgumentException e) {
+                        return false;
                     }
-                    if (features != null) {
-                        for (String feature : features) {
-                            if (!codecCapabilities.isFeatureSupported(feature)) {
-                                isOk = false;
-                                break;
-                            }
-                        }
-                    }
-                    if (isOk) listOfCodecs.add(codecInfo.getName());
-                }
-            }
-        }
-        return listOfCodecs;
+                })
+                .map(MediaCodecInfo::getName)
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     public static int getWidth(MediaFormat format) {

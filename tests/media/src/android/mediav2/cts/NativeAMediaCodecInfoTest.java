@@ -24,6 +24,7 @@ import static android.mediav2.common.cts.CodecTestBase.PER_TEST_TIMEOUT_SMALL_TE
 import static android.mediav2.common.cts.CodecTestBase.codecFilter;
 import static android.mediav2.common.cts.CodecTestBase.codecPrefix;
 import static android.mediav2.common.cts.CodecTestBase.compileRequestedMediaTypeList;
+import static android.mediav2.common.cts.CodecTestBase.getCodecInfo;
 import static android.mediav2.common.cts.CodecTestBase.getMaxSupportedInstances;
 import static android.mediav2.common.cts.CodecTestBase.isFeatureRequired;
 import static android.mediav2.common.cts.CodecTestBase.isFeatureSupported;
@@ -177,15 +178,6 @@ public class NativeAMediaCodecInfoTest {
     public NativeAMediaCodecInfoTest(String codecName, String mediaType) {
         mCodecName = codecName;
         mMediaType = mediaType;
-    }
-
-    public static MediaCodecInfo getCodecInfo(String codecName) {
-        for (MediaCodecInfo info : MEDIA_CODEC_LIST_ALL.getCodecInfos()) {
-            if (info.getName().equals(codecName)) {
-                return info;
-            }
-        }
-        return null;
     }
 
     private static int getExpectedCodecType(String codecName) {
