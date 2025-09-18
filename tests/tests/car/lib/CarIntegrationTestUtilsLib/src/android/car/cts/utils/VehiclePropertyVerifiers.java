@@ -848,8 +848,7 @@ public class VehiclePropertyVerifiers {
                                                     Arrays.asList(
                                                             hvacFanDirectionAvailableCarPropertyValue
                                                                     .getValue()));
-                                })
-                        .setAllPossibleUnwritableValues(CAR_HVAC_FAN_DIRECTION_UNWRITABLE_STATES);
+                                });
 
         if (VehiclePropertyVerifier.isAtLeastU()) {
             builder.setAllPossibleUnwritableValues(CAR_HVAC_FAN_DIRECTION_UNWRITABLE_STATES);
