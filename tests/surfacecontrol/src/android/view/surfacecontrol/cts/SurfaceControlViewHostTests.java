@@ -179,7 +179,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
     public final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    private Instrumentation mInstrumentation;
+    private Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
     private CtsTouchUtils mCtsTouchUtils;
     private Activity mActivity;
     private SurfaceView mSurfaceView;
@@ -251,7 +251,6 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
             mImeSession = createManagedMockImeSession(this);
         }
 
-        mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mCtsTouchUtils = new CtsTouchUtils(mInstrumentation.getTargetContext());
         mActivity = mActivityRule.launchActivity(null);
         mDisplayId = mActivity.getDisplayId();
