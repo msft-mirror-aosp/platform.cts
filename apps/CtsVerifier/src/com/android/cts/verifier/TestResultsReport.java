@@ -106,12 +106,37 @@ class TestResultsReport {
         // at the time of writing, the build class has no REFERENCE_FINGERPRINT property
         String referenceFingerprint = null;
 
-        DevicePropertyInfo devicePropertyInfo = new DevicePropertyInfo(Build.CPU_ABI,
-                Build.CPU_ABI2, abis, abis32, abis64, Build.BOARD, Build.BRAND, Build.DEVICE,
-                Build.FINGERPRINT, null, Build.ID, Build.MANUFACTURER, Build.MODEL, Build.PRODUCT,
-                referenceFingerprint, Build.getSerial(), Build.TAGS, Build.TYPE, versionBaseOs,
-                versionRelease, Integer.toString(Build.VERSION.SDK_INT),
-                versionSecurityPatch, Build.VERSION.INCREMENTAL);
+        String sdkVersion = Integer.toString(Build.VERSION.SDK_INT);
+        String sdkVerionFull =
+                String.format(
+                        "%s.%s", sdkVersion, Build.getMinorSdkVersion(Build.VERSION.SDK_INT_FULL));
+
+        DevicePropertyInfo devicePropertyInfo =
+                DevicePropertyInfo.newBuilder()
+                        .abi(Build.CPU_ABI)
+                        .abi2(Build.CPU_ABI2)
+                        .abis(abis)
+                        .abis32(abis32)
+                        .abis64(abis64)
+                        .board(Build.BOARD)
+                        .brand(Build.BRAND)
+                        .device(Build.DEVICE)
+                        .fingerprint(Build.FINGERPRINT)
+                        .id(Build.ID)
+                        .manufacturer(Build.MANUFACTURER)
+                        .model(Build.MODEL)
+                        .product(Build.PRODUCT)
+                        .referenceFingerprint(referenceFingerprint)
+                        .serial(Build.getSerial())
+                        .tags(Build.TAGS)
+                        .type(Build.TYPE)
+                        .versionBaseOs(versionBaseOs)
+                        .versionRelease(versionRelease)
+                        .versionSdk(sdkVersion)
+                        .versionSecurityPatch(versionSecurityPatch)
+                        .versionIncremental(Build.VERSION.INCREMENTAL)
+                        .versionSdkFull(sdkVerionFull)
+                        .build();
 
         // add device properties to the result with a prefix tag for each key
         for (Entry<String, String> entry :
