@@ -2741,6 +2741,11 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                     expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
                     expectImeVisible(TIMEOUT);
 
+                    // Compatibility layer may try to scale up certain apps at runtime. This
+                    // may cause multiple onStartInput events when MockIme is created and
+                    // shown for the first time. Clear out the stream events to make sure only
+                    // new events are detected.
+                    stream.skipAll();
                     // another show request should not result in a showSoftInput
                     touch.tapOnViewCenter(editText);
                     notExpectEvent(stream, showSoftInputMatcher(0), NOT_EXPECT_TIMEOUT);
