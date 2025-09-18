@@ -72,6 +72,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 @AppModeFull
@@ -102,7 +103,7 @@ public class BrightnessTest extends TestBase {
     }
 
     @Test
-    public void testBrightnessSliderTracking() {
+    public void testBrightnessSliderTracking() throws Exception {
         // Only run if we have a valid ambient light sensor.
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_SENSOR_LIGHT));
 
@@ -137,7 +138,7 @@ public class BrightnessTest extends TestBase {
     }
 
     @Test
-    public void testBrightnesSliderTrackingDecrease() {
+    public void testBrightnesSliderTrackingDecrease() throws Exception {
         // Only run if we have a valid ambient light sensor.
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_SENSOR_LIGHT));
 
@@ -170,7 +171,7 @@ public class BrightnessTest extends TestBase {
     }
 
     @Test
-    public void testNoTrackingForManualBrightness() {
+    public void testNoTrackingForManualBrightness() throws Exception {
         // Don't run as there is no app that has permission to access slider usage.
         assumeTrue(
                 numberOfSystemAppsWithPermission(Manifest.permission.BRIGHTNESS_SLIDER_USAGE) > 0);
@@ -189,7 +190,7 @@ public class BrightnessTest extends TestBase {
     }
 
     @Test
-    public void testNoColorSampleData() {
+    public void testNoColorSampleData() throws Exception {
         // Only run if we have a valid ambient light sensor.
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_SENSOR_LIGHT));
 
@@ -316,7 +317,7 @@ public class BrightnessTest extends TestBase {
     }
 
     @Test
-    public void testSliderEventsReflectCurves() {
+    public void testSliderEventsReflectCurves() throws Exception {
         // Only run if we have a valid ambient light sensor.
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_SENSOR_LIGHT));
 
@@ -363,7 +364,7 @@ public class BrightnessTest extends TestBase {
     }
 
     @Test
-    public void testSetAndGetBrightnessConfiguration() {
+    public void testSetAndGetBrightnessConfiguration() throws Exception {
         assumeTrue(numberOfSystemAppsWithPermission(
                 Manifest.permission.CONFIGURE_DISPLAY_BRIGHTNESS) > 0);
 
@@ -383,7 +384,7 @@ public class BrightnessTest extends TestBase {
     }
 
     @Test
-    public void testSetAndGetPerDisplay() {
+    public void testSetAndGetPerDisplay() throws Exception {
         // Only run if we have a valid ambient light sensor.
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_SENSOR_LIGHT));
 
@@ -433,7 +434,7 @@ public class BrightnessTest extends TestBase {
     @Test
     @RequiresFlagsEnabled(FLAG_SET_BRIGHTNESS_BY_UNIT)
     @Parameters({"0", "13.1", "39", "54.32", "80", "97.87", "100"})
-    public void testSetBrightness_unitPercentage(float brightness) {
+    public void testSetBrightness_unitPercentage(float brightness) throws Exception {
         try (var brtClosable = new BrightnessClosable()) {
             mDisplayManager.setBrightness(
                     Display.DEFAULT_DISPLAY, brightness, DisplayManager.BRIGHTNESS_UNIT_PERCENTAGE);
@@ -449,7 +450,7 @@ public class BrightnessTest extends TestBase {
         FLAG_SET_BRIGHTNESS_BY_UNIT,
         FLAG_DISPLAY_LISTENER_PERFORMANCE_IMPROVEMENTS
     })
-    public void testBrightnessChangeListener() throws InterruptedException {
+    public void testBrightnessChangeListener() throws Exception {
         try (var brtClosable = new BrightnessClosable()) {
             float brightness = 33.7f;
             CountDownLatch signal = new CountDownLatch(1);
@@ -593,7 +594,7 @@ public class BrightnessTest extends TestBase {
         }
     }
 
-    private class BrightnessClosable implements AutoCloseable {
+    private class BrightnessClosable extends SafeExecutor implements AutoCloseable {
         private final float mPrevBrightness;
         private float mCurrBrightness;
         private final int mPrevBrightnessMode;
@@ -618,7 +619,7 @@ public class BrightnessTest extends TestBase {
             mCurrBrightnessMode = mPrevBrightnessMode;
             mPrevBrightnessConfig = mDisplayManager.getBrightnessConfiguration();
             // Enforce min brightness to get the system absolute min brightness
-            changeBrightness(0f, Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC, null);
+            changeBrightness(0f, Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
             mMinBrightness = brightnessIntToFloat(getSystemSetting(
                     Settings.System.SCREEN_BRIGHTNESS));
             // Enforce max brightness to get the system absolute max brightness
@@ -629,12 +630,13 @@ public class BrightnessTest extends TestBase {
         }
 
         @Override
-        public void close() {
-            changeBrightness(mPrevBrightness, mPrevBrightnessMode, null);
-            mDisplayManager.setBrightnessConfiguration(mPrevBrightnessConfig);
-            mSliderPermission.close();
-            mConfigureBrightnessPermission.close();
-            mWriteSettingsPermission.close();
+        public void close() throws Exception {
+            executeSafely(() -> changeBrightness(mPrevBrightness, mPrevBrightnessMode));
+            executeSafely(() -> mDisplayManager.setBrightnessConfiguration(mPrevBrightnessConfig));
+            executeSafely(mSliderPermission::close);
+            executeSafely(mConfigureBrightnessPermission::close);
+            executeSafely(mWriteSettingsPermission::close);
+            throwSuppressedExceptions();
         }
 
         float getMinimumBrightness() {
@@ -715,6 +717,48 @@ public class BrightnessTest extends TestBase {
         @Override
         public void close() {
             revokePermission(mPermission);
+        }
+    }
+
+    /**
+     * Helper class allowing to quitely execute steps (suppressing exceptions), and throw all
+     * suppressed exceptions at the end.
+     */
+    private static class SafeExecutor {
+        private AtomicReference<Throwable> mPrimaryExceptionRef = new AtomicReference<>(null);
+
+        // Helper to safely execute a step and update the primary exception
+        void executeSafely(Runnable step) {
+            try {
+                step.run();
+            } catch (Throwable t) {
+                Throwable primary = mPrimaryExceptionRef.get();
+                if (primary == null) {
+                    mPrimaryExceptionRef.set(t); // Set the first exception
+                } else {
+                    primary.addSuppressed(t); // Suppress subsequent exceptions
+                }
+            }
+        }
+
+        void throwSuppressedExceptions() throws Exception {
+            var primary = mPrimaryExceptionRef.getAndSet(null);
+            if (primary == null) {
+                return;
+            }
+            if (primary instanceof Exception) {
+                // Safe: It's an Exception, and the method throws Exception.
+                throw (Exception) primary;
+            }
+            if (primary instanceof Error) {
+                // Safe: It's an Error (unchecked), preserving the original type.
+                throw (Error) primary;
+            }
+
+            // In the highly unlikely case of a custom checked Throwable that's
+            // neither Exception nor Error, wrap it in a RuntimeException.
+            // (This is usually not necessary but is technically the safest catch-all.)
+            throw new RuntimeException("Unexpected Throwable during close", primary);
         }
     }
 }
