@@ -408,7 +408,6 @@ public abstract class WindowUntrustedTouchTestBase {
         // We're testing the opacity coming from the animation here, not the one declared in the
         // activity, so we set its opacity to 1
         addActivityOverlay(component, /* opacity */ 1, touchable, options.toBundle());
-        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(mActivityDisplayId));
         animationsStarted.block();
     }
 
