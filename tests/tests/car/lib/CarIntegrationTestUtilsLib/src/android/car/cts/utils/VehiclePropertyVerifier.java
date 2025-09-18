@@ -1310,12 +1310,17 @@ public class VehiclePropertyVerifier<T> {
 
     /** Stores the property's current values for all areas so that they can be restored later. */
     public void storeCurrentValues() {
-        storeCurrentValuesForProperty(getCarPropertyConfig());
+        storeCurrentValuesForProperty(getCarPropertyConfig(), mAllPossibleUnwritableValues);
     }
 
     private <U> void storeCurrentValuesForProperty(CarPropertyConfig<U> carPropertyConfig) {
+        storeCurrentValuesForProperty(carPropertyConfig, ImmutableSet.of());
+    }
+
+    private <U> void storeCurrentValuesForProperty(
+            CarPropertyConfig<U> carPropertyConfig, Set<U> unwritableValues) {
         SparseArray<U> areaIdToInitialValue =
-                getInitialValuesByAreaId(carPropertyConfig, mCarPropertyManager);
+                getInitialValuesByAreaId(carPropertyConfig, mCarPropertyManager, unwritableValues);
         if (areaIdToInitialValue == null || areaIdToInitialValue.size() == 0) {
             return;
         }
@@ -1375,7 +1380,8 @@ public class VehiclePropertyVerifier<T> {
     // Get a map storing the property's area Ids to the initial values.
     @Nullable
     private static <U> SparseArray<U> getInitialValuesByAreaId(
-            CarPropertyConfig<U> carPropertyConfig, CarPropertyManager carPropertyManager) {
+            CarPropertyConfig<U> carPropertyConfig, CarPropertyManager carPropertyManager,
+            Set<U> unwritableValues) {
         if (!isAtLeastV()
                 && !(canRead(carPropertyConfig.getAccess())
                         && canWrite(carPropertyConfig.getAccess()))) {
@@ -1423,6 +1429,17 @@ public class VehiclePropertyVerifier<T> {
                                 + areaId
                                 + " because status: "
                                 + carPropertyValue.getStatus());
+                continue;
+            }
+            if (unwritableValues.contains(carPropertyValue.getValue())) {
+                Log.w(
+                        TAG,
+                        "Cannot save initial value for property:"
+                                + propertyName
+                                + " at area ID: "
+                                + areaId
+                                + " because it is an unwritable value: "
+                                + carPropertyValue.getValue());
                 continue;
             }
             areaIdToInitialValue.put(areaId, (U) carPropertyValue.getValue());
