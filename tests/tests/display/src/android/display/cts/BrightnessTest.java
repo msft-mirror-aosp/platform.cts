@@ -619,7 +619,7 @@ public class BrightnessTest extends TestBase {
             mCurrBrightnessMode = mPrevBrightnessMode;
             mPrevBrightnessConfig = mDisplayManager.getBrightnessConfiguration();
             // Enforce min brightness to get the system absolute min brightness
-            changeBrightness(0f, Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
+            changeBrightness(0f);
             mMinBrightness = brightnessIntToFloat(getSystemSetting(
                     Settings.System.SCREEN_BRIGHTNESS));
             // Enforce max brightness to get the system absolute max brightness
