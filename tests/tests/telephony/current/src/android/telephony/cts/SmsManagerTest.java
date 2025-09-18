@@ -164,9 +164,6 @@ public class SmsManagerTest {
                     | PackageManager.MATCH_DIRECT_BOOT_AWARE
                     | PackageManager.MATCH_DIRECT_BOOT_UNAWARE;
 
-    private static final List<String> SMS_OTP_READING_ROLES =
-            List.of(RoleManager.ROLE_SMS, RoleManager.ROLE_ASSISTANT, RoleManager.ROLE_DIALER);
-
     private TelephonyManager mTelephonyManager;
     private SubscriptionManager mSubscriptionManager;
     private RoleManager mRoleManager;
@@ -197,6 +194,7 @@ public class SmsManagerTest {
     private String mOriginalDefaultSmsApp;
     private static boolean sHasShellPermissionIdentity = false;
     private static long sMessageId = 0L;
+    private static List<String> sSmsOtpReadingRoles;
 
     private static final int TIME_OUT = 1000 * 60 * 10;
     private static final int NO_CALLS_TIMEOUT_MILLIS = 1000; // 1 second
@@ -223,6 +221,10 @@ public class SmsManagerTest {
         mRoleManager = mContext.getSystemService(RoleManager.class);
         mAppOpsManager = mContext.getSystemService(AppOpsManager.class);
         mText = "This is a test message";
+
+        sSmsOtpReadingRoles = (mTelephonyManager.isDeviceVoiceCapable()) ?
+                List.of(RoleManager.ROLE_SMS, RoleManager.ROLE_ASSISTANT, RoleManager.ROLE_DIALER)
+                : List.of(RoleManager.ROLE_SMS, RoleManager.ROLE_ASSISTANT);
 
         executeWithShellPermissionIdentity(() -> {
             mDestAddr = mSubscriptionManager.getPhoneNumber(mTelephonyManager.getSubscriptionId());
@@ -589,9 +591,7 @@ public class SmsManagerTest {
     @EnsureHasNoDeviceOwner
     public void testOtpSmsBroadcastReceivedByDefaultTrustedRoleHolders() throws Exception {
         init();
-        List<String> smsOtpReadingRoles =
-                List.of(RoleManager.ROLE_SMS, RoleManager.ROLE_ASSISTANT, RoleManager.ROLE_DIALER);
-        for (String roleName : smsOtpReadingRoles) {
+        for (String roleName : sSmsOtpReadingRoles) {
             List<String> oldRoleHolders =
                     callWithShellPermissionIdentity(
                             () ->
@@ -1231,7 +1231,7 @@ public class SmsManagerTest {
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS_API})
     @EnsureHasNoDeviceOwner
     public void testGetSmsOtpTrustedAppIds_rolesTrusted() throws Exception {
-        for (String roleName : SMS_OTP_READING_ROLES) {
+        for (String roleName : sSmsOtpReadingRoles) {
             List<String> oldRoleHolders =
                     callWithShellPermissionIdentity(
                             () ->
@@ -1367,7 +1367,7 @@ public class SmsManagerTest {
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS_API})
     @EnsureHasNoDeviceOwner
     public void testIsAppTrustedForSmsOtp_rolesTrusted() throws Exception {
-        for (String roleName : SMS_OTP_READING_ROLES) {
+        for (String roleName : sSmsOtpReadingRoles) {
             List<String> oldRoleHolders =
                     callWithShellPermissionIdentity(
                             () ->
@@ -1609,22 +1609,17 @@ public class SmsManagerTest {
 
     @SuppressLint("MissingPermission")
     private void addRoleHolder(String roleName, String packageName) throws Exception {
-        CountDownLatch latch = new CountDownLatch(1);
-        runWithShellPermissionIdentity(
-                () ->
-                        mRoleManager.addRoleHolderAsUser(
-                                roleName,
-                                packageName,
-                                0,
-                                android.os.Process.myUserHandle(),
-                                getContext().getMainExecutor(),
-                                success -> {
-                                    assertTrue(
-                                            "Failed to set role " + roleName + " to " + packageName,
-                                            success);
-                                    latch.countDown();
-                                }));
-        latch.await();
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        runWithShellPermissionIdentity(() ->
+            mRoleManager.addRoleHolderAsUser(
+                roleName,
+                packageName,
+                0,
+                android.os.Process.myUserHandle(),
+                getContext().getMainExecutor(),
+                success -> future.complete(success)));
+        boolean success = future.get();
+        assertTrue("Failed to set role " + roleName + " to " + packageName, success);
     }
 
     private void setReadSmsOtpAppOp(int mode) {
