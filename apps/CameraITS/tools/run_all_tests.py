@@ -81,7 +81,7 @@ _PROPERTIES_TO_MATCH = (
 _TABLET_SCENES = (
     'scene0', 'scene1_1', 'scene1_2', 'scene1_3', 'scene2_a', 'scene2_b',
     'scene2_c', 'scene2_d', 'scene2_e', 'scene2_f', 'scene2_g', 'scene3',
-    'scene4', 'scene6', 'scene7', 'scene8', 'scene9',
+    'scene4', 'scene6', 'scene7', 'scene8', 'scene9','scene_wide_gamut',
     os.path.join('scene_extensions', 'scene_hdr'),
     os.path.join('scene_extensions', 'scene_low_light'),
     os.path.join('scene_tele', 'scene6_tele'),
@@ -102,6 +102,9 @@ _SENSOR_FUSION_RIG_SCENES = (
 
 # Scenes that have to be run manually regardless of configuration
 _MANUAL_SCENES = ('scene5',)
+
+# Scenes that uses wide gamut images
+_SCENES_WIDE_GAMUT = ('scene_wide_gamut',)
 
 # Scene extensions
 _EXTENSIONS_SCENES = (
@@ -194,7 +197,9 @@ _SCENE_REQ = types.MappingProxyType({
                 'dead leaf patch, dynamic range chart used to analyze metrics '
                 'such as brightness, sharpness, color accuracy.',
     'scene_gen2_chart': 'Same as scene_ip, '
-                        'but does not include image parity tests.'
+                        'but does not include image parity tests.',
+    'scene_wide_gamut': 'The picture with 4 different colors, slanted edge and'
+                        '4 ArUco markers. See tests/scene_wide_gamut/scene_wide_gamut.jpg'
 })
 
 # Made mutable to allow for test augmentation based on first API level
@@ -896,6 +901,8 @@ def main():
         possible_scenes = _SCENE_GEN2_CHART
       elif 'gen2_scenes' in scenes:
         possible_scenes = _GEN2_RIG_SCENES
+      elif 'scene_wide_gamut' in scenes:
+        possible_scenes = _SCENES_WIDE_GAMUT
       else:
         possible_scenes = _TABLET_SCENES if auto_scene_switch else _ALL_SCENES
     if ('<scene-name>' in scenes or 'checkerboard' in scenes or

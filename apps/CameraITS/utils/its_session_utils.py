@@ -81,11 +81,13 @@ TABLET_ALLOWLIST = (
     'gta9p',  # Samsung Galaxy Tab A9+ 5G
     'gts10fewifi',  # Samsung Galaxy Tab S10 FE
     'gts10fe',  # Samsung Galaxy Tab S10 FE 5G
+    'gts10p',   # Samsung Galaxy Tab S10+
     'dpd2221',  # Vivo Pad2
     'nabu',  # Xiaomi Pad 5
     'nabu_tw',  # Xiaomi Pad 5
     'xun',  # Xiaomi Redmi Pad SE
     'yunluo',  # Xiaomi Redmi Pad
+    'tb520fu', # Lenovo Yoga Tab plus
 )
 TABLET_DEFAULT_BRIGHTNESS = 192  # 8-bit tablet 75% brightness
 TABLET_LEGACY_BRIGHTNESS = 96
@@ -105,6 +107,7 @@ TABLET_NOT_ALLOWED_ERROR_MSG = ('Tablet model or tablet Android version is '
 TAP_COORDINATES = (500, 500)  # Location to tap tablet screen via adb
 USE_CASE_CROPPED_RAW = 6
 VIDEO_SCENES = ('scene_video',)
+JPG_SCENES = ('scene_wide_gamut',)
 NOT_YET_MANDATED_MESSAGE = 'Not yet mandated test'
 RESULT_OK_STATUS = '-1'
 
@@ -2553,13 +2556,14 @@ class ItsSession(object):
     logging.debug('Calculated FoV: %s', fov)
     return fov
 
-  def get_file_name_to_load(self, chart_distance, camera_fov, scene):
+  def get_file_name_to_load(self, chart_distance, camera_fov, scene, file_extension='.png'):
     """Get the image to load on the tablet depending on fov and chart_distance.
 
     Args:
      chart_distance: float; distance in cm from camera of displayed chart
      camera_fov: float; camera field of view.
      scene: String; Scene to be used in the test.
+     file_extension: String: file extension format for the file
 
     Returns:
      file_name: file name to display on the tablet.
@@ -2568,9 +2572,10 @@ class ItsSession(object):
     chart_scaling = opencv_processing_utils.calc_chart_scaling(
         chart_distance, camera_fov)
     if chart_scaling:
-      file_name = f'{scene}_{chart_scaling}x_scaled.png'
+      file_name = f'{scene}_{chart_scaling}x_scaled'
     else:
-      file_name = f'{scene}.png'
+      file_name = f'{scene}'
+    file_name = file_name + file_extension
     logging.debug('Scene to load: %s', file_name)
     return file_name
 
@@ -3038,6 +3043,7 @@ def load_scene(cam, props, scene, tablet, chart_distance, lighting_check=True,
     logging.info('Manual run: no tablet to load scene on.')
     return
   file_name = ''
+  file_extension = '.jpg' if scene in JPG_SCENES else '.png'
   scene_name = scene
   if 'scene' not in f'{scene}':
     scene_name = f'scene{scene}'
@@ -3046,9 +3052,9 @@ def load_scene(cam, props, scene, tablet, chart_distance, lighting_check=True,
     logging.debug('Using chart_scaling specified in config file')
     scene_path = os.path.join(os.environ['CAMERA_ITS_TOP'], 'tests', scene_name)
     if math.isclose(chart_scaling, 1.0):
-      file_name = f'{scene}.png'
+      file_name = f'{scene}' + file_extension
     else:
-      file_name = f'{scene}_{chart_scaling}x_scaled.png'
+      file_name = f'{scene}_{chart_scaling}x_scaled' + file_extension
     if 'scene' not in file_name:
       file_name = f'scene{file_name}'
     if scene in VIDEO_SCENES:
@@ -3064,7 +3070,7 @@ def load_scene(cam, props, scene, tablet, chart_distance, lighting_check=True,
           'Please check the available scaling factor in scene directory.')
   else:
     # Calculate camera_fov, which determines the image/video to load on tablet.
-    file_name = cam.get_file_name_to_load(chart_distance, camera_fov, scene)
+    file_name = cam.get_file_name_to_load(chart_distance, camera_fov, scene, file_extension)
     if 'scene' not in file_name:
       file_name = f'scene{file_name}'
 
@@ -3114,7 +3120,7 @@ def copy_scenes_to_tablet(scene, tablet_id):
   scene_path = os.path.join(os.environ['CAMERA_ITS_TOP'], 'tests', scene)
   scene_dir = os.listdir(scene_path)
   for file_name in scene_dir:
-    if file_name.endswith('.png') or file_name.endswith('.mp4'):
+    if file_name.endswith('.png') or file_name.endswith('.jpg') or file_name.endswith('.mp4'):
       src_scene_file = os.path.join(scene_path, file_name)
       cmd = f'adb -s {tablet_id} push {src_scene_file} {_DST_SCENE_DIR}'
       subprocess.Popen(cmd.split())
