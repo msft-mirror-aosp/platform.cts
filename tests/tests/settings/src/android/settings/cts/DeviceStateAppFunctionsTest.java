@@ -410,7 +410,8 @@ public class DeviceStateAppFunctionsTest {
                         executeAppFunctionWithParams(
                                 "setDeviceStateItem",
                                 SETTINGS_PACKAGE,
-                                "\"setDeviceStateItemParams\":{\"key\":\"key\"}"))
+                                "\"setDeviceStateItemParams\":{\"key\":\"key\","
+                                        + "\"value\":\"value\"}"))
                 .contains("android.app.appfunctions.AppFunctionException");
     }
 
@@ -435,6 +436,7 @@ public class DeviceStateAppFunctionsTest {
                                 "setDeviceStateItem",
                                 SETTINGS_PACKAGE,
                                 "\"setDeviceStateItemParams\":{\"key\":\"key\","
+                                        + "\"value\":\"value\","
                                         + "\"requestInitiatedWhileUnlocked\":true}"))
                 .doesNotContain("android.app.appfunctions.AppFunctionException");
     }
@@ -450,7 +452,8 @@ public class DeviceStateAppFunctionsTest {
                         executeAppFunctionWithParams(
                                 "setDeviceStateItem",
                                 SETTINGS_PACKAGE,
-                                "\"setDeviceStateItemParams\":{\"key\":\"key\"}"))
+                                "\"setDeviceStateItemParams\":{\"key\":\"key\","
+                                        + "\"value\":\"value\"}"))
                 .doesNotContain("android.app.appfunctions.AppFunctionException");
     }
 
@@ -537,7 +540,8 @@ public class DeviceStateAppFunctionsTest {
                         executeAppFunctionWithParams(
                                 "offsetNumericDeviceStateItemByValue",
                                 SETTINGS_PACKAGE,
-                                "\"offsetNumericDeviceStateItemByValueParams\":{\"key\":\"key\"}"))
+                                "\"offsetNumericDeviceStateItemByValueParams\":{\"key\":\"key\","
+                                        + "\"valueAdjustment\":0}"))
                 .contains("android.app.appfunctions.AppFunctionException");
     }
 
@@ -563,6 +567,7 @@ public class DeviceStateAppFunctionsTest {
                                 "offsetNumericDeviceStateItemByValue",
                                 SETTINGS_PACKAGE,
                                 "\"offsetNumericDeviceStateItemByValueParams\":{\"key\":\"key\","
+                                        + "\"valueAdjustment\":0,"
                                         + "\"requestInitiatedWhileUnlocked\":true}"))
                 .doesNotContain("android.app.appfunctions.AppFunctionException");
     }
@@ -579,7 +584,8 @@ public class DeviceStateAppFunctionsTest {
                         executeAppFunctionWithParams(
                                 "offsetNumericDeviceStateItemByValue",
                                 SETTINGS_PACKAGE,
-                                "\"offsetNumericDeviceStateItemByValueParams\":{\"key\":\"key\"}"))
+                                "\"offsetNumericDeviceStateItemByValueParams\":{\"key\":\"key\","
+                                        + "\"valueAdjustment\":0}"))
                 .doesNotContain("android.app.appfunctions.AppFunctionException");
     }
 
@@ -603,7 +609,8 @@ public class DeviceStateAppFunctionsTest {
                         executeAppFunctionWithParams(
                                 "adjustNumericDeviceStateItemByPercentage",
                                 SETTINGS_PACKAGE,
-                                "\"adjustNumericDeviceStateItemByPercentageParams\":{\"key\":\"key\"}"))
+                                "\"adjustNumericDeviceStateItemByPercentageParams\":{\"key\":\"key\","
+                                    + "\"percentageAdjustment\":0}"))
                 .contains("android.app.appfunctions.AppFunctionException");
     }
 
@@ -629,6 +636,7 @@ public class DeviceStateAppFunctionsTest {
                                 "adjustNumericDeviceStateItemByPercentage",
                                 SETTINGS_PACKAGE,
                                 "\"adjustNumericDeviceStateItemByPercentageParams\":{\"key\":\"key\","
+                                    + "\"percentageAdjustment\":0"
                                     + "\"requestInitiatedWhileUnlocked\":true}"))
                 .doesNotContain("android.app.appfunctions.AppFunctionException");
     }
@@ -645,7 +653,8 @@ public class DeviceStateAppFunctionsTest {
                         executeAppFunctionWithParams(
                                 "adjustNumericDeviceStateItemByPercentage",
                                 SETTINGS_PACKAGE,
-                                "\"adjustNumericDeviceStateItemByPercentageParams\":{\"key\":\"key\"}"))
+                                "\"adjustNumericDeviceStateItemByPercentageParams\":{\"key\":\"key\","
+                                    + "\"percentageAdjustment\":0}"))
                 .doesNotContain("android.app.appfunctions.AppFunctionException");
     }
 
