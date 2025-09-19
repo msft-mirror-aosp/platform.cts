@@ -38,6 +38,7 @@ package android {
     field @Deprecated public static final String BIND_CHOOSER_TARGET_SERVICE = "android.permission.BIND_CHOOSER_TARGET_SERVICE";
     field public static final String BIND_COMPANION_DEVICE_SERVICE = "android.permission.BIND_COMPANION_DEVICE_SERVICE";
     field public static final String BIND_CONDITION_PROVIDER_SERVICE = "android.permission.BIND_CONDITION_PROVIDER_SERVICE";
+    field @FlaggedApi("android.permission.flags.content_restriction_role_enabled") public static final String BIND_CONTENT_RESTRICTION_SERVICE = "android.permission.BIND_CONTENT_RESTRICTION_SERVICE";
     field public static final String BIND_CONTROLS = "android.permission.BIND_CONTROLS";
     field public static final String BIND_CREDENTIAL_PROVIDER_SERVICE = "android.permission.BIND_CREDENTIAL_PROVIDER_SERVICE";
     field public static final String BIND_DEVICE_ADMIN = "android.permission.BIND_DEVICE_ADMIN";
@@ -253,6 +254,7 @@ package android {
     field public static final String PROVIDE_REMOTE_CREDENTIALS = "android.permission.PROVIDE_REMOTE_CREDENTIALS";
     field @FlaggedApi("android.security.aapm_api") public static final String QUERY_ADVANCED_PROTECTION_MODE = "android.permission.QUERY_ADVANCED_PROTECTION_MODE";
     field public static final String QUERY_ALL_PACKAGES = "android.permission.QUERY_ALL_PACKAGES";
+    field @FlaggedApi("android.media.audio.guard_stream_volume_apis") public static final String QUERY_AUDIO_VOLUME = "android.permission.QUERY_AUDIO_VOLUME";
     field @FlaggedApi("android.permission.flags.ranging_permission_enabled") public static final String RANGING = "android.permission.RANGING";
     field public static final String READ_ASSISTANT_APP_SEARCH_DATA = "android.permission.READ_ASSISTANT_APP_SEARCH_DATA";
     field public static final String READ_BASIC_PHONE_STATE = "android.permission.READ_BASIC_PHONE_STATE";
@@ -292,6 +294,7 @@ package android {
     field public static final String REQUEST_COMPANION_PROFILE_AUTOMOTIVE_PROJECTION = "android.permission.REQUEST_COMPANION_PROFILE_AUTOMOTIVE_PROJECTION";
     field public static final String REQUEST_COMPANION_PROFILE_COMPUTER = "android.permission.REQUEST_COMPANION_PROFILE_COMPUTER";
     field public static final String REQUEST_COMPANION_PROFILE_GLASSES = "android.permission.REQUEST_COMPANION_PROFILE_GLASSES";
+    field @FlaggedApi("android.companion.enable_medical_profile") public static final String REQUEST_COMPANION_PROFILE_MEDICAL = "android.permission.REQUEST_COMPANION_PROFILE_MEDICAL";
     field public static final String REQUEST_COMPANION_PROFILE_NEARBY_DEVICE_STREAMING = "android.permission.REQUEST_COMPANION_PROFILE_NEARBY_DEVICE_STREAMING";
     field @FlaggedApi("android.companion.virtualdevice.flags.enable_limited_vdm_role") public static final String REQUEST_COMPANION_PROFILE_VIRTUAL_DEVICE = "android.permission.REQUEST_COMPANION_PROFILE_VIRTUAL_DEVICE";
     field public static final String REQUEST_COMPANION_PROFILE_WATCH = "android.permission.REQUEST_COMPANION_PROFILE_WATCH";
@@ -8832,8 +8835,8 @@ package android.app.admin {
 
   @FlaggedApi("android.app.admin.flags.policy_streamlining") public final class PolicyIdentifier<T> {
     field @FlaggedApi("android.app.admin.flags.policy_streamlining") @NonNull public static final android.app.admin.PolicyIdentifier<java.lang.Integer> SCREEN_CAPTURE;
-    field @FlaggedApi("android.app.admin.flags.policy_streamlining") public static final int SCREEN_CAPTURE_ALLOWED = 1; // 0x1
-    field @FlaggedApi("android.app.admin.flags.policy_streamlining") public static final int SCREEN_CAPTURE_BLOCKED = 0; // 0x0
+    field @FlaggedApi("android.app.admin.flags.policy_streamlining") public static final int SCREEN_CAPTURE_ALLOWED = 2; // 0x2
+    field @FlaggedApi("android.app.admin.flags.policy_streamlining") public static final int SCREEN_CAPTURE_BLOCKED = 1; // 0x1
   }
 
   public abstract class PolicyUpdateReceiver extends android.content.BroadcastReceiver {
@@ -9731,21 +9734,6 @@ package android.app.people {
 
 }
 
-package android.app.privatecompute {
-
-  @FlaggedApi("android.app.privatecompute.flags.enable_pcc_framework_support") public final class PccEntity implements android.os.Parcelable {
-    method public int describeContents();
-    method @NonNull public String getPackageName();
-    method public void writeToParcel(@NonNull android.os.Parcel, int);
-    field @NonNull public static final android.os.Parcelable.Creator<android.app.privatecompute.PccEntity> CREATOR;
-  }
-
-  @FlaggedApi("android.app.privatecompute.flags.enable_pcc_framework_support") public final class PccSandboxManager {
-    method @NonNull public java.util.List<android.app.privatecompute.PccEntity> getPccEntities();
-  }
-
-}
-
 package android.app.slice {
 
   @Deprecated public final class Slice implements android.os.Parcelable {
@@ -10267,6 +10255,29 @@ package android.appwidget {
 
 package android.companion {
 
+  @FlaggedApi("android.companion.enable_data_sync") public final class ActionRequest implements android.os.Parcelable {
+    method public int describeContents();
+    method public int getAction();
+    method public int getOperation();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field @NonNull public static final android.os.Parcelable.Creator<android.companion.ActionRequest> CREATOR;
+    field public static final int OP_ACTIVATE = 0; // 0x0
+    field public static final int OP_DEACTIVATE = 1; // 0x1
+    field public static final int REQUEST_NEARBY_ADVERTISING = 1; // 0x1
+    field public static final int REQUEST_NEARBY_SCANNING = 0; // 0x0
+    field public static final int REQUEST_TRANSPORT = 2; // 0x2
+  }
+
+  @FlaggedApi("android.companion.enable_data_sync") public final class ActionResult implements android.os.Parcelable {
+    method public int describeContents();
+    method @NonNull public android.companion.ActionRequest getActionRequest();
+    method public int getResultCode();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field @NonNull public static final android.os.Parcelable.Creator<android.companion.ActionResult> CREATOR;
+    field public static final int RESULT_FAILED = 1; // 0x1
+    field public static final int RESULT_SUCCESS = 0; // 0x0
+  }
+
   public final class AssociatedDevice implements android.os.Parcelable {
     method public int describeContents();
     method @Nullable public android.bluetooth.le.ScanResult getBleDevice();
@@ -10304,7 +10315,9 @@ package android.companion {
     field @RequiresPermission(android.Manifest.permission.REQUEST_COMPANION_PROFILE_APP_STREAMING) public static final String DEVICE_PROFILE_APP_STREAMING = "android.app.role.COMPANION_DEVICE_APP_STREAMING";
     field @RequiresPermission(android.Manifest.permission.REQUEST_COMPANION_PROFILE_AUTOMOTIVE_PROJECTION) public static final String DEVICE_PROFILE_AUTOMOTIVE_PROJECTION = "android.app.role.SYSTEM_AUTOMOTIVE_PROJECTION";
     field @RequiresPermission(android.Manifest.permission.REQUEST_COMPANION_PROFILE_COMPUTER) public static final String DEVICE_PROFILE_COMPUTER = "android.app.role.COMPANION_DEVICE_COMPUTER";
+    field @FlaggedApi("android.companion.band_device_profile") @RequiresPermission(android.Manifest.permission.REQUEST_COMPANION_PROFILE_WATCH) public static final String DEVICE_PROFILE_FITNESS_TRACKER = "android.app.role.COMPANION_DEVICE_FITNESS_TRACKER";
     field @RequiresPermission(android.Manifest.permission.REQUEST_COMPANION_PROFILE_GLASSES) public static final String DEVICE_PROFILE_GLASSES = "android.app.role.COMPANION_DEVICE_GLASSES";
+    field @FlaggedApi("android.companion.enable_medical_profile") @RequiresPermission(android.Manifest.permission.REQUEST_COMPANION_PROFILE_MEDICAL) public static final String DEVICE_PROFILE_MEDICAL = "android.app.role.COMPANION_DEVICE_MEDICAL";
     field @RequiresPermission(android.Manifest.permission.REQUEST_COMPANION_PROFILE_NEARBY_DEVICE_STREAMING) public static final String DEVICE_PROFILE_NEARBY_DEVICE_STREAMING = "android.app.role.COMPANION_DEVICE_NEARBY_DEVICE_STREAMING";
     field @FlaggedApi("android.companion.virtualdevice.flags.enable_limited_vdm_role") @RequiresPermission(android.Manifest.permission.REQUEST_COMPANION_PROFILE_VIRTUAL_DEVICE) public static final String DEVICE_PROFILE_VIRTUAL_DEVICE = "android.app.role.COMPANION_DEVICE_VIRTUAL_DEVICE";
     field public static final String DEVICE_PROFILE_WATCH = "android.app.role.COMPANION_DEVICE_WATCH";
@@ -10355,7 +10368,7 @@ package android.companion {
 
   public final class CompanionDeviceManager {
     method @RequiresPermission(anyOf={android.Manifest.permission.REQUEST_COMPANION_PROFILE_WATCH, android.Manifest.permission.REQUEST_COMPANION_PROFILE_COMPUTER, android.Manifest.permission.REQUEST_COMPANION_PROFILE_APP_STREAMING, android.Manifest.permission.REQUEST_COMPANION_PROFILE_AUTOMOTIVE_PROJECTION}, conditional=true) public void associate(@NonNull android.companion.AssociationRequest, @NonNull android.companion.CompanionDeviceManager.Callback, @Nullable android.os.Handler);
-    method @RequiresPermission(anyOf={android.Manifest.permission.REQUEST_COMPANION_PROFILE_WATCH, android.Manifest.permission.REQUEST_COMPANION_PROFILE_COMPUTER, android.Manifest.permission.REQUEST_COMPANION_PROFILE_APP_STREAMING, android.Manifest.permission.REQUEST_COMPANION_PROFILE_AUTOMOTIVE_PROJECTION}, conditional=true) public void associate(@NonNull android.companion.AssociationRequest, @NonNull java.util.concurrent.Executor, @NonNull android.companion.CompanionDeviceManager.Callback);
+    method @RequiresPermission(anyOf={android.Manifest.permission.REQUEST_COMPANION_PROFILE_WATCH, android.Manifest.permission.REQUEST_COMPANION_PROFILE_COMPUTER, android.Manifest.permission.REQUEST_COMPANION_PROFILE_MEDICAL, android.Manifest.permission.REQUEST_COMPANION_PROFILE_APP_STREAMING, android.Manifest.permission.REQUEST_COMPANION_PROFILE_AUTOMOTIVE_PROJECTION}, conditional=true) public void associate(@NonNull android.companion.AssociationRequest, @NonNull java.util.concurrent.Executor, @NonNull android.companion.CompanionDeviceManager.Callback);
     method @RequiresPermission(android.Manifest.permission.DELIVER_COMPANION_MESSAGES) public void attachSystemDataTransport(int, @NonNull java.io.InputStream, @NonNull java.io.OutputStream) throws android.companion.DeviceNotAssociatedException;
     method @Nullable public android.content.IntentSender buildAssociationCancellationIntent();
     method @Nullable public android.content.IntentSender buildPermissionTransferUserConsentIntent(int) throws android.companion.DeviceNotAssociatedException;
@@ -10402,6 +10415,7 @@ package android.companion {
     ctor public CompanionDeviceService();
     method @RequiresPermission(android.Manifest.permission.DELIVER_COMPANION_MESSAGES) public final void attachSystemDataTransport(int, @NonNull java.io.InputStream, @NonNull java.io.OutputStream) throws android.companion.DeviceNotAssociatedException;
     method @RequiresPermission(android.Manifest.permission.DELIVER_COMPANION_MESSAGES) public final void detachSystemDataTransport(int) throws android.companion.DeviceNotAssociatedException;
+    method @FlaggedApi("android.companion.enable_data_sync") @MainThread public void onActionRequested(@NonNull android.companion.AssociationInfo, @NonNull android.companion.ActionRequest);
     method @Nullable public final android.os.IBinder onBind(@NonNull android.content.Intent);
     method @Deprecated @MainThread public void onDeviceAppeared(@NonNull String);
     method @Deprecated @MainThread public void onDeviceAppeared(@NonNull android.companion.AssociationInfo);
@@ -10450,6 +10464,8 @@ package android.companion {
     field public static final int EVENT_BT_DISCONNECTED = 3; // 0x3
     field public static final int EVENT_SELF_MANAGED_APPEARED = 4; // 0x4
     field public static final int EVENT_SELF_MANAGED_DISAPPEARED = 5; // 0x5
+    field @FlaggedApi("android.companion.enable_data_sync") public static final int EVENT_SELF_MANAGED_NEARBY = 7; // 0x7
+    field @FlaggedApi("android.companion.enable_data_sync") public static final int EVENT_SELF_MANAGED_NOT_NEARBY = 8; // 0x8
     field public static final int NO_ASSOCIATION = -1; // 0xffffffff
   }
 
@@ -11354,7 +11370,6 @@ package android.content {
     field public static final String NOTIFICATION_SERVICE = "notification";
     field public static final String NSD_SERVICE = "servicediscovery";
     field public static final String OVERLAY_SERVICE = "overlay";
-    field @FlaggedApi("android.app.privatecompute.flags.enable_pcc_framework_support") public static final String PCC_SANDBOX_SERVICE = "pcc_sandbox";
     field public static final String PEOPLE_SERVICE = "people";
     field public static final String PERFORMANCE_HINT_SERVICE = "performance_hint";
     field public static final String PERSISTENT_DATA_BLOCK_SERVICE = "persistent_data_block";
@@ -13775,7 +13790,6 @@ package android.content.pm {
     field public static final String FEATURE_FINGERPRINT = "android.hardware.fingerprint";
     field public static final String FEATURE_FREEFORM_WINDOW_MANAGEMENT = "android.software.freeform_window_management";
     field public static final String FEATURE_GAMEPAD = "android.hardware.gamepad";
-    field @FlaggedApi("com.android.microxr.xr_glasses_feature") public static final String FEATURE_GLASSES = "android.hardware.type.glasses";
     field public static final String FEATURE_HARDWARE_KEYSTORE = "android.hardware.hardware_keystore";
     field public static final String FEATURE_HIFI_SENSORS = "android.hardware.sensor.hifi_sensors";
     field public static final String FEATURE_HOME_SCREEN = "android.software.home_screen";
@@ -13886,6 +13900,7 @@ package android.content.pm {
     field @FlaggedApi("android.xr.xr_manifest_entries") public static final String FEATURE_XR_INPUT_CONTROLLER = "android.hardware.xr.input.controller";
     field @FlaggedApi("android.xr.xr_manifest_entries") public static final String FEATURE_XR_INPUT_EYE_TRACKING = "android.hardware.xr.input.eye_tracking";
     field @FlaggedApi("android.xr.xr_manifest_entries") public static final String FEATURE_XR_INPUT_HAND_TRACKING = "android.hardware.xr.input.hand_tracking";
+    field @FlaggedApi("com.android.microxr.xr_glasses_feature") public static final String FEATURE_XR_PERIPHERAL = "android.hardware.type.xr_peripheral";
     field public static final int FLAG_PERMISSION_WHITELIST_INSTALLER = 2; // 0x2
     field public static final int FLAG_PERMISSION_WHITELIST_SYSTEM = 1; // 0x1
     field public static final int FLAG_PERMISSION_WHITELIST_UPGRADE = 4; // 0x4
@@ -14155,7 +14170,7 @@ package android.content.pm {
     field @RequiresPermission(allOf={android.Manifest.permission.FOREGROUND_SERVICE_CAMERA}, anyOf={android.Manifest.permission.CAMERA}, conditional=true) public static final int FOREGROUND_SERVICE_TYPE_CAMERA = 64; // 0x40
     field @RequiresPermission(allOf={android.Manifest.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE}, anyOf={android.Manifest.permission.BLUETOOTH_ADVERTISE, android.Manifest.permission.BLUETOOTH_CONNECT, android.Manifest.permission.BLUETOOTH_SCAN, android.Manifest.permission.CHANGE_NETWORK_STATE, android.Manifest.permission.CHANGE_WIFI_STATE, android.Manifest.permission.CHANGE_WIFI_MULTICAST_STATE, android.Manifest.permission.NFC, android.Manifest.permission.TRANSMIT_IR, android.Manifest.permission.UWB_RANGING, android.Manifest.permission.RANGING}, conditional=true) public static final int FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE = 16; // 0x10
     field @RequiresPermission(value=android.Manifest.permission.FOREGROUND_SERVICE_DATA_SYNC, conditional=true) public static final int FOREGROUND_SERVICE_TYPE_DATA_SYNC = 1; // 0x1
-    field @FlaggedApi("android.permission.flags.replace_body_sensor_permission_enabled") @RequiresPermission(allOf={android.Manifest.permission.FOREGROUND_SERVICE_HEALTH}, anyOf={android.Manifest.permission.ACTIVITY_RECOGNITION, android.Manifest.permission.HIGH_SAMPLING_RATE_SENSORS, android.health.connect.HealthPermissions.READ_HEART_RATE, android.health.connect.HealthPermissions.READ_SKIN_TEMPERATURE, android.health.connect.HealthPermissions.READ_OXYGEN_SATURATION}) public static final int FOREGROUND_SERVICE_TYPE_HEALTH = 256; // 0x100
+    field @RequiresPermission(allOf={android.Manifest.permission.FOREGROUND_SERVICE_HEALTH}, anyOf={android.Manifest.permission.ACTIVITY_RECOGNITION, android.Manifest.permission.HIGH_SAMPLING_RATE_SENSORS, android.health.connect.HealthPermissions.READ_HEART_RATE, android.health.connect.HealthPermissions.READ_SKIN_TEMPERATURE, android.health.connect.HealthPermissions.READ_OXYGEN_SATURATION}) public static final int FOREGROUND_SERVICE_TYPE_HEALTH = 256; // 0x100
     field @RequiresPermission(allOf={android.Manifest.permission.FOREGROUND_SERVICE_LOCATION}, anyOf={android.Manifest.permission.ACCESS_COARSE_LOCATION, android.Manifest.permission.ACCESS_FINE_LOCATION}, conditional=true) public static final int FOREGROUND_SERVICE_TYPE_LOCATION = 8; // 0x8
     field public static final int FOREGROUND_SERVICE_TYPE_MANIFEST = -1; // 0xffffffff
     field @RequiresPermission(value=android.Manifest.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK, conditional=true) public static final int FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK = 2; // 0x2
@@ -21063,18 +21078,44 @@ package android.hardware.display {
     ctor public DeviceProductInfo(@Nullable String, @NonNull String, @NonNull String, @IntRange(from=1990) int, int);
     method public int describeContents();
     method public int getConnectionToSinkType();
+    method @FlaggedApi("com.android.graphics.surfaceflinger.flags.parse_edid_version_and_input_type") @Nullable public android.hardware.display.DeviceProductInfo.EdidStructureMetadata getEdidStructureMetadata();
     method @IntRange(from=0xffffffff, to=53) public int getManufactureWeek();
     method @IntRange(from=0xffffffff) public int getManufactureYear();
     method @NonNull public String getManufacturerPnpId();
     method @IntRange(from=0xffffffff) public int getModelYear();
     method @Nullable public String getName();
     method @NonNull public String getProductId();
+    method @FlaggedApi("com.android.graphics.surfaceflinger.flags.parse_edid_version_and_input_type") public int getVideoInputType();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
     field public static final int CONNECTION_TO_SINK_BUILT_IN = 1; // 0x1
     field public static final int CONNECTION_TO_SINK_DIRECT = 2; // 0x2
     field public static final int CONNECTION_TO_SINK_TRANSITIVE = 3; // 0x3
     field public static final int CONNECTION_TO_SINK_UNKNOWN = 0; // 0x0
     field @NonNull public static final android.os.Parcelable.Creator<android.hardware.display.DeviceProductInfo> CREATOR;
+    field @FlaggedApi("com.android.graphics.surfaceflinger.flags.parse_edid_version_and_input_type") public static final int VIDEO_INPUT_TYPE_ANALOG = 0; // 0x0
+    field @FlaggedApi("com.android.graphics.surfaceflinger.flags.parse_edid_version_and_input_type") public static final int VIDEO_INPUT_TYPE_DIGITAL = 1; // 0x1
+    field @FlaggedApi("com.android.graphics.surfaceflinger.flags.parse_edid_version_and_input_type") public static final int VIDEO_INPUT_TYPE_UNKNOWN = -1; // 0xffffffff
+  }
+
+  @FlaggedApi("com.android.graphics.surfaceflinger.flags.parse_edid_version_and_input_type") public static final class DeviceProductInfo.Builder {
+    ctor @FlaggedApi("com.android.graphics.surfaceflinger.flags.parse_edid_version_and_input_type") public DeviceProductInfo.Builder(@NonNull String, @NonNull String);
+    method @FlaggedApi("com.android.graphics.surfaceflinger.flags.parse_edid_version_and_input_type") @NonNull public android.hardware.display.DeviceProductInfo build();
+    method @FlaggedApi("com.android.graphics.surfaceflinger.flags.parse_edid_version_and_input_type") @NonNull public android.hardware.display.DeviceProductInfo.Builder setConnectionToSinkType(int);
+    method @FlaggedApi("com.android.graphics.surfaceflinger.flags.parse_edid_version_and_input_type") @NonNull public android.hardware.display.DeviceProductInfo.Builder setEdidStructureMetadata(@IntRange(from=0) int, @IntRange(from=0) int);
+    method @FlaggedApi("com.android.graphics.surfaceflinger.flags.parse_edid_version_and_input_type") @NonNull public android.hardware.display.DeviceProductInfo.Builder setManufactureDate(@IntRange(from=0xffffffff, to=53) int, @IntRange(from=0xffffffff) int);
+    method @FlaggedApi("com.android.graphics.surfaceflinger.flags.parse_edid_version_and_input_type") @NonNull public android.hardware.display.DeviceProductInfo.Builder setManufacturerPnpId(@NonNull String);
+    method @FlaggedApi("com.android.graphics.surfaceflinger.flags.parse_edid_version_and_input_type") @NonNull public android.hardware.display.DeviceProductInfo.Builder setModelYear(@IntRange(from=0xffffffff) int);
+    method @FlaggedApi("com.android.graphics.surfaceflinger.flags.parse_edid_version_and_input_type") @NonNull public android.hardware.display.DeviceProductInfo.Builder setName(@Nullable String);
+    method @FlaggedApi("com.android.graphics.surfaceflinger.flags.parse_edid_version_and_input_type") @NonNull public android.hardware.display.DeviceProductInfo.Builder setProductId(@NonNull String);
+    method @FlaggedApi("com.android.graphics.surfaceflinger.flags.parse_edid_version_and_input_type") @NonNull public android.hardware.display.DeviceProductInfo.Builder setVideoInputType(int);
+  }
+
+  @FlaggedApi("com.android.graphics.surfaceflinger.flags.parse_edid_version_and_input_type") public static final class DeviceProductInfo.EdidStructureMetadata implements android.os.Parcelable {
+    method public int describeContents();
+    method @FlaggedApi("com.android.graphics.surfaceflinger.flags.parse_edid_version_and_input_type") @IntRange(from=0) public int getRevision();
+    method @FlaggedApi("com.android.graphics.surfaceflinger.flags.parse_edid_version_and_input_type") @IntRange(from=0) public int getVersion();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field @NonNull public static final android.os.Parcelable.Creator<android.hardware.display.DeviceProductInfo.EdidStructureMetadata> CREATOR;
   }
 
   public final class DisplayManager {
@@ -30471,7 +30512,7 @@ package android.net.http {
   public class X509TrustManagerExtensions {
     ctor public X509TrustManagerExtensions(javax.net.ssl.X509TrustManager) throws java.lang.IllegalArgumentException;
     method public java.util.List<java.security.cert.X509Certificate> checkServerTrusted(java.security.cert.X509Certificate[], String, String) throws java.security.cert.CertificateException;
-    method @FlaggedApi("android.security.certificate_transparency_configuration") @NonNull public java.util.List<java.security.cert.X509Certificate> checkServerTrusted(@NonNull java.security.cert.X509Certificate[], @Nullable byte[], @Nullable byte[], @NonNull String, @NonNull String) throws java.security.cert.CertificateException;
+    method @NonNull public java.util.List<java.security.cert.X509Certificate> checkServerTrusted(@NonNull java.security.cert.X509Certificate[], @Nullable byte[], @Nullable byte[], @NonNull String, @NonNull String) throws java.security.cert.CertificateException;
     method public boolean isSameTrustConfiguration(String, String);
     method public boolean isUserAddedCertificate(java.security.cert.X509Certificate);
   }
@@ -37207,6 +37248,7 @@ package android.provider {
     field public static final String PHONE_ACCOUNT_COMPONENT_NAME = "subscription_component_name";
     field public static final String PHONE_ACCOUNT_ID = "subscription_id";
     field public static final String POST_DIAL_DIGITS = "post_dial_digits";
+    field @FlaggedApi("com.android.server.telecom.flags.support_display_name_call_log") public static final String PREFERRED_DISPLAY_NAME = "preferred_display_name";
     field public static final int PRESENTATION_ALLOWED = 1; // 0x1
     field public static final int PRESENTATION_PAYPHONE = 4; // 0x4
     field public static final int PRESENTATION_RESTRICTED = 2; // 0x2
@@ -40957,7 +40999,7 @@ package android.security {
 
   public class NetworkSecurityPolicy {
     method public static android.security.NetworkSecurityPolicy getInstance();
-    method @FlaggedApi("android.security.certificate_transparency_configuration") public boolean isCertificateTransparencyVerificationRequired(@NonNull String);
+    method public boolean isCertificateTransparencyVerificationRequired(@NonNull String);
     method public boolean isCleartextTrafficPermitted();
     method public boolean isCleartextTrafficPermitted(String);
   }
@@ -44306,6 +44348,7 @@ package android.telecom {
     method public final void cancelCall();
     method @Nullable public final android.os.IBinder onBind(@NonNull android.content.Intent);
     method public abstract void onPlaceCall(@NonNull android.net.Uri, @NonNull android.telecom.PhoneAccountHandle, boolean);
+    method @FlaggedApi("com.android.server.telecom.flags.send_original_number_on_place_call") public void onPlaceCall(@NonNull android.net.Uri, @NonNull android.net.Uri, @NonNull android.telecom.PhoneAccountHandle, boolean);
     method public void onRedirectionTimeout();
     method public final boolean onUnbind(@NonNull android.content.Intent);
     method public final void placeCallUnmodified();
@@ -48978,6 +49021,7 @@ package android.telephony.ims {
     method @NonNull public java.util.Set<java.lang.String> getFeatureTags();
     method @FlaggedApi("com.android.internal.telephony.flags.emergency_registration_state") public boolean getFlagRegistrationTypeEmergency();
     method @FlaggedApi("com.android.internal.telephony.flags.emergency_registration_state") public boolean getFlagVirtualRegistrationForEmergencyCall();
+    method @FlaggedApi("com.android.internal.telephony.flags.pcscf_address") @Nullable public String getPcscfAddress();
     method @Nullable public android.telephony.ims.SipDetails getSipDetails();
     method public int getTransportType();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
@@ -54280,12 +54324,22 @@ package android.view {
   public class SurfaceControlViewHost {
     ctor public SurfaceControlViewHost(@NonNull android.content.Context, @NonNull android.view.Display, @Nullable android.os.IBinder);
     ctor public SurfaceControlViewHost(@NonNull android.content.Context, @NonNull android.view.Display, @Nullable android.window.InputTransferToken);
+    method @FlaggedApi("com.android.window.flags.scvh_set_focusable") @NonNull public android.view.SurfaceControlViewHost.LayoutParams getLayoutParams();
     method @Nullable public android.view.SurfaceControlViewHost.SurfacePackage getSurfacePackage();
     method @Nullable public android.view.View getView();
     method public void relayout(int, int);
+    method @FlaggedApi("com.android.window.flags.scvh_set_focusable") public void relayout(@NonNull android.view.SurfaceControlViewHost.LayoutParams);
     method public void release();
     method public void setView(@NonNull android.view.View, int, int);
+    method @FlaggedApi("com.android.window.flags.scvh_set_focusable") public void setView(@NonNull android.view.View, @NonNull android.view.SurfaceControlViewHost.LayoutParams);
     method @Deprecated public boolean transferTouchGestureToHost();
+  }
+
+  @FlaggedApi("com.android.window.flags.scvh_set_focusable") public static class SurfaceControlViewHost.LayoutParams {
+    ctor @FlaggedApi("com.android.window.flags.scvh_set_focusable") public SurfaceControlViewHost.LayoutParams(int, int, boolean);
+    method @FlaggedApi("com.android.window.flags.scvh_set_focusable") public int getHeight();
+    method @FlaggedApi("com.android.window.flags.scvh_set_focusable") public int getWidth();
+    method @FlaggedApi("com.android.window.flags.scvh_set_focusable") public boolean isFocusable();
   }
 
   public static final class SurfaceControlViewHost.SurfacePackage implements android.os.Parcelable {
@@ -55249,6 +55303,7 @@ package android.view {
     field public static final int OVER_SCROLL_IF_CONTENT_SCROLLS = 1; // 0x1
     field public static final int OVER_SCROLL_NEVER = 2; // 0x2
     field @FlaggedApi("com.android.hardware.input.pointer_capture_modes") public static final int POINTER_CAPTURE_MODE_ABSOLUTE = 1; // 0x1
+    field @FlaggedApi("com.android.hardware.input.pointer_capture_modes") public static final int POINTER_CAPTURE_MODE_RELATIVE = 2; // 0x2
     field @FlaggedApi("com.android.hardware.input.pointer_capture_modes") public static final int POINTER_CAPTURE_MODE_UNCAPTURED = 0; // 0x0
     field protected static final int[] PRESSED_ENABLED_FOCUSED_SELECTED_STATE_SET;
     field protected static final int[] PRESSED_ENABLED_FOCUSED_SELECTED_WINDOW_FOCUSED_STATE_SET;
