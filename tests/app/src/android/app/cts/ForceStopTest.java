@@ -48,6 +48,7 @@ import android.os.ConditionVariable;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -238,6 +239,7 @@ public final class ForceStopTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_STAY_STOPPED)
+    @AppModeFull(reason = "Instant apps don't get BOOT_COMPLETED broadcasts")
     public void testBootCompletedBroadcasts_activity() throws Exception {
         final Intent intent = createSimpleActivityIntent();
 
@@ -346,6 +348,7 @@ public final class ForceStopTest {
      */
     @Test
     @RequiresFlagsEnabled(FLAG_USE_APP_INFO_NOT_LAUNCHED)
+    @AppModeFull(reason = "Instant apps don't get BOOT_COMPLETED broadcasts")
     public void testNoBootCompletedBroadcastsOnFirstLaunch_activity() throws Exception {
         verifyNoBootCompletedBroadcastsGeneric(() -> {
             final Intent intent = createSimpleActivityIntent();
@@ -358,6 +361,7 @@ public final class ForceStopTest {
      */
     @Test
     @RequiresFlagsEnabled(FLAG_USE_APP_INFO_NOT_LAUNCHED)
+    @AppModeFull(reason = "Instant apps don't get BOOT_COMPLETED broadcasts")
     public void testNoBootCompletedBroadcastsOnFirstLaunch_broadcast() throws Exception {
         verifyNoBootCompletedBroadcastsGeneric(
                 () ->
@@ -376,6 +380,7 @@ public final class ForceStopTest {
      */
     @Test
     @RequiresFlagsEnabled(FLAG_USE_APP_INFO_NOT_LAUNCHED)
+    @AppModeFull(reason = "Instant apps don't get BOOT_COMPLETED broadcasts")
     public void testNoBootCompletedBroadcastsOnFirstLaunch_bindService() throws Exception {
         verifyNoBootCompletedBroadcastsGeneric(
                 () -> {
@@ -388,6 +393,7 @@ public final class ForceStopTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_STAY_STOPPED)
+    @AppModeFull(reason = "Instant apps don't get BOOT_COMPLETED broadcasts")
     public void testBootCompletedBroadcasts_broadcast() throws Exception {
         final ConditionVariable gotLockedBoot = new ConditionVariable();
         final ConditionVariable gotBoot = new ConditionVariable();
