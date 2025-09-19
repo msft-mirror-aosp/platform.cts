@@ -54,6 +54,7 @@ IMAGE_FORMAT_YUV_420_888 = 35
 JCA_VIDEO_PATH_TAG = 'JCA_VIDEO_CAPTURE_PATH'
 JCA_CAPTURE_PATHS_TAG = 'JCA_CAPTURE_PATHS'
 JCA_CAPTURE_STATUS_TAG = 'JCA_CAPTURE_STATUS'
+JCA_CAPTURE_URIS_TAG = 'JCA_CAPTURE_URIS'
 LOAD_SCENE_DELAY_SEC = 3
 PREVIEW_MAX_TESTED_AREA = 1920 * 1440
 PREVIEW_MIN_TESTED_AREA = 320 * 240
@@ -1791,9 +1792,9 @@ class ItsSession(object):
     """Handle JCA capture result paths from the socket.
 
     Returns:
-      A capture result path or a list of capture results paths.
+      A capture result path or a list of capture results paths and URIs.
     """
-    capture_paths, capture_status = None, None
+    capture_paths, capture_uris, capture_status = None, None, None
     while not capture_paths or not capture_status:
       data, _ = self.__read_response_from_socket()
       if data[_TAG_STR] == JCA_CAPTURE_STATUS_TAG:
@@ -1803,6 +1804,7 @@ class ItsSession(object):
           raise error_util.CameraItsError(
               f'Invalid response {data[_TAG_STR]} for JCA capture')
         capture_paths = data[_OBJ_VALUE_STR][JCA_CAPTURE_PATHS_TAG]
+        capture_uris = data[_OBJ_VALUE_STR][JCA_CAPTURE_URIS_TAG]
       elif data[_TAG_STR] == JCA_VIDEO_PATH_TAG:
         if capture_paths is not None:
           raise error_util.CameraItsError(
@@ -1815,7 +1817,8 @@ class ItsSession(object):
       logging.error('Capture failed! Expected status %d, received %d',
                     RESULT_OK_STATUS, capture_status)
     logging.debug('capture paths: %s', capture_paths)
-    return capture_paths
+    logging.debug('capture uris: %s', capture_uris)
+    return capture_paths, capture_uris
 
   def get_and_pull_jca_capture(self, dut, log_path):
     """Retrieve a capture path from the socket and pulls capture to host.
@@ -1828,12 +1831,23 @@ class ItsSession(object):
     Raises:
       CameraItsError: If unexpected data is retrieved from the socket.
     """
-    capture_paths = self._get_jca_capture_paths()
-    for capture_path in capture_paths:
+    current_user = its_device_utils.get_current_user(dut.serial)
+    is_hsum = current_user != its_device_utils.SYSTEM_USER
+    capture_paths, capture_uris = self._get_jca_capture_paths()
+    for capture_path, capture_uri in zip(capture_paths, capture_uris):
       _, capture_name = os.path.split(capture_path)
-      its_device_utils.run(
-          f'adb -s {dut.serial} pull {capture_path} {log_path}')
-      yield os.path.join(log_path, capture_name)
+      capture_path_on_host = os.path.join(log_path, capture_name)
+      if not is_hsum:
+        its_device_utils.run(
+            f'adb -s {dut.serial} pull {capture_path} {log_path}')
+        yield capture_path_on_host
+      else:
+        dut.adb.shell(
+            f'content read --uri {capture_uri} '
+            f'--user {current_user} > {capture_path_on_host}',
+            shell=True,
+        )
+        yield capture_path_on_host
 
   def get_and_pull_jca_video_capture(self, dut, log_path):
     """Retrieve a capture path from the socket and pulls capture to host.
@@ -1846,7 +1860,7 @@ class ItsSession(object):
     Raises:
       CameraItsError: If unexpected data is retrieved from the socket.
     """
-    capture_path = self._get_jca_capture_paths()
+    capture_path, _ = self._get_jca_capture_paths()
     _, capture_name = os.path.split(capture_path)
     its_device_utils.run(f'adb -s {dut.serial} pull {capture_path} {log_path}')
     return os.path.join(log_path, capture_name)

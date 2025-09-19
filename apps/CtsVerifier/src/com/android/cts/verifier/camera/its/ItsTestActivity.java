@@ -122,6 +122,7 @@ public class ItsTestActivity extends DialogTestListActivity {
     private static final String JCA_DEBUG_MODE_KEY = "KEY_DEBUG_MODE";
     public static final String JCA_VIDEO_PATH_TAG = "JCA_VIDEO_CAPTURE_PATH";
     public static final String JCA_CAPTURE_PATHS_TAG = "JCA_CAPTURE_PATHS";
+    public static final String JCA_CAPTURE_URIS_TAG = "JCA_CAPTURE_URIS";
     public static final String JCA_CAPTURE_STATUS_TAG = "JCA_CAPTURE_STATUS";
     public static final String JCA_DATE_TIME_TAG = "yyyyMMdd_HHmmss";
 
@@ -1479,14 +1480,16 @@ public class ItsTestActivity extends DialogTestListActivity {
                 Logt.i(TAG, "Result data: " + data.getStringArrayListExtra(
                         MediaStore.EXTRA_OUTPUT).toString());
                 ArrayList<String> jcaCapturePaths = new ArrayList<String>();
+                ArrayList<String> jcaCaptureUris = new ArrayList<String>();
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern(
                         JCA_DATE_TIME_TAG).withZone(ZoneId.systemDefault());
                 String timestamp = formatter.format(Instant.now());
                 int i = 0;
                 for (String intentUri : data.getStringArrayListExtra(MediaStore.EXTRA_OUTPUT)) {
+                    jcaCaptureUris.add(intentUri);
                     Uri uri = Uri.parse(intentUri);
                     try {
-                        Path imagePath = moveImageFromUri(
+                        Path imagePath = copyImageFromUri(
                                 uri, "ITS_JCA_" + i + "_" + timestamp + ".jpg");
                         jcaCapturePaths.add(imagePath.toString());
                     } catch (FileNotFoundException e) {
@@ -1500,6 +1503,7 @@ public class ItsTestActivity extends DialogTestListActivity {
                 }
                 Intent serviceIntent = new Intent(this, ItsService.class);
                 serviceIntent.putExtra(JCA_CAPTURE_PATHS_TAG, jcaCapturePaths);
+                serviceIntent.putExtra(JCA_CAPTURE_URIS_TAG, jcaCaptureUris);
                 serviceIntent.putExtra(JCA_CAPTURE_STATUS_TAG, resultCode);
                 startService(serviceIntent);
             }
@@ -1527,7 +1531,7 @@ public class ItsTestActivity extends DialogTestListActivity {
         }
     }
 
-    private Path moveImageFromUri(Uri uri, String name)
+    private Path copyImageFromUri(Uri uri, String name)
             throws FileNotFoundException, IOException {
         ParcelFileDescriptor parcelFileDescriptor =
                 getContentResolver().openFileDescriptor(uri, "r");
@@ -1540,7 +1544,6 @@ public class ItsTestActivity extends DialogTestListActivity {
         }
         Path imagePath = new File(imageDir, name).toPath();
         Files.copy(inputStream, imagePath, StandardCopyOption.REPLACE_EXISTING);
-        getContentResolver().delete(uri, null, null);
         return imagePath;
     }
 
