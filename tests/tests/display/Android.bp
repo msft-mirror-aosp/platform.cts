@@ -37,6 +37,7 @@ android_test {
         "CtsSurfaceValidatorLib",
         "android.companion.virtualdevice.flags-aconfig-java",
         "display_flags_lib",
+        "surfaceflinger_flags_java_lib",
         "junit-params",
         "desktop-test-lib",
     ],
