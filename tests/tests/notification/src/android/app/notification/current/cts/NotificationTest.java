@@ -624,13 +624,13 @@ public class NotificationTest {
     }
 
     @Test
-    public void testAction_builder_hasDefault() {
+    public void testActionBuilder_semanticAction_hasDefault() {
         Notification.Action action = makeNotificationAction(null);
         assertEquals(Notification.Action.SEMANTIC_ACTION_NONE, action.getSemanticAction());
     }
 
     @Test
-    public void testAction_builder_setSemanticAction() {
+    public void testActionBuilder_setSemanticAction() {
         Notification.Action action = makeNotificationAction(
                 builder -> builder.setSemanticAction(Notification.Action.SEMANTIC_ACTION_REPLY));
         assertEquals(Notification.Action.SEMANTIC_ACTION_REPLY, action.getSemanticAction());
@@ -667,7 +667,7 @@ public class NotificationTest {
     }
 
     @Test
-    public void testAction_parcel() {
+    public void testAction_semanticAction_parcel() {
         Notification.Action action = writeAndReadParcelable(
                 makeNotificationAction(builder -> {
                     builder.setSemanticAction(Notification.Action.SEMANTIC_ACTION_ARCHIVE);
@@ -679,12 +679,80 @@ public class NotificationTest {
     }
 
     @Test
-    public void testAction_clone() {
+    public void testAction_semanticAction_clone() {
         Notification.Action action = makeNotificationAction(
                 builder -> builder.setSemanticAction(Notification.Action.SEMANTIC_ACTION_DELETE));
-        assertEquals(
-                Notification.Action.SEMANTIC_ACTION_DELETE,
-                action.clone().getSemanticAction());
+
+        Notification.Action clone = action.clone();
+
+        assertEquals(Notification.Action.SEMANTIC_ACTION_DELETE, clone.getSemanticAction());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_NOTIFICATION_ACTION_CUSTOM)
+    public void testActionBuilder_emphasisAndStyle_hasDefault() {
+        Notification.Action action = makeNotificationAction(null);
+
+        assertThat(action.getEmphasisHint()).isEqualTo(Notification.Action.EMPHASIS_AUTO);
+        assertThat(action.getStyleHint()).isEqualTo(Notification.Action.STYLE_AUTO);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_NOTIFICATION_ACTION_CUSTOM)
+    public void testActionBuilder_setEmphasisAndStyle() {
+        Notification.Action action =
+                makeNotificationAction(
+                        builder ->
+                                builder.setEmphasisHint(Notification.Action.EMPHASIS_PRIMARY)
+                                        .setStyleHint(Notification.Action.STYLE_ICON_AND_TEXT));
+
+        assertThat(action.getEmphasisHint()).isEqualTo(Notification.Action.EMPHASIS_PRIMARY);
+        assertThat(action.getStyleHint()).isEqualTo(Notification.Action.STYLE_ICON_AND_TEXT);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_NOTIFICATION_ACTION_CUSTOM)
+    public void testAction_emphasisAndStyle_parcel() {
+        Notification.Action action =
+                makeNotificationAction(
+                        builder ->
+                                builder.setEmphasisHint(Notification.Action.EMPHASIS_SECONDARY)
+                                        .setStyleHint(Notification.Action.STYLE_ICON_ONLY));
+
+        Notification.Action unparceled = writeAndReadParcelable(action);
+
+        assertThat(unparceled.getEmphasisHint()).isEqualTo(Notification.Action.EMPHASIS_SECONDARY);
+        assertThat(unparceled.getStyleHint()).isEqualTo(Notification.Action.STYLE_ICON_ONLY);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_NOTIFICATION_ACTION_CUSTOM)
+    public void testAction_emphasisAndStyle_clone() {
+        Notification.Action action =
+                makeNotificationAction(
+                        builder ->
+                                builder.setEmphasisHint(Notification.Action.EMPHASIS_PRIMARY)
+                                        .setStyleHint(Notification.Action.STYLE_ICON_AND_TEXT));
+
+        Notification.Action cloned = action.clone();
+
+        assertThat(cloned.getEmphasisHint()).isEqualTo(Notification.Action.EMPHASIS_PRIMARY);
+        assertThat(cloned.getStyleHint()).isEqualTo(Notification.Action.STYLE_ICON_AND_TEXT);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_NOTIFICATION_ACTION_CUSTOM)
+    public void testActionBuilder_emphasisAndStyle_rebuild() {
+        Notification.Action action =
+                makeNotificationAction(
+                        builder ->
+                                builder.setEmphasisHint(Notification.Action.EMPHASIS_PRIMARY)
+                                        .setStyleHint(Notification.Action.STYLE_ICON_AND_TEXT));
+
+        Notification.Action rebuilt = new Notification.Action.Builder(action).build();
+
+        assertThat(rebuilt.getEmphasisHint()).isEqualTo(Notification.Action.EMPHASIS_PRIMARY);
+        assertThat(rebuilt.getStyleHint()).isEqualTo(Notification.Action.STYLE_ICON_AND_TEXT);
     }
 
     @Test
