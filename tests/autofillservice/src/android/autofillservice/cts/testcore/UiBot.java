@@ -23,6 +23,7 @@ import static android.autofillservice.cts.testcore.Timeouts.SAVE_TIMEOUT;
 import static android.autofillservice.cts.testcore.Timeouts.UI_DATASET_PICKER_TIMEOUT;
 import static android.autofillservice.cts.testcore.Timeouts.UI_SCREEN_ORIENTATION_TIMEOUT;
 import static android.autofillservice.cts.testcore.Timeouts.UI_TIMEOUT;
+import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
 import static android.service.autofill.SaveInfo.SAVE_DATA_TYPE_ADDRESS;
 import static android.service.autofill.SaveInfo.SAVE_DATA_TYPE_CREDIT_CARD;
 import static android.service.autofill.SaveInfo.SAVE_DATA_TYPE_DEBIT_CARD;
@@ -180,12 +181,15 @@ public class UiBot {
      */
     public static final int LANDSCAPE = Surface.ROTATION_90;
 
+    private static final long WAIT_FOR_HOME_SCREEN_MS = 1000L;
+
     private final UiDevice mDevice;
     private final Context mContext;
     private final UserHelper mUserHelper;
     private final String mPackageName;
     private final UiAutomation mAutoman;
     private final Timeout mDefaultTimeout;
+    private final boolean mIsAutomotive;
 
     private boolean mOkToCallAssertNoDatasets;
 
@@ -201,6 +205,7 @@ public class UiBot {
         mUserHelper = new UserHelper(mContext);
         mPackageName = mContext.getPackageName();
         mAutoman = instrumentation.getUiAutomation();
+        mIsAutomotive = mContext.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE);
     }
 
     public void waitForIdle() {
@@ -705,6 +710,15 @@ public class UiBot {
         Log.d(TAG, "pressHome()");
         mDevice.pressHome();
         waitForIdle();
+        if (mIsAutomotive) {
+            try {
+                // Waits until the current foreground activity is the home activity.
+                // TODO(b/445993405): Use a better way to do this.
+                Thread.sleep(WAIT_FOR_HOME_SCREEN_MS);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     /**
