@@ -65,18 +65,16 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
         testItems.add(new CustomBigContentViewTest());
         testItems.add(new CustomHeadsUpContentViewTest());
 
-        if (Flags.apiRichOngoing()) {
-            testItems.add(new ProgressStyleIndeterminateTest());
-            testItems.add(new ProgressStyleProgressTest());
-            testItems.add(new ProgressStyleMultipleSegmentsTest());
-            testItems.add(new ProgressStyleMultiplePointsTest());
-            testItems.add(new ProgressStyleStartAndEndIconsTest());
-            testItems.add(new ProgressStyleProgressTrackerIconTest());
-            testItems.add(new ProgressStyleLargeIconTest());
-            testItems.add(new ProgressStyleNotStyledByProgressTest());
-            testItems.add(new ProgressStyleManySegmentsSameColor());
-            testItems.add(new ProgressStyleRTLTest());
-        }
+        testItems.add(new ProgressStyleIndeterminateTest());
+        testItems.add(new ProgressStyleProgressTest());
+        testItems.add(new ProgressStyleMultipleSegmentsTest());
+        testItems.add(new ProgressStyleMultiplePointsTest());
+        testItems.add(new ProgressStyleStartAndEndIconsTest());
+        testItems.add(new ProgressStyleProgressTrackerIconTest());
+        testItems.add(new ProgressStyleLargeIconTest());
+        testItems.add(new ProgressStyleNotStyledByProgressTest());
+        testItems.add(new ProgressStyleManySegmentsSameColor());
+        testItems.add(new ProgressStyleRTLTest());
 
         return Collections.unmodifiableList(testItems);
     }

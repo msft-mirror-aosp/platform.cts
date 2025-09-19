@@ -3957,7 +3957,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     @RequiresFlagsEnabled({
-        android.app.Flags.FLAG_API_RICH_ONGOING,
         android.app.Flags.FLAG_UI_RICH_ONGOING,
         android.app.Flags.FLAG_API_RICH_ONGOING_PERMISSION
     })
@@ -3967,7 +3966,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     @RequiresFlagsEnabled({
-        android.app.Flags.FLAG_API_RICH_ONGOING,
         android.app.Flags.FLAG_UI_RICH_ONGOING
     })
     @RequiresFlagsDisabled({android.app.Flags.FLAG_API_RICH_ONGOING_PERMISSION})
