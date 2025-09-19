@@ -159,6 +159,7 @@ class SharesheetInteractiveChooserActivity : PassFailButtons.Activity() {
         val targetIntent =
             Intent(Intent.ACTION_SEND).apply {
                 addCategory("com.android.cts.verifier.sharesheet.TEST_CATEGORY")
+                setType("test/interactive-chooser-boundary")
             }
         val chooserIntent =
             Intent.createChooser(targetIntent, "Test").apply {
