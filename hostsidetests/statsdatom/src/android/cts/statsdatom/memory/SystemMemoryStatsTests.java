@@ -29,6 +29,7 @@ import com.android.os.AtomsProto;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.testtype.DeviceTestCase;
 import com.android.tradefed.testtype.IBuildReceiver;
+import com.android.tradefed.util.Pair;
 
 import java.util.List;
 
@@ -66,8 +67,9 @@ public class SystemMemoryStatsTests extends DeviceTestCase implements IBuildRece
         assertThat(systemMemory.getVmallocUsedKb()).isAtLeast(0);
         assertThat(systemMemory.getPageTablesKb()).isAtLeast(0);
         assertThat(systemMemory.getKernelStackKb()).isAtLeast(0);
-        if (PropertyUtil.getFirstApiLevel(getDevice()) >= 30) {
-            assertThat(systemMemory.getTotalIonKb()).isAtLeast(0);
+        if (PropertyUtil.getFirstApiLevel(getDevice()) >= 30 &&
+            !DeviceUtils.isKernelGreaterEqual(getDevice(), Pair.create(6, 13))) { // TODO: Remove b/445947853
+            assertThat(systemMemory.getDmabufTotalExportedKb()).isAtLeast(0);
         }
     }
 
