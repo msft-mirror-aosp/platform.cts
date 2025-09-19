@@ -31,6 +31,7 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
+import android.media.AudioManager;
 import android.os.Bundle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.telecom.Call;
@@ -61,12 +62,14 @@ public class LocalVoicemailTest extends BaseAppVerifier {
 
     public static final int STATE_TIMEOUT_MILLIS = 5000;
     private TelecomManager mTelecomManager;
+    private AudioManager mAudioManager;
 
     @Before
     public void setUp() throws Exception {
         super.setUp();
 
         mTelecomManager = mContext.getSystemService(TelecomManager.class);
+        mAudioManager = mContext.getSystemService(AudioManager.class);
     }
 
     /**
@@ -207,12 +210,12 @@ public class LocalVoicemailTest extends BaseAppVerifier {
 
             assertEquals("Saved does not match expected.", newDuration, storedDuration);
         } finally {
+            tearDownApp(managedApp);
             invokeMethodWithShellPermissionsNoReturn(
                     mTelecomManager,
                     tm -> tm.disableLocalVoicemail(MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle()));
             resetTestLocalVoicemailService();
             unregisterAcctAndVerify(managedApp, MANAGED_DEFAULT_ACCOUNT_1);
-            tearDownApp(managedApp);
         }
     }
 
@@ -261,12 +264,12 @@ public class LocalVoicemailTest extends BaseAppVerifier {
                                                     MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle(),
                                                     Duration.ofMillis(10))));
         } finally {
+            tearDownApp(managedApp);
             invokeMethodWithShellPermissionsNoReturn(
                     mTelecomManager,
                     tm -> tm.disableLocalVoicemail(MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle()));
             resetTestLocalVoicemailService();
             unregisterAcctAndVerify(managedApp, MANAGED_DEFAULT_ACCOUNT_1);
-            tearDownApp(managedApp);
         }
     }
 
@@ -307,17 +310,19 @@ public class LocalVoicemailTest extends BaseAppVerifier {
             // Disconnect the call as if the remote party dropped it.
             managedApp.setCallState(incomingCallId, Call.STATE_DISCONNECTED, true, new Bundle());
 
+            verifyLocalVoicemailStopped(call);
+
             assertTrue(
                     "Expected unbind from the local voicemail service.",
                     CujLocalVoicemailService.getUnbindLatch()
                             .await(STATE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS));
         } finally {
+            tearDownApp(managedApp);
             invokeMethodWithShellPermissionsNoReturn(
                     mTelecomManager,
                     tm -> tm.disableLocalVoicemail(MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle()));
             resetTestLocalVoicemailService();
             unregisterAcctAndVerify(managedApp, MANAGED_DEFAULT_ACCOUNT_1);
-            tearDownApp(managedApp);
         }
     }
 
@@ -358,6 +363,9 @@ public class LocalVoicemailTest extends BaseAppVerifier {
             // Drop the call from the local vm service
             CujLocalVoicemailService.disconnectCurrentCall();
 
+            // Since the local VM service initiated the disconnect it won't get the onDisconnected
+            // signal.
+
             // We can't validate disconnect directly since it isn't in an InCallService, but we can
             // confirm we unbound.
             assertTrue(
@@ -365,12 +373,138 @@ public class LocalVoicemailTest extends BaseAppVerifier {
                     CujLocalVoicemailService.getUnbindLatch()
                             .await(STATE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS));
         } finally {
+            tearDownApp(managedApp);
             invokeMethodWithShellPermissionsNoReturn(
                     mTelecomManager,
                     tm -> tm.disableLocalVoicemail(MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle()));
             resetTestLocalVoicemailService();
             unregisterAcctAndVerify(managedApp, MANAGED_DEFAULT_ACCOUNT_1);
+        }
+    }
+
+    /**
+     * Verifies that a call undergoing local voicemail will continue processing while an incoming
+     * call rings, but will disconnect when the ringing call is answered.
+     */
+    @Test
+    @ApiTest(
+            apis = {
+                "android.telecom.LocalVoicemailService#onVoicemailRequested",
+                "android.telecom.LocalVoicemailService#onVoicemailStopped"
+            })
+    public void testIncomingCallDuringLocalVoicemailCall() throws Exception {
+        assumeTrue("Skipped for devices with no FEATURE_TELECOM", mShouldTestTelecom);
+        assumeTrue("Skipped for devices with no dialer role", mSupportsManagedCalls);
+
+        AppControlWrapper managedApp = null;
+        try {
+            managedApp = bindToApp(ManagedConnectionServiceApp);
+            configureTestLocalVoicemailServiceAndVerify();
+
+            // Start by assuming that the timeout is quite short; 1 sec.
+            // This way we can ensure the local voicemail service picks up quickly without this test
+            // becoming an absolute time vortex.
+            invokeMethodWithShellPermissionsNoReturn(
+                    mTelecomManager,
+                    tm ->
+                            tm.enableLocalVoicemail(
+                                    MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle(),
+                                    Duration.ofSeconds(1)));
+
+            String incomingCallId = addIncomingCallAndVerify(managedApp);
+
+            // We'll wait up to 5 sec for the local vm service to get the call.
+            Call.Details call =
+                    CujLocalVoicemailService.getRequestedCalls()
+                            .poll(STATE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+            assertNotNull("Expected the CujLocalVoicemailService to receive the call.", call);
+            assertEquals(incomingCallId, call.getId());
+
+            // Add a second incoming call.
+            String incomingCall2Id = addIncomingCallAndVerify(managedApp);
+
+            // There is no direct way to observe that a call is in local vm state, so we will check
+            // the audio mode and make sure it is still `MODE_CALL_REDIRECT`.
+            assertEquals(
+                    "Local voicemail should still be in progress when a ringing call added.",
+                    AudioManager.MODE_CALL_REDIRECT,
+                    mAudioManager.getMode());
+
+            // Answer the second incoming call.
+            managedApp.setCallState(incomingCall2Id, Call.STATE_ACTIVE, true, new Bundle());
+
+            // Make sure the original call got disconnected.
+            verifyLocalVoicemailStopped(call);
+
+            assertTrue(
+                    "Expected unbind from the local voicemail service.",
+                    CujLocalVoicemailService.getUnbindLatch()
+                            .await(STATE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS));
+        } finally {
             tearDownApp(managedApp);
+            invokeMethodWithShellPermissionsNoReturn(
+                    mTelecomManager,
+                    tm -> tm.disableLocalVoicemail(MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle()));
+            resetTestLocalVoicemailService();
+            unregisterAcctAndVerify(managedApp, MANAGED_DEFAULT_ACCOUNT_1);
+        }
+    }
+
+    /**
+     * Verifies that a call undergoing local voicemail will get disconnected if the user places a
+     * managed call.
+     */
+    @Test
+    @ApiTest(
+            apis = {
+                "android.telecom.LocalVoicemailService#onVoicemailRequested",
+                "android.telecom.LocalVoicemailService#onVoicemailStopped"
+            })
+    public void testOutgoingManagedCallDuringLocalVoicemailCall() throws Exception {
+        assumeTrue("Skipped for devices with no FEATURE_TELECOM", mShouldTestTelecom);
+        assumeTrue("Skipped for devices with no dialer role", mSupportsManagedCalls);
+
+        AppControlWrapper managedApp = null;
+        try {
+            managedApp = bindToApp(ManagedConnectionServiceApp);
+            configureTestLocalVoicemailServiceAndVerify();
+
+            // Start by assuming that the timeout is quite short; 1 sec.
+            // This way we can ensure the local voicemail service picks up quickly without this test
+            // becoming an absolute time vortex.
+            invokeMethodWithShellPermissionsNoReturn(
+                    mTelecomManager,
+                    tm ->
+                            tm.enableLocalVoicemail(
+                                    MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle(),
+                                    Duration.ofSeconds(1)));
+
+            String initialCallId = addIncomingCallAndVerify(managedApp);
+
+            // We'll wait up to 5 sec for the local vm service to get the call.
+            Call.Details call =
+                    CujLocalVoicemailService.getRequestedCalls()
+                            .poll(STATE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+            assertNotNull("Expected the CujLocalVoicemailService to receive the call.", call);
+            assertEquals(initialCallId, call.getId());
+
+            // Place an outgoing call.
+            String outgoingCallId = addOutgoingCallAndVerify(managedApp);
+
+            // Make sure the original call got disconnected.
+            verifyLocalVoicemailStopped(call);
+
+            assertTrue(
+                    "Expected unbind from the local voicemail service.",
+                    CujLocalVoicemailService.getUnbindLatch()
+                            .await(STATE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS));
+        } finally {
+            tearDownApp(managedApp);
+            invokeMethodWithShellPermissionsNoReturn(
+                    mTelecomManager,
+                    tm -> tm.disableLocalVoicemail(MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle()));
+            resetTestLocalVoicemailService();
+            unregisterAcctAndVerify(managedApp, MANAGED_DEFAULT_ACCOUNT_1);
         }
     }
 
@@ -409,5 +543,25 @@ public class LocalVoicemailTest extends BaseAppVerifier {
             throws Exception {
         wrapper.unregisterPhoneAccountWithHandle(phoneAccount.getAccountHandle());
         assertFalse(isPhoneAccountRegistered(phoneAccount.getAccountHandle()));
+    }
+
+    /**
+     * Verifies that a specified call has stopped local voicemail processing by waiting for the
+     * local voicemail service to get confirmation that local vm stopped for that call.
+     *
+     * @param call the call.
+     * @throws InterruptedException thrown is async operation is interrupted (not expected).
+     */
+    private static void verifyLocalVoicemailStopped(Call.Details call) throws InterruptedException {
+        // Wait for signal from the LocalVoicemailService that local VM stopped.
+        Call.Details stoppedCall =
+                CujLocalVoicemailService.getStoppedCalls()
+                        .poll(STATE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+        assertNotNull("Expected a call reported by onVoicemailStopped.", stoppedCall);
+        assertEquals(
+                "Expected the call reported by onVoicemailStopped be the same as one from "
+                        + "onVoicemailRequested.",
+                call.getId(),
+                stoppedCall.getId());
     }
 }
