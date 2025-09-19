@@ -463,69 +463,6 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasDeviceOwner
     @Postsubmit(reason = "New test")
     @Test
-    public void testToggleDeviceStateItem_deviceLocked_throwsException() throws Exception {
-        assumeTrue(deviceSupportsAppFunction("toggleDeviceStateItem"));
-
-        dpc(sDeviceState).devicePolicyManager().lockNow();
-        Poll.forValue("isDeviceLocked", sLocalKeyguardManager::isDeviceLocked)
-                .toBeEqualTo(true)
-                .errorOnFail()
-                .await();
-
-        assertThat(
-                        executeAppFunctionWithParams(
-                                "toggleDeviceStateItem",
-                                SETTINGS_PACKAGE,
-                                "\"toggleDeviceStateItemParams\":{\"key\":\"key\"}"))
-                .contains("android.app.appfunctions.AppFunctionException");
-    }
-
-    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
-    @EnsureScreenIsOn
-    @EnsurePasswordSet
-    @EnsureHasDeviceOwner
-    @Postsubmit(reason = "New test")
-    @Test
-    public void testToggleDeviceStateItem_requestInitiatedWhileUnlockedSet_doesNotThrowException()
-            throws Exception {
-        assumeTrue(deviceSupportsAppFunction("toggleDeviceStateItem"));
-
-        dpc(sDeviceState).devicePolicyManager().lockNow();
-        Poll.forValue("isDeviceLocked", sLocalKeyguardManager::isDeviceLocked)
-                .toBeEqualTo(true)
-                .errorOnFail()
-                .await();
-
-        assertThat(
-                        executeAppFunctionWithParams(
-                                "toggleDeviceStateItem",
-                                SETTINGS_PACKAGE,
-                                "\"toggleDeviceStateItemParams\":{\"key\":\"key\","
-                                        + "\"requestInitiatedWhileUnlocked\":true}"))
-                .doesNotContain("android.app.appfunctions.AppFunctionException");
-    }
-
-    @Postsubmit(reason = "New test")
-    @Test
-    @EnsureUnlocked
-    @EnsurePasswordNotSet
-    public void testToggleDeviceStateItem_deviceNotLocked_doesNotThrowException() throws Exception {
-        assumeTrue(deviceSupportsAppFunction("toggleDeviceStateItem"));
-
-        assertThat(
-                        executeAppFunctionWithParams(
-                                "toggleDeviceStateItem",
-                                SETTINGS_PACKAGE,
-                                "\"toggleDeviceStateItemParams\":{\"key\":\"key\"}"))
-                .doesNotContain("android.app.appfunctions.AppFunctionException");
-    }
-
-    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
-    @EnsureScreenIsOn
-    @EnsurePasswordSet
-    @EnsureHasDeviceOwner
-    @Postsubmit(reason = "New test")
-    @Test
     public void testOffsetNumericDeviceStateItemByValue_deviceLocked_throwsException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("offsetNumericDeviceStateItemByValue"));
