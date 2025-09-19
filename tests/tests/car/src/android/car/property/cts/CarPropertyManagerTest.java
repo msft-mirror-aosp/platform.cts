@@ -87,6 +87,7 @@ import android.car.VehiclePropertyIds;
 import android.car.VehicleUnit;
 import android.car.cts.AbstractCarTestCase;
 import android.car.cts.utils.CarSvcPropsParser;
+import android.car.cts.utils.ShellPermissionUtils;
 import android.car.cts.utils.VehiclePropertyVerifier;
 import android.car.cts.utils.VehiclePropertyVerifiers;
 import android.car.feature.Flags;
@@ -5246,6 +5247,91 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                     assertThat(nightModeListener.receivedEvent(nightMode)).isEqualTo(1);
                     mCarPropertyManager.unregisterCallback(nightModeListener);
                 });
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_STATUS_DETAILED_NOT_AVAILABLE)
+    @ApiTest(apis = {"android.car.hardware.CarPropertyValue#getPropertyVendorStatus"})
+    @Test
+    public void testGetPropertyVendorStatus_withPermission() throws Exception {
+        runWithShellPermissionIdentity(
+                () -> {
+                    var carPropertyValues = getVehicleSpeedValuesWithSubscription();
+
+                    for (CarPropertyValue carPropertyValue : carPropertyValues) {
+                        assertThat(carPropertyValue.getPropertyVendorStatus()).isAtLeast(0);
+                    }
+                },
+                ShellPermissionUtils.CHECK_MODE_ASSERT,
+                Car.PERMISSION_SPEED,
+                Car.PERMISSION_READ_PROPERTY_VENDOR_STATUS);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_STATUS_DETAILED_NOT_AVAILABLE)
+    @ApiTest(apis = {"android.car.hardware.CarPropertyValue#getPropertyVendorStatus"})
+    @Test
+    public void testGetPropertyVendorStatus_withoutPermission_throwsException() throws Exception {
+        runWithShellPermissionIdentity(
+                () -> {
+                    var carPropertyValues = getVehicleSpeedValuesWithSubscription();
+
+                    for (CarPropertyValue carPropertyValue : carPropertyValues) {
+                        assertThrows(
+                                SecurityException.class,
+                                () -> carPropertyValue.getPropertyVendorStatus());
+                    }
+                },
+                ShellPermissionUtils.CHECK_MODE_ASSERT,
+                // No PERMISSION_READ_PROPERTY_VENDOR_STATUS
+                Car.PERMISSION_SPEED);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_STATUS_DETAILED_NOT_AVAILABLE)
+    @ApiTest(apis = {"android.car.hardware.CarPropertyValue#getPropertyVendorStatus"})
+    @Test
+    public void testGetPropertyVendorStatus_withoutPermission_statusFiltered() throws Exception {
+        runWithShellPermissionIdentity(
+                () -> {
+                    var carPropertyValues = getVehicleSpeedValuesWithSubscription();
+
+                    for (CarPropertyValue carPropertyValue : carPropertyValues) {
+                        var carPropertyValueWithPermission =
+                                carPropertyValue.cloneWithPermissionToReadPropertyVendorStatus();
+                        assertThat(carPropertyValueWithPermission.getPropertyVendorStatus())
+                                .isEqualTo(0);
+                    }
+                },
+                ShellPermissionUtils.CHECK_MODE_ASSERT,
+                // No PERMISSION_READ_PROPERTY_VENDOR_STATUS
+                Car.PERMISSION_SPEED);
+    }
+
+    private Set<CarPropertyValue<?>> getVehicleSpeedValuesWithSubscription() throws Exception {
+        // Permissions are checked at the first subscription, so we must get a new
+        // CarPropertyManager here.
+        Car car = Car.createCar(mContext);
+        CarPropertyManager carPropertyManager = car.getCarManager(CarPropertyManager.class);
+
+        int vehicleSpeed = VehiclePropertyIds.PERF_VEHICLE_SPEED;
+        CarPropertyEventCounter speedListener = new CarPropertyEventCounter();
+
+        // Disable VUR so that we can receive multiple events.
+        Subscription subscription =
+                new Subscription.Builder(vehicleSpeed)
+                        .setUpdateRateFastest()
+                        .setVariableUpdateRateEnabled(false)
+                        .build();
+
+        try {
+            carPropertyManager.subscribePropertyEvents(
+                    List.of(subscription), /* callbackExecutor= */ null, speedListener);
+
+            speedListener.assertOnChangeEventCalled();
+
+            return speedListener.getReceivedCarPropertyValues();
+        } finally {
+            carPropertyManager.unsubscribePropertyEvents(vehicleSpeed, speedListener);
+            car.disconnect();
+        }
     }
 
     @ApiTest(

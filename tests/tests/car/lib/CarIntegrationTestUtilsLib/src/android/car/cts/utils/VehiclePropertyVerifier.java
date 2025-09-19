@@ -29,6 +29,7 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeThat;
 import static org.junit.Assume.assumeTrue;
 
+import android.car.Car;
 import android.car.VehicleAreaDoor;
 import android.car.VehicleAreaMirror;
 import android.car.VehicleAreaSeat;
@@ -208,6 +209,8 @@ public class VehiclePropertyVerifier<T> {
     private static final float FLOAT_INEQUALITY_THRESHOLD = 0.00001f;
     private static final int VENDOR_ERROR_CODE_MINIMUM_VALUE = 0x0;
     private static final int VENDOR_ERROR_CODE_MAXIMUM_VALUE = 0xffff;
+    private static final int PROPERTY_VENDOR_STATUS_MINIMUM_VALUE = 0x0;
+    private static final int PROPERTY_VENDOR_STATUS_MAXIMUM_VALUE = 0xffff;
     private static final int SET_PROPERTY_CALLBACK_TIMEOUT_SEC = 5;
     private static final long CPM_ACTION_DELAY_MS = 20;
     private static final Object sLock = new Object();
@@ -1610,6 +1613,11 @@ public class VehiclePropertyVerifier<T> {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA;
     }
 
+    // TODO(b/416768353): Update this to 26Q2 once we have the version for it.
+    public static boolean isAtLeast26Q2() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.CUR_DEVELOPMENT;
+    }
+
     /** Gets the possible values for an integer property. */
     private List<Integer> getPossibleIntegerValues(int areaId) {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
@@ -2236,6 +2244,19 @@ public class VehiclePropertyVerifier<T> {
                         carPropertyValue,
                         carPropertyValue.getAreaId(),
                         CAR_PROPERTY_VALUE_SOURCE_CALLBACK);
+                if (isAtLeast26Q2() && Flags.carPropertyStatusDetailedNotAvailable()) {
+                    if (mContext.checkSelfPermission(Car.PERMISSION_READ_PROPERTY_VENDOR_STATUS)
+                            != PERMISSION_GRANTED) {
+                        assertThrows(
+                                SecurityException.class,
+                                () -> carPropertyValue.getPropertyVendorStatus());
+                    } else {
+                        assertThat(carPropertyValue.getPropertyVendorStatus())
+                                .isAtLeast(PROPERTY_VENDOR_STATUS_MINIMUM_VALUE);
+                        assertThat(carPropertyValue.getPropertyVendorStatus())
+                                .isAtMost(PROPERTY_VENDOR_STATUS_MAXIMUM_VALUE);
+                    }
+                }
             }
         }
     }
