@@ -55,6 +55,10 @@ public class CtsCallRedirectionService extends CallRedirectionService {
             } else if (decision == CtsCallRedirectionServiceController.PLACE_REDIRECTED_CALL) {
                 redirectCall(controller.getTargetHandle(), controller.getTargetPhoneAccount(),
                         controller.isConfirmFirst());
+            } else if (decision ==
+                    CtsCallRedirectionServiceController.PLACE_CALL_TO_ALTERNATE_NUMBER) {
+                placeCallToAlternateNumber(controller.getTargetHandle(),
+                        controller.getTargetPhoneAccount(), controller.isConfirmFirst());
             }
             controller.onPlaceCallInvoked();
         } else {
