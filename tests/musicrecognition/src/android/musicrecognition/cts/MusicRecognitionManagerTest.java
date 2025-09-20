@@ -44,11 +44,9 @@ import android.media.MediaRecorder;
 import android.media.musicrecognition.MusicRecognitionManager;
 import android.media.musicrecognition.RecognitionRequest;
 import android.os.Binder;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 import android.os.Process;
-import android.os.UserManager;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -59,7 +57,6 @@ import com.android.compatibility.common.util.RequiredServiceRule;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -86,7 +83,6 @@ public class MusicRecognitionManagerTest {
 
     private MusicRecognitionManager mManager;
     private CtsMusicRecognitionService.Watcher mWatcher;
-    private UserManager mUserManager;
     @Mock MusicRecognitionManager.RecognitionCallback mCallback;
     @Captor ArgumentCaptor<Bundle> mBundleCaptor;
 
@@ -100,7 +96,6 @@ public class MusicRecognitionManagerTest {
         mWatcher = CtsMusicRecognitionService.setWatcher();
         // Tell MusicRecognitionManagerService to use our no-op service instead.
         setService(CtsMusicRecognitionService.SERVICE_COMPONENT.flattenToString());
-        mUserManager = getContext().getSystemService(UserManager.class);
     }
 
     @After
@@ -136,7 +131,6 @@ public class MusicRecognitionManagerTest {
 
     @Test
     public void testOnRecognitionFailed() throws Exception {
-        temporarilySkipTestOnHsumForNonSystemUser();
         mWatcher.failureCode = MusicRecognitionManager.RECOGNITION_FAILED_NO_CONNECTIVITY;
 
         invokeMusicRecognitionApi();
@@ -149,7 +143,6 @@ public class MusicRecognitionManagerTest {
 
     @Test
     public void testOnRecognitionSucceeded() throws Exception {
-        temporarilySkipTestOnHsumForNonSystemUser();
         mWatcher.result = new MediaMetadata.Builder()
                 .putString(MediaMetadata.METADATA_KEY_ARTIST, "artist")
                 .putString(MediaMetadata.METADATA_KEY_TITLE, "title")
@@ -167,7 +160,6 @@ public class MusicRecognitionManagerTest {
 
     @Test
     public void testRemovesBindersFromBundle() throws Exception {
-        temporarilySkipTestOnHsumForNonSystemUser();
         ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
         mWatcher.result = new MediaMetadata.Builder().build();
         mWatcher.resultExtras = new Bundle();
@@ -208,7 +200,6 @@ public class MusicRecognitionManagerTest {
 
     @Test
     public void testRecordAudioOpsAreTracked() {
-        temporarilySkipTestOnHsumForNonSystemUser();
         mWatcher.result = new MediaMetadata.Builder()
                 .putString(MediaMetadata.METADATA_KEY_ARTIST, "artist")
                 .putString(MediaMetadata.METADATA_KEY_TITLE, "title")
@@ -291,16 +282,6 @@ public class MusicRecognitionManagerTest {
                 mCallback);
         Log.d(TAG, "Invoking service done.");
         return request;
-    }
-
-    /**
-     * Skips tests on HSUM devices for non-system users. This is a temporary workaround.
-     * TODO(b/444503576): Remove this once MusicRecognitionManager is HSUM-aware.
-     */
-    private void temporarilySkipTestOnHsumForNonSystemUser() {
-        Assume.assumeFalse(
-                "Skipping test: MusicRecognitionManager not yet HSUM-aware for non-system users",
-                UserManager.isHeadlessSystemUserMode() && !mUserManager.isSystemUser());
     }
 
     /**
