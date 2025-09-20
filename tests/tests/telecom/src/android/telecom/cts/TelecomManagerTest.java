@@ -32,8 +32,12 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.telecom.TelecomManager;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.ApiTest;
+import com.android.server.telecom.flags.Flags;
+
+import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -180,6 +184,91 @@ public class TelecomManagerTest extends BaseTelecomTestWithMockServices {
         } catch (InterruptedException e) {
             fail("Couldn't check if in emergency call.");
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * Verifies that calling getVoipCallLogIntegrationStatus() without the required permission
+     * throws a SecurityException.
+     */
+    @ApiTest(apis = {"android.telecom.TelecomManager#getVoipCallLogIntegrationStatus"})
+    public void testGetVoipCallLogIntegrationStatus_NoPermission() {
+        if (!mShouldTestTelecom || !Flags.integratedCallLogsStage2()) {
+            return;
+        }
+        try {
+            mTelecomManager.getVoipCallLogIntegrationStatus();
+            fail("getVoipCallLogIntegrationStatus should require READ_PRIVILEGED_PHONE_STATE");
+        } catch (SecurityException e) {
+            // Security exception should've been thrown at this point. Do nothing.
+        }
+    }
+
+    /**
+     * Verifies that calling setVoipCallLogIntegrationEnabled() without the required permission
+     * throws a SecurityException.
+     */
+    @ApiTest(apis = {"android.telecom.TelecomManager#setVoipCallLogIntegrationEnabled"})
+    public void testSetVoipCallLogIntegrationEnabled_NoPermission() {
+        if (!mShouldTestTelecom || !Flags.integratedCallLogsStage2()) {
+            return;
+        }
+        try {
+            mTelecomManager.setVoipCallLogIntegrationEnabled("testPkg", true);
+            fail("setVoipCallLogIntegrationEnabled should require READ_PRIVILEGED_PHONE_STATE");
+        } catch (SecurityException e) {
+            // Security exception should've been thrown at this point. Do nothing.
+        }
+    }
+
+    /**
+     * Verifies that calling getVoipCallLogIntegrationStatus() with the required permission does
+     * not throw an error.
+     */
+    @ApiTest(apis = {"android.telecom.TelecomManager#getVoipCallLogIntegrationStatus"})
+    public void testGetVoipCallLogIntegrationStatus() {
+        if (!mShouldTestTelecom || !Flags.integratedCallLogsStage2()) {
+            return;
+        }
+        try {
+            // Hold SHELL permission identity to ensure CTS tests have READ_PRIVILEGED_PHONE_STATE.
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .adoptShellPermissionIdentity();
+            // Verify that the getter doesn't throw an exception
+            Map<String, Boolean> supportedPackages = mTelecomManager
+                    .getVoipCallLogIntegrationStatus();
+            // Since the CTS doesn't define the callback action, the list should be empty.
+            assertTrue(supportedPackages.isEmpty());
+        } catch (SecurityException e) {
+            // Security exception should not be thrown at this point. Fail the test if it does.
+            throw new AssertionError("Security exception should not have been thrown.", e);
+        } finally {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .dropShellPermissionIdentity();
+        }
+    }
+
+    /**
+     * Verifies that calling setVoipCallLogIntegrationEnabled() with the required permission does
+     * not throw an error.
+     */
+    @ApiTest(apis = {"android.telecom.TelecomManager#setVoipCallLogIntegrationEnabled"})
+    public void testSetVoipCallLogIntegrationEnabled() {
+        if (!mShouldTestTelecom || !Flags.integratedCallLogsStage2()) {
+            return;
+        }
+        try {
+            // Hold SHELL permission identity to ensure CTS tests have MODIFY_PHONE_STATE.
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .adoptShellPermissionIdentity();
+            // No-op but verify that the setter doesn't throw an exception.
+            mTelecomManager.setVoipCallLogIntegrationEnabled("testPkg", true);
+        } catch (SecurityException e) {
+            // Security exception should not be thrown at this point. Fail the test if it does.
+            throw new AssertionError("Security exception should not have been thrown.", e);
+        } finally {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .dropShellPermissionIdentity();
         }
     }
 
