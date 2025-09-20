@@ -36,7 +36,6 @@ import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_NAME
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -270,7 +269,6 @@ public class OutputSwitcherTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
     public void selectOneRoute_closeAndOpenDialog_routeStillSelected() throws Exception {
         mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID2));
         registerRouteCallback(List.of(FEATURE_SAMPLE));
@@ -290,7 +288,6 @@ public class OutputSwitcherTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
     public void selectOneRoute_thenTransferToAnother_sessionTransferred() throws Exception {
         mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID5_TO_TRANSFER_TO));
         registerRouteCallback(List.of(FEATURE_SAMPLE));
@@ -309,7 +306,6 @@ public class OutputSwitcherTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
     public void selectOneRoute_thenTransferToThisDevice_sessionTransferred() throws Exception {
         mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID2));
         registerRouteCallback(List.of(FEATURE_SAMPLE, FEATURE_LIVE_AUDIO));
@@ -395,7 +391,6 @@ public class OutputSwitcherTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
     public void providerReleasesSessionWhileDialogOpen_dialogUpdates() throws Exception {
         mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID2));
         registerRouteCallback(List.of(FEATURE_SAMPLE));
@@ -415,7 +410,6 @@ public class OutputSwitcherTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
     public void appCallsTransferToWhileDialogOpen_dialogUpdates() throws Exception {
         mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID5_TO_TRANSFER_TO));
         registerRouteCallback(List.of(FEATURE_SAMPLE));
@@ -465,7 +459,6 @@ public class OutputSwitcherTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
     public void streamExpansion_addSecondRoute_eventsFire() throws Exception {
         mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID4_TO_SELECT_AND_DESELECT));
         registerRouteCallback(List.of(FEATURE_SAMPLE));
@@ -501,7 +494,6 @@ public class OutputSwitcherTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
     public void streamExpansion_addAndRemoveSecondRoute_eventsFire() throws Exception {
         mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID4_TO_SELECT_AND_DESELECT));
         registerRouteCallback(List.of(FEATURE_SAMPLE));
@@ -521,7 +513,6 @@ public class OutputSwitcherTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
     public void streamExpansion_selectSecondRouteUsingController_dialogUpdates() throws Exception {
         mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID4_TO_SELECT_AND_DESELECT));
         registerRouteCallback(List.of(FEATURE_SAMPLE));
@@ -548,7 +539,6 @@ public class OutputSwitcherTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
     public void streamExpansion_deselectRouteUsingController_dialogUpdates() throws Exception {
         mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID4_TO_SELECT_AND_DESELECT));
         registerRouteCallback(List.of(FEATURE_SAMPLE));
@@ -680,7 +670,6 @@ public class OutputSwitcherTest {
     }
 
     private static void assertDialogShowsConnectionToRoute(BySelector selector) throws Exception {
-        assumeTrue(Flags.enableOutputSwitcherRedesign());
         UiObject2 routeNode = UiAutomatorUtils2.waitFindObject(selector, TIMEOUT_MS);
         UiAutomatorUtils2.assertWithUiDump(
                 () ->
