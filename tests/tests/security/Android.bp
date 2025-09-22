@@ -48,6 +48,7 @@ android_test {
         "NeneInternal",
         "CameraPermissionTestLib",
         "bedstead-enterprise",
+        "TestParameterInjector",
     ],
     libs: [
         "android.test.runner.stubs.system",
@@ -84,6 +85,7 @@ android_test {
         "aidl/android/security/cts/ICertCheckService.aidl",
         "aidl/android/security/cts/CVE_2021_0327/IBadProvider.aidl",
         "testdata/dynamicpermissiontestattackerapp/src/**/*.aidl",
+        ":advanced-protection-config",
     ],
     //sdk_version: "current",
     platform_apis: true,

@@ -19,7 +19,6 @@ package android.security.cts.advancedprotection;
 import static android.os.UserManager.DISALLOW_INSTALL_UNKNOWN_SOURCES_GLOBALLY;
 import static android.security.advancedprotection.AdvancedProtectionManager.FEATURE_ID_DISALLOW_INSTALL_UNKNOWN_SOURCES;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -27,17 +26,10 @@ import android.os.UserManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.security.Flags;
 
-import androidx.test.runner.AndroidJUnit4;
-
-import com.android.compatibility.common.util.ApiTest;
-
 import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 
-@RunWith(AndroidJUnit4.class)
 @RequiresFlagsEnabled(Flags.FLAG_AAPM_FEATURE_DISABLE_INSTALL_UNKNOWN_SOURCES)
-public class DisallowInstallUnknownSourcesTest extends BaseAdvancedProtectionTest {
+public class DisallowInstallUnknownSourcesTest extends BaseAdvancedProtectionFeatureTest {
     private UserManager mUserManager;
 
     @Override
@@ -47,42 +39,33 @@ public class DisallowInstallUnknownSourcesTest extends BaseAdvancedProtectionTes
         mUserManager = mInstrumentation.getContext().getSystemService(UserManager.class);
     }
 
-    @ApiTest(apis = {
-            "android.security.advancedprotection.AdvancedProtectionManager"
-                    + "#getAdvancedProtectionFeatures",
-            "android.security.advancedprotection.AdvancedProtectionManager"
-                    + "#FEATURE_ID_DISALLOW_INSTALL_UNKNOWN_SOURCES"
-    })
-    @Test
-    public void testGetFeatures() {
-        assertEquals(
-                "The Disallow Install Unknown Sources feature is not in the feature list",
-                1,
-                mManager.getAdvancedProtectionFeatures().stream()
-                        .filter(
-                                feature ->
-                                        feature.getId()
-                                                == FEATURE_ID_DISALLOW_INSTALL_UNKNOWN_SOURCES)
-                        .count());
+    @Override
+    protected int getFeatureId() {
+        return FEATURE_ID_DISALLOW_INSTALL_UNKNOWN_SOURCES;
     }
 
-    @ApiTest(apis = {
-            "android.security.advancedprotection.AdvancedProtectionManager"
-                    + "#setAdvancedProtectionEnabled"})
-    @Test
-    public void testEnableProtection() throws InterruptedException {
-        setAdvancedProtectionEnabled(true);
-        assertTrue("The DISALLOW_INSTALL_UNKNOWN_SOURCES_GLOBALLY restriction is not set",
+    @Override
+    protected String getFeatureName() {
+        return "Disallow Install Unknown Sources";
+    }
+
+    @Override
+    protected boolean isSupportedOnDevice() {
+        // This feature is supported on all devices.
+        return true;
+    }
+
+    @Override
+    protected void assertFeatureEnabled() {
+        assertTrue(
+                "The DISALLOW_INSTALL_UNKNOWN_SOURCES_GLOBALLY restriction is not set",
                 mUserManager.hasUserRestriction(DISALLOW_INSTALL_UNKNOWN_SOURCES_GLOBALLY));
     }
 
-    @ApiTest(apis = {
-            "android.security.advancedprotection.AdvancedProtectionManager"
-                    + "#setAdvancedProtectionEnabled"})
-    @Test
-    public void testDisableProtection() throws InterruptedException {
-        setAdvancedProtectionEnabled(false);
-        assertFalse("The DISALLOW_INSTALL_UNKNOWN_SOURCES_GLOBALLY restriction is set",
+    @Override
+    protected void assertFeatureDisabled() {
+        assertFalse(
+                "The DISALLOW_INSTALL_UNKNOWN_SOURCES_GLOBALLY restriction is set",
                 mUserManager.hasUserRestriction(DISALLOW_INSTALL_UNKNOWN_SOURCES_GLOBALLY));
     }
 }

@@ -16,8 +16,8 @@
 
 package android.security.cts.advancedprotection;
 
-import static org.junit.Assert.fail;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
@@ -28,8 +28,8 @@ import android.security.advancedprotection.AdvancedProtectionManager;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.bedstead.harrier.annotations.BeforeClass;
 import com.android.compatibility.common.util.SystemUtil;
+
 import org.junit.After;
 import org.junit.Before;
 
