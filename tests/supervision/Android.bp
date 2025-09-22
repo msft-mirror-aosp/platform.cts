@@ -18,6 +18,7 @@ android_test {
     team: "trendy_team_android_parental_controls",
     static_libs: [
         "compatibility-device-util-axt",
+        "cts-companion-common",
         "ctstestrunner-axt",
         "truth",
         "androidx.test.ext.junit",
@@ -29,6 +30,11 @@ android_test {
         "bedstead-root",
         "cts-install-lib",
         "kotlin-test",
+        "TestApp",
+        "Nene",
+        "services.core",
+        "androidx.core_core",
+        "testables",
     ],
     srcs: ["src/**/*.kt"],
     test_suites: [

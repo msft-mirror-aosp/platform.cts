@@ -18,14 +18,21 @@ package android.supervision.cts
 
 import android.Manifest.permission.BYPASS_ROLE_QUALIFICATION
 import android.Manifest.permission.CREATE_USERS
+import android.Manifest.permission.MANAGE_ROLE_HOLDERS
+import android.Manifest.permission.OBSERVE_ROLE_HOLDERS
 import android.Manifest.permission.QUERY_USERS
+import android.app.role.RoleManager
 import android.app.supervision.SupervisionManager
+import android.content.Context
 import android.os.UserHandle
 import android.os.UserManager
 import android.platform.test.annotations.AppModeFull
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.bedstead.nene.TestApis
+import com.android.bedstead.testapp.TestAppInstance
+import com.android.bedstead.testapp.TestAppProvider
 import com.android.compatibility.common.util.SystemUtil.runShellCommand
+import com.android.compatibility.common.util.supervision.withSystemSupervisionRoleHeld
 import com.google.common.truth.Truth.assertThat
 
 /** Base class for supervision CTS tests. */
@@ -76,10 +83,38 @@ open class BaseSupervisionTest {
         }
     }
 
+    fun withSupervisionApp(action: (app: TestAppInstance) -> Unit) {
+        val testAppProvider = TestAppProvider()
+        val testApp =
+            checkNotNull(testAppProvider.query().whereLabel().isEqualTo("SupervisionApp").get()) {
+                "Supervision TestApp not found."
+            }
+        val app =
+            checkNotNull(testApp.install(TestApis.users().instrumented())) {
+                "Failed to install Supervision TestApp."
+            }
+
+        try {
+            callWithShellPermissionIdentity(
+                BYPASS_ROLE_QUALIFICATION,
+                MANAGE_ROLE_HOLDERS,
+                QUERY_USERS,
+                OBSERVE_ROLE_HOLDERS
+            ) {
+                withSystemSupervisionRoleHeld(app.packageName()) {
+                    action(app)
+                }
+            }
+        } finally {
+            app.uninstall()
+        }
+    }
+
     companion object {
-        val context = TestApis.context().instrumentedContext()
-        val supervisionManager = context.getSystemService(SupervisionManager::class.java)
-        val userManager = context.getSystemService(UserManager::class.java)
+        val context: Context = TestApis.context().instrumentedContext()
+        val supervisionManager = context.getSystemService(SupervisionManager::class.java)!!
+        val userManager = context.getSystemService(UserManager::class.java)!!
+        val roleManager = context.getSystemService(RoleManager::class.java)!!
     }
 }
 
