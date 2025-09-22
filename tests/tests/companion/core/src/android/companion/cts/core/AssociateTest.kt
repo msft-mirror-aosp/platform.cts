@@ -16,8 +16,11 @@
 
 package android.companion.cts.core
 
+import android.Manifest
 import android.Manifest.permission.REQUEST_COMPANION_SELF_MANAGED
 import android.companion.AssociationRequest
+import android.companion.AssociationRequest.DEVICE_PROFILE_COMPUTER
+import android.companion.AssociationRequest.PERMISSION_NEARBY
 import android.companion.CompanionDeviceManager.FLAG_CALL_METADATA
 import android.companion.CompanionDeviceManager.FLAG_UNIVERSAL_MODES
 import android.companion.DeviceId
@@ -30,6 +33,7 @@ import android.companion.cts.common.RecordingCallback
 import android.companion.cts.common.RecordingCallback.OnAssociationPending
 import android.companion.cts.common.SIMPLE_EXECUTOR
 import android.companion.cts.common.getAssociationForPackage
+import android.content.pm.PackageManager
 import android.net.MacAddress
 import android.platform.test.annotations.AppModeFull
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -266,6 +270,71 @@ class AssociateTest : CoreTestBase() {
             expected = MAC_ADDRESS_A,
             actual = deviceIdC.macAddress
         )
+    }
+
+    @Test
+    fun test_associate_profileNull_grantsExtraPermission() = with (testApp) {
+        var nearbyPerms = arrayOf(
+            Manifest.permission.BLUETOOTH_ADVERTISE,
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.BLUETOOTH_SCAN,
+            Manifest.permission.NEARBY_WIFI_DEVICES
+        )
+
+        withShellPermissionIdentity {
+            nearbyPerms.forEach { p ->
+                uiAutomation.revokeRuntimePermission(packageName, p)
+            }
+        }
+
+        nearbyPerms.forEach { p ->
+            assertEquals(
+                PackageManager.PERMISSION_DENIED,
+                pm.checkPermission(p, packageName)
+            )
+        }
+
+        associate(MAC_ADDRESS_A, "null", PERMISSION_NEARBY)
+
+        nearbyPerms.forEach { p ->
+            assertEquals(
+                PackageManager.PERMISSION_GRANTED,
+                pm.checkPermission(p, packageName)
+            )
+        }
+        // TODO disassociate
+    }
+
+    @Test
+    fun test_associate_profileNotNull_doesNotGrantsExtraPermission() = with (testApp) {
+        var nearbyPerms = arrayOf(
+            Manifest.permission.BLUETOOTH_ADVERTISE,
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.BLUETOOTH_SCAN,
+            Manifest.permission.NEARBY_WIFI_DEVICES
+        )
+
+        withShellPermissionIdentity {
+            nearbyPerms.forEach { p ->
+                uiAutomation.revokeRuntimePermission(packageName, p)
+            }
+        }
+
+        nearbyPerms.forEach { p ->
+            assertEquals(
+                PackageManager.PERMISSION_DENIED,
+                pm.checkPermission(p, packageName)
+            )
+        }
+
+        associate(MAC_ADDRESS_A, DEVICE_PROFILE_COMPUTER, PERMISSION_NEARBY)
+
+        nearbyPerms.forEach { p ->
+            assertEquals(
+                PackageManager.PERMISSION_DENIED,
+                pm.checkPermission(p, packageName)
+            )
+        }
     }
 
     private fun createDeviceId(id: String?, macAddress: MacAddress?): DeviceId {

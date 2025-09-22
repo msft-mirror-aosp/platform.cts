@@ -28,6 +28,7 @@ import android.companion.AssociationRequest
 import android.companion.AssociationRequest.DEVICE_PROFILE_GLASSES
 import android.companion.AssociationRequest.DEVICE_PROFILE_MEDICAL
 import android.companion.AssociationRequest.DEVICE_PROFILE_WATCH
+import android.companion.AssociationRequest.PERMISSION_NEARBY
 import android.companion.BluetoothDeviceFilter
 import android.companion.CompanionDeviceManager
 import android.content.ComponentName
@@ -56,6 +57,7 @@ class CompanionDeviceTestAppActivity : Activity() {
     val permissionStatus by lazy { TextView(this) }
     val notificationsStatus by lazy { TextView(this) }
     val bypassStatus by lazy { TextView(this) }
+    val associateNumber by lazy { TextView(this) }
 
     val nameFilter by lazy { EditText(this).apply {
         hint = "Name Filter"
@@ -65,6 +67,7 @@ class CompanionDeviceTestAppActivity : Activity() {
     val watchCheckbox by lazy { CheckBox(this).apply { text = "Watch" } }
     val glassesCheckbox by lazy { CheckBox(this).apply { text = "Glasses" } }
     val medicalCheckbox by lazy { CheckBox(this).apply { text = "Medical" } }
+    val nearbyCheckbox by lazy { CheckBox(this).apply { text = "Nearby Devices" } }
 
     val cdm: CompanionDeviceManager by lazy { val java = CompanionDeviceManager::class.java
         getSystemService(java)!! }
@@ -85,6 +88,7 @@ class CompanionDeviceTestAppActivity : Activity() {
             addView(permissionStatus)
             addView(notificationsStatus)
             addView(bypassStatus)
+            addView(associateNumber)
 
             addView(Button(ctx).apply {
                 text = "^^^ Refresh"
@@ -96,6 +100,7 @@ class CompanionDeviceTestAppActivity : Activity() {
             addView(watchCheckbox)
             addView(glassesCheckbox)
             addView(medicalCheckbox)
+            addView(nearbyCheckbox)
 
             addView(cdmButton("Associate") {
                 if (singleCheckbox.isChecked) {
@@ -109,6 +114,9 @@ class CompanionDeviceTestAppActivity : Activity() {
                 }
                 if (medicalCheckbox.isChecked) {
                     setDeviceProfile(DEVICE_PROFILE_MEDICAL)
+                }
+                if (nearbyCheckbox.isChecked) {
+                    setExtraPermissions(setOf(PERMISSION_NEARBY))
                 }
                 addDeviceFilter(BluetoothDeviceFilter.Builder().apply {
                     if (!nameFilter.text.isEmpty()) {
@@ -128,9 +136,9 @@ class CompanionDeviceTestAppActivity : Activity() {
             addView(Button(ctx).apply {
                 text = "Disassociate"
                 setOnClickListener {
-                    cdm.associations.forEach { address ->
-                        toast("Disassociating $address")
-                        cdm.disassociate(address)
+                    cdm.associations.firstOrNull()?.let { firstAddress ->
+                        toast("Disassociating $firstAddress")
+                        cdm.disassociate(firstAddress)
                     }
                 }
             })
@@ -246,6 +254,10 @@ class CompanionDeviceTestAppActivity : Activity() {
                 }
             }"
         }, 1000)
+
+        associateNumber.text = "Association Number: ${
+            cdm.associations.size
+        }"
     }
 
     companion object {

@@ -18,6 +18,7 @@ package android.companion.cts.core
 
 import android.companion.AssociationInfo
 import android.companion.AssociationRequest.DEVICE_PROFILE_WATCH
+import android.companion.AssociationRequest.PERMISSION_NEARBY
 import android.companion.cts.common.MAC_ADDRESS_A
 import android.companion.cts.common.MAC_ADDRESS_B
 import android.platform.test.annotations.AppModeFull
@@ -49,6 +50,7 @@ class AssociationInfoBuilderTest : CoreTestBase() {
                 .setLastTimeConnected(currentTime)
                 .setTimeApproved(currentTime)
                 .setDeviceMacAddress(MAC_ADDRESS_B)
+                .setExtraPermissions(setOf(PERMISSION_NEARBY))
                 .build()
 
         assertEquals(actual = newAssociationInfo.deviceProfile, expected = DEVICE_PROFILE_WATCH)
@@ -56,6 +58,10 @@ class AssociationInfoBuilderTest : CoreTestBase() {
         assertEquals(actual = newAssociationInfo.lastTimeConnectedMs, expected = currentTime)
         assertEquals(actual = newAssociationInfo.timeApprovedMs, expected = currentTime)
         assertEquals(actual = newAssociationInfo.deviceMacAddress, expected = MAC_ADDRESS_B)
+        assertEquals(
+            actual = newAssociationInfo.extraPermissions,
+            expected = setOf(PERMISSION_NEARBY)
+        )
         assertTrue(newAssociationInfo.isSelfManaged)
     }
 
