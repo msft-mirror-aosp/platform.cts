@@ -216,6 +216,11 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       ui_interaction_utils.pull_img_files(
           device_id, device_img_path, self.log_path
       )
+
+      # Check if the image captured is HDR or not
+      gainmap_present = cam.check_gain_map_present(device_img_path)
+      logging.debug('gainmap_present: %s', gainmap_present)
+
       default_img_name = pathlib.Path(device_img_path).name
       default_path = os.path.join(self.log_path, default_img_name)
       logging.debug('Default capture img name: %s', default_img_name)
@@ -280,7 +285,8 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
           camera_facing=props['android.lens.facing'],
           zoom_ratio=jca_zoom_ratio,
           video_stabilization=video_stabilization,
-          jca_aspect_ratio=jca_ar
+          jca_aspect_ratio=jca_ar,
+          enable_hdr=gainmap_present
       )
       ui_interaction_utils.pull_img_files(
           device_id, jca_capture_path, self.log_path

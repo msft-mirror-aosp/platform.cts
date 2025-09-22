@@ -43,6 +43,7 @@ UI_IMAGE_CAPTURE_SUCCESS_TEXT = 'Image Capture Success'
 
 # JCA_PATH ui/components/capture/src/main/java/com/google/jetpackcamera/ui/components/capture/TestTags.kt  pylint: disable=line-too-long
 QUICK_SETTINGS_RESOURCE_ID = 'QuickSettingsDropDown'
+QUICK_SETTINGS_HDR_RESOURCE_ID = 'QuickSettingsHdrButton'
 QUICK_SET_FLASH_RESOURCE_ID = 'QuickSettingsFlashButton'
 QUICK_SET_FLIP_CAMERA_RESOURCE_ID = 'QuickSettingsFlipCameraButton'
 QUICK_SET_RATIO_RESOURCE_ID = 'QuickSettingsRatioButton'
@@ -756,7 +757,8 @@ def default_camera_app_dut_setup(device_id, pkg_name):
 
 
 def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
-                           video_stabilization=None, jca_aspect_ratio=None):
+                           video_stabilization=None, jca_aspect_ratio=None,
+                           enable_hdr=False):
   """Launches the jetpack camera app and takes still capture.
 
   Args:
@@ -769,6 +771,7 @@ def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
     taking the JCA capture. By default, JCA uses AUTO mode.
     jca_aspect_ratio: optional; Aspect ratio used while taking JCA captures
     By default 3:4 is used.
+    enable_hdr: True if the HDR should be enabled during JCA capture
 
     AUTO in JCA will set the stabilization mode to PREVIEW_STABILIZATION,
     if the lens supports it, and if not, it will set it to OIS. If neither
@@ -792,6 +795,8 @@ def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
     )
     its_device_utils.run_adb_shell_command(device_id, launch_cmd)
     switch_jca_camera(dut, log_path, camera_facing)
+    if enable_hdr:
+      enable_jca_hdr(dut, log_path)
     aspect_ratio = THREE_TO_FOUR_ASPECT_RATIO_DESC  # default value
     if jca_aspect_ratio is not None:
       aspect_ratio = jca_aspect_ratio
@@ -827,6 +832,23 @@ def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
   finally:
     force_stop_app(dut, JETPACK_CAMERA_APP_PACKAGE_NAME)
   return img_path_on_dut
+
+
+def enable_jca_hdr(dut, log_path):
+  """Enable HDR while capturing image in JCA.
+
+  Args:
+    dut: An android controller device object
+    log_path: str; log path to save screenshots
+  """
+  dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
+  dut.ui(scrollable=True).scroll.down(
+      res=QUICK_SETTINGS_HDR_RESOURCE_ID)
+  dut.ui(res=QUICK_SETTINGS_HDR_RESOURCE_ID).click()
+  logging.debug('Enabled HDR on JCA')
+  time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
+  dut.take_screenshot(log_path, prefix='enabled_hdr_jca')
+  dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
 
 
 def take_dumpsys_report(dut, file_path):
