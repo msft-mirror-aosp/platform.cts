@@ -20,6 +20,8 @@ import static android.content.pm.Flags.FLAG_VERIFICATION_SERVICE;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -55,6 +57,7 @@ public class DeveloperVerificationHostsideTest extends BaseHostJUnit4Test
 
     private static final String TEST_BASE = "DeveloperVerificationHostsideTest";
     private static final String TEST_INSTALL_APK = "CtsStatsdAtomEmptyApp.apk";
+    private static final String NO_VERIFIER_RESULT = "No verification service provider specified.";
 
     private ITestDevice mDevice;
     private static File sBasePath;
@@ -89,9 +92,9 @@ public class DeveloperVerificationHostsideTest extends BaseHostJUnit4Test
         String verifierComponentNameStr =
                 mDevice.executeShellCommand("pm get-developer-verification-service-provider")
                         .trim();
-        if (verifierComponentNameStr.isEmpty()) {
-            return;
-        }
+        // No verifier installed
+        assumeFalse(NO_VERIFIER_RESULT, NO_VERIFIER_RESULT.equals(verifierComponentNameStr));
+
         String verifierPackageName =
                 getPackageNameFromComponentNameString(verifierComponentNameStr);
         assertThat(verifierPackageName).isNotNull();
@@ -112,9 +115,9 @@ public class DeveloperVerificationHostsideTest extends BaseHostJUnit4Test
         String verifierComponentNameStr =
                 mDevice.executeShellCommand("pm get-developer-verification-service-provider")
                         .trim();
-        if (verifierComponentNameStr.isEmpty()) {
-            return;
-        }
+        // No verifier installed
+        assumeFalse(NO_VERIFIER_RESULT, NO_VERIFIER_RESULT.equals(verifierComponentNameStr));
+
         String verifierPackageName =
                 getPackageNameFromComponentNameString(verifierComponentNameStr);
         assertThat(verifierPackageName).isNotNull();
