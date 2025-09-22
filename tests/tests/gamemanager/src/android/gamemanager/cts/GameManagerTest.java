@@ -37,7 +37,6 @@ import android.content.pm.PackageManager;
 import android.gamemanager.cts.util.TestUtil;
 import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.support.test.uiautomator.UiDevice;
@@ -158,8 +157,6 @@ public class GameManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({android.server.app.Flags.FLAG_GAME_DEFAULT_FRAME_RATE,
-            com.android.graphics.surfaceflinger.flags.Flags.FLAG_GAME_DEFAULT_FRAME_RATE})
     public void testIsGameDefaultFrameRatePropSet() throws NumberFormatException {
         // Verify that "ro.surface_flinger.game_default_frame_rate_override"
         // is set with a positive integer.

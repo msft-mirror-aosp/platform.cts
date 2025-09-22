@@ -29,7 +29,6 @@ android_test {
         "androidx.annotation_annotation",
         "androidx.test.core",
         "androidx.test.rules",
-        "android.server.app.flags-aconfig-java",
         "surfaceflinger_flags_java_lib",
         "compatibility-device-util-axt",
         "ctsdeviceutillegacy-axt",
