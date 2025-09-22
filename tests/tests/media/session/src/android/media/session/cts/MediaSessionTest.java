@@ -146,7 +146,7 @@ public class MediaSessionTest {
         InstrumentationRegistry
             .getInstrumentation().getUiAutomation().adoptShellPermissionIdentity();
         UserManager userManager = mContext.getSystemService(UserManager.class);
-        boolean isCloneProfileEnabled = userManager.isUserTypeEnabled(USER_TYPE_PROFILE_CLONE);
+        boolean isCloneProfileEnabled = userManager.isUserTypeSupported(USER_TYPE_PROFILE_CLONE);
         InstrumentationRegistry
             .getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
         Assume.assumeTrue(isCloneProfileEnabled);
