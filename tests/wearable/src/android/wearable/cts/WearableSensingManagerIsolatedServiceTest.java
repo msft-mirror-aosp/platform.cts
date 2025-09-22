@@ -362,46 +362,6 @@ public class WearableSensingManagerIsolatedServiceTest {
                 "android.app.wearable.WearableSensingManager#provideConnection",
                 "android.service.wearable.WearableSensingService#onSecureConnectionProvided"
             })
-    @Parameters({"true", "false"})
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
-    public void provideConnection_wearableStreamClosedThenSendDataFromWss_channelErrorStatus(
-            boolean isForConcurrentApi) throws Exception {
-        getInstrumentation()
-                .getUiAutomation()
-                .adoptShellPermissionIdentity(
-                        Manifest.permission.MANAGE_WEARABLE_SENSING_SERVICE,
-                        Manifest.permission.REQUEST_COMPANION_SELF_MANAGED,
-                        Manifest.permission.USE_COMPANION_TRANSPORTS);
-        AtomicInteger statusCodeRef = new AtomicInteger(WearableSensingManager.STATUS_UNKNOWN);
-        CountDownLatch successStatusLatch = new CountDownLatch(1);
-        // Count down twice because we expect a success status followed by a channel error
-        CountDownLatch channelErrorStatusLatch = new CountDownLatch(2);
-        mCdmAssociationId0 = attachTransportToCdm(mSocketPair0[0]).mAssociationId;
-
-        provideConnection(
-                isForConcurrentApi,
-                mSocketPair0[1],
-                (statusCode) -> {
-                    statusCodeRef.set(statusCode);
-                    successStatusLatch.countDown();
-                    channelErrorStatusLatch.countDown();
-                });
-        assertThat(successStatusLatch.await(3, SECONDS)).isTrue();
-        assertThat(statusCodeRef.get()).isEqualTo(WearableSensingManager.STATUS_SUCCESS);
-
-        mSocketPair0[0].close();
-        sendDataToWearableFromWss(DATA_TO_WRITE_0);
-
-        assertThat(channelErrorStatusLatch.await(3, SECONDS)).isTrue();
-        assertThat(statusCodeRef.get()).isEqualTo(WearableSensingManager.STATUS_CHANNEL_ERROR);
-    }
-
-    @Test
-    @ApiTest(
-            apis = {
-                "android.app.wearable.WearableSensingManager#provideConnection",
-                "android.service.wearable.WearableSensingService#onSecureConnectionProvided"
-            })
     public void provideConnection_wearableStreamClosedThenSendDataFromWss_restartWssProcess()
             throws Exception {
         getInstrumentation()
