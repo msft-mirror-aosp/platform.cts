@@ -100,9 +100,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -264,6 +262,8 @@ public class CameraTestUtils extends Assert {
         public List<MultiResolutionImageReader> mYuvMultiResTargets = new ArrayList<>();
         public List<MultiResolutionImageReader> mRawMultiResTargets = new ArrayList<>();
 
+        public List<ImageDropperListener> mTargetListeners = new ArrayList<>();
+
         public void close() {
             for (SurfaceTexture target : mPrivTargets) {
                 target.release();
@@ -337,6 +337,7 @@ public class CameraTestUtils extends Assert {
                 default:
                     fail("Unknown/Unsupported output format " + format);
             }
+            targets.mTargetListeners.add(listener);
         } else {
             if (format == ImageFormat.PRIVATE) {
                 SurfaceTexture target = new SurfaceTexture(/*random int*/1);
@@ -388,6 +389,7 @@ public class CameraTestUtils extends Assert {
                     default:
                       fail("Unknown/Unsupported output format " + format);
                 }
+                targets.mTargetListeners.add(listener);
             }
         }
     }
@@ -433,7 +435,6 @@ public class CameraTestUtils extends Assert {
             Log.i(TAG, "Random seed used for selecting 10-bit output: " + seed);
             rnd.setSeed(seed);
         }
-        ImageDropperListener imageDropperListener = new ImageDropperListener();
         List<Surface> chosenSurfaces;
         for (MandatoryStreamInformation streamInfo : streamsInfo) {
             if (streamInfo.isInput()) {
@@ -465,6 +466,9 @@ public class CameraTestUtils extends Assert {
             Size[] availableSizes = new Size[streamInfo.getAvailableSizes().size()];
             availableSizes = streamInfo.getAvailableSizes().toArray(availableSizes);
             Size targetSize = CameraTestUtils.getMaxSize(availableSizes);
+            ImageDropperListener imageDropperListener = new ImageDropperListener();
+            imageDropperListener.setOutputDescription("Output format: " + format + " size: " +
+                    targetSize);
             boolean createMultiResReader =
                     (multiResStreamConfig != null &&
                      !multiResStreamConfig.getOutputInfo(format).isEmpty() &&
@@ -550,6 +554,7 @@ public class CameraTestUtils extends Assert {
                 if (image != null) {
                     image.close();
                     mImagesDropped++;
+                    mImageAvailable.open();
                 }
             }
         }
@@ -561,6 +566,41 @@ public class CameraTestUtils extends Assert {
         public synchronized void resetImageCount() {
             mImagesDropped = 0;
         }
+
+        /**
+         * Timed wait for incoming images
+         *
+         * @param timeout wait timeout in milliseconds
+         *
+         * @return true in case an image arrives before the timeout expires, false otherwise
+         */
+        public boolean waitForAnyImageAvailable(long timeout) {
+            if (mImageAvailable.block(timeout)) {
+                mImageAvailable.close();
+                return true;
+            }
+
+            return false;
+        }
+
+        /**
+         * Set an ImageReader user readable description
+         *
+         * @param info Description of the ImageReader this listener is attached to
+         */
+        public synchronized void setOutputDescription(String info) {
+            mOutputDescription = info;
+        }
+
+        /**
+         * Return the image reader description
+         */
+        public synchronized String getOutputDescription() {
+            return mOutputDescription;
+        }
+
+        private final ConditionVariable mImageAvailable = new ConditionVariable();
+        private String mOutputDescription;
 
         private int mImagesDropped = 0;
     }

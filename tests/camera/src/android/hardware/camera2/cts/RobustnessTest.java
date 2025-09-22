@@ -574,6 +574,7 @@ public class RobustnessTest extends Camera2AndroidTestCase {
         final int TIMEOUT_FOR_RESULT_MS =
                 ((staticInfo.isHardwareLevelLegacy()) ? 2000 : 1000) * TIMEOUT_MULTIPLIER;
         final int MIN_RESULT_COUNT = 3;
+        final int TIMEOUT_FOR_CAPTURE_MS = 5000 * TIMEOUT_MULTIPLIER;
 
         // Set up outputs
         List<OutputConfiguration> outputConfigs = new ArrayList<>();
@@ -654,6 +655,14 @@ public class RobustnessTest extends Camera2AndroidTestCase {
                             eq(mCameraSession),
                             eq(uhRequest),
                             isA(TotalCaptureResult.class));
+            }
+
+            for (CameraTestUtils.ImageDropperListener listener : targets.mTargetListeners) {
+               if (!listener.waitForAnyImageAvailable(TIMEOUT_FOR_CAPTURE_MS)) {
+                   fail("ImageReader listener: " + listener.getOutputDescription() +
+                           " didn't receive any image notifications for combination: " +
+                           combination.getDescription());
+               }
             }
 
             verify(mockCaptureCallback, never()).
