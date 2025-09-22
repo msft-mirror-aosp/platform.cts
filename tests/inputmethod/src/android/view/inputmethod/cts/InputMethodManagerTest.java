@@ -88,7 +88,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @MediumTest
@@ -101,6 +100,11 @@ public final class InputMethodManagerTest {
     private static final String HIDDEN_FROM_PICKER_IME_ID =
             "com.android.cts.hiddenfrompickerime/.HiddenFromPickerIme";
     private static final String HIDDEN_FROM_PICKER_IME_LABEL = "Hidden From Picker IME";
+    /**
+     * Title of the IME Switcher Menu window, to be kept in sync with the value defined in the
+     * {@code InputMethodMenuController}.
+     */
+    private static final String IME_SWITCHER_MENU_WINDOW_TITLE = "IME Switcher Menu";
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     // TODO(b/371520375): Remove after UiAutomator scroll waits for animation to finish.
     private static final long SCROLL_TIMEOUT_MS = 500;
@@ -453,14 +457,23 @@ public final class InputMethodManagerTest {
 
         // Test InputMethodManager#showInputMethodPicker() works as expected.
         mImManager.showInputMethodPicker();
+        // TODO(b/446170524): normally the IME Switcher Menu should be focused, but this is not the
+        //  case with config_preventImeStartupUnlessTextEditor set, as there would be no IME parent.
         mWmStateHelper.waitAndAssert(
                 WindowManagerStateHelper.focusedActivity(testActivity.getComponentName())
-                        .and(Predicate.not(WindowManagerStateHelper::activityWindowFocused))
                         .and(state -> state.getMatchingWindows(
                                         ws -> ws.isSurfaceShown()
+                                                && ws.isVisible()
+                                                && ws.getName().equals(
+                                                        IME_SWITCHER_MENU_WINDOW_TITLE)
                                                 && ws.getType() == TYPE_INPUT_METHOD_DIALOG)
                                 .findAny().isPresent()),
                 "Input Method Dialog window should be focused on top of test activity");
+        final int displayId = testActivity.getDisplayId();
+        assertTrue("Failed to wait for app transition to idle on display " + displayId,
+                mWmStateHelper.waitForAppTransitionIdleOnDisplay(displayId));
+        mInstrumentation.getUiAutomation().syncInputTransactions();
+        mInstrumentation.waitForIdleSync();
         assertWithMessage("Input Method Switcher Menu should be shown")
                 .that(isInputMethodPickerShown(mImManager))
                 .isTrue();
