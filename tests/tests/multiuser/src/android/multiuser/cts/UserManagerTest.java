@@ -788,10 +788,7 @@ public final class UserManagerTest {
         if (android.multiuser.Flags.supportCommunalProfile()) {
             assertThat(umOfSys.isCommunalProfile()).isFalse();
         }
-        if (android.os.Flags.allowPrivateProfile()
-                && android.multiuser.Flags.enablePrivateSpaceFeatures()) {
-            assertThat(umOfSys.isPrivateProfile()).isFalse();
-        }
+        assertThat(umOfSys.isPrivateProfile()).isFalse();
     }
 
     @Test
