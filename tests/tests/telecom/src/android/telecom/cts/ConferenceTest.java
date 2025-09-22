@@ -197,6 +197,20 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
 
     }
 
+    public void testConferenceMergeFail() {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        final Call conf = mInCallService.getLastConferenceCall();
+        assertCallState(conf, Call.STATE_ACTIVE);
+        mConferenceObject.notifyConferenceMergeFailed();
+        mOnConnectionEventCounter.waitForCount(1, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        String event = (String) (mOnConnectionEventCounter.getArgs(0)[1]);
+        Bundle extras = (Bundle) (mOnConnectionEventCounter.getArgs(0)[2]);
+        assertEquals(Connection.EVENT_CALL_MERGE_FAILED, event);
+        assertNull(extras);
+    }
+
     /**
      * Verifies the ability to merge two conference calls together and the utility methods that
      * surround that process.
