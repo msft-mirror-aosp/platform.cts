@@ -140,7 +140,7 @@ public class DisplayEventOccurredStatsTests extends BaseHostJUnit4Test implement
                 eventPollingTimeoutMs,
                 () -> {
                     try {
-                        assertDisplayEvent(EventType.TYPE_DISPLAY_BRIGHTNESS_CHANGED, 1);
+                        assertDisplayEvent(EventType.TYPE_DISPLAY_BRIGHTNESS_CHANGED, 1, 0);
                         return true; // Assertion passed, event found
                     } catch (AssertionError e) {
                         return false; // Assertion failed, event not yet found
@@ -169,7 +169,7 @@ public class DisplayEventOccurredStatsTests extends BaseHostJUnit4Test implement
                 DisplayExtensionAtoms.DISPLAY_EVENT_CALLBACK_OCCURRED_FIELD_NUMBER);
         // This test changes display state 2 times.
         runDeviceTests(DISPLAY_TEST_PKG, TEST_CLASS_DISPLAY_EVENT, "testDisplayStateChangedEvent");
-        assertDisplayEvent(EventType.TYPE_DISPLAY_STATE_CHANGED, 2);
+        assertDisplayEvent(EventType.TYPE_DISPLAY_STATE_CHANGED, 2, 1);
     }
 
     @Test
@@ -182,10 +182,11 @@ public class DisplayEventOccurredStatsTests extends BaseHostJUnit4Test implement
 
         runDeviceTests(
                 DISPLAY_TEST_PKG, TEST_CLASS_DISPLAY_EVENT, "testDisplayRefreshRateChangedEvent");
-        assertDisplayEvent(EventType.TYPE_DISPLAY_REFRESH_RATE_CHANGED, 1);
+        assertDisplayEvent(EventType.TYPE_DISPLAY_REFRESH_RATE_CHANGED, 1, 1);
     }
 
-    private void assertDisplayEvent(EventType eventType, int expectedEventCount) throws Exception {
+    private void assertDisplayEvent(
+            EventType eventType, int expectedEventCount, int expectedClientCount) throws Exception {
         final ExtensionRegistry registry = ExtensionRegistry.newInstance();
         DisplayExtensionAtoms.registerAllExtensions(registry);
 
@@ -193,7 +194,8 @@ public class DisplayEventOccurredStatsTests extends BaseHostJUnit4Test implement
                 ReportUtils.getEventMetricDataList(getDevice(), registry).stream()
                         .map(this::getDisplayEventCallbackOccurred)
                         .filter(x -> x.getEventType().equals(eventType))
-                        .peek(x -> assertEquals(x.getClientCount(), x.getUidCount()))
+                        .peek(x -> assertTrue(x.getClientCount() >= expectedClientCount))
+                        .peek(x -> assertEquals(0, x.getUidCount())) // UID list is not being logged
                         .toList();
 
         assertTrue(events.size() >= expectedEventCount);
