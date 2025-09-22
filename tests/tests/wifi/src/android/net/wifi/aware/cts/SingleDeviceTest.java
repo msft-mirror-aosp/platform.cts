@@ -1453,8 +1453,126 @@ public class SingleDeviceTest extends WifiJUnit4TestBase {
                 DiscoverySessionCallbackTest.ON_SESSION_CONFIG_UPDATED));
 
         // 3. destroy
-        assertFalse("Subscribe not terminated", discoveryCb.hasCallbackAlreadyHappened(
-                DiscoverySessionCallbackTest.ON_SESSION_TERMINATED));
+        assertFalse(
+                "Subscribe not terminated",
+                discoveryCb.hasCallbackAlreadyHappened(
+                        DiscoverySessionCallbackTest.ON_SESSION_TERMINATED));
+        discoverySession.close();
+
+        // 4. try update post-destroy: should time-out waiting for cb
+        discoverySession.updateSubscribe(subscribeConfig);
+        assertFalse(
+                "Subscribe update post destroy",
+                discoveryCb.waitForCallback(
+                        DiscoverySessionCallbackTest.ON_SESSION_CONFIG_UPDATED));
+        assertEquals(
+                numOfAllSubscribeSessions,
+                mWifiAwareManager
+                        .getAvailableAwareResources()
+                        .getAvailableSubscribeSessionsCount());
+        if (ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU)) {
+            assertTrue("Time out waiting for resource change", receiver.waitForStateChange());
+            assertEquals(
+                    numOfAllSubscribeSessions,
+                    receiver.getResources().getAvailableSubscribeSessionsCount());
+        }
+
+        session.close();
+    }
+
+    /**
+     * Validate a successful subscribe discovery session lifetime with geofence: subscribe, update
+     * subscribe, destroy.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_AWARE_INGRESS_EGRESS_DISTANCE)
+    @ApiTest(
+            apis = {
+                "android.net.wifi.aware.SubscribeConfig.Builder#setEgressDistanceMm",
+                "android.net.wifi.aware.SubscribeConfig.Builder#setIngressDistanceMm",
+                "android.net.wifi.aware.SubscribeConfig#getEgressDistanceMm",
+                "android.net.wifi.aware.SubscribeConfig#getIngressDistanceMm"
+            })
+    public void subscribeDiscoverySuccessWithGeofence() throws Exception {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
+            return;
+        }
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(WifiAwareManager.ACTION_WIFI_AWARE_RESOURCE_CHANGED);
+        WifiAwareResourcesBroadcastReceiver receiver = new WifiAwareResourcesBroadcastReceiver();
+        mContext.registerReceiver(receiver, intentFilter);
+        final String serviceName = "SubscribeName";
+
+        WifiAwareSession session = attachAndGetSession();
+
+        SubscribeConfig subscribeConfig =
+                new SubscribeConfig.Builder().setServiceName(serviceName).build();
+        DiscoverySessionCallbackTest discoveryCb = new DiscoverySessionCallbackTest();
+        int numOfAllSubscribeSessions =
+                mWifiAwareManager.getAvailableAwareResources().getAvailableSubscribeSessionsCount();
+        // 1. subscribe
+        session.subscribe(subscribeConfig, discoveryCb, mHandler);
+        assertTrue(
+                "Subscribe started",
+                discoveryCb.waitForCallback(DiscoverySessionCallbackTest.ON_SUBSCRIBE_STARTED));
+        SubscribeDiscoverySession discoverySession = discoveryCb.getSubscribeDiscoverySession();
+        assertNotNull("Subscribe session", discoverySession);
+        assertFalse(
+                discoveryCb.waitForCallback(DiscoverySessionCallbackTest.ON_SERVICE_DISCOVERED));
+        assertFalse(
+                discoveryCb.waitForCallback(
+                        DiscoverySessionCallbackTest.ON_SESSION_DISCOVERED_LOST));
+        assertEquals(
+                numOfAllSubscribeSessions - 1,
+                mWifiAwareManager
+                        .getAvailableAwareResources()
+                        .getAvailableSubscribeSessionsCount());
+        if (ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU)) {
+            assertTrue("Time out waiting for resource change", receiver.waitForStateChange());
+            assertEquals(
+                    numOfAllSubscribeSessions - 1,
+                    receiver.getResources().getAvailableSubscribeSessionsCount());
+        }
+
+        // 2. update-subscribe
+        boolean rttSupported =
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI_RTT);
+        SubscribeConfig.Builder builder =
+                new SubscribeConfig.Builder()
+                        .setServiceName(serviceName)
+                        .setServiceSpecificInfo("extras".getBytes());
+
+        if (rttSupported) {
+            builder.setEgressDistanceMm(MIN_DISTANCE_MM);
+            builder.setIngressDistanceMm(MAX_DISTANCE_MM);
+        }
+
+        List<OuiKeyedData> vendorData = generateOuiKeyedDataList(5);
+        if (isVendorDataSupported()) {
+            builder.setVendorData(vendorData);
+        }
+
+        subscribeConfig = builder.build();
+        if (isVendorDataSupported()) {
+            assertEquals(vendorData, subscribeConfig.getVendorData());
+        }
+
+        if (rttSupported) {
+            assertEquals(MAX_DISTANCE_MM, subscribeConfig.getEgressDistanceMm());
+            assertEquals(MIN_DISTANCE_MM, subscribeConfig.getIngressDistanceMm());
+        }
+
+        discoverySession.updateSubscribe(subscribeConfig);
+        assertTrue(
+                "Subscribe update",
+                discoveryCb.waitForCallback(
+                        DiscoverySessionCallbackTest.ON_SESSION_CONFIG_UPDATED));
+
+        // 3. destroy
+        assertFalse(
+                "Subscribe not terminated",
+                discoveryCb.hasCallbackAlreadyHappened(
+                        DiscoverySessionCallbackTest.ON_SESSION_TERMINATED));
         discoverySession.close();
 
         // 4. try update post-destroy: should time-out waiting for cb
