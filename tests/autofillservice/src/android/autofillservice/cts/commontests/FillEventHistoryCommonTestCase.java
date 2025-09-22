@@ -965,7 +965,7 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
                 .build());
 
         // Now switch back to A...
-        backToLoginActivity(/* minimumBackCount= */ 3);
+        backToLoginActivity(/* minimumBackCount= */ 2);
 
         mUiBot.assertShownByRelativeId(ID_USERNAME);
         assertWithMessage("root window has no focus")
