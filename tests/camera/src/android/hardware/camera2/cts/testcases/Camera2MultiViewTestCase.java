@@ -299,6 +299,13 @@ public class Camera2MultiViewTestCase extends Camera2ParameterizedTestCase {
         camera.updateOutputConfiguration(config);
     }
 
+    protected void updateOutputConfigurations(String cameraId, List<OutputConfiguration> configs)
+            throws Exception {
+        CameraHolder camera = getCameraHolder(cameraId);
+        assertTrue("Camera " + cameraId + " is not opened", camera.isOpened());
+        camera.updateOutputConfigurations(configs);
+    }
+
     protected boolean isSessionConfigurationSupported(String cameraId,
             List<OutputConfiguration> configs) throws Exception {
         CameraHolder camera = getCameraHolder(cameraId);
@@ -306,11 +313,11 @@ public class Camera2MultiViewTestCase extends Camera2ParameterizedTestCase {
         return camera.isSessionConfigurationSupported(configs);
     }
 
-    protected void capture(String cameraId, CaptureRequest request, CaptureCallback listener)
+    protected int capture(String cameraId, CaptureRequest request, CaptureCallback listener)
             throws Exception {
         CameraHolder camera = getCameraHolder(cameraId);
         assertTrue("Camera " + cameraId + " is not opened", camera.isOpened());
-        camera.capture(request, listener);
+        return camera.capture(request, listener);
     }
 
     protected CaptureRequest.Builder getCaptureBuilder(String cameraId, int templateId)
@@ -562,6 +569,10 @@ public class Camera2MultiViewTestCase extends Camera2ParameterizedTestCase {
             mSession.updateOutputConfiguration(config);
         }
 
+        public void updateOutputConfigurations(List<OutputConfiguration> configs) throws Exception {
+            mSession.updateOutputConfigurations(configs);
+        }
+
         public boolean isSessionConfigurationSupported(List<OutputConfiguration> configs)
                 throws Exception {
             return isSessionConfigSupported(mCamera, mHandler, configs,
@@ -569,9 +580,9 @@ public class Camera2MultiViewTestCase extends Camera2ParameterizedTestCase {
                     mCameraManager, /*expectedResult*/ true).configSupported;
         }
 
-        public void capture(CaptureRequest request, CaptureCallback listener)
+        public int capture(CaptureRequest request, CaptureCallback listener)
                 throws Exception {
-            mSession.capture(request, listener, mHandler);
+            return mSession.capture(request, listener, mHandler);
         }
 
         public CaptureRequest.Builder getCaptureBuilder(int templateId) throws Exception {
