@@ -63,8 +63,8 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
     private SurfaceTexture mSurfaceTexture;
     private Surface mSurface;
 
-    private Object mFrameSyncObject = new Object();     // guards mFrameAvailable
-    private boolean mFrameAvailable;
+    private Object mFrameSyncObject = new Object();     // guards mFramesAvailable
+    private int mFramesAvailable = 0;
     private boolean mSecureMode = false;
 
     private TextureRender mTextureRender;
@@ -312,6 +312,13 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
     }
 
     /**
+     * Check description of class {@link android.graphics.SurfaceTexture#getTimestamp}
+     */
+    public long getTimestamp() {
+        return mSurfaceTexture.getTimestamp();
+    }
+
+    /**
      * Replaces the fragment shader.
      */
     public void changeFragmentShader(String fragmentShader) {
@@ -327,12 +334,12 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
         final int TIMEOUT_MS = 2000;
 
         synchronized (mFrameSyncObject) {
-            while (!mFrameAvailable) {
+            while (mFramesAvailable <= 0) {
                 try {
                     // Wait for onFrameAvailable() to signal us.  Use a timeout to avoid
                     // stalling the test if it doesn't arrive.
                     mFrameSyncObject.wait(TIMEOUT_MS);
-                    if (!mFrameAvailable) {
+                    if (mFramesAvailable <= 0) {
                         // TODO: if "spurious wakeup", continue while loop
                         throw new RuntimeException("Surface frame wait timed out");
                     }
@@ -341,7 +348,7 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
                     throw new RuntimeException(ie);
                 }
             }
-            mFrameAvailable = false;
+            mFramesAvailable--;
         }
 
         // Latch the data.
@@ -356,12 +363,12 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
      */
     public boolean checkForNewImage(int timeoutMs) {
         synchronized (mFrameSyncObject) {
-            while (!mFrameAvailable) {
+            while (mFramesAvailable <= 0) {
                 try {
                     // Wait for onFrameAvailable() to signal us.  Use a timeout to avoid
                     // stalling the test if it doesn't arrive.
                     mFrameSyncObject.wait(timeoutMs);
-                    if (!mFrameAvailable) {
+                    if (mFramesAvailable <= 0) {
                         return false;
                     }
                 } catch (InterruptedException ie) {
@@ -369,7 +376,7 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
                     throw new RuntimeException(ie);
                 }
             }
-            mFrameAvailable = false;
+            mFramesAvailable--;
         }
 
         // Latch the data.
@@ -394,10 +401,7 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
     public void onFrameAvailable(SurfaceTexture st) {
         if (VERBOSE) Log.d(TAG, "new frame available");
         synchronized (mFrameSyncObject) {
-            if (mFrameAvailable) {
-                throw new RuntimeException("mFrameAvailable already set, frame could be dropped");
-            }
-            mFrameAvailable = true;
+            mFramesAvailable++;
             mFrameSyncObject.notifyAll();
         }
     }
