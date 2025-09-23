@@ -27,6 +27,7 @@ android_library {
     ],
     manifest: "src/main/AndroidManifestInternal.xml",
     static_libs: [
+        "android.multiuser.flags-aconfig-java",
         "compatibility-device-util-axt",
         "guava",
         "Queryable",
@@ -53,6 +54,7 @@ android_library {
     ],
     manifest: "src/main/AndroidManifest.xml",
     static_libs: [
+        "android.multiuser.flags-aconfig-java",
         "compatibility-device-util-axt",
         "guava",
         "Queryable",

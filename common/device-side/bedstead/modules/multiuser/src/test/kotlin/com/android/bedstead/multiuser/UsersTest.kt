@@ -526,6 +526,13 @@ class UsersTest {
                 }
     }
 
+    // TODO(b/444765027): for now it' just making sure it doesn't fail (for example, if it tries to
+    // remove the last admin on "mainless-user" devices), but ideally it should assert some state
+    @Test
+    fun ensureNoOtherUsers_works() {
+        TestApis.users().ensureNoOtherUsers()
+    }
+
     companion object {
         private const val MAX_SYSTEM_USERS = 1
         private const val MAX_SYSTEM_USERS_PER_PARENT = UserType.UNLIMITED
