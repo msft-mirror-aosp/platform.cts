@@ -30,6 +30,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.appsearch.AppSearchBatchResult;
@@ -179,6 +180,7 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         mContext = ApplicationProvider.getApplicationContext();
         mLogger = UserAwareLogger.newBuilder(TAG).setUser(mContext).build();
         mDb = createAndLogSearchSessionAsync(DB_NAME);
+        mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
         cleanup();
     }
 
@@ -975,6 +977,11 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
 
     @Test
     public void testGlobalGetById_withAccess() throws Exception {
+        assumeTrue(
+                mGlobalSearchSession
+                        .getFeatures()
+                        .isFeatureSupported(
+                                Features.SET_SCHEMA_REQUEST_SCHEMA_TYPE_DISPLAYED_BY_SYSTEM));
         indexGloballySearchableDocument(PKG_A, DB_NAME, NAMESPACE_NAME, "id1");
 
         SystemUtil.runWithShellPermissionIdentity(
@@ -982,21 +989,30 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                     mGlobalSearchSession = createAndLogGlobalSearchSessionAsync(mContext);
 
                     // Can get the document
-                    AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
-                            .getByDocumentIdAsync(PKG_A, DB_NAME,
-                                    new GetByDocumentIdRequest.Builder(NAMESPACE_NAME)
-                                            .addIds("id1")
-                                            .build()).get();
+                    AppSearchBatchResult<String, GenericDocument> result =
+                            mGlobalSearchSession
+                                    .getByDocumentIdAsync(
+                                            PKG_A,
+                                            DB_NAME,
+                                            new GetByDocumentIdRequest.Builder(NAMESPACE_NAME)
+                                                    .addIds("id1")
+                                                    .build())
+                                    .get();
 
-                    assertWithMessage("successes of %s", result).that(result.getSuccesses())
+                    assertWithMessage("successes of %s", result)
+                            .that(result.getSuccesses())
                             .hasSize(1);
 
                     // Can't get non existent document
-                    AppSearchBatchResult<String, GenericDocument> nonExistent = mGlobalSearchSession
-                            .getByDocumentIdAsync(PKG_A, DB_NAME,
-                                    new GetByDocumentIdRequest.Builder(NAMESPACE_NAME)
-                                            .addIds("id2")
-                                            .build()).get();
+                    AppSearchBatchResult<String, GenericDocument> nonExistent =
+                            mGlobalSearchSession
+                                    .getByDocumentIdAsync(
+                                            PKG_A,
+                                            DB_NAME,
+                                            new GetByDocumentIdRequest.Builder(NAMESPACE_NAME)
+                                                    .addIds("id2")
+                                                    .build())
+                                    .get();
 
                     assertThat(nonExistent.isSuccess()).isFalse();
                     assertThat(nonExistent.getSuccesses()).isEmpty();
@@ -1005,7 +1021,41 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
     }
 
     @Test
+    public void testGlobalGetById_withAccess_notSupported() throws Exception {
+        assumeFalse(
+                mGlobalSearchSession
+                        .getFeatures()
+                        .isFeatureSupported(
+                                Features.SET_SCHEMA_REQUEST_SCHEMA_TYPE_DISPLAYED_BY_SYSTEM));
+        indexGloballySearchableDocument(PKG_A, DB_NAME, NAMESPACE_NAME, "id1");
+
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    mGlobalSearchSession = createAndLogGlobalSearchSessionAsync(mContext);
+
+                    // Cannot get the document
+                    AppSearchBatchResult<String, GenericDocument> result =
+                            mGlobalSearchSession
+                                    .getByDocumentIdAsync(
+                                            PKG_A,
+                                            DB_NAME,
+                                            new GetByDocumentIdRequest.Builder(NAMESPACE_NAME)
+                                                    .addIds("id1")
+                                                    .build())
+                                    .get();
+
+                    assertThat(result.getSuccesses()).hasSize(0);
+                },
+                READ_GLOBAL_APP_SEARCH_DATA);
+    }
+
+    @Test
     public void testGlobalGetById_withoutAccess() throws Exception {
+        assumeTrue(
+                mGlobalSearchSession
+                        .getFeatures()
+                        .isFeatureSupported(
+                                Features.SET_SCHEMA_REQUEST_SCHEMA_TYPE_DISPLAYED_BY_SYSTEM));
         indexNotGloballySearchableDocument(PKG_A, DB_NAME, NAMESPACE_NAME, "id1");
 
         SystemUtil.runWithShellPermissionIdentity(
@@ -1028,6 +1078,11 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
 
     @Test
     public void testGlobalGetById_sameErrorMessages() throws Exception {
+        assumeTrue(
+                mGlobalSearchSession
+                        .getFeatures()
+                        .isFeatureSupported(
+                                Features.SET_SCHEMA_REQUEST_SCHEMA_TYPE_DISPLAYED_BY_SYSTEM));
         AtomicReference<String> errorMessageNonExistent = new AtomicReference<>();
         AtomicReference<String> errorMessageUnauth = new AtomicReference<>();
 
@@ -1094,6 +1149,11 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
 
     @Test
     public void testGlobalGetById_requireAllVisibleToConfig_pkgAndPermission() throws Exception {
+        assumeTrue(
+                mGlobalSearchSession
+                        .getFeatures()
+                        .isFeatureSupported(
+                                Features.SET_SCHEMA_REQUEST_SCHEMA_TYPE_DISPLAYED_BY_SYSTEM));
         String ctsPackageName = mContext.getPackageName();
         PackageIdentifier ctsPackage =
                 new PackageIdentifier(
@@ -1170,6 +1230,11 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
     @Test
     public void testGlobalGetById_requireAllVisibleToConfig_publicAclAndPermission()
             throws Exception {
+        assumeTrue(
+                mGlobalSearchSession
+                        .getFeatures()
+                        .isFeatureSupported(
+                                Features.SET_SCHEMA_REQUEST_SCHEMA_TYPE_DISPLAYED_BY_SYSTEM));
         String ctsPackageName = mContext.getPackageName();
         assertThat(mContext.getPackageManager().canPackageQuery(ctsPackageName, PKG_A)).isTrue();
         PackageIdentifier packageA = new PackageIdentifier(PKG_A, PKG_A_CERT_SHA256);
@@ -1241,6 +1306,11 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
     @Test
     public void testGlobalGetById_requireAllVisibleToConfig_all3Settings()
             throws Exception {
+        assumeTrue(
+                mGlobalSearchSession
+                        .getFeatures()
+                        .isFeatureSupported(
+                                Features.SET_SCHEMA_REQUEST_SCHEMA_TYPE_DISPLAYED_BY_SYSTEM));
         String ctsPackageName = mContext.getPackageName();
         assertThat(mContext.getPackageManager().canPackageQuery(ctsPackageName, PKG_A)).isTrue();
         PackageIdentifier ctsPackage =
@@ -1340,6 +1410,11 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
     @Test
     public void testGlobalGetById_requireAllVisibleToConfig_emptyConfig()
             throws Exception {
+        assumeTrue(
+                mGlobalSearchSession
+                        .getFeatures()
+                        .isFeatureSupported(
+                                Features.SET_SCHEMA_REQUEST_SCHEMA_TYPE_DISPLAYED_BY_SYSTEM));
         // index global searchable document in pkg_A and set it requires empty config. This
         // shouldn't accessible by anyone.
         indexGloballySearchableDocumentVisibleToConfig(PKG_A, DB_NAME, NAMESPACE_NAME, "id",
@@ -1365,6 +1440,11 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
 
     @Test
     public void testGlobalSearch_withAccess() throws Exception {
+        assumeTrue(
+                mGlobalSearchSession
+                        .getFeatures()
+                        .isFeatureSupported(
+                                Features.SET_SCHEMA_REQUEST_SCHEMA_TYPE_DISPLAYED_BY_SYSTEM));
         indexGloballySearchableDocument(PKG_A, DB_NAME, NAMESPACE_NAME, "id1");
         indexGloballySearchableDocument(PKG_B, DB_NAME, NAMESPACE_NAME, "id1");
 
@@ -1392,6 +1472,11 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
 
     @Test
     public void testGlobalSearch_withPartialAccess() throws Exception {
+        assumeTrue(
+                mGlobalSearchSession
+                        .getFeatures()
+                        .isFeatureSupported(
+                                Features.SET_SCHEMA_REQUEST_SCHEMA_TYPE_DISPLAYED_BY_SYSTEM));
         indexGloballySearchableDocument(PKG_A, DB_NAME, NAMESPACE_NAME, "id1");
         indexNotGloballySearchableDocument(PKG_B, DB_NAME, NAMESPACE_NAME, "id1");
 
@@ -1416,6 +1501,11 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
 
     @Test
     public void testGlobalSearch_withPackageFilters() throws Exception {
+        assumeTrue(
+                mGlobalSearchSession
+                        .getFeatures()
+                        .isFeatureSupported(
+                                Features.SET_SCHEMA_REQUEST_SCHEMA_TYPE_DISPLAYED_BY_SYSTEM));
         indexGloballySearchableDocument(PKG_A, DB_NAME, NAMESPACE_NAME, "id1");
         indexGloballySearchableDocument(PKG_B, DB_NAME, NAMESPACE_NAME, "id1");
 
@@ -1458,6 +1548,11 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
 
     @Test
     public void testGlobalSearch_withJoin_packageFiltering() throws Exception {
+        assumeTrue(
+                mGlobalSearchSession
+                        .getFeatures()
+                        .isFeatureSupported(
+                                Features.SET_SCHEMA_REQUEST_SCHEMA_TYPE_DISPLAYED_BY_SYSTEM));
         // This test ensures that we can place documents in separate packages, then join them
         // together while specifying package filters.
         indexGloballySearchableDocument(PKG_A, DB_NAME, NAMESPACE_NAME, "ida");
@@ -1528,6 +1623,11 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
 
     @Test
     public void testGlobalSearch_withJoin() throws Exception {
+        assumeTrue(
+                mGlobalSearchSession
+                        .getFeatures()
+                        .isFeatureSupported(
+                                Features.SET_SCHEMA_REQUEST_SCHEMA_TYPE_DISPLAYED_BY_SYSTEM));
         indexGloballySearchableDocument(PKG_B, DB_NAME, NAMESPACE_NAME, "idb");
         indexGloballySearchableDocument(PKG_A, DB_NAME, NAMESPACE_NAME, "ida");
 
@@ -1613,7 +1713,11 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
 
     @Test
     public void testGlobalSearch_withJoin_partialAccess() throws Exception {
-
+        assumeTrue(
+                mGlobalSearchSession
+                        .getFeatures()
+                        .isFeatureSupported(
+                                Features.SET_SCHEMA_REQUEST_SCHEMA_TYPE_DISPLAYED_BY_SYSTEM));
         indexGloballySearchableDocument(PKG_A, DB_NAME, NAMESPACE_NAME, "ida");
 
         String qualifiedId =
@@ -1811,6 +1915,11 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
 
     @Test
     public void testGlobalGetSchema_globalAccess_singleAccess() throws Exception {
+        assumeTrue(
+                mGlobalSearchSession
+                        .getFeatures()
+                        .isFeatureSupported(
+                                Features.SET_SCHEMA_REQUEST_SCHEMA_TYPE_DISPLAYED_BY_SYSTEM));
         // 1. Index documents for PKG_A and PKG_B. This will set the schema for each with the
         // corresponding access set.
         indexGloballySearchableDocument(PKG_A, DB_NAME, NAMESPACE_NAME, "id1");
@@ -1833,6 +1942,11 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
 
     @Test
     public void testGlobalGetSchema_globalAccess_multiAccess() throws Exception {
+        assumeTrue(
+                mGlobalSearchSession
+                        .getFeatures()
+                        .isFeatureSupported(
+                                Features.SET_SCHEMA_REQUEST_SCHEMA_TYPE_DISPLAYED_BY_SYSTEM));
         // 1. Index documents for PKG_A and PKG_B. This will set the schema for each with the
         // corresponding access set.
         indexGloballySearchableDocument(PKG_A, DB_NAME, NAMESPACE_NAME, "id1");
@@ -2036,6 +2150,11 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
 
     @Test
     public void testReportSystemUsage() throws Exception {
+        assumeTrue(
+                mGlobalSearchSession
+                        .getFeatures()
+                        .isFeatureSupported(
+                                Features.SET_SCHEMA_REQUEST_SCHEMA_TYPE_DISPLAYED_BY_SYSTEM));
         // Insert schema
         mDb.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(AppSearchEmail.SCHEMA).build())
                 .get();
@@ -2151,6 +2270,11 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
 
     @Test
     public void testRemoveObserver_otherPackagesNotRemoved() throws Exception {
+        assumeTrue(
+                mGlobalSearchSession
+                        .getFeatures()
+                        .isFeatureSupported(
+                                Features.GLOBAL_SEARCH_SESSION_REGISTER_OBSERVER_CALLBACK));
         final String fakePackage = "com.android.appsearch.fake.package";
         TestObserverCallback observer = new TestObserverCallback();
 
@@ -2517,3 +2641,4 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         }
     }
 }
+
