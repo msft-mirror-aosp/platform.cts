@@ -138,15 +138,28 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
       images = []
       physical_ids = set()
       size = None
-      captures = cam.do_jca_captures_across_zoom_ratios(
+      watch_dump_path = os.path.join(
+          self.log_path, ui_interaction_utils.DEFAULT_CAMERA_WATCH_DUMP_FILE)
+      watch_process = ui_interaction_utils.start_cameraservice_watch(
+          self.dut.serial, watch_dump_path, self.ui_app)
+      # Force evaluation of the generator expression so all captures finish
+      captures = list(cam.do_jca_captures_across_zoom_ratios(
           self.dut,
           self.log_path,
           flash_mode_desc=ui_interaction_utils.FLASH_MODE_OFF_CONTENT_DESC,
           lens_facing=camera_facing,
           zoom_ratios=z_list,
           save_image_delay=_SAVE_IMAGE_DELAY
+      ))
+      ui_interaction_utils.stop_cameraservice_watch(watch_process)
+      result_zoom_ratios = ui_interaction_utils.get_jca_zoom_ratios(
+          watch_dump_path, number_of_captures=len(z_list)
       )
-      for zoom_ratio, capture in zip(z_list, captures):
+      logging.debug(
+          'requested zoom ratios: %s, result zoom ratios: %s',
+          z_list, result_zoom_ratios
+      )
+      for zoom_ratio, capture in zip(result_zoom_ratios, captures):
         physical_ids.add(capture.physical_id)
         logging.debug('Physical IDs: %s', physical_ids)
         bgr_img = cv2.imread(capture.capture_path)

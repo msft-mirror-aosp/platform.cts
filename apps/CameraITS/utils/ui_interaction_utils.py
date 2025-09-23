@@ -962,6 +962,40 @@ def stop_cameraservice_watch(watch_process):
   logging.debug('Stopped watching 3a')
 
 
+def get_jca_zoom_ratios(file_name, number_of_captures=0):
+  """Returns the zoom_ratios used by JCA.
+
+  Args:
+    file_name: str; file name storing JCA camera pkg watch
+      cameraservice dump output.
+    number_of_captures: int; if positive, returns the zoom_ratios for the
+      last number_of_captures captures. Otherwise, returns all zoom_ratios.
+  Returns:
+    zoom_ratios: zoom_ratios used by JCA
+  Raises:
+    FileNotFoundError: If file_name does not exist
+  """
+  zoom_ratios = []
+  if not os.path.exists(file_name):
+    raise FileNotFoundError(f'File not found: {file_name}')
+  with open(file_name, 'r') as f:
+    for line in f.readlines():
+      if _CONTROL_ZOOM_RATIO_KEY in line and _RES_STR_PATTERN in line:
+        zoom_ratio = re.findall(r'\[(.*?)\]', line)
+        if len(zoom_ratio) != 1:
+          raise ValueError(f'Failed to parse zoom ratio: {line}')
+        try:
+          zoom_ratios.append(float(zoom_ratio[0]))
+        except ValueError as e:
+          logging.debug('Failed to parse zoom ratio: %s', line)
+          raise e
+  logging.debug('zoom_ratios from JCA watch dump: %s', zoom_ratios)
+  if number_of_captures > 0:
+    return zoom_ratios[-number_of_captures:]
+  else:
+    return zoom_ratios
+
+
 def get_default_camera_zoom_ratio(file_name):
   """Returns the zoom_ratio used by default camera capture.
 
