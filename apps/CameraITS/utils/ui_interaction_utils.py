@@ -47,6 +47,7 @@ QUICK_SETTINGS_HDR_RESOURCE_ID = 'QuickSettingsHdrButton'
 QUICK_SET_FLASH_RESOURCE_ID = 'QuickSettingsFlashButton'
 QUICK_SET_FLIP_CAMERA_RESOURCE_ID = 'QuickSettingsFlipCameraButton'
 QUICK_SET_RATIO_RESOURCE_ID = 'QuickSettingsRatioButton'
+CAPTURE_MODE_TOGGLE_BUTTON_JCA_RES_ID = 'CaptureModeToggleButton'
 QUICK_SET_RATIO_3_4_RESOURCE_ID = 'QuickSettingsRatio3:4Button'
 QUICK_SET_RATIO_9_16_RESOURCE_ID = 'QuickSettingsRatio9:16Button'
 QUICK_SET_RATIO_1_1_RESOURCE_ID = 'QuickSettingsRatio1:1Button'
@@ -849,6 +850,7 @@ def enable_jca_hdr(dut, log_path):
   time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
   dut.take_screenshot(log_path, prefix='enabled_hdr_jca')
   dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
+  dut.ui(res=CAPTURE_MODE_TOGGLE_BUTTON_JCA_RES_ID).click()
 
 
 def take_dumpsys_report(dut, file_path):

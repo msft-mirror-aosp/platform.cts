@@ -377,6 +377,14 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       mean_white_balance_diff = ip_metrics_utils.do_white_balance_check(
           default_dynamic_range_patch_cells, jca_dynamic_range_patch_cells
       )
+
+      # Get cropped color cells
+      default_cropped_color_cells = ce.get_cropped_color_cells(
+          default_capture_path, self.log_path, 'default')
+
+      jca_cropped_color_cells = ce.get_cropped_color_cells(
+          jca_capture_path, self.log_path, 'jca')
+
       # logging for data collection
       print(f'{_NAME}_mean_white_balance_diff: {mean_white_balance_diff}')
       logging.debug('mean_white_balance_diff: %f', mean_white_balance_diff)
