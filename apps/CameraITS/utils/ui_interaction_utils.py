@@ -695,6 +695,15 @@ def launch_and_take_capture(dut, pkg_name, camera_facing, log_path,
     time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
     # stop cameraservice watch immediately after capturing image
     stop_cameraservice_watch(watch_process)
+    # handle retrieval of files on device
+    current_user = its_device_utils.get_current_user(device_id)
+    if current_user != its_device_utils.SYSTEM_USER:
+      return its_device_utils.pull_file_from_content_provider(
+          device_id,
+          content_location='content://media/external/images/media',
+          directory_on_host=log_path,
+          file_name='jp'  # we don't know the image name, only .jpg or .jpeg
+      )
     img_path_on_dut = ''
     photo_storage_path = ''
     for path in CAMERA_FILES_PATHS:

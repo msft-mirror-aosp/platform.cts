@@ -92,3 +92,49 @@ def get_current_user(device_id):
       device_id, adb_command).stdout.decode('utf-8').strip()
   logging.debug('Current user: %s', output)
   return output
+
+
+def pull_file_from_content_provider(
+    device_id, content_location, directory_on_host, file_name):
+  """Searches and pulls a file from the content provider given a file name.
+
+  If file name is not provided, the base name of the file on host is used.
+  This function is a workaround for HSUM devices that do not support adb pull
+  as system user 0.
+
+  Args:
+    device_id: serial id of device.
+    content_location: content provider location.
+    file_path_on_host: path to store the file on host.
+    file_name: name of the file to pull. If not provided, the base name of the
+      file on host will be used.
+  Returns:
+    URI of the file from the content provider.
+  Raises:
+    ValueError: If the file is not found in the content provider output.
+  """
+  current_user_id = get_current_user(device_id)
+  adb_command = (
+      f'content query --user {current_user_id} '
+      f'--uri {content_location} --projection _id:_data:datetaken '
+      '--sort \\"datetaken DESC\\"'
+  )
+  output = run_adb_shell_command(
+      device_id, adb_command).stdout.decode('utf-8').strip()
+  for line in output.splitlines():
+    if file_name.lower() in line.lower():
+      logging.debug(
+          'Found file %s in content provider output: %s', file_name, line
+      )
+      content_id = line.split('_id=')[1].split(',')[0]
+      file_path_on_device = line.split('_data=')[1].split(',')[0]
+      file_name_on_device = os.path.basename(file_path_on_device)
+      file_path_on_host = os.path.join(directory_on_host, file_name_on_device)
+      adb_command = (
+          f'content read --uri {content_location}/{content_id} '
+          f'--user {current_user_id} > {file_path_on_host}'
+      )
+      run_adb_shell_command(device_id, adb_command)
+      return f'{content_location}/{content_id}'
+  raise ValueError(
+      f'File {file_name} not found in content provider output: {output}')

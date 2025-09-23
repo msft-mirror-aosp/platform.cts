@@ -1133,7 +1133,7 @@ public class ItsService extends Service implements SensorEventListener {
                 } else if ("doGetDefaultCameraPkgName".equals(cmdObj.getString("cmdName"))) {
                     doGetDefaultCameraPkgName();
                 } else if ("doGainMapCheck".equals(cmdObj.getString("cmdName"))) {
-                    doGainMapCheck(cmdObj);
+                    doGainMapCheckHelper(cmdObj);
                 } else if ("isNightModeIndicatorSupported".equals(cmdObj.getString("cmdName"))) {
                     String cameraId = cmdObj.getString("cameraId");
                     doCheckNightModeIndicatorSupported(cameraId);
@@ -2760,19 +2760,36 @@ public class ItsService extends Service implements SensorEventListener {
         mSocketRunnableObj.sendResponse("defaultCameraPkg", pkgName);
     }
 
-    private void doGainMapCheck(JSONObject params) throws ItsException {
+    private void doGainMapCheckHelper(JSONObject params) throws ItsException {
         String filePath;
+        boolean gainmapPresent;
         try {
             filePath = params.getString("filePath");
         } catch(org.json.JSONException e) {
             throw new ItsException("JSON error: ", e);
         }
-        Bitmap bitmapImage = BitmapFactory.decodeFile(filePath);
-        assert(bitmapImage != null);
-        boolean gainmapPresent = bitmapImage.hasGainmap();
+        File file = new File(filePath);
+        if (file.exists()) {
+            Log.d(TAG, "File exists: " + filePath);
+            gainmapPresent = doGainMapCheck(BitmapFactory.decodeFile(filePath));
+        } else {
+            Log.d(TAG, "File does not exist: " + filePath + ", trying to use content provider");
+            Uri fileUri = Uri.parse(filePath);
+            try (InputStream inputStream = getContentResolver().openInputStream(fileUri)) {
+                gainmapPresent = doGainMapCheck(BitmapFactory.decodeStream(inputStream));
+            } catch (IOException e) {
+                throw new ItsException("Failed to open input stream", e);
+            }
+        }
         Log.i(TAG, "Gainmap present? " + gainmapPresent);
         mSocketRunnableObj.sendResponse("gainmapPresent",
                 gainmapPresent ? "true" : "false");
+    }
+
+    private boolean doGainMapCheck(Bitmap bitmapImage) {
+        assert(bitmapImage != null);
+        boolean gainmapPresent = bitmapImage.hasGainmap();
+        return gainmapPresent;
     }
 
     private void doGetSupportedVideoSizesCapped(String id) throws ItsException {
