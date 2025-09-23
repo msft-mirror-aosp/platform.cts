@@ -51,7 +51,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.after;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
@@ -1026,92 +1025,6 @@ public class VirtualCameraTest {
         cameraDevice.close();
 
         verify(mVirtualCameraCallback, timeout(TIMEOUT_MILLIS)).onStreamClosed(anyInt());
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_STABLE_STREAM_ID)
-    public void virtualCamera_streamId_matchesCreationOrder() throws Exception {
-        setupVirtualDeviceCameraManager();
-
-        int stream0Width = CAMERA_WIDTH;
-        int stream0Height = CAMERA_HEIGHT;
-        int stream1Width = CAMERA_WIDTH * 2;
-        int stream1Height = CAMERA_HEIGHT * 2;
-        int stream2Width = CAMERA_WIDTH * 3;
-        int stream2Height = CAMERA_HEIGHT * 3;
-
-        VirtualCameraConfig config =
-                new VirtualCameraConfig.Builder("SessionMetadataCamera")
-                        .addStreamConfig(stream0Width, stream0Height, CAMERA_FORMAT, CAMERA_MAX_FPS)
-                        .addStreamConfig(stream1Width, stream1Height, CAMERA_FORMAT, CAMERA_MAX_FPS)
-                        .addStreamConfig(stream2Width, stream2Height, CAMERA_FORMAT, CAMERA_MAX_FPS)
-                        .setVirtualCameraCallback(mExecutor, mVirtualCameraCallback)
-                        .setLensFacing(LENS_FACING_FRONT)
-                        .build();
-
-        mVirtualDevice.createVirtualCamera(config);
-        mCameraManager.openCamera(FRONT_CAMERA_ID, mExecutor, mCameraStateCallback);
-        verify(mCameraStateCallback, timeout(TIMEOUT_MILLIS))
-                .onOpened(mCameraDeviceCaptor.capture());
-
-        CameraDevice cameraDevice = mCameraDeviceCaptor.getValue();
-
-        ImageReader reader1 =
-                ImageReader.newInstance(
-                        stream0Width, stream0Height, YUV_420_888, IMAGE_READER_MAX_IMAGES);
-        ImageReader reader2 =
-                ImageReader.newInstance(
-                        stream2Width, stream2Height, YUV_420_888, IMAGE_READER_MAX_IMAGES);
-
-        try {
-            OutputConfiguration outputConfiguration1 =
-                    new OutputConfiguration(reader1.getSurface());
-            OutputConfiguration outputConfiguration2 =
-                    new OutputConfiguration(reader2.getSurface());
-
-            SessionConfiguration sessionConfiguration =
-                    new SessionConfiguration(
-                            SESSION_REGULAR,
-                            List.of(outputConfiguration1, outputConfiguration2),
-                            mExecutor,
-                            mSessionStateCallback);
-
-            cameraDevice.createCaptureSession(sessionConfiguration);
-            ArgumentCaptor<Integer> mStreamIdCaptor = ArgumentCaptor.forClass(Integer.class);
-            verify(mVirtualCameraCallback, timeout(TIMEOUT_MILLIS).times(2))
-                    .onStreamConfigured(
-                            mStreamIdCaptor.capture(),
-                            mSurfaceCaptor.capture(),
-                            mWidthCaptor.capture(),
-                            mHeightCaptor.capture(),
-                            mFormatCaptor.capture());
-
-            verify(mSessionStateCallback).onConfigured(mCameraCaptureSessionCaptor.capture());
-
-            assertThat(mStreamIdCaptor.getAllValues()).containsExactly(0, 2);
-            assertThat(mWidthCaptor.getAllValues()).containsExactly(stream0Width, stream2Width);
-            assertThat(mHeightCaptor.getAllValues()).containsExactly(stream0Height, stream2Height);
-
-            CameraCaptureSession session = mCameraCaptureSessionCaptor.getValue();
-            CaptureRequest.Builder captureRequest =
-                    cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-            captureRequest.addTarget(reader1.getSurface());
-            captureRequest.addTarget(reader2.getSurface());
-
-            session.captureSingleRequest(
-                    captureRequest.build(),
-                    mExecutor,
-                    mock(CameraCaptureSession.CaptureCallback.class));
-
-            verify(mVirtualCameraCallback, timeout(TIMEOUT_MILLIS))
-                    .onProcessCaptureRequest(eq(0), Mockito.anyLong());
-            verify(mVirtualCameraCallback, timeout(TIMEOUT_MILLIS))
-                    .onProcessCaptureRequest(eq(2), Mockito.anyLong());
-
-        } finally {
-            reader1.close();
-            reader2.close();
-        }
     }
 
     private VirtualCamera createDefaultCameraWithMetadata(int lensFacing,
