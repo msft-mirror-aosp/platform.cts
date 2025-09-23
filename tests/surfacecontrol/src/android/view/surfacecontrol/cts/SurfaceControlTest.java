@@ -2119,6 +2119,48 @@ public class SurfaceControlTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_LUTS_API)
+    public void testSurfaceTransaction_setLuts_1DLut_withCIEy_GrayBuffer() throws Throwable {
+        mActivity.awaitReadyState();
+        verifyTest(
+                new BasicSurfaceHolderCallback() {
+                    @Override
+                    public void surfaceCreated(SurfaceHolder holder) {
+                        SurfaceControl surfaceControl = createFromWindow(holder);
+                        DisplayLuts displayLuts = new DisplayLuts();
+                        // Set very extreme endpoints: a bad sampling scheme will either
+                        // annihilate or clamp the test color
+                        DisplayLuts.Entry entry =
+                                new DisplayLuts.Entry(
+                                        new float[] {
+                                            0.0f, 0.0f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 1.0f,
+                                            1.0f
+                                        },
+                                        LutProperties.ONE_DIMENSION,
+                                        LutProperties.SAMPLING_KEY_CIE_Y);
+                        displayLuts.set(entry);
+                        setSolidBuffer(
+                                surfaceControl,
+                                DEFAULT_LAYOUT_WIDTH,
+                                DEFAULT_LAYOUT_HEIGHT,
+                                Color.GRAY,
+                                DataSpace.DATASPACE_SRGB);
+                        new SurfaceControl.Transaction()
+                                .setLuts(surfaceControl, displayLuts)
+                                .apply();
+                    }
+                },
+                new RectChecker(new Rect(0, 0, DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT)) {
+                    PixelColor mResult = new PixelColor(0xFF626262);
+
+                    @Override
+                    public PixelColor getExpectedColor(int x, int y) {
+                        return mResult;
+                    }
+                });
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_LUTS_API)
     public void testSurfaceTransaction_setLuts_1DLut_withCYAN() throws Throwable {
         mActivity.awaitReadyState();
         verifyTest(
