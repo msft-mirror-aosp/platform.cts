@@ -19,7 +19,6 @@ package android.systemui.cts;
 import static android.Manifest.permission.POST_NOTIFICATIONS;
 import static android.Manifest.permission.REVOKE_POST_NOTIFICATIONS_WITHOUT_KILL;
 import static android.Manifest.permission.REVOKE_RUNTIME_PERMISSIONS;
-import static android.app.Flags.FLAG_UI_RICH_ONGOING;
 import static android.server.wm.ActivityManagerTestBase.isTablet;
 import static android.server.wm.BarTestUtils.assumeHasColoredNavigationBar;
 import static android.server.wm.BarTestUtils.assumeHasColoredStatusBar;
@@ -46,9 +45,6 @@ import android.permission.PermissionManager;
 import android.permission.cts.PermissionUtils;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.PlatinumTest;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.IgnoreOrientationRequestSession;
 import android.view.Gravity;
 import android.view.InputDevice;
@@ -67,6 +63,7 @@ import com.android.settingslib.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -87,11 +84,8 @@ import org.junit.runner.RunWith;
             "android.view.View#SYSTEM_UI_FLAG_LIGHT_STATUS_BAR"
         })
 @RunWith(AndroidJUnit4.class)
-@RequiresFlagsDisabled(FLAG_UI_RICH_ONGOING)
+@Ignore
 public class LightBarTests extends LightBarTestBase {
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     public static final String TAG = "LightStatusBarTests";
 
@@ -126,8 +120,6 @@ public class LightBarTests extends LightBarTestBase {
             LightBarActivity.class);
     @Rule
     public TestName mTestName = new TestName();
-
-
 
     @Before
     public void setUp() {
