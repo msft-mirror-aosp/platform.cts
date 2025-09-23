@@ -17,6 +17,7 @@
 package android.media.decoder.cts;
 
 import static android.media.codec.Flags.apvSupport;
+import static android.mediav2.common.cts.CodecTestBase.IS_AFTER_B;
 import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_B;
 import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_V;
 
@@ -107,14 +108,6 @@ public class DecoderBlockModelTest {
                         "video_480x360_mp4_h264_1000kbps_25fps_aac_stereo_128kbps_44100hz.mp4"},
                 {MediaFormat.MIMETYPE_VIDEO_AVC,
                         "video_480x360_mp4_h264_1000kbps_25fps_aac_stereo_128kbps_44100hz.mp4"},
-                {MediaFormat.MIMETYPE_VIDEO_HEVC,
-                        "video_480x360_mp4_hevc_650kbps_30fps_aac_stereo_128kbps_48000hz.mp4"},
-                {MediaFormat.MIMETYPE_VIDEO_VP8,
-                        "video_480x360_webm_vp8_333kbps_25fps_vorbis_stereo_128kbps_48000hz.webm"},
-                {MediaFormat.MIMETYPE_VIDEO_VP9,
-                        "video_480x360_webm_vp9_333kbps_25fps_vorbis_stereo_128kbps_48000hz.webm"},
-                {MediaFormat.MIMETYPE_VIDEO_AV1,
-                        "video_480x360_webm_av1_400kbps_30fps_vorbis_stereo_128kbps_48000hz.webm"},
         }));
         // SkipCutBuffer handling for the following media types in case of block model mode had
         // issues prior to Android V (b/329767811). These issues were fixed in Android V and hence
@@ -126,10 +119,28 @@ public class DecoderBlockModelTest {
                     {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "bbb_mono_8kHz_4.75kbps_amrnb.3gp"},
             }));
         }
-        if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
+        // Non-AVC video codecs are failing due to offset alignment issues in the decoders hence
+        // the tests are limited to Android versions above B. Refer b/445856828 for more details.
+        if (IS_AFTER_B) {
             exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
-                    {MediaFormat.MIMETYPE_VIDEO_APV, "pattern_640x480_30fps_16mbps_apv_10bit.mp4"},
+                    {MediaFormat.MIMETYPE_VIDEO_HEVC,
+                            "video_480x360_mp4_hevc_650kbps_30fps_aac_stereo_128kbps_48000hz.mp4"},
+                    {MediaFormat.MIMETYPE_VIDEO_VP8,
+                            "video_480x360_webm_vp8_333kbps_25fps_vorbis_stereo_128kbps_48000hz"
+                                    + ".webm"},
+                    {MediaFormat.MIMETYPE_VIDEO_VP9,
+                            "video_480x360_webm_vp9_333kbps_25fps_vorbis_stereo_128kbps_48000hz"
+                                    + ".webm"},
+                    {MediaFormat.MIMETYPE_VIDEO_AV1,
+                            "video_480x360_webm_av1_400kbps_30fps_vorbis_stereo_128kbps_48000hz"
+                                    + ".webm"},
             }));
+            if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
+                exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
+                        {MediaFormat.MIMETYPE_VIDEO_APV,
+                                "pattern_640x480_30fps_16mbps_apv_10bit.mp4"},
+                }));
+            }
         }
         return prepareParamList(exhaustiveArgsList);
     }
