@@ -18,6 +18,7 @@
     <include name="cts" />
 
     <option name="plan" value="cts-mumd-passenger" />
+    <option name="result-attribute" key="automotive_feature" value="secondary_user_on_secondary_display" />
 
     <!-- Tests included in this subplan -->
     <option name="compatibility:include-filter" value="CtsAccelerationTestCases" />
