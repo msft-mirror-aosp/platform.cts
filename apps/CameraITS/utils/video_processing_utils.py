@@ -462,5 +462,5 @@ def compress_video(input_filename, output_filename, crf=CONSTANT_RATE_FACTOR):
   ]
 
   with open(os.devnull, 'w') as devnull:
-    subprocess.run(ffmpeg_cmd, stdout=devnull,
+    subprocess.run(ffmpeg_cmd, stdin=devnull, stdout=devnull,
                    stderr=subprocess.STDOUT, check=False)
