@@ -580,7 +580,7 @@ public class MediaStore_FilesTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SPECIAL_FORMAT_COLUMN)
     public void testSpecialFormatMediaColumn_enabled() throws Exception {
-        final Uri uri = MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
+        final Uri uri = MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL);
         final File file =
                 new File(
                         MediaProviderTestUtils.stageDownloadDir(mVolumeName),
@@ -605,7 +605,7 @@ public class MediaStore_FilesTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SPECIAL_FORMAT_COLUMN)
     public void testSpecialFormatMediaColumn_defaultValueNone() throws Exception {
-        final Uri uri = MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
+        final Uri uri = MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL);
         final File file =
                 new File(
                         MediaProviderTestUtils.stageDownloadDir(mVolumeName),
