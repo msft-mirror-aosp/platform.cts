@@ -50,6 +50,7 @@ import android.util.Log;
 import android.util.Pair;
 import android.view.Display;
 
+import androidx.annotation.Nullable;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -97,7 +98,7 @@ public class BrightnessTest extends TestBase {
         mPackageManager = mContext.getPackageManager();
         launchScreenOnActivity();
         revokePermission(Manifest.permission.CONFIGURE_DISPLAY_BRIGHTNESS);
-        try (var usage = new PermissionClosable(Manifest.permission.BRIGHTNESS_SLIDER_USAGE)) {
+        try (var usage = new PermissionCloseable(Manifest.permission.BRIGHTNESS_SLIDER_USAGE)) {
             recordSliderEvents();
         }
     }
@@ -115,18 +116,18 @@ public class BrightnessTest extends TestBase {
                 numberOfSystemAppsWithPermission(Manifest.permission.CONFIGURE_DISPLAY_BRIGHTNESS)
                     > 0);
 
-        try (var brtClosable = new BrightnessClosable()) {
+        try (var brtCloseable = new BrightnessCloseable()) {
             // Update brightness
             var newEvents =
-                    brtClosable.changeBrightness(
-                            brtClosable.getMinimumBrightness(),
+                    brtCloseable.changeBrightness(
+                            brtCloseable.getMinimumBrightness(),
                             Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
             assertEquals(1, newEvents.size());
             BrightnessChangeEvent firstEvent = newEvents.get(0);
             assertValidLuxData(firstEvent);
 
             // Update brightness again
-            newEvents = brtClosable.changeBrightness(brtClosable.getMaximumBrightness());
+            newEvents = brtCloseable.changeBrightness(brtCloseable.getMaximumBrightness());
             assertEquals(1, newEvents.size());
             BrightnessChangeEvent secondEvent = newEvents.get(0);
             assertValidLuxData(secondEvent);
@@ -150,16 +151,16 @@ public class BrightnessTest extends TestBase {
                 numberOfSystemAppsWithPermission(Manifest.permission.CONFIGURE_DISPLAY_BRIGHTNESS)
                     > 0);
 
-        try (var brtClosable = new BrightnessClosable()) {
+        try (var brtCloseable = new BrightnessCloseable()) {
             var newEvents =
-                    brtClosable.changeBrightness(
-                            brtClosable.getMiddleBrightness(),
+                    brtCloseable.changeBrightness(
+                            brtCloseable.getMiddleBrightness(),
                             Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
             assertEquals(1, newEvents.size());
             BrightnessChangeEvent firstEvent = newEvents.get(0);
             assertValidLuxData(firstEvent);
             // Update brightness again
-            newEvents = brtClosable.changeBrightness(brtClosable.getMinimumBrightness());
+            newEvents = brtCloseable.changeBrightness(brtCloseable.getMinimumBrightness());
             assertEquals(1, newEvents.size());
             BrightnessChangeEvent secondEvent = newEvents.get(0);
             assertValidLuxData(secondEvent);
@@ -176,14 +177,14 @@ public class BrightnessTest extends TestBase {
         assumeTrue(
                 numberOfSystemAppsWithPermission(Manifest.permission.BRIGHTNESS_SLIDER_USAGE) > 0);
 
-        try (var brtClosable = new BrightnessClosable()) {
+        try (var brtCloseable = new BrightnessCloseable()) {
             var newEvents =
-                    brtClosable.changeBrightness(
-                            brtClosable.getMinimumBrightness(),
+                    brtCloseable.changeBrightness(
+                            brtCloseable.getMinimumBrightness(),
                             Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL);
             assertTrue(newEvents.isEmpty());
             // Then change the brightness
-            newEvents = brtClosable.changeBrightness(brtClosable.getMaximumBrightness());
+            newEvents = brtCloseable.changeBrightness(brtCloseable.getMaximumBrightness());
             // There shouldn't be any events.
             assertTrue(newEvents.isEmpty());
         }
@@ -202,7 +203,7 @@ public class BrightnessTest extends TestBase {
         assumeTrue(numberOfSystemAppsWithPermission(
                 Manifest.permission.CONFIGURE_DISPLAY_BRIGHTNESS) > 0);
 
-        try (var brtClosable = new BrightnessClosable()) {
+        try (var brtCloseable = new BrightnessCloseable()) {
             // Set brightness config to not sample color.
             BrightnessConfiguration config =
                     new BrightnessConfiguration.Builder(
@@ -211,8 +212,8 @@ public class BrightnessTest extends TestBase {
             mDisplayManager.setBrightnessConfiguration(config);
 
             var newEvents =
-                    brtClosable.changeBrightness(
-                            brtClosable.getMinimumBrightness(),
+                    brtCloseable.changeBrightness(
+                            brtCloseable.getMinimumBrightness(),
                             Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
             // No color samples.
             assertEquals(0, newEvents.get(0).colorSampleDuration);
@@ -246,7 +247,7 @@ public class BrightnessTest extends TestBase {
         assumeTrue(numberOfSystemAppsWithPermission(
                 Manifest.permission.CONFIGURE_DISPLAY_BRIGHTNESS) > 0);
 
-        try (var brt = new PermissionClosable(Manifest.permission.CONFIGURE_DISPLAY_BRIGHTNESS)) {
+        try (var brt = new PermissionCloseable(Manifest.permission.CONFIGURE_DISPLAY_BRIGHTNESS)) {
             var defaultConfig = mDisplayManager.getDefaultBrightnessConfiguration();
             // This might be null, meaning that the device doesn't support brightness configuration
             assumeNotNull(defaultConfig);
@@ -294,7 +295,7 @@ public class BrightnessTest extends TestBase {
         assumeTrue(numberOfSystemAppsWithPermission(
                 Manifest.permission.CONFIGURE_DISPLAY_BRIGHTNESS) > 0);
 
-        try (var brt = new PermissionClosable(Manifest.permission.CONFIGURE_DISPLAY_BRIGHTNESS)) {
+        try (var brt = new PermissionCloseable(Manifest.permission.CONFIGURE_DISPLAY_BRIGHTNESS)) {
             var defaultConfig = mDisplayManager.getDefaultBrightnessConfiguration();
             assumeNotNull(defaultConfig);
 
@@ -334,12 +335,12 @@ public class BrightnessTest extends TestBase {
                         .setDescription("model:8")
                         .build();
 
-        try (var brtClosable = new BrightnessClosable()) {
+        try (var brtCloseable = new BrightnessCloseable()) {
             // Update brightness while we have a custom curve.
             mDisplayManager.setBrightnessConfiguration(config);
             var newEvents =
-                    brtClosable.changeBrightness(
-                            brtClosable.getMinimumBrightness(),
+                    brtCloseable.changeBrightness(
+                            brtCloseable.getMinimumBrightness(),
                             Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC,
                             (e) -> !e.isDefaultBrightnessConfig);
             assertFalse(newEvents.isEmpty());
@@ -348,9 +349,8 @@ public class BrightnessTest extends TestBase {
 
             // Update brightness again now with default curve.
             mDisplayManager.setBrightnessConfiguration(null);
-            newEvents =
-                    brtClosable.changeBrightness(
-                            brtClosable.getMaximumBrightness(), (e) -> e.isDefaultBrightnessConfig);
+            newEvents = brtCloseable.changeBrightness(
+                    brtCloseable.getMaximumBrightness(), (e) -> e.isDefaultBrightnessConfig);
             assertFalse(newEvents.isEmpty());
             BrightnessChangeEvent secondEvent = newEvents.get(newEvents.size() - 1);
             assertValidLuxData(secondEvent);
@@ -368,7 +368,7 @@ public class BrightnessTest extends TestBase {
         assumeTrue(numberOfSystemAppsWithPermission(
                 Manifest.permission.CONFIGURE_DISPLAY_BRIGHTNESS) > 0);
 
-        try (var brightnessAutoClosable = new BrightnessClosable()) {
+        try (var brtCloseable = new BrightnessCloseable()) {
             BrightnessConfiguration configSet =
                     new BrightnessConfiguration.Builder(
                             new float[]{0.0f, 1345.0f}, new float[]{15.0f, 250.0f})
@@ -391,11 +391,11 @@ public class BrightnessTest extends TestBase {
         assumeTrue(numberOfSystemAppsWithPermission(
                 Manifest.permission.CONFIGURE_DISPLAY_BRIGHTNESS) > 0);
 
-        try (var brtClosable = new BrightnessClosable()) {
+        try (var brtCloseable = new BrightnessCloseable()) {
             // Get a unique display id via brightness change event
             var newEvents =
-                    brtClosable.changeBrightness(
-                            brtClosable.getMinimumBrightness(),
+                    brtCloseable.changeBrightness(
+                            brtCloseable.getMinimumBrightness(),
                             Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
             BrightnessChangeEvent firstEvent = newEvents.get(0);
             String uniqueDisplayId = firstEvent.uniqueDisplayId;
@@ -435,7 +435,7 @@ public class BrightnessTest extends TestBase {
     @RequiresFlagsEnabled(FLAG_SET_BRIGHTNESS_BY_UNIT)
     @Parameters({"0", "13.1", "39", "54.32", "80", "97.87", "100"})
     public void testSetBrightness_unitPercentage(float brightness) throws Exception {
-        try (var brtClosable = new BrightnessClosable()) {
+        try (var brtCloseable = new BrightnessCloseable()) {
             mDisplayManager.setBrightness(
                     Display.DEFAULT_DISPLAY, brightness, DisplayManager.BRIGHTNESS_UNIT_PERCENTAGE);
             float actualBrightness =
@@ -451,7 +451,7 @@ public class BrightnessTest extends TestBase {
         FLAG_DISPLAY_LISTENER_PERFORMANCE_IMPROVEMENTS
     })
     public void testBrightnessChangeListener() throws Exception {
-        try (var brtClosable = new BrightnessClosable()) {
+        try (var brtCloseable = new BrightnessCloseable()) {
             float brightness = 33.7f;
             CountDownLatch signal = new CountDownLatch(1);
             mDisplayManager.registerDisplayListener(
@@ -594,49 +594,64 @@ public class BrightnessTest extends TestBase {
         }
     }
 
-    private class BrightnessClosable extends SafeExecutor implements AutoCloseable {
-        private final float mPrevBrightness;
+    private class BrightnessCloseable extends SafeExecutor {
+        private float mPrevBrightness;
         private float mCurrBrightness;
-        private final int mPrevBrightnessMode;
+        private int mPrevBrightnessMode;
         private int mCurrBrightnessMode;
-        private final BrightnessConfiguration mPrevBrightnessConfig;
-        private final float mMaxBrightness;
-        private final float mMinBrightness;
-        private final PermissionClosable mConfigureBrightnessPermission;
-        private final PermissionClosable mSliderPermission;
-        private final PermissionContext mWriteSettingsPermission;
+        private BrightnessConfiguration mPrevConfig;
+        private float mMaxBrightness;
+        private float mMinBrightness;
+        private PermissionCloseable mConfigureBrightnessPermission;
+        private PermissionCloseable mSliderPermission;
+        private PermissionContext mWriteSettingsPermission;
 
-        BrightnessClosable() {
-            mConfigureBrightnessPermission =
-                    new PermissionClosable(Manifest.permission.CONFIGURE_DISPLAY_BRIGHTNESS);
-            mSliderPermission = new PermissionClosable(Manifest.permission.BRIGHTNESS_SLIDER_USAGE);
-            mWriteSettingsPermission =
-                    TestApis.permissions().withPermission(Manifest.permission.WRITE_SETTINGS);
-            mPrevBrightness = brightnessIntToFloat(getSystemSetting(
-                    Settings.System.SCREEN_BRIGHTNESS));
-            mCurrBrightness = mPrevBrightness;
-            mPrevBrightnessMode = getSystemSetting(Settings.System.SCREEN_BRIGHTNESS_MODE);
-            mCurrBrightnessMode = mPrevBrightnessMode;
-            mPrevBrightnessConfig = mDisplayManager.getBrightnessConfiguration();
-            // Enforce min brightness to get the system absolute min brightness
-            changeBrightness(0f);
-            mMinBrightness = brightnessIntToFloat(getSystemSetting(
-                    Settings.System.SCREEN_BRIGHTNESS));
-            // Enforce max brightness to get the system absolute max brightness
-            changeBrightness(1.0f);
-            mMaxBrightness = brightnessIntToFloat(getSystemSetting(
-                    Settings.System.SCREEN_BRIGHTNESS));
-            recordSliderEvents();
-        }
+        /**
+         * Initializes the brightness state. Anything can fail in this method, so when the close()
+         * method will be called to restore the state, it needs to know which state needs to be
+         * restored.
+         */
+        BrightnessCloseable() throws Exception {
+            try {
+                mConfigureBrightnessPermission =
+                        new PermissionCloseable(Manifest.permission.CONFIGURE_DISPLAY_BRIGHTNESS);
+                addCleanupStep(mConfigureBrightnessPermission::close);
 
-        @Override
-        public void close() throws Exception {
-            executeSafely(() -> changeBrightness(mPrevBrightness, mPrevBrightnessMode));
-            executeSafely(() -> mDisplayManager.setBrightnessConfiguration(mPrevBrightnessConfig));
-            executeSafely(mSliderPermission::close);
-            executeSafely(mConfigureBrightnessPermission::close);
-            executeSafely(mWriteSettingsPermission::close);
-            throwSuppressedExceptions();
+                mSliderPermission =
+                        new PermissionCloseable(Manifest.permission.BRIGHTNESS_SLIDER_USAGE);
+                addCleanupStep(mSliderPermission::close);
+
+                mWriteSettingsPermission =
+                        TestApis.permissions().withPermission(Manifest.permission.WRITE_SETTINGS);
+                addCleanupStep(mWriteSettingsPermission::close);
+
+                mCurrBrightness =
+                        mPrevBrightness =
+                                brightnessIntToFloat(
+                                        getSystemSetting(Settings.System.SCREEN_BRIGHTNESS));
+                addCleanupStep(() -> changeBrightness(mPrevBrightness));
+
+                mCurrBrightnessMode =
+                        mPrevBrightnessMode =
+                                getSystemSetting(Settings.System.SCREEN_BRIGHTNESS_MODE);
+                addCleanupStep(() -> changeBrightnessMode(mPrevBrightnessMode));
+
+                mPrevConfig = mDisplayManager.getBrightnessConfiguration();
+                addCleanupStep(() -> mDisplayManager.setBrightnessConfiguration(mPrevConfig));
+
+                // Enforce min brightness to get the system absolute min brightness
+                changeBrightness(0f);
+                mMinBrightness =
+                        brightnessIntToFloat(getSystemSetting(Settings.System.SCREEN_BRIGHTNESS));
+                // Enforce max brightness to get the system absolute max brightness
+                changeBrightness(1.0f);
+                mMaxBrightness =
+                        brightnessIntToFloat(getSystemSetting(Settings.System.SCREEN_BRIGHTNESS));
+                recordSliderEvents();
+            } catch (Throwable e) {
+                close();
+                throw e;
+            }
         }
 
         float getMinimumBrightness() {
@@ -664,6 +679,10 @@ public class BrightnessTest extends TestBase {
             return changeBrightness(newBrightness, newBrightnessMode, null);
         }
 
+        List<BrightnessChangeEvent> changeBrightnessMode(int newBrightnessMode) {
+            return changeBrightness(mCurrBrightness, newBrightnessMode, null);
+        }
+
         List<BrightnessChangeEvent> changeBrightness(
                 float newBrightness, int newBrightnessMode, Predicate<BrightnessChangeEvent> pred) {
             if (newBrightnessMode == Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC) {
@@ -671,10 +690,14 @@ public class BrightnessTest extends TestBase {
                 assumeNotNull(mDisplayManager.getDefaultBrightnessConfiguration());
             }
             if (mCurrBrightnessMode != newBrightnessMode) {
+                assertTrue("brightness mode must be automatic or manual: " + newBrightnessMode,
+                        newBrightnessMode == Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC
+                        || newBrightnessMode == Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL);
                 assertTrue(
                         "setTemporaryBrightnessMode failed",
                         mDisplayManager.setTemporaryBrightnessMode(
                                 Display.DEFAULT_DISPLAY, newBrightnessMode));
+                mCurrBrightnessMode = newBrightnessMode;
             } else {
                 Log.d(
                         TAG,
@@ -687,29 +710,27 @@ public class BrightnessTest extends TestBase {
             List<BrightnessChangeEvent> res = List.of();
             if (mCurrBrightness != newBrightness) {
                 res = setDisplayBrightness(newBrightness, pred != null ? pred : (e) -> true);
+                mCurrBrightness = newBrightness;
             } else {
                 Log.d(
                         TAG,
                         "no brightness change " + newBrightness + " for mode " + newBrightnessMode);
             }
-            mCurrBrightnessMode = newBrightnessMode;
-            mCurrBrightness = newBrightness;
+
             return res;
         }
 
-        /**
-         * Converts between the int brightness system and the float brightness system.
-         */
+        /** Converts between the int brightness system and the float brightness system. */
         private static float brightnessIntToFloat(int brightnessInt) {
             assertThat(brightnessInt).isIn(Range.closed(1, 255));
             return (float) (brightnessInt - 1) / 254f;
         }
     }
 
-    private class PermissionClosable implements AutoCloseable {
+    private class PermissionCloseable implements AutoCloseable {
         private final String mPermission;
 
-        PermissionClosable(String permission) {
+        PermissionCloseable(String permission) {
             mPermission = permission;
             grantPermission(mPermission);
         }
@@ -721,17 +742,40 @@ public class BrightnessTest extends TestBase {
     }
 
     /**
-     * Helper class allowing to quitely execute steps (suppressing exceptions), and throw all
-     * suppressed exceptions at the end.
+     * Helper class allowing to execute steps, and execute cleanups in reverse order while
+     * suppressing exceptions, and then throw all suppressed exceptions at the end of close().
      */
-    private static class SafeExecutor {
-        private AtomicReference<Throwable> mPrimaryExceptionRef = new AtomicReference<>(null);
+    private static class SafeExecutor implements AutoCloseable {
+        private final AtomicReference<Throwable> mPrimaryExceptionRef = new AtomicReference<>(null);
+        private final List<Runnable> mCleanups = new ArrayList<>();
 
-        // Helper to safely execute a step and update the primary exception
-        void executeSafely(Runnable step) {
+        /** Add the cleanup to the list of cleanups to be executed in reverse order */
+        void addCleanupStep(@Nullable Runnable cleanup) {
+            mCleanups.add(cleanup);
+        }
+
+        /**
+         * Execute all the cleanups in reverse order, and throw all the suppressed exceptions at the
+         * end of close().
+         */
+        @Override
+        public void close() throws Exception {
+            for (int i = mCleanups.size() - 1; i >= 0; i--) {
+                executeQuietly(mCleanups.get(i), i);
+            }
+            mCleanups.clear();
+            throwSuppressedExceptions();
+        }
+
+        /** Helper to execute the runnable without throwing, and then set the primary exception */
+        void executeQuietly(@Nullable Runnable runnable, int index) {
+            if (runnable == null) {
+                return;
+            }
             try {
-                step.run();
+                runnable.run();
             } catch (Throwable t) {
+                Log.e(TAG, "Failed to execute index " + index + " with " + runnable, t);
                 Throwable primary = mPrimaryExceptionRef.get();
                 if (primary == null) {
                     mPrimaryExceptionRef.set(t); // Set the first exception
@@ -741,7 +785,7 @@ public class BrightnessTest extends TestBase {
             }
         }
 
-        void throwSuppressedExceptions() throws Exception {
+        private void throwSuppressedExceptions() throws Exception {
             var primary = mPrimaryExceptionRef.getAndSet(null);
             if (primary == null) {
                 return;
