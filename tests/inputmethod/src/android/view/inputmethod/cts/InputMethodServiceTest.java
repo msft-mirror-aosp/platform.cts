@@ -102,6 +102,7 @@ import androidx.window.extensions.layout.WindowLayoutInfo;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 import com.android.cts.mockime.ImeCommand;
 import com.android.cts.mockime.ImeEvent;
 import com.android.cts.mockime.ImeEventStream;
@@ -115,7 +116,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -142,9 +142,11 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
 
     private static final String OTHER_IME_ID = "com.android.cts.spellcheckingime/.SpellCheckingIme";
 
-    private static final String ERASE_FONT_SCALE_CMD = "settings delete system font_scale";
+    private static final String ERASE_FONT_SCALE_CMD =
+            "settings delete --user %d system font_scale";
+
     // 1.2 is an arbitrary value.
-    private static final String PUT_FONT_SCALE_CMD = "settings put system font_scale 1.2";
+    private static final String PUT_FONT_SCALE_CMD = "settings put --user %d system font_scale 1.2";
 
     @Rule
     public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
@@ -155,6 +157,7 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
 
     private Instrumentation mInstrumentation;
 
+    private final UserHelper mUserHelper = new UserHelper();
     private static DescribedPredicate<ImeEvent> backKeyDownMatcher(boolean expectedReturnValue) {
         return withDescription("onKeyDown(KEYCODE_BACK) = " + expectedReturnValue, event -> {
             if (!TextUtils.equals("onKeyDown", event.getEventName())) {
@@ -411,13 +414,9 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
      * This function will apply font scale changes.
      */
     private void enableFontScale() {
-        try {
-            final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
-            SystemUtil.runShellCommand(instrumentation, PUT_FONT_SCALE_CMD);
-            instrumentation.waitForIdleSync();
-        } catch (IOException io) {
-            fail("Couldn't apply font scale.");
-        }
+        final String command = String.format(PUT_FONT_SCALE_CMD, mUserHelper.getUserId());
+        SystemUtil.runShellCommandOrThrow(command);
+        mInstrumentation.waitForIdleSync();
     }
 
     /**
@@ -425,13 +424,9 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
      * This function will apply font scale changes.
      */
     private void eraseFontScale() {
-        try {
-            final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
-            SystemUtil.runShellCommand(instrumentation, ERASE_FONT_SCALE_CMD);
-            instrumentation.waitForIdleSync();
-        } catch (IOException io) {
-            fail("Couldn't apply font scale.");
-        }
+        final String command = String.format(ERASE_FONT_SCALE_CMD, mUserHelper.getUserId());
+        SystemUtil.runShellCommandOrThrow(command);
+        mInstrumentation.waitForIdleSync();
     }
 
     private static void assertSynthesizedSoftwareKeyEvent(KeyEvent keyEvent, int expectedAction,
