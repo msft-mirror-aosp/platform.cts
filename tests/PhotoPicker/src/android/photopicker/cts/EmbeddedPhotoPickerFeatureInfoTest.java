@@ -157,6 +157,36 @@ public class EmbeddedPhotoPickerFeatureInfoTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EMBEDDED_PICKER_EXPANDED_HIGHLIGHT_TYPE_API)
+    public void testSetHighlightType() {
+        // Suppress HSR tests for wearables since the APIs aren't supported in wear devices
+        Assume.assumeTrue(isHardwareSupported());
+        final EmbeddedPhotoPickerFeatureInfo info =
+                new EmbeddedPhotoPickerFeatureInfo.Builder()
+                        .setHighlightType(MediaStore.PICK_IMAGES_HIGHLIGHT_TYPE_EXPANDED)
+                        .build();
+
+        assertWithMessage("Expected highlight media query should be equal to input query")
+                .that(info.getHighlightType())
+                .isEqualTo(MediaStore.PICK_IMAGES_HIGHLIGHT_TYPE_EXPANDED);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EMBEDDED_PICKER_EXPANDED_HIGHLIGHT_TYPE_API)
+    public void testIsLaunchedPickerInExpandedState() {
+        // Suppress HSR tests for wearables since the APIs aren't supported in wear devices
+        Assume.assumeTrue(isHardwareSupported());
+        final EmbeddedPhotoPickerFeatureInfo info =
+                new EmbeddedPhotoPickerFeatureInfo.Builder()
+                        .setPickerLaunchedInExpandedState(true)
+                        .build();
+
+        assertWithMessage("Expected highlight media query should be equal to input query")
+                .that(info.isPickerLaunchedInExpandedState())
+                .isTrue();
+    }
+
+    @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PICKER_HIGHLIGHT_SEARCH_RESULTS_APIS)
     public void testSetHighlightSearchMediaTextQueryForNullQuery() {
         // Suppress HSR tests for wearables since the APIs aren't supported in wear devices
@@ -179,6 +209,18 @@ public class EmbeddedPhotoPickerFeatureInfoTest {
                 IllegalArgumentException.class,
                 () -> {
                     new EmbeddedPhotoPickerFeatureInfo.Builder().setHighlightAlbumId(null).build();
+                });
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EMBEDDED_PICKER_EXPANDED_HIGHLIGHT_TYPE_API)
+    public void testSetHighlightTypeForInvalidType() {
+        // Suppress HSR tests for wearables since the APIs aren't supported in wear devices
+        Assume.assumeTrue(isHardwareSupported());
+        Assert.assertThrows(
+                IllegalArgumentException.class,
+                () -> {
+                    new EmbeddedPhotoPickerFeatureInfo.Builder().setHighlightType(-1).build();
                 });
     }
 
