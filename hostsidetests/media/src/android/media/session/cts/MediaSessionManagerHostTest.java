@@ -99,8 +99,8 @@ public class MediaSessionManagerHostTest extends BaseMultiUserTest {
     private void testGetActiveSessions_primaryUser(boolean instant) throws Exception {
         int primaryUserId = getDevice().getPrimaryUserId();
 
-        setAllowGetActiveSessionForTest(true, primaryUserId);
         installAppAsUser(DEVICE_SIDE_TEST_APK, primaryUserId, instant);
+        setAllowGetActiveSessionForTest(true, primaryUserId);
         runTest("testGetActiveSessions_noMediaSessionFromMediaSessionTestHelper");
 
         installAppAsUser(MEDIA_SESSION_TEST_HELPER_APK, primaryUserId, false);
@@ -219,8 +219,8 @@ public class MediaSessionManagerHostTest extends BaseMultiUserTest {
     public void testGetActiveSessions_noSession2() throws Exception {
         int primaryUserId = getDevice().getPrimaryUserId();
 
-        setAllowGetActiveSessionForTest(true, primaryUserId);
         installAppAsUser(DEVICE_SIDE_TEST_APK, primaryUserId, false);
+        setAllowGetActiveSessionForTest(true, primaryUserId);
         runTest("testGetActiveSessions_noMediaSessionFromMediaSessionTestHelper");
 
         installAppAsUser(MEDIA_SESSION_TEST_HELPER_APK, primaryUserId, false);
@@ -236,8 +236,8 @@ public class MediaSessionManagerHostTest extends BaseMultiUserTest {
     public void testGetActiveSessions_withSession2() throws Exception {
         int primaryUserId = getDevice().getPrimaryUserId();
 
-        setAllowGetActiveSessionForTest(true, primaryUserId);
         installAppAsUser(DEVICE_SIDE_TEST_APK, primaryUserId, false);
+        setAllowGetActiveSessionForTest(true, primaryUserId);
         runTest("testGetActiveSessions_noMediaSessionFromMediaSessionTestHelper");
 
         installAppAsUser(MEDIA_SESSION_TEST_HELPER_APK, primaryUserId, false);
@@ -256,8 +256,8 @@ public class MediaSessionManagerHostTest extends BaseMultiUserTest {
     public void testOnMediaKeyEventSessionChangedListener() throws Exception {
         int primaryUserId = getDevice().getPrimaryUserId();
 
-        setAllowGetActiveSessionForTest(true, primaryUserId);
         installAppAsUser(DEVICE_SIDE_TEST_APK, primaryUserId, false);
+        setAllowGetActiveSessionForTest(true, primaryUserId);
         runTest("testOnMediaKeyEventSessionChangedListener");
     }
 
@@ -266,8 +266,8 @@ public class MediaSessionManagerHostTest extends BaseMultiUserTest {
     public void testOnMediaKeyEventSessionChangedListener_whenSessionIsReleased() throws Exception {
         int primaryUserId = getDevice().getPrimaryUserId();
 
-        setAllowGetActiveSessionForTest(true, primaryUserId);
         installAppAsUser(DEVICE_SIDE_TEST_APK, primaryUserId, false);
+        setAllowGetActiveSessionForTest(true, primaryUserId);
         runTest("testOnMediaKeyEventSessionChangedListener_whenSessionIsReleased");
     }
 
@@ -283,8 +283,8 @@ public class MediaSessionManagerHostTest extends BaseMultiUserTest {
         }
 
         int newUserId = createAndStartUser();
-        setAllowGetActiveSessionForTest(true, newUserId);
         installAppAsUser(DEVICE_SIDE_TEST_APK, newUserId, false);
+        setAllowGetActiveSessionForTest(true, newUserId);
         runTestAsUser("testIsTrusted_returnsTrue", newUserId);
     }
 
@@ -299,8 +299,8 @@ public class MediaSessionManagerHostTest extends BaseMultiUserTest {
         }
 
         int newUserId = createAndStartUser();
-        setAllowGetActiveSessionForTest(false, newUserId);
         installAppAsUser(DEVICE_SIDE_TEST_APK, newUserId, false);
+        setAllowGetActiveSessionForTest(false, newUserId);
         runTestAsUser("testIsTrusted_returnsFalse", newUserId);
     }
 
