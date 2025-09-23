@@ -281,13 +281,24 @@ public class VehiclePropertyVerifier<T> {
                     DetailedErrorCode.NOT_AVAILABLE_SAFETY);
     private static final boolean CAR_PROPERTY_SUPPORTED_VALUE_FLAG =
             isAtLeastB() && Flags.carPropertySupportedValue();
-    private static final List<Integer> VALID_CAR_PROPERTY_VALUE_STATUSES =
-            Arrays.asList(
+    private static final ImmutableSet<Integer> VALID_CAR_PROPERTY_VALUE_STATUSES_BEFORE_26Q2 =
+            ImmutableSet.of(
                     CarPropertyValue.STATUS_AVAILABLE,
                     CarPropertyValue.STATUS_UNAVAILABLE,
                     CarPropertyValue.STATUS_ERROR);
-    private static final List<Integer> VALID_SET_ERROR_CODES =
-            Arrays.asList(
+    private static final ImmutableSet<Integer> VALID_CAR_PROPERTY_VALUE_STATUSES =
+            ImmutableSet.of(
+                    CarPropertyValue.STATUS_AVAILABLE,
+                    CarPropertyValue.STATUS_NOT_AVAILABLE_GENERAL,
+                    CarPropertyValue.STATUS_ERROR,
+                    CarPropertyValue.STATUS_NOT_AVAILABLE_DISABLED,
+                    CarPropertyValue.STATUS_NOT_AVAILABLE_SPEED_LOW,
+                    CarPropertyValue.STATUS_NOT_AVAILABLE_SPEED_HIGH,
+                    CarPropertyValue.STATUS_NOT_AVAILABLE_POOR_VISIBILITY,
+                    CarPropertyValue.STATUS_NOT_AVAILABLE_SAFETY,
+                    CarPropertyValue.STATUS_NOT_AVAILABLE_SUBSYSTEM_NOT_CONNECTED);
+    private static final ImmutableSet<Integer> VALID_SET_ERROR_CODES =
+            ImmutableSet.of(
                     CarPropertyManager.CAR_SET_PROPERTY_ERROR_CODE_TRY_AGAIN,
                     CarPropertyManager.CAR_SET_PROPERTY_ERROR_CODE_INVALID_ARG,
                     CarPropertyManager.CAR_SET_PROPERTY_ERROR_CODE_PROPERTY_NOT_AVAILABLE,
@@ -2802,6 +2813,11 @@ public class VehiclePropertyVerifier<T> {
                                 .collect(Collectors.toList())
                                 .contains(areaId))
                 .isTrue();
+
+        ImmutableSet<Integer> validStatuses = VALID_CAR_PROPERTY_VALUE_STATUSES;
+        if (!(isAtLeast26Q2() && Flags.carPropertyStatusDetailedNotAvailable())) {
+            validStatuses = VALID_CAR_PROPERTY_VALUE_STATUSES_BEFORE_26Q2;
+        }
         assertWithMessage(
                         mPropertyName
                                 + " - areaId: "
@@ -2809,8 +2825,8 @@ public class VehiclePropertyVerifier<T> {
                                 + " - source: "
                                 + source
                                 + " value must have a valid status: "
-                                + VALID_CAR_PROPERTY_VALUE_STATUSES)
-                .that(VALID_CAR_PROPERTY_VALUE_STATUSES)
+                                + validStatuses)
+                .that(validStatuses)
                 .contains(status);
         assertWithMessage(
                         mPropertyName
