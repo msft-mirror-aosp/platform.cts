@@ -32,6 +32,7 @@ import android.media.MediaCommunicationManager;
 import android.media.MediaSession2;
 import android.media.Session2CommandGroup;
 import android.media.Session2Token;
+import android.os.Build;
 import android.os.Bundle;
 
 import androidx.test.InstrumentationRegistry;
@@ -61,7 +62,7 @@ import java.util.concurrent.TimeUnit;
 /** Tests {@link android.media.MediaCommunicationManager}. */
 @RunWith(BedsteadJUnit4.class)
 @SmallTest
-@SdkSuppress(minSdkVersion = 31, codeName = "S")
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
 public class MediaCommunicationManagerTest {
     private static final int TIMEOUT_MS = 5000;
     private static final int WAIT_MS = 500;

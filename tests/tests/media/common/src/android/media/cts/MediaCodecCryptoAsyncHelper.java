@@ -56,7 +56,7 @@ import org.junit.Assume;
 /**
  * MediaCodecCryptoAsyncHelper class
  */
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 public class MediaCodecCryptoAsyncHelper {
     private static final String TAG = "MediaCodecCryptoAsyncHelper";
     private static final boolean VERBOSE = false;           // lots of logging
