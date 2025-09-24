@@ -106,6 +106,7 @@ android_test {
         "CtsTelecomUtilLib",
         "telecom_flags_core_java_lib",
         "telephony_flags_core_java_lib",
+        "telecom_module_flags-export-java",
         "TelecomTestAppUtilsLib",
         "flag-junit",
         "telecom_module_flags-export-java",
