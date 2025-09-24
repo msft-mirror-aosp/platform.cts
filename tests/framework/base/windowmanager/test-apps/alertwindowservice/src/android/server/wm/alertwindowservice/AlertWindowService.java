@@ -17,7 +17,6 @@
 package android.server.wm.alertwindowservice;
 
 import static android.graphics.Color.BLUE;
-import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.Gravity.LEFT;
 import static android.view.Gravity.TOP;
 import static android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
@@ -35,6 +34,7 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
+import android.os.UserManager;
 import android.util.Log;
 import android.view.Display;
 import android.view.View;
@@ -140,7 +140,15 @@ public final class AlertWindowService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        final Display display = getSystemService(DisplayManager.class).getDisplay(DEFAULT_DISPLAY);
+
+        final UserManager userManager = getSystemService(UserManager.class);
+        final int mainDisplayId = userManager.getMainDisplayIdAssignedToUser();
+
+        if (DEBUG) Log.d(TAG, "mainDisplayId = " + mainDisplayId);
+
+        final DisplayManager displayManager = getSystemService(DisplayManager.class);
+        final Display display = displayManager.getDisplay(mainDisplayId);
+
         mWindowContext =
                 createDisplayContext(display)
                         .createWindowContext(TYPE_APPLICATION_OVERLAY, null /* options */);
