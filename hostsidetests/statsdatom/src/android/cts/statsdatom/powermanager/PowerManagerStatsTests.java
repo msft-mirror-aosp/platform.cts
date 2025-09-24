@@ -24,7 +24,6 @@ import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
 import android.os.WakeLockLevelEnum;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
@@ -33,7 +32,6 @@ import com.android.os.AtomsProto;
 import com.android.os.AtomsProto.WakelockStateChanged;
 import com.android.os.AttributionNode;
 import com.android.os.adpf.AdpfExtensionAtoms;
-import com.android.server.power.feature.flags.Flags;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.result.TestDescription;
 import com.android.tradefed.result.TestRunResult;
@@ -175,7 +173,6 @@ public class PowerManagerStatsTests extends BaseHostJUnit4Test implements IBuild
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_WAKELOCK_ATTRIBUTION_VIA_WORKCHAIN})
     public void test_updateWakelockUids_releasesOldAndAcquiresNewUids() throws Exception {
         int atomId = AtomsProto.Atom.WAKELOCK_STATE_CHANGED_FIELD_NUMBER;
 
