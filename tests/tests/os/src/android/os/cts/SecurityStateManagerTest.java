@@ -35,6 +35,7 @@ import android.os.Flags;
 import android.os.SecurityStateManager;
 import android.os.SystemProperties;
 import android.os.VintfRuntimeInfo;
+import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -81,6 +82,7 @@ public class SecurityStateManagerTest {
     }
 
     @Test
+    @AppModeFull(reason = "Instant apps cannot restore binder identity")
     public void testGetGlobalSecurityState() throws Exception {
         try (PermissionContext permissionContext = TestApis.permissions().withPermission(Manifest.permission.INTERACT_ACROSS_USERS_FULL)) {
             Pattern pattern = Pattern.compile("(\\d+\\.\\d+\\.\\d+)(.*)");
