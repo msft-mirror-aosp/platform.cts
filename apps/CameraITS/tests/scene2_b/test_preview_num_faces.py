@@ -105,8 +105,7 @@ def _do_preview_recording_and_retrieve_result(
   result = cam.do_preview_recording(
       preview_size, _PREVIEW_RECORDING_DURATION_SECONDS, stabilize=False,
       zoom_ratio=None, face_detect_mode=fd_mode)
-  dut.adb.pull(
-      [result['recordedOutputPath'], log_path])
+  its_session_utils.pull_file_from_dut(dut, result, log_path)
   logging.debug('Preview recording with face detection is completed.')
 
   return result
