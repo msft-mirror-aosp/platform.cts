@@ -23,6 +23,7 @@ import threading
 import time
 
 from mobly import test_runner
+from mobly.controllers.android_device_lib import adb
 
 import its_base_test
 import error_util
@@ -495,9 +496,16 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                 logging.debug('Number of gyro samples %d', len(gyro_events))
 
               # Grab the video from the file location on DUT
-              self.dut.adb.pull([recording_obj['recordedOutputPath'], log_path])
+              its_session_utils.pull_file_from_dut(
+                  self.dut, recording_obj, self.log_path)
               # Delete the video file from the DUT
-              self.dut.adb.shell('rm %s' % recording_obj['recordedOutputPath'])
+              try:
+                self.dut.adb.shell(
+                    'rm %s' % recording_obj['recordedOutputPath'])
+              except adb.AdbError as e:
+                logging.warning('ADB error when deleting video file %s: %s. '
+                                'Please delete the file manually.',
+                                recording_obj['recordedOutputPath'], e)
 
               # Verify FPS by inspecting the video clip
               preview_file_name = (

@@ -133,8 +133,8 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
           lighting_control_utils.LIGHT_ON, self.use_gen2)
 
       # pull the video recording file from the device.
-      self.dut.adb.pull([preview_recording_obj['recordedOutputPath'],
-                         self.log_path])
+      its_session_utils.pull_file_from_dut(
+          self.dut, preview_recording_obj, self.log_path)
       logging.debug('Recorded preview video is available at: %s',
                     self.log_path)
       preview_file_name = preview_recording_obj[
