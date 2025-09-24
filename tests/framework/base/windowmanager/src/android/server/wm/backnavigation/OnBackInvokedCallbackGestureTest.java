@@ -130,6 +130,7 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         assertNotInvoked(mTracker.mStartLatch);
 
         mSwipeHelper.continueSwipe(midWidth, midHeight);
+        assertTrue(mActivity.mOnUserInteractionCalled);
         assertInvoked(mTracker.mStartLatch);
         assertInvoked(mTracker.mProgressLatch, progressFailMessageSupplier());
         assertNotInvoked(mTracker.mInvokeLatch);
@@ -162,6 +163,7 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         mSwipeHelper.beginSwipe(0, midHeight);
         mSwipeHelper.continueSwipe(midWidth, midHeight);
         assertInvoked(mTracker.mProgressLatch, progressFailMessageSupplier());
+        assertTrue(mActivity.mOnUserInteractionCalled);
 
         mTracker.reset();
         mTracker.mIsCancelRequested = true;
