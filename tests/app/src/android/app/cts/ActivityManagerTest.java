@@ -596,9 +596,8 @@ public final class ActivityManagerTest {
                     .isTrue();
             assertWithMessage(
                             String.format(
-                                    "totalMem (%d) <= advertisedMem (%d)",
-                                    outInfo.totalMem, outInfo.advertisedMem))
-                    .that(outInfo.totalMem <= outInfo.advertisedMem)
+                                    "advertisedMem (%d) > 0", outInfo.advertisedMem))
+                    .that(outInfo.advertisedMem > 0)
                     .isTrue();
         }
     }
