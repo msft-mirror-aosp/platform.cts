@@ -58,6 +58,13 @@ public class PackageInstallationSessionReportedStatsTests extends PackageManager
     private static final String TEST_INSTALL_STATIC_SHARED_LIB_NAME = "test.stats.lib";
 
     @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+        getDevice().uninstallPackage(TEST_INSTALL_PACKAGE);
+        getDevice().uninstallPackage(TEST_INSTALL_STATIC_SHARED_LIB_V1_PACKAGE);
+    }
+
+    @Override
     protected void tearDown() throws Exception {
         getDevice().uninstallPackage(TEST_INSTALL_PACKAGE);
         getDevice().uninstallPackage(TEST_INSTALL_STATIC_SHARED_LIB_V1_PACKAGE);
