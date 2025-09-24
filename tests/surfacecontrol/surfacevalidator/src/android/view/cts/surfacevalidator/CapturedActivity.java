@@ -68,6 +68,7 @@ import android.widget.FrameLayout;
 import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.FeatureUtil;
 
 import org.junit.rules.TestName;
 
@@ -132,6 +133,7 @@ public class CapturedActivity extends Activity {
     private FrameLayout mParentLayout;
 
     public static Boolean wmCanReplaceContentOnDisplay() {
+        if(FeatureUtil.isWatch()) return false;
         try {
             WindowManager.class.getMethod(
                     "replaceContentOnDisplayWithMirror", int.class, Window.class);
