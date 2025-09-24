@@ -1540,7 +1540,7 @@ public final class ActivityManagerProcessStateTest {
             cmd = "am make-uid-idle --user " + mTestRunningUserId
                     + " " + CANT_SAVE_STATE_1_PACKAGE_NAME;
             result = SystemUtil.runShellCommand(mInstrumentation, cmd);
-            uid1Watcher.expect(WatchUidRunner.CMD_IDLE, null);
+            uid1Watcher.waitFor(WatchUidRunner.CMD_IDLE, null);
 
             // We are interested in only the uid changes happening after returning to home.
             // Clear the history so we won't match staled results.
