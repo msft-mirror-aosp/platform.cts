@@ -23,12 +23,18 @@ import static org.junit.Assert.assertThrows;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Parcel;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.data.TrafficDescriptor;
 import android.telephony.data.TrafficDescriptor.OsAppId;
 
 import androidx.test.InstrumentationRegistry;
 
+import com.android.internal.telephony.flags.Flags;
+
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class TrafficDescriptorTest {
@@ -60,6 +66,9 @@ public class TrafficDescriptorTest {
         73, 67, 65, 84, 73, 79, 78, 83
     };
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private PackageManager mPackageManager;
 
     @Before
@@ -85,6 +94,56 @@ public class TrafficDescriptorTest {
         td = new TrafficDescriptor(DNN, UFC_OS_APP_ID);
         assertThat(td.getDataNetworkName()).isEqualTo(DNN);
         assertThat(td.getOsAppId()).isEqualTo(UFC_OS_APP_ID);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_TRAFFIC_DESCRIPTOR_CONNECTION_CAPABILITY)
+    public void testBuilderAndGetters_flagEnabled() {
+        TrafficDescriptor td =
+                new TrafficDescriptor.Builder()
+                        .setDataNetworkName(DNN)
+                        .setOsAppId(ENTERPRISE_OS_APP_ID)
+                        .build();
+        assertThat(td.getDataNetworkName()).isEqualTo(DNN);
+        assertThat(td.getOsAppId()).isEqualTo(ENTERPRISE_OS_APP_ID);
+        assertThat(td.getConnectionCapability())
+                .isEqualTo(TrafficDescriptor.CONNECTION_CAPABILITY_UNKNOWN);
+
+        td =
+                new TrafficDescriptor.Builder()
+                        .setDataNetworkName(DNN)
+                        .setOsAppId(URLLC_OS_APP_ID)
+                        .setConnectionCapability(
+                                TrafficDescriptor.CONNECTION_CAPABILITY_REAL_TIME_INTERACTIVE)
+                        .build();
+        assertThat(td.getDataNetworkName()).isEqualTo(DNN);
+        assertThat(td.getOsAppId()).isEqualTo(URLLC_OS_APP_ID);
+        assertThat(td.getConnectionCapability())
+                .isEqualTo(TrafficDescriptor.CONNECTION_CAPABILITY_REAL_TIME_INTERACTIVE);
+
+        td =
+                new TrafficDescriptor.Builder()
+                        .setDataNetworkName(DNN)
+                        .setOsAppId(EMBB_OS_APP_ID)
+                        .setConnectionCapability(
+                                TrafficDescriptor.CONNECTION_CAPABILITY_DOWNLINK_STREAMING)
+                        .build();
+        assertThat(td.getDataNetworkName()).isEqualTo(DNN);
+        assertThat(td.getOsAppId()).isEqualTo(EMBB_OS_APP_ID);
+        assertThat(td.getConnectionCapability())
+                .isEqualTo(TrafficDescriptor.CONNECTION_CAPABILITY_DOWNLINK_STREAMING);
+
+        td =
+                new TrafficDescriptor.Builder()
+                        .setDataNetworkName(DNN)
+                        .setOsAppId(UFC_OS_APP_ID)
+                        .setConnectionCapability(
+                                TrafficDescriptor.CONNECTION_CAPABILITY_UNIFIED_COMMUNICATIONS)
+                        .build();
+        assertThat(td.getDataNetworkName()).isEqualTo(DNN);
+        assertThat(td.getOsAppId()).isEqualTo(UFC_OS_APP_ID);
+        assertThat(td.getConnectionCapability())
+                .isEqualTo(TrafficDescriptor.CONNECTION_CAPABILITY_UNIFIED_COMMUNICATIONS);
     }
 
     @Test
@@ -205,5 +264,60 @@ public class TrafficDescriptorTest {
                             .setOsAppId(osAppId.getBytes())
                             .build());
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_TRAFFIC_DESCRIPTOR_CONNECTION_CAPABILITY)
+    public void testConnectionCapability_flagEnabled() {
+        TrafficDescriptor td =
+                new TrafficDescriptor.Builder()
+                        .setConnectionCapability(TrafficDescriptor.CONNECTION_CAPABILITY_IMS)
+                        .build();
+        assertThat(td.getConnectionCapability())
+                .isEqualTo(TrafficDescriptor.CONNECTION_CAPABILITY_IMS);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_TRAFFIC_DESCRIPTOR_CONNECTION_CAPABILITY)
+    public void testParcel_withConnectionCapability_flagEnabled() {
+        TrafficDescriptor td =
+                new TrafficDescriptor.Builder()
+                        .setConnectionCapability(TrafficDescriptor.CONNECTION_CAPABILITY_MMS)
+                        .build();
+
+        Parcel parcel = Parcel.obtain();
+        td.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+
+        TrafficDescriptor parcelTd = TrafficDescriptor.CREATOR.createFromParcel(parcel);
+        assertThat(td).isEqualTo(parcelTd);
+        parcel.recycle();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_TRAFFIC_DESCRIPTOR_CONNECTION_CAPABILITY)
+    public void testEquals_withConnectionCapability_flagEnabled() {
+        TrafficDescriptor td1 =
+                new TrafficDescriptor.Builder()
+                        .setConnectionCapability(TrafficDescriptor.CONNECTION_CAPABILITY_SUPL)
+                        .build();
+        TrafficDescriptor td2 =
+                new TrafficDescriptor.Builder()
+                        .setConnectionCapability(TrafficDescriptor.CONNECTION_CAPABILITY_SUPL)
+                        .build();
+        TrafficDescriptor td3 =
+                new TrafficDescriptor.Builder()
+                        .setConnectionCapability(TrafficDescriptor.CONNECTION_CAPABILITY_INTERNET)
+                        .build();
+
+        assertThat(td1).isEqualTo(td2);
+        assertThat(td1.hashCode()).isEqualTo(td2.hashCode());
+        assertThat(td1).isNotEqualTo(td3);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_TRAFFIC_DESCRIPTOR_CONNECTION_CAPABILITY)
+    public void testBuilder_throwsExceptionWhenEmpty_flagEnabled() {
+        assertThrows(IllegalArgumentException.class, () -> new TrafficDescriptor.Builder().build());
     }
 }
