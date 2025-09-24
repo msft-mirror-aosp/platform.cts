@@ -57,8 +57,7 @@ class DefaultCapturePerfClassTest(its_base_test.ItsBaseTest):
       current_user = its_device_utils.get_current_user(device_id)
       camera_properties_utils.skip_unless(
           first_api_level >= its_session_utils.ANDROID15_API_LEVEL and
-          cam.is_primary_camera() and
-          current_user == its_device_utils.SYSTEM_USER)
+          cam.is_primary_camera())
 
       # Load chart for scene
       props = cam.get_camera_properties()
@@ -90,10 +89,12 @@ class DefaultCapturePerfClassTest(its_base_test.ItsBaseTest):
       device_img_path = ui_interaction_utils.launch_and_take_capture(
           self.dut, pkg_name, camera_facing, self.log_path,
           flip_camera=flip_camera)
-      ui_interaction_utils.pull_img_files(
-          device_id, device_img_path, self.log_path)
+      if current_user == its_device_utils.SYSTEM_USER:
+        ui_interaction_utils.pull_img_files(
+            device_id, device_img_path, self.log_path)
 
       # Analyze the captured image
+      logging.debug('device_img_path: %s', device_img_path)
       gainmap_present = cam.check_gain_map_present(device_img_path)
       logging.debug('gainmap_present: %s', gainmap_present)
 
