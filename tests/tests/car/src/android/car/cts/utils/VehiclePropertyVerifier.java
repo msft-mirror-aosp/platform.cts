@@ -72,6 +72,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -642,12 +643,17 @@ public class VehiclePropertyVerifier<T> {
      * Stores the property's current values for all areas so that they can be restored later.
      */
     public void storeCurrentValues() {
-        storeCurrentValuesForProperty(getCarPropertyConfig());
+         storeCurrentValuesForProperty(getCarPropertyConfig(), mAllPossibleUnwritableValues);
     }
 
     private <U> void storeCurrentValuesForProperty(CarPropertyConfig<U> carPropertyConfig) {
+        storeCurrentValuesForProperty(carPropertyConfig, ImmutableSet.of());
+    }
+
+    private <U> void storeCurrentValuesForProperty(
+            CarPropertyConfig<U> carPropertyConfig, Set<U> unwritableValues) {
         SparseArray<U> areaIdToInitialValue =
-                getInitialValuesByAreaId(carPropertyConfig, mCarPropertyManager);
+                getInitialValuesByAreaId(carPropertyConfig, mCarPropertyManager, unwritableValues);
         if (areaIdToInitialValue == null) {
             return;
         }
@@ -682,7 +688,8 @@ public class VehiclePropertyVerifier<T> {
     // Get a map storing the property's area Ids to the initial values.
     @Nullable
     private static <U> SparseArray<U> getInitialValuesByAreaId(
-            CarPropertyConfig<U> carPropertyConfig, CarPropertyManager carPropertyManager) {
+            CarPropertyConfig<U> carPropertyConfig, CarPropertyManager carPropertyManager,
+            Set<U> unwritableValues) {
         if (carPropertyConfig.getAccess() != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
             return null;
         }
@@ -702,6 +709,17 @@ public class VehiclePropertyVerifier<T> {
             if (carPropertyValue == null) {
                 Log.w(TAG, "Failed to get property:" + propertyName + " at area ID: " + areaId
                         + " to save initial car property value.");
+                continue;
+            }
+            if (unwritableValues.contains(carPropertyValue.getValue())) {
+                Log.w(
+                        TAG,
+                        "Cannot save initial value for property:"
+                                + propertyName
+                                + " at area ID: "
+                                + areaId
+                                + " because it is an unwritable value: "
+                                + carPropertyValue.getValue());
                 continue;
             }
             areaIdToInitialValue.put(areaId, (U) carPropertyValue.getValue());
