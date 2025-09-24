@@ -388,7 +388,7 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
         disableIgnoreOrientationRequest();
 
         separateTestJournal();
-        launchActivity(PORTRAIT_ORIENTATION_ACTIVITY);
+        launchActivityInFullscreen(PORTRAIT_ORIENTATION_ACTIVITY);
         mWmState.assertVisibility(PORTRAIT_ORIENTATION_ACTIVITY, true /* visible */);
         SizeInfo reportedSizes = getLastReportedSizesForActivity(PORTRAIT_ORIENTATION_ACTIVITY);
         assertEquals("portrait activity should be in portrait",
