@@ -117,15 +117,13 @@ class DebugInputRule : TestWatcher() {
      */
     annotation class DebugInput(val bug: Long)
 
-    val initialValues = mutableMapOf<String, String>()
+    private val scopedTags = mutableListOf<ScopedInputTag>()
 
     override fun starting(description: Description?) {
         if (!shouldEnableInputDebugging(description!!)) return
 
         for (tag in debugInputTags) {
-            initialValues[tag] =
-                    SystemUtil.runShellCommandOrThrow("getprop log.tag.$tag")!!.trim()
-            SystemUtil.runShellCommandOrThrow("setprop log.tag.$tag DEBUG")
+            scopedTags.add(ScopedInputTag(tag))
         }
         SystemUtil.runShellCommandOrThrow(
             "wm logging enable-text WM_DEBUG_FOCUS_LIGHT WM_DEBUG_FOCUS"
@@ -139,11 +137,8 @@ class DebugInputRule : TestWatcher() {
     override fun finished(description: Description?) {
         if (!shouldEnableInputDebugging(description!!)) return
 
-        for (entry in initialValues) {
-            val value = entry.value.ifBlank { "UNKNOWN" }
-            SystemUtil.runShellCommandOrThrow("setprop log.tag.${entry.key} $value")
-        }
-        initialValues.clear()
+        scopedTags.forEach { it.close() }
+        scopedTags.clear()
         SystemUtil.runShellCommandOrThrow(
             "wm logging disable-text WM_DEBUG_FOCUS_LIGHT WM_DEBUG_FOCUS"
         )
