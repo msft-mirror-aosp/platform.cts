@@ -26,7 +26,7 @@ import android.app.Notification.Metric;
 import android.app.Notification.Metric.FixedDate;
 import android.app.Notification.Metric.FixedFloat;
 import android.app.Notification.Metric.FixedInt;
-import android.app.Notification.Metric.FixedString;
+import android.app.Notification.Metric.FixedText;
 import android.app.Notification.Metric.FixedTime;
 import android.app.Notification.Metric.TimeDifference;
 import android.app.Notification.MetricStyle;
@@ -86,13 +86,13 @@ public class NotificationMetricStyleTest {
     @Test
     public void addMetric_adds() {
         MetricStyle style = new MetricStyle();
-        style.addMetric(new Metric(new FixedString("Blah"), "Meh"));
+        style.addMetric(new Metric(new FixedText("Blah"), "Meh"));
         style.addMetric(new Metric(new FixedInt(42), "Steps"));
         style.addMetric(new Metric(new FixedDate(LocalDate.of(2017, 4, 1)), "X"));
 
         assertThat(style.getMetrics())
                 .containsExactly(
-                        new Metric(new FixedString("Blah"), "Meh"),
+                        new Metric(new FixedText("Blah"), "Meh"),
                         new Metric(new FixedInt(42), "Steps"),
                         new Metric(new FixedDate(LocalDate.of(2017, 4, 1)), "X"))
                 .inOrder();
@@ -107,8 +107,8 @@ public class NotificationMetricStyleTest {
     @Test
     public void setMetrics_replaces() {
         MetricStyle style = new MetricStyle();
-        style.addMetric(new Metric(new FixedString("Will be discarded"), "A"));
-        style.addMetric(new Metric(new FixedString("And this too"), "B"));
+        style.addMetric(new Metric(new FixedText("Will be discarded"), "A"));
+        style.addMetric(new Metric(new FixedText("And this too"), "B"));
 
         style.setMetrics(List.of(new Metric(new FixedInt(10), "X")));
 
@@ -134,7 +134,7 @@ public class NotificationMetricStyleTest {
                                                 Duration.ofSeconds(30),
                                                 TimeDifference.FORMAT_ADAPTIVE),
                                         "Timer"))
-                        .addMetric(new Metric(new FixedString("Gibbous"), "Moon"))
+                        .addMetric(new Metric(new FixedText("Gibbous"), "Moon"))
                         .addMetric(new Metric(new FixedTime(LocalTime.of(19, 30)), "Event"));
 
         MetricStyle style2 =
@@ -146,7 +146,7 @@ public class NotificationMetricStyleTest {
                                                         Duration.ofSeconds(30),
                                                         TimeDifference.FORMAT_ADAPTIVE),
                                                 "Timer"),
-                                        new Metric(new FixedString("Gibbous"), "Moon"),
+                                        new Metric(new FixedText("Gibbous"), "Moon"),
                                         new Metric(new FixedTime(LocalTime.of(19, 30)), "Event")));
 
         assertThat(style1).isEqualTo(style2);
@@ -163,7 +163,7 @@ public class NotificationMetricStyleTest {
                                                 Duration.ofSeconds(30),
                                                 TimeDifference.FORMAT_ADAPTIVE),
                                         "Timer"))
-                        .addMetric(new Metric(new FixedString("Gibbous"), "Moon"));
+                        .addMetric(new Metric(new FixedText("Gibbous"), "Moon"));
 
         MetricStyle style2 =
                 new MetricStyle()
@@ -174,7 +174,7 @@ public class NotificationMetricStyleTest {
                                                         Duration.ofSeconds(30),
                                                         TimeDifference.FORMAT_ADAPTIVE),
                                                 "A *different* timer"),
-                                        new Metric(new FixedString("Gibbous"), "Moon")));
+                                        new Metric(new FixedText("Gibbous"), "Moon")));
 
         assertThat(style1).isNotEqualTo(style2);
         assertThat(style1.hashCode()).isNotEqualTo(style2.hashCode());
@@ -182,9 +182,9 @@ public class NotificationMetricStyleTest {
 
     @Test
     public void newMetric_constructs() {
-        Metric metric = new Metric(new FixedString("str"), "Port");
+        Metric metric = new Metric(new FixedText("str"), "Port");
 
-        assertThat(metric.getValue()).isEqualTo(new FixedString("str"));
+        assertThat(metric.getValue()).isEqualTo(new FixedText("str"));
         assertThat(metric.getLabel()).isEqualTo("Port");
     }
 
@@ -414,18 +414,18 @@ public class NotificationMetricStyleTest {
     }
 
     @Test
-    public void newFixedString_constructs() {
-        FixedString fixedString = new FixedString("120/80", "mmHg");
-        assertThat(fixedString.getValue()).isEqualTo("120/80");
-        assertThat(fixedString.getUnit()).isEqualTo("mmHg");
+    public void newFixedText_constructs() {
+        FixedText fixedText = new FixedText("120/80", "mmHg");
+        assertThat(fixedText.getValue()).isEqualTo("120/80");
+        assertThat(fixedText.getUnit()).isEqualTo("mmHg");
 
-        FixedString defaults = new FixedString("Hello!");
+        FixedText defaults = new FixedText("Hello!");
         assertThat(defaults.getValue()).isEqualTo("Hello!");
         assertThat(defaults.getUnit()).isNull();
     }
 
     @Test
-    public void newFixedString_nullString_throws() {
-        assertThrows(NullPointerException.class, () -> new FixedString(null));
+    public void newFixedText_nullString_throws() {
+        assertThrows(NullPointerException.class, () -> new FixedText(null));
     }
 }
