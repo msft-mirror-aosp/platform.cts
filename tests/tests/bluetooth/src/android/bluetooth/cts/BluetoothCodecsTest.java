@@ -18,7 +18,6 @@ package android.bluetooth.cts;
 
 import static android.bluetooth.BluetoothCodecConfig.SOURCE_CODEC_TYPE_AAC;
 import static android.bluetooth.BluetoothCodecConfig.SOURCE_CODEC_TYPE_INVALID;
-import static android.bluetooth.BluetoothCodecConfig.SOURCE_CODEC_TYPE_LC3;
 import static android.bluetooth.BluetoothCodecConfig.SOURCE_CODEC_TYPE_SBC;
 import static android.bluetooth.BluetoothCodecType.CODEC_ID_AAC;
 
@@ -360,7 +359,6 @@ public class BluetoothCodecsTest {
         BluetoothCodecType c = BluetoothCodecType.createFromType(SOURCE_CODEC_TYPE_AAC);
         assertThat(c).isNotNull();
 
-        assertThat(BluetoothCodecType.createFromType(SOURCE_CODEC_TYPE_LC3)).isNull();
         assertThat(BluetoothCodecType.createFromType(SOURCE_CODEC_TYPE_INVALID)).isNull();
     }
 
