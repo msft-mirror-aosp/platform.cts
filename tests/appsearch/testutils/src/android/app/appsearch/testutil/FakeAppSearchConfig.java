@@ -355,6 +355,12 @@ public final class FakeAppSearchConfig implements ServiceAppSearchConfig {
         return DEFAULT_COMPRESSION_THRESHOLD_BYTES;
     }
 
+    @Override
+    public int getEmbeddingIndexNumShards() {
+        throwIfClosed();
+        return DEFAULT_EMBEDDING_INDEX_NUM_SHARDS;
+    }
+
     private void throwIfClosed() {
         if (mIsClosed.get()) {
             throw new IllegalStateException(
