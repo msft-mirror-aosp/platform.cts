@@ -4112,41 +4112,6 @@
     <option name="compatibility:include-filter" value="CtsTextTestCases android.text.cts.StaticLayoutMultilineBidiTest#testConsistentBidiDraw"/>
     <option name="compatibility:include-filter" value="CtsTextTestCases android.text.method.cts.DateTimeKeyListenerTest#testDateTimeKeyListener"/>
     <option name="compatibility:include-filter" value="CtsTextTestCases android.text.method.cts.DigitsKeyListenerTest#testDigitsKeyListener1"/>
-    <!-- CtsTextTestCases[instant] -->
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.BoringLayoutDrawShiftTest#testBreakOvershoot_preceding_LTR"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.BoringLayoutDrawShiftTest#testBreakOvershoot_trailing_LTR"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_preceding_Bidi_LTRFirst[Dynamic/Greedy]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_preceding_Bidi_LTRFirst[Dynamic/Optimal]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_preceding_Bidi_LTRFirst[Static/Greedy]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_preceding_Bidi_LTRFirst[Static/Optimal]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_preceding_Bidi_RTLFirst[Dynamic/Greedy]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_preceding_Bidi_RTLFirst[Dynamic/Optimal]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_preceding_Bidi_RTLFirst[Static/Greedy]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_preceding_Bidi_RTLFirst[Static/Optimal]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_preceding_LTR[Dynamic/Greedy]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_preceding_LTR[Dynamic/Optimal]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_preceding_LTR[Static/Greedy]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_preceding_LTR[Static/Optimal]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_preceding_RTL[Dynamic/Greedy]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_preceding_RTL[Dynamic/Optimal]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_preceding_RTL[Static/Greedy]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_preceding_RTL[Static/Optimal]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_trailing_Bidi_LTRFirst[Dynamic/Greedy]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_trailing_Bidi_LTRFirst[Dynamic/Optimal]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_trailing_Bidi_LTRFirst[Static/Greedy]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_trailing_Bidi_LTRFirst[Static/Optimal]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_trailing_Bidi_RTLFirst[Dynamic/Greedy]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_trailing_Bidi_RTLFirst[Dynamic/Optimal]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_trailing_Bidi_RTLFirst[Static/Greedy]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_trailing_Bidi_RTLFirst[Static/Optimal]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_trailing_LTR[Dynamic/Greedy]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_trailing_LTR[Dynamic/Optimal]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_trailing_LTR[Static/Greedy]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_trailing_LTR[Static/Optimal]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_trailing_RTL[Dynamic/Greedy]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_trailing_RTL[Dynamic/Optimal]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_trailing_RTL[Static/Greedy]"/>
-    <option name="compatibility:include-filter" value="CtsTextTestCases[instant] android.text.cts.LayoutDrawShiftTest#testBreakOvershoot_trailing_RTL[Static/Optimal]"/>
     <!-- CtsThemeHostTestCases -->
     <option name="compatibility:include-filter" value="CtsThemeHostTestCases android.theme.cts.ThemeHostTest#testThemes"/>
     <!-- CtsThreadNetworkTestCases -->
