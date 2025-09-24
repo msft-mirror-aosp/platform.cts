@@ -42,6 +42,7 @@ public class AudioOffloadNativeTest {
 
     private static final int STATUS_OK = 0;
     private static final int AUDIOTRACK_DEFAULT_SAMPLE_RATE = 48000;
+    private static final int PER_TEST_TIMEOUT_SMALL_TEST_MS = 60000;
 
     static {
         System.loadLibrary("audiocts_aaudio_jni");
@@ -54,7 +55,7 @@ public class AudioOffloadNativeTest {
                 .hasSystemFeature(PackageManager.FEATURE_AUDIO_OUTPUT);
     }
 
-    @Test
+    @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
     public void testMmapPcmOffload() {
         assumeTrue("Skipping test, no audio output found", hasAudioOutput());
 
