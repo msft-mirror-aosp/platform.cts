@@ -42,7 +42,6 @@ import static android.telephony.CarrierConfigManager.ImsEmergency.REDIAL_TIMER_D
 import static android.telephony.CarrierConfigManager.ImsEmergency.SCAN_TYPE_NO_PREFERENCE;
 import static android.telephony.CarrierConfigManager.ImsWfc.KEY_EMERGENCY_CALL_OVER_EMERGENCY_PDN_BOOL;
 import static android.telephony.NetworkRegistrationInfo.REGISTRATION_STATE_HOME;
-import static android.telephony.PreciseCallState.PRECISE_CALL_STATE_ACTIVE;
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_CHT;
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_FET;
 import static android.telephony.satellite.SatelliteManager.EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_SOS;
@@ -50,12 +49,8 @@ import static android.telephony.satellite.SatelliteManager.EMERGENCY_CALL_TO_SAT
 
 import static com.android.internal.telephony.satellite.SatelliteController.TIMEOUT_TYPE_EMERGENCY_CALL_MONITORING_DURATION_MILLIS;
 
-import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
@@ -63,50 +58,33 @@ import static org.junit.Assume.assumeTrue;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
-import android.media.AudioManager;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.PersistableBundle;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telecom.Call;
-import android.telecom.PhoneAccount;
 import android.telecom.TelecomManager;
 import android.telephony.AccessNetworkConstants;
-import android.telephony.BarringInfo;
 import android.telephony.CallState;
 import android.telephony.CarrierConfigManager;
-import android.telephony.DisconnectCause;
 import android.telephony.NetworkRegistrationInfo;
 import android.telephony.PreciseCallState;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyCallback;
-import android.telephony.TelephonyManager;
 import android.telephony.cts.InCallServiceStateValidator;
 import android.telephony.emergency.EmergencyNumber;
-import android.telephony.ims.ImsCallProfile;
-import android.telephony.ims.ImsCallSessionListener;
 import android.telephony.ims.ImsManager;
 import android.telephony.ims.ImsMmTelManager;
-import android.telephony.ims.ImsStreamMediaProfile;
-import android.telephony.ims.MediaQualityStatus;
-import android.telephony.ims.cts.ConferenceHelper;
 import android.telephony.ims.cts.ImsServiceConnector;
 import android.telephony.ims.cts.ImsUtils;
-import android.telephony.ims.cts.TestMmTelFeature;
 import android.telephony.ims.cts.TestImsCallSessionImpl;
 import android.telephony.ims.cts.TestImsService;
-import android.telephony.ims.feature.MmTelFeature;
+import android.telephony.ims.cts.TestMmTelFeature;
 import android.telephony.mockmodem.MockEmergencyRegResult;
-import android.telephony.mockmodem.MockModemManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
-import android.util.SparseArray;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -124,10 +102,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -335,7 +311,9 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
         TestTelephonyCallbackForCallStateChange testCb =
                 new TestTelephonyCallbackForCallStateChange(queue);
         try {
-            logd(LOG_TAG, "testE911ToT911Handover_AutoConnect: setup auto connect test environment");
+            logd(
+                    LOG_TAG,
+                    "testE911ToT911Handover_AutoConnect: setup auto connect test environment");
             setUpAutoConnectTestEnvironment(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_FET,
                 PHONE_NUMBER_0, true);
             setUpImsCallingTestEnvironment(SLOT_ID_0);
@@ -783,6 +761,271 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
     }
 
     @Test
+    public void testE911ToT911Handover_Hybrid_AutoConnect_DS() throws Exception {
+        /*
+         * Require domain selection to be supported.
+         * Test scenario:
+         * 1. There is only one hybrid connect satellite subscription.
+         * 2. The device is connected to auto satellite within hysteresis time.
+         * 3. The emergency call is placed to the test emergency number.
+         * 4. The emergency call is handed over to T911 satellite messaging.
+         * 5. Verify the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE is sent
+         *    and its contents are correct.
+         */
+        assumeTrue(shouldTestEmergencyHandoverToSatelliteMessaging());
+
+        assumeTrue(Flags.vzwAstSkyloFallback());
+
+        boolean supportDomainSelection =
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        sTelephonyManager, (tm) -> tm.isDomainSelectionSupported());
+        assumeTrue(supportDomainSelection);
+
+        ImsManager imsManager = getContext().getSystemService(ImsManager.class);
+        ImsMmTelManager mmTelManager = null;
+        LinkedBlockingQueue<List<CallState>> queue = new LinkedBlockingQueue<>();
+        TestTelephonyCallbackForCallStateChange testCb =
+                new TestTelephonyCallbackForCallStateChange(queue);
+
+        try {
+            logd(
+                    LOG_TAG,
+                    "testE911ToT911Handover_Hybrid_AutoConnect_DS: setup hybrid connect"
+                            + " test environment");
+
+            setUpHybridConnectAutoTestEnvironment(
+                    SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_FET, PHONE_NUMBER_0, true);
+
+            setUpImsCallingTestEnvironment(SLOT_ID_0);
+            setUpSatelliteAccessAllowedAtDefaultTestLocation();
+            assertTrue(sMockSatelliteServiceManager.setCtsMode(true));
+
+            int subId = SubscriptionManager.getSubscriptionId(SLOT_ID_0);
+            assumeTrue(subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+            mmTelManager = imsManager.getImsMmTelManager(subId);
+            sVoLteEnabled =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            mmTelManager, ImsMmTelManager::isAdvancedCallingSettingEnabled);
+
+            sMockModemManager.notifyEmergencyNumberList(
+                    SLOT_ID_0, new String[] {sTestEmergencyNumbers[1]});
+
+            // Setup pre-condition
+            PersistableBundle bundle = getDefaultPersistableBundle();
+            overrideCarrierConfig(subId, bundle);
+
+            MockEmergencyRegResult regResult =
+                    getEmergencyRegResult(
+                            EUTRAN,
+                            REGISTRATION_STATE_HOME,
+                            NetworkRegistrationInfo.DOMAIN_CS | NetworkRegistrationInfo.DOMAIN_PS,
+                            true,
+                            true,
+                            0,
+                            0,
+                            "",
+                            "");
+            sMockModemManager.setEmergencyRegResult(SLOT_ID_0, regResult);
+
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    sTelephonyManager, (tm) -> tm.registerTelephonyCallback(Runnable::run, testCb));
+
+            testCb.setTestEmergencyNumber(sTestEmergencyNumbers[1]);
+            setupForEmergencyCalling(SLOT_ID_0, sTestEmergencyNumbers[1]);
+            assertTrue(testCb.waitForTestEmergencyNumberConfigured());
+
+            logd(LOG_TAG, "testE911ToT911Handover_Hybrid_AutoConnect_DS: bind to InCallService");
+            bindImsService(SLOT_ID_0);
+            mServiceCallBack = new ServiceCallBack();
+            InCallServiceStateValidator.setCallbacks(mServiceCallBack);
+
+            logd(
+                    LOG_TAG,
+                    "testE911ToT911Handover_Hybrid_AutoConnect_DS: place outgoing emergency call");
+            TelecomManager telecomManager = getContext().getSystemService(TelecomManager.class);
+            telecomManager.placeCall(sTestEmergencyUris[1], new Bundle());
+
+            waitForCallSessionToNotBe(null);
+            TestImsCallSessionImpl callSession =
+                    sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+            callSession.addTestType(TestImsCallSessionImpl.TEST_TYPE_MO_STAY_AT_ESTABLISHING);
+
+            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+            Call call = getCall(mCurrentCallId);
+
+            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+
+            // Wait for outgoing emergency call
+            assertTrue(testCb.waitForOutgoingEmergencyCall(sTestEmergencyNumbers[1]));
+            // Wait for the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE sent to Dialer.
+            assertTrue(
+                    callingTestLatchCountdown(
+                            LATCH_EVENT_DISPLAY_EMERGENCY_MESSAGE_RECEIVED, WAIT_FOR_CALL_STATE));
+            Pair<String, String> defaultSmsApp = getDefaultSmsApp();
+            String action = Intent.ACTION_SENDTO;
+            String uri = "smsto:" + sTestEmergencyNumbers[1];
+            verifyHandoverMessage(
+                    EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_T911,
+                    defaultSmsApp.first,
+                    defaultSmsApp.second,
+                    action,
+                    uri,
+                    SLOT_ID_0);
+
+            call.disconnect();
+            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+            isCallDisconnected(call, callSession);
+            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+            waitForUnboundService();
+        } finally {
+            logd(LOG_TAG, "estE911ToT911Handover_AutoConnect_DS: clean up test environments");
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    sTelephonyManager, (tm) -> tm.unregisterTelephonyCallback(testCb));
+            if (mmTelManager != null) {
+                ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                        mmTelManager, (m) -> m.setAdvancedCallingSettingEnabled(sVoLteEnabled));
+            }
+            cleanUpImsCallingTestEnvironment(SLOT_ID_0);
+            cleanUpMockSim(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_FET, true);
+        }
+    }
+
+    @Test
+    public void testE911ToeSOSHandover_Hybrid_ManualConnect_DS() throws Exception {
+        /*
+         * Require domain selection to be supported.
+         * Test scenario:
+         * 1. One Hybrid connect SIM
+         * 2. Manual connected.
+         * 3. The emergency call is placed to the test emergency number.
+         * 4. The emergency call is handed over to eSOS satellite messaging.
+         * 5. Verify the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE is sent
+         *    and its contents are correct.
+         */
+        assumeTrue(shouldTestEmergencyHandoverToSatelliteMessaging());
+
+        assumeTrue(Flags.vzwAstSkyloFallback());
+        boolean supportDomainSelection =
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        sTelephonyManager, (tm) -> tm.isDomainSelectionSupported());
+        assumeTrue(supportDomainSelection);
+
+        ImsManager imsManager = getContext().getSystemService(ImsManager.class);
+        ImsMmTelManager mmTelManager = null;
+        LinkedBlockingQueue<List<CallState>> queue = new LinkedBlockingQueue<>();
+        TestTelephonyCallbackForCallStateChange testCb =
+                new TestTelephonyCallbackForCallStateChange(queue);
+
+        try {
+            logd(
+                    LOG_TAG,
+                    "testE911ToeSOSHandover_Hybrid_ManualConnect_DS: "
+                            + "setup manual connect test environment");
+
+            setUpHybridConnectManualTestEnvironment(
+                    MANUAL_CONNECT_SLOT_ID,
+                    MANUAL_CONNECT_SIM_PROFILE_ID,
+                    MANUAL_CONNECT_PHONE_NUMBER,
+                    true,
+                    true,
+                    true);
+
+            setUpImsCallingTestEnvironment(MANUAL_CONNECT_SLOT_ID);
+
+            int subId = SubscriptionManager.getSubscriptionId(MANUAL_CONNECT_SLOT_ID);
+            assumeTrue(subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+            mmTelManager = imsManager.getImsMmTelManager(subId);
+            sVoLteEnabled =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            mmTelManager, ImsMmTelManager::isAdvancedCallingSettingEnabled);
+
+            sMockModemManager.notifyEmergencyNumberList(
+                    MANUAL_CONNECT_SLOT_ID, new String[] {sTestEmergencyNumbers[1]});
+
+            // Setup pre-condition
+            PersistableBundle bundle = getDefaultPersistableBundle();
+            overrideCarrierConfig(subId, bundle);
+
+            MockEmergencyRegResult regResult =
+                    getEmergencyRegResult(
+                            EUTRAN,
+                            REGISTRATION_STATE_HOME,
+                            NetworkRegistrationInfo.DOMAIN_CS | NetworkRegistrationInfo.DOMAIN_PS,
+                            true,
+                            true,
+                            0,
+                            0,
+                            "",
+                            "");
+            sMockModemManager.setEmergencyRegResult(MANUAL_CONNECT_SLOT_ID, regResult);
+
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    sTelephonyManager, (tm) -> tm.registerTelephonyCallback(Runnable::run, testCb));
+
+            testCb.setTestEmergencyNumber(sTestEmergencyNumbers[1]);
+            setupForEmergencyCalling(MANUAL_CONNECT_SLOT_ID, sTestEmergencyNumbers[1]);
+            assertTrue(testCb.waitForTestEmergencyNumberConfigured());
+
+            logd(LOG_TAG, "testE911ToeSOSHandover_Hybrid_ManualConnect_DS: bind to InCallService");
+            bindImsService(MANUAL_CONNECT_SLOT_ID);
+            mServiceCallBack = new ServiceCallBack();
+            InCallServiceStateValidator.setCallbacks(mServiceCallBack);
+
+            logd(
+                    LOG_TAG,
+                    "testE911ToeSOSHandover_Hybrid_ManualConnect_DS:"
+                            + "place outgoing emergency call");
+            TelecomManager telecomManager = getContext().getSystemService(TelecomManager.class);
+            telecomManager.placeCall(sTestEmergencyUris[1], new Bundle());
+
+            waitForCallSessionToNotBe(null);
+            TestImsCallSessionImpl callSession =
+                    sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+            callSession.addTestType(TestImsCallSessionImpl.TEST_TYPE_MO_STAY_AT_ESTABLISHING);
+
+            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+            Call call = getCall(mCurrentCallId);
+
+            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+
+            // Wait for outgoing emergency call
+            assertTrue(testCb.waitForOutgoingEmergencyCall(sTestEmergencyNumbers[1]));
+            // Wait for the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE sent to Dialer.
+            assertTrue(
+                    callingTestLatchCountdown(
+                            LATCH_EVENT_DISPLAY_EMERGENCY_MESSAGE_RECEIVED, WAIT_FOR_CALL_STATE));
+            Pair<String, String> eSosApp = readSatelliteHandoverAppFromOverlayConfig();
+            String action =
+                    sMockSatelliteServiceManager.readStringFromOverlayConfig(
+                            "config_satellite_test_with_esp_replies_intent_action");
+            verifyHandoverMessage(
+                    EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_SOS,
+                    eSosApp.first,
+                    eSosApp.second,
+                    action,
+                    "",
+                    MANUAL_CONNECT_SLOT_ID);
+
+            call.disconnect();
+            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+            isCallDisconnected(call, callSession);
+            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+            waitForUnboundService();
+        } finally {
+            logd(LOG_TAG, "testE911ToEsosHandover_Coex_DS: clean up test environments");
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    sTelephonyManager, (tm) -> tm.unregisterTelephonyCallback(testCb));
+            if (mmTelManager != null) {
+                ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                        mmTelManager, (m) -> m.setAdvancedCallingSettingEnabled(sVoLteEnabled));
+            }
+            cleanUpImsCallingTestEnvironment(MANUAL_CONNECT_SLOT_ID);
+            cleanUpManualConnectTestEnvironment(
+                    MANUAL_CONNECT_SLOT_ID, MANUAL_CONNECT_SIM_PROFILE_ID);
+        }
+    }
+
+    @Test
     public void testE911ToEsosHandover_Coex_DS() throws Exception {
         /*
          * Require domain selection to be supported.
@@ -810,8 +1053,13 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
 
         try {
             logd(LOG_TAG, "testE911ToEsosHandover_Coex_DS: setup manual connect test environment");
-            setUpManualConnectTestEnvironment(MANUAL_CONNECT_SLOT_ID,
-                MANUAL_CONNECT_SIM_PROFILE_ID, MANUAL_CONNECT_PHONE_NUMBER, true, true, false);
+            setUpManualConnectTestEnvironment(
+                    MANUAL_CONNECT_SLOT_ID,
+                    MANUAL_CONNECT_SIM_PROFILE_ID,
+                    MANUAL_CONNECT_PHONE_NUMBER,
+                    true,
+                    true,
+                    true);
             setUpImsCallingTestEnvironment(MANUAL_CONNECT_SLOT_ID);
 
             logd(LOG_TAG, "testE911ToEsosHandover_Coex_DS: setup auto connect test environment");
