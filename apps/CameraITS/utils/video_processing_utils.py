@@ -464,3 +464,35 @@ def compress_video(input_filename, output_filename, crf=CONSTANT_RATE_FACTOR):
   with open(os.devnull, 'w') as devnull:
     subprocess.run(ffmpeg_cmd, stdout=devnull,
                    stderr=subprocess.STDOUT, check=False)
+
+
+def extract_frames_and_frame_shape_from_video(log_path, recording_path,
+                                              img_format):
+  """Extract frames from video and convert to numpy array.
+
+  Args:
+    log_path: str; Directory where video is saved.
+    recording_path: str; Path to video file.
+    img_format: str; Format of the image. ex. 'png'
+
+  Returns:
+    frames: List of numpy arrays.
+    frame_shape: Tuple of frame shape.
+  """
+  video_filename = os.path.basename(recording_path)
+  logging.debug('file_name: %s', video_filename)
+  extracted_frame_files = extract_all_frames_from_video(
+      log_path, video_filename, img_format)
+  if not extracted_frame_files:
+    logging.debug('No frames extracted from video: %s', video_filename)
+    return [], ()  # Return empty list and tuple if no frames
+  logging.debug('Number of extracted frames: %d', len(extracted_frame_files))
+
+  frames = []
+  for file in extracted_frame_files:
+    img = image_processing_utils.convert_image_to_numpy_array(
+        os.path.join(log_path, file))
+    frames.append(img/255.0)
+  frame_shape = frames[0].shape
+  logging.debug('Frame size %d x %d', frame_shape[1], frame_shape[0])
+  return frames, frame_shape

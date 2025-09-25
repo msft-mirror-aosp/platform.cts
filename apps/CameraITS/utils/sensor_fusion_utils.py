@@ -928,3 +928,48 @@ def conv_acceleration_to_movement(gyro_events, video_delay_time):
       gyro_rotations.append((gyro_times[i]-gyro_times[i-1])/_SEC_TO_NSEC *
                             gyro_speed[i])
   return np.array(gyro_rotations)
+
+
+def extract_camera_gyro_rotations(
+    lens_facing, frames, frame_shape, start_frame, video_delay_time,
+    gyro_events, log_path, file_name, quality_tested):
+  """Extract camera and gyro rotations from frames and gyro events.
+
+  Args:
+    lens_facing: str; Facing of camera.
+    frames: List of numpy arrays.
+    frame_shape: Tuple of frame shape.
+    start_frame: int; Frame index to start at.
+    video_delay_time: int; Time to wait before extracting rotations.
+    gyro_events: List of gyro events.
+    log_path: str; Directory where video is saved.
+    file_name: str; Saving file name of video.
+    quality_name: str; For labeling graph and file name for video quality.
+
+  Returns:
+    max_gyro_angle: float; Max angle of deflection in gyroscope movement.
+    max_camera_angle: float; Max angle of deflection in video movement.
+    frame_shape: Tuple of frame shape.
+    ratio_name: str; Name of ratio tested for logging.
+  """
+  quality_name = quality_tested.replace(' ', '_')
+  file_name_stem = f'{os.path.join(log_path, file_name)}_{quality_name}'
+
+  # Extract camera rotations.
+  cam_rots = get_cam_rotations_from_frames(
+      frames[start_frame:], lens_facing, frame_shape[0],
+      file_name_stem, start_frame, stabilized_video=True)
+  plot_camera_rotations(
+      cam_rots, start_frame, quality_name, file_name_stem)
+  max_camera_angle = calc_max_rotation_angle(
+      cam_rots, 'Camera')
+
+  # Extract gyro rotations.
+  plot_gyro_events(gyro_events, f'{file_name}_{quality_name}', log_path)
+  gyro_rots = conv_acceleration_to_movement(gyro_events, video_delay_time)
+  max_gyro_angle = calc_max_rotation_angle(gyro_rots, 'Gyro')
+  logging.debug(
+      'Max deflection (degrees) %s: video: %.3f, gyro: %.3f, ratio: %.4f',
+      quality_name, max_camera_angle, max_gyro_angle,
+      max_camera_angle / max_gyro_angle)
+  return max_gyro_angle, max_camera_angle, frame_shape, quality_name

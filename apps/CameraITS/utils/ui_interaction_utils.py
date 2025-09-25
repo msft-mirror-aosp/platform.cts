@@ -66,12 +66,14 @@ CAPTURE_BUTTON_RESOURCE_ID = 'CaptureButton'
 
 # JCA_PATH feature/settings/src/main/java/com/google/jetpackcamera/settings/ui/TestTags.kt  pylint: disable=line-too-long
 SETTINGS_BACK_BUTTON_RESOURCE_ID = 'BackButton'
+SETTINGS_VIDEO_QUALITY_RESOURCE_ID = 'btn_open_dialog_setting_video_quality_tag'
 SETTINGS_VIDEO_STABILIZATION_RESOURCE_ID = (
     'btn_open_dialog_setting_video_stabilization_tag'
 )
 # JCA_PATH feature/settings/src/main/java/com/google/jetpackcamera/settings/ui/TestTags.kt  pylint: disable=line-too-long
 
 # JCA_PATH feature/settings/src/main/res/values/strings.xml
+SETTINGS_VIDEO_QUALITY_MODE_TEXT = 'Set Video Quality'
 SETTINGS_VIDEO_STABILIZATION_AUTO_TEXT = 'Stabilization Auto'
 SETTINGS_MENU_STABILIZATION_HIGH_QUALITY_TEXT = 'Stabilization High Quality'
 SETTINGS_VIDEO_STABILIZATION_MODE_TEXT = 'Set Video Stabilization'
@@ -103,6 +105,11 @@ JCA_STABILIZATION_MODES = {
     2: STABILIZATION_DESC_ON,
     3: STABILIZATION_DESC_OPTICAL,
 }
+JCA_VIDEO_QUALITY_AUTO = 'Auto'
+JCA_VIDEO_QUALITY_SD = 'SD'
+JCA_VIDEO_QUALITY_HD = 'HD'
+JCA_VIDEO_QUALITY_FHD = 'FHD'
+JCA_VIDEO_QUALITY_UHD = 'UHD'
 JCA_VIDEO_STABILIZATION_MODE_HIGH_QUALITY = 1
 JCA_VIDEO_STABILIZATION_MODE_OFF = 0
 JCA_VIDEO_STABILIZATION_MODE_ON = 2
@@ -380,7 +387,8 @@ def change_jca_aspect_ratio(dut, log_path, aspect_ratio):
   dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
 
 
-def do_jca_video_setup(dut, log_path, facing, aspect_ratio, stabilization_mode):
+def do_jca_video_setup(dut, log_path, facing, aspect_ratio, stabilization_mode,
+                       video_quality):
   """Change video capture settings using the UI.
 
   Selects UI elements to modify settings.
@@ -394,11 +402,14 @@ def do_jca_video_setup(dut, log_path, facing, aspect_ratio, stabilization_mode):
       Acceptable values: _RATIO_TO_UI_DESCRIPTION
     stabilization_mode: int; constant describing the video stabilization mode.
       Acceptable values: 0, 1, 2
+    video_quality: int; constant describing the video quality.
+      Acceptable values: 0, 1, 2, 3, 4
   """
   open_jca_viewfinder(dut, log_path, request_video_capture=True)
   switch_jca_camera(dut, log_path, facing)
   change_jca_aspect_ratio(dut, log_path, aspect_ratio)
   _set_jca_video_stabilization(dut, log_path, stabilization_mode)
+  _set_jca_video_quality(dut, log_path, video_quality)
 
 
 def _set_jca_video_stabilization(dut, log_path, stabilization_mode):
@@ -490,6 +501,59 @@ def _set_jca_video_stabilization(dut, log_path, stabilization_mode):
   else:
     if 'stabilize' in dut.ui.dump().lower():
       raise AssertionError('JCA video stabilization_mode not set to OFF.')
+
+
+def _set_jca_video_quality(dut, log_path, video_quality):
+  """Change video quality using the UI.
+
+  Args:
+    dut: An Android controller device object.
+    log_path: str; log path to save screenshots.
+    video_quality: str.
+  """
+  dut.ui(res=SETTINGS_BUTTON_RESOURCE_ID).click()
+  scrollable_menu = dut.ui(scrollable=True)
+  scrollable_menu.scroll.down(res=SETTINGS_VIDEO_QUALITY_RESOURCE_ID)
+  if not dut.ui(text=SETTINGS_VIDEO_QUALITY_MODE_TEXT).wait.exists(
+      UI_OBJECT_WAIT_TIME_SECONDS):
+    dut.take_screenshot(
+        log_path, prefix='failed_to_find_video_quality_settings')
+    raise AssertionError('Set Video Quality settings not found!'
+                         'Make sure you have the latest JCA app.')
+  dut.ui(res=SETTINGS_VIDEO_QUALITY_RESOURCE_ID).click()
+
+  # Check if the element is already visible
+  if not dut.ui(text=video_quality).wait.exists(UI_OBJECT_WAIT_TIME_SECONDS):
+    logging.debug(
+        '%s not immediately visible. Attempting to scroll.', video_quality)
+
+    if scrollable_menu.wait.exists(UI_OBJECT_WAIT_TIME_SECONDS):
+      logging.debug('Scrolling down to find %s...', video_quality)
+
+      found = scrollable_menu.scroll.down(text=video_quality)
+      if not found:
+        dut.take_screenshot(
+            log_path, prefix='failed_to_find_video_quality_mode')
+        raise AssertionError(
+            f'Video Quality Mode "{video_quality}"'
+            f' not found even after scrolling!')
+      else:
+        logging.debug('Found %s after scrolling.', video_quality)
+    else:
+      # No scrollable element found on the screen
+      dut.take_screenshot(log_path, prefix='no_scrollable_for_video_quality')
+      raise AssertionError(
+          f'Cannot find "{video_quality}"'
+          f' and no scrollable view found to search within.')
+
+  dut.ui(text=video_quality).click()
+  time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
+  logging.debug(
+      'JCA Video Video Quality set to %s successfully.', video_quality)
+  screenshot_prefix = (f'jca_stabilization_mode_{video_quality}_set')
+  dut.take_screenshot(log_path, prefix=screenshot_prefix)
+  dut.ui(text=SETTINGS_CLOSE_TEXT).click()
+  dut.ui(res=SETTINGS_BACK_BUTTON_RESOURCE_ID).click()
 
 
 def default_camera_app_setup(device_id, pkg_name):
