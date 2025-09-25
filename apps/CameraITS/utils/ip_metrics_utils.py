@@ -241,106 +241,114 @@ def get_delta_ab(color_cells_1, color_cells_2):
 
 
 def get_white_balance_variation(
-    default_greyscale_cells, jca_greyscale_cells
-):
-  """Gets the white balance variation between default and jca color cells.
+    greyscale_cells_1, greyscale_cells_2, suffix_1, suffix_2):
+  """Computes the white balance variation between two sets of color cells.
 
   Args:
-    default_greyscale_cells: list of default greyscale cells
-    jca_greyscale_cells: list of jca greyscale cells
+    greyscale_cells_1: A list of greyscale cells from the first image set.
+    greyscale_cells_2: A list of greyscale cells from the second image set.
+    suffix_1: The identifier for the first set (e.g., 'default').
+    suffix_2: The identifier for the second set (e.g., 'jca').
 
   Returns:
-    mean_delta_ab_diff: mean delta ab diff between default and jca
+    The mean delta E difference in the a*b* plane between the two sets.
   """
-  default_neutral_delta_ab = np.mean(
-      get_neutral_delta_ab(default_greyscale_cells)
+  neutral_delta_ab_1 = np.mean(
+      get_neutral_delta_ab(greyscale_cells_1)
   )
-  jca_neutral_delta_ab = np.mean(get_neutral_delta_ab(jca_greyscale_cells))
-  default_jca_neutral_delta_ab = np.mean(
-      get_delta_ab(default_greyscale_cells, jca_greyscale_cells)
+  neutral_delta_ab_2 = np.mean(get_neutral_delta_ab(greyscale_cells_2))
+  mean_delta_ab_diff = np.mean(
+      get_delta_ab(greyscale_cells_1, greyscale_cells_2)
   )
-  logging.debug('default_neutral_delta_ab_rounded_values: %.2f',
-                default_neutral_delta_ab)
-  logging.debug('jca_neutral_delta_ab_rounded_values: %.2f',
-                jca_neutral_delta_ab)
-  logging.debug('default_jca_neutral_delta_ab_rounded_values: %.2f',
-                default_jca_neutral_delta_ab)
 
-  # Check that the white balance between default and jca does not exceed the
-  # max absolute error.
-  if (default_neutral_delta_ab > MAX_DELTA_AB_WHITE_BALANCE_ABSOLUTE_ERROR) or (
-      jca_neutral_delta_ab > MAX_DELTA_AB_WHITE_BALANCE_ABSOLUTE_ERROR
+  logging.debug('%s_neutral_delta_ab: %.2f', suffix_1, neutral_delta_ab_1)
+  logging.debug('%s_neutral_delta_ab: %.2f', suffix_2, neutral_delta_ab_2)
+  logging.debug(
+      '%s_%s_neutral_delta_ab: %.2f', suffix_1, suffix_2, mean_delta_ab_diff
+  )
+
+  # Check that the white balance for each set does not exceed the max absolute error.
+  if (neutral_delta_ab_1 > MAX_DELTA_AB_WHITE_BALANCE_ABSOLUTE_ERROR) or (
+      neutral_delta_ab_2 > MAX_DELTA_AB_WHITE_BALANCE_ABSOLUTE_ERROR
   ):
-    e_msg = (
-        f'White balance of default and jca images exceeds the threshold.'
-        f'Actual default value: {default_neutral_delta_ab:.2f},'
-        f'Actual jca value: {jca_neutral_delta_ab:.2f}, '
-        f'Expected maximum: {MAX_DELTA_AB_WHITE_BALANCE_ABSOLUTE_ERROR:.1f}'
+    logging.debug(
+        'White balance of %s and/or %s images exceeds the absolute threshold. '
+        'Actual %s value: %.2f, Actual %s value: %.2f, Expected max: %.1f',
+        suffix_1,
+        suffix_2,
+        suffix_1,
+        neutral_delta_ab_1,
+        suffix_2,
+        neutral_delta_ab_2,
+        MAX_DELTA_AB_WHITE_BALANCE_ABSOLUTE_ERROR,
     )
-    logging.debug(e_msg)
-  # Check that the white balance between default and jca does not exceed the
-  # max relative error.
-  if (default_jca_neutral_delta_ab > MAX_DELTA_AB_WHITE_BALANCE_RELATIVE_ERROR):
-    e_msg = (
-        f'White balance between default and jca for greyscale cells exceeds the'
-        f' threshold. Actual default: {default_jca_neutral_delta_ab:.2f}, '
-        f'Expected: {MAX_DELTA_AB_WHITE_BALANCE_RELATIVE_ERROR:.1f}'
+
+  # Check that the white balance between the two sets does not exceed the max relative error.
+  if mean_delta_ab_diff > MAX_DELTA_AB_WHITE_BALANCE_RELATIVE_ERROR:
+    logging.debug(
+        'White balance between %s and %s exceeds the relative threshold. '
+        'Actual difference: %.2f, Expected max: %.1f',
+        suffix_1,
+        suffix_2,
+        mean_delta_ab_diff,
+        MAX_DELTA_AB_WHITE_BALANCE_RELATIVE_ERROR,
     )
-    logging.debug(e_msg)
-  return default_jca_neutral_delta_ab
+  return mean_delta_ab_diff
 
 
-def do_white_balance_check(default_patch_list, jca_patch_list):
-  """Computes white balance diff between default and jca images.
+def _get_ab_values_from_patches(patch_list):
+  """Extracts and rounds a* and b* values from middle tone patches.
 
   Args:
-    default_patch_list: default camera dynamic range patch cells
-    jca_patch_list: jca camera dynamic range patch cells
+    patch_list: A list of dynamic range patch cells.
 
   Returns:
-    mean_neutral_delta_ab: mean neutral delta ab between default and jca
-      rounded to 2 places
+    A tuple containing the list of middle tone patches, the rounded a* values,
+    and the rounded b* values.
   """
-  default_a_values = []
-  default_b_values = []
-  default_middle_tone_patch_list = default_patch_list[
+  a_values = []
+  b_values = []
+  middle_tone_patch_list = patch_list[
       _DYNAMIC_PATCH_MID_TONE_START_IDX:_DYNAMIC_PATCH_MID_TONE_END_IDX
   ]
-  for patch in default_middle_tone_patch_list:
+  for patch in middle_tone_patch_list:
     _, mean_a, mean_b = get_lab_mean_values(patch)
-    default_a_values.append(mean_a)
-    default_b_values.append(mean_b)
-  jca_a_values = []
-  jca_b_values = []
-  jca_middle_tone_patch_list = jca_patch_list[
-      _DYNAMIC_PATCH_MID_TONE_START_IDX:_DYNAMIC_PATCH_MID_TONE_END_IDX
-  ]
-  for patch in jca_middle_tone_patch_list:
-    _, mean_a, mean_b = get_lab_mean_values(patch)
-    jca_a_values.append(mean_a)
-    jca_b_values.append(mean_b)
+    a_values.append(mean_a)
+    b_values.append(mean_b)
 
-  default_rounded_a_values = [round(float(x), 2)
-                              for x in default_a_values]
-  default_rounded_b_values = [round(float(x), 2)
-                              for x in default_b_values]
-  jca_rounded_a_values = [round(float(x), 2)
-                          for x in jca_a_values]
-  jca_rounded_b_values = [round(float(x), 2)
-                          for x in jca_b_values]
-  logging.debug('default_rounded_a_values: %s', default_rounded_a_values)
-  logging.debug('default_rounded_b_values: %s', default_rounded_b_values)
-  logging.debug('jca_rounded_a_values: %s', jca_rounded_a_values)
-  logging.debug('jca_rounded_b_values: %s', jca_rounded_b_values)
+  rounded_a = [round(float(x), 2) for x in a_values]
+  rounded_b = [round(float(x), 2) for x in b_values]
+  return middle_tone_patch_list, rounded_a, rounded_b
+
+
+def do_white_balance_check(
+    first_patch_list, second_patch_list, suffix1, suffix2):
+  """Computes white balance diff between two sets of image patches.
+
+  Args:
+    first_patch_list: Camera dynamic range patch cells for the first image.
+    second_patch_list: Camera dynamic range patch cells for the second image.
+    suffix1: String identifier for the first set of patches (e.g., 'default').
+    suffix2: String identifier for the second set of patches (e.g., 'jca').
+
+  Returns:
+    The mean neutral delta ab between the two sets, rounded to 2 places.
+  """
+  first_middle_patches, first_a, first_b = _get_ab_values_from_patches(
+      first_patch_list)
+  second_middle_patches, second_a, second_b = _get_ab_values_from_patches(
+      second_patch_list)
+
+  logging.debug('%s_rounded_a_values: %s', suffix1, first_a)
+  logging.debug('%s_rounded_b_values: %s', suffix1, first_b)
+  logging.debug('%s_rounded_a_values: %s', suffix2, second_a)
+  logging.debug('%s_rounded_b_values: %s', suffix2, second_b)
 
   mean_neutral_delta_ab = get_white_balance_variation(
-      default_middle_tone_patch_list,
-      jca_middle_tone_patch_list,
-  )
+      first_middle_patches, second_middle_patches, suffix1, suffix2)
   logging.debug(
-      'White balance difference between default and jca: %.2f',
-      mean_neutral_delta_ab,
-  )
+      'White balance difference between %s and %s: %.2f',
+      suffix1, suffix2, mean_neutral_delta_ab)
   return round(float(mean_neutral_delta_ab), 2)
 
 
