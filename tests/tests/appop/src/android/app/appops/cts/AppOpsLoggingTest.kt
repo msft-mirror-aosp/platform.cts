@@ -865,6 +865,9 @@ class AppOpsLoggingTest {
      * Realistic end-to-end test for opening camera
      */
     @Test
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(
+            reason = "camera is not supported for visible background users"
+    )
     @FlakyTest
     fun openCameraWithAttribution() {
         openCamera(context.createAttributionContext(TEST_ATTRIBUTION_TAG))
@@ -875,6 +878,9 @@ class AppOpsLoggingTest {
      * This is interesting as null attribution handling is more complex in native code.
      */
     @Test
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(
+            reason = "camera is not supported for visible background users"
+    )
     fun openCameraWithDefaultAttribution() {
         openCamera(context)
     }
