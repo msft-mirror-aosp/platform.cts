@@ -20,13 +20,22 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.car.cts.utils.VehiclePropertyUtils;
+import android.car.feature.Flags;
 import android.car.hardware.property.DetailedErrorCode;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
 
 public class DetailedErrorCodeTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Test
     public void testToString() {
         assertThat(DetailedErrorCode.toString(DetailedErrorCode.NO_DETAILED_ERROR_CODE))
@@ -41,9 +50,29 @@ public class DetailedErrorCodeTest {
                 .isEqualTo("NOT_AVAILABLE_POOR_VISIBILITY");
         assertThat(DetailedErrorCode.toString(DetailedErrorCode.NOT_AVAILABLE_SAFETY))
                 .isEqualTo("NOT_AVAILABLE_SAFETY");
+        assertThat(DetailedErrorCode.toString(-1)).isEqualTo("-1");
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_STATUS_DETAILED_NOT_AVAILABLE)
+    public void testToString_notAvailableSubSystemNotConnected_flagEnabled() {
+        assertThat(
+                        DetailedErrorCode.toString(
+                                DetailedErrorCode.NOT_AVAILABLE_SUBSYSTEM_NOT_CONNECTED))
+                .isEqualTo("NOT_AVAILABLE_SUBSYSTEM_NOT_CONNECTED");
+    }
+
+    @Test
+    @RequiresFlagsDisabled(Flags.FLAG_CAR_PROPERTY_STATUS_DETAILED_NOT_AVAILABLE)
+    public void testToString_notAvailableSubSystemNotConnected_flagDisabled() {
+        assertThat(
+                        DetailedErrorCode.toString(
+                                /* DetailedErrorCode.NOT_AVAILABLE_SUBSYSTEM_NOT_CONNECTED= */ 6))
+                .isEqualTo("6");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_STATUS_DETAILED_NOT_AVAILABLE)
     public void testAllDetailedErrorCodesAreMappedInToString() {
         List<Integer> detailedErrorCodes =
                 VehiclePropertyUtils.getIntegersFromDataEnums(DetailedErrorCode.class);
