@@ -21,7 +21,6 @@ import time
 
 import camera_properties_utils
 import gen2_rig_controller_utils
-import image_processing_utils
 import its_base_test
 import its_session_utils
 from mobly import test_runner
@@ -29,21 +28,49 @@ import sensor_fusion_utils
 import ui_interaction_utils
 import video_processing_utils
 
-_ASPECT_RATIO_16_9 = 16/9  # Determine if video fmt > 16:9.
 _IMG_FORMAT = 'png'
 _JETPACK_CAMERA_APP_PACKAGE_NAME = 'com.google.jetpackcamera'
+_MAX_WIDTH_TESTED = 1920
+_MAX_HEIGHT_TESTED = 1080
 _MIN_PHONE_MOVEMENT_ANGLE = 5  # Degrees
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_ROTATIONS = 36
-_ONE_TO_ONE_ASPECT_RATIO = '1 to 1 aspect ratio'
 _START_FRAME = 30  # Give 3A 1s to warm up.
 _VIDEO_DELAY_TIME = 3  # Seconds
 _VIDEO_DURATION = 5.5  # Seconds
 _VIDEO_STABILIZATION_FACTOR = 0.7  # 70% of gyro movement allowed.
 
 
+def _start_rotation_rig_movement(rot_rig, servo_speed):
+  """Starts the rotation rig movement in a separate thread.
+
+  Args:
+    rot_rig_data: dict with 'cntl' (controller) and 'ch' (channel) defined.
+    servo_speed: int; Speed of servo motor.
+
+  Returns:
+    A threading.Thread object for the movement.
+  """
+  controller = rot_rig['cntl']
+  channel = rot_rig['ch']
+
+  if controller == gen2_rig_controller_utils.DEFAULT_GEN2_ROTATOR_NAME:
+    rotate_func = gen2_rig_controller_utils.rotation_rig
+    args = (controller, channel, _NUM_ROTATIONS,
+            sensor_fusion_utils.ARDUINO_ANGLES_STABILIZATION)
+  else:
+    rotate_func = sensor_fusion_utils.rotation_rig
+    args = (controller, channel, _NUM_ROTATIONS,
+            sensor_fusion_utils.ARDUINO_ANGLES_STABILIZATION, servo_speed,
+            sensor_fusion_utils.ARDUINO_MOVE_TIME_STABILIZATION)
+
+  movement_thread = threading.Thread(target=rotate_func, args=args)
+  movement_thread.start()
+  return movement_thread
+
+
 def _collect_data(cam, dut, lens_facing, log_path,
-                  aspect_ratio, rot_rig, servo_speed):
+                  aspect_ratio, video_quality, rot_rig, servo_speed):
   """Capture a new set of data from the device.
 
   Captures camera frames while the device is being rotated in the prescribed
@@ -68,156 +95,68 @@ def _collect_data(cam, dut, lens_facing, log_path,
       facing=lens_facing,
       aspect_ratio=aspect_ratio,
       stabilization_mode=camera_properties_utils.STABILIZATION_MODE_ON,
+      video_quality=video_quality,
   )
   # Start camera movement.
-  rotation_rig_args = (
-      rot_rig['cntl'],
-      rot_rig['ch'],
-      _NUM_ROTATIONS,
-      sensor_fusion_utils.ARDUINO_ANGLES_STABILIZATION,
-  )
-  if rot_rig['cntl'] == gen2_rig_controller_utils.DEFAULT_GEN2_ROTATOR_NAME:
-    rotate_func = gen2_rig_controller_utils.rotation_rig
-  else:
-    rotate_func = sensor_fusion_utils.rotation_rig
-    rotation_rig_args += (
-        servo_speed,
-        sensor_fusion_utils.ARDUINO_MOVE_TIME_STABILIZATION,
-    )
-  movement = threading.Thread(
-      target=rotate_func,
-      args=rotation_rig_args,
-  )
-  movement.start()
+  movement_thread = _start_rotation_rig_movement(rot_rig, servo_speed)
   cam.start_sensor_events()
   logging.debug('Gyro Sensor recording started')
-  # Record video with JCA.
-  time.sleep(_VIDEO_DELAY_TIME)  # Allow time for rig to start moving.
-  recording_path = pathlib.Path(
-      cam.do_jca_video_capture(
-          dut,
-          log_path,
-          duration=_VIDEO_DURATION * 1000,  # ms
-      )
-  )
-  prefix_name = str(recording_path).split('.')[0]
-  ratio_name = aspect_ratio.replace(' ', '_')
-  output_path = (f'{prefix_name}_{ratio_name}.mp4')
-  os.rename(recording_path, output_path)
-  logging.debug('Output path for recording %s : %s', aspect_ratio, output_path)
-  # Wait for movement to stop.
-  movement.join()
 
+  time.sleep(_VIDEO_DELAY_TIME)  # Allow rig to start moving before recording.
+
+  # Record video with JCA and rename it with aspect ratio.
+  recording_path = pathlib.Path(
+      cam.do_jca_video_capture(dut, log_path, duration=_VIDEO_DURATION * 1000))
+  ratio_name = aspect_ratio.replace(' ', '_')
+  output_path = (
+      recording_path.parent / f'{recording_path.stem}_{ratio_name}.mp4')
+  os.rename(recording_path, output_path)
+  logging.debug('Output path for recording %s: %s', aspect_ratio, output_path)
+
+  movement_thread.join()  # Wait for movement to stop.
   return output_path
 
 
-def _extract_frames_from_video(log_path, recording_path):
-  """Extract frames from video.
-
-  Extract frames from video and convert to numpy array.
-
-  Args:
-    log_path: str; Directory where video is saved.
-    recording_path: str; Path to video file.
-
-  Returns:
-    frames: List of numpy arrays.
-    frame_shape: Tuple of frame shape.
-  """
-  file_name = str(recording_path).split('/')[-1]
-  logging.debug('file_name: %s', file_name)
-  file_list = video_processing_utils.extract_all_frames_from_video(
-      log_path, file_name, _IMG_FORMAT)
-  frames = []
-  logging.debug('Number of frames %d', len(file_list))
-  for file in file_list:
-    img = image_processing_utils.convert_image_to_numpy_array(
-        os.path.join(log_path, file))
-    frames.append(img/255)
-  frame_shape = frames[0].shape
-  logging.debug('Frame size %d x %d', frame_shape[1], frame_shape[0])
-  return frames, frame_shape
-
-
-def _extract_camera_gyro_rotations(
-    lens_facing, frames, frame_shape, gyro_events, log_path, ratio_tested):
-  """Extract camera and gyro rotations from frames and gyro events.
-
-  Args:
-    lens_facing: str; Facing of camera.
-    frames: List of numpy arrays.
-    frame_shape: Tuple of frame shape.
-    gyro_events: List of gyro events.
-    log_path: str; Directory where video is saved.
-    ratio_tested: str; Key string for video aspect ratio defined by JCA.
-
-  Returns:
-    max_gyro_angle: float; Max angle of deflection in gyroscope movement.
-    max_camera_angle: float; Max angle of deflection in video movement.
-    frame_shape: Tuple of frame shape.
-    ratio_name: str; Name of ratio tested for logging.
-  """
-  ratio_name = ratio_tested.replace(' ', '_')
-  file_name_stem = f'{os.path.join(log_path, _NAME)}_{ratio_name}'
-  cam_rots = sensor_fusion_utils.get_cam_rotations_from_frames(
-      frames[_START_FRAME:], lens_facing, frame_shape[0],
-      file_name_stem, _START_FRAME, stabilized_video=True)
-  sensor_fusion_utils.plot_camera_rotations(
-      cam_rots, _START_FRAME, ratio_name, file_name_stem)
-  max_camera_angle = sensor_fusion_utils.calc_max_rotation_angle(
-      cam_rots, 'Camera')
-
-  # Extract gyro rotations.
-  sensor_fusion_utils.plot_gyro_events(
-      gyro_events, f'{_NAME}_{ratio_name}', log_path)
-  gyro_rots = sensor_fusion_utils.conv_acceleration_to_movement(
-      gyro_events, _VIDEO_DELAY_TIME)
-  max_gyro_angle = sensor_fusion_utils.calc_max_rotation_angle(
-      gyro_rots, 'Gyro')
-  logging.debug(
-      'Max deflection (degrees) %s: video: %.3f, gyro: %.3f, ratio: %.4f',
-      ratio_tested, max_camera_angle, max_gyro_angle,
-      max_camera_angle / max_gyro_angle)
-  return max_gyro_angle, max_camera_angle, frame_shape, ratio_name
-
-
-def _initialize_rotation_rig(rot_rig, rotator_cntl, rotator_ch):
-  """Initialize rotation rig.
-
-  Args:
-    rot_rig: dict with 'cntl' and 'ch' defined
-    rotator_cntl: str; controller type
-    rotator_ch: str; controller channel
-
-  Returns:
-    rot_rig: updated dict with 'cntl' and 'ch' defined
-  """
-  rot_rig['cntl'] = rotator_cntl
-  rot_rig['ch'] = rotator_ch
+def _initialize_rotation_rig(rotator_cntl, rotator_ch):
+  """Initializes and validates rotation rig controller and channel."""
+  rot_rig = {'cntl': rotator_cntl, 'ch': rotator_ch}
   if rot_rig['cntl'].lower() not in sensor_fusion_utils.VALID_CONTROLLERS:
-    raise AssertionError(
-        'You must use a valid controller from '
-        f'{sensor_fusion_utils.VALID_CONTROLLERS}.'
-    )
-  logging.debug('video qualities tested: %s', str(
-      ui_interaction_utils.RATIO_TO_UI_DESCRIPTION.keys()))
+    raise AssertionError(f'You must use a valid controller from '
+                         f'{sensor_fusion_utils.VALID_CONTROLLERS}.')
+  logging.debug('Video qualities tested: %s',
+                str(ui_interaction_utils.RATIO_TO_UI_DESCRIPTION.keys()))
   return rot_rig
 
 
-def _get_servo_speed(tablet_device):
-  """Get servo speed.
+def _assert_stabilization_results(max_cam_gyro_angles, log_path):
+  """Asserts whether the video stabilization criteria are met."""
+  test_failures = []
+  for ratio_name, frame_data in max_cam_gyro_angles.items():
+    max_gyro_angles = frame_data['gyro']
+    max_camera_angle = frame_data['cam']
+    frame_shape = frame_data['frame_shape']
+    logging.debug('Resolution for aspect ratio %s: %s',
+                  ratio_name, frame_shape)
+    # Ensure width is always the larger dimension
+    frame_height = min(frame_shape[0], frame_shape[1])
+    frame_width = max(frame_shape[0], frame_shape[1])
+    if frame_width > _MAX_WIDTH_TESTED or frame_height > _MAX_HEIGHT_TESTED:
+      logging.debug('This resolution (%s x %s) is exempted, skipping test.',
+                    frame_width, frame_height)
+    else:
+      if max_camera_angle >= max_gyro_angles * _VIDEO_STABILIZATION_FACTOR:
+        test_failures.append(
+            f'{ratio_name} video not stabilized enough! '
+            f'Max video angle: {max_camera_angle:.3f}, '
+            f'Max gyro angle: {max_gyro_angles:.3f}, '
+            f'Ratio: {max_camera_angle / max_gyro_angles:.3f}, '
+            f'Threshold: {_VIDEO_STABILIZATION_FACTOR}.'
+        )
+      else:
+        its_session_utils.remove_tmp_files(log_path, 'ITS_JCA_*')
 
-  Args:
-    tablet_device: bool; True if tablet device is connected.
-
-  Returns:
-    servo_speed: int; Speed of servo motor.
-  """
-  if tablet_device:
-    servo_speed = sensor_fusion_utils.ARDUINO_SERVO_SPEED_STABILIZATION_TABLET
-  else:
-    servo_speed = sensor_fusion_utils.ARDUINO_SERVO_SPEED_STABILIZATION
-  return servo_speed
+  if test_failures:
+    raise AssertionError('\n'.join(test_failures))
 
 
 class VideoStabilizationJCATest(its_base_test.UiAutomatorItsBaseTest):
@@ -247,7 +186,6 @@ class VideoStabilizationJCATest(its_base_test.UiAutomatorItsBaseTest):
     ui_interaction_utils.force_stop_app(self.dut, self.ui_app)
 
   def test_video_stabilization_jca(self):
-    rot_rig = {}
     log_path = self.log_path
 
     with its_session_utils.ItsSession(
@@ -277,37 +215,44 @@ class VideoStabilizationJCATest(its_base_test.UiAutomatorItsBaseTest):
       lens_facing = props['android.lens.facing']
       camera_properties_utils.check_front_or_rear_camera(props)
 
-      # Initialize rotation rig.
-      rot_rig = _initialize_rotation_rig(
-          rot_rig, self.rotator_cntl, self.rotator_ch)
+      rot_rig = _initialize_rotation_rig(self.rotator_cntl, self.rotator_ch)
       # Initialize connection with controller.
-      servo_speed = _get_servo_speed(self.tablet_device)
+      servo_speed = (
+          sensor_fusion_utils.ARDUINO_SERVO_SPEED_STABILIZATION_TABLET
+          if self.tablet_device
+          else sensor_fusion_utils.ARDUINO_SERVO_SPEED_STABILIZATION)
       max_cam_gyro_angles = {}
 
-      # Remove 1:1 aspect ratio from testing.
-      # TODO: b/431844388 - Add 1:1 aspect ratio back to testing.
-      ratio_list = list(ui_interaction_utils.RATIO_TO_UI_DESCRIPTION.keys())
-      ratio_list.remove(_ONE_TO_ONE_ASPECT_RATIO)
-
-      for ratio_tested in ratio_list:
+      for ratio_tested in ui_interaction_utils.RATIO_TO_UI_DESCRIPTION.keys():
+        logging.debug('Testing ratio: %s', ratio_tested)
+        # FHD for 9:16, HD for the rest
+        video_quality = (
+            ui_interaction_utils.JCA_VIDEO_QUALITY_FHD
+            if (ui_interaction_utils.NINE_TO_SIXTEEN_ASPECT_RATIO_DESC
+                in ratio_tested)
+            else ui_interaction_utils.JCA_VIDEO_QUALITY_HD)
         # Record video.
         recording_path = _collect_data(
-            cam, self.dut, lens_facing, log_path, ratio_tested,
-            rot_rig, servo_speed
-        )
+            cam, self.dut, lens_facing, log_path, ratio_tested, video_quality,
+            rot_rig, servo_speed)
 
         # Get gyro events.
         logging.debug('Reading out inertial sensor events')
         gyro_events = cam.get_sensor_events()['gyro']
         logging.debug('Number of gyro samples %d', len(gyro_events))
 
-        # Extract frames from video.
-        frames, frame_shape = _extract_frames_from_video(
-            log_path, recording_path)
+        # Extract frames and their resolution from video.
+        frames, frame_shape = (
+            video_processing_utils.extract_frames_and_frame_shape_from_video(
+            log_path, recording_path, _IMG_FORMAT))
+        if not frames:
+          raise AssertionError('No frames extracted from video.')
+
         # Extract camera and gyro rotations.
         max_gyro_angle, max_camera_angle, frame_shape, ratio_name = (
-            _extract_camera_gyro_rotations(lens_facing, frames, frame_shape,
-                                           gyro_events, log_path, ratio_tested))
+            sensor_fusion_utils.extract_camera_gyro_rotations(
+                lens_facing, frames, frame_shape, _START_FRAME,
+                _VIDEO_DELAY_TIME, gyro_events, log_path, _NAME, ratio_tested))
         max_cam_gyro_angles[ratio_name] = {'gyro': max_gyro_angle,
                                            'cam': max_camera_angle,
                                            'frame_shape': frame_shape}
@@ -317,27 +262,7 @@ class VideoStabilizationJCATest(its_base_test.UiAutomatorItsBaseTest):
               f'Phone not moved enough! Movement: {max_gyro_angle}, '
               f'THRESH: {_MIN_PHONE_MOVEMENT_ANGLE} degrees')
 
-      # Assert PASS/FAIL criteria.
-      test_failures = []
-      for ratio_name, max_angles in max_cam_gyro_angles.items():
-        aspect_ratio = (max_angles['frame_shape'][1] /
-                        max_angles['frame_shape'][0])
-        if aspect_ratio > _ASPECT_RATIO_16_9:
-          video_stabilization_factor = _VIDEO_STABILIZATION_FACTOR * 1.1
-        else:
-          video_stabilization_factor = _VIDEO_STABILIZATION_FACTOR
-        if max_angles['cam'] >= max_angles['gyro']*video_stabilization_factor:
-          test_failures.append(
-              f'{ratio_name} video not stabilized enough! '
-              f"Max video angle:  {max_angles['cam']:.3f}, "
-              f"Max gyro angle: {max_angles['gyro']:.3f}, "
-              f"ratio: {max_angles['cam']/max_angles['gyro']:.3f} "
-              f'THRESH: {video_stabilization_factor}.')
-        else:  # Remove frames if PASS.
-          its_session_utils.remove_tmp_files(log_path, 'ITS_JCA_*')
-      if test_failures:
-        raise AssertionError(test_failures)
-
+      _assert_stabilization_results(max_cam_gyro_angles, log_path)
 
 if __name__ == '__main__':
   test_runner.main()
