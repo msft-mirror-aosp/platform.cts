@@ -18,6 +18,8 @@ package android.mediapc.cts;
 
 import static android.media.audio.Flags.iamfDefinitionsApi;
 import static android.media.codec.Flags.apvSupport;
+import static android.mediapc.cts.CodecEncoderPerformanceClassTestBase.getAudioEncoderCfgParams;
+import static android.mediapc.cts.CodecEncoderPerformanceClassTestBase.getVideoEncoderCfgParams;
 import static android.mediapc.cts.CodecTestBase.codecFilter;
 import static android.mediapc.cts.CodecTestBase.codecPrefix;
 import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
@@ -50,6 +52,8 @@ import android.mediapc.cts.common.Preconditions;
 import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Utils;
 import android.mediav2.common.cts.CodecTestBase.ComponentClass;
+import android.mediav2.common.cts.EncoderConfigParams;
+import android.mediav2.common.cts.OutputManager;
 import android.os.SystemClock;
 import android.util.Log;
 import android.util.Pair;
@@ -334,6 +338,50 @@ public class CodecInitializationLatencyTest {
     public void testInitializationLatency() throws Exception {
         boolean isEncoder = getCodecInfo(mCodecName).isEncoder();
         boolean isAudio = mMediaType.startsWith("audio/");
+        EncoderConfigParams[] params = new EncoderConfigParams[1];
+        if (isAudio) {
+            int sampleRate = 48000;
+            int channelCount = 2;
+            int quality = 128000;
+            if (mMediaType.equals(MediaFormat.MIMETYPE_AUDIO_AMR_NB)) {
+                sampleRate = 8000;
+                channelCount = 1;
+                quality = 12200;
+            } else if (mMediaType.equals(MediaFormat.MIMETYPE_AUDIO_AMR_WB)) {
+                sampleRate = 16000;
+                channelCount = 1;
+                quality = 23850;
+            } else if (mMediaType.equals(MediaFormat.MIMETYPE_AUDIO_FLAC)) {
+                quality = 5;
+            }
+            params[0] = getAudioEncoderCfgParams(mMediaType, quality, sampleRate, channelCount);
+        } else {
+            MediaCodecInfo.CodecCapabilities caps = getCodecCapabilities(mCodecName, mMediaType);
+            MediaCodecInfo.VideoCapabilities videoCaps = caps.getVideoCapabilities();
+            assertNotNull("received null for video capabilities", videoCaps);
+            int width = 176;
+            int height = 144;
+            int bitrate = 128000;
+            if (videoCaps.isSizeSupported(1920, 1080)) {
+                width = 1920;
+                height = 1080;
+                bitrate = 8000000;
+            } else if (videoCaps.isSizeSupported(1280, 720)) {
+                width = 1280;
+                height = 720;
+                bitrate = 5000000;
+            } else if (videoCaps.isSizeSupported(640, 480)) {
+                width = 640;
+                height = 480;
+                bitrate = 2000000;
+            } else if (videoCaps.isSizeSupported(352, 288)) {
+                width = 352;
+                height = 288;
+                bitrate = 512000;
+            }
+            params[0] = getVideoEncoderCfgParams(mMediaType, bitrate, width, height, 60,
+                    MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
+        }
         final int NUM_MEASUREMENTS = 5;
         // Test gathers initialization latency for a number of iterations and
         // percentile is a variable used to control how many of these iterations
@@ -350,7 +398,8 @@ public class CodecInitializationLatencyTest {
                 long latency;
                 if (isEncoder) {
                     EncoderInitializationLatency encoderInitializationLatency =
-                            new EncoderInitializationLatency(mMediaType, mCodecName, isAsync);
+                            new EncoderInitializationLatency(mMediaType, mCodecName, isAsync,
+                                    params);
                     latency = encoderInitializationLatency.calculateInitLatency();
                     codecInitializationLatencyMs[count] = latency;
                     sumOfCodecInitializationLatencyMs += latency;
@@ -434,80 +483,28 @@ public class CodecInitializationLatencyTest {
      * (create + configure + start + first frame to enqueue),
      * (create + configure + start + first frame to dequeue).
      */
-    static class EncoderInitializationLatency extends CodecEncoderTestBase {
+    static class EncoderInitializationLatency extends CodecEncoderPerformanceClassTestBase {
         private static final String LOG_TAG = EncoderInitializationLatency.class.getSimpleName();
 
-        private final String mEncoderName;
         private final boolean mIsAsync;
 
-        EncoderInitializationLatency(String mediaType, String encoderName, boolean isAsync) {
-            super(mediaType);
-            mEncoderName = encoderName;
+        EncoderInitializationLatency(String mediaType, String encoderName, boolean isAsync,
+                EncoderConfigParams[] encCfgParams) {
+            super(mediaType, encoderName, encCfgParams);
             mIsAsync = isAsync;
-            mSampleRate = 8000;
-            mFrameRate = 60;
         }
 
-        private MediaFormat setUpFormat() throws IOException {
-            MediaFormat format = new MediaFormat();
-            format.setString(MediaFormat.KEY_MIME, mMediaType);
-            if (mIsAudio) {
-                if (mMediaType.equals(MediaFormat.MIMETYPE_AUDIO_FLAC)) {
-                    format.setInteger(MediaFormat.KEY_FLAC_COMPRESSION_LEVEL, 10000);
-                } else {
-                    format.setInteger(MediaFormat.KEY_BIT_RATE, 128000);
-                }
-                format.setInteger(MediaFormat.KEY_SAMPLE_RATE, mSampleRate);
-                format.setInteger(MediaFormat.KEY_CHANNEL_COUNT, 1);
-            } else {
-                MediaCodecInfo.CodecCapabilities codecCapabilities =
-                                    getCodecCapabilities(mEncoderName, mMediaType);
-                assertNotNull("did not receive capabilities for encoder: " + mEncoderName
-                        + ", media type: " + mMediaType + "\n", codecCapabilities);
-                if (codecCapabilities.getVideoCapabilities().isSizeSupported(1920, 1080)) {
-                    format.setInteger(MediaFormat.KEY_WIDTH, 1920);
-                    format.setInteger(MediaFormat.KEY_HEIGHT, 1080);
-                    format.setInteger(MediaFormat.KEY_BIT_RATE, 8000000);
-                } else if (codecCapabilities.getVideoCapabilities().isSizeSupported(1280, 720)) {
-                    format.setInteger(MediaFormat.KEY_WIDTH, 1280);
-                    format.setInteger(MediaFormat.KEY_HEIGHT, 720);
-                    format.setInteger(MediaFormat.KEY_BIT_RATE, 5000000);
-                } else if (codecCapabilities.getVideoCapabilities().isSizeSupported(640, 480)) {
-                    format.setInteger(MediaFormat.KEY_WIDTH, 640);
-                    format.setInteger(MediaFormat.KEY_HEIGHT, 480);
-                    format.setInteger(MediaFormat.KEY_BIT_RATE, 2000000);
-                } else if (codecCapabilities.getVideoCapabilities().isSizeSupported(352, 288)) {
-                    format.setInteger(MediaFormat.KEY_WIDTH, 352);
-                    format.setInteger(MediaFormat.KEY_HEIGHT, 288);
-                    format.setInteger(MediaFormat.KEY_BIT_RATE, 512000);
-                } else {
-                    format.setInteger(MediaFormat.KEY_WIDTH, 176);
-                    format.setInteger(MediaFormat.KEY_HEIGHT, 144);
-                    format.setInteger(MediaFormat.KEY_BIT_RATE, 128000);
-                }
-                format.setInteger(MediaFormat.KEY_FRAME_RATE, mFrameRate);
-                format.setFloat(MediaFormat.KEY_I_FRAME_INTERVAL, 1.0f);
-                format.setInteger(MediaFormat.KEY_COLOR_FORMAT,
-                        MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
-            }
-            return format;
-        }
-
-        public long calculateInitLatency() throws Exception {
-            MediaFormat format = setUpFormat();
-            if (mIsAudio) {
-                mSampleRate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE);
-                mChannels = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
-            } else {
-                mWidth = format.getInteger(MediaFormat.KEY_WIDTH);
-                mHeight = format.getInteger(MediaFormat.KEY_HEIGHT);
-            }
-            setUpSource(mInputFile);
+        public long calculateInitLatency() throws IOException, InterruptedException {
+            mActiveEncCfg = mEncCfgParams[0];
+            MediaFormat format = mActiveEncCfg.getFormat();
+            mActiveRawRes = mIsAudio ? INPUT_AUDIO_FILE : INPUT_VIDEO_FILE;
+            setUpSource(mActiveRawRes.mFileName);
             MediaCodec.BufferInfo outInfo = new MediaCodec.BufferInfo();
+            mOutputBuff = new OutputManager();
             long enqueueTimeStamp = 0;
             long dequeueTimeStamp = 0;
             long baseTimeStamp = SystemClock.elapsedRealtimeNanos();
-            mCodec = MediaCodec.createByCodecName(mEncoderName);
+            mCodec = MediaCodec.createByCodecName(mCodecName);
             resetContext(mIsAsync, false);
             mAsyncHandle.setCallBack(mCodec, mIsAsync);
             mCodec.configure(format, null, MediaCodec.CONFIGURE_FLAG_ENCODE, null);
@@ -557,18 +554,18 @@ public class CodecInitializationLatencyTest {
             waitForAllOutputs();
             mCodec.stop();
             mCodec.release();
-            Log.d(LOG_TAG, "Encode MediaType: " + mMediaType + " Encoder: " + mEncoderName +
-                    " Time for (create + configure) in ns: " +
-                    (configureTimeStamp - baseTimeStamp));
-            Log.d(LOG_TAG, "Encode MediaType: " + mMediaType + " Encoder: " + mEncoderName +
-                    " Time for (create + configure + start) in ns: " +
-                    (startTimeStamp - baseTimeStamp));
-            Log.d(LOG_TAG, "Encode MediaType: " + mMediaType + " Encoder: " + mEncoderName +
-                    " Time for (create + configure + start + first frame to enqueue) in ns: " +
-                    (enqueueTimeStamp - baseTimeStamp));
-            Log.d(LOG_TAG, "Encode MediaType: " + mMediaType + " Encoder: " + mEncoderName +
-                    " Time for (create + configure + start + first frame to dequeue) in ns: " +
-                    (dequeueTimeStamp - baseTimeStamp));
+            Log.d(LOG_TAG, "Encode MediaType: " + mMediaType + " Encoder: " + mCodecName
+                    + " Time for (create + configure) in ns: "
+                    + (configureTimeStamp - baseTimeStamp));
+            Log.d(LOG_TAG, "Encode MediaType: " + mMediaType + " Encoder: " + mCodecName
+                    + " Time for (create + configure + start) in ns: "
+                    + (startTimeStamp - baseTimeStamp));
+            Log.d(LOG_TAG, "Encode MediaType: " + mMediaType + " Encoder: " + mCodecName
+                    + " Time for (create + configure + start + first frame to enqueue) in ns: "
+                    + (enqueueTimeStamp - baseTimeStamp));
+            Log.d(LOG_TAG, "Encode MediaType: " + mMediaType + " Encoder: " + mCodecName
+                    + " Time for (create + configure + start + first frame to dequeue) in ns: "
+                    + (dequeueTimeStamp - baseTimeStamp));
             long timeToConfigureMs = (configureTimeStamp - baseTimeStamp) / 1000000;
             return timeToConfigureMs;
         }
