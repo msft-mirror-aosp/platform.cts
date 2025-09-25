@@ -50,6 +50,7 @@ import java.security.SignatureException;
 import java.security.interfaces.EdECPublicKey;
 import java.security.spec.ECGenParameterSpec;
 import java.security.spec.InvalidKeySpecException;
+import java.security.spec.NamedParameterSpec;
 import java.util.Arrays;
 import java.util.Base64;
 
@@ -209,6 +210,36 @@ public class Curve25519Test {
                 .setAlgorithmParameterSpec(new ECGenParameterSpec("ed25519")).build();
 
         assertThrows(InvalidAlgorithmParameterException.class, () -> kpg.initialize(keySpec));
+    }
+
+    @Test
+    public void x25519CannotCreateKeyUsingKPGWithNamedParameterSpec()
+            throws NoSuchAlgorithmException, NoSuchProviderException,
+            InvalidAlgorithmParameterException {
+        KeyPairGenerator kpg = KeyPairGenerator.getInstance("XDH", "AndroidKeyStore");
+
+        NamedParameterSpec paramSpec = new NamedParameterSpec("X25519");
+        try {
+            kpg.initialize(paramSpec);
+            fail("Should not be able to generate keys using NamedParameterSpec");
+        } catch (IllegalArgumentException e) {
+            assertThat(e.getMessage()).contains("cannot be initialized using NamedParameterSpec");
+        }
+    }
+
+    @Test
+    public void ed25519CannotCreateKeyUsingKPGWithNamedParameterSpec()
+            throws NoSuchAlgorithmException, NoSuchProviderException,
+            InvalidAlgorithmParameterException {
+        KeyPairGenerator kpg = KeyPairGenerator.getInstance("XDH", "AndroidKeyStore");
+
+        NamedParameterSpec paramSpec = new NamedParameterSpec("Ed25519");
+        try {
+            kpg.initialize(paramSpec);
+            fail("Should not be able to generate keys using NamedParameterSpec");
+        } catch (IllegalArgumentException e) {
+            assertThat(e.getMessage()).contains("cannot be initialized using NamedParameterSpec");
+        }
     }
 
     @Test
