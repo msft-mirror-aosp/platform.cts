@@ -173,7 +173,7 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
             removeUser(managedUserId);
 
             // Remove secure lock screens and tear down test app
-            runDeviceTestsAsUser("testTearDown", initialUser);
+            runTestTearDownForUsers(initialUser);
 
             deviceClearLskf();
         }
@@ -300,8 +300,7 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
             runDeviceTestsAsUser("testCheckServiceInteraction", /* userId= */ 0);
         } finally {
             // Remove secure lock screens and tear down test app
-            runDeviceTestsAsUser("testTearDown", initialUser);
-
+            runTestTearDownForUsers(initialUser);
             deviceClearLskf();
         }
     }
@@ -340,8 +339,7 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
             runDeviceTestsAsUser("testCheckServiceInteraction", /* userId= */ 0);
         } finally {
             // Remove secure lock screens and tear down test app
-            runDeviceTestsAsUser("testTearDown", initialUser);
-
+            runTestTearDownForUsers(initialUser);
             deviceClearLskf();
         }
     }
@@ -379,8 +377,7 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
             runDeviceTestsAsUser("testCheckServiceInteraction", /* userId= */ 0);
         } finally {
             // Remove secure lock screens and tear down test app
-            runDeviceTestsAsUser("testTearDown", initialUser);
-
+            runTestTearDownForUsers(initialUser);
             deviceClearLskf();
         }
     }
@@ -484,8 +481,9 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
 
     private boolean isLskfCapturedForClient(String clientName) throws Exception {
         Pattern pattern = Pattern.compile(".*LSKF capture status: (\\w+)");
-        String status = getDevice().executeShellCommand(
-                "cmd recovery is-lskf-captured " + clientName);
+        String cmd = "cmd recovery is-lskf-captured " + clientName;
+        String status = getDevice().executeShellCommand(cmd);
+        CLog.d("isLskfCapturedForClient(%s): cmd '%s' returned '%s'", clientName, cmd, status);
         Matcher matcher = pattern.matcher(status);
         if (!matcher.find()) {
             CLog.i(TAG, "is-lskf-captured isn't implemented on build, assuming captured");
@@ -500,22 +498,31 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
     }
 
     private void deviceRebootAndApply(String clientName) throws Exception {
-        CLog.d("deviceRebootAndApply(clientName=%s)", clientName);
+        var device = getDevice();
+        int currentUserBeforeReboot = device.getCurrentUser();
+        CLog.d(
+                "deviceRebootAndApply(clientName=%s): current user is %d",
+                clientName, currentUserBeforeReboot);
 
         verifyLskfCaptured(clientName);
         mBootCountTrackingRule.increaseExpectedBootCountDifference(1);
 
-        String res =
-                executeShellCommandWithLogging(
-                        "cmd recovery reboot-and-apply " + clientName + " cts-test");
+        String cmd = "cmd recovery reboot-and-apply " + clientName + " cts-test";
+        String res = executeShellCommandWithLogging(cmd);
+        CLog.d("Response of '%s': '%s'", cmd, res);
         if (res != null && res.contains("Reboot and apply status: failure")) {
-            fail("could not call reboot-and-apply");
+            fail("could not call reboot-and-apply. Response was: " + res);
         }
 
-        getDevice().waitForDeviceNotAvailable(SHUTDOWN_TIME_MS);
-        getDevice().waitForDeviceOnline(120000);
+        device.waitForDeviceNotAvailable(SHUTDOWN_TIME_MS);
+        device.waitForDeviceOnline(120000);
 
-        waitForBootCompleted(getDevice());
+        CLog.d("After reboot, current user is %d", currentUserBeforeReboot);
+
+        waitForBootCompleted(device);
+
+        // TODO(b/420640007): remove call below once it's handled by tradefed
+        switchUser(currentUserBeforeReboot);
     }
 
     private void installTestPackages() throws Exception {
@@ -597,9 +604,9 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
             throws DeviceNotAvailableException {
         String command = "pm create-user --profileOf " + parentUserId + " --managed "
                 + "TestProfile_" + System.currentTimeMillis();
-        CLog.d("Starting command " + command);
+        CLog.d("Starting command %s", command);
         String commandOutput = getDevice().executeShellCommand(command);
-        CLog.d("Output for command " + command + ": " + commandOutput);
+        CLog.d("Output for command %s: %s", command, commandOutput);
         return commandOutput;
     }
 
@@ -608,15 +615,18 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
         Utils.runDeviceTests(getDevice(), PKG, CLASS, testMethodName, userId);
     }
 
-    private void runTestTearDownForUsers(int[] userIds) throws Exception {
-        int initialUserId = getDevice().getCurrentUser();
+    private void runTestTearDownForUsers(int... userIds) throws Exception {
+        int currentUserId = getDevice().getCurrentUser();
+        CLog.d(
+                "runTestTearDownForUsers(%s): current user is %d",
+                Arrays.toString(userIds), currentUserId);
 
         // Unlock the screen for the current user first because the switching to another one while
         // the current user is still locked may fail.
-        runDeviceTestsAsUser("testTearDown", initialUserId);
+        runDeviceTestsAsUser("testTearDown", currentUserId);
 
         for (int userId : userIds) {
-            if (userId == initialUserId) {
+            if (userId == currentUserId) {
                 continue;
             }
 
@@ -624,7 +634,7 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
             runDeviceTestsAsUser("testTearDown", userId);
         }
 
-        switchUser(initialUserId);
+        switchUser(currentUserId);
     }
 
     private boolean isSupportedSDevice() throws Exception {
