@@ -266,7 +266,9 @@ public class TelecomManagerTest extends BaseTelecomTestWithMockServices {
         } catch (SecurityException e) {
             // Security exception should not be thrown at this point. Fail the test if it does.
             throw new AssertionError("Security exception should not have been thrown.", e);
-        } finally {
+        } catch (IllegalArgumentException e) {
+            // Exception expected since the package hasn't registered the callback action.
+        }finally {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();
         }
