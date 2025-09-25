@@ -17,7 +17,7 @@
 package android.mediapc.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_SecurePlayback;
-import static android.mediapc.cts.CodecDecoderTestBase.WIDEVINE_UUID;
+import static android.mediapc.cts.CodecDecoderPerformanceClassTestBase.WIDEVINE_UUID;
 import static android.mediapc.cts.common.CodecMetrics.getMetrics;
 import static android.mediav2.common.cts.CodecTestBase.getCodecCapabilities;
 import static android.mediav2.common.cts.CodecTestBase.selectHardwareCodecs;

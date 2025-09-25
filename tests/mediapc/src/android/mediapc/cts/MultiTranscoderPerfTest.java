@@ -227,13 +227,13 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
             List<Future<CodecMetrics>> decodeResultList = null;
             Collection<Callable<CodecMetrics>> allTasks = new ArrayList<>();
             if (maxInstances % 2 == 1) {
-                List<DecodeToSurface> decodeList = new ArrayList<>();
+                List<Decode> decodeList = new ArrayList<>();
                 mActivityRule.getActivity().waitTillSurfaceIsCreated();
                 Surface surface = mActivityRule.getActivity().getSurface();
                 assertTrue("Surface created is null.", surface != null);
                 assertTrue("Surface created is invalid.", surface.isValid());
                 mActivityRule.getActivity().setScreenParams(width, height, true);
-                decodeList.add(new DecodeToSurface(mDecoderPair.first,
+                decodeList.add(new Decode(mDecoderPair.first,
                         mTestFiles.get(mDecoderPair.first), mDecoderPair.second, surface,
                         mIsAsync));
                 allTasks.addAll(decodeList);

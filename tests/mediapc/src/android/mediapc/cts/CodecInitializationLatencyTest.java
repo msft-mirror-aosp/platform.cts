@@ -579,16 +579,14 @@ public class CodecInitializationLatencyTest {
      * (create + configure + start + first frame to enqueue),
      * (create + configure + start + first frame to dequeue).
      */
-    static class DecoderInitializationLatency extends CodecDecoderTestBase {
+    static class DecoderInitializationLatency extends CodecDecoderPerformanceClassTestBase {
         private static final String LOG_TAG = DecoderInitializationLatency.class.getSimpleName();
 
-        private final String mDecoderName;
         private final boolean mIsAsync;
 
         DecoderInitializationLatency(String mediaType, String decoderName, String testFile,
                 boolean isAsync, boolean surfaceMode) {
-            super(mediaType, testFile);
-            mDecoderName = decoderName;
+            super(mediaType, testFile, decoderName);
             mIsAsync = isAsync;
             mSurface = mIsAudio ? null :
                     surfaceMode ? MediaCodec.createPersistentInputSurface() : null;
@@ -601,13 +599,13 @@ public class CodecInitializationLatencyTest {
             formats.add(format);
             // If the decoder doesn't support the formats, then return Integer.MAX_VALUE to
             // indicate that all decode was not successful
-            if (!areFormatsSupported(mDecoderName, mMediaType, formats)) {
+            if (!areFormatsSupported(mCodecName, mMediaType, formats)) {
                 return Integer.MAX_VALUE;
             }
             long enqueueTimeStamp = 0;
             long dequeueTimeStamp = 0;
             long baseTimeStamp = SystemClock.elapsedRealtimeNanos();
-            mCodec = MediaCodec.createByCodecName(mDecoderName);
+            mCodec = MediaCodec.createByCodecName(mCodecName);
             resetContext(mIsAsync, false);
             mAsyncHandle.setCallBack(mCodec, mIsAsync);
             mCodec.configure(format, mSurface, 0, null);
@@ -659,19 +657,20 @@ public class CodecInitializationLatencyTest {
             mCodec.release();
             if (mSurface != null) {
                 mSurface.release();
+                mSurface = null;
             }
-            Log.d(LOG_TAG, "Decode MediaType: " + mMediaType + " Decoder: " + mDecoderName +
-                    " Time for (create + configure) in ns: " +
-                    (configureTimeStamp - baseTimeStamp));
-            Log.d(LOG_TAG, "Decode MediaType: " + mMediaType + " Decoder: " + mDecoderName +
-                    " Time for (create + configure + start) in ns: " +
-                    (startTimeStamp - baseTimeStamp));
-            Log.d(LOG_TAG, "Decode MediaType: " + mMediaType + " Decoder: " + mDecoderName +
-                    " Time for (create + configure + start + first frame to enqueue) in ns: " +
-                    (enqueueTimeStamp - baseTimeStamp));
-            Log.d(LOG_TAG, "Decode MediaType: " + mMediaType + " Decoder: " + mDecoderName +
-                    " Time for (create + configure + start + first frame to dequeue) in ns: " +
-                    (dequeueTimeStamp - baseTimeStamp));
+            Log.d(LOG_TAG, "Decode MediaType: " + mMediaType + " Decoder: " + mCodecName
+                    + " Time for (create + configure) in ns: "
+                    + (configureTimeStamp - baseTimeStamp));
+            Log.d(LOG_TAG, "Decode MediaType: " + mMediaType + " Decoder: " + mCodecName
+                    + " Time for (create + configure + start) in ns: "
+                    + (startTimeStamp - baseTimeStamp));
+            Log.d(LOG_TAG, "Decode MediaType: " + mMediaType + " Decoder: " + mCodecName
+                    + " Time for (create + configure + start + first frame to enqueue) in ns: "
+                    + (enqueueTimeStamp - baseTimeStamp));
+            Log.d(LOG_TAG, "Decode MediaType: " + mMediaType + " Decoder: " + mCodecName
+                    + " Time for (create + configure + start + first frame to dequeue) in ns: "
+                    + (dequeueTimeStamp - baseTimeStamp));
             long timeToConfigureMs = (configureTimeStamp - baseTimeStamp) / 1000000;
             return timeToConfigureMs;
         }

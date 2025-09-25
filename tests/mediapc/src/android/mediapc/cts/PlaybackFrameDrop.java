@@ -36,9 +36,8 @@ import java.util.concurrent.locks.ReentrantLock;
  * It will do playback for at least 30 seconds worth of input data or for utmost 31 seconds.
  * If input reaches eos, it will rewind the input to start position.
  */
-public class PlaybackFrameDrop extends CodecDecoderTestBase {
+public class PlaybackFrameDrop extends CodecDecoderPerformanceClassTestBase {
     private static final int AV1_INITIAL_DELAY = 8;
-    private final String mDecoderName;
     private final String[] mTestFiles;
     private final long mEachFrameTimeIntervalUs;
     private final boolean mIsAsync;
@@ -134,8 +133,7 @@ public class PlaybackFrameDrop extends CodecDecoderTestBase {
 
     PlaybackFrameDrop(String mediaType, String decoderName, String[] testFiles, Surface surface,
             int frameRate, boolean isAsync) {
-        super(mediaType, null);
-        mDecoderName = decoderName;
+        super(mediaType, null, decoderName);
         mTestFiles = testFiles;
         mSurface = surface;
         mEachFrameTimeIntervalUs = 1000000 / frameRate;
@@ -201,12 +199,12 @@ public class PlaybackFrameDrop extends CodecDecoderTestBase {
     public ArrayList<MediaFormat> setUpSourceFiles() throws Exception {
         ArrayList<MediaFormat> formats = new ArrayList<>();
         for (String file : mTestFiles) {
-            formats.add(setUpSource(file));
+            formats.add(setUpSource(MEDIA_DIR + file));
             mExtractor.release();
         }
         int totalSize = 0;
         for (String srcFile : mTestFiles) {
-            File file = new File(mInpPrefix + srcFile);
+            File file = new File(MEDIA_DIR + srcFile);
             totalSize += (int) file.length();
         }
         totalSize <<= 1;
@@ -214,8 +212,8 @@ public class PlaybackFrameDrop extends CodecDecoderTestBase {
         int buffOffset = 0;
         mBuffer = ByteBuffer.allocate(totalSize);
         for (String file : mTestFiles) {
-            formats.add(createInputList(setUpSource(file), mBuffer, mBufferInfos, buffOffset,
-                    ptsOffset));
+            formats.add(createInputList(setUpSource(MEDIA_DIR + file), mBuffer, mBufferInfos,
+                    buffOffset, ptsOffset));
             mExtractor.release();
             ptsOffset = mInputMaxPtsUs + 1000000L;
             buffOffset = (mBufferInfos.get(mBufferInfos.size() - 1).offset) +
@@ -229,11 +227,11 @@ public class PlaybackFrameDrop extends CodecDecoderTestBase {
 
         // If the decoder doesn't support the formats, then return Integer.MAX_VALUE to indicate
         // that all frames were dropped
-        if (!areFormatsSupported(mDecoderName, mMediaType, formats)) {
+        if (!areFormatsSupported(mCodecName, mMediaType, formats)) {
             return Integer.MAX_VALUE;
         }
 
-        mCodec = MediaCodec.createByCodecName(mDecoderName);
+        mCodec = MediaCodec.createByCodecName(mCodecName);
         configureCodec(formats.get(0), mIsAsync, false, false);
         mThread.start();
         mCodec.start();
@@ -249,7 +247,7 @@ public class PlaybackFrameDrop extends CodecDecoderTestBase {
     }
 
     @Override
-    void enqueueInput(int bufferIndex) {
+    protected void enqueueInput(int bufferIndex) {
         if (mSampleIndex >= mBufferInfos.size() ||
                 // Decode for mMaxNumFrames samples or for utmost 31 seconds
                 mInputCount >= mMaxNumFrames ||

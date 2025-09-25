@@ -29,8 +29,7 @@ import java.nio.ByteBuffer;
  * The following class decode and render the audio (will be audible), until loadStatus is finished.
  * If input reaches eos, it will rewind the input to start position.
  */
-class AudioPlaybackLoad extends CodecDecoderTestBase {
-    private final String mDecoderName;
+class AudioPlaybackLoad extends CodecDecoderPerformanceClassTestBase {
     private final LoadStatus mLoadStatus;
 
     private long mBasePts;
@@ -39,8 +38,7 @@ class AudioPlaybackLoad extends CodecDecoderTestBase {
 
     AudioPlaybackLoad(String mediaType, String testFile, String decoderName,
             LoadStatus loadStatus) {
-        super(mediaType, testFile);
-        mDecoderName = decoderName;
+        super(mediaType, testFile, decoderName);
         mLoadStatus = loadStatus;
         mBasePts = 0;
         mMaxPts = 0;
@@ -50,7 +48,7 @@ class AudioPlaybackLoad extends CodecDecoderTestBase {
         MediaFormat format = setUpSource(mTestFile);
         mTrack = createAudioTrack(format);
         mTrack.play();
-        mCodec = MediaCodec.createByCodecName(mDecoderName);
+        mCodec = MediaCodec.createByCodecName(mCodecName);
         mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
         configureCodec(format, false, false, false);
         mCodec.start();
@@ -101,7 +99,7 @@ class AudioPlaybackLoad extends CodecDecoderTestBase {
 
     // Enqueue input to decoder until loadStatus is finished or unexpected eos is seen.
     @Override
-    void enqueueInput(int bufferIndex) {
+    protected void enqueueInput(int bufferIndex) {
         if (mExtractor.getSampleSize() < 0 || mLoadStatus.isLoadFinished()) {
             enqueueEOS(bufferIndex);
         } else {
@@ -127,7 +125,7 @@ class AudioPlaybackLoad extends CodecDecoderTestBase {
     }
 
     @Override
-    void releaseOutput(int bufferIndex, MediaCodec.BufferInfo info) {
+    protected void releaseOutput(int bufferIndex, MediaCodec.BufferInfo info) {
         final ByteBuffer buffer = mCodec.getOutputBuffer(bufferIndex);
         final byte[] audio = new byte[info.size];
         buffer.clear(); // prepare buffer for reading
