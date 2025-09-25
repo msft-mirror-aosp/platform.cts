@@ -228,7 +228,7 @@ class AeAwbRegions(its_base_test.ItsBaseTest):
       logging.debug('Tested quality: %s', recording_obj['quality'])
 
       # Grab the video from the save location on DUT
-      self.dut.adb.pull([recording_obj['recordedOutputPath'], log_path])
+      its_session_utils.pull_file_from_dut(self.dut, recording_obj, log_path)
       file_name = recording_obj['recordedOutputPath'].split('/')[-1]
       file_name_with_path = os.path.join(log_path, file_name)
       logging.debug('file_name: %s', file_name)
