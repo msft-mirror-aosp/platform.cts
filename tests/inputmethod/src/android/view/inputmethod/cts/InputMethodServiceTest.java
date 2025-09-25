@@ -1209,6 +1209,11 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
                 InstrumentationRegistry.getInstrumentation().getUiAutomation(),
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
+
+            expectEvent(stream, eventMatcher("onCreate"), TIMEOUT);
+            expectEvent(stream, eventMatcher("bindInput"), TIMEOUT);
+            expectEvent(stream, eventMatcher("onStartInput"), TIMEOUT);
+
             final int injectedKeyCode = KeyEvent.KEYCODE_1;
             injectKeyEvent(injectedKeyCode, mInstrumentation);
 
