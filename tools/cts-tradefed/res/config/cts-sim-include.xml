@@ -16,36 +16,8 @@
 <configuration description="Include CTS test that require SIM card">
 
     <!-- CTS tests that need SIM card-->
-    <option name="compatibility:include-filter" value="signed-CtsOmapiTestCases" />
-    <option name="compatibility:include-filter" value="signed-CtsSecureElementAccessControlTestCases1" />
-    <option name="compatibility:include-filter" value="signed-CtsSecureElementAccessControlTestCases2" />
-    <option name="compatibility:include-filter" value="signed-CtsSecureElementAccessControlTestCases3" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases" />
-    <option name="compatibility:include-filter" value="CtsHostsideNetworkTests" />
-    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases" />
-    <option name="compatibility:include-filter" value="CtsNativeNetDnsTestCases" />
-    <option name="compatibility:include-filter" value="CtsNetTestCases" />
-    <option name="compatibility:include-filter" value="CtsNetTestCasesInternetPermission" />
-    <option name="compatibility:include-filter" value="CtsNetTestCasesLegacyApi22" />
-    <option name="compatibility:include-filter" value="CtsNetTestCasesUpdateStatsPermission" />
-    <option name="compatibility:include-filter" value="CtsOmapiTestCases" />
-    <option name="compatibility:include-filter" value="CtsPermissionTestCases" />
-    <option name="compatibility:include-filter" value="CtsPermissionPolicyTestCases" />
-    <option name="compatibility:include-filter" value="CtsSecureElementAccessControlTestCases1" />
-    <option name="compatibility:include-filter" value="CtsSecureElementAccessControlTestCases2" />
-    <option name="compatibility:include-filter" value="CtsSecureElementAccessControlTestCases3" />
-    <option name="compatibility:include-filter" value="CtsSimPhonebookProviderTestCases" />
-    <option name="compatibility:include-filter" value="CtsSimRestrictedApisTestCases" />
-    <option name="compatibility:include-filter" value="CtsStatsdHostTestCases" />
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases" />
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases" />
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases2" />
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases3" />
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases" />
-    <option name="compatibility:include-filter" value="CtsTelephony2TestCases" />
-    <option name="compatibility:include-filter" value="CtsTelephony3TestCases" />
-    <option name="compatibility:include-filter" value="CtsTetheringTest" />
-    <option name="compatibility:include-filter" value="CtsUsageStatsTestCases" />
-    <option name="compatibility:include-filter" value="CtsVcnTestCases" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicySimTestCases" />
+    <option name="compatibility:module-metadata-include-filter" key="token" value="SIM_CARD" />
+    <option name="compatibility:module-metadata-include-filter" key="token" value="UICC_SIM_CARD" />
+    <option name="compatibility:module-metadata-include-filter" key="token" value="SECURE_ELEMENT_SIM_CARD" />
+
 </configuration>
