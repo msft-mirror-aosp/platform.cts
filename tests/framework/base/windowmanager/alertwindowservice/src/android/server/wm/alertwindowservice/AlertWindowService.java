@@ -40,6 +40,7 @@ import android.view.Display;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.TextView;
+import android.os.UserManager;
 
 import java.util.LinkedList;
 
@@ -139,7 +140,15 @@ public final class AlertWindowService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        final Display display = getSystemService(DisplayManager.class).getDisplay(DEFAULT_DISPLAY);
+
+        final UserManager userManager = getSystemService(UserManager.class);
+        final int mainDisplayId = userManager.getMainDisplayIdAssignedToUser();
+
+        if (DEBUG) Log.d(TAG, "mainDisplayId = " + mainDisplayId);
+
+        final DisplayManager displayManager = getSystemService(DisplayManager.class);
+        final Display display = displayManager.getDisplay(mainDisplayId);
+
         mWindowContext = createDisplayContext(display)
                 .createWindowContext(TYPE_APPLICATION_OVERLAY, null /* options */);
         mWindowManager = mWindowContext.getSystemService(WindowManager.class);
