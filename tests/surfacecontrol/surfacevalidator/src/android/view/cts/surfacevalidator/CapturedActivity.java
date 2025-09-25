@@ -149,10 +149,6 @@ public class CapturedActivity extends Activity {
         mIsSharingScreenDenied = new AtomicBoolean(false);
         final PackageManager packageManager = getPackageManager();
         mOnWatch = packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH);
-        if (mOnWatch) {
-            // Don't try and set up test/capture infrastructure - they're not supported
-            return;
-        }
 
         mParentLayout = new FrameLayout(this);
         FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(
