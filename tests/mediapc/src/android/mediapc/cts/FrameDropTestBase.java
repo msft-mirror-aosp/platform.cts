@@ -167,7 +167,7 @@ public class FrameDropTestBase {
                     Precondition.create(
                             "The device doesn't support running at least four 1920x1080 avc"
                                     + " instances concurrently",
-                            Utils.MEETS_AVC_CODEC_PRECONDITIONS));
+                            Utils.meetsAvcCodecPreconditions()));
 
     @Rule(order = 2)
     public ActivityTestRule<TestActivity> mActivityRule =
