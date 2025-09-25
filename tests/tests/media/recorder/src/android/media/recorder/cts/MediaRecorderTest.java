@@ -82,6 +82,7 @@ import androidx.test.filters.SmallTest;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.MediaUtils;
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
 import org.junit.Before;
@@ -156,6 +157,7 @@ public class MediaRecorderTest extends MediaTestBase {
     private ConditionVariable mMaxFileSizeApproachingCond;
     private ConditionVariable mNextOutputFileStartedCond;
     private boolean mExpectMaxFileCond;
+    private UserHelper mUserHelper;
 
     // movie length, in frames
     private static final int NUM_FRAMES = 120;
@@ -200,6 +202,7 @@ public class MediaRecorderTest extends MediaTestBase {
     @Override
     public void setUp() throws Throwable {
         super.setUp();
+        mUserHelper = new UserHelper(mContext);
         completeOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -443,6 +446,10 @@ public class MediaRecorderTest extends MediaTestBase {
     }
 
     private void recordVideoUsingCamera(boolean timelapse, boolean pause) throws Exception {
+        if (!hasCamera()) {
+            MediaUtils.skipTest("no camera");
+            return;
+        }
         int nCamera = Camera.getNumberOfCameras();
         int durMs = timelapse? RECORD_TIME_LAPSE_MS: RECORD_TIME_MS;
         for (int cameraId = 0; cameraId < nCamera; cameraId++) {
@@ -1830,7 +1837,9 @@ public class MediaRecorderTest extends MediaTestBase {
     }
 
     private boolean hasCamera() {
-        return mActivity.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA);
+        // Camera is not supported for a visible background user.
+        return mActivity.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)
+                && !mUserHelper.isVisibleBackgroundUser();
     }
 
     private boolean hasMicrophone() {
