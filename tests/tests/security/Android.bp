@@ -45,7 +45,7 @@ android_test {
         "hamcrest-library",
         "NeneInternal",
         "CameraPermissionTestLib",
-        "Harrier",
+        "bedstead-enterprise",
     ],
     libs: [
         "android.test.runner.stubs.system",
@@ -347,7 +347,7 @@ android_test {
         "platform-test-annotations",
         "hamcrest-library",
         "NeneInternal",
-        "Harrier",
+        "bedstead-enterprise",
     ],
     libs: [
         "android.test.runner.stubs.system",
