@@ -16,6 +16,11 @@
 
 package android.app.notification.current.cts;
 
+import static android.app.Notification.SEMANTIC_STYLE_CAUTION;
+import static android.app.Notification.SEMANTIC_STYLE_INFO;
+import static android.app.Notification.SEMANTIC_STYLE_SAFE;
+import static android.app.Notification.SEMANTIC_STYLE_UNSPECIFIED;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
@@ -31,6 +36,7 @@ import android.app.Notification.Metric.FixedTime;
 import android.app.Notification.Metric.TimeDifference;
 import android.app.Notification.MetricStyle;
 import android.content.Context;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -59,8 +65,25 @@ public class NotificationMetricStyleTest {
     public final CheckFlagsRule checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
-    public void builderBuild_setsMetricStyle() {
+    @RequiresFlagsDisabled(Flags.FLAG_API_NOTIFICATION_SEMANTIC_STYLE)
+    public void builderBuild_legacy_setsMetricStyle() {
         Metric metric = new Metric(new FixedInt(1979), "Steps");
+        Notification n =
+                new Notification.Builder(mContext)
+                        .setSmallIcon(R.drawable.ic_android)
+                        .setStyle(new MetricStyle().addMetric(metric))
+                        .build();
+
+        Notification.Builder recovered = Notification.Builder.recoverBuilder(mContext, n);
+
+        assertThat(recovered.getStyle()).isInstanceOf(MetricStyle.class);
+        assertThat(((MetricStyle) recovered.getStyle()).getMetrics()).containsExactly(metric);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_NOTIFICATION_SEMANTIC_STYLE)
+    public void builderBuild_setsMetricStyle() {
+        Metric metric = new Metric(new FixedInt(1979), "Steps", SEMANTIC_STYLE_CAUTION);
         Notification n =
                 new Notification.Builder(mContext)
                         .setSmallIcon(R.drawable.ic_android)
@@ -189,7 +212,18 @@ public class NotificationMetricStyleTest {
     }
 
     @Test
-    public void equalsAndHash_sameMetric_isEqual() {
+    @RequiresFlagsEnabled(Flags.FLAG_API_NOTIFICATION_SEMANTIC_STYLE)
+    public void newMetric_withSemanticStyle_constructs() {
+        Metric metric = new Metric(new FixedText("str"), "Port", SEMANTIC_STYLE_INFO);
+
+        assertThat(metric.getValue()).isEqualTo(new FixedText("str"));
+        assertThat(metric.getLabel()).isEqualTo("Port");
+        assertThat(metric.getSemanticStyle()).isEqualTo(SEMANTIC_STYLE_INFO);
+    }
+
+    @Test
+    @RequiresFlagsDisabled(Flags.FLAG_API_NOTIFICATION_SEMANTIC_STYLE)
+    public void equalsAndHash_sameMetricLegacy_isEqual() {
         Metric metric1 = new Metric(new FixedFloat(23.5f, "°C", 0, 1), "Temp");
         Metric metric2 = new Metric(new FixedFloat(23.5f, "°C", 0, 1), "Temp");
 
@@ -198,9 +232,29 @@ public class NotificationMetricStyleTest {
     }
 
     @Test
-    public void equalsAndHash_differentMetric_isDifferent() {
+    @RequiresFlagsEnabled(Flags.FLAG_API_NOTIFICATION_SEMANTIC_STYLE)
+    public void equalsAndHash_sameMetric_isEqual() {
+        Metric metric1 = new Metric(new FixedFloat(23.5f, "°C", 0, 1), "Temp", SEMANTIC_STYLE_SAFE);
+        Metric metric2 = new Metric(new FixedFloat(23.5f, "°C", 0, 1), "Temp", SEMANTIC_STYLE_SAFE);
+
+        assertThat(metric1).isEqualTo(metric2);
+        assertThat(metric1.hashCode()).isEqualTo(metric2.hashCode());
+    }
+
+    @Test
+    public void equalsAndHash_differentMetricValue_isDifferent() {
         Metric metric1 = new Metric(new FixedInt(23, "m"), "Distance");
         Metric metric2 = new Metric(new FixedInt(24, "m"), "Distance");
+
+        assertThat(metric1).isNotEqualTo(metric2);
+        assertThat(metric1.hashCode()).isNotEqualTo(metric2.hashCode());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_NOTIFICATION_SEMANTIC_STYLE)
+    public void equalsAndHash_differentSemanticStyle_isDifferent() {
+        Metric metric1 = new Metric(new FixedInt(23, "m"), "Distance", SEMANTIC_STYLE_UNSPECIFIED);
+        Metric metric2 = new Metric(new FixedInt(23, "m"), "Distance", SEMANTIC_STYLE_CAUTION);
 
         assertThat(metric1).isNotEqualTo(metric2);
         assertThat(metric1.hashCode()).isNotEqualTo(metric2.hashCode());

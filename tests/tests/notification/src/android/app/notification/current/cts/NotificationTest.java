@@ -18,6 +18,9 @@ package android.app.notification.current.cts;
 
 import static android.app.Notification.FLAG_BUBBLE;
 import static android.app.Notification.FLAG_PROMOTED_ONGOING;
+import static android.app.Notification.SEMANTIC_STYLE_CAUTION;
+import static android.app.Notification.SEMANTIC_STYLE_INFO;
+import static android.app.Notification.SEMANTIC_STYLE_SAFE;
 import static android.graphics.drawable.Icon.TYPE_ADAPTIVE_BITMAP;
 import static android.graphics.drawable.Icon.TYPE_RESOURCE;
 
@@ -1245,6 +1248,14 @@ public class NotificationTest {
                         .setColor(Color.RED))
                 .addProgressPoint(new Notification.ProgressStyle.Point(25))
                 .setProgressIndeterminate(true);
+        if (Flags.apiNotificationSemanticStyle()) {
+            // Move to the builder chain above when inlining.
+            expectedProgressStyle
+                    .getProgressSegments()
+                    .get(1)
+                    .setSemanticStyle(SEMANTIC_STYLE_CAUTION);
+            expectedProgressStyle.getProgressPoints().get(0).setSemanticStyle(SEMANTIC_STYLE_INFO);
+        }
 
         mNotification = new Notification.Builder(mContext, CHANNEL.getId())
                 .setSmallIcon(1)
@@ -1291,6 +1302,14 @@ public class NotificationTest {
                         .setColor(Color.RED))
                 .addProgressPoint(new Notification.ProgressStyle.Point(25))
                 .setProgressIndeterminate(true);
+        if (Flags.apiNotificationSemanticStyle()) {
+            // Move to the builder chain above when inlining.
+            expectedProgressStyle
+                    .getProgressSegments()
+                    .get(1)
+                    .setSemanticStyle(SEMANTIC_STYLE_CAUTION);
+            expectedProgressStyle.getProgressPoints().get(0).setSemanticStyle(SEMANTIC_STYLE_SAFE);
+        }
 
         mNotification = new Notification.Builder(mContext, CHANNEL.getId())
                 .setSmallIcon(1)
@@ -1425,7 +1444,8 @@ public class NotificationTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
-    public void progressStyle_point() {
+    @RequiresFlagsDisabled(Flags.FLAG_API_NOTIFICATION_SEMANTIC_STYLE)
+    public void progressStyle_point_legacy() {
         final int id = 1;
         final int position = 10;
         final int color = Color.RED;
@@ -1439,8 +1459,29 @@ public class NotificationTest {
     }
 
     @Test
+    @RequiresFlagsEnabled({Flags.FLAG_API_RICH_ONGOING, Flags.FLAG_API_NOTIFICATION_SEMANTIC_STYLE})
+    public void progressStyle_point() {
+        final int id = 1;
+        final int position = 10;
+        final int color = Color.RED;
+        final int semanticStyle = SEMANTIC_STYLE_INFO;
+
+        final Notification.ProgressStyle.Point point =
+                new Notification.ProgressStyle.Point(position)
+                        .setId(id)
+                        .setColor(color)
+                        .setSemanticStyle(semanticStyle);
+
+        assertEquals(id, point.getId());
+        assertEquals(position, point.getPosition());
+        assertEquals(color, point.getColor());
+        assertEquals(semanticStyle, point.getSemanticStyle());
+    }
+
+    @Test
     @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
-    public void progressStyle_segment() {
+    @RequiresFlagsDisabled(Flags.FLAG_API_NOTIFICATION_SEMANTIC_STYLE)
+    public void progressStyle_segment_legacy() {
         final int id = 1;
         final int length = 100;
         final int color = Color.RED;
@@ -1451,6 +1492,26 @@ public class NotificationTest {
         assertEquals(id, segment.getId());
         assertEquals(length, segment.getLength());
         assertEquals(color, segment.getColor());
+    }
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_API_RICH_ONGOING, Flags.FLAG_API_NOTIFICATION_SEMANTIC_STYLE})
+    public void progressStyle_segment() {
+        final int id = 1;
+        final int length = 100;
+        final int color = Color.RED;
+        final int semanticStyle = SEMANTIC_STYLE_INFO;
+
+        final Notification.ProgressStyle.Segment segment =
+                new Notification.ProgressStyle.Segment(length)
+                        .setId(id)
+                        .setColor(color)
+                        .setSemanticStyle(semanticStyle);
+
+        assertEquals(id, segment.getId());
+        assertEquals(length, segment.getLength());
+        assertEquals(color, segment.getColor());
+        assertEquals(semanticStyle, segment.getSemanticStyle());
     }
 
     private void assertProgressStylesAreEqual(Notification.ProgressStyle expected,
