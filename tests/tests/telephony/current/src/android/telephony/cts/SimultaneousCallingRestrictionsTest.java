@@ -33,9 +33,6 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.SystemProperties;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
@@ -65,7 +62,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
-import com.android.internal.telephony.flags.Flags;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -85,11 +81,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @RunWith(AndroidJUnit4.class)
-@RequiresFlagsEnabled(Flags.FLAG_SIMULTANEOUS_CALLING_INDICATIONS)
 public class SimultaneousCallingRestrictionsTest {
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
     private static ImsServiceConnector sServiceConnectorSlot0;
     private static ImsServiceConnector sServiceConnectorSlot1;
     private static TelephonyManager sTelephonyManager;
@@ -101,7 +93,6 @@ public class SimultaneousCallingRestrictionsTest {
     private static boolean sIsMultiSimDevice;
     private static boolean sIsMockModemAllowed;
     private static Throwable sCapturedSetupThrowable;
-    private static boolean sFeatureEnabled;
     private static boolean sHasCallingFeature;
     private static int sTestSubSlot0 = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
     private static int sTestSubSlot1 = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
@@ -139,7 +130,6 @@ public class SimultaneousCallingRestrictionsTest {
     public static void beforeAllTests() {
         // @Rule doesn't support skipping @BeforeClass, so we need to do this manually so we
         // can skip setting up the mock modem if not needed.
-        sFeatureEnabled = Flags.simultaneousCallingIndications();
         if (!ImsUtils.shouldTestTelephony()) {
             Log.d(TAG, "beforeAllTests: Telephony Feature is not enabled on this device. ");
             return;
@@ -147,10 +137,6 @@ public class SimultaneousCallingRestrictionsTest {
         sHasCallingFeature = hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING);
         if (!sHasCallingFeature) {
             Log.d(TAG, "beforeAllTests: FEATURE_TELEPHONY_CALLING is not enabled on this device");
-            return;
-        }
-        if (!sFeatureEnabled) {
-            Log.d(TAG, "beforeAllTests: Simultaneous Calling is not enabled on this device ");
             return;
         }
         Log.d(TAG, "beforeAllTests: begin");
@@ -215,8 +201,8 @@ public class SimultaneousCallingRestrictionsTest {
     // NOTE: AfterClass can NOT throw Exceptions.
     @AfterClass
     public static void afterAllTests() {
-        if (!ImsUtils.shouldTestTelephony() || !sIsMultiSimDevice || !sFeatureEnabled
-                || !sIsMockModemAllowed || !sHasCallingFeature) {
+        if (!ImsUtils.shouldTestTelephony() || !sIsMultiSimDevice || !sIsMockModemAllowed
+                    || !sHasCallingFeature) {
             Log.d(TAG, "afterAllTests: Skipping - previous assumption failures");
             return;
         }

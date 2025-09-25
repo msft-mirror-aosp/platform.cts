@@ -177,7 +177,7 @@ public class PhoneAccountOperationsTest extends InstrumentationTestCase {
     }
 
     public void testRegisterPhoneAccount_simultaneousCallingRestrictions() {
-        if (!shouldTestTelecom(mContext) || !Flags.simultaneousCallingIndications()) {
+        if (!shouldTestTelecom(mContext)) {
             return;
         }
         PhoneAccountHandle testPhoneAccountInvalid = new PhoneAccountHandle(

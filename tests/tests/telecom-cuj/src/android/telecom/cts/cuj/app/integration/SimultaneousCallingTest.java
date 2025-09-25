@@ -20,15 +20,10 @@ import static android.telecom.Call.STATE_ACTIVE;
 import static android.telecom.Call.STATE_DISCONNECTED;
 import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceApp;
 
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telecom.CallAttributes;
 import android.telecom.PhoneAccount;
 import android.telecom.cts.apps.AppControlWrapper;
 import android.telecom.cts.cuj.BaseAppVerifier;
-
-import com.android.internal.telephony.flags.Flags;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -45,9 +40,6 @@ import java.util.Collections;
 @RunWith(JUnit4.class)
 public class SimultaneousCallingTest extends BaseAppVerifier {
 
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
     /**
      * This case sets up two PhoneAccounts registered by the same application with a
      * calling restriction (see {@link PhoneAccount#getSimultaneousCallingRestriction()}). This
@@ -59,7 +51,6 @@ public class SimultaneousCallingTest extends BaseAppVerifier {
      * call will be placed using the default active PhoneAccount.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SIMULTANEOUS_CALLING_INDICATIONS)
     public void simultaneousCalling_MtMo_OneActiveAccountRestriction() throws Exception {
         if (!mShouldTestTelecom) {
             return;
