@@ -440,6 +440,8 @@ public class DecodeEditEncodeTest {
         // Loop until the output side is done.
         boolean inputDone = false;
         boolean outputDone = false;
+        boolean eos = false;
+        long inputDoneTs = 0;
         while (!outputDone) {
             if (VERBOSE) Log.d(TAG, "gen loop");
 
@@ -453,17 +455,31 @@ public class DecodeEditEncodeTest {
                         // Might drop a frame, but at least we won't crash mediaserver.
                         try { Thread.sleep(500); } catch (InterruptedException ie) {}
                         outputDone = true;
-                    } else {
-                        encoder.signalEndOfInputStream();
+                        eos = true;
                     }
                     inputDone = true;
+                    inputDoneTs = System.currentTimeMillis();
                 } else {
                     generateSurfaceFrame(generateIndex);
                     inputSurface.setPresentationTime(computePresentationTime(generateIndex) * 1000);
                     if (VERBOSE) Log.d(TAG, "inputSurface swapBuffers");
                     inputSurface.swapBuffers();
+                    generateIndex++;
                 }
-                generateIndex++;
+            }
+
+            if (inputDone && !eos) {
+                if (outputCount < NUM_FRAMES) {
+                    long now = System.currentTimeMillis();
+                    if ((now - inputDoneTs) > 1000) {
+                        Log.d(TAG, (NUM_FRAMES - outputCount) + " frames are not delievered ");
+                        encoder.signalEndOfInputStream();
+                        eos = true;
+                    }
+                } else {
+                    encoder.signalEndOfInputStream();
+                    eos = true;
+                }
             }
 
             // Check for output from the encoder.  If there's no output yet, we either need to
