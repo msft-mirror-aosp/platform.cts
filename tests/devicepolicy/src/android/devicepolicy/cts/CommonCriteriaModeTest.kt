@@ -17,6 +17,7 @@
 package android.devicepolicy.cts
 
 import android.app.admin.DevicePolicyManager
+import android.app.admin.flags.Flags
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest
 import com.android.bedstead.enterprise.dpc
@@ -28,6 +29,7 @@ import com.android.bedstead.nene.utils.Assert.assertThrows
 import com.android.compatibility.common.util.ApiTest
 import com.google.common.truth.Truth.assertThat
 import java.lang.AutoCloseable
+import org.junit.Assume.assumeTrue
 import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.runner.RunWith
@@ -37,6 +39,11 @@ class CommonCriteriaModeTest {
     @PolicyAppliesTest(policy = [CommonCriteriaMode::class])
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#setCommonCriteriaModeEnabled"])
     fun setCommonCriteriaModeEnabled_enabled_success() {
+        assumeTrue(
+            deviceState.dpc().componentName() != null ||
+                    Flags.commonCriteriaModeCoexistence()
+        )
+
         CommonCriteriaModeCleanup().use {
             deviceState.dpc().devicePolicyManager()
                 .setCommonCriteriaModeEnabled(deviceState.dpc().componentName(), true)
@@ -48,6 +55,11 @@ class CommonCriteriaModeTest {
     @PolicyAppliesTest(policy = [CommonCriteriaMode::class])
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#setCommonCriteriaModeEnabled"])
     fun setCommonCriteriaModeEnabled_disabled_success() {
+        assumeTrue(
+            deviceState.dpc().componentName() != null ||
+                    Flags.commonCriteriaModeCoexistence()
+        )
+
         CommonCriteriaModeCleanup().use {
             deviceState.dpc().devicePolicyManager()
                 .setCommonCriteriaModeEnabled(deviceState.dpc().componentName(), false)
@@ -59,6 +71,11 @@ class CommonCriteriaModeTest {
     @CannotSetPolicyTest(policy = [CommonCriteriaMode::class], includeNonDeviceAdminStates = false)
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#setCommonCriteriaModeEnabled"])
     fun setCommonCriteriaModeEnabled_enabled_throwsException() {
+        assumeTrue(
+            deviceState.dpc().componentName() != null ||
+                    Flags.commonCriteriaModeCoexistence()
+        )
+
         assertThrows(SecurityException::class.java) {
             deviceState.dpc().devicePolicyManager()
                 .setCommonCriteriaModeEnabled(deviceState.dpc().componentName(), true)
