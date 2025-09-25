@@ -302,7 +302,6 @@ class AssociateTest : CoreTestBase() {
                 pm.checkPermission(p, packageName)
             )
         }
-        // TODO disassociate
     }
 
     @Test
@@ -328,6 +327,45 @@ class AssociateTest : CoreTestBase() {
         }
 
         associate(MAC_ADDRESS_A, DEVICE_PROFILE_COMPUTER, PERMISSION_NEARBY)
+
+        nearbyPerms.forEach { p ->
+            assertEquals(
+                PackageManager.PERMISSION_DENIED,
+                pm.checkPermission(p, packageName)
+            )
+        }
+    }
+
+    @Test
+    fun test_disassociate_profileNull_revokesExtraPermission() = with(testApp) {
+        var nearbyPerms = arrayOf(
+            Manifest.permission.BLUETOOTH_ADVERTISE,
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.BLUETOOTH_SCAN,
+            Manifest.permission.NEARBY_WIFI_DEVICES
+        )
+
+        associate(MAC_ADDRESS_A, "null", PERMISSION_NEARBY)
+
+        nearbyPerms.forEach { p ->
+            assertEquals(
+                PackageManager.PERMISSION_GRANTED,
+                pm.checkPermission(p, packageName)
+            )
+        }
+
+        associate(MAC_ADDRESS_B, "null", PERMISSION_NEARBY)
+
+        disassociate(MAC_ADDRESS_A)
+
+        nearbyPerms.forEach { p ->
+            assertEquals(
+                PackageManager.PERMISSION_GRANTED,
+                pm.checkPermission(p, packageName)
+            )
+        }
+
+        disassociate(MAC_ADDRESS_B)
 
         nearbyPerms.forEach { p ->
             assertEquals(
