@@ -45,17 +45,18 @@ import android.app.appsearch.SearchResultsShim;
 import android.app.appsearch.SearchSpec;
 import android.app.appsearch.SetSchemaRequest;
 import android.app.appsearch.testutil.AppSearchSessionShimImpl;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.appsearch.flags.Flags;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.BaseEncoding;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import java.io.File;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -308,6 +309,7 @@ public class AppSearchDeviceTest {
     }
 
     // Put a large number of docs, with embeddings and blobs, in different sessions.
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     @Test
     public void setUpStressTestDbs() throws Exception {
         for (int i = 0; i < STRESS_TEST_MAX_NUM_SESSIONS; ++i) {
@@ -321,6 +323,7 @@ public class AppSearchDeviceTest {
         }
     }
 
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     @Test
     public void verifyStressTestDbs() throws Exception {
         for (int i = 0; i < STRESS_TEST_MAX_NUM_SESSIONS; ++i) {
@@ -374,6 +377,7 @@ public class AppSearchDeviceTest {
         }
     }
 
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     @Test
     public void clearStressTestDbs() throws Exception {
         for (int i = 0; i < STRESS_TEST_MAX_NUM_SESSIONS; ++i) {

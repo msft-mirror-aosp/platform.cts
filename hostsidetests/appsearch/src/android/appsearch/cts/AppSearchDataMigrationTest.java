@@ -17,11 +17,13 @@
 package android.appsearch.cts;
 
 import static com.google.common.truth.Truth.assertWithMessage;
+import static com.google.common.truth.Truth.assertThat;
 
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,17 +52,15 @@ public class AppSearchDataMigrationTest extends AppSearchHostTestBase {
                                 "device_config get appsearch isolated_storage_disabled");
         getDevice()
                 .executeShellCommand(
-                        "device_config override appsearch isolated_storage_disabled true");
+                        "device_config put appsearch isolated_storage_disabled true");
         rebootAndWaitUntilReady();
 
         mPrimaryUserId = getDevice().getPrimaryUserId();
         installPackageAsUser(TARGET_APK_A, /* grantPermission= */ true, mPrimaryUserId);
-        runDeviceTestAsUserInPkgA("clearStressTestDbs", mPrimaryUserId);
     }
 
     @After
     public void tearDown() throws Exception {
-        runDeviceTestAsUserInPkgA("clearStressTestDbs", mPrimaryUserId);
         uninstallPackage(TARGET_PKG_A);
         getDevice()
                 .executeShellCommand(
@@ -70,14 +70,35 @@ public class AppSearchDataMigrationTest extends AppSearchHostTestBase {
 
     @Test
     public void testAppSearchDataMigration() throws Exception {
-        runDeviceTestAsUserInPkgA("setUpStressTestDbs", mPrimaryUserId);
-        getDevice()
-                .executeShellCommand(
-                        "device_config override appsearch isolated_storage_disabled false");
-        rebootAndWaitUntilReady();
+        // Only run the test on API 36+(B) as the isolated storage is only enabled on API 36+.
+        Assume.assumeTrue(
+                "Skipping test AppSearchDataMigration on API "
+                        + getDevice().getApiLevel()
+                        + " as it is not supported.",
+                getDevice().getApiLevel() > 35);
 
-        // TODO(b/430289015) better way to check migration finishes.
-        Thread.sleep(240_000); // 4min
-        runDeviceTestAsUserInPkgA("verifyStressTestDbs", mPrimaryUserId);
+        try {
+            runDeviceTestAsUserInPkgA("clearStressTestDbs", mPrimaryUserId);
+            runDeviceTestAsUserInPkgA("setUpStressTestDbs", mPrimaryUserId);
+
+            getDevice()
+                    .executeShellCommand(
+                            "device_config put appsearch isolated_storage_disabled false");
+            rebootAndWaitUntilReady();
+
+            // Wait for at most 5 minutes for the migration to complete.
+            int checkCount = 300;
+            String versionFilePath = "/data/system_ce/0/appsearch/icing/version";
+            while (checkCount-- > 0) {
+                if (!getDevice().doesFileExist(versionFilePath)) {
+                    break;
+                }
+                Thread.sleep(1_000); // 1 second
+            }
+
+            runDeviceTestAsUserInPkgA("verifyStressTestDbs", mPrimaryUserId);
+        } finally {
+            runDeviceTestAsUserInPkgA("clearStressTestDbs", mPrimaryUserId);
+        }
     }
 }
