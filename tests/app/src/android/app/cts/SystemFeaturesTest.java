@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 import android.app.ActivityManager;
 import android.app.Instrumentation;
@@ -52,6 +53,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -79,6 +81,7 @@ public class SystemFeaturesTest {
     private TelephonyManager mTelephonyManager;
     private WifiManager mWifiManager;
     private CameraManager mCameraManager;
+    private UserHelper mUserHelper;
 
     @Before
     public void setUp() {
@@ -97,6 +100,7 @@ public class SystemFeaturesTest {
         mTelephonyManager = (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
         mWifiManager = (WifiManager) mContext.getSystemService(Context.WIFI_SERVICE);
         mCameraManager = (CameraManager) mContext.getSystemService(Context.CAMERA_SERVICE);
+        mUserHelper = new UserHelper(mContext);
     }
 
     /**
@@ -135,6 +139,9 @@ public class SystemFeaturesTest {
 
     @Test
     public void testCameraFeatures() throws Exception {
+        // Camera is not support for visible background users. Skip the test.
+        assumeFalse(mUserHelper.isVisibleBackgroundUser());
+
         int numCameras = Camera.getNumberOfCameras();
         if (numCameras == 0) {
             assertNotAvailable(PackageManager.FEATURE_CAMERA);
