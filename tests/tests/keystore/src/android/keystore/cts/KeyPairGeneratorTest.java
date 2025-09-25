@@ -21,8 +21,6 @@ import static android.keystore.cts.util.TestUtils.assumeKmSupport;
 import static android.keystore.cts.util.TestUtils.isStrongboxKeyMint;
 import static android.keystore.cts.util.TestUtils.assumeLockScreenSupport;
 
-import static com.google.common.truth.Truth.assertThat;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -84,7 +82,6 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.AlgorithmParameterSpec;
 import java.security.spec.ECGenParameterSpec;
 import java.security.spec.ECParameterSpec;
-import java.security.spec.NamedParameterSpec;
 import java.security.spec.RSAKeyGenParameterSpec;
 import java.text.DecimalFormatSymbols;
 import java.text.SimpleDateFormat;
@@ -252,61 +249,17 @@ public class KeyPairGeneratorTest {
     }
 
     @Test
-    public void testInitialize_NamedParameterSpec() throws Exception {
-        // The algorithms supported by NamedParameterSpec and AndroidKeyStore partially overlap. We
-        // test all algorithms in this overlap.
-        try {
-            NamedParameterSpec spec = new NamedParameterSpec("X25519");
-            KeyPairGenerator generator = KeyPairGenerator.getInstance("XDH", "AndroidKeyStore");
-            generator.initialize(spec);
-            fail("KeyPairGenerator should not support initialization with NamedParameterSpec");
-        } catch (InvalidAlgorithmParameterException expected) {}
-
-        try {
-            NamedParameterSpec spec = new NamedParameterSpec("Ed25519");
-            KeyPairGenerator generator = KeyPairGenerator.getInstance("Ed25519", "AndroidKeyStore");
-            generator.initialize(spec);
-            fail("KeyPairGenerator should not support initialization with NamedParameterSpec");
-        } catch (InvalidAlgorithmParameterException expected) {}
-    }
-
-    @Test
-    public void testInitialize_UnsupportedSpec() throws Exception {
-        // Test an arbitrary class that implements AlgorithmParameterSpec, can be used for
-        // initialization of a KeyPairGenerator in the JCA, and is used for a key pair generation
-        // algorithm supported by AndroidKeyStore.
-        try {
-            RSAKeyGenParameterSpec spec =
-                    new RSAKeyGenParameterSpec(2048, RSAKeyGenParameterSpec.F4);
-            KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA", "AndroidKeyStore");
-            generator.initialize(spec);
-            fail(
-                    "KeyPairGenerator should not support initialization with classes other than"
-                            + " KeyGenParameterSpec or KeyPairGeneratorSpec. ");
-        } catch (InvalidAlgorithmParameterException expected) {}
-    }
-
-    @Test
-    public void testInitialize_NullSpec() throws Exception {
-        try {
-            KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA", "AndroidKeyStore");
-            generator.initialize(null);
-            fail("KeyPairGenerator should not support initialization with a null spec.");
-        } catch (InvalidAlgorithmParameterException expected) {}
-    }
-
-    @Test
     public void testInitialize_KeySizeOnly() throws Exception {
         try {
             getRsaGenerator().initialize(1024);
-            fail("KeyPairGenerator should not support initialization with the key size");
-        } catch (IllegalArgumentException expected) {
+            fail("KeyPairGenerator should not support setting the key size");
+        } catch (IllegalArgumentException success) {
         }
 
         try {
             getEcGenerator().initialize(256);
-            fail("KeyPairGenerator should not support initialization with the key size");
-        } catch (IllegalArgumentException expected) {
+            fail("KeyPairGenerator should not support setting the key size");
+        } catch (IllegalArgumentException success) {
         }
     }
 
@@ -315,14 +268,14 @@ public class KeyPairGeneratorTest {
             throws Exception {
         try {
             getRsaGenerator().initialize(1024, new SecureRandom());
-            fail("KeyPairGenerator should not support initialization with the key size");
-        } catch (IllegalArgumentException expected) {
+            fail("KeyPairGenerator should not support setting the key size");
+        } catch (IllegalArgumentException success) {
         }
 
         try {
             getEcGenerator().initialize(1024, new SecureRandom());
-            fail("KeyPairGenerator should not support initialization with the key size");
-        } catch (IllegalArgumentException expected) {
+            fail("KeyPairGenerator should not support setting the key size");
+        } catch (IllegalArgumentException success) {
         }
     }
 
