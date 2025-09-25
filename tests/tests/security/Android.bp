@@ -29,6 +29,7 @@ android_test {
         "androidx.test.uiautomator_uiautomator",
         "android-common",
         "android.security.flags-aconfig-java",
+        "art-aconfig-rw-flags-java-lib",
         "wifi_aconfig_flags_lib",
         "ctstestserver",
         "ctstestrunner-axt",
@@ -69,6 +70,7 @@ android_test {
         "libpcre2",
         "libpackagelistparser",
         "libcve_2019_2213_jni",
+        "libread_only_native_lib_jni",
     ],
     host_required: ["CtsBackupHostTestCases"],
     host_common_data: [":CtsBackupHostTestCases"],
@@ -115,6 +117,7 @@ android_test {
         ":CtsMultiuserCPOther",
     ],
     assets: [":all_apex_certs{.der}"],
+    use_embedded_native_libs: false,
 }
 
 android_test_helper_app {
