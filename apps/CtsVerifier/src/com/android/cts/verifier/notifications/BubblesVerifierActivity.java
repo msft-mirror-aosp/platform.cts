@@ -204,8 +204,16 @@ public class BubblesVerifierActivity extends PassFailButtons.Activity {
             if (getPackageManager().hasSystemFeature(FEATURE_INPUT_METHODS)) {
                 mTests.add(new ImeInsetsExpandedView());
             }
-            mTests.add(new MinHeightExpandedView());
-            mTests.add(new MaxHeightExpandedView());
+
+            WindowMetrics maximumWindowMetrics = getWindowManager().getMaximumWindowMetrics();
+            float maxWidth =
+                    maximumWindowMetrics.getBounds().width() / maximumWindowMetrics.getDensity();
+            // These tests only apply to non bubble bar configurations, bubble bar is active on
+            // displays larger than 600dp
+            if (maxWidth < 600) {
+                mTests.add(new MinHeightExpandedView());
+                mTests.add(new MaxHeightExpandedView());
+            }
         }
 
         setPassFailButtonClickListeners();

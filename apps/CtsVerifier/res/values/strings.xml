@@ -6980,7 +6980,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="bubbles_test_bubbles_in_overflow_title">Bubble overflow (with bubbles)</string>
     <string name="bubbles_test_bubbles_in_overflow_verify">1. Press the button below to create
         several bubbles.\n\n
-        2. Expand the stack and drag down two of the bubbles to dismiss them.\n\n
+        2. Expand the stack and drag two of the bubbles to dismiss them.\n\n
         3. Tap on the bubble overflow, pass this test if the two bubbles you dismissed are in
         the overflow. </string>
     <string name="bubbles_test_bubbles_in_overflow_button">Send several bubbles</string>
@@ -7004,7 +7004,9 @@ You should be prompted to select credentials; choose the ones you just installed
     </string>
     <string name="bubbles_test_tap_notif_with_overflow_verify">1. Press the button to create a
         bubble.\n\n
-        2. Dismiss the bubble without opening it.\n\n
+        2. Dismiss the bubble without opening it.\n
+        \t\t a. If the bubble is hidden under the bar in the corner (bubble bar), slowly swipe up
+        from the center of the display to show the bubble, where you can dismiss it easily.\n\n
         3. Tap on the notification. Pass this test if the notification opened as a bubble.</string>
     <string name="bubbles_test_tap_notif_with_overflow_button">Send bubble</string>
     <!-- Portrait & landscape positioning -->
