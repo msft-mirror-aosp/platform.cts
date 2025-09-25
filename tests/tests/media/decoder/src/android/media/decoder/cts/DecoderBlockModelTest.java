@@ -17,7 +17,7 @@
 package android.media.decoder.cts;
 
 import static android.media.codec.Flags.apvSupport;
-import static android.mediav2.common.cts.CodecTestBase.IS_AFTER_B;
+import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_AFTER_202504;
 import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_B;
 import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_V;
 
@@ -119,9 +119,10 @@ public class DecoderBlockModelTest {
                     {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "bbb_mono_8kHz_4.75kbps_amrnb.3gp"},
             }));
         }
-        // Non-AVC video codecs are failing due to offset alignment issues in the decoders hence
-        // the tests are limited to Android versions above B. Refer b/445856828 for more details.
-        if (IS_AFTER_B) {
+        // Due to offset alignment issues (b/445856828), some non-AVC h/w video codecs fail on
+        // devices with board API level 202504 or earlier. Therefore, these tests are skipped
+        // unless BOARD_SDK_IS_AFTER_202504 is true.
+        if (BOARD_SDK_IS_AFTER_202504) {
             exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
                     {MediaFormat.MIMETYPE_VIDEO_HEVC,
                             "video_480x360_mp4_hevc_650kbps_30fps_aac_stereo_128kbps_48000hz.mp4"},
