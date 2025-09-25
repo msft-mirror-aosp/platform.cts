@@ -183,6 +183,7 @@ def ae_exposure_time_priority_capture_request(exp_time):
   req = {
       'android.control.mode': 1,  # CONTROL_MODE_AUTO
       'android.control.aeMode': 1,  # CONTROL_AE_MODE_ON
+      'android.control.afMode': 0,  # CONTROL_AF_MODE_OFF
       'android.control.aePriorityMode': 2,
       # CONTROL_AE_PRIORITY_MODE_SENSOR_EXPOSURE_TIME_PRIORITY
       'android.sensor.exposureTime': exp_time,
@@ -233,7 +234,7 @@ class ExposureTimePriorityTest(its_base_test.ItsBaseTest):
           e) for e in e_test]
 
       for req in reqs:
-        cam.do_3a()
+        cam.do_3a(do_af=False, get_results=False)
         results = cam.do_capture([req]*_BURST_LEN, fmt, reuse_session=True)
         caps.append(results[-1])
 
