@@ -26,6 +26,7 @@ import android.app.appfunctions.ExecuteAppFunctionResponse
 import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunctionAndWait
 import android.app.appfunctions.cts.AppFunctionUtils.getAllRuntimeMetadataPackages
 import android.app.appfunctions.cts.AppFunctionUtils.getAllStaticMetadataPackages
+import android.app.appfunctions.cts.AppFunctionUtils.installExistingPackageAsUser
 import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabled
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
 import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
@@ -49,18 +50,17 @@ import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest
 import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnPrimaryUser
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSecondaryUser
 import com.android.bedstead.enterprise.dpc
+import com.android.bedstead.enterprise.policies.AppFunctionsPolicy
 import com.android.bedstead.enterprise.workProfile
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.Postsubmit
-import com.android.bedstead.enterprise.policies.AppFunctionsPolicy
 import com.android.bedstead.multiuser.additionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnPrimaryUser
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSecondaryUser
 import com.android.bedstead.nene.TestApis
-import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.utils.ShellCommand
 import com.android.compatibility.common.util.ApiTest
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule
@@ -89,7 +89,8 @@ import org.junit.runner.RunWith
     FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED,
 )
 class AppFunctionManagerTest {
-    @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+    @get:Rule
+    val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @get:Rule
     val setCancellationTimeoutRule: DeviceConfigStateChangerRule =
@@ -188,17 +189,20 @@ class AppFunctionManagerTest {
                 .build()
         val blockingQueue = LinkedBlockingQueue<ExecuteAppFunctionResponse>()
 
-        mManager.executeAppFunction(request, context.mainExecutor, CancellationSignal()) {
-            e: ExecuteAppFunctionResponse ->
+        mManager.executeAppFunction(
+            request,
+            context.mainExecutor,
+            CancellationSignal()
+        ) { e: ExecuteAppFunctionResponse ->
             blockingQueue.add(e)
         }
 
         val response = requireNotNull(blockingQueue.poll(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS))
         assertThat(
-                response.resultDocument.getPropertyLong(
-                    ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
-                )
+            response.resultDocument.getPropertyLong(
+                ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
             )
+        )
             .isEqualTo(3)
 
         // Each callback can only be invoked once.
@@ -219,11 +223,11 @@ class AppFunctionManagerTest {
 
         assertThat(response.isSuccess).isTrue()
         assertThat(
-                response
-                    .getOrNull()!!
-                    .resultDocument
-                    .getPropertyString("TEST_PROPERTY_CALLING_PACKAGE")
-            )
+            response
+                .getOrNull()!!
+                .resultDocument
+                .getPropertyString("TEST_PROPERTY_CALLING_PACKAGE")
+        )
             .isEqualTo(CURRENT_PKG)
         assertServiceDestroyed()
     }
@@ -242,18 +246,18 @@ class AppFunctionManagerTest {
 
             assertThat(response.isSuccess).isTrue()
             assertThat(
-                    response
-                        .getOrNull()!!
-                        .resultDocument
-                        .getPropertyString("TEST_PROPERTY_CALLING_PACKAGE")
-                )
+                response
+                    .getOrNull()!!
+                    .resultDocument
+                    .getPropertyString("TEST_PROPERTY_CALLING_PACKAGE")
+            )
                 .isEqualTo(CURRENT_PKG)
             assertThat(
-                    response
-                        .getOrNull()!!
-                        .resultDocument
-                        .getPropertyBoolean("TEST_PROPERTY_HAS_CALLER_VISIBILITY")
-                )
+                response
+                    .getOrNull()!!
+                    .resultDocument
+                    .getPropertyBoolean("TEST_PROPERTY_HAS_CALLER_VISIBILITY")
+            )
                 .isEqualTo(true)
         }
     }
@@ -287,16 +291,16 @@ class AppFunctionManagerTest {
             installExistingPackageAsUser(CURRENT_PKG, secondaryUser)
             retryAssert {
                 assertThat(
-                        getAllStaticMetadataPackages(
-                            context.createContextAsUser(secondaryUser.userHandle(), 0)
-                        )
+                    getAllStaticMetadataPackages(
+                        context.createContextAsUser(secondaryUser.userHandle(), 0)
                     )
+                )
                     .contains(CURRENT_PKG)
                 assertThat(
-                        getAllRuntimeMetadataPackages(
-                            context.createContextAsUser(secondaryUser.userHandle(), 0)
-                        )
+                    getAllRuntimeMetadataPackages(
+                        context.createContextAsUser(secondaryUser.userHandle(), 0)
                     )
+                )
                     .contains(CURRENT_PKG)
             }
             val parameters: GenericDocument =
@@ -336,16 +340,16 @@ class AppFunctionManagerTest {
                 installExistingPackageAsUser(CURRENT_PKG, secondaryUser)
                 retryAssert {
                     assertThat(
-                            getAllStaticMetadataPackages(
-                                context.createContextAsUser(secondaryUser.userHandle(), 0)
-                            )
+                        getAllStaticMetadataPackages(
+                            context.createContextAsUser(secondaryUser.userHandle(), 0)
                         )
+                    )
                         .contains(CURRENT_PKG)
                     assertThat(
-                            getAllRuntimeMetadataPackages(
-                                context.createContextAsUser(secondaryUser.userHandle(), 0)
-                            )
+                        getAllRuntimeMetadataPackages(
+                            context.createContextAsUser(secondaryUser.userHandle(), 0)
                         )
+                    )
                         .contains(CURRENT_PKG)
                 }
                 mManager =
@@ -388,11 +392,11 @@ class AppFunctionManagerTest {
 
             assertThat(response.isSuccess).isTrue()
             assertThat(
-                    response
-                        .getOrNull()!!
-                        .resultDocument
-                        .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
-                )
+                response
+                    .getOrNull()!!
+                    .resultDocument
+                    .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
+            )
                 .isEqualTo(3)
             assertServiceDestroyed()
         }
@@ -505,11 +509,11 @@ class AppFunctionManagerTest {
 
         assertThat(response.isSuccess).isTrue()
         assertThat(
-                response
-                    .getOrNull()!!
-                    .resultDocument
-                    .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
-            )
+            response
+                .getOrNull()!!
+                .resultDocument
+                .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
+        )
             .isEqualTo(3)
         assertServiceDestroyed()
     }
@@ -550,11 +554,11 @@ class AppFunctionManagerTest {
 
         assertThat(response.isSuccess).isTrue()
         assertThat(
-                response
-                    .getOrNull()!!
-                    .resultDocument
-                    .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
-            )
+            response
+                .getOrNull()!!
+                .resultDocument
+                .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
+        )
             .isEqualTo(3)
         assertServiceDestroyed()
     }
@@ -583,16 +587,16 @@ class AppFunctionManagerTest {
                 installExistingPackageAsUser(CURRENT_PKG, workProfileUser)
                 retryAssert {
                     assertThat(
-                            getAllStaticMetadataPackages(
-                                context.createContextAsUser(workProfileUser.userHandle(), 0)
-                            )
+                        getAllStaticMetadataPackages(
+                            context.createContextAsUser(workProfileUser.userHandle(), 0)
                         )
+                    )
                         .contains(CURRENT_PKG)
                     assertThat(
-                            getAllRuntimeMetadataPackages(
-                                context.createContextAsUser(workProfileUser.userHandle(), 0)
-                            )
+                        getAllRuntimeMetadataPackages(
+                            context.createContextAsUser(workProfileUser.userHandle(), 0)
                         )
+                    )
                         .contains(CURRENT_PKG)
                 }
                 mManager =
@@ -637,16 +641,16 @@ class AppFunctionManagerTest {
             installExistingPackageAsUser(CURRENT_PKG, workProfileUser)
             retryAssert {
                 assertThat(
-                        getAllStaticMetadataPackages(
-                            context.createContextAsUser(workProfileUser.userHandle(), 0)
-                        )
+                    getAllStaticMetadataPackages(
+                        context.createContextAsUser(workProfileUser.userHandle(), 0)
                     )
+                )
                     .contains(CURRENT_PKG)
                 assertThat(
-                        getAllRuntimeMetadataPackages(
-                            context.createContextAsUser(workProfileUser.userHandle(), 0)
-                        )
+                    getAllRuntimeMetadataPackages(
+                        context.createContextAsUser(workProfileUser.userHandle(), 0)
                     )
+                )
                     .contains(CURRENT_PKG)
             }
             mManager =
@@ -662,11 +666,11 @@ class AppFunctionManagerTest {
 
             assertThat(response.isSuccess).isTrue()
             assertThat(
-                    response
-                        .getOrNull()!!
-                        .resultDocument
-                        .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
-                )
+                response
+                    .getOrNull()!!
+                    .resultDocument
+                    .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
+            )
                 .isEqualTo(3)
         }
     }
@@ -696,16 +700,16 @@ class AppFunctionManagerTest {
                 installExistingPackageAsUser(CURRENT_PKG, additionalUser)
                 retryAssert {
                     assertThat(
-                            getAllStaticMetadataPackages(
-                                context.createContextAsUser(additionalUser.userHandle(), 0)
-                            )
+                        getAllStaticMetadataPackages(
+                            context.createContextAsUser(additionalUser.userHandle(), 0)
                         )
+                    )
                         .contains(CURRENT_PKG)
                     assertThat(
-                            getAllRuntimeMetadataPackages(
-                                context.createContextAsUser(additionalUser.userHandle(), 0)
-                            )
+                        getAllRuntimeMetadataPackages(
+                            context.createContextAsUser(additionalUser.userHandle(), 0)
                         )
+                    )
                         .contains(CURRENT_PKG)
                 }
                 mManager =
@@ -795,11 +799,11 @@ class AppFunctionManagerTest {
 
         assertThat(response.isSuccess).isTrue()
         assertThat(
-                response
-                    .getOrNull()!!
-                    .resultDocument
-                    .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
-            )
+            response
+                .getOrNull()!!
+                .resultDocument
+                .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
+        )
             .isEqualTo(3)
         assertServiceDestroyed()
     }
@@ -858,11 +862,11 @@ class AppFunctionManagerTest {
 
         assertThat(response.isSuccess).isTrue()
         assertThat(
-                response
-                    .getOrNull()!!
-                    .resultDocument
-                    .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
-            )
+            response
+                .getOrNull()!!
+                .resultDocument
+                .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
+        )
             .isEqualTo(3)
         assertServiceDestroyed()
     }
@@ -882,9 +886,9 @@ class AppFunctionManagerTest {
                         .build()
                 val request =
                     ExecuteAppFunctionRequest.Builder(
-                            TEST_HELPER_PKG,
-                            "addWithRestrictCallersWithExecuteAppFunctionsFalse",
-                        )
+                        TEST_HELPER_PKG,
+                        "addWithRestrictCallersWithExecuteAppFunctionsFalse",
+                    )
                         .setParameters(parameters)
                         .build()
 
@@ -892,11 +896,11 @@ class AppFunctionManagerTest {
 
                 assertThat(response.isSuccess).isTrue()
                 assertThat(
-                        response
-                            .getOrNull()!!
-                            .resultDocument
-                            .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
-                    )
+                    response
+                        .getOrNull()!!
+                        .resultDocument
+                        .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
+                )
                     .isEqualTo(3)
             }
         }
@@ -955,8 +959,11 @@ class AppFunctionManagerTest {
                 .build()
         val cancellationSignal = CancellationSignal()
         val blockingQueue = LinkedBlockingQueue<ExecuteAppFunctionResponse>()
-        mManager.executeAppFunction(request, context.mainExecutor, cancellationSignal) {
-            e: ExecuteAppFunctionResponse ->
+        mManager.executeAppFunction(
+            request,
+            context.mainExecutor,
+            cancellationSignal
+        ) { e: ExecuteAppFunctionResponse ->
             blockingQueue.add(e)
         }
 
@@ -982,8 +989,11 @@ class AppFunctionManagerTest {
                 .build()
         val cancellationSignal = CancellationSignal()
         val blockingQueue = LinkedBlockingQueue<ExecuteAppFunctionResponse>()
-        mManager.executeAppFunction(request, context.mainExecutor, cancellationSignal) {
-            e: ExecuteAppFunctionResponse ->
+        mManager.executeAppFunction(
+            request,
+            context.mainExecutor,
+            cancellationSignal
+        ) { e: ExecuteAppFunctionResponse ->
             blockingQueue.add(e)
         }
 
@@ -1228,8 +1238,8 @@ class AppFunctionManagerTest {
             assertThat(isAppFunctionEnabled(TEST_HELPER_PKG, functionIdUnderTest)).isFalse()
 
             ShellCommand.builder(
-                    "pm clear --user ${TestApis.users().current().id()}" + " $TEST_HELPER_PKG"
-                )
+                "pm clear --user ${TestApis.users().current().id()}" + " $TEST_HELPER_PKG"
+            )
                 .execute()
 
             retryAssert {
@@ -1254,8 +1264,8 @@ class AppFunctionManagerTest {
             assertThat(isAppFunctionEnabled(TEST_HELPER_PKG, functionIdUnderTest)).isTrue()
 
             ShellCommand.builder(
-                    "pm clear --user ${TestApis.users().current().id()}" + " $TEST_HELPER_PKG"
-                )
+                "pm clear --user ${TestApis.users().current().id()}" + " $TEST_HELPER_PKG"
+            )
                 .execute()
 
             retryAssert {
@@ -1263,6 +1273,9 @@ class AppFunctionManagerTest {
             }
         }
     }
+
+    /** Runs a suspend block in a blocking manner */
+    private fun doBlocking(block: suspend CoroutineScope.() -> Unit) = runBlocking(block = block)
 
     private fun assertCancelListenerTriggered() {
         assertThat(waitForOperationCancellation(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)).isTrue()
@@ -1301,12 +1314,6 @@ class AppFunctionManagerTest {
         assertThat(waitForServiceOnCreate(SHORT_TIMEOUT_SECOND, TimeUnit.SECONDS)).isFalse()
     }
 
-    private fun installExistingPackageAsUser(packageName: String, user: UserReference) {
-        val userId = user.id()
-        assertThat(SystemUtil.runShellCommand("pm install-existing --user $userId $packageName"))
-            .isEqualTo("Package $packageName installed for user: $userId\n")
-    }
-
     /**
      * Asserts the state of the process running AppFunctionService is 'bfgs', i.e. bound foreground
      * service, or not.
@@ -1327,12 +1334,15 @@ class AppFunctionManagerTest {
         }
         fail(
             "Cannot find android.app.appfunctions.cts:appfunctions/u${UserHandle.myUserId()}" +
-                " from dumpsys activity lru"
+                    " from dumpsys activity lru"
         )
     }
 
     private companion object {
-        @JvmField @ClassRule @Rule val sDeviceState: DeviceState = DeviceState()
+        @JvmField
+        @ClassRule
+        @Rule
+        val sDeviceState: DeviceState = DeviceState()
 
         const val TEST_SIDECAR_HELPER_PKG: String = "android.app.appfunctions.cts.helper.sidecar"
         const val TEST_HELPER_PKG: String = "android.app.appfunctions.cts.helper"
@@ -1345,8 +1355,6 @@ class AppFunctionManagerTest {
             Manifest.permission.INTERACT_ACROSS_USERS_FULL
     }
 }
-
-private fun doBlocking(block: suspend CoroutineScope.() -> Unit) = runBlocking(block = block)
 
 private fun <T> Result<T>.appFunctionException(): AppFunctionException =
     exceptionOrNull() as AppFunctionException

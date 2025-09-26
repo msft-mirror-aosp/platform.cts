@@ -116,5 +116,11 @@
     <appfunction>
         <function_id>contextConcatStrings</function_id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
+        <enabled_by_default>false</enabled_by_default>
+    </appfunction>
+    <appfunction>
+        <function_id>contextLongRunning</function_id>
+        <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
+        <enabled_by_default>false</enabled_by_default>
     </appfunction>
 </appfunctions>
