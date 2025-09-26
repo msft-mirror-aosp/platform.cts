@@ -518,7 +518,7 @@ public class CodecInitializationLatencyTest {
                 while (!mSawOutputEOS) {
                     if (!mSawInputEOS) {
                         int inputBufferId = mCodec.dequeueInputBuffer(Q_DEQ_TIMEOUT_US);
-                        if (inputBufferId > 0) {
+                        if (inputBufferId >= 0) {
                             if (enqueueTimeStamp == 0) {
                                 enqueueTimeStamp = SystemClock.elapsedRealtimeNanos();
                             }
