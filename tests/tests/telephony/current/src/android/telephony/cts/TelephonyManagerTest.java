@@ -711,6 +711,31 @@ public class TelephonyManagerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(
+            com.android.server.telecom.flags.Flags.FLAG_MOVE_GET_TTY_MODE_TO_TELEPHONY_MANAGER)
+    public void testGetCurrentTtyMode() {
+        assumeTrue("Test requires Telephony feature",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+
+        try {
+            int currentTtyMode = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                    mTelephonyManager, tm -> tm.getCurrentTtyMode(),
+                    permission.READ_PRIVILEGED_PHONE_STATE);
+
+            // We are primarily testing that the API can be called without crashing
+            // and returns a valid value so the TTY mode can be any of the valid modes:
+            assertTrue("Returned TTY mode is invalid: " + currentTtyMode,
+                    currentTtyMode == TelephonyManager.TTY_MODE_OFF ||
+                            currentTtyMode == TelephonyManager.TTY_MODE_FULL ||
+                            currentTtyMode == TelephonyManager.TTY_MODE_HCO ||
+                            currentTtyMode == TelephonyManager.TTY_MODE_VCO);
+
+        } catch (Exception e) {
+            fail("Calling getCurrentTtyMode failed with exception: " + e.getMessage());
+        }
+    }
+
+    @Test
     public void testDeviceDataCapable() {
         boolean isDataCapable = mTelephonyManager.isDataCapable();
         // Note: there's no mTelephonyManager.isDeviceDataCapable()
