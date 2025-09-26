@@ -103,6 +103,7 @@ import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImePackageNames;
 import com.android.cts.mockime.MockImeSession;
 
+import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -669,6 +670,7 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
 
     @Test
     public void testShowImeOnCreate() throws Exception {
+        Assume.assumeFalse(isPreventImeStartup());
         final Instrumentation instrumentation = getInstrumentation();
         assumeThat(MockImeSession.getUnavailabilityReason(instrumentation.getContext()),
                 nullValue());
@@ -682,6 +684,7 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
 
     @Test
     public void testShowImeOnCreate_doesntCauseImeToReappearWhenDialogIsShown() throws Exception {
+        Assume.assumeFalse(isPreventImeStartup());
         final Instrumentation instrumentation = getInstrumentation();
         assumeThat(MockImeSession.getUnavailabilityReason(instrumentation.getContext()),
                 nullValue());
@@ -1263,5 +1266,16 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
         getInstrumentation().runOnMainSync(() -> result[0] = f.get());
         //noinspection unchecked
         return (R) result[0];
+    }
+
+    private static boolean isPreventImeStartup() {
+        final Context context = getInstrumentation().getContext();
+        try {
+            return context.getResources()
+                    .getBoolean(android.R.bool.config_preventImeStartupUnlessTextEditor);
+        } catch (Resources.NotFoundException e) {
+            // Assume this is not enabled.
+            return false;
+        }
     }
 }
