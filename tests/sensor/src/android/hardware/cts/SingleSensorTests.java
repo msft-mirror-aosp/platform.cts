@@ -769,27 +769,50 @@ public class SingleSensorTests extends SensorTestCase {
     private void runSensorTest(int sensorType, int rateUs,
             boolean isAutomotiveSpecificTest) throws Throwable {
         SensorCtsHelper.sleep(3, TimeUnit.SECONDS);
-        TestSensorEnvironment environment = new TestSensorEnvironment(
-                getContext(),
-                sensorType,
-                shouldEmulateSensorUnderLoad(),
-                rateUs,
-                isAutomotiveSpecificTest);
-        TestSensorOperation op =
-                TestSensorOperation.createOperation(environment, 5, TimeUnit.SECONDS);
-        op.addDefaultVerifications();
+        SensorManager sensorManager =
+                (SensorManager) getContext().getSystemService(Context.SENSOR_SERVICE);
+        if (sensorManager == null) {
+            throw new IllegalStateException("SensorService is not present in the system.");
+        }
 
-        try {
-            op.execute(getCurrentTestNode());
-        } finally {
-            SensorStats stats = op.getStats();
-            stats.log(TAG);
+        for (Sensor sensor : sensorManager.getSensorList(sensorType)) {
+            TestSensorEnvironment environment =
+                    new TestSensorEnvironment(
+                            getContext(),
+                            sensor,
+                            shouldEmulateSensorUnderLoad(),
+                            rateUs,
+                            0 /* maxReportLatencyUs */,
+                            false /* isDeviceSuspendTest */,
+                            false /* isIntegrationTest */,
+                            isAutomotiveSpecificTest);
+            TestSensorOperation op =
+                    TestSensorOperation.createOperation(environment, 5, TimeUnit.SECONDS);
+            op.addDefaultVerifications();
 
-            String fileName = String.format(
-                    "single_%s_%s.txt",
-                    SensorStats.getSanitizedSensorName(environment.getSensor()),
-                    environment.getFrequencyString());
-            stats.logToFile(environment.getContext(), fileName);
+            try {
+                op.execute(getCurrentTestNode());
+            } finally {
+                SensorStats stats = op.getStats();
+                stats.log(TAG);
+
+                String fileName;
+                if (sensor == sensorManager.getDefaultSensor(sensorType)) {
+                    fileName =
+                            String.format(
+                                    "single_%s_%s.txt",
+                                    SensorStats.getSanitizedSensorName(environment.getSensor()),
+                                    environment.getFrequencyString());
+                } else {
+                    fileName =
+                            String.format(
+                                    "single_%s_%s.txt",
+                                    SensorCtsHelper.sanitizeStringForFileName(
+                                            environment.getSensor().getName()),
+                                    environment.getFrequencyString());
+                }
+                stats.logToFile(environment.getContext(), fileName);
+            }
         }
     }
 }
