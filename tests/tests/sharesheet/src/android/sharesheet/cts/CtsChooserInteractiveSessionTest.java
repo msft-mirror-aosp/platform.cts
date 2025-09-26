@@ -19,6 +19,8 @@ package android.sharesheet.cts;
 import static android.Manifest.permission.START_ACTIVITIES_FROM_BACKGROUND;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
+import static android.service.chooser.Flags.FLAG_INTERACTIVE_CHOOSER;
+import static android.service.chooser.Flags.FLAG_INTERACTIVE_CHOOSER_DEFAULT_BOUNDS;
 
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
@@ -40,10 +42,10 @@ import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.os.SystemClock;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.service.chooser.Flags;
 import android.util.TypedValue;
 import android.view.View;
 
@@ -76,7 +78,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
 @RunWith(AndroidJUnit4.class)
-@RequiresFlagsEnabled(Flags.FLAG_INTERACTIVE_CHOOSER)
+@RequiresFlagsEnabled(FLAG_INTERACTIVE_CHOOSER)
 public class CtsChooserInteractiveSessionTest {
     private static final int WAIT_AND_ASSERT_FOUND_TIMEOUT_MS = 5_000;
     private static final int MIN_CHOOSER_HEIGHT_DP = 48;
@@ -195,6 +197,7 @@ public class CtsChooserInteractiveSessionTest {
                 "android.service.chooser.ChooserSession#getBounds",
             })
     @Test
+    @RequiresFlagsDisabled(FLAG_INTERACTIVE_CHOOSER_DEFAULT_BOUNDS)
     public void test_chooserReportsBounds() {
         InteractiveTestActivityController activityController = launchTestActivity();
 
@@ -207,6 +210,35 @@ public class CtsChooserInteractiveSessionTest {
         assertThat(testReport.getBoundsUpdateHistory()).isNotEmpty();
         assertThat(testReport.getBoundsUpdateHistory().getLast())
                 .isEqualTo(testReport.getChooserBounds());
+
+        // dismiss Chooser
+        mDevice.pressBack();
+        waitForChooserToBeGone();
+    }
+
+    /** Test Chooser bounds reporting. */
+    @ApiTest(
+            apis = {
+                "android.service.chooser.ChooserSession#addStateListener",
+                "android.service.chooser.ChooserSession.StateListener#onBoundsChanged",
+                "android.service.chooser.ChooserSession#getBounds",
+                "android.service.chooser.ChooserSession#getDefaultLaunchBounds",
+            })
+    @Test
+    @RequiresFlagsEnabled(FLAG_INTERACTIVE_CHOOSER_DEFAULT_BOUNDS)
+    public void test_chooserReportsBoundsInfo() {
+        InteractiveTestActivityController activityController = launchTestActivity();
+
+        clickLaunchChooser();
+        waitForChooserToAppear();
+        mDevice.waitForIdle();
+
+        InteractiveTestActivityReport testReport = activityController.getReport();
+        assertThat(testReport.getHasActiveSession()).isTrue();
+        assertThat(testReport.getDefaultBoundsUpdateHistory()).isNotEmpty();
+        Rect lastDefaultBounds = testReport.getDefaultBoundsUpdateHistory().getLast();
+        assertThat(lastDefaultBounds).isEqualTo(testReport.getChooserDefaultBounds());
+        assertThat(testReport.getChooserBounds()).isEqualTo(testReport.getChooserDefaultBounds());
 
         // dismiss Chooser
         mDevice.pressBack();

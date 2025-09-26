@@ -69,7 +69,12 @@ public class CtsInteractiveChooserTestActivity extends Activity {
 
                 @Override
                 public void onBoundsChanged(@NonNull Rect bounds) {
-                    onChooserBoundsChanged(bounds);
+                    ChooserSession chooserSession = mChooserSession;
+                    onChooserBoundsChanged(
+                            bounds,
+                            chooserSession == null
+                                    ? null
+                                    : chooserSession.getDefaultLaunchBounds());
                 }
             };
 
@@ -152,9 +157,10 @@ public class CtsInteractiveChooserTestActivity extends Activity {
         }
     }
 
-    private void onChooserBoundsChanged(Rect bounds) {
+    private void onChooserBoundsChanged(Rect bounds, Rect defaultBounds) {
         Log.d(TAG, "Chooser bounds changed; bounds: " + bounds);
         mReportBuilder.addReportedBound(bounds);
+        mReportBuilder.addReportedDefaultBounds(defaultBounds);
     }
 
     private InteractiveTestActivityReport createTestReport() {
