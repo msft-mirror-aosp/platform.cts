@@ -356,6 +356,7 @@ public class VehiclePropertyVerifier<T> {
     private final int mPowerPropagationDelayMs;
     private final ImmutableSet<String> mReadPermissions;
     private final ImmutableList<ImmutableSet<String>> mWritePermissions;
+    private final Optional<SupportedValuesGenerator<T>> mSupportedValuesGenerator;
     private final VerifierContext mVerifierContext;
     private final List<Integer> mStoredProperties = new ArrayList<>();
 
@@ -389,7 +390,8 @@ public class VehiclePropertyVerifier<T> {
             boolean verifyErrorStates,
             int powerPropagationDelayMs,
             ImmutableSet<String> readPermissions,
-            ImmutableList<ImmutableSet<String>> writePermissions) {
+            ImmutableList<ImmutableSet<String>> writePermissions,
+            Optional<SupportedValuesGenerator<T>> supportedValuesGenerator) {
         assertWithMessage("Must set car property manager").that(carPropertyManager).isNotNull();
         mCarPropertyManager = carPropertyManager;
         mPropertyId = propertyId;
@@ -420,6 +422,7 @@ public class VehiclePropertyVerifier<T> {
         mPowerPropagationDelayMs = powerPropagationDelayMs;
         mReadPermissions = readPermissions;
         mWritePermissions = writePermissions;
+        mSupportedValuesGenerator = supportedValuesGenerator;
         mPropertyToAreaIdValues = new SparseArray<>();
         mVerifierContext = new VerifierContext(carPropertyManager);
     }
@@ -1590,7 +1593,11 @@ public class VehiclePropertyVerifier<T> {
      */
     public List<T> getPossibleValues(int areaId) {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
-        if (Boolean.class.equals(carPropertyConfig.getPropertyType())) {
+        if (mSupportedValuesGenerator.isPresent()) {
+            return mSupportedValuesGenerator
+                    .get()
+                    .generate(mVerifierContext, carPropertyConfig, areaId);
+        } else if (Boolean.class.equals(carPropertyConfig.getPropertyType())) {
             return (List<T>) List.of(Boolean.TRUE, Boolean.FALSE);
         } else if (Integer.class.equals(carPropertyConfig.getPropertyType())) {
             return (List<T>) getPossibleIntegerValues(areaId);
@@ -3225,6 +3232,15 @@ public class VehiclePropertyVerifier<T> {
         void verify(VerifierContext verifierContext, CarPropertyConfig<?> carPropertyConfig);
     }
 
+    /** An interface for generating the supported values for a property. */
+    public interface SupportedValuesGenerator<T> {
+        /** Generates the supported values for a property. */
+        List<T> generate(
+                VerifierContext verifierContext,
+                CarPropertyConfig<?> carPropertyConfig,
+                int areaId);
+    }
+
     /** The builder class. */
     public static class Builder<T> {
         private final int mPropertyId;
@@ -3256,6 +3272,7 @@ public class VehiclePropertyVerifier<T> {
         private ImmutableSet.Builder<String> mReadPermissionsBuilder = ImmutableSet.builder();
         private final ImmutableList.Builder<ImmutableSet<String>> mWritePermissionsBuilder =
                 ImmutableList.builder();
+        private Optional<SupportedValuesGenerator<T>> mSupportedValuesGenerator = Optional.empty();
 
         private Builder(
                 int propertyId,
@@ -3464,6 +3481,13 @@ public class VehiclePropertyVerifier<T> {
             return this;
         }
 
+        /** Sets the supported values generator. */
+        public Builder<T> setSupportedValuesGenerator(
+                SupportedValuesGenerator<T> supportedValuesGenerator) {
+            mSupportedValuesGenerator = Optional.of(supportedValuesGenerator);
+            return this;
+        }
+
         /** Builds the verifier. */
         public VehiclePropertyVerifier<T> build() {
             return new VehiclePropertyVerifier<>(
@@ -3494,7 +3518,8 @@ public class VehiclePropertyVerifier<T> {
                     mVerifyErrorStates,
                     mPowerPropagationDelayMs,
                     mReadPermissionsBuilder.build(),
-                    mWritePermissionsBuilder.build());
+                    mWritePermissionsBuilder.build(),
+                    mSupportedValuesGenerator);
         }
     }
 
