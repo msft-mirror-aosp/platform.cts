@@ -3014,6 +3014,13 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                                 + " or equal to max current draw by the vehicle")
                                     .that(evChargeCurrentDrawLimit)
                                     .isAtMost(maxCurrentDrawThresholdAmps);
+                        })
+                .setSupportedValuesGenerator(
+                        (verifierContext, carPropertyConfig, areaId) -> {
+                            // First value in the configArray specifies the max current draw allowed
+                            // by the vehicle.
+                            return ImmutableList.of(
+                                    carPropertyConfig.getConfigArray().get(0).floatValue());
                         });
     }
 
@@ -3067,6 +3074,23 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                         .that(evChargePercentLimit.intValue())
                                         .isIn(evChargePercentLimitConfigArray);
                             }
+                        })
+                .setSupportedValuesGenerator(
+                        (verifierContext, carPropertyConfig, areaId) -> {
+                            ImmutableList.Builder<Float> possibleValues = ImmutableList.builder();
+                            List<Integer> configArray = carPropertyConfig.getConfigArray();
+                            if (!configArray.isEmpty()) {
+                                for (Integer possibleEvChargePercentLimit : configArray) {
+                                    possibleValues.add(possibleEvChargePercentLimit.floatValue());
+                                }
+                            } else {
+                                // If the configArray is not specified, then values between 0 and
+                                // 100 percent must
+                                // be supported.
+                                possibleValues.add(0f);
+                                possibleValues.add(100f);
+                            }
+                            return possibleValues.build();
                         });
     }
 

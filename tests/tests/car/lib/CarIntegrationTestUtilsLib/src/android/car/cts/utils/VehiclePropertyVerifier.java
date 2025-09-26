@@ -39,7 +39,6 @@ import android.car.VehicleAreaWindow;
 import android.car.VehiclePropertyIds;
 import android.car.VehiclePropertyType;
 import android.car.feature.Flags;
-import android.car.hardware.CarHvacFanDirection;
 import android.car.hardware.CarPropertyConfig;
 import android.car.hardware.CarPropertyValue;
 import android.car.hardware.property.AreaIdConfig;
@@ -1601,8 +1600,6 @@ public class VehiclePropertyVerifier<T> {
             return (List<T>) List.of(Boolean.TRUE, Boolean.FALSE);
         } else if (Integer.class.equals(carPropertyConfig.getPropertyType())) {
             return (List<T>) getPossibleIntegerValues(areaId);
-        } else if (Float.class.equals(carPropertyConfig.getPropertyType())) {
-            return (List<T>) getPossibleFloatValues(areaId);
         }
         return List.of();
     }
@@ -1640,17 +1637,6 @@ public class VehiclePropertyVerifier<T> {
     private List<Integer> getPossibleIntegerValues(int areaId) {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
         List<Integer> possibleValues = new ArrayList<>();
-        if (mPropertyId == VehiclePropertyIds.HVAC_FAN_DIRECTION) {
-            int[] availableHvacFanDirections =
-                    mCarPropertyManager.getIntArrayProperty(
-                            VehiclePropertyIds.HVAC_FAN_DIRECTION_AVAILABLE, areaId);
-            for (int i = 0; i < availableHvacFanDirections.length; i++) {
-                if (availableHvacFanDirections[i] != CarHvacFanDirection.UNKNOWN) {
-                    possibleValues.add(availableHvacFanDirections[i]);
-                }
-            }
-            return possibleValues;
-        }
         if (mVerifySetterWithConfigArrayValues) {
             for (Integer value : carPropertyConfig.getConfigArray()) {
                 possibleValues.add(value);
@@ -1688,53 +1674,6 @@ public class VehiclePropertyVerifier<T> {
             }
         }
         return possibleValues;
-    }
-
-    /** Gets the possible values for a float property. */
-    private List<Float> getPossibleFloatValues(int areaId) {
-        ImmutableList.Builder<Float> possibleValuesBuilder = ImmutableList.builder();
-        if (mPropertyId == VehiclePropertyIds.HVAC_TEMPERATURE_SET) {
-            List<Integer> hvacTempSetConfigArray = getCarPropertyConfig().getConfigArray();
-            if (!hvacTempSetConfigArray.isEmpty()) {
-                // For HVAC_TEMPERATURE_SET, the configArray specifies the supported temperature
-                // values for the property. configArray[0] is the lower bound of the supported
-                // temperatures in Celsius. configArray[1] is the upper bound of the supported
-                // temperatures in Celsius. configArray[2] is the supported temperature increment
-                // between the two bounds. All configArray values are Celsius*10 since the
-                // configArray is List<Integer> but HVAC_TEMPERATURE_SET is a Float type property.
-                for (int possibleHvacTempSetValue = hvacTempSetConfigArray.get(0);
-                        possibleHvacTempSetValue <= hvacTempSetConfigArray.get(1);
-                        possibleHvacTempSetValue += hvacTempSetConfigArray.get(2)) {
-                    possibleValuesBuilder.add((float) possibleHvacTempSetValue / 10.0f);
-                }
-            } else {
-                // If the configArray is not specified, then use min/max values.
-                Float minValueFloat = (Float) getCarPropertyConfig().getMinValue(areaId);
-                Float maxValueFloat = (Float) getCarPropertyConfig().getMaxValue(areaId);
-                possibleValuesBuilder.add(minValueFloat);
-                possibleValuesBuilder.add(maxValueFloat);
-            }
-        } else if (mPropertyId == VehiclePropertyIds.EV_CHARGE_PERCENT_LIMIT) {
-            List<Integer> evChargePercentLimitConfigArray = getCarPropertyConfig().getConfigArray();
-            if (!evChargePercentLimitConfigArray.isEmpty()) {
-                for (Integer possibleEvChargePercentLimit : evChargePercentLimitConfigArray) {
-                    possibleValuesBuilder.add(possibleEvChargePercentLimit.floatValue());
-                }
-            } else {
-                // If the configArray is not specified, then values between 0 and 100 percent must
-                // be supported.
-                possibleValuesBuilder.add(0f);
-                possibleValuesBuilder.add(100f);
-            }
-        } else if (mPropertyId == VehiclePropertyIds.EV_CHARGE_CURRENT_DRAW_LIMIT) {
-            // First value in the configArray specifies the max current draw allowed by the vehicle.
-            Integer vehicleMaxCurrentDrawLimit = getCarPropertyConfig().getConfigArray().get(0);
-            possibleValuesBuilder.add(vehicleMaxCurrentDrawLimit.floatValue());
-        } else if (mPropertyId == VehiclePropertyIds.RANGE_REMAINING) {
-            // Test when no range is remaining
-            possibleValuesBuilder.add(0f);
-        }
-        return possibleValuesBuilder.build();
     }
 
     private void verifyCarPropertyValueSetter() {
