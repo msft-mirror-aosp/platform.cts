@@ -15,6 +15,7 @@
 
 
 import math
+import numpy as np
 import os
 import unittest
 
@@ -22,9 +23,30 @@ import cv2
 
 import opencv_processing_utils
 
+# ArUco marker parameters for test images.
+LEFT_ARUCO_ID = 0
+RIGHT_ARUCO_ID = 1
+TEST_IMG_ARUCO = '4_arucos_with_squares.png'
+TEST_IMG_ARUCO_ROTATED = '4_arucos_with_squares_rotated.png'
+TEST_IMG_SLANTED_EDGE = 'slanted_edge.png'
+
 
 class Cv2ImageProcessingUtilsTests(unittest.TestCase):
   """Unit tests for this module."""
+
+  def setUp(self):
+    super().setUp()
+    self.aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_100)
+    self.aruco_params = cv2.aruco.DetectorParameters()
+    self.aruco_image_path = os.path.join(
+        opencv_processing_utils.TEST_IMG_DIR, TEST_IMG_ARUCO)
+    self.aruco_img = cv2.imread(self.aruco_image_path)
+    self.aruco_rotated_image_path = os.path.join(
+        opencv_processing_utils.TEST_IMG_DIR, TEST_IMG_ARUCO_ROTATED)
+    self.aruco_rotated_img = cv2.imread(self.aruco_rotated_image_path)
+    self.slanted_edge_image_path = os.path.join(
+        opencv_processing_utils.TEST_IMG_DIR, TEST_IMG_SLANTED_EDGE)
+    self.slanted_edge_img = cv2.imread(self.slanted_edge_image_path)
 
   def test_get_angle_identify_rotated_chessboard_angle(self):
     """Unit test to check extracted angles from images."""
@@ -82,6 +104,41 @@ class Cv2ImageProcessingUtilsTests(unittest.TestCase):
     self.assertIsNone(opencv_processing_utils.calc_chart_scaling(50, 115))
     # No scaling rule is found for input distance, default is used
     self.assertIsNone(opencv_processing_utils.calc_chart_scaling(200, 65))
+
+  def _detect_aruco_markers(self, image):
+    """Helper to load image and detect ArUco markers."""
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    corners, ids, _ = cv2.aruco.detectMarkers(gray, self.aruco_dict,
+                                              parameters=self.aruco_params)
+    return corners, ids
+
+  def test_rotated_scene_with_aruco_markers(self):
+    """Unit test for detect_180_degree_rotation_with_aruco_markers - True."""
+    corners, ids = self._detect_aruco_markers(self.aruco_rotated_img)
+    self.assertIsNotNone(
+        corners, f'Could not load image: {self.aruco_rotated_image_path}')
+    result = (
+        opencv_processing_utils.detect_180_degree_rotation_with_aruco_markers(
+            corners, ids, LEFT_ARUCO_ID, RIGHT_ARUCO_ID))
+    self.assertTrue(result)
+
+  def test_non_rotated_scene_with_aruco_markers(self):
+    """Unit test for detect_180_degree_rotation_with_aruco_markers - False."""
+    corners, ids = self._detect_aruco_markers(self.aruco_img)
+    self.assertIsNotNone(corners, f'Could not load image: {self.aruco_image_path}')
+    result = (
+        opencv_processing_utils.detect_180_degree_rotation_with_aruco_markers(
+            corners, ids, LEFT_ARUCO_ID, RIGHT_ARUCO_ID))
+    self.assertFalse(result)
+
+  def test_missing_marker_raises_error(self):
+    """Unit test for detect_180_degree_rotation_with_aruco_markers - Missing."""
+    corners, ids = self._detect_aruco_markers(self.slanted_edge_img)
+    self.assertIsNotNone(
+        corners, f'Could not load image: {self.slanted_edge_image_path}')
+    with self.assertRaises(ValueError):
+      opencv_processing_utils.detect_180_degree_rotation_with_aruco_markers(
+          corners, ids, LEFT_ARUCO_ID, RIGHT_ARUCO_ID)
 
 if __name__ == '__main__':
   unittest.main()
