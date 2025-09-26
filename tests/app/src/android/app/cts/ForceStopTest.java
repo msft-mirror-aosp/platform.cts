@@ -224,13 +224,13 @@ public final class ForceStopTest {
 
         forceStopAndStartSimpleActivity(intent);
 
-        assertWithMessage("EXTRA_TIME " + mTimestampMs + " not after " + preUnstopTimestampMs)
-                .that(mTimestampMs >= preUnstopTimestampMs)
-                .isTrue();
-
         if (!gotUnstopped.block(DELAY_MILLIS)) {
             assertWithMessage("Didn't get ACTION_PACKAGE_UNSTOPPED").fail();
         }
+
+        assertWithMessage("EXTRA_TIME " + mTimestampMs + " not after " + preUnstopTimestampMs)
+                .that(mTimestampMs >= preUnstopTimestampMs)
+                .isTrue();
 
         // Force-stop it again to clean up
         runWithShellPermissionIdentity(
