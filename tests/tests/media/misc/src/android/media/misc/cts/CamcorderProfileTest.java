@@ -23,6 +23,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
+import static org.junit.Assume.assumeFalse;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -43,7 +44,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.UserHelper;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -106,6 +109,13 @@ public class CamcorderProfileTest {
         LAST_TIMELAPSE_QUALITY + 1, // Unknown timelapse profile quality
         LAST_HIGH_SPEED_QUALITY + 1 // Unknown high speed timelapse profile quality
     };
+
+    private UserHelper mUserHelper;
+
+    @Before
+    public void setUp() {
+        mUserHelper = new UserHelper();
+    }
 
     // Uses get without id if cameraId == -1 and get with id otherwise.
     private CamcorderProfile getWithOptionalId(int quality, int cameraId) {
@@ -415,6 +425,9 @@ public class CamcorderProfileTest {
     }
 
     private void checkGet(int cameraId) {
+        assumeFalse("Camera is not supported for visible background users",
+                mUserHelper.isVisibleBackgroundUser());
+
         Log.v(TAG, (cameraId == -1)
                    ? "Checking get without id"
                    : "Checking get with id = " + cameraId);
