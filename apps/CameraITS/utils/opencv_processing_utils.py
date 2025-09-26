@@ -1459,3 +1459,46 @@ def define_regions(img, img_path, chart_path, props, width, height):
       'regionYellow': region_yellow,
   }
   return regions
+
+
+def detect_180_degree_rotation_with_aruco_markers(
+    corners, ids, left_id, right_id):
+  """Checks if the scene is rotated 180 deg using known aruco marker locations.
+
+  Args:
+    corners: list of detected corners.
+    ids: list of int ids for each ArUco markers in the input_img.
+    left_id: id of the left marker.
+    right_id: id of the right marker.
+
+  Returns:
+    True if the scene is rotated, False otherwise.
+  """
+  # Check if ids, corners is None or an empty tuple
+  if ids is None or ids.size == 0:
+    raise ValueError('No ArUco markers detected.')
+  if corners is None or not corners:
+    raise ValueError('No ArUco marker corners detected.')
+
+  aruco_marker_ids_flat = ids.flatten()
+  try:
+    left_idx = numpy.where(aruco_marker_ids_flat == left_id)[0][0]
+    right_idx = numpy.where(aruco_marker_ids_flat == right_id)[0][0]
+  except IndexError as e:
+    raise ValueError('Marker ID not found in ids array') from e
+
+  aruco_marker_left = corners[left_idx][0][0]
+  aruco_marker_right = corners[right_idx][0][0]
+  is_rotated = aruco_marker_right[0] < aruco_marker_left[0]
+
+  if is_rotated:
+    logging.debug(
+        'Scene is rotated. Left Aruco marker location: %s, Right Aruco marker '
+        'location: %s, Expected right value < left value on the X-axis of top '
+        'left corner locations.', aruco_marker_left[0], aruco_marker_right[0])
+  else:
+    logging.debug(
+        'Scene is not rotated. X-axis of location of Left marker: %s, '
+        'Right marker: %s', aruco_marker_left[0], aruco_marker_right[0])
+
+  return is_rotated
