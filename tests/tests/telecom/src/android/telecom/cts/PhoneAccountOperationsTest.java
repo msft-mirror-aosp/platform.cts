@@ -38,7 +38,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-
 /**
  * Verifies some of the PhoneAccount registration related operations.
  */
@@ -48,6 +47,8 @@ public class PhoneAccountOperationsTest extends InstrumentationTestCase {
     public static final Bundle TEST_BUNDLE = createTestBundle(false);
     public static final int TEST_LENGTH = 10;
     public static final String TEST_ENCODING = "enUS";
+    public static final int TEST_ALERT_INTERVAL = 3;
+    public static final int TEST_ALERT_THRESHOLD = 5;
 
     private TestUtils.InvokeCounter mPhoneAccountRegisteredLatch;
     private TestUtils.InvokeCounter mPhoneAccountUnRegisteredLatch;
@@ -71,6 +72,12 @@ public class PhoneAccountOperationsTest extends InstrumentationTestCase {
         testBundle.putString(PhoneAccount.EXTRA_CALL_SUBJECT_CHARACTER_ENCODING, TEST_ENCODING);
         if (setCallFiltering) {
             testBundle.putBoolean(PhoneAccount.EXTRA_SKIP_CALL_FILTERING, true);
+        }
+        if (Flags.supportLowBatteryAlert()) {
+            testBundle.putInt(
+                    PhoneAccount.EXTRA_LOW_BATTERY_ALERT_INTERVAL_SECONDS, TEST_ALERT_INTERVAL);
+            testBundle.putInt(
+                    PhoneAccount.EXTRA_LOW_BATTERY_ALERT_LEVEL_THRESHOLD, TEST_ALERT_THRESHOLD);
         }
         return testBundle;
     }
@@ -412,8 +419,15 @@ public class PhoneAccountOperationsTest extends InstrumentationTestCase {
         assertEquals(TEST_ENCODING,
                 extras.getString(PhoneAccount.EXTRA_CALL_SUBJECT_CHARACTER_ENCODING));
         assertTrue(extras.containsKey(PhoneAccount.EXTRA_CALL_SUBJECT_MAX_LENGTH));
-        assertEquals(TEST_LENGTH,
-                extras.getInt(PhoneAccount.EXTRA_CALL_SUBJECT_MAX_LENGTH));
+        assertEquals(TEST_LENGTH, extras.getInt(PhoneAccount.EXTRA_CALL_SUBJECT_MAX_LENGTH));
+        if (Flags.supportLowBatteryAlert()) {
+            assertEquals(
+                    TEST_ALERT_THRESHOLD,
+                    extras.getInt(PhoneAccount.EXTRA_LOW_BATTERY_ALERT_LEVEL_THRESHOLD));
+            assertEquals(
+                    TEST_ALERT_INTERVAL,
+                    extras.getInt(PhoneAccount.EXTRA_LOW_BATTERY_ALERT_INTERVAL_SECONDS));
+        }
     }
 
     public void testRegisterPhoneAccount_CheckURISchemeSupported() throws Exception {

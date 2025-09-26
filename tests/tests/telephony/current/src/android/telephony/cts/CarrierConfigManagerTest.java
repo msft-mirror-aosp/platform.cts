@@ -31,6 +31,7 @@ import static android.telephony.CarrierConfigManager.KEY_EMERGENCY_CALL_TO_SATEL
 import static android.telephony.CarrierConfigManager.KEY_EMERGENCY_MESSAGING_SUPPORTED_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_FORCE_HOME_NETWORK_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_LOG_CALLS_ANSWERED_ELSEWHERE_BOOL;
+import static android.telephony.CarrierConfigManager.KEY_LOW_BATTERY_ALERT_THRESHOLD_INT;
 import static android.telephony.CarrierConfigManager.KEY_OVERRIDE_WFC_ROAMING_MODE_WHILE_USING_NTN_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_CONNECTED_NOTIFICATION_THROTTLE_MILLIS_INT;
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_CONNECTION_HYSTERESIS_SEC_INT;
@@ -348,6 +349,16 @@ public class CarrierConfigManagerTest {
                 assertTrue(
                         "KEY_LOG_CALLS_ANSWERED_ELSEWHERE_BOOL doesn't match static default.",
                         config.getBoolean(KEY_LOG_CALLS_ANSWERED_ELSEWHERE_BOOL));
+            }
+            if (Flags.supportLowBatteryAlert()) {
+                assertEquals(
+                        "KEY_LOW_BATTERY_ALERT_THRESHOLD_INT doesn't match static default.",
+                        config.getInt(KEY_LOW_BATTERY_ALERT_THRESHOLD_INT),
+                        -1);
+                assertEquals(
+                        "KEY_LOW_BATTERY_ALERT_THRESHOLD_INT doesn't match static default.",
+                        config.getInt(KEY_LOW_BATTERY_ALERT_THRESHOLD_INT),
+                        -1);
             }
         }
 
