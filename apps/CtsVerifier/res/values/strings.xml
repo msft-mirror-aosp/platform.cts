@@ -7602,11 +7602,11 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="sharesheet_result_test_no_button">Action not available - test passed</string>
 
     <string name="sharesheet_interactive_chooser_test">Interactive Session Test</string>
-    <string name="sharesheet_interactive_chooser_start_instruction">Press the \"Send\" button below to launch the Chooser.</string>
+    <string name="sharesheet_interactive_chooser_start_instruction">Press the \"Share\" button below to launch the Chooser.</string>
     <string name="sharesheet_interactive_chooser_test_instruction">The Chooser now should be launched and the \"Close\" button should be positioned above it.
-        \nIf the Chooser can be moved (e.g. by dragging up or down), move it as part of the test, verify that the close button position changes accordingly except for the case when there\'s not enough vertical space for the button and the Chooser to be placed side-by-side.
-        \nPress the close button.</string>
-    <string name="sharesheet_interactive_chooser_confirmation_instruction">Was the close button moving along withe the Chooser (if the Chooser was movable) and did the Chooser get closed when the button was pressed?</string>
+        \nIf the Chooser can be moved (e.g. by dragging up or down), move it as part of the test. Verify that the Close button\'s position changes accordingly, except for the case when there\'s not enough vertical space for both the button and the Chooser to be placed side-by-side.
+        \nPress the Close button.</string>
+    <string name="sharesheet_interactive_chooser_confirmation_instruction">Did the Close button track the Chooser\'s movement (if movable), and was the Chooser dismissed upon button press?</string>
     <string name="sharesheet_close_button">Close</string>
 
     <!-- Strings for CaptureContentForNotes test -->
