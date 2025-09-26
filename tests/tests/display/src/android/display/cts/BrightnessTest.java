@@ -50,12 +50,12 @@ import android.util.Log;
 import android.util.Pair;
 import android.view.Display;
 
-import androidx.annotation.Nullable;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
+import com.android.server.testutils.TestUtils;
 
 import com.google.common.collect.Range;
 
@@ -73,7 +73,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 @AppModeFull
@@ -594,7 +593,7 @@ public class BrightnessTest extends TestBase {
         }
     }
 
-    private class BrightnessCloseable extends SafeExecutor {
+    private class BrightnessCloseable extends TestUtils.CleanupExecutor {
         private float mPrevBrightness;
         private float mCurrBrightness;
         private int mPrevBrightnessMode;
@@ -612,32 +611,33 @@ public class BrightnessTest extends TestBase {
          * restored.
          */
         BrightnessCloseable() throws Exception {
+            super(TAG);
             try {
                 mConfigureBrightnessPermission =
                         new PermissionCloseable(Manifest.permission.CONFIGURE_DISPLAY_BRIGHTNESS);
-                addCleanupStep(mConfigureBrightnessPermission::close);
+                addCleanup(mConfigureBrightnessPermission::close);
 
                 mSliderPermission =
                         new PermissionCloseable(Manifest.permission.BRIGHTNESS_SLIDER_USAGE);
-                addCleanupStep(mSliderPermission::close);
+                addCleanup(mSliderPermission::close);
 
                 mWriteSettingsPermission =
                         TestApis.permissions().withPermission(Manifest.permission.WRITE_SETTINGS);
-                addCleanupStep(mWriteSettingsPermission::close);
+                addCleanup(mWriteSettingsPermission::close);
 
                 mCurrBrightness =
                         mPrevBrightness =
                                 brightnessIntToFloat(
                                         getSystemSetting(Settings.System.SCREEN_BRIGHTNESS));
-                addCleanupStep(() -> changeBrightness(mPrevBrightness));
+                addCleanup(() -> changeBrightness(mPrevBrightness));
 
                 mCurrBrightnessMode =
                         mPrevBrightnessMode =
                                 getSystemSetting(Settings.System.SCREEN_BRIGHTNESS_MODE);
-                addCleanupStep(() -> changeBrightnessMode(mPrevBrightnessMode));
+                addCleanup(() -> changeBrightnessMode(mPrevBrightnessMode));
 
                 mPrevConfig = mDisplayManager.getBrightnessConfiguration();
-                addCleanupStep(() -> mDisplayManager.setBrightnessConfiguration(mPrevConfig));
+                addCleanup(() -> mDisplayManager.setBrightnessConfiguration(mPrevConfig));
 
                 // Enforce min brightness to get the system absolute min brightness
                 changeBrightness(0f);
@@ -741,68 +741,5 @@ public class BrightnessTest extends TestBase {
         }
     }
 
-    /**
-     * Helper class allowing to execute steps, and execute cleanups in reverse order while
-     * suppressing exceptions, and then throw all suppressed exceptions at the end of close().
-     */
-    private static class SafeExecutor implements AutoCloseable {
-        private final AtomicReference<Throwable> mPrimaryExceptionRef = new AtomicReference<>(null);
-        private final List<Runnable> mCleanups = new ArrayList<>();
 
-        /** Add the cleanup to the list of cleanups to be executed in reverse order */
-        void addCleanupStep(@Nullable Runnable cleanup) {
-            mCleanups.add(cleanup);
-        }
-
-        /**
-         * Execute all the cleanups in reverse order, and throw all the suppressed exceptions at the
-         * end of close().
-         */
-        @Override
-        public void close() throws Exception {
-            for (int i = mCleanups.size() - 1; i >= 0; i--) {
-                executeQuietly(mCleanups.get(i), i);
-            }
-            mCleanups.clear();
-            throwSuppressedExceptions();
-        }
-
-        /** Helper to execute the runnable without throwing, and then set the primary exception */
-        void executeQuietly(@Nullable Runnable runnable, int index) {
-            if (runnable == null) {
-                return;
-            }
-            try {
-                runnable.run();
-            } catch (Throwable t) {
-                Log.e(TAG, "Failed to execute index " + index + " with " + runnable, t);
-                Throwable primary = mPrimaryExceptionRef.get();
-                if (primary == null) {
-                    mPrimaryExceptionRef.set(t); // Set the first exception
-                } else {
-                    primary.addSuppressed(t); // Suppress subsequent exceptions
-                }
-            }
-        }
-
-        private void throwSuppressedExceptions() throws Exception {
-            var primary = mPrimaryExceptionRef.getAndSet(null);
-            if (primary == null) {
-                return;
-            }
-            if (primary instanceof Exception) {
-                // Safe: It's an Exception, and the method throws Exception.
-                throw (Exception) primary;
-            }
-            if (primary instanceof Error) {
-                // Safe: It's an Error (unchecked), preserving the original type.
-                throw (Error) primary;
-            }
-
-            // In the highly unlikely case of a custom checked Throwable that's
-            // neither Exception nor Error, wrap it in a RuntimeException.
-            // (This is usually not necessary but is technically the safest catch-all.)
-            throw new RuntimeException("Unexpected Throwable during close", primary);
-        }
-    }
 }

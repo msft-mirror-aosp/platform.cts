@@ -29,6 +29,7 @@ android_test {
     srcs: ["src/**/*.java"],
     static_libs: [
         "android.hardware.flags-aconfig-java",
+        "servicestests-utils",
         "androidx.test.core",
         "androidx.test.rules",
         "compatibility-device-util-axt",
