@@ -171,7 +171,6 @@ import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -6067,8 +6066,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
             int areaId,
             VehiclePropertyVerifier<?> verifier,
             Class<T> propertyType) {
-        Collection<T> possibleValues = (Collection<T>) verifier.getPossibleValues(areaId);
-        if (possibleValues == null || possibleValues.isEmpty()) {
+        List<T> possibleValues = (List<T>) verifier.getPossibleValues(areaId);
+        if (possibleValues.isEmpty()) {
             Log.w(
                     TAG,
                     "we can't find possible values to set for property: "

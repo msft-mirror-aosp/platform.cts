@@ -1586,18 +1586,18 @@ public class VehiclePropertyVerifier<T> {
      *
      * <p>The values returned here must not cause {@code IllegalArgumentException} for set.
      *
-     * <p>Returns {@code null} or empty array if we don't know possible values.
+     * <p>Returns empty list if we don't know possible values.
      */
-    public @Nullable Collection<T> getPossibleValues(int areaId) {
+    public List<T> getPossibleValues(int areaId) {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
         if (Boolean.class.equals(carPropertyConfig.getPropertyType())) {
             return (List<T>) List.of(Boolean.TRUE, Boolean.FALSE);
         } else if (Integer.class.equals(carPropertyConfig.getPropertyType())) {
             return (List<T>) getPossibleIntegerValues(areaId);
         } else if (Float.class.equals(carPropertyConfig.getPropertyType())) {
-            return getPossibleFloatValues(areaId);
+            return (List<T>) getPossibleFloatValues(areaId);
         }
-        return null;
+        return List.of();
     }
 
     public static boolean isAtLeastR() {
@@ -1684,8 +1684,8 @@ public class VehiclePropertyVerifier<T> {
     }
 
     /** Gets the possible values for a float property. */
-    private Collection<T> getPossibleFloatValues(int areaId) {
-        ImmutableSet.Builder<Float> possibleValuesBuilder = ImmutableSet.builder();
+    private List<Float> getPossibleFloatValues(int areaId) {
+        ImmutableList.Builder<Float> possibleValuesBuilder = ImmutableList.builder();
         if (mPropertyId == VehiclePropertyIds.HVAC_TEMPERATURE_SET) {
             List<Integer> hvacTempSetConfigArray = getCarPropertyConfig().getConfigArray();
             if (!hvacTempSetConfigArray.isEmpty()) {
@@ -1727,7 +1727,7 @@ public class VehiclePropertyVerifier<T> {
             // Test when no range is remaining
             possibleValuesBuilder.add(0f);
         }
-        return (Collection<T>) possibleValuesBuilder.build();
+        return possibleValuesBuilder.build();
     }
 
     private void verifyCarPropertyValueSetter() {
@@ -1736,12 +1736,11 @@ public class VehiclePropertyVerifier<T> {
             verifySetPropertyFails(carPropertyConfig.getAreaIds()[0]);
             return;
         }
-        if (Boolean.class.equals(carPropertyConfig.getPropertyType())) {
-            verifyBooleanPropertySetter();
+        if (Boolean.class.equals(carPropertyConfig.getPropertyType())
+                || Float.class.equals(carPropertyConfig.getPropertyType())) {
+            verifyPropertySetter();
         } else if (Integer.class.equals(carPropertyConfig.getPropertyType())) {
             verifyIntegerPropertySetter();
-        } else if (Float.class.equals(carPropertyConfig.getPropertyType())) {
-            verifyFloatPropertySetter();
         } else if (mPropertyId == VehiclePropertyIds.HVAC_TEMPERATURE_VALUE_SUGGESTION) {
             verifyHvacTemperatureValueSuggestionSetter();
         }
@@ -1767,30 +1766,22 @@ public class VehiclePropertyVerifier<T> {
                                 getDefaultValue(mPropertyType)));
     }
 
-    private void verifyBooleanPropertySetter() {
+    private void verifyPropertySetter() {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
         for (int areaId : carPropertyConfig.getAreaIds()) {
             if (!canWrite(carPropertyConfig, areaId)) {
                 verifySetPropertyFails(areaId);
                 continue;
             }
-            for (Boolean valueToSet : List.of(Boolean.TRUE, Boolean.FALSE)) {
-                verifySetProperty(areaId, (T) valueToSet);
+            for (T valueToSet : getPossibleValues(areaId)) {
+                verifySetProperty(areaId, valueToSet);
             }
         }
     }
 
     private void verifyIntegerPropertySetter() {
+        verifyPropertySetter();
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
-        for (int areaId : carPropertyConfig.getAreaIds()) {
-            if (!canWrite(carPropertyConfig, areaId)) {
-                verifySetPropertyFails(areaId);
-                continue;
-            }
-            for (Integer valueToSet : getPossibleIntegerValues(areaId)) {
-                verifySetProperty(areaId, (T) valueToSet);
-            }
-        }
         if (!mAllPossibleEnumValues.isEmpty() && isAtLeastU()) {
             for (AreaIdConfig<?> areaIdConfig : carPropertyConfig.getAreaIdConfigs()) {
                 if (!canWrite(carPropertyConfig, areaIdConfig.getAreaId())) {
@@ -1828,14 +1819,6 @@ public class VehiclePropertyVerifier<T> {
                                                 areaIdConfig.getAreaId(), valueToSet));
                     }
                 }
-            }
-        }
-    }
-
-    private void verifyFloatPropertySetter() {
-        for (int areaId : getCarPropertyConfig().getAreaIds()) {
-            for (T valueToSet : getPossibleFloatValues(areaId)) {
-                verifySetProperty(areaId, valueToSet);
             }
         }
     }
@@ -4185,8 +4168,8 @@ public class VehiclePropertyVerifier<T> {
 
         for (AreaIdConfig<?> areaIdConfig : carPropertyConfig.getAreaIdConfigs()) {
             int areaId = areaIdConfig.getAreaId();
-            Collection<T> possibleValues = getPossibleValues(areaId);
-            if (possibleValues == null || possibleValues.size() == 0) {
+            List<T> possibleValues = getPossibleValues(areaId);
+            if (possibleValues.isEmpty()) {
                 continue;
             }
             // Convert to a list so that we can access via index later.
