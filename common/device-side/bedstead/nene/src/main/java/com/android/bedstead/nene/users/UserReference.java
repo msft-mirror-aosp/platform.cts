@@ -1131,6 +1131,12 @@ public final class UserReference implements AutoCloseable {
             }
         }
 
+        // If we cannot check the profile specifically, we will at least check that more users can
+        // be created, to maintain historical behaviour (even though that isn't quite right).
+        if (TestApis.users().getMaxNumberOfUsersSupported() <= TestApis.users().all().size()) {
+            return false;
+        }
+
         // For S and older versions, we need to keep the previous behavior by returning true here
         // so that the check can pass.
         Log.d(LOG_TAG, "canCreateProfile pre-T: true");

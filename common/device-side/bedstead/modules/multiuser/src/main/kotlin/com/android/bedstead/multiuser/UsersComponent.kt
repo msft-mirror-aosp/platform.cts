@@ -665,7 +665,6 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
         profileType: UserType,
         parent: UserReference
     ): UserReference {
-        EnsureCanAddUser().logic()
         ensureCanAddProfile(parent, profileType)
         if (profileType.name() == "android.os.usertype.profile.CLONE") {
             // Special case - we can't create a clone profile if this is set
