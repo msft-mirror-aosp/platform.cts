@@ -63,7 +63,7 @@ public class IRadioSimImpl extends IRadioSim.Stub {
     private MockModemConfigInterface mMockModemConfigInterface;
     private Object mCacheUpdateMutex;
     private final Handler mHandler;
-    private int mSubId;
+    private int mLogicalSlotIndex;
     private String mTag;
 
     // ***** Events
@@ -103,25 +103,25 @@ public class IRadioSimImpl extends IRadioSim.Stub {
 
         this.mService = service;
         mMockModemConfigInterface = configInterface;
-        mSubId = instanceId;
+        mLogicalSlotIndex = instanceId;
         mCardStatus = new CardStatus();
         mCacheUpdateMutex = new Object();
         mHandler = new IRadioSimHandler();
 
         // Register events
         mMockModemConfigInterface.registerForCardStatusChanged(
-                mSubId, mHandler, EVENT_SIM_CARD_STATUS_CHANGED, null);
+                mLogicalSlotIndex, mHandler, EVENT_SIM_CARD_STATUS_CHANGED, null);
 
         // Register events
         mMockModemConfigInterface.registerForSimAppDataChanged(
-                mSubId, mHandler, EVENT_SIM_APP_DATA_CHANGED, null);
+                mLogicalSlotIndex, mHandler, EVENT_SIM_APP_DATA_CHANGED, null);
 
         // Register events
         mMockModemConfigInterface.registerForSimInfoChanged(
-                mSubId, mHandler, EVENT_SIM_INFO_CHANGED, null);
+                mLogicalSlotIndex, mHandler, EVENT_SIM_INFO_CHANGED, null);
 
         // Register SIM IO data change events
-        mMockModemConfigInterface.registerForSimIoDataChanged(mSubId, mHandler,
+        mMockModemConfigInterface.registerForSimIoDataChanged(mLogicalSlotIndex, mHandler,
                 EVENT_SIM_IO_DATA_CHANGED, null);
     }
 

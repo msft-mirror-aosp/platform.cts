@@ -22,12 +22,12 @@ public class MockMessagingService {
 
     // Setup messaging result parameters
     String mSmsc;
-    int mPhoneId;
+    int mLogicalSlotIndex;
 
 
     public MockMessagingService(int instanceId) {
         mTag = TAG + "-" + instanceId;
-        mPhoneId = instanceId;
+        mLogicalSlotIndex = instanceId;
         initializeParameter();
     }
 

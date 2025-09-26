@@ -51,7 +51,7 @@ public class IRadioMessagingImpl extends IRadioMessaging.Stub {
             new CopyOnWriteArrayList<>();
 
     private MockModemConfigInterface mMockModemConfigInterface;
-    private int mSubId;
+    private int mLogicalSlotIndex;
     private String mTag;
     private final MockMessagingService mMockMessagingService;
     @RadioError
@@ -80,7 +80,7 @@ public class IRadioMessagingImpl extends IRadioMessaging.Stub {
 
         this.mService = service;
         mMockModemConfigInterface = configInterface;
-        mSubId = instanceId;
+        mLogicalSlotIndex = instanceId;
         mMockMessagingService = new MockMessagingService(instanceId);
     }
 

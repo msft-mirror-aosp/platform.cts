@@ -44,7 +44,7 @@ public class IRadioConfigImpl extends IRadioConfig.Stub {
     private MockModemConfigInterface mMockModemConfigInterface;
     private final Object mCacheUpdateMutex;
     private final Handler mHandler;
-    private int mSubId;
+    private int mLogicalSlotIndex;
     private String mTag;
 
     // ***** Events
@@ -75,20 +75,20 @@ public class IRadioConfigImpl extends IRadioConfig.Stub {
         mSimSlotStatus = new SimSlotStatus[mSlotNum];
         mCacheUpdateMutex = new Object();
         mHandler = new IRadioConfigHandler();
-        mSubId = instanceId;
+        mLogicalSlotIndex = instanceId;
         mMockCentralizedNetworkAgent = centralizedNetworkAgent;
         mSimTypeInfos = new SimTypeInfo[mSlotNum];
 
         // Register events
         mMockModemConfigInterface.registerForNumOfLiveModemChanged(
-                mSubId, mHandler, EVENT_NUM_OF_LIVE_MODEM_CHANGED, null);
+                mLogicalSlotIndex, mHandler, EVENT_NUM_OF_LIVE_MODEM_CHANGED, null);
         mMockModemConfigInterface.registerForPhoneCapabilityChanged(
-                mSubId, mHandler, EVENT_PHONE_CAPABILITY_CHANGED, null);
+                mLogicalSlotIndex, mHandler, EVENT_PHONE_CAPABILITY_CHANGED, null);
         mMockModemConfigInterface.registerForSimSlotStatusChanged(
-                mSubId, mHandler, EVENT_SIM_SLOT_STATUS_CHANGED, null);
+                mLogicalSlotIndex, mHandler, EVENT_SIM_SLOT_STATUS_CHANGED, null);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             mMockModemConfigInterface.registerForSimultaneousCallingSupportStatusChanged(
-                    mSubId, mHandler, EVENT_SIMULTANEOUS_CALLING_SUPPORT_CHANGED, null);
+                    mLogicalSlotIndex, mHandler, EVENT_SIMULTANEOUS_CALLING_SUPPORT_CHANGED, null);
         }
     }
 

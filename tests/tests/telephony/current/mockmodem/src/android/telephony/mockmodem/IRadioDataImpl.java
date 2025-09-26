@@ -55,7 +55,7 @@ public class IRadioDataImpl extends IRadioData.Stub {
     private MockModemConfigInterface mMockModemConfigInterface;
     private static Object sCacheUpdateMutex = new Object();
     private final Handler mHandler;
-    private int mSubId;
+    private int mLogicalSlotIndex;
     private String mTag;
 
     private static MockNetworkService sServiceState;
@@ -75,13 +75,13 @@ public class IRadioDataImpl extends IRadioData.Stub {
         this.mService = service;
 
         mMockModemConfigInterface = configInterface;
-        mSubId = instanceId;
+        mLogicalSlotIndex = instanceId;
 
         mHandler = new IRadioDataHandler();
 
         // Register event
         mMockModemConfigInterface.registerForServiceStateChanged(
-                mSubId, mHandler, EVENT_NETWORK_STATUS_CHANGED, null);
+                mLogicalSlotIndex, mHandler, EVENT_NETWORK_STATUS_CHANGED, null);
 
         for (int i = 0; i < LATCH_MAX; i++) {
             mLatches[i] = new CountDownLatch(1);
