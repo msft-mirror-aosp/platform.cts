@@ -211,9 +211,13 @@ class CreateManagedProfileTest {
                         DevicePolicyManager.ACTION_PROVISION_MANAGED_PROFILE
                 )
                 val nonRequiredAppsInProfile = TestApis.packages().installedForUser(user)
+                val roleHolderPackageName = deviceState.dpmRoleHolder().packageName()
                 nonRequiredAppsInProfile.retainAll(
-                        nonRequiredApps.stream().map { TestApis.packages().find(it) }
-                                .collect(Collectors.toSet())
+                    nonRequiredApps
+                        .stream()
+                        .filter { it != roleHolderPackageName }
+                        .map { TestApis.packages().find(it) }
+                        .collect(Collectors.toSet())
                 )
                 return nonRequiredAppsInProfile
             }
