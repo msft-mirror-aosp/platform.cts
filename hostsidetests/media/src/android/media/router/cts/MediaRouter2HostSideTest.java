@@ -56,6 +56,8 @@ import static com.android.tradefed.targetprep.UserHelper.getRunTestsAsUser;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresDevice;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -456,6 +458,11 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
     @Test
     public void permissionHiddenRoute_routeSelectedInOsw_routeBecomesVisibleBeforeTransfer()
             throws Exception {
+        // TODO(b/447658885) - rewrite this test to not use Output Switcher
+        assumeFalse(hasDeviceFeature("android.hardware.type.automotive"));
+        assumeFalse(hasDeviceFeature("android.software.leanback"));
+        assumeFalse(hasDeviceFeature("android.hardware.type.watch"));
+
         revokeAllPermissions(DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE);
         runDeviceTests(
                 DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
@@ -469,6 +476,11 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
     @Test
     public void visibilityRestrictedRoute_routeSelectedInOsw_routeBecomesVisibleBeforeTransfer()
             throws Exception {
+        // TODO(b/447658885) - rewrite this test to not use Output Switcher
+        assumeFalse(hasDeviceFeature("android.hardware.type.automotive"));
+        assumeFalse(hasDeviceFeature("android.software.leanback"));
+        assumeFalse(hasDeviceFeature("android.hardware.type.watch"));
+
         revokeAllPermissions(DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE);
         runDeviceTests(
                 DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
