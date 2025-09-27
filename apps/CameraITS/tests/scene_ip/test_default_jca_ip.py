@@ -176,6 +176,8 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       # Set up gen2 rig controllers
       if self.rotator_cntl == 'None' or self.lighting_cntl == 'None':
         logging.debug('Gen2 rig is not available.')
+        self.motor_port = None
+        self.motor_channel = None
       else:
         self._setup_gen2rig()
 
@@ -201,8 +203,9 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
         self.dut.ui(text='OK').click.wait()
 
       # Ensure that the device is orthogonal and then close camera
-      gen2_rig_controller_utils.rotate_to_orthogonal_position(
-          cam, self.log_path, self.motor_port, self.motor_channel)
+      if self.motor_port is not None:
+        gen2_rig_controller_utils.rotate_to_orthogonal_position(
+            cam, self.log_path, self.motor_port, self.motor_channel)
       cam.close_camera()
 
       # Take capture with default camera app
