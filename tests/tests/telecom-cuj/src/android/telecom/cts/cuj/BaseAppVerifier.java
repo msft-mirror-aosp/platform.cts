@@ -97,7 +97,7 @@ public class BaseAppVerifier {
     public static final PhoneAccountHandle MANAGED_HANDLE_1 =
             new PhoneAccountHandle(MANAGED_APP_CN, MANAGED_APP_ID);
 
-    private static final PhoneAccount MANAGED_DEFAULT_ACCOUNT_1 =
+    public static final PhoneAccount MANAGED_DEFAULT_ACCOUNT_1 =
             PhoneAccount.builder(MANAGED_HANDLE_1, MANAGED_APP_LABEL)
                     .setAddress(Uri.parse(MANAGED_ADDRESS))
                     .setSubscriptionAddress(Uri.parse(MANAGED_ADDRESS))
