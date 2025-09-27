@@ -18,12 +18,12 @@ package com.android.cts.releaseparser;
 
 import com.android.compatibility.common.util.ReadElf;
 import com.android.cts.releaseparser.ReleaseProto.*;
+
 import com.google.protobuf.TextFormat;
 
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -283,8 +283,10 @@ public class SoParser extends FileParser {
                     + "           to prase SO file meta data\n"
                     + "Options:\n"
                     + "\t-i PATH\t The file path of the file to be parsed.\n"
-                    + "\t-pi \t Parses internal methods and fields too. Output will be large when parsing multiple files in a release.\n"
-                    + "\t-of PATH\t The file path of the output file instead of printing to System.out.\n";
+                    + "\t-pi \t Parses internal methods and fields too. Output will be large when"
+                    + " parsing multiple files in a release.\n"
+                    + "\t-of PATH\t The file path of the output file instead of printing to"
+                    + " System.out.\n";
 
     public static void main(String[] args) {
         try {
@@ -299,14 +301,13 @@ public class SoParser extends FileParser {
             aParser.setParseInternalApi(parseInternalApi);
 
             if (outputFileName != null) {
-                FileOutputStream txtOutput = new FileOutputStream(outputFileName);
-                txtOutput.write(
-                        TextFormat.printToString(aParser.getAppInfo())
-                                .getBytes(Charset.forName("UTF-8")));
+                FileWriter txtOutput = new FileWriter(outputFileName);
+                TextFormat.printer().print(aParser.getAppInfo(), txtOutput);
                 txtOutput.flush();
                 txtOutput.close();
             } else {
-                System.out.println(TextFormat.printToString(aParser.getAppInfo()));
+                TextFormat.printer().print(aParser.getAppInfo(), System.out);
+                System.out.println();
             }
         } catch (Exception ex) {
             System.out.println(USAGE_MESSAGE);
