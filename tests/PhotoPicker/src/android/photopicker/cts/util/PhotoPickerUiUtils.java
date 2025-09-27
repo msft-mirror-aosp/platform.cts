@@ -49,7 +49,7 @@ public class PhotoPickerUiUtils {
     // Matches all possible content description, while avoiding to match with content description of
     // other ui objects like the "Photos" tab
     private static final String REGEX_MEDIA_ITEM_CONTENT_DESCRIPTION =
-            "^(Media|Photo|Video|GIF|Motion)[^s].*";
+            "^(Photo|Video|GIF|Motion)[^s].*|.*taken on.*";
 
     /**
      * Gets the list of items from the photo grid list.
