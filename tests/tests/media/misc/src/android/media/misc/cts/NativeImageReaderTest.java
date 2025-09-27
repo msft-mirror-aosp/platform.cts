@@ -24,6 +24,11 @@ import android.view.Surface;
 
 import androidx.test.filters.SdkSuppress;
 
+import com.android.compatibility.common.util.MediaUtils;
+import com.android.compatibility.common.util.UserHelper;
+
+import org.junit.Before;
+
 /**
  * Verification test for AImageReader.
  */
@@ -32,11 +37,21 @@ public class NativeImageReaderTest extends AndroidTestCase {
     private static final String TAG = "NativeImageReaderTest";
     private static final boolean VERBOSE = Log.isLoggable(TAG, Log.VERBOSE);
 
+    private UserHelper mUserHelper;
+
     /** Load jni on initialization */
     static {
         Log.i("NativeImageReaderTest", "before loadlibrary");
         System.loadLibrary("ctsmediamisc_jni");
         Log.i("NativeImageReaderTest", "after loadlibrary");
+    }
+
+    @Before
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+
+        mUserHelper = new UserHelper();
     }
 
     public void testSucceedsWithSupportedUsageFormat() {
@@ -46,6 +61,11 @@ public class NativeImageReaderTest extends AndroidTestCase {
     }
 
     public void testTakePictures() {
+        if (mUserHelper.isVisibleBackgroundUser()) {
+            MediaUtils.skipTest("Camera is not supported for visible background users");
+            return;
+        }
+
         assertTrue("Native test failed, see log for details", testTakePicturesNative());
     }
 
