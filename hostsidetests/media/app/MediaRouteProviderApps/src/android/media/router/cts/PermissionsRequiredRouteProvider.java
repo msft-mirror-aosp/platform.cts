@@ -85,10 +85,7 @@ public class PermissionsRequiredRouteProvider extends BaseFakeRouteProviderServi
     public void onCreateSession(
             long requestId, String packageName, String routeId, Bundle sessionHints) {
         MediaRoute2Info route =
-                mAllRoutes.stream()
-                        .filter(r -> r.getOriginalId().equals(routeId))
-                        .findFirst()
-                        .orElse(null);
+                mAllRoutes.stream().filter(r -> r.getId().equals(routeId)).findFirst().orElse(null);
         if (route == null) {
             throw new IllegalArgumentException(
                     "onCreateSession failed to find route with id " + routeId);
