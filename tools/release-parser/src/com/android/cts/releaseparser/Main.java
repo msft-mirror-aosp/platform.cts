@@ -17,10 +17,11 @@
 package com.android.cts.releaseparser;
 
 import com.android.cts.releaseparser.ReleaseProto.*;
+
 import com.google.protobuf.TextFormat;
 
 import java.io.FileOutputStream;
-import java.nio.charset.Charset;
+import java.io.FileWriter;
 import java.nio.file.Paths;
 import java.util.logging.Logger;
 
@@ -30,7 +31,8 @@ public class Main {
 
     private static final String USAGE_MESSAGE =
             "Usage: java -jar releaseparser.jar [-options <parameter>]...\n"
-                    + "\tto prase a release, such as device build, test suite or app distribution package\n"
+                    + "\tto prase a release, such as device build, test suite or app distribution"
+                    + " package\n"
                     + "Options:\n"
                     + "\t-i PATH\t path to a release folder\n"
                     + "\t-o PATH\t path to output files\n";
@@ -63,11 +65,9 @@ public class Main {
             output.flush();
             output.close();
 
-            FileOutputStream txtOutput =
-                    new FileOutputStream(
-                            getPathString(outputPath, "%s-ReleaseContent.txt", relNameVer));
-            txtOutput.write(
-                    TextFormat.printToString(relContent).getBytes(Charset.forName("UTF-8")));
+            FileWriter txtOutput =
+                    new FileWriter(getPathString(outputPath, "%s-ReleaseContent.txt", relNameVer));
+            TextFormat.printer().print(relContent, txtOutput);
             txtOutput.flush();
             txtOutput.close();
 

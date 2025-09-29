@@ -51,9 +51,8 @@ import com.android.tools.smali.dexlib2.iface.value.TypeEncodedValue;
 import com.google.protobuf.TextFormat;
 
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -348,8 +347,10 @@ public class DexParser extends FileParser {
                     + "           to prase APK file Dex data\n"
                     + "Options:\n"
                     + "\t-i PATH\t The file path of the file to be parsed.\n"
-                    + "\t-pi \t Parses internal methods and fields too. Output will be large when parsing multiple files in a release.\n"
-                    + "\t-of PATH\t The file path of the output file instead of printing to System.out.\n";
+                    + "\t-pi \t Parses internal methods and fields too. Output will be large when"
+                    + " parsing multiple files in a release.\n"
+                    + "\t-of PATH\t The file path of the output file instead of printing to"
+                    + " System.out.\n";
 
     public static void main(String[] args) {
         try {
@@ -364,21 +365,19 @@ public class DexParser extends FileParser {
             aParser.setParseInternalApi(parseInternalApi);
 
             if (outputFileName != null) {
-                FileOutputStream txtOutput = new FileOutputStream(outputFileName);
-                txtOutput.write(
-                        TextFormat.printToString(aParser.getExternalApiPackage())
-                                .getBytes(Charset.forName("UTF-8")));
+                FileWriter txtOutput = new FileWriter(outputFileName);
+                TextFormat.printer().print(aParser.getExternalApiPackage(), txtOutput);
                 if (parseInternalApi) {
-                    txtOutput.write(
-                            TextFormat.printToString(aParser.getInternalApiPackage())
-                                    .getBytes(Charset.forName("UTF-8")));
+                    TextFormat.printer().print(aParser.getInternalApiPackage(), txtOutput);
                 }
                 txtOutput.flush();
                 txtOutput.close();
             } else {
-                System.out.println(TextFormat.printToString(aParser.getExternalApiPackage()));
+                TextFormat.printer().print(aParser.getExternalApiPackage(), System.out);
+                System.out.println();
                 if (parseInternalApi) {
-                    System.out.println(TextFormat.printToString(aParser.getInternalApiPackage()));
+                    TextFormat.printer().print(aParser.getInternalApiPackage(), System.out);
+                    System.out.println();
                 }
             }
         } catch (Exception ex) {
