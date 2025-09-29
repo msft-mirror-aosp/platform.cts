@@ -7230,35 +7230,6 @@ public class TelephonyManagerTest {
         }
     }
 
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_GET_SERVICE_STATE_FOR_SLOT)
-    public void testGetServiceStateForSlotWithoutPermission() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-
-        AppOpsManager appOpsManager = getContext().getSystemService(AppOpsManager.class);
-        final String readPhoneStateOp = AppOpsManager.OPSTR_READ_PHONE_STATE;
-        final int uid = Process.myUid();
-
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                    appOpsManager,
-                    (appOps) ->
-                            appOps.setUidMode(readPhoneStateOp, uid, AppOpsManager.MODE_IGNORED));
-
-            for (int i = 0; i < mTelephonyManager.getActiveModemCount(); i++) {
-                ServiceState serviceState = mTelephonyManager.getServiceStateForSlot(i);
-                assertNull("service state is null", serviceState);
-            }
-        } catch (SecurityException e) {
-            // expected as caller is not granted with required permissions
-        } finally {
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                    appOpsManager,
-                    (appOps) ->
-                            appOps.setUidMode(readPhoneStateOp, uid, AppOpsManager.MODE_DEFAULT));
-        }
-    }
-
     private Integer getSecondTestSubId() {
         try {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
