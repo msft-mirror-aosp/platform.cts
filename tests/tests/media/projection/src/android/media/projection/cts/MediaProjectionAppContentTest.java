@@ -95,7 +95,11 @@ public class MediaProjectionAppContentTest {
         Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         String title = "title";
         int id = 1234;
-        MediaProjectionAppContent appContent = new MediaProjectionAppContent(bitmap, title, id);
+        MediaProjectionAppContent appContent =
+                new MediaProjectionAppContent.Builder(id)
+                        .setThumbnail(bitmap)
+                        .setTitle(title)
+                        .build();
         assertThat(appContent.getId()).isEqualTo(id);
         assertThat(appContent.getTitle()).isEqualTo(title);
         assertThat(appContent.getThumbnail().getWidth()).isEqualTo(width);

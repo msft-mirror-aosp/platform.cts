@@ -65,8 +65,10 @@ public class MediaProjectionAppContentService extends AppContentProjectionServic
 
     @NonNull
     private static MediaProjectionAppContent createAppContent(String title, int id) {
-        return new MediaProjectionAppContent(
-                Bitmap.createBitmap(5, 5, Bitmap.Config.ARGB_8888), title, id);
+        return new MediaProjectionAppContent.Builder(id)
+                .setThumbnail(Bitmap.createBitmap(5, 5, Bitmap.Config.ARGB_8888))
+                .setTitle(title)
+                .build();
     }
 
     @Override
