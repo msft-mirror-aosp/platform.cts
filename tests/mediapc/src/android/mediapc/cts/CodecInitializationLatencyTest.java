@@ -48,7 +48,6 @@ import android.util.Pair;
 import android.view.Surface;
 
 import androidx.test.filters.LargeTest;
-import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.CddTest;
@@ -127,7 +126,7 @@ public class CodecInitializationLatencyTest {
                     Precondition.create(
                             "The device doesn't support running at least four 1920x1080 avc"
                                     + " instances concurrently",
-                            Utils.MEETS_AVC_CODEC_PRECONDITIONS),
+                            Utils.meetsAvcCodecPreconditions()),
                     Precondition.requireSystemFeature(PackageManager.FEATURE_CAMERA_ANY),
                     Precondition.requireSystemFeature(PackageManager.FEATURE_MICROPHONE));
 
@@ -222,8 +221,7 @@ public class CodecInitializationLatencyTest {
     }
 
     private MediaRecorder createMediaRecorderLoad(Surface surface) throws Exception {
-        MediaRecorder mediaRecorder = new MediaRecorder(InstrumentationRegistry.getInstrumentation()
-                .getContext());
+        MediaRecorder mediaRecorder = new MediaRecorder(Utils.getContext());
         mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
         mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
         mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.DEFAULT);

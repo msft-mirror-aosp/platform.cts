@@ -21,33 +21,30 @@
 
 package android.mediapc.cts.common
 
-import android.content.pm.PackageManager
-import android.hardware.display.DisplayManager
 import android.mediapc.cts.common.Precondition.Companion.create
-import android.mediapc.cts.common.Precondition.Companion.forbidSystemFeature
-import android.mediapc.cts.common.Precondition.Companion.requireSystemFeature
 import android.util.DisplayMetrics
+import com.android.compatibility.common.util.MediaUtils
 
+/**
+ * Detect if the device is handheld
+ *
+ * This uses [com.android.compatibility.common.util.MediaUtils.isHandheld].
+ */
 @JvmField
-val IS_HANDHELD = Precondition.group(
-    // handheld nature is not exposed to package manager, for now
-    // we check for touchscreen and NOT watch, tv or automotive
+val IS_HANDHELD = Precondition.create(
     "is_handheld",
-    requireSystemFeature(PackageManager.FEATURE_TOUCHSCREEN),
-    forbidSystemFeature(PackageManager.FEATURE_WATCH),
-    forbidSystemFeature(PackageManager.FEATURE_TELEVISION),
-    forbidSystemFeature(PackageManager.FEATURE_AUTOMOTIVE),
-    )
+    MediaUtils.isHandheld()
+)
 
 /**
  * Setting the minimum memory to 2.5G so we get statistics on "Mid Tier Devices"
  *
  * As of 2025 Q1 this is about 80% of daily active devices.
  */
-private val AT_LEAST_2_5GB_MEMORY: Precondition =
-    Precondition.usingContext("At least 2.5Gb of memory") {
-        Utils.getTotalMemoryMb(it) > (2.5 * 1024L).toLong()
-    }
+private val AT_LEAST_2_5GB_MEMORY = Precondition.create(
+    "At least 2.5Gb of memory",
+    { Utils.getTotalMemoryMb() > (2.5 * 1024L).toLong() }
+)
 
 /**
  * MPC requires 400 DPI. lowering to HIGH (320) to report statistics on
@@ -55,12 +52,10 @@ private val AT_LEAST_2_5GB_MEMORY: Precondition =
  *
  * As of 2025 Q1 this is about 85% of daily active devices.
  */
-private val DISPLAY_DPI =
-    Precondition.usingContext(
-        "Requires default display DPI greater than ${DisplayMetrics.DENSITY_HIGH}"
-    ) {
-        Utils.getDisplayDpi(it) > DisplayMetrics.DENSITY_HIGH
-    }
+private val DISPLAY_DPI = Precondition.create(
+   "Requires default display DPI greater than ${DisplayMetrics.DENSITY_HIGH}",
+    { Utils.getDisplayDpi() > DisplayMetrics.DENSITY_HIGH }
+)
 
 /**
  *  Require resolution of at least 1280x720
@@ -68,14 +63,10 @@ private val DISPLAY_DPI =
  *  MPC requires 1920x1080 lowering to 1280x720 to report statistics on "mid tier" devices
  *  As of 2025 Q1 this is about 99% of daily active devices.
  */
-private val LARGEST_DISPLAY_RESOLUTION =
-    Precondition.usingContext("Largest display resolution must at least")
-    {
-        val displayManager: DisplayManager? = it.getSystemService(DisplayManager::class.java)
-        checkNotNull(displayManager)
-        val s = Utils.getLargestDisplaySize(displayManager)
-        Utils.getLongPixels(s) >= 1280 && Utils.getShortPixels(s) >= 720
-    }
+private val LARGEST_DISPLAY_RESOLUTION = Precondition.create(
+    "Largest display resolution must at least HD",
+    { Utils.getMaxDisplayDim() >= 1280 && Utils.getMinDisplayDim() >= 720 }
+)
 
 /**
  * The baseline set of preconditions for MPC.
