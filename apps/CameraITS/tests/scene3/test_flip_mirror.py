@@ -16,10 +16,10 @@
 
 import logging
 import os
+import types
 
 import cv2
 from mobly import test_runner
-import numpy as np
 
 import its_base_test
 import camera_properties_utils
@@ -28,104 +28,121 @@ import image_processing_utils
 import its_session_utils
 import opencv_processing_utils
 
-_CHART_ORIENTATIONS = ('nominal', 'flip', 'mirror', 'rotate')
+_ARUCO_MARKERS_NOT_FOUND_MESSAGE = (
+    'ArUco markers not found in all orientations. '
+    'Please check that all 4 markers are visible in scene.'
+)
+_CV2_FLIP_ACROSS_X_AXIS = 0  # flip across x axis (flip)
+_CV2_FLIP_ACROSS_Y_AXIS = 1  # flip across y axis (mirror)
+_FAILURE_MESSAGE = (
+    'Image is {orientation}, ArUco markers found in this orientation.')
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
-_PATCH_H = 0.5  # center 50%
-_PATCH_W = 0.5
-_PATCH_X = 0.5 - _PATCH_W/2
-_PATCH_Y = 0.5 - _PATCH_H/2
-_TELE_CHART_HEIGHT_31CM = 6.5  # cm height of chart for 31cm distance
-_TELE_SCALE_STOP = 1.5  # extend search range for TELE cameras due to variety
+_NUM_ARUCO_MARKERS = 4
+_ROTATED_RESULTS = types.MappingProxyType({
+    'nominal': 'rotated',
+    'flip': 'mirrored',
+    'mirror': 'flipped'
+})
+_TOP_LEFT_ARUCO_MARKER_ID = 0
+_TOP_RIGHT_ARUCO_MARKER_ID = 1
+_TOP_ARUCO_PAIR = (_TOP_LEFT_ARUCO_MARKER_ID, _TOP_RIGHT_ARUCO_MARKER_ID)
 _VGA_W, _VGA_H = 640, 480
 
 
-def test_flip_mirror_impl(cam, props, fmt, chart, first_api_level,
-                          name_with_log_path):
+def _get_orientation_map(img_bgr):
+  """Creates a map of images with different orientations."""
+  return {
+      'nominal': img_bgr,
+      'flip': cv2.flip(img_bgr, _CV2_FLIP_ACROSS_X_AXIS),
+      'mirror': cv2.flip(img_bgr, _CV2_FLIP_ACROSS_Y_AXIS),
+  }
 
-  """Return if image is flipped or mirrored.
+
+def _do_capture_and_convert_to_uint8(cam, props, name_with_log_path):
+  """Captures and processes an image for ArUco marker detection.
 
   Args:
-   cam: An open its session.
-   props: Properties of cam.
-   fmt: dict; capture format.
-   chart: Object with chart properties.
-   first_api_level: int; first API level value.
-   name_with_log_path: file with log_path to save the captured image.
+    cam: An open its session.
+    props: Properties of cam.
+    name_with_log_path: file with log_path to save the captured image.
 
   Returns:
-    boolean: True if flipped, False if not
+    A numpy array BGR image.
   """
-  # take img, crop chart, scale and prep for cv2 template match
   cam.do_3a()
   req = capture_request_utils.auto_capture_request()
+  fmt = {'format': 'yuv', 'width': _VGA_W, 'height': _VGA_H}
   cap = cam.do_capture(req, fmt)
-  y, _, _ = image_processing_utils.convert_capture_to_planes(cap, props)
-  y = image_processing_utils.rotate_img_per_argv(y)
-  chart_patch = image_processing_utils.get_image_patch(
-      y, chart.xnorm, chart.ynorm, chart.wnorm, chart.hnorm)
-  image_processing_utils.write_image(chart_patch,
-                                     f'{name_with_log_path}_chart.jpg')
+  img = image_processing_utils.convert_capture_to_rgb_image(cap, props=props)
+  image_processing_utils.write_image(
+      img, f'{name_with_log_path}_capture_for_aruco_detection.jpg')
+  img_bgr = cv2.cvtColor(image_processing_utils.convert_image_to_uint8(img),
+                         cv2.COLOR_RGB2BGR)
+  return img_bgr
 
-  # make chart patch 2D & uint8 for cv2.matchTemplate
-  chart_patch = chart_patch[:, :, 0]
-  chart_uint8 = image_processing_utils.convert_image_to_uint8(chart_patch)
 
-  # scale chart
-  chart_uint8 = opencv_processing_utils.scale_img(chart_uint8, chart.scale)
+def _check_rotated_aruco(corners, ids, orientation, first_api_level):
+  """Checks for rotated ArUco markers and raises an error if needed.
 
-  # check image has content
-  if np.max(chart_uint8)-np.min(chart_uint8) < 255/8:
-    raise AssertionError('Image patch has no content! Check setup.')
+  Args:
+    corners: list of detected ArUco markers corners.
+    ids: list of int ids for each detected ArUco markers.
+    orientation: str, the orientation of the processed image.
+    first_api_level: int, the first API level value.
 
-  # get a local copy of the chart template and save to results dir
-  template = cv2.imread(opencv_processing_utils.CHART_FILE, cv2.IMREAD_ANYDEPTH)
-  image_processing_utils.write_image(template[:, :, np.newaxis] / 255,
-                                     f'{name_with_log_path}_template.jpg')
+  Raises:
+    AssertionError: if the image is rotated and the first API level is not
+    Android 15, and if rotated ArUco markers are found in flip or mirror images.
+  """
+  if opencv_processing_utils.detect_180_degree_rotation_with_aruco_markers(
+      corners, ids, *_TOP_ARUCO_PAIR):
+    if (orientation == 'nominal' and
+        first_api_level < its_session_utils.ANDROID15_API_LEVEL):
+      logging.warning(
+          'Image is %s, ArUco markers found in '
+          'this orientation. Allowing test to pass for first_api_level < '
+          'Android 15.', _ROTATED_RESULTS[orientation])
+    else:
+      raise AssertionError(_FAILURE_MESSAGE.format(
+          orientation=_ROTATED_RESULTS[orientation]))
 
-  # crop center areas, strip off any extra rows/columns, & save cropped images
-  template = image_processing_utils.get_image_patch(
-      template, _PATCH_X, _PATCH_Y, _PATCH_W, _PATCH_H)
-  center_uint8 = image_processing_utils.get_image_patch(
-      chart_uint8, _PATCH_X, _PATCH_Y, _PATCH_W, _PATCH_H)
-  center_uint8 = center_uint8[:min(center_uint8.shape[0], template.shape[0]),
-                              :min(center_uint8.shape[1], template.shape[1])]
-  image_processing_utils.write_image(template[:, :, np.newaxis] / 255,
-                                     f'{name_with_log_path}_template_crop.jpg')
-  image_processing_utils.write_image(chart_uint8[:, :, np.newaxis] / 255,
-                                     f'{name_with_log_path}_chart_crop.jpg')
 
-  # determine optimum orientation
-  opts = []
-  imgs = []
-  for orientation in _CHART_ORIENTATIONS:
-    if orientation == 'nominal':
-      comp_chart = center_uint8
-    elif orientation == 'flip':
-      comp_chart = np.flipud(center_uint8)
-    elif orientation == 'mirror':
-      comp_chart = np.fliplr(center_uint8)
-    elif orientation == 'rotate':
-      comp_chart = np.flipud(np.fliplr(center_uint8))
-    correlation = cv2.matchTemplate(comp_chart, template, cv2.TM_CCOEFF)
-    _, opt_val, _, _ = cv2.minMaxLoc(correlation)
-    imgs.append(comp_chart)
-    logging.debug('%s correlation value: %d', orientation, opt_val)
-    opts.append(opt_val)
+def _check_nominal_orientation(orientation):
+  """Raises an error if Aruco markers found in non-nominal orientation."""
+  if orientation != 'nominal':
+    raise AssertionError(_FAILURE_MESSAGE.format(orientation=orientation))
+  logging.debug('ArUco markers found in nominal orientation.')
 
-  # assert correct behavior
-  if opts[0] != max(opts):  # 'nominal' is not best orientation
-    for i, orientation in enumerate(_CHART_ORIENTATIONS):
-      cv2.imwrite(f'{name_with_log_path}_{orientation}.jpg', imgs[i])
 
-    if first_api_level < its_session_utils.ANDROID15_API_LEVEL:
-      if opts[3] != max(opts):  # allow 'rotated' < ANDROID15
-        raise AssertionError(
-            f'Optimum orientation is {_CHART_ORIENTATIONS[np.argmax(opts)]}')
-      else:
-        logging.warning('Image rotated 180 degrees. Tablet might be rotated.')
-    else:  # no rotation >= ANDROID15
-      raise AssertionError(
-          f'Optimum orientation is {_CHART_ORIENTATIONS[np.argmax(opts)]}')
+def test_image_orientation_with_aruco_markers(
+    cam, props, first_api_level, name_with_log_path):
+  """Test if image is flipped or mirrored using ArUco markers.
+
+  Args:
+    cam: An open its session.
+    props: Properties of cam.
+    first_api_level: int; first API level value.
+    name_with_log_path: file with log_path to save the captured image.
+  """
+  img_bgr = _do_capture_and_convert_to_uint8(cam, props, name_with_log_path)
+  orientation_map = _get_orientation_map(img_bgr)
+
+  for orientation, chart in orientation_map.items():
+    logging.debug('Finding ArUco markers in %s orientation.', orientation)
+    try:
+      corners, ids, _ = opencv_processing_utils.find_aruco_markers(
+          chart, f'{name_with_log_path}_aruco_chart.jpg', _NUM_ARUCO_MARKERS)
+    except AssertionError:
+      logging.debug('Aruco markers not found in %s orientation.', orientation)
+      corners, ids = [], []
+
+    if len(ids) == _NUM_ARUCO_MARKERS:
+      _check_rotated_aruco(corners, ids, orientation, first_api_level)
+      _check_nominal_orientation(orientation)
+      return  # PASS: Non-rotated ArUco markers found in nominal orientation.
+
+  # if no markers found in all orientations
+  raise AssertionError(_ARUCO_MARKERS_NOT_FOUND_MESSAGE)
 
 
 class FlipMirrorTest(its_base_test.ItsBaseTest):
@@ -151,23 +168,9 @@ class FlipMirrorTest(its_base_test.ItsBaseTest):
           cam, props, self.scene, self.tablet, self.chart_distance,
           chart_scaling=self.chart_scaling)
 
-      # initialize chart class and locate chart in scene
-      is_tele = cam.get_camera_type(props) == (
-          its_session_utils.CAMERA_TYPE_TELE)
-      if is_tele and self.chart_distance == (
-          opencv_processing_utils.CHART_DISTANCE_31CM):
-        logging.debug('Initializing TELE camera chart at 31cm.')
-        chart = opencv_processing_utils.Chart(
-            cam, props, self.log_path, height=_TELE_CHART_HEIGHT_31CM,
-            distance=self.chart_distance, scale_stop=_TELE_SCALE_STOP)
-      else:
-        chart = opencv_processing_utils.Chart(
-            cam, props, self.log_path, distance=self.chart_distance)
-      fmt = {'format': 'yuv', 'width': _VGA_W, 'height': _VGA_H}
-
       # test that image is not flipped, mirrored, or rotated
-      test_flip_mirror_impl(cam, props, fmt, chart, first_api_level,
-                            name_with_log_path)
+      test_image_orientation_with_aruco_markers(
+          cam, props, first_api_level, name_with_log_path)
 
 
 if __name__ == '__main__':
