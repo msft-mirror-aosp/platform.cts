@@ -50,6 +50,7 @@ class SettingsParameterizedTestWithArgumentGenerator(
     private fun SettingsPreferenceMetadataParameter.logic(
         frameworkMethod: FrameworkMethod
     ): List<FrameworkMethod> = clientComponent.allMetadata(packageName)
+        .applyKeysFilter(keys)
         .applyWriteSensitivityFilter(writeSensitivity)
         .applyIsWritableFilter(isWritable)
         .applyOtherFilters(otherFilters)
@@ -57,6 +58,14 @@ class SettingsParameterizedTestWithArgumentGenerator(
         .map { metadata ->
             FrameworkMethodWithParameter(frameworkMethod, metadata, metadata.nameWithKeys())
         }
+
+    private fun List<SettingsPreferenceMetadata>.applyKeysFilter(
+        keys: Array<String>
+    ): List<SettingsPreferenceMetadata> = if (keys.isEmpty()) {
+        this
+    } else {
+        filter { keys.contains(it.toString()) }
+    }
 
     private fun List<SettingsPreferenceMetadata>.applyWriteSensitivityFilter(
         writeSensitivity: IntArray

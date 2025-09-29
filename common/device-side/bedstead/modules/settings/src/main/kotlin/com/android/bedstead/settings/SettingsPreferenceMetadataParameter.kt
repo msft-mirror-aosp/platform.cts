@@ -56,7 +56,12 @@ annotation class SettingsPreferenceMetadataParameter(
      * Skip unsupported preferences. Caution! This parameter is very expensive!
      */
     // TODO(karzelek) cache it or make it available in SettingsPreferenceMetadata
-    val skipUnsupportedPreferences: Boolean = false
+    val skipUnsupportedPreferences: Boolean = false,
+
+    /**
+     * Generates tests only for preferences with keys present in [keys].
+     */
+    val keys: Array<String> = []
 ) {
     companion object {
         const val PREFERENCE_FILTER_READ_PERMISSIONS_NOT_EMPTY: Int = 0
