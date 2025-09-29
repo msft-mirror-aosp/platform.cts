@@ -832,7 +832,7 @@ def default_camera_app_dut_setup(device_id, pkg_name):
 
 def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
                            video_stabilization=None, jca_aspect_ratio=None,
-                           enable_hdr=False):
+                           enable_hdr=False, take_preview_snap=False):
   """Launches the jetpack camera app and takes still capture.
 
   Args:
@@ -846,6 +846,7 @@ def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
     jca_aspect_ratio: optional; Aspect ratio used while taking JCA captures
     By default 3:4 is used.
     enable_hdr: True if the HDR should be enabled during JCA capture
+    take_preview_snap: bool; True if snapshot is needed, False otherwise
 
     AUTO in JCA will set the stabilization mode to PREVIEW_STABILIZATION,
     if the lens supports it, and if not, it will set it to OIS. If neither
@@ -853,8 +854,10 @@ def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
 
   Returns:
     img_path_on_dut: Path of the captured image on the device
+    jca_screenshot: Path of the preview snapshot. None if take_preview_snap is False
   """
   device_id = dut.serial
+  jca_screenshot = None
   remove_command = f'rm -rf {EMULATED_STORAGE_PATH}/*'
   its_device_utils.run_adb_shell_command(device_id, remove_command)
   watch_dump_path = os.path.join(log_path, JCA_WATCH_DUMP_FILE)
@@ -886,6 +889,9 @@ def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
     if dut.ui(res=CAPTURE_BUTTON_RESOURCE_ID).wait.exists(
         timeout=WAIT_INTERVAL_FIVE_SECONDS
     ):
+      if take_preview_snap:
+        time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
+        jca_screenshot = dut.take_screenshot(log_path, prefix='jca_preview_snapshot')
       dut.ui(res=CAPTURE_BUTTON_RESOURCE_ID).click.wait()
     time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
     stop_cameraservice_watch(watch_process)
@@ -905,7 +911,8 @@ def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
       raise AssertionError('Failed to find jpg files!')
   finally:
     force_stop_app(dut, JETPACK_CAMERA_APP_PACKAGE_NAME)
-  return img_path_on_dut
+  # TODO(b/427212603): Flip the preview snapshot
+  return img_path_on_dut, jca_screenshot
 
 
 def enable_jca_hdr(dut, log_path):
@@ -918,12 +925,59 @@ def enable_jca_hdr(dut, log_path):
   dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
   dut.ui(scrollable=True).scroll.down(
       res=QUICK_SETTINGS_HDR_RESOURCE_ID)
-  dut.ui(res=QUICK_SETTINGS_HDR_RESOURCE_ID).click()
-  logging.debug('Enabled HDR on JCA')
-  time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
-  dut.take_screenshot(log_path, prefix='enabled_hdr_jca')
-  dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
-  dut.ui(res=CAPTURE_MODE_TOGGLE_BUTTON_JCA_RES_ID).click()
+  if not dut.ui(res=QUICK_SETTINGS_HDR_RESOURCE_ID).enabled:
+    logging.debug('Device does not support HDR on JCA.')
+    dut.take_screenshot(
+        log_path, prefix='JCA_HDR_disabled')
+    dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
+  else:
+    dut.ui(res=QUICK_SETTINGS_HDR_RESOURCE_ID).click()
+    time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
+    call_on_fail = lambda: dut.take_screenshot(log_path, prefix='hdr_not_enabled')
+    verify_ui_object_visible(dut.ui(desc='High dynamic range'), call_on_fail=call_on_fail)
+    logging.debug('Enabled HDR on JCA')
+    dut.take_screenshot(log_path, prefix='enabled_hdr_jca')
+    dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
+    dut.ui(res=CAPTURE_MODE_TOGGLE_BUTTON_JCA_RES_ID).click()
+
+
+def jca_hdr_supported(dut, log_path, camera_facing):
+  """Checks whether the device supports HDR on JCA or not.
+
+  Args:
+    dut: An android controller device object
+    log_path: str; log path to save screenshots
+    camera_facing: camera lens facing orientation
+  Returns:
+    supports_hdr: bool, True if the device supports HDR, False otherwise
+  """
+  device_id = dut.serial
+  supports_hdr = False
+  try:
+    logging.debug('Checking if HDR is supported or not.')
+    launch_cmd = (
+        'am start -n '
+        f'{JETPACK_CAMERA_APP_PACKAGE_NAME}/{JETPACK_CAMERA_APP_PACKAGE_NAME}.MainActivity '
+        '--ez "KEY_DEBUG_MODE" true'
+    )
+    its_device_utils.run_adb_shell_command(device_id, launch_cmd)
+    switch_jca_camera(dut, log_path, camera_facing)
+    dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
+    dut.ui(scrollable=True).scroll.down(
+        res=QUICK_SETTINGS_HDR_RESOURCE_ID)
+    if not dut.ui(res=QUICK_SETTINGS_HDR_RESOURCE_ID).enabled:
+      logging.debug('Device does not support HDR on JCA.')
+      dut.take_screenshot(
+          log_path, prefix='JCA_HDR_not_supported')
+    else:
+      logging.debug('Device supports HDR on JCA.')
+      dut.take_screenshot(
+          log_path, prefix='JCA_HDR_supported')
+      supports_hdr = True
+    dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
+  finally:
+    force_stop_app(dut, JETPACK_CAMERA_APP_PACKAGE_NAME)
+  return supports_hdr
 
 
 def take_dumpsys_report(dut, file_path):
