@@ -782,6 +782,8 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
     @FlakyTest
     @RequiresFlagsDisabled(android.view.inputmethod.Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
     public void testImeInsetsWithDifferentControlTarget() throws Exception {
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
+                "This test doesn't support visible background users");
         final Instrumentation instrumentation = getInstrumentation();
         assumeThat(MockImeSession.getUnavailabilityReason(instrumentation.getContext()),
                 nullValue());
