@@ -70,6 +70,7 @@ android_test_helper_app {
         "mcts-nfc",
         "mcts-crashrecovery",
         "mcts-bt",
+        "mcts-profiling",
     ],
     static_libs: [
         "camera_platform_flags_java_lib",
