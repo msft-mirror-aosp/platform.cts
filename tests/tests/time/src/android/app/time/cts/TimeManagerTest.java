@@ -122,10 +122,13 @@ public class TimeManagerTest {
                 .getCapabilities().getConfigureAutoDetectionEnabledCapability();
         boolean userRestricted = configureAutoDetectionEnabledCapability == CAPABILITY_NOT_ALLOWED;
         assertFalse(userRestricted);
+        TestNotificationListener.setup(mContext);
     }
 
     @After
     public void after() throws Exception {
+        TestNotificationListener.clearAllNotifications();
+        TestNotificationListener.teardown(mContext);
         mDeviceConfigShellHelper.restoreDeviceConfigStateForTest(mDeviceConfigPreTestState);
     }
 
