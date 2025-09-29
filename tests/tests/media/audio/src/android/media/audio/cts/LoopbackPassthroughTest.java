@@ -285,10 +285,14 @@ public class LoopbackPassthroughTest {
                                 expectedFramePositionPcmReferred - mMixFormat.getSampleRate();
                         float maxAllowedFramePosition =
                                 expectedFramePositionPcmReferred + mMixFormat.getSampleRate();
-                        Assert.assertTrue("timestamp position:" + timestamp.framePosition
-                                        + " time:" + timestamp.nanoTime + " out of range",
-                                timestamp.framePosition >= minAllowedFramePosition
-                                        && timestamp.framePosition <= maxAllowedFramePosition);
+                        if (bytesToWrite > 0) {
+                            // Only check when delivering data, stopping delivery puts direct
+                            // streams into standby, and resets the position.
+                            Assert.assertTrue("timestamp position:" + timestamp.framePosition
+                                            + " time:" + timestamp.nanoTime + " out of range",
+                                    timestamp.framePosition >= minAllowedFramePosition
+                                            && timestamp.framePosition <= maxAllowedFramePosition);
+                        }
                         Assert.assertTrue("head position:" + headPosition + " out of range",
                                 headPosition >= minAllowedFramePosition
                                         && headPosition <= maxAllowedFramePosition);
