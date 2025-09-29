@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,14 @@
 package com.android.bedstead.multiuser.annotations
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
-import com.android.bedstead.harrier.annotations.meta.RepeatingAnnotation
+import com.android.bedstead.harrier.annotations.FailureMode
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
 
+/**
+ * Mark that a test method requires the ability to add a new secondary user.
+ *
+ * You can use `Devicestate` to ensure that the device enters the correct state for the method.
+ */
 @Target(
     AnnotationTarget.FUNCTION,
     AnnotationTarget.PROPERTY_GETTER,
@@ -26,9 +32,12 @@ import com.android.bedstead.harrier.annotations.meta.RepeatingAnnotation
     AnnotationTarget.CLASS
 )
 @Retention(AnnotationRetention.RUNTIME)
-@RepeatingAnnotation
-annotation class EnsureCanAddUserGroup(
-    vararg val value: EnsureCanAddUser,
+@RequireMultiUserSupport
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
+annotation class EnsureCanAddSecondaryUser(
+    /** The number of users we need space for. Defaults to 1.  */
+    val number: Int = 1,
+    val failureMode: FailureMode = FailureMode.SKIP,
     /**
      * Priority sets the order that annotations will be resolved.
      *

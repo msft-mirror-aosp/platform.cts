@@ -24,6 +24,7 @@ import static android.cts.testapisreflection.TestApisReflectionKt.getVisibleBack
 import static android.cts.testapisreflection.TestApisReflectionKt.getVisibleBackgroundUsersSupported;
 import static android.cts.testapisreflection.TestApisReflectionKt.setStopUserOnSwitch;
 import static android.os.Build.VERSION.SDK_INT;
+import static android.os.Build.VERSION_CODES.BAKLAVA;
 import static android.os.Build.VERSION_CODES.S;
 import static android.os.Build.VERSION_CODES.S_V2;
 import static android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
@@ -753,16 +754,23 @@ public final class Users {
     }
 
     /**
-     * Gets the maximum number of users supported by the device
+     * Gets the number of additional users of the given type that can be added to the device
      */
-    // TODO(b/442891661); This needs to be overhauled, as there is no longer a global user maximum.
-    public int getMaxNumberOfUsersSupported() {
+    public int getRemainingCreatableUserCount(UserType userType) {
+         if (Versions.meetsMinimumSdkVersionRequirement(BAKLAVA)) {
+            try (PermissionContext p = TestApis.permissions().withPermission(CREATE_USERS)) {
+                return sUserManager.getRemainingCreatableUserCount(userType.name());
+            }
+        }
+
+        // Legacy approach, when there was an overall max user limit (which was only an estimate).
         try {
-            return ShellCommand.builder("pm get-max-users")
+            int maxUsers = ShellCommand.builder("pm get-max-users")
                     .validate((output) -> output.startsWith("Maximum supported"))
                     .executeAndParseOutput((output) ->
                             Integer.parseInt(output.split(": ", 2)[1].trim())
                     );
+            return maxUsers - TestApis.users().all().size();
         } catch (AdbException e) {
             throw new IllegalStateException("Invalid command output", e);
         }

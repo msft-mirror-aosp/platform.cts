@@ -1131,9 +1131,8 @@ public final class UserReference implements AutoCloseable {
             }
         }
 
-        // If we cannot check the profile specifically, we will at least check that more users can
-        // be created, to maintain historical behaviour (even though that isn't quite right).
-        if (TestApis.users().getMaxNumberOfUsersSupported() <= TestApis.users().all().size()) {
+        // For older builds, we must rely on the following backwards-compatible mechanism.
+        if (TestApis.users().getRemainingCreatableUserCount(userType) <= 0) {
             return false;
         }
 

@@ -31,7 +31,7 @@ import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireFeature
 import com.android.bedstead.harrier.annotations.UserTest
 import com.android.bedstead.harrier.components.registerBroadcastReceiver
-import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
+import com.android.bedstead.multiuser.annotations.EnsureCanAddSecondaryUser
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode
 import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser
@@ -397,7 +397,7 @@ class DeviceOwnerTest {
     }
 
     @EnsureHasNoDpc
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     @Postsubmit(reason = "new test")
     @Test
     fun setDeviceOwner_hasSecondaryUser_throwsException() {
