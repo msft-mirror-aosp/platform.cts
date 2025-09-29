@@ -24,14 +24,15 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 import static com.android.compatibility.common.util.concurrentuser.ConcurrentUserActivityUtils.getResponderUserId;
 import static com.android.compatibility.common.util.concurrentuser.ConcurrentUserActivityUtils.launchActivityAsUserSync;
 import static com.android.compatibility.common.util.concurrentuser.ConcurrentUserActivityUtils.sendBundleAndWaitForReply;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
 import static com.android.server.inputmethod.concurrentmultiuser.TestRequestConstants.KEY_DISPLAY_ID;
 import static com.android.server.inputmethod.concurrentmultiuser.TestRequestConstants.KEY_EDITTEXT_CENTER;
-import static com.android.server.inputmethod.concurrentmultiuser.TestRequestConstants.KEY_IME_SHOWN;
 import static com.android.server.inputmethod.concurrentmultiuser.TestRequestConstants.KEY_REQUEST_CODE;
 import static com.android.server.inputmethod.concurrentmultiuser.TestRequestConstants.REQUEST_DISPLAY_ID;
 import static com.android.server.inputmethod.concurrentmultiuser.TestRequestConstants.REQUEST_EDITTEXT_POSITION;
 import static com.android.server.inputmethod.concurrentmultiuser.TestRequestConstants.REQUEST_HIDE_IME;
-import static com.android.server.inputmethod.concurrentmultiuser.TestRequestConstants.REQUEST_IME_STATUS;
 import static com.android.server.inputmethod.concurrentmultiuser.TestRequestConstants.REQUEST_SHOW_IME;
 
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -58,6 +59,9 @@ import com.android.bedstead.multiuser.annotations.RequireVisibleBackgroundUsers;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.WindowUtil;
+import com.android.cts.mockime.ImeEventStream;
+import com.android.cts.mockime.ImeSettings;
+import com.android.cts.mockime.MockImeSession;
 
 import org.junit.After;
 import org.junit.Before;
@@ -70,6 +74,7 @@ import org.junit.runner.RunWith;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @RunWith(BedsteadJUnit4.class)
 @RequireVisibleBackgroundUsers(
@@ -89,13 +94,19 @@ public final class ConcurrentMultiUserTest {
             TimeUnit.SECONDS.toMillis(5) * BuildUtils.HW_TIMEOUT_MULTIPLIER;
     private static final String MOCKIME_ID = "com.android.cts.mockime/.MockIme";
     private final Context mContext = getInstrumentation().getTargetContext();
+
+    private ImeSettings.Builder mDriverImeSettings;
+    private ImeSettings.Builder mPassengerImeSettings;
     private final InputMethodManager mInputMethodManager =
             mContext.getSystemService(InputMethodManager.class);
     private final UiAutomation mUiAutomation = getInstrumentation().getUiAutomation();
 
     private ActivityScenario<ConcurrentMultiUserTestActivity> mActivityScenario;
     private ConcurrentMultiUserTestActivity mActivity;
+    private UserHandle mDriverUser;
+    private UserHandle mPassengerUser;
     private int mPeerUserId;
+    private Context mPassengerContext;
 
     @Before
     public void setUp() {
@@ -109,6 +120,13 @@ public final class ConcurrentMultiUserTest {
         WindowUtil.waitForFocus(mActivity);
         mUiAutomation.adoptShellPermissionIdentity(
                 INTERACT_ACROSS_USERS_FULL, ACCESS_SURFACE_FLINGER);
+
+        // Set up user handles and builders
+        mDriverUser = UserHandle.of(mContext.getUserId());
+        mPassengerUser = UserHandle.of(mPeerUserId);
+        mDriverImeSettings = new ImeSettings.Builder().setTargetUser(mDriverUser);
+        mPassengerImeSettings = new ImeSettings.Builder().setTargetUser(mPassengerUser);
+        mPassengerContext = mContext.createContextAsUser(mPassengerUser, /* flags */ 0);
     }
 
     @After
@@ -125,11 +143,23 @@ public final class ConcurrentMultiUserTest {
      */
     @Test
     public void driverShowImeNotAffectPassenger() throws Exception {
-        assertDriverImeHidden();
-        assertPassengerImeHidden();
+        try (MockImeSession passengerImeSession =
+                MockImeSession.create(mPassengerContext, mUiAutomation, mPassengerImeSettings)) {
+            try (MockImeSession driverImeSession =
+                    MockImeSession.create(mContext, mUiAutomation, mDriverImeSettings)) {
+                final ImeEventStream passengerStream = passengerImeSession.openEventStream();
+                final ImeEventStream driverStream = driverImeSession.openEventStream();
 
-        showDriverImeAndAssert();
-        assertPassengerImeHidden();
+                notExpectEvent(driverStream, eventMatcher("onStartInputView"), TIMEOUT_MILLIS);
+
+                notExpectEvent(passengerStream, eventMatcher("onStartInputView"), TIMEOUT_MILLIS);
+
+                showDriverIme();
+                expectEvent(driverStream, eventMatcher("onStartInputView"), TIMEOUT_MILLIS);
+
+                notExpectEvent(passengerStream, eventMatcher("onStartInputView"), TIMEOUT_MILLIS);
+            }
+        }
     }
 
     /**
@@ -139,11 +169,23 @@ public final class ConcurrentMultiUserTest {
     @Test
     @Ignore("b/352823913")
     public void passengerShowImeNotAffectDriver() throws Exception {
-        assertDriverImeHidden();
-        assertPassengerImeHidden();
+        try (MockImeSession passengerImeSession =
+                MockImeSession.create(mPassengerContext, mUiAutomation, mPassengerImeSettings)) {
+            try (MockImeSession driverImeSession =
+                    MockImeSession.create(mContext, mUiAutomation, mDriverImeSettings)) {
+                final ImeEventStream driverStream = driverImeSession.openEventStream();
+                final ImeEventStream passengerStream = passengerImeSession.openEventStream();
 
-        showPassengerImeAndAssert();
-        assertDriverImeHidden();
+                notExpectEvent(driverStream, eventMatcher("onStartInputView"), TIMEOUT_MILLIS);
+
+                notExpectEvent(passengerStream, eventMatcher("onStartInputView"), TIMEOUT_MILLIS);
+
+                showPassengerIme();
+                expectEvent(passengerStream, eventMatcher("onStartInputView"), TIMEOUT_MILLIS);
+
+                notExpectEvent(driverStream, eventMatcher("onStartInputView"), TIMEOUT_MILLIS);
+            }
+        }
     }
 
     /**
@@ -152,11 +194,25 @@ public final class ConcurrentMultiUserTest {
      */
     @Test
     public void driverHideImeNotAffectPassenger() throws Exception {
-        showDriverImeAndAssert();
-        showPassengerImeAndAssert();
+        try (MockImeSession passengerImeSession =
+                MockImeSession.create(mPassengerContext, mUiAutomation, mPassengerImeSettings)) {
+            try (MockImeSession driverImeSession =
+                    MockImeSession.create(mContext, mUiAutomation, mDriverImeSettings)) {
+                final ImeEventStream driverStream = driverImeSession.openEventStream();
+                final ImeEventStream passengerStream = passengerImeSession.openEventStream();
 
-        hideDriverImeAndAssert();
-        assertPassengerImeShown();
+                showDriverIme();
+                expectEvent(driverStream, eventMatcher("onStartInputView"), TIMEOUT_MILLIS);
+
+                showPassengerIme();
+                expectEvent(passengerStream, eventMatcher("onStartInputView"), TIMEOUT_MILLIS);
+
+                hideDriverIme();
+                expectEvent(driverStream, eventMatcher("onFinishInputView"), TIMEOUT_MILLIS);
+
+                notExpectEvent(passengerStream, eventMatcher("onFinishInputView"), TIMEOUT_MILLIS);
+            }
+        }
     }
 
     /**
@@ -165,26 +221,47 @@ public final class ConcurrentMultiUserTest {
      */
     @Test
     public void passengerHideImeNotAffectDriver() throws Exception {
-        showDriverImeAndAssert();
-        showPassengerImeAndAssert();
+        try (MockImeSession driverImeSession =
+                MockImeSession.create(mContext, mUiAutomation, mDriverImeSettings)) {
+            try (MockImeSession passengerImeSession =
+                    MockImeSession.create(
+                            mPassengerContext, mUiAutomation, mPassengerImeSettings)) {
+                final ImeEventStream driverStream = driverImeSession.openEventStream();
+                final ImeEventStream passengerStream = passengerImeSession.openEventStream();
 
-        hidePassengerImeAndAssert();
-        assertDriverImeShown();
+                showPassengerIme();
+                expectEvent(passengerStream, eventMatcher("onStartInputView"), TIMEOUT_MILLIS);
+
+                showDriverIme();
+                notExpectEvent(driverStream, eventMatcher("onFinishInputView"), TIMEOUT_MILLIS);
+
+                hidePassengerIme();
+                expectEvent(passengerStream, eventMatcher("onFinishInputView"), TIMEOUT_MILLIS);
+
+                notExpectEvent(driverStream, eventMatcher("onFinishInputView"), TIMEOUT_MILLIS);
+            }
+        }
     }
 
     /** Verifies that both the driver and the passenger user have at least one IME installed. */
     @Test
     public void imeListNotEmpty() {
         List<InputMethodInfo> driverImeList = mInputMethodManager.getInputMethodList();
-        assertWithMessage("Driver IME list shouldn't be empty")
-                .that(driverImeList.isEmpty())
-                .isFalse();
+        assertWithMessage("Driver IME list should contain MockIme")
+                .that(
+                        driverImeList.stream()
+                                .map(InputMethodInfo::getId)
+                                .collect(Collectors.toList()))
+                .contains(MOCKIME_ID);
 
         List<InputMethodInfo> passengerImeList =
                 mInputMethodManager.getInputMethodListAsUser(mPeerUserId);
-        assertWithMessage("Passenger IME list shouldn't be empty")
-                .that(passengerImeList.isEmpty())
-                .isFalse();
+        assertWithMessage("Passenger IME list should contain MockIme")
+                .that(
+                        passengerImeList.stream()
+                                .map(InputMethodInfo::getId)
+                                .collect(Collectors.toList()))
+                .contains(MOCKIME_ID);
     }
 
     /** Verifies that both the driver and the passenger user have at least one enabled IME. */
@@ -197,7 +274,7 @@ public final class ConcurrentMultiUserTest {
                 .isFalse();
 
         List<InputMethodInfo> passengerEnabledImeList =
-                mInputMethodManager.getEnabledInputMethodListAsUser(UserHandle.of(mPeerUserId));
+                mInputMethodManager.getEnabledInputMethodListAsUser(mPassengerUser);
         assertWithMessage("Passenger enabled IME list shouldn't be empty")
                 .that(passengerEnabledImeList.isEmpty())
                 .isFalse();
@@ -221,11 +298,9 @@ public final class ConcurrentMultiUserTest {
      * another user.
      */
     @Test
-    public void enableDisableImePerUser() throws Exception {
-        UserHandle driver = UserHandle.of(mContext.getUserId());
-        UserHandle passenger = UserHandle.of(mPeerUserId);
-        enableDisableImeForUser(driver, passenger);
-        enableDisableImeForUser(passenger, driver);
+    public void enableDisableImePerUser() {
+        enableDisableImeForUser(mDriverUser, mPassengerUser);
+        enableDisableImeForUser(mPassengerUser, mDriverUser);
     }
 
     /**
@@ -233,87 +308,43 @@ public final class ConcurrentMultiUserTest {
      * user.
      */
     @Test
-    public void setImePerUser() throws Exception {
-        UserHandle driver = UserHandle.of(mContext.getUserId());
-        UserHandle passenger = UserHandle.of(mPeerUserId);
-        setImeForUser(driver, passenger);
-        setImeForUser(passenger, driver);
+    public void setImePerUser() {
+        setImeForUser(mDriverUser, mPassengerUser);
+        setImeForUser(mPassengerUser, mDriverUser);
     }
 
-    private void assertDriverImeShown() {
-        assertWithMessage("Driver IME should be shown").that(mActivity.isMyImeVisible()).isTrue();
-    }
-
-    private void assertDriverImeHidden() {
-        assertWithMessage("Driver IME should be hidden").that(mActivity.isMyImeVisible()).isFalse();
-    }
-
-    private void assertPassengerImeHidden() {
-        final Bundle bundleToSend = new Bundle();
-        bundleToSend.putInt(KEY_REQUEST_CODE, REQUEST_IME_STATUS);
-        Bundle receivedBundle =
-                sendBundleAndWaitForReply(
-                        TEST_ACTIVITY.getPackageName(), mPeerUserId, bundleToSend);
-        assertWithMessage("Passenger IME should be hidden")
-                .that(receivedBundle.getBoolean(KEY_IME_SHOWN, /* defaultValue= */ true))
-                .isFalse();
-    }
-
-    private void assertPassengerImeShown() {
-        final Bundle bundleToSend = new Bundle();
-        bundleToSend.putInt(KEY_REQUEST_CODE, REQUEST_IME_STATUS);
-        Bundle receivedBundle =
-                sendBundleAndWaitForReply(
-                        TEST_ACTIVITY.getPackageName(), mPeerUserId, bundleToSend);
-        assertWithMessage("Passenger IME should be shown")
-                .that(receivedBundle.getBoolean(KEY_IME_SHOWN))
-                .isTrue();
-    }
-
-    private void showDriverImeAndAssert() throws Exception {
+    private void showDriverIme() throws Exception {
         //  WindowManagerInternal only allows the top focused display to show IME, so this method
         //  taps the driver display in case it is not the top focused display.
         moveDriverDisplayToTop();
-
         mActivity.showMyImeAndWait();
     }
 
-    private void hideDriverImeAndAssert() {
+    private void hideDriverIme() {
         mActivity.hideMyImeAndWait();
     }
 
-    private void showPassengerImeAndAssert() throws Exception {
+    private void showPassengerIme() throws Exception {
         // WindowManagerInternal only allows the top focused display to show IME, so this method
         // taps the passenger display in case it is not the top focused display.
         movePassengerDisplayToTop();
 
         Bundle bundleToSend = new Bundle();
         bundleToSend.putInt(KEY_REQUEST_CODE, REQUEST_SHOW_IME);
-        Bundle receivedBundle =
-                sendBundleAndWaitForReply(
-                        TEST_ACTIVITY.getPackageName(), mPeerUserId, bundleToSend);
-
-        assertWithMessage("Passenger IME should be shown")
-                .that(receivedBundle.getBoolean(KEY_IME_SHOWN))
-                .isTrue();
+        sendBundleAndWaitForReply(TEST_ACTIVITY.getPackageName(), mPeerUserId, bundleToSend);
     }
 
-    private void hidePassengerImeAndAssert() {
+    private void hidePassengerIme() {
         Bundle bundleToSend = new Bundle();
         bundleToSend.putInt(KEY_REQUEST_CODE, REQUEST_HIDE_IME);
-        Bundle receivedBundle =
-                sendBundleAndWaitForReply(
-                        TEST_ACTIVITY.getPackageName(), mPeerUserId, bundleToSend);
-
-        assertWithMessage("Passenger IME should be hidden")
-                .that(receivedBundle.getBoolean(KEY_IME_SHOWN, /* defaultValue= */ true))
-                .isFalse();
+        sendBundleAndWaitForReply(TEST_ACTIVITY.getPackageName(), mPeerUserId, bundleToSend);
     }
 
     private void moveDriverDisplayToTop() throws Exception {
         float[] driverEditTextCenter = mActivity.getEditTextCenter();
         SystemUtil.runShellCommandOrThrow(
                 String.format("input tap %f %f", driverEditTextCenter[0], driverEditTextCenter[1]));
+        mUiAutomation.syncInputTransactions();
         CtsWindowInfoUtils.waitForStableWindowGeometry(Duration.ofMillis(TIMEOUT_MILLIS));
     }
 
@@ -336,6 +367,7 @@ public final class ConcurrentMultiUserTest {
                         passengerDisplayId,
                         passengerEditTextCenter[0],
                         passengerEditTextCenter[1]));
+        mUiAutomation.syncInputTransactions();
         CtsWindowInfoUtils.waitForStableWindowGeometry(Duration.ofMillis(TIMEOUT_MILLIS));
     }
 
@@ -343,8 +375,7 @@ public final class ConcurrentMultiUserTest {
      * Disables/enables IME for {@code user1}, then verifies that the IME settings for {@code user1}
      * has changed as expected and {@code user2} stays the same.
      */
-    private void enableDisableImeForUser(@NonNull UserHandle user1, @NonNull UserHandle user2)
-            throws Exception {
+    private void enableDisableImeForUser(@NonNull UserHandle user1, @NonNull UserHandle user2) {
         List<InputMethodInfo> user2EnabledImeList =
                 mInputMethodManager.getEnabledInputMethodListAsUser(user2);
         SystemUtil.runShellCommandOrThrow(
@@ -429,8 +460,7 @@ public final class ConcurrentMultiUserTest {
      * Sets/resets IME for {@code user1}, then verifies that the IME settings for {@code user1} has
      * changed as expected and {@code user2} stays the same.
      */
-    private void setImeForUser(@NonNull UserHandle user1, @NonNull UserHandle user2)
-            throws Exception {
+    private void setImeForUser(@NonNull UserHandle user1, @NonNull UserHandle user2) {
         // Reset IME for user1.
         SystemUtil.runShellCommandOrThrow("ime reset --user " + user1.getIdentifier());
         List<InputMethodInfo> user1EnabledImeList =
