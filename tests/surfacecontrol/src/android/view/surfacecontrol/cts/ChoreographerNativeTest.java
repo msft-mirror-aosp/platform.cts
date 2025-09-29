@@ -291,14 +291,6 @@ public class ChoreographerNativeTest {
     private Optional<Mode> findModeForSeamlessSwitch() {
         Mode activeMode = mDefaultDisplay.getMode();
         int refreshRate = Math.round(mDefaultDisplay.getRefreshRate());
-        if (com.android.graphics.surfaceflinger.flags.Flags.supportedRefreshRateUpdate()) {
-            float[] refreshRates = mDefaultDisplay.getSupportedRefreshRates();
-            Arrays.sort(refreshRates);
-            return Arrays.stream(mDefaultDisplay.getSupportedModes())
-                    .filter(mode -> DisplayUtil.isModeSwitchSeamless(activeMode, mode))
-                    .filter(mode -> Arrays.binarySearch(refreshRates, refreshRate) >= 0)
-                    .findFirst();
-        }
         return Arrays.stream(mDefaultDisplay.getSupportedModes())
                 .filter(mode -> DisplayUtil.isModeSwitchSeamless(activeMode, mode))
                 .filter(mode ->  Math.round(mode.getRefreshRate()) != refreshRate)
