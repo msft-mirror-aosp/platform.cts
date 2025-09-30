@@ -22,9 +22,7 @@ android_test {
     defaults: ["cts_defaults"],
     resource_dirs: ["res"],
     static_libs: [
-        "Nene",
-        "Harrier",
-        "TestApp",
+        "bedstead-enterprise",
         "ctswebkitsharedenv",
     ],
     srcs: [

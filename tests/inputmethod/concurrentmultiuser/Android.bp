@@ -32,10 +32,7 @@ android_test {
         "platform-test-rules",
         "truth",
         "ui-trace-collector",
-        // beadstead
-        "Nene",
-        "Harrier",
-        "TestApp",
+        "bedstead",
     ],
     test_suites: [
         "general-tests",

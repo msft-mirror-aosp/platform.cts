@@ -29,8 +29,7 @@ android_test {
         "cts-install-lib",
         "android.content.pm.flags-aconfig-java",
         "ShortcutManagerTestUtils",
-        "Nene",
-        "Harrier",
+        "bedstead",
     ],
     resource_dirs: ["res"],
     srcs: [

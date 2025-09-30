@@ -23,7 +23,7 @@ android_test {
     static_libs: [
         "ctstestrunner-axt",
         "compatibility-device-util-axt",
-        "Harrier",
+        "bedstead",
     ],
     libs: [
         "android.test.runner.stubs.test",
