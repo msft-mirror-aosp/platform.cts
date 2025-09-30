@@ -27,6 +27,7 @@ import android.content.pm.PackageManager;
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioManager;
+import android.media.audiofx.Equalizer;
 import android.media.audiofx.Visualizer;
 import android.os.Build;
 import android.os.SystemClock;
@@ -52,6 +53,7 @@ public class AudioOffloadNativeEffectsTest {
     private static final int STATUS_OK = 0;
     private static final float AUDIOTRACK_DEFAULT_FREQUENCY_HZ = 910;
     private static final int AUDIOTRACK_DEFAULT_SAMPLE_RATE = 48000;
+    private static final int PER_TEST_TIMEOUT_LARGE_TEST_MS = 300000;
     private static final int PER_TEST_TIMEOUT_SMALL_TEST_MS = 60000;
     private static final int PLAYBACK_COMPLETION_DELAY_MS = 10000;
     private static final int VISUALIZER_SILENCE_MB = -9600; // RMS value for silence in millibels
@@ -61,6 +63,7 @@ public class AudioOffloadNativeEffectsTest {
     private int mOriginalVolume;
     private int mSessionId = 0;
     private long mStreamHandle = 0;
+    private Equalizer mEqualizer = null;
     private Visualizer mVisualizer = null;
 
     static {
@@ -100,12 +103,18 @@ public class AudioOffloadNativeEffectsTest {
 
         mStreamHandle = nativeOpenStream();
         assertTrue("Failed to open native stream", mStreamHandle != 0);
+
+        mSessionId = nativeGetSessionId(mStreamHandle);
+        assumeTrue("Failed to get a valid session ID", mSessionId > 0);
     }
 
     @After
     public void teardown() {
         if (mAudioManager != null) {
             mAudioManager.setStreamVolume(mStreamType, mOriginalVolume, /* flag */ 0);
+        }
+        if (mEqualizer != null) {
+            mEqualizer.release();
         }
         if (mVisualizer != null) {
             mVisualizer.release();
@@ -120,8 +129,6 @@ public class AudioOffloadNativeEffectsTest {
     }
 
     private void setupVisualizer() {
-        mSessionId = nativeGetSessionId(mStreamHandle);
-        assumeTrue("Failed to get a valid session ID", mSessionId > 0);
         mVisualizer = new Visualizer(mSessionId);
         assumeNotNull("Failed to create Visualizer effect", mVisualizer);
         assumeTrue(
@@ -165,6 +172,34 @@ public class AudioOffloadNativeEffectsTest {
         final int rmsMb = playAndGetRms(AUDIOTRACK_DEFAULT_FREQUENCY_HZ);
         Log.i(TAG, "Measured Rms: " + rmsMb);
         assumeTrue("rms should not represent silence", rmsMb != VISUALIZER_SILENCE_MB);
+    }
+
+    @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
+    public void testMmapPcmOffloadWithEqualizerEffect() throws InterruptedException {
+        mEqualizer = new Equalizer(0, mSessionId);
+        assumeNotNull("Failed to create Equalizer effect", mEqualizer);
+        assumeTrue(Equalizer.SUCCESS == mEqualizer.setEnabled(true));
+
+        // Initialize the Visualizer to capture and measure the rms of audio output.
+        setupVisualizer();
+
+        final short bandToBoost =
+                mEqualizer.getBand((int) AUDIOTRACK_DEFAULT_FREQUENCY_HZ * 1000 /*convert to mHz*/);
+
+        // Define the sequence of decreasing band levels to test, in millibels
+        // (0 dB, -6dB, -12 dB).
+        final short[] testDecreasingBandLevelsMb = {0, -600, -1200};
+        int prevRmsMb = Integer.MAX_VALUE;
+
+        for (short bandLevelMb : testDecreasingBandLevelsMb) {
+            mEqualizer.setBandLevel(bandToBoost, bandLevelMb);
+            final int currRmsMb = playAndGetRms(AUDIOTRACK_DEFAULT_FREQUENCY_HZ);
+            Log.i(TAG, "Measured Curr Rms : " + currRmsMb);
+            assumeTrue(
+                    "Curr Rms at band level " + bandLevelMb + " should be less than " + prevRmsMb,
+                    currRmsMb < prevRmsMb);
+            prevRmsMb = currRmsMb;
+        }
     }
 
     private static native long nativeOpenStream();
