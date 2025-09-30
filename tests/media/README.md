@@ -11,7 +11,7 @@ The test suite aims to:
 
 ## Test Vectors
 
-Android TestFramework automatically downloads and copies the required resources from [url](https://dl.google.com/android/xts/cts/tests/media/CtsMediaV2TestCases-5.11.zip) while running the tests. Manual download and copy is also supported. This can be done by running the script `copy_media.sh`. All Big Buck Bunny (bbb) test vectors used by this suite are derived from [Blender Foundation](https://peach.blender.org/download/). All Cosmos Laundromat (cosmat) test vectors used by this suite are derived from [xiph.org](https://media.xiph.org/). All Dolby vision (ChromaPulseCts*, video_dovi*) test vectors used by this suite are shared by [dolby](https://www.dolby.com/) group
+Android TestFramework automatically downloads and copies the required resources from [url](https://dl.google.com/android/xts/cts/tests/media/CtsMediaV2TestCases-6.0.zip) while running the tests. Manual download and copy is also supported. This can be done by running the script `copy_media.sh`. All Big Buck Bunny test vectors (`bbb_*`) used by this test suite are derived from `bbb_sunflower_1080p_30fps_normal.mp4`. The original can be downloaded from the [Blender Foundation](https://peach.blender.org/download/). All Cosmos Laundromat test vectors (`cosmat_*`) used by this test suite are derived from resources at [xiph.org](https://media.xiph.org/cosmoslaundromat/). `stefan_*` is downloaded from [xiph.org](https://media.xiph.org/video/derf/). The original resource is transcoded and/or resized using FFmpeg as per test's needs. Test vectors `ChromaPulseCTS*`, `video_dovi*` are shared by Dolby for testing Dolby decoders. Test vectors `pattern_*` is shared by Samsung for testing APV decoders.
 
 ## Test Organization
 
