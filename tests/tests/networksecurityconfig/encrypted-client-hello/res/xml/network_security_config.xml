@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+  <domain-config>
+    <domainEncryption mode="disabled" />
+    <domain>android.com</domain>
+  </domain-config>
+  <domain-config>
+    <domainEncryption mode="strict" />
+    <domain>brambonne.com</domain>
+  </domain-config>
+  <domain-config>
+    <domainEncryption mode="closed" />
+    <domain>tls-ech.dev</domain>
+  </domain-config>
+</network-security-config>
