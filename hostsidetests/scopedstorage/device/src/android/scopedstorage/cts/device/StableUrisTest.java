@@ -244,7 +244,8 @@ public final class StableUrisTest extends ScopedStorageBaseDeviceTest {
     }
 
     private void clearMediaProvider() throws Exception {
-        mDevice.executeShellCommand("pm clear " + getMediaProviderPackageName());
+        mDevice.executeShellCommand(
+                "pm clear --user " + mContext.getUserId() + " " + getMediaProviderPackageName());
         waitForMountedAndIdleState(mContentResolver);
         MediaStore.scanVolume(mContentResolver, mVolumeName);
     }
