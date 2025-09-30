@@ -16,7 +16,7 @@
 
 package android.media.drmframework.cts;
 
-import static android.mediav2.common.cts.CodecTestBase.IS_AFTER_B;
+import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_AFTER_202504;
 
 import static org.junit.Assume.assumeTrue;
 
@@ -95,9 +95,9 @@ public class MediaDrmCodecBlockModelTest {
                 {MediaFormat.MIMETYPE_VIDEO_AVC, "llama_h264_main_720p_8000.mp4"},
         }));
 
-        // Block model for encrypted content was introduced in R but testing has been limited to AVC.
-        // It is expanded to cover other decoders after B.
-        if (IS_AFTER_B) {
+        // Block model for encrypted content was introduced in R but testing has been limited to
+        // AVC. It is expanded to cover other decoders after board API level 202504.
+        if (BOARD_SDK_IS_AFTER_202504) {
             exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
                     {MediaFormat.MIMETYPE_VIDEO_HEVC, "llama_hevc_240p_30fps_600_cenc.mp4"},
                     {MediaFormat.MIMETYPE_VIDEO_VP8, "bbb_520x390_1mbps_30fps_vp8_cenc.webm"},
