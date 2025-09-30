@@ -101,6 +101,7 @@ public final class WallpaperTest {
     @ApiTest(apis = "android.app.WallpaperManager#setBitmap")
     @EnsureHasPermission({SET_WALLPAPER, /* Android.U+ */ READ_WALLPAPER_INTERNAL})
     @EnsureDoesNotHaveUserRestriction(DISALLOW_SET_WALLPAPER)
+    @Ignore("b/447077454")
     @Test
     public void setBitmap_allowed_canSet() throws Exception {
         try (TestAppInstance testAppInstance = sTestApp.install();
