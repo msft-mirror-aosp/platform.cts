@@ -209,6 +209,8 @@ static std::optional<std::string> testThermalStatusRegisterNullListener() {
                     strerror(ret));
     }
 
+    usleep(100000);
+
     // Unregister listener
     ret = AThermal_unregisterThermalStatusListener(ctx.mThermalMgr, onStatusChange,
                                                    nullptr);
@@ -406,6 +408,8 @@ static std::optional<std::string> testThermalHeadroomRegisterNullListener() {
         return StringPrintf("AThermal_registerThermalHeadroomListener with null data failed: %s",
                             strerror(ret));
     }
+
+    usleep(100000);
 
     // Unregister listener
     ret = AThermal_unregisterThermalHeadroomListener(ctx.mThermalMgr, onHeadroomChange, nullptr);
