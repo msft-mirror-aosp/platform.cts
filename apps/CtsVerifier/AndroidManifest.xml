@@ -6485,7 +6485,7 @@
                 |android.service.chooser.ChooserSession.StateListener#onBoundsChanged" />
             <meta-data android:name="display_mode" android:value="single_display_mode" />
             <meta-data android:name="test_excluded_features"
-                android:value="android.hardware.type.watch|android.hardware.type.television|android.hardware.type.automotive" />
+                android:value="android.hardware.type.watch:android.hardware.type.television:android.hardware.type.automotive" />
         </activity>
 
         <!-- aliases -->
