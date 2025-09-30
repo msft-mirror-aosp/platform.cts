@@ -131,7 +131,6 @@ import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -218,6 +217,7 @@ public class ItsService extends Service implements SensorEventListener {
     public static final String REGION_AF_KEY = "af";
     public static final String LOCK_AE_KEY = "aeLock";
     public static final String LOCK_AWB_KEY = "awbLock";
+    public static final String ALLOW_AF_NOT_FOCUS_LOCKED_KEY = "allowAFNotFocusLocked";
     public static final String TRIGGER_KEY = "triggers";
     public static final String PHYSICAL_ID_KEY = "physicalId";
     public static final String TRIGGER_AE_KEY = "ae";
@@ -346,6 +346,7 @@ public class ItsService extends Service implements SensorEventListener {
     private volatile boolean mDoAE = true;
     private volatile boolean mDoAF = true;
     private volatile boolean mSend3AResults = true;
+    private volatile boolean mAllowAFNotFocusLocked = false;
     private final LinkedBlockingQueue<String> unavailableEventQueue = new LinkedBlockingQueue<>();
     private final LinkedBlockingQueue<Pair<String, String>> unavailablePhysicalCamEventQueue =
                 new LinkedBlockingQueue<>();
@@ -2350,6 +2351,7 @@ public class ItsService extends Service implements SensorEventListener {
                 // values, waiting until the HAL has reported that the lock was successful.
                 mNeedsLockedAE = params.optBoolean(LOCK_AE_KEY, false);
                 mNeedsLockedAWB = params.optBoolean(LOCK_AWB_KEY, false);
+                mAllowAFNotFocusLocked = params.optBoolean(ALLOW_AF_NOT_FOCUS_LOCKED_KEY, false);
                 mConvergedAE = false;
                 mConvergedAWB = false;
                 mConvergedAF = false;
@@ -4948,8 +4950,21 @@ public class ItsService extends Service implements SensorEventListener {
                     }
                 }
                 if (result.get(CaptureResult.CONTROL_AF_STATE) != null) {
-                    mConvergedAF = result.get(CaptureResult.CONTROL_AF_STATE)
-                             == CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED;
+                    Integer afState = result.get(CaptureResult.CONTROL_AF_STATE);
+                    mConvergedAF =
+                            (afState == CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED)
+                                    || (mAllowAFNotFocusLocked
+                                            && (afState
+                                                    == CaptureResult
+                                                            .CONTROL_AF_STATE_NOT_FOCUSED_LOCKED));
+                    Log.i(
+                            TAG,
+                            "afState = "
+                                    + afState
+                                    + ", mAllowAFNotFocusLocked: "
+                                    + mAllowAFNotFocusLocked
+                                    + ", mConvergedAF: "
+                                    + mConvergedAF);
                 }
                 if (result.get(CaptureResult.CONTROL_AWB_STATE) != null) {
                     mConvergedAWB = result.get(CaptureResult.CONTROL_AWB_STATE)
