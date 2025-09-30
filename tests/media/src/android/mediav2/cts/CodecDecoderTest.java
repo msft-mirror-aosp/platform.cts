@@ -26,6 +26,7 @@ import static android.media.tv.flags.Flags.FLAG_APPLY_PICTURE_PROFILES;
 import static android.media.tv.flags.Flags.FLAG_MEDIA_QUALITY_FW;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
+import static android.mediav2.cts.DolbyVisionDecoderParamPreparer.getDvTestParams;
 
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableIamf;
@@ -263,6 +264,7 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
                     {MediaFormat.MIMETYPE_AUDIO_EAC3, "audio/eac3_510_48kHz_256.mp4", null, -1.0f,
                             -1L, CODEC_OPTIONAL},
             }));
+            exhaustiveArgsList.addAll(getDvTestParams(CodecDecoderTest.class));
         }
         if (IS_AFTER_B && iamfDefinitionsApi() && extractorMp4EnableIamf()) {
             exhaustiveArgsList.add(new Object[] {MediaFormat.MIMETYPE_AUDIO_IAMF,

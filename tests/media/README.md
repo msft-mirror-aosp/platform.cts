@@ -105,6 +105,7 @@ atest MctsMediaV2TestCases -- --module-arg MctsMediaV2TestCases:instrumentation-
 | mpeg4 | video/mp4v-es |
 | h263 | video/3gpp |
 | mpeg2 | video/mpeg2 |
+| dolbyvision | video/dolby-vision |
 | vraw | video/raw |
 | amrnb | audio/3gpp |
 | amrwb | audio/amr-wb |

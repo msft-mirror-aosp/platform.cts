@@ -191,6 +191,7 @@ public abstract class CodecTestBase {
     public static final HashMap<String, int[]> PROFILE_HLG_MAP = new HashMap<>();
     public static final HashMap<String, int[]> PROFILE_HDR10_MAP = new HashMap<>();
     public static final HashMap<String, int[]> PROFILE_HDR10_PLUS_MAP = new HashMap<>();
+    public static final HashMap<String, int[]> PROFILE_DOLBY_HDR_MAP = new HashMap<>();
     public static final HashMap<String, int[]> PROFILE_HDR_MAP = new HashMap<>();
     public static final boolean ENABLE_LOGS = false;
     public static final int PER_TEST_TIMEOUT_LARGE_TEST_MS = 300000;
@@ -204,6 +205,14 @@ public abstract class CodecTestBase {
     public static final String INVALID_CODEC = "unknown.codec_";
     public static final String MIMETYPE_VIDEO_VC1 = "video/wvc1";
     public static final String MIMETYPE_VIDEO_WMV = "video/x-ms-wmv";
+    // Arrays,
+    // <MEDIATYPE>_PROFILES contains all profiles of that media type
+    // <MEDIATYPE>_SDR_PROFILES contains all sdr profiles of that media type
+    // <MEDIATYPE>_HLG_PROFILES contains all hlg profiles of that media type
+    // <MEDIATYPE>_HDR10_PROFILES contains all hdr10 profiles of that media type
+    // <MEDIATYPE>_HDR10_PLUS_PROFILES contains all hdr10+ profiles of that media type
+    // <MEDIATYPE>_HDR_PROFILES = <MEDIATYPE>_[HLG + HDR10 + HDR10_PLUS]_PROFILES
+    // <MEDIATYPE>_PROFILES = <MEDIATYPE>_[SDR + HDR]_PROFILES
     static final int[] MPEG2_PROFILES = new int[]{MPEG2ProfileSimple, MPEG2ProfileMain,
             MPEG2Profile422, MPEG2ProfileSNR, MPEG2ProfileSpatial, MPEG2ProfileHigh};
     static final int[] MPEG4_PROFILES = new int[]{MPEG4ProfileSimple, MPEG4ProfileSimpleScalable,
@@ -459,6 +468,7 @@ public abstract class CodecTestBase {
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("mpeg4", MediaFormat.MIMETYPE_VIDEO_MPEG4);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("h263", MediaFormat.MIMETYPE_VIDEO_H263);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("mpeg2", MediaFormat.MIMETYPE_VIDEO_MPEG2);
+        CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("dolbyvision", MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("vraw", MediaFormat.MIMETYPE_VIDEO_RAW);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("amrnb", MediaFormat.MIMETYPE_AUDIO_AMR_NB);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("amrwb", MediaFormat.MIMETYPE_AUDIO_AMR_WB);
@@ -515,6 +525,9 @@ public abstract class CodecTestBase {
         PROFILE_HDR10_PLUS_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_HDR10_PLUS_PROFILES);
         PROFILE_HDR10_PLUS_MAP.put(MediaFormat.MIMETYPE_VIDEO_APV, APV_HDR10_PLUS_PROFILES);
 
+        PROFILE_DOLBY_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION,
+                DOLBY_VISION_HDR_PROFILES);
+
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_AVC, AVC_HDR_PROFILES);
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_HDR_PROFILES);
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HDR_PROFILES);
@@ -531,6 +544,7 @@ public abstract class CodecTestBase {
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_PROFILES);
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_PROFILES);
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_APV, APV_HDR_PROFILES);
+        PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION, DOLBY_VISION_HDR_PROFILES);
         PROFILE_MAP.put(MediaFormat.MIMETYPE_AUDIO_AAC, AAC_PROFILES);
         PROFILE_MAP.put(MediaFormat.MIMETYPE_AUDIO_AC4, AC4_PROFILES);
         if (IS_AFTER_B) {
