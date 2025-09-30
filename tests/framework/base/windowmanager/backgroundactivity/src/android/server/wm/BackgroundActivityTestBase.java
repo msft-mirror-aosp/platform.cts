@@ -26,6 +26,7 @@ import static android.server.wm.backgroundactivity.appa.Components.APP_A_PACKAGE
 import static android.server.wm.backgroundactivity.appa.Components.APP_A_SIMPLE_ADMIN_RECEIVER;
 import static android.server.wm.backgroundactivity.appa33.Components.APP_A_33_PACKAGE_NAME;
 import static android.server.wm.backgroundactivity.appa36.Components.APP_A_36_PACKAGE_NAME;
+import static android.server.wm.backgroundactivity.appasmoptout.Components.APP_ASM_OPT_OUT_PACKAGE_NAME;
 import static android.server.wm.backgroundactivity.appb.Components.APP_B_PACKAGE_NAME;
 import static android.server.wm.backgroundactivity.appb33.Components.APP_B_33_PACKAGE_NAME;
 import static android.server.wm.backgroundactivity.appc.Components.APP_C_PACKAGE_NAME;
@@ -77,6 +78,7 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
                     APP_A_PACKAGE_NAME,
                     APP_A_33_PACKAGE_NAME,
                     APP_A_36_PACKAGE_NAME,
+                    APP_ASM_OPT_OUT_PACKAGE_NAME,
                     APP_B_PACKAGE_NAME,
                     APP_B_33_PACKAGE_NAME,
                     APP_C_PACKAGE_NAME,
