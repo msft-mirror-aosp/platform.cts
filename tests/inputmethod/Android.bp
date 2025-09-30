@@ -21,8 +21,10 @@ android_test {
     name: "CtsInputMethodTestCases",
     defaults: ["cts_defaults"],
     // Tag this module as a cts test artifact
+    // Adding the test KeyboardVisibilityControlTest to CTS downstreaming to be run in GTS
     test_suites: [
         "cts",
+        "gts",
         "general-tests",
         // This is an equivalent of general-tests for automotive.
         // It helps manage the build time on automotive branches.

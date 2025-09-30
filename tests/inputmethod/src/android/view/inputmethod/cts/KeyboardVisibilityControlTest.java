@@ -127,7 +127,9 @@ import androidx.test.uiautomator.Until;
 
 import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.bedstead.harrier.annotations.RequireNotWatch;
+import com.android.bedstead.harrier.annotations.RequireSdkVersion;
 import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsers;
+import com.android.compatibility.common.util.CtsDownstreamingTest;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.UserHelper;
 import com.android.cts.input.UinputTouchScreen;
@@ -157,6 +159,7 @@ import java.util.function.Predicate;
 
 @MediumTest
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
+@RequireSdkVersion(min = 36)
 public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -403,6 +406,7 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
      * next back event is sent to the app.
      */
     @Test
+    @CtsDownstreamingTest
     public void testHideImeAfterBackPressed_inSecondActivityAfterProcessSwitch() throws Exception {
         final Context context = mInstrumentation.getTargetContext();
 
