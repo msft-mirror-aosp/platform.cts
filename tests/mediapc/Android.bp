@@ -23,6 +23,7 @@ android_test {
     defaults: ["cts_defaults"],
     compile_multilib: "both",
     static_libs: [
+        "android.media.extractor.flags-aconfig-java",
         "compatibility-device-util-axt",
         "ctsmediav2common",
         "ctstestrunner-axt",

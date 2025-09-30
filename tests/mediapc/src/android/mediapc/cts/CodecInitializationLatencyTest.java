@@ -16,15 +16,22 @@
 
 package android.mediapc.cts;
 
+import static android.media.audio.Flags.iamfDefinitionsApi;
+import static android.media.codec.Flags.apvSupport;
 import static android.mediapc.cts.CodecTestBase.codecFilter;
 import static android.mediapc.cts.CodecTestBase.codecPrefix;
 import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
+import static android.mediav2.common.cts.CodecTestBase.IS_AFTER_B;
+import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_B;
 import static android.mediav2.common.cts.CodecTestBase.areFormatsSupported;
 import static android.mediav2.common.cts.CodecTestBase.compileMediaTypesList;
 import static android.mediav2.common.cts.CodecTestBase.getCodecCapabilities;
 import static android.mediav2.common.cts.CodecTestBase.getCodecInfo;
 import static android.mediav2.common.cts.CodecTestBase.selectCodecs;
 import static android.mediav2.common.cts.CodecTestBase.selectHardwareCodecs;
+
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableIamf;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -86,7 +93,6 @@ public class CodecInitializationLatencyTest {
     private static final Map<String, String> mTestFiles = new HashMap<>();
 
     static {
-        // TODO(b/222006626): Add tests vectors for remaining media types
         // Audio media types
         mTestFiles.put(MediaFormat.MIMETYPE_AUDIO_AAC, "bbb_stereo_48kHz_128kbps_aac.mp4");
         mTestFiles.put(MediaFormat.MIMETYPE_AUDIO_AMR_NB, "bbb_mono_8kHz_12.2kbps_amrnb.3gp");
@@ -99,6 +105,14 @@ public class CodecInitializationLatencyTest {
         mTestFiles.put(MediaFormat.MIMETYPE_AUDIO_OPUS, "bbb_2ch_48kHz_opus.mka");
         mTestFiles.put(MediaFormat.MIMETYPE_AUDIO_RAW, "bbb_1ch_8kHz.wav");
         mTestFiles.put(MediaFormat.MIMETYPE_AUDIO_VORBIS, "bbb_stereo_48kHz_128kbps_vorbis.ogg");
+        if (IS_AFTER_B) {
+            if (iamfDefinitionsApi() && extractorMp4EnableIamf()) {
+                mTestFiles.put(MediaFormat.MIMETYPE_AUDIO_IAMF, "7_1_4_Opus_no_video.mp4");
+            }
+            mTestFiles.put(MediaFormat.MIMETYPE_AUDIO_AC3, "ac3_200_48kHz_128.mp4");
+            mTestFiles.put(MediaFormat.MIMETYPE_AUDIO_AC4, "ac4_510_48kHz_128.mp4");
+            mTestFiles.put(MediaFormat.MIMETYPE_AUDIO_EAC3, "eac3_200_48kHz_128.mp4");
+        }
 
         // Video media types
         mTestFiles.put(MediaFormat.MIMETYPE_VIDEO_AV1, "bbb_1920x1080_4mbps_30fps_av1.mp4");
@@ -111,6 +125,10 @@ public class CodecInitializationLatencyTest {
         mTestFiles.put(MediaFormat.MIMETYPE_VIDEO_MPEG4, "bbb_cif_768kbps_30fps_mpeg4.mkv");
         mTestFiles.put(MediaFormat.MIMETYPE_VIDEO_VP8, "bbb_1920x1080_6mbps_30fps_vp8.webm");
         mTestFiles.put(MediaFormat.MIMETYPE_VIDEO_VP9, "bbb_1920x1080_4mbps_30fps_vp9.webm");
+        if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
+            mTestFiles.put(
+                    MediaFormat.MIMETYPE_VIDEO_APV, "pattern_1280x720_30fps_30mbps_apv_10bit.mp4");
+        }
     }
 
     @Rule(order = 1)
