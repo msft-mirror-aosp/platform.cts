@@ -31,6 +31,7 @@ import android.media.cts.InputSurface;
 import android.media.cts.OutputSurface;
 import android.mediapc.cts.common.CodecMetrics;
 import android.mediav2.common.cts.CodecAsyncHandler;
+import android.mediav2.common.cts.CodecTestBase;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Surface;

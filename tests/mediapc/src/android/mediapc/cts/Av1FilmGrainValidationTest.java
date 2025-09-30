@@ -16,7 +16,7 @@
 
 package android.mediapc.cts;
 
-import static android.mediapc.cts.CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS;
+import static android.mediav2.common.cts.CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS;
 import static android.mediav2.common.cts.CodecTestBase.selectHardwareCodecs;
 
 import android.media.MediaFormat;

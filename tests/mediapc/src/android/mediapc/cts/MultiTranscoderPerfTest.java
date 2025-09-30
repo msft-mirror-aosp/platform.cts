@@ -16,9 +16,9 @@
 
 package android.mediapc.cts;
 
-import static android.mediapc.cts.CodecTestBase.codecFilter;
-import static android.mediapc.cts.CodecTestBase.codecPrefix;
-import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
+import static android.mediav2.common.cts.CodecTestBase.codecFilter;
+import static android.mediav2.common.cts.CodecTestBase.codecPrefix;
+import static android.mediav2.common.cts.CodecTestBase.mediaTypePrefix;
 
 import static org.junit.Assert.assertTrue;
 
@@ -32,6 +32,7 @@ import android.mediapc.cts.common.Requirements.ConcurrentHDRTranscodingSessionsR
 import android.mediapc.cts.common.Requirements.ConcurrentVideoTranscodingSessionsRequirement;
 import android.mediapc.cts.common.Requirements.VideoTranscodingInstancesRequirement;
 import android.mediapc.cts.common.Utils;
+import android.mediav2.common.cts.CodecTestBase;
 import android.util.Pair;
 import android.view.Surface;
 

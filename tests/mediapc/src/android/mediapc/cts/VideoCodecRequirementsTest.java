@@ -41,6 +41,7 @@ import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.PerformanceClassTestRule;
 import android.mediapc.cts.common.Preconditions;
 import android.mediapc.cts.common.Requirements;
+import android.mediav2.common.cts.CodecTestBase;
 import android.mediav2.common.cts.CodecTestBase.ComponentClass;
 import android.util.Log;
 import android.util.Range;
