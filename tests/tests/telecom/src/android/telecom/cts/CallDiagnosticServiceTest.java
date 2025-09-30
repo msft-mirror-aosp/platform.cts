@@ -233,6 +233,25 @@ public class CallDiagnosticServiceTest extends BaseTelecomTestWithMockServices {
     }
 
     /**
+     * Test sending a device to device message. This is not actually used, but because APIs are
+     * forever we need to test and cover it.
+     * @throws InterruptedException
+     */
+    public void testSendDeviceToDeviceMessage() throws InterruptedException {
+        if (!shouldTestTelecom(mContext) || !TestUtils.hasTelephonyFeature(mContext)) {
+            return;
+        }
+        setupCall();
+
+        CtsCallDiagnosticService.CtsCallDiagnostics diagnosticCall = mService.getCalls().get(0);
+
+        final TestUtils.InvokeCounter counter = mConnection.getInvokeCounter(
+                MockConnection.ON_CALL_EVENT);
+        diagnosticCall.sendDeviceToDeviceMessage(1, 1);
+        counter.waitForCount(1, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+    }
+
+    /**
      * Test routing of a clear diagnostic message from the CallDiagnosticService to the dialer.
      * @throws InterruptedException
      */
