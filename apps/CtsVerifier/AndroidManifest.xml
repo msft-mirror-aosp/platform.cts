@@ -7029,6 +7029,9 @@
             <meta-data android:name="android.appwidget.provider"
                 android:resource="@xml/generated_previews_widget_info" />
         </receiver>
+        <meta-data
+            android:name="android.software.car.display_compatibility"
+            android:value="false" />
     </application>
 
     <queries>
