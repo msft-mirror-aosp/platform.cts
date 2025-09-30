@@ -181,9 +181,12 @@ public class WifiInfoTest extends WifiJUnit4TestBase{
 
         setWifiEnabled(false);
 
-        PollingCheck.check("getNetworkId not -1", 20000,
-                () -> sWifiManager.getConnectionInfo().getSupplicantState()
-                        == SupplicantState.DISCONNECTED);
+        PollingCheck.check(
+                "getSupplicantState not UNINITIALIZED",
+                20000,
+                () ->
+                        sWifiManager.getConnectionInfo().getSupplicantState()
+                                == SupplicantState.UNINITIALIZED);
 
         PollingCheck.check("getWifiState not disabled", 20000,
                 () -> sWifiManager.getWifiState() == WifiManager.WIFI_STATE_DISABLED);
