@@ -1046,6 +1046,18 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
     }
 
     /**
+     * Stub test to verify coverage of {@code Connection#onHandoverComplete}; this API is not used
+     * any more, but APIs are forever so we need to have skeletal coverage.
+     */
+    public void testHandoverComplete() {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+
+        mConnection.onHandoverComplete();
+    }
+
+    /**
      * Tests that {@link Call} events are propagated from {@link Call#sendCallEvent(String, Bundle)}
      * to {@link Connection#onCallEvent(String, Bundle)}.
      */

@@ -32,6 +32,7 @@ import androidx.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 
 public class CtsCallDiagnosticService extends CallDiagnosticService {
     private static final String LOG_TAG = "CtsCallDiagnosticService";
@@ -142,12 +143,24 @@ public class CtsCallDiagnosticService extends CallDiagnosticService {
 
     @NonNull
     @Override
+    public Executor getExecutor() {
+        return super.getExecutor();
+    }
+
+    @NonNull
+    @Override
     public CallDiagnostics onInitializeCallDiagnostics(@NonNull Call.Details call) {
         CtsCallDiagnostics diagCall = new CtsCallDiagnostics();
         diagCall.mCallDetails = call;
         mCalls.add(diagCall);
         mChangeLatch.countDown();
         mChangeLatch = new CountDownLatch(1);
+
+        // Ensure we can call getExecutor; technically we're supposed to override this method if we
+        // want to provide a custom executor.  However for CTS coverage purposes sometimes that is
+        // not enough to ensure coverage.  So we'll call the getter even though we override it
+        // above.
+        getExecutor();
         return diagCall;
     }
 
