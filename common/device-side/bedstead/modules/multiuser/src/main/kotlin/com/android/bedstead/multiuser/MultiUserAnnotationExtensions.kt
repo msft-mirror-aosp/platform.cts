@@ -34,7 +34,7 @@ import com.android.bedstead.multiuser.annotations.RequireRunOnVisibleBackgroundN
 import com.android.bedstead.multiuser.annotations.RequireUserSupported
 import com.android.bedstead.multiuser.annotations.RequireVisibleBackgroundUsers
 import com.android.bedstead.multiuser.annotations.RequireVisibleBackgroundUsersOnDefaultDisplay
-import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
+import com.android.bedstead.multiuser.annotations.EnsureCanAddSecondaryUser
 import com.android.bedstead.multiuser.annotations.RequireHasMainUser
 import com.android.bedstead.multiuser.annotations.meta.EnsureHasNoUserAnnotation
 import com.android.bedstead.nene.TestApis.users
@@ -144,18 +144,23 @@ fun RequireRunNotOnVisibleBackgroundNonProfileUser.logic() {
 }
 
 /**
- * See [EnsureCanAddUser]
+ * See [EnsureCanAddSecondaryUser]
  */
-fun EnsureCanAddUser.logic() {
-    val maxUsers: Int = users().maxNumberOfUsersSupported
-    val currentUsers = users().all().size
+fun EnsureCanAddSecondaryUser.logic() {
+    val secondaryUserType = users().supportedType(UserType.SECONDARY_USER_TYPE_NAME)
+    if (secondaryUserType == null) {
+        failOrSkip("Secondary users are not supported.", failureMode)
+        return
+    }
 
     // TODO(scottjonathan): Try to remove users until we have space - this will have to take
     // into account other users which have been added during the setup of this test.
+
+    val remainingCount = users().getRemainingCreatableUserCount(secondaryUserType)
     checkFailOrSkip(
-        "The device does not have space for $number additional user(s) " +
-                "($currentUsers current users, $maxUsers max users)",
-        currentUsers + number <= maxUsers,
+        "The device does not have space for $number additional secondary user(s). " +
+                "Remaining: $remainingCount",
+        remainingCount >= number,
         failureMode
     )
 }

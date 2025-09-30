@@ -87,7 +87,7 @@ import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireNotTv;
 import com.android.bedstead.harrier.annotations.RequireResourcesIntegerValue;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
-import com.android.bedstead.multiuser.annotations.EnsureCanAddUser;
+import com.android.bedstead.multiuser.annotations.EnsureCanAddSecondaryUser;
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser;
 import com.android.bedstead.multiuser.annotations.EnsureHasPrivateProfile;
@@ -842,7 +842,7 @@ public final class UserManagerTest {
     @Test
     @EnsureHasPermission(CREATE_USERS)
     @EnsureHasNoAdditionalUser
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     @EnsureHasNoAccounts
     public void testSomeUserHasAccount() {
         // TODO: (b/233197356): Replace with bedstead annotation.
@@ -861,7 +861,7 @@ public final class UserManagerTest {
     @Test
     @EnsureHasPermission(CREATE_USERS)
     @EnsureHasNoAdditionalUser
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     @EnsureHasNoAccounts
     public void testSomeUserHasAccount_shouldIgnoreToBeRemovedUsers() {
         // TODO: (b/233197356): Replace with bedstead annotation.
@@ -888,7 +888,7 @@ public final class UserManagerTest {
             "android.os.UserManager#isUserOfType"})
     @EnsureHasPermission(CREATE_USERS)
     @EnsureHasNoAdditionalUser
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     @EnsureHasNoAccounts
     public void testCreateUser_withNewUserRequest_shouldCreateUserWithCorrectProperties()
             throws PackageManager.NameNotFoundException {
@@ -925,7 +925,7 @@ public final class UserManagerTest {
     @Test
     @EnsureHasPermission(CREATE_USERS)
     @EnsureHasNoAdditionalUser
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     @EnsureHasNoAccounts
     public void testCreateUser_withNewUserRequest_shouldNotAllowDuplicateUserAccounts() {
         // TODO: (b/233197356): Replace with bedstead annotation.

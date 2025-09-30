@@ -32,7 +32,7 @@ import com.android.bedstead.enterprise.policies.DisallowRemoveUser
 import com.android.bedstead.enterprise.policies.DisallowUserSwitch
 import com.android.bedstead.enterprise.policies.ReceiveUserCallbacks
 import com.android.bedstead.multiuser.additionalUser
-import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
+import com.android.bedstead.multiuser.annotations.EnsureCanAddSecondaryUser
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser
 import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser
@@ -247,7 +247,7 @@ class UserTest {
 
     // TODO: Figure out how to add tests that the broadcasts ARE NOT received by other types of DPC
 
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     @CanSetPolicyTest(policy = [ReceiveUserCallbacks::class])
     @ApiTest(apis = ["android.app.admin.DeviceAdminReceiver#onUserAdded"])
     fun addUser_userAddedCallbackIsReceived() {
@@ -274,7 +274,7 @@ class UserTest {
             .eventOccurred()
     }
 
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     @CanSetPolicyTest(policy = [ReceiveUserCallbacks::class])
     @EnsureHasAdditionalUser(switchedToUser = FALSE)
     @ApiTest(apis = ["android.app.admin.DeviceAdminReceiver#onUserStarted"])
@@ -289,7 +289,7 @@ class UserTest {
             .eventOccurred()
     }
 
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     @CanSetPolicyTest(policy = [ReceiveUserCallbacks::class])
     @EnsureHasAdditionalUser(switchedToUser = FALSE)
     @ApiTest(apis = ["android.app.admin.DeviceAdminReceiver#onUserStopped"])
@@ -304,7 +304,7 @@ class UserTest {
             .eventOccurred()
     }
 
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     @CanSetPolicyTest(policy = [ReceiveUserCallbacks::class])
     @EnsureHasAdditionalUser(switchedToUser = FALSE)
     @ApiTest(apis = ["android.app.admin.DeviceAdminReceiver#onUserSwitched"])
