@@ -24,14 +24,18 @@ import android.hardware.cts.R;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
+import com.android.cts.input.DebugInputRule;
 import com.android.cts.kernelinfo.KernelInfo;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class SonyDualshock4BluetoothTest extends InputHidTestCase {
+
+    @Rule public DebugInputRule mDebugInputRule = new DebugInputRule();
 
     // Simulates the behavior of PlayStation DualShock4 gamepad (model CUH-ZCT1U)
     public SonyDualshock4BluetoothTest() {
@@ -59,6 +63,7 @@ public class SonyDualshock4BluetoothTest extends InputHidTestCase {
     }
 
     @Test
+    @DebugInputRule.DebugInput(bug = 437684441)
     public void testBattery() {
         testInputBatteryEvents(R.raw.sony_dualshock4_bluetooth_batteryeventtests);
     }
