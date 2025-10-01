@@ -50,6 +50,7 @@ import android.graphics.Color;
 import android.graphics.Insets;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Pair;
@@ -539,6 +540,8 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
                                     TestActivity2.class);
             expectImeInvisible(TIMEOUT);
 
+            final boolean isVerticallySplit = isVerticallySplit(primaryActivity, secondaryActivity);
+
             final EditText primaryEditText = primaryEditTextRef.get();
             final var display = primaryEditText.getContext().getDisplay();
             try (var touch = new UinputTouchScreen(mInstrumentation, display)) {
@@ -556,8 +559,10 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
 
                 mInstrumentation.waitForIdleSync();
 
-                primaryInsetsListener.assertChangeCount(
-                        "Insets should become visible once on primary activity", 1);
+                if (!isVerticallySplit) {
+                    primaryInsetsListener.assertChangeCount(
+                            "Insets should become visible once on primary activity", 1);
+                }
                 secondaryInsetsListener.assertChangeCount(
                         "Insets should become visible once on secondary activity", 1);
 
@@ -588,8 +593,10 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
 
             mInstrumentation.waitForIdleSync();
 
-            primaryInsetsListener.assertChangeCount(
-                    "Insets should become invisible once on primary activity", 1);
+            if (!isVerticallySplit) {
+                primaryInsetsListener.assertChangeCount(
+                        "Insets should become invisible once on primary activity", 1);
+            }
             secondaryInsetsListener.assertChangeCount(
                     "Insets should become invisible once on secondary activity", 1);
         }
@@ -706,5 +713,11 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
                 .getTargetContext().getSystemService(InputMethodManager.class);
         assertNotNull(imm);
         return imm;
+    }
+
+    private static boolean isVerticallySplit(Activity act1, Activity act2) {
+        final Rect r1 = act1.getWindowManager().getCurrentWindowMetrics().getBounds();
+        final Rect r2 = act2.getWindowManager().getCurrentWindowMetrics().getBounds();
+        return r1.left == r2.left && r1.right == r2.right && r1.bottom <= r2.top;
     }
 }
