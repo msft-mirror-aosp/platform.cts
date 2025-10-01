@@ -163,8 +163,8 @@ public class VideoEncoderValidationTestBase extends CodecEncoderTestBase {
     }
 
     protected void enqueueInput(int bufferIndex) {
-        int frmSize = getVideoFrameSize(mActiveRawRes.mWidth, mActiveRawRes.mHeight,
-                mActiveRawRes.mColorFormat);
+        int frmSize = 3 * mActiveRawRes.mBytesPerSample * mActiveRawRes.mWidth
+                * mActiveRawRes.mHeight / 2;
         if (mInputData == null || mInputData.length != frmSize) {
             mInputData = new byte[frmSize];
         }
@@ -186,8 +186,8 @@ public class VideoEncoderValidationTestBase extends CodecEncoderTestBase {
                     + mTestConfig + mTestEnv, mFileReadOffset, mFileLength);
             enqueueEOS(bufferIndex);
         } else {
-            int size = getVideoFrameSize(mActiveEncCfg.mWidth, mActiveEncCfg.mHeight,
-                    mActiveRawRes.mColorFormat);
+            int size = mActiveRawRes.mBytesPerSample * mActiveEncCfg.mWidth
+                    * mActiveEncCfg.mHeight * 3 / 2;
             int flags = 0;
             long pts = mInputOffsetPts + mInputCount * 1000000L / mActiveEncCfg.mFrameRate;
 

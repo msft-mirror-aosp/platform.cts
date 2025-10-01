@@ -64,8 +64,6 @@ public class RawResource {
         private int mColorFormat = ImageFormat.UNKNOWN;
         private int mSampleRate;
         private int mChannelCount;
-        // For video, this represents bytes per sample per plane. For audio, this represents
-        // bytes per sample per channel
         private int mBytesPerSample;
         private int mAudioEncoding = AudioFormat.ENCODING_INVALID;
 
