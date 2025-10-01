@@ -122,8 +122,9 @@ public class HDREncoderTestBase extends CodecEncoderTestBase {
                             .getKey();
             frameLimit = (int) (lastHdr10PlusFramePts * mActiveEncCfg.mFrameRate / 1000000L) + 10;
         }
-        int maxNumFrames = mInputData.length
-                / (mActiveRawRes.mWidth * mActiveRawRes.mHeight * mActiveRawRes.mBytesPerSample);
+        int maxNumFrames =
+                mInputData.length / getVideoFrameSize(mActiveRawRes.mWidth, mActiveRawRes.mHeight,
+                        mActiveRawRes.mColorFormat);
         assertTrue("HDR info tests require input file with at least " + frameLimit + " frames. "
                 + mActiveRawRes.mFileName + " has " + maxNumFrames + " frames. \n" + mTestConfig
                 + mTestEnv, frameLimit <= maxNumFrames);
