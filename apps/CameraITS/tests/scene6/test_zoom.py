@@ -34,6 +34,8 @@ _TEST_REQUIRED_MPC = 33
 _SAVE_IMAGE_DELAY = 5  # empirically determined
 # Wider zoom ratio range will be tested by test_zoom_tele
 _WIDE_ZOOM_RATIO_MAX = 4.0
+_CTS_VERIFIER_PACKAGE_NAME = 'com.android.cts.verifier'
+_JETPACK_CAMERA_APP_PACKAGE_NAME = 'com.google.jetpackcamera'
 
 
 class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
