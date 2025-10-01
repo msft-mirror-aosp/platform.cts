@@ -79,6 +79,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
@@ -304,7 +305,7 @@ public class WindowInputTests {
         });
 
         mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
-        assertEquals(0, mClickCount);
+        assertEquals("Wrong number of clicks", 0, mClickCount);
     }
 
     // If a window is obscured by another window from the same app, touches should still get
@@ -333,12 +334,12 @@ public class WindowInputTests {
 
         mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
 
-        assertTrue(touchReceived.get());
+        assertTrue("Did not receive any touch input", touchReceived.get());
         assertEquals(
                 0,
                 eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS)
                         & MotionEvent.FLAG_WINDOW_IS_OBSCURED);
-        assertEquals(1, mClickCount);
+        assertEquals("Wrong number of clicks", 1, mClickCount);
     }
 
     @Test
@@ -371,8 +372,8 @@ public class WindowInputTests {
             mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
 
             // Touch not received due to setFilterTouchesWhenObscured(true)
-            assertFalse(touchReceived.get());
-            assertEquals(0, mClickCount);
+            assertFalse("Should not receive any touch input", touchReceived.get());
+            assertEquals("Wrong number of clicks", 0, mClickCount);
         }
     }
 
@@ -406,12 +407,13 @@ public class WindowInputTests {
         try (var overlay = addForeignOverlayWindow(overlayConfig)) {
             mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
 
-            assertTrue(touchReceived.get());
+            assertTrue("Did not receive any touch input", touchReceived.get());
             assertEquals(
+                    "Window was not obscured",
                     MotionEvent.FLAG_WINDOW_IS_OBSCURED,
                     eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS)
                             & MotionEvent.FLAG_WINDOW_IS_OBSCURED);
-            assertEquals(1, mClickCount);
+            assertEquals("Wrong number of clicks", 1, mClickCount);
         }
     }
 
@@ -440,12 +442,12 @@ public class WindowInputTests {
         try (var overlay = addForeignOverlayWindow(overlayConfig)) {
             mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
 
-            assertTrue(touchReceived.get());
+            assertTrue("Did not receive any touch input", touchReceived.get());
             assertEquals(
                     0,
                     eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS)
                             & MotionEvent.FLAG_WINDOW_IS_OBSCURED);
-            assertEquals(1, mClickCount);
+            assertEquals("Wrong number of clicks", 1, mClickCount);
         }
     }
 
@@ -478,12 +480,13 @@ public class WindowInputTests {
         try (var overlay = addForeignOverlayWindow(overlayConfig)) {
             mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
 
-            assertTrue(touchReceived.get());
+            assertTrue("Did not receive any touch input", touchReceived.get());
             assertEquals(
+                    "Window was not obscured",
                     MotionEvent.FLAG_WINDOW_IS_OBSCURED,
                     eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS)
                             & MotionEvent.FLAG_WINDOW_IS_OBSCURED);
-            assertEquals(1, mClickCount);
+            assertEquals("Wrong number of clicks", 1, mClickCount);
         }
     }
 
@@ -520,12 +523,13 @@ public class WindowInputTests {
         try (var overlay = addForeignOverlayWindow(overlayConfig)) {
             mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
 
-            assertTrue(touchReceived.get());
+            assertTrue("Did not receive any touch input", touchReceived.get());
             assertEquals(
+                    "Window was not partially obscured",
                     MotionEvent.FLAG_WINDOW_IS_PARTIALLY_OBSCURED,
                     eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS)
                             & MotionEvent.FLAG_WINDOW_IS_PARTIALLY_OBSCURED);
-            assertEquals(1, mClickCount);
+            assertEquals("Wrong number of clicks", 1, mClickCount);
         }
     }
 
@@ -557,11 +561,11 @@ public class WindowInputTests {
         try (var overlay = addForeignOverlayWindow(overlayConfig)) {
             mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
 
-            assertTrue(touchReceived.get());
+            assertTrue("Did not receive any touch input", touchReceived.get());
             assertEquals(0, eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS) & (
                     MotionEvent.FLAG_WINDOW_IS_OBSCURED
                             | MotionEvent.FLAG_WINDOW_IS_PARTIALLY_OBSCURED));
-            assertEquals(1, mClickCount);
+            assertEquals("Wrong number of clicks", 1, mClickCount);
         }
     }
 
@@ -579,7 +583,7 @@ public class WindowInputTests {
 
             mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
         }
-        assertEquals(1, mClickCount);
+        assertEquals("Wrong number of clicks", 1, mClickCount);
     }
 
     @Test
@@ -612,7 +616,7 @@ public class WindowInputTests {
                 overlapView.getDisplay().getDisplayId()));
 
         mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
-        assertEquals(1, mClickCount);
+        assertEquals("Wrong number of clicks", 1, mClickCount);
     }
 
     @Test
@@ -631,9 +635,10 @@ public class WindowInputTests {
 
         mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
 
-        assertEquals(1, events.size());
+        assertEquals("Wrong number of events", 1, events.size());
         MotionEvent event = events.iterator().next();
-        assertEquals(MotionEvent.ACTION_OUTSIDE, event.getAction());
+        assertEquals("Expected motion event ACTION_OUTSIDE", MotionEvent.ACTION_OUTSIDE,
+                event.getAction());
     }
 
     @Test
@@ -655,9 +660,10 @@ public class WindowInputTests {
         // Tap outside the untouchable window
         mCtsTouchUtils.emulateTapOnView(mInstrumentation, mActivityRule, mView, size + 5, size + 5);
 
-        assertEquals(1, events.size());
+        assertEquals("Wrong number of events", 1, events.size());
         MotionEvent event = events.iterator().next();
-        assertEquals(MotionEvent.ACTION_OUTSIDE, event.getAction());
+        assertEquals("Expected motion event ACTION_OUTSIDE", MotionEvent.ACTION_OUTSIDE,
+                event.getAction());
     }
 
     @Test
@@ -770,7 +776,7 @@ public class WindowInputTests {
     }
 
     public static class TestActivity extends Activity {
-        private ArrayList<View> mViews = new ArrayList<>();
+        private final List<View> mViews = new ArrayList<>();
 
         @Override
         protected void onCreate(Bundle savedInstanceState) {
