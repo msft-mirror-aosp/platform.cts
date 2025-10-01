@@ -55,8 +55,9 @@ import java.util.stream.Collectors;
 public class CallSequencingMultiCallingTests extends BaseAppVerifier {
     public static final String TAG = "CallSequencingTests";
 
-    private static class CallParameters {
-        private List<Integer> mSequence;
+    public static class CallParameters {
+        private final List<Integer> mSequence;
+
         CallParameters(List<Integer> callSequence) {
             mSequence = callSequence;
         }
@@ -65,13 +66,7 @@ public class CallSequencingMultiCallingTests extends BaseAppVerifier {
         }
         @Override
         public String toString() {
-            StringBuilder nameBuilder = new StringBuilder();
-            mSequence.stream().map(i -> CALL_TYPE_NAME[i]).forEach(s -> {
-                nameBuilder.append(" ");
-                nameBuilder.append(s);
-                nameBuilder.append(" ");
-            });
-            return nameBuilder.toString();
+            return mSequence.stream().map(i -> CALL_TYPE_NAME[i]).collect(Collectors.joining("."));
         }
     }
 
@@ -119,8 +114,8 @@ public class CallSequencingMultiCallingTests extends BaseAppVerifier {
                         }
                     }).collect(Collectors.toList());
             // Place first call
-            AppControlWrapper app = apps.get(0);
-            CallAttributes attr = attrs.get(0);
+            AppControlWrapper app = apps.getFirst();
+            CallAttributes attr = attrs.getFirst();
             String c1 = addCallAndVerify(app, attr, c1Validator);
             if (attr.getDirection() == CallAttributes.DIRECTION_INCOMING) {
                 answerViaInCallService(c1, VideoProfile.STATE_AUDIO_ONLY);
@@ -152,7 +147,7 @@ public class CallSequencingMultiCallingTests extends BaseAppVerifier {
                 verifyCallIsInState(c2, STATE_ACTIVE);
                 // Skip verification if the test apps are the same. Sequencing should really only
                 // be verified across phone accounts.
-                if (app.getTelecomApps() != apps.get(0).getTelecomApps()) {
+                if (app.getTelecomApps() != apps.getFirst().getTelecomApps()) {
                     // Verify that HOLD operation is received before the ANSWER operation
                     long holdOpTimestamp = holdOp.getCreationTimeMs();
                     long answerOpTimestamp = answerOp.getCreationTimeMs();
