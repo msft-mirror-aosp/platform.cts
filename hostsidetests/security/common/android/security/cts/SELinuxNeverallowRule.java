@@ -75,6 +75,15 @@ record SELinuxNeverallowRule(
 
     public String getStableId() {
         String id = mText.replaceFirst("^neverallow ", "").replaceAll("[^A-Za-z0-9_]", "_");
+        // Test infra can't support tests greater than 512 bytes. Truncate.
+        // b/446175448
+        int maxlen =
+                512
+                        - ("android.security.cts.SELinuxNeverallowRulesTestVendor"
+                                        + "#testNeverallowRules[ver=202504;id=]")
+                                .length()
+                        - 4;
+        id = id.substring(0, Math.min(id.length(), maxlen));
         byte b = 0;
         b += (compatiblePropertyOnly ? 1 : 0) << 1;
         b += (launchingWithROnly ? 1 : 0) << 2;
