@@ -38,8 +38,11 @@ import android.platform.test.rule.ScreenRecordRule.ScreenRecord
 import androidx.test.InstrumentationRegistry
 import androidx.test.filters.SdkSuppress
 import androidx.test.runner.AndroidJUnit4
+import com.android.bedstead.nene.TestApis
+import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_INSTALL_UNKNOWN_SOURCES
 import com.android.compatibility.common.util.AppOpsUtils
 import com.android.compatibility.common.util.SystemUtil
+import com.android.xts.root.annotations.RequireAdbRoot
 import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -239,6 +242,24 @@ class SessionTest : PackageInstallerTestBase() {
         val sessionInfo = pi.getSessionInfo(sessionId)
         assertNull(sessionInfo!!.resolvedBaseApkPath)
         clickInstallerUIButton(CANCEL_BUTTON_ID)
+    }
+
+    @Test
+    @RequireAdbRoot(reason = "b/322830652 Required for TestApis to set user restriction")
+    fun disallowInstallUnknownSources_installViaSessionApi_installSucceeds() {
+        try {
+            TestApis.devicePolicy().userRestrictions().set(DISALLOW_INSTALL_UNKNOWN_SOURCES, true)
+
+            startInstallationViaSession()
+            clickInstallerUIButton(INSTALL_BUTTON_ID)
+
+            // Install should have succeeded
+            val result = getInstallSessionResult()
+            assertEquals(STATUS_SUCCESS, result.status)
+            assertInstalled()
+        } finally {
+            TestApis.devicePolicy().userRestrictions().set(DISALLOW_INSTALL_UNKNOWN_SOURCES, false)
+        }
     }
 
     private fun disablePackage() {
