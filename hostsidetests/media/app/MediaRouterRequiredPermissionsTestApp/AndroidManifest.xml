@@ -28,7 +28,7 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
     <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES"/>
 
-    <application android:testOnly="true">
+    <application android:debuggable="true" android:testOnly="true">
         <uses-library android:name="android.test.runner"/>
         <activity
             android:name="android.media.cts.app.common.ScreenOnActivity"
