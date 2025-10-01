@@ -199,6 +199,10 @@
                 <data android:scheme="https" />
              </intent-filter>
         </activity>
+        <activity android:name=".TaskMoveAllowedListenerActivity"
+             android:resizeableActivity="true"
+             android:taskAffinity="nobody.but.TaskMoveAllowedListenerActivity"
+             android:exported="true"/>
         <activity android:name=".MultiWindowFullscreenActivity"
                   android:resizeableActivity="true"
                   android:taskAffinity="nobody.but.MultiWindowFullscreenActivity"
