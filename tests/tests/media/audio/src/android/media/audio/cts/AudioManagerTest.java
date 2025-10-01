@@ -156,6 +156,7 @@ public class AudioManagerTest extends InstrumentationTestCase {
     private boolean mIsTelevision;
     private boolean mIsSingleVolume;
     private boolean mSkipRingerTests;
+    private boolean mSkipAutoVolumeTests = false;
     // From N onwards, ringer mode adjustments that toggle DND are not allowed unless
     // package has DND access. Many tests in this package toggle DND access in order
     // to get device out of the DND state for the test to proceed correctly.
@@ -199,6 +200,12 @@ public class AudioManagerTest extends InstrumentationTestCase {
         mIsSingleVolume = mContext.getResources().getBoolean(
                 Resources.getSystem().getIdentifier("config_single_volume", "bool", "android"));
         mSkipRingerTests = mUseFixedVolume || mIsTelevision || mIsSingleVolume;
+        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
+            // setRingerMode is a no-op
+            mSkipRingerTests = true;
+            // volume SDK APIs are no-ops
+            mSkipAutoVolumeTests = true;
+        }
 
         // Store the original volumes that that they can be recovered in tearDown().
         final int[] streamTypes = {
@@ -344,6 +351,10 @@ public class AudioManagerTest extends InstrumentationTestCase {
         final MyBlockingIntentReceiver receiver =
                 new MyBlockingIntentReceiver(AudioManager.ACTION_VOLUME_CHANGED);
         if (mAudioManager.isVolumeFixed()) {
+            return;
+        }
+        if (mSkipAutoVolumeTests) {
+            // setStreamVolume is a no-op
             return;
         }
         // safe media can block the raising the volume, disable it
@@ -634,6 +645,10 @@ public class AudioManagerTest extends InstrumentationTestCase {
         if (mUseFixedVolume || !mHasVibrator) {
             return;
         }
+        if (mSkipAutoVolumeTests) {
+            // setRingerMode is a no-op
+            return;
+        }
         Utils.toggleNotificationPolicyAccess(
                 mContext.getPackageName(), getInstrumentation(), true);
         // VIBRATE_SETTING_ON
@@ -695,6 +710,10 @@ public class AudioManagerTest extends InstrumentationTestCase {
 
     public void testVibrateRinger() throws Exception {
         if (mUseFixedVolume || !mHasVibrator) {
+            return;
+        }
+        if (mSkipAutoVolumeTests) {
+            // setRingerMode is a no-op
             return;
         }
         Utils.toggleNotificationPolicyAccess(
@@ -998,6 +1017,10 @@ public class AudioManagerTest extends InstrumentationTestCase {
     public void testVolume() throws Exception {
         if (MediaUtils.check(mIsTelevision, "No volume test due to fixed/full vol devices"))
             return;
+        if (mSkipAutoVolumeTests) {
+            // setStreamVolume/adjustVolume are no-op
+            return;
+        }
         Utils.toggleNotificationPolicyAccess(
                 mContext.getPackageName(), getInstrumentation(), true);
         int volume, volumeDelta;
@@ -1190,6 +1213,10 @@ public class AudioManagerTest extends InstrumentationTestCase {
     }
 
     public void testMuteFixedVolume() throws Exception {
+        if (mSkipAutoVolumeTests) {
+            // adjustStreamVolume is a no-op
+            return;
+        }
         int[] streams = {
                 STREAM_VOICE_CALL,
                 STREAM_MUSIC,
@@ -1336,6 +1363,10 @@ public class AudioManagerTest extends InstrumentationTestCase {
     }
 
     private void testStreamMuting(int stream) {
+        if (mSkipAutoVolumeTests) {
+            // adjustStreamVolume is a no-op
+            return;
+        }
         getInstrumentation().getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.QUERY_AUDIO_STATE);
 
@@ -1401,6 +1432,10 @@ public class AudioManagerTest extends InstrumentationTestCase {
     }
 
     public void testAdjustVolumeInTotalSilenceMode() throws Exception {
+        if (mSkipAutoVolumeTests) {
+            // adjustStreamVolume is a no-op
+            return;
+        }
         if (mSkipRingerTests) {
             return;
         }
@@ -1835,6 +1870,10 @@ public class AudioManagerTest extends InstrumentationTestCase {
     }
 
     public void testAdjustVolumeWithIllegalDirection() throws Exception {
+        if (mSkipAutoVolumeTests) {
+            // adjustVolume is a no-op
+            return;
+        }
         // Call the method with illegal direction. System should not reboot.
         mAudioManager.adjustVolume(37, 0);
     }
