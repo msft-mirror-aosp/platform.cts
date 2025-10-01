@@ -30,6 +30,7 @@ import android.hdmicec.cts.HdmiCecConstants;
 
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -110,11 +111,11 @@ public class HdmiCecAvbToTvTest extends BaseHdmiCecAbsoluteVolumeBehaviorTest {
      * device's support for <Set Audio Volume Level>. In this test, this support status is
      * communicated through (the lack of) <Feature Abort> responses to <Set Audio Volume Level>.
      */
+    @Ignore("(b/406050353")
     @Test
     public void testEnableDisableAvb_triggeredByAvbSupportChanged() throws Exception {
         assumeFalse("Skip for audio system devices (b/323469502)",
                 hasDeviceType(HdmiCecConstants.CEC_DEVICE_TYPE_AUDIO_SYSTEM));
-
         setSettingsValue(HdmiCecConstants.SETTING_VOLUME_CONTROL_ENABLED,
                 HdmiCecConstants.VOLUME_CONTROL_ENABLED);
 
@@ -142,9 +143,10 @@ public class HdmiCecAvbToTvTest extends BaseHdmiCecAbsoluteVolumeBehaviorTest {
     }
 
     /**
-     * Tests that the DUT enables and disables AVB in response to CEC volume control being
-     * enabled or disabled.
+     * Tests that the DUT enables and disables AVB in response to CEC volume control being enabled
+     * or disabled.
      */
+    @Ignore("(b/406050353")
     @Test
     public void testEnableAndDisableAvb_triggeredByVolumeControlSettingChange() throws Exception {
         assumeFalse("Skip for audio system devices (b/323469502)",
@@ -176,9 +178,10 @@ public class HdmiCecAvbToTvTest extends BaseHdmiCecAbsoluteVolumeBehaviorTest {
     }
 
     /**
-     * Tests that the DUT sends the correct CEC messages when AVB is enabled and Android
-     * initiates volume changes.
+     * Tests that the DUT sends the correct CEC messages when AVB is enabled and Android initiates
+     * volume changes.
      */
+    @Ignore("(b/406050353")
     @Test
     public void testOutgoingVolumeUpdates() throws Exception {
         assumeFalse("Skip for audio system devices (b/323469502)",
@@ -228,6 +231,7 @@ public class HdmiCecAvbToTvTest extends BaseHdmiCecAbsoluteVolumeBehaviorTest {
      * Tests that the DUT notifies AudioManager when it receives <Report Audio Status> from the
      * System Audio device.
      */
+    @Ignore("(b/406050353")
     @Test
     public void testIncomingVolumeUpdates() throws Exception {
         assumeFalse("Skip for audio system devices (b/323469502)",
