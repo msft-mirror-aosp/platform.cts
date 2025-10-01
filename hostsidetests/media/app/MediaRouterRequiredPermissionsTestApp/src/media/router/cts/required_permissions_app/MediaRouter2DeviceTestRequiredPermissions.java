@@ -43,9 +43,6 @@ import static android.media.cts.app.common.MediaRouter2TestUtils.waitForAndGetRo
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
-
 import android.Manifest;
 import android.app.Activity;
 import android.app.compat.CompatChanges;
@@ -225,7 +222,7 @@ public class MediaRouter2DeviceTestRequiredPermissions {
 
     @Test
     public void restrictLocalNetworkCompatChange_notEnabled_routeIsFound() throws TimeoutException {
-        assumeFalse(CompatChanges.isChangeEnabled(RESTRICT_LOCAL_NETWORK_CHANGE_ID));
+        assertThat(CompatChanges.isChangeEnabled(RESTRICT_LOCAL_NETWORK_CHANGE_ID)).isFalse();
         mScreenOnActivity = launchScreenOnActivity(mContext);
         Map<String, MediaRoute2Info> routes =
                 waitForAndGetRoutes(
@@ -239,7 +236,7 @@ public class MediaRouter2DeviceTestRequiredPermissions {
 
     @Test
     public void restrictLocalNetworkCompatChange_enabled_routeNotFound() throws TimeoutException {
-        assumeTrue(CompatChanges.isChangeEnabled(RESTRICT_LOCAL_NETWORK_CHANGE_ID));
+        assertThat(CompatChanges.isChangeEnabled(RESTRICT_LOCAL_NETWORK_CHANGE_ID)).isTrue();
         mScreenOnActivity = launchScreenOnActivity(mContext);
         Map<String, MediaRoute2Info> routes =
                 waitForAndGetRoutes(
@@ -250,7 +247,7 @@ public class MediaRouter2DeviceTestRequiredPermissions {
     @Test
     public void restrictLocalNetworkCompatChange_enabled_routeFoundWhenWifiPermissionHeld()
             throws TimeoutException {
-        assumeTrue(CompatChanges.isChangeEnabled(RESTRICT_LOCAL_NETWORK_CHANGE_ID));
+        assertThat(CompatChanges.isChangeEnabled(RESTRICT_LOCAL_NETWORK_CHANGE_ID)).isTrue();
         assertPermissionState(PERMISSION_GRANTED, Manifest.permission.NEARBY_WIFI_DEVICES);
         mScreenOnActivity = launchScreenOnActivity(mContext);
         Map<String, MediaRoute2Info> routes =
