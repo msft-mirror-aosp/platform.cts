@@ -47,6 +47,7 @@ class DebugInputRule : TestWatcher() {
                 "InputManager",
                 "InputManagerGlobal",
                 "TouchpadInputMapperGestures",
+                "SysfsNodeMonitor",
         )
 
         @JvmStatic
