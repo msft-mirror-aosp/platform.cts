@@ -18,6 +18,7 @@ import logging
 import math
 import os
 
+import cv2
 from matplotlib import pyplot as plt
 from mobly import test_runner
 import numpy as np
@@ -32,11 +33,10 @@ import opencv_processing_utils
 _EDGE_MODES = {'OFF': 0, 'FAST': 1, 'HQ': 2, 'ZSL': 3}
 _EDGE_MODES_VALUES = list(_EDGE_MODES.values())
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
+_NUM_ARUCO_MARKERS = 4
 _NUM_SAMPLES = 4
 _PLOT_COLORS = {'yuv': 'r', 'private': 'g', 'none': 'b'}
 _SHARPNESS_RTOL = 0.15
-_TELE_CHART_HEIGHT_31CM = 6.5  # cm height of chart for 31cm distance
-_TELE_SCALE_STOP = 1.5  # extend search range for TELE cameras due to variety
 
 
 def check_edge_modes(sharpness):
@@ -69,7 +69,7 @@ def check_edge_modes(sharpness):
 
 
 def do_capture_and_determine_sharpness(
-    cam, edge_mode, sensitivity, exp, fd, out_surface, chart,
+    cam, edge_mode, sensitivity, exp, fd, out_surface,
     name_with_log_path, reprocess_format=None):
   """Return sharpness of the output images and the capture result metadata.
 
@@ -87,7 +87,6 @@ def do_capture_and_determine_sharpness(
     fd: Focus distance for the request as defined in
         android.lens.focusDistance
     out_surface: Specifications of the output image format and size.
-    chart: object containing chart information
     name_with_log_path: file name & location to save files
     reprocess_format: (Optional) The reprocessing format. If not None,
                       reprocessing will be enabled.
@@ -107,17 +106,22 @@ def do_capture_and_determine_sharpness(
 
   sharpness_list = []
   caps = cam.do_capture([req]*_NUM_SAMPLES, [out_surface], reprocess_format)
+  # determine chart area with first frame.
+  patch_x, patch_y, patch_w, patch_h = (
+      opencv_processing_utils.get_chart_boundary_scene3(
+          caps[0], _NUM_ARUCO_MARKERS, name_with_log_path)
+  )
   for n in range(_NUM_SAMPLES):
     y, _, _ = image_processing_utils.convert_capture_to_planes(caps[n])
-    chart.img = image_processing_utils.get_image_patch(
-        y, chart.xnorm, chart.ynorm, chart.wnorm, chart.hnorm)
+    chart = image_processing_utils.get_image_patch(
+        y, patch_x, patch_y, patch_w, patch_h)
     if n == 0:
       image_processing_utils.write_image(
-          chart.img,
-          f'{name_with_log_path}_reprocess_fmt_{reprocess_format}_edge={edge_mode}.jpg')
+          chart, f'{name_with_log_path}_reprocess_fmt_{reprocess_format}'
+          f'_edge={edge_mode}.jpg')
       edge_mode_res = caps[n]['metadata']['android.edge.mode']
     sharpness_list.append(
-        image_processing_utils.compute_image_sharpness(chart.img)*255)
+        image_processing_utils.compute_image_sharpness(chart)*255)
   logging.debug('Sharpness list for edge mode %d: %s',
                 edge_mode, str(sharpness_list))
   return {'edge_mode': edge_mode_res, 'sharpness': np.mean(sharpness_list)}
@@ -156,19 +160,6 @@ class ReprocessEdgeEnhancementTest(its_base_test.ItsBaseTest):
       its_session_utils.load_scene(
           cam, props, self.scene, self.tablet, self.chart_distance)
 
-      # Initialize chart class and locate chart in scene
-      is_tele = cam.get_camera_type(props) == (
-          its_session_utils.CAMERA_TYPE_TELE)
-      if is_tele and self.chart_distance == (
-          opencv_processing_utils.CHART_DISTANCE_31CM):
-        logging.debug('Initializing TELE camera chart at 31cm.')
-        chart = opencv_processing_utils.Chart(
-            cam, props, self.log_path, height=_TELE_CHART_HEIGHT_31CM,
-            distance=self.chart_distance, scale_stop=_TELE_SCALE_STOP)
-      else:
-        chart = opencv_processing_utils.Chart(
-            cam, props, self.log_path, distance=self.chart_distance)
-
       # If reprocessing is supported, ZSL edge mode must be available
       if not camera_properties_utils.edge_mode(props, _EDGE_MODES['ZSL']):
         raise AssertionError('ZSL android.edge.mode not available!')
@@ -196,8 +187,9 @@ class ReprocessEdgeEnhancementTest(its_base_test.ItsBaseTest):
           edge_mode_reported_regular.append(edge_mode)
           sharpness_regular.append(0)
           continue
+
         ret = do_capture_and_determine_sharpness(
-            cam, edge_mode, s, e, fd, out_surface, chart, name_with_log_path)
+            cam, edge_mode, s, e, fd, out_surface, name_with_log_path)
         edge_mode_reported_regular.append(ret['edge_mode'])
         sharpness_regular.append(ret['sharpness'])
 
@@ -228,7 +220,7 @@ class ReprocessEdgeEnhancementTest(its_base_test.ItsBaseTest):
             continue
 
           ret = do_capture_and_determine_sharpness(
-              cam, edge_mode, s, e, fd, out_surface, chart, name_with_log_path,
+              cam, edge_mode, s, e, fd, out_surface, name_with_log_path,
               reprocess_format)
           edge_mode_reported.append(ret['edge_mode'])
           sharpnesses.append(ret['sharpness'])

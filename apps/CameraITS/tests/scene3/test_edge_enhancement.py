@@ -17,6 +17,7 @@
 import logging
 import os
 
+import cv2
 from matplotlib import pyplot as plt
 from mobly import test_runner
 import numpy as np
@@ -30,10 +31,9 @@ import opencv_processing_utils
 
 _EDGE_MODES = {'OFF': 0, 'FAST': 1, 'HQ': 2}
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
+_NUM_ARUCO_MARKERS = 4
 _NUM_SAMPLES = 4
 _SHARPNESS_RTOL = 0.1
-_TELE_CHART_HEIGHT_31CM = 6.5  # cm height of chart for 31cm distance
-_TELE_SCALE_STOP = 1.5  # extend search range for TELE cameras due to variety
 
 
 def plot_results(modes, sharpness_values, name_with_log_path):
@@ -55,7 +55,7 @@ def plot_results(modes, sharpness_values, name_with_log_path):
 
 
 def do_capture_and_determine_sharpness(
-    cam, edge_mode, sensitivity, exp, fd, out_surface, chart,
+    cam, edge_mode, sensitivity, exp, fd, out_surface, props,
     name_with_log_path):
   """Return sharpness of the output image and the capture result metadata.
 
@@ -72,7 +72,7 @@ def do_capture_and_determine_sharpness(
     fd: Focus distance for the request as defined in
         android.lens.focusDistance
     out_surface: Specifications of the output image format and size.
-    chart: object that contains chart information
+    props: Camera properties object.
     name_with_log_path: file name with log_path to write result images
 
   Returns:
@@ -89,15 +89,22 @@ def do_capture_and_determine_sharpness(
   sharpness_list = []
   for n in range(_NUM_SAMPLES):
     cap = capture_request_utils.stationary_lens_capture(cam, req, out_surface)
-    y, _, _ = image_processing_utils.convert_capture_to_planes(cap)
-    chart.img = image_processing_utils.get_image_patch(
-        y, chart.xnorm, chart.ynorm, chart.wnorm, chart.hnorm)
+    img = image_processing_utils.convert_capture_to_rgb_image(cap, props=props)
+    image_processing_utils.write_image(
+        img, f'{name_with_log_path}_capture_for_aruco_detection.jpg')
+    img_bgr = cv2.cvtColor(image_processing_utils.convert_image_to_uint8(img),
+                           cv2.COLOR_RGB2BGR)
+    corners, ids, _ = opencv_processing_utils.find_aruco_markers(
+        img_bgr, f'{name_with_log_path}_aruco.jpg',
+        _NUM_ARUCO_MARKERS, save_images=False)
+    chart = opencv_processing_utils.get_patch_from_aruco_markers(
+        img_bgr, corners, ids, use_outer_corner=True)
     if n == 0:
       image_processing_utils.write_image(
-          chart.img, f'{name_with_log_path}_edge={edge_mode}.jpg')
+          chart, f'{name_with_log_path}_edge={edge_mode}.jpg')
       edge_mode_res = cap['metadata']['android.edge.mode']
     sharpness_list.append(
-        image_processing_utils.compute_image_sharpness(chart.img)*255)
+        image_processing_utils.compute_image_sharpness(chart)*255)
   logging.debug('edge mode: %d, sharpness values: %s',
                 edge_mode_res, sharpness_list)
   return {'edge_mode': edge_mode_res, 'sharpness': np.mean(sharpness_list)}
@@ -129,19 +136,6 @@ class EdgeEnhancementTest(its_base_test.ItsBaseTest):
       its_session_utils.load_scene(
           cam, props, self.scene, self.tablet, self.chart_distance)
 
-      # Initialize chart class and locate chart in scene
-      is_tele = cam.get_camera_type(props) == (
-          its_session_utils.CAMERA_TYPE_TELE)
-      if is_tele and self.chart_distance == (
-          opencv_processing_utils.CHART_DISTANCE_31CM):
-        logging.debug('Initializing TELE camera chart at 31cm.')
-        chart = opencv_processing_utils.Chart(
-            cam, props, self.log_path, height=_TELE_CHART_HEIGHT_31CM,
-            distance=self.chart_distance, scale_stop=_TELE_SCALE_STOP)
-      else:
-        chart = opencv_processing_utils.Chart(
-            cam, props, self.log_path, distance=self.chart_distance)
-
       # Define format
       fmt = 'yuv'
       size = capture_request_utils.get_available_output_sizes(fmt, props)[0]
@@ -162,9 +156,8 @@ class EdgeEnhancementTest(its_base_test.ItsBaseTest):
           edge_mode_reported_regular.append(edge_mode)
           sharpness_regular.append(0)
           continue
-
         ret = do_capture_and_determine_sharpness(
-            cam, edge_mode, s, e, fd, out_surface, chart, name_with_log_path)
+            cam, edge_mode, s, e, fd, out_surface, props, name_with_log_path)
         edge_mode_reported_regular.append(ret['edge_mode'])
         sharpness_regular.append(ret['sharpness'])
 
