@@ -40,9 +40,11 @@ class Apis private constructor(private val mMethods: Set<MethodSignature>) {
     companion object {
         private val API_FILES = arrayOf<String>(
             "current.txt",
-            "wifi-current.txt",
             "bluetooth-current.txt",
-            "system-current.txt"
+            "telephony-current.txt",
+            "wifi-current.txt",
+            "system-current.txt",
+            "telephony-system-current.txt",
         )
 
         private val CODEBASE = initializeCodebase()
