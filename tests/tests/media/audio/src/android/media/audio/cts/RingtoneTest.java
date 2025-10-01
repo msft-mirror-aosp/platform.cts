@@ -31,6 +31,7 @@ import static org.junit.Assert.assertTrue;
 import android.Manifest;
 import android.app.Instrumentation;
 import android.content.ContentProvider;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.media.AudioAttributes;
@@ -48,6 +49,7 @@ import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.os.VibratorManager;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.Settings;
 import android.util.Log;
 
@@ -55,6 +57,7 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
@@ -360,5 +363,26 @@ public class RingtoneTest {
         assertTrue(isVibrating);
         ringtone.stop();
         assertFalse(ringtone.isPlaying());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            com.android.server.telecom.flags.Flags.FLAG_RESOLVE_HIDDEN_DEPENDENCIES_TWO)
+    @ApiTest(apis = {"android.media.Ringtone#hasHapticChannels"})
+    public void testHasHapticChannels() {
+        final String uriPrefix =
+                ContentResolver.SCHEME_ANDROID_RESOURCE
+                        + "://"
+                        + mContext.getPackageName()
+                        + "/raw/";
+        Uri uriWithHaptics = Uri.parse(uriPrefix + "a_4_haptic");
+        Uri uriWithoutHaptics = Uri.parse(uriPrefix + "a_4");
+        assertTrue(RingtoneManager.hasHapticChannels(uriWithHaptics));
+        assertFalse(RingtoneManager.hasHapticChannels(uriWithoutHaptics));
+
+        Ringtone ringtoneWithHaptics = RingtoneManager.getRingtone(mContext, uriWithHaptics);
+        assertTrue(ringtoneWithHaptics.hasHapticChannels());
+        Ringtone ringtoneWithoutHaptics = RingtoneManager.getRingtone(mContext, uriWithoutHaptics);
+        assertFalse(ringtoneWithoutHaptics.hasHapticChannels());
     }
 }
