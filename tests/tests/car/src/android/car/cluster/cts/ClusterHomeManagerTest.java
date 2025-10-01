@@ -39,6 +39,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.util.Log;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 
@@ -62,6 +63,8 @@ import java.util.concurrent.TimeUnit;
             + " visible background users, so skipping tests for"
             + " secondary_user_on_secondary_display.")
 public final class ClusterHomeManagerTest {
+    private static final String TAG = ClusterHomeManagerTest.class.getSimpleName();
+
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
@@ -129,6 +132,8 @@ public final class ClusterHomeManagerTest {
             PollingCheck.waitFor(TIMEOUT_MS, () -> {
                 String monitoringSurface = DumpUtils.executeDumpShellCommand(CLUSTER_HOME_SERVICE)
                         .get(DUMP_CLUSTER_SURFACE);
+                Log.d(TAG, String.format("Waiting for visibility monitoring to stop "
+                        + "(monitorinSurface:%s)", monitoringSurface));
                 return monitoringSurface.equals("null");
             });
         }
@@ -165,6 +170,9 @@ public final class ClusterHomeManagerTest {
             int count = Integer.valueOf(dump.get(DUMP_TPL_COUNT));
             boolean visible = Boolean.parseBoolean(dump.get(DUMP_CLUSTER_VISIBLE));
             mTestMonitoringSurface = dump.get(DUMP_CLUSTER_SURFACE);
+            Log.d(TAG, String.format("Waiting for the test activity to be visible "
+                    + "(oldCount:%d, count:%d, visible:%b, monitoringSurface:%s)",
+                    oldCount, count, visible, mTestMonitoringSurface));
             return count > oldCount && visible
                     && mTestMonitoringSurface.contains(mTestActivityName.flattenToString());
         });
@@ -185,6 +193,8 @@ public final class ClusterHomeManagerTest {
             var dump = DumpUtils.executeDumpShellCommand(CLUSTER_HOME_SERVICE);
             int count = Integer.valueOf(dump.get(DUMP_TPL_COUNT));
             boolean visible = Boolean.parseBoolean(dump.get(DUMP_CLUSTER_VISIBLE));
+            Log.d(TAG, String.format("Waiting for the test activity to be invisible "
+                            + "(oldCount:%d, count:%d, visible:%b)", oldCount, count, visible));
             return count > oldCount2 && !visible;
         });
     }
