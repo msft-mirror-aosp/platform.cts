@@ -185,9 +185,9 @@
              android:resizeableActivity="true"
              android:taskAffinity="nobody.but.FreeformActivity"
              android:exported="true"/>
-        <activity android:name=".MoveTaskToBoundsActivity"
+        <activity android:name=".TaskMoveTestActivity"
              android:resizeableActivity="true"
-             android:taskAffinity="nobody.but.MoveTaskToBoundsActivity"
+             android:taskAffinity="nobody.but.TaskMoveTestActivity"
              android:exported="true">
           <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -199,10 +199,6 @@
                 <data android:scheme="https" />
              </intent-filter>
         </activity>
-        <activity android:name=".TaskMoveAllowedListenerActivity"
-             android:resizeableActivity="true"
-             android:taskAffinity="nobody.but.TaskMoveAllowedListenerActivity"
-             android:exported="true"/>
         <activity android:name=".MultiWindowFullscreenActivity"
                   android:resizeableActivity="true"
                   android:taskAffinity="nobody.but.MultiWindowFullscreenActivity"

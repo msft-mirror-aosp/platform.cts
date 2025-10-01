@@ -17,104 +17,53 @@
 package android.server.wm.other;
 
 import static android.server.wm.StateLogger.logAlways;
-import static android.server.wm.app.Components.MoveTaskToBoundsActivity.ACTION_CHECK_IS_TASK_MOVE_ALLOWED;
-import static android.server.wm.app.Components.MoveTaskToBoundsActivity.ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT;
-import static android.server.wm.app.Components.MoveTaskToBoundsActivity.ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT;
-import static android.server.wm.app.Components.MoveTaskToBoundsActivity.ACTION_REQUEST_TASK_MOVE;
-import static android.server.wm.app.Components.MoveTaskToBoundsActivity.EXTRA_BOUNDS_KEY;
-import static android.server.wm.app.Components.MoveTaskToBoundsActivity.EXTRA_DISPLAY_ID_KEY;
-import static android.server.wm.app.Components.MoveTaskToBoundsActivity.EXTRA_EXCEPTION_KEY;
-import static android.server.wm.app.Components.MoveTaskToBoundsActivity.EXTRA_SYNC_EXCEPTION_KEY;
-import static android.server.wm.app.Components.MoveTaskToBoundsActivity.EXTRA_TASK_MOVE_ALLOWED_RESULT;
-import static android.view.WindowManager.DISPLAY_IME_POLICY_LOCAL;
+import static android.server.wm.app.Components.TaskMoveTestActivity.ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT;
+import static android.server.wm.app.Components.TaskMoveTestActivity.ACTION_REQUEST_TASK_MOVE;
+import static android.server.wm.app.Components.TaskMoveTestActivity.EXTRA_BOUNDS_KEY;
+import static android.server.wm.app.Components.TaskMoveTestActivity.EXTRA_DISPLAY_ID_KEY;
+import static android.server.wm.app.Components.TaskMoveTestActivity.EXTRA_EXCEPTION_KEY;
+import static android.server.wm.app.Components.TaskMoveTestActivity.EXTRA_SYNC_EXCEPTION_KEY;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Rect;
-import android.os.ConditionVariable;
-import android.os.UserHandle;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.server.wm.BuildUtils;
-import android.server.wm.MultiDisplayTestBase;
-import android.server.wm.ShellCommandHelper;
+import android.server.wm.TaskMoveTestBase;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerState.DisplayContent;
 import android.server.wm.WindowManagerState.Task;
-import android.server.wm.app.Components;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.window.flags.Flags;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Function;
 
-/**
- * Build/Install/Run:
- *     atest CtsWindowManagerDeviceOther:TaskMoveTests
- */
+/** Build/Install/Run: atest CtsWindowManagerDeviceOther:TaskMoveTests */
 @Presubmit
 @android.server.wm.annotation.Group3
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_WINDOW_REPOSITIONING_API)
-public class TaskMoveTests extends MultiDisplayTestBase {
+public class TaskMoveTests extends TaskMoveTestBase {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    private static final ComponentName TEST_ACTIVITY = Components.MOVE_TASK_TO_BOUNDS_ACTIVITY;
-    private static final int TIMEOUT_MS = 2000 * BuildUtils.HW_TIMEOUT_MULTIPLIER;
-    private Map<String, ConditionVariable> mBroadcastsReceived;
-    private Map<String, Intent> mBroadcastsContentsReceived;
-    private BroadcastReceiver mAppCommunicator =
-            new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    logAlways("Received an intent with action " + intent.getAction());
-                    mBroadcastsContentsReceived.put(intent.getAction(), intent);
-                    getBroadcastReceivedVariable(intent.getAction()).open();
-                }
-            };
-
-    private ConditionVariable getBroadcastReceivedVariable(String action) {
-        return mBroadcastsReceived.computeIfAbsent(action, k -> new ConditionVariable());
-    }
-
-    @Before
     @Override
-    public void setUp() throws Exception {
-        super.setUp();
-
-        mBroadcastsReceived = Collections.synchronizedMap(new HashMap<>());
-        mBroadcastsContentsReceived = Collections.synchronizedMap(new HashMap<>());
-        final IntentFilter filter = new IntentFilter();
-        filter.addAction(ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT);
+    protected IntentFilter getIntentFilter() {
+        final IntentFilter filter = super.getIntentFilter();
         filter.addAction(ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT);
-        mContext.registerReceiver(mAppCommunicator, filter, Context.RECEIVER_EXPORTED);
-        grantBrowserRole();
-    }
-
-    @After
-    public void tearDown() {
-        revokeBrowserRole();
-        mContext.unregisterReceiver(mAppCommunicator);
-        Components.forceStopPackage();
+        return filter;
     }
 
     /**
@@ -555,71 +504,9 @@ public class TaskMoveTests extends MultiDisplayTestBase {
                 sourceAndTargetBoundingBox.contains(finalBounds));
     }
 
-    private boolean getIsTaskMoveAllowedOnDisplay(int displayId) {
-        final Intent response = askIfTaskMoveAllowedOnDisplay(displayId);
-
-        if (!response.hasExtra(EXTRA_TASK_MOVE_ALLOWED_RESULT)) {
-            if (response.hasExtra(EXTRA_SYNC_EXCEPTION_KEY)) {
-                fail(
-                        "The activity notified that the isTaskMoveAllowedOnDisplay request thrown"
-                                + " an exception: "
-                                + response.getParcelableExtra(
-                                                EXTRA_SYNC_EXCEPTION_KEY, Exception.class)
-                                        .getMessage());
-            } else {
-                fail(
-                        "The activity has not notified about task movability on display "
-                                + displayId
-                                + ".");
-            }
-        }
-
-        return response.getBooleanExtra(EXTRA_TASK_MOVE_ALLOWED_RESULT, false);
-    }
-
-    private void assertIsTaskMoveAllowedOnDisplayThrownException(
-            int displayId, Class<?> exceptionClass) {
-        final Intent response = askIfTaskMoveAllowedOnDisplay(displayId);
-        assertTrue(response.getParcelableExtra(EXTRA_SYNC_EXCEPTION_KEY, exceptionClass) != null);
-    }
-
-    // Fails the test if the activity does not respond.
-    private Intent askIfTaskMoveAllowedOnDisplay(int displayId) {
-        logAlways("Sending ACTION_CHECK_IS_TASK_MOVE_ALLOWED intent with displayId = " + displayId);
-        mContext.sendBroadcast(
-                new Intent(ACTION_CHECK_IS_TASK_MOVE_ALLOWED)
-                        .setFlags(Intent.FLAG_RECEIVER_FOREGROUND)
-                        .putExtra(EXTRA_DISPLAY_ID_KEY, displayId));
-        final boolean notified =
-                getBroadcastReceivedVariable(ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT)
-                        .block(TIMEOUT_MS);
-        getBroadcastReceivedVariable(ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT).close();
-        final Intent intent =
-                mBroadcastsContentsReceived.get(ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT);
-
-        if (!notified || intent == null) {
-            fail(
-                    "The activity has not notified about task movability on display "
-                            + displayId
-                            + ".");
-        }
-
-        return intent;
-    }
-
-    private void assumeTaskMoveAllowedOnDisplay(int displayId) {
-        assumeTrue(
-                "Only test when display allows task moving",
-                getIsTaskMoveAllowedOnDisplay(displayId));
-    }
-
     private void assertTaskMoveRequestReportedSuccess() {
-        final boolean notified =
-                getBroadcastReceivedVariable(ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT)
-                        .block(TIMEOUT_MS);
-        getBroadcastReceivedVariable(ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT).close();
-        final Intent intent =
-                mBroadcastsContentsReceived.get(ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT);
+        final boolean notified = awaitBroadcast(ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT);
+        final Intent intent = getIntentOfBroadcast(ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT);
 
         if (!notified || intent == null) {
             fail("The activity has not notified about the moveTaskTo request result.");
@@ -645,12 +532,8 @@ public class TaskMoveTests extends MultiDisplayTestBase {
     }
 
     private void assertTaskMoveRequestReportedError(Class<?> exceptionClass) {
-        final boolean notified =
-                getBroadcastReceivedVariable(ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT)
-                        .block(TIMEOUT_MS);
-        getBroadcastReceivedVariable(ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT).close();
-        final Intent intent =
-                mBroadcastsContentsReceived.get(ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT);
+        final boolean notified = awaitBroadcast(ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT);
+        final Intent intent = getIntentOfBroadcast(ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT);
 
         if (!notified || intent == null) {
             fail("The activity has not notified about the moveTaskTo request result.");
@@ -674,24 +557,6 @@ public class TaskMoveTests extends MultiDisplayTestBase {
         assertTrue(intent.getParcelableExtra(EXTRA_EXCEPTION_KEY, exceptionClass) != null);
     }
 
-    private void grantBrowserRole() {
-        logAlways("Granting browser role");
-        ShellCommandHelper.executeShellCommand(
-                "cmd role add-role-holder --user "
-                        + UserHandle.myUserId()
-                        + " android.app.role.BROWSER "
-                        + Components.getPackageName());
-    }
-
-    private void revokeBrowserRole() {
-        logAlways("Revoking browser role");
-        ShellCommandHelper.executeShellCommand(
-                "cmd role remove-role-holder --user "
-                        + UserHandle.myUserId()
-                        + " android.app.role.BROWSER "
-                        + Components.getPackageName());
-    }
-
     private void sendTaskMoveRequest(int displayId, Rect bounds) {
         logAlways(
                 "Sending ACTION_REQUEST_TASK_MOVE intent with params {displayId: "
@@ -704,15 +569,6 @@ public class TaskMoveTests extends MultiDisplayTestBase {
                         .setFlags(Intent.FLAG_RECEIVER_FOREGROUND)
                         .putExtra(EXTRA_DISPLAY_ID_KEY, displayId)
                         .putExtra(EXTRA_BOUNDS_KEY, bounds));
-    }
-
-    private int createNewDisplay() {
-        return createManagedVirtualDisplaySession()
-                .setSimulateDisplay(true)
-                .setSimulationDisplaySize(1920 /* width */, 1080 /* height */)
-                .setDisplayImePolicy(DISPLAY_IME_POLICY_LOCAL)
-                .createDisplay()
-                .mId;
     }
 
     private void launchActivityOnDisplayWithSafetyMargins(
