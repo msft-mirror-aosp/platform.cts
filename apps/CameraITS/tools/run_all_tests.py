@@ -81,7 +81,7 @@ _PROPERTIES_TO_MATCH = (
 _TABLET_SCENES = (
     'scene0', 'scene1_1', 'scene1_2', 'scene1_3', 'scene2_a', 'scene2_b',
     'scene2_c', 'scene2_d', 'scene2_e', 'scene2_f', 'scene2_g', 'scene3',
-    'scene4', 'scene6', 'scene7', 'scene8', 'scene9','scene_wide_gamut',
+    'scene4', 'scene6', 'scene7', 'scene8', 'scene9', 'scene_wide_gamut',
     os.path.join('scene_extensions', 'scene_hdr'),
     os.path.join('scene_extensions', 'scene_low_light'),
     os.path.join('scene_tele', 'scene6_tele'),
@@ -199,7 +199,8 @@ _SCENE_REQ = types.MappingProxyType({
     'scene_gen2_chart': 'Same as scene_ip, '
                         'but does not include image parity tests.',
     'scene_wide_gamut': 'The picture with 4 different colors, slanted edge and'
-                        '4 ArUco markers. See tests/scene_wide_gamut/scene_wide_gamut.jpg'
+                        '4 ArUco markers. '
+                        'See tests/scene_wide_gamut/scene_wide_gamut.jpg'
 })
 
 # Made mutable to allow for test augmentation based on first API level
@@ -1021,6 +1022,7 @@ def main():
       num_pass = 0
       num_skip = 0
       num_not_mandated_fail = 0
+      num_marginal_passing = 0
       num_fail = 0
       for test in scene_test_list:
         # Handle repeated test
@@ -1060,6 +1062,7 @@ def main():
             test_code = output.returncode
             test_skipped = False
             test_not_yet_mandated = False
+            test_marginal_passing = False
             test_mpc_req = ''
             perf_test_metrics = ''
             hdr_mpc_req = ''
@@ -1125,7 +1128,14 @@ def main():
               test_not_yet_mandated = True
               break
 
-            if test_code == 0 and not test_skipped:
+            if its_session_utils.MARGINAL_PASSING_MESSAGE in content:
+              return_string = 'PASS*'
+              num_marginal_passing += 1
+              test_marginal_passing = True
+              break
+
+            if (test_code == 0 and not test_skipped and
+                not test_marginal_passing):
               return_string = 'PASS '
               num_pass += 1
               break
@@ -1178,6 +1188,10 @@ def main():
       if num_not_mandated_fail > 0:
         logging.info('(*) %s not_yet_mandated tests failed',
                      num_not_mandated_fail)
+
+      if num_marginal_passing > 0:
+        logging.info('(*) Number of tests marginally passing: %s ',
+                     num_marginal_passing)
 
       tot_pass += num_pass
       logging.info('scene tests: %s, Total tests passed: %s', tot_tests,

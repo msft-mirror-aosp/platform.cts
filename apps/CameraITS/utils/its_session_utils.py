@@ -88,7 +88,7 @@ TABLET_ALLOWLIST = (
     'nabu_tw',  # Xiaomi Pad 5
     'xun',  # Xiaomi Redmi Pad SE
     'yunluo',  # Xiaomi Redmi Pad
-    'tb520fu', # Lenovo Yoga Tab plus
+    'tb520fu',  # Lenovo Yoga Tab plus
 )
 TABLET_DEFAULT_BRIGHTNESS = 192  # 8-bit tablet 75% brightness
 TABLET_LEGACY_BRIGHTNESS = 96
@@ -110,6 +110,7 @@ USE_CASE_CROPPED_RAW = 6
 VIDEO_SCENES = ('scene_video',)
 JPG_SCENES = ('scene_wide_gamut',)
 NOT_YET_MANDATED_MESSAGE = 'Not yet mandated test'
+MARGINAL_PASSING_MESSAGE = '***Marginally passing test***'
 RESULT_OK_STATUS = '-1'
 
 _FLASH_MODE_OFF = 0
@@ -3043,7 +3044,7 @@ def do_capture_with_latency(cam, req, sync_latency, fmt=None):
 
 
 def load_scene(cam, props, scene, tablet, chart_distance, lighting_check=True,
-               log_path=None, chart_scaling=None, allow_af_not_focus_locked = False):
+               log_path=None, chart_scaling=None, allow_af_not_focus_locked=False):
   """Load the scene for the camera based on the FOV.
 
   Args:
