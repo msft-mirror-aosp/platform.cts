@@ -54,6 +54,7 @@ public class DecodeStreamToYuv extends CodecDecoderTestBase {
     private int mWidth;
     private int mHeight;
     private int mBytesPerSample;
+    private int mColorFormat;
 
     public DecodeStreamToYuv(String mediaType, String inpFile, int frameLimit, String outYuvPrefix)
             throws IOException {
@@ -109,7 +110,7 @@ public class DecodeStreamToYuv extends CodecDecoderTestBase {
                 .setFileName(mOutputFile, false)
                 .setDimension(mWidth, mHeight)
                 .setBytesPerSample(mBytesPerSample)
-                .setColorFormat(ImageFormat.UNKNOWN)
+                .setColorFormat(mColorFormat)
                 .build();
     }
 
@@ -158,8 +159,8 @@ public class DecodeStreamToYuv extends CodecDecoderTestBase {
                 MediaFormat format = mCodec.getOutputFormat();
                 mWidth = getWidth(format);
                 mHeight = getHeight(format);
-                int imgFormat = img.getFormat();
-                mBytesPerSample = (ImageFormat.getBitsPerPixel(imgFormat) * 2) / (8 * 3);
+                mColorFormat = img.getFormat();
+                mBytesPerSample = (ImageFormat.getBitsPerPixel(mColorFormat) * 2) / (8 * 3);
             }
             mOutputCount++;
         }
