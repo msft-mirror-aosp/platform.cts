@@ -286,6 +286,32 @@ class HistoricalRegistryTest {
         assertThat(appOpEvent.rejectCount).isEqualTo(1)
     }
 
+    @Test
+    fun durationIsReturnedWhenFinishOpIsRecordedSeparately() {
+        waitUntilSafelyInTimeQuant(SHORT_INTERVAL_QUANTIZATION_MILLIS, 5 * 1000)
+        val opNames = listOf(SHORT_INTERVAL_OP)
+        ensureAppOpsModeAllowed(testUid, testPackageName, opNames)
+        runWithShellPermissionIdentity {
+            appOpsManager.startOp(SHORT_INTERVAL_OP, testUid, testPackageName, null, null)
+        }
+        // verify access count is recorded, duration is recorded on finishOp
+        var historicalOps =
+            getHistoricalOps(historyFlag = HISTORY_FLAGS_ALL, opNames = opNames)
+        var discreteOps = convertHistoricalOpsToDiscreteAccessEvents(historicalOps)
+        assertThat(discreteOps.size).isEqualTo(1)
+        assertThat(discreteOps.first().durationMillis).isEqualTo(0)
+        // finishOp and verify duration is recorded & returned.
+        Thread.sleep(100)
+        runWithShellPermissionIdentity {
+            appOpsManager.finishOp(SHORT_INTERVAL_OP, testUid, testPackageName, null)
+        }
+        historicalOps =
+            getHistoricalOps(historyFlag = HISTORY_FLAGS_ALL, opNames = opNames)
+        discreteOps = convertHistoricalOpsToDiscreteAccessEvents(historicalOps)
+        assertThat(discreteOps.size).isEqualTo(1)
+        assertThat(discreteOps.first().durationMillis).isGreaterThan(100)
+    }
+
     private fun setAppOpHistoryParameters(mode: Int) {
         runWithShellPermissionIdentity {
             appOpsManager.setHistoryParameters(mode, 15 * 60 * 1000, 10)
