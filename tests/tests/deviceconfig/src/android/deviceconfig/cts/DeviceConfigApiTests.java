@@ -240,7 +240,8 @@ public final class DeviceConfigApiTests {
 
     @Test
     public void testPropertiesIncludedInGetAllProperties() {
-        if (!SdkLevel.isAtLeastV()) {
+        // Fix for large binder transaction in #getAllProperties only included in B+.
+        if (!SdkLevel.isAtLeastB()) {
             return;
         }
 
