@@ -41,6 +41,7 @@ import com.android.tradefed.testtype.junit4.BeforeClassWithInfo;
 import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
 import com.android.tradefed.util.FileUtil;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
@@ -879,10 +880,24 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
         jars.addAll(sBootclasspathJars);
         jars.addAll(sSharedLibJars);
         final Multimap<String, String> duplicates = getDuplicateClasses(jars.build());
-        final Multimap<String, String> filtered = Multimaps.filterKeys(duplicates,
+
+        // Due to problems with other tests that don't clean up after themselves,
+        // we end up finding duplicates here. However, these findings don't reflect
+        // real world scenarios that could cause problems.
+        // Discard test APKs from duplicated jars b/447082560
+        Predicate<String> isTestApk =
+                file -> file.contains("com.android.tests.") && file.endsWith(".apk");
+        final Multimap<String, String> duplicatesWithoutTestApks =
+                Multimaps.filterValues(duplicates, file -> !isTestApk.test(file));
+        final Multimap<String, String> cleanDuplicates =
+                Multimaps.filterKeys(
+                        duplicatesWithoutTestApks,
+                        key -> duplicatesWithoutTestApks.get(key).size() > 1);
+
+        final Multimap<String, String> filtered = Multimaps.filterKeys(cleanDuplicates,
                 dupeClass -> {
                     try {
-                        final Collection<String> dupeJars = duplicates.get(dupeClass);
+                        final Collection<String> dupeJars = cleanDuplicates.get(dupeClass);
                         // Duplicate is already known.
                         if (BCP_AND_SHARED_LIB_BURNDOWN_LIST.contains(dupeClass)
                                 || BOOTCLASSPATH_DUPLICATE_BURNDOWN_LIST.contains(dupeClass)) {
