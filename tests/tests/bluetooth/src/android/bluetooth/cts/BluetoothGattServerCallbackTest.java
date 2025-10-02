@@ -16,25 +16,19 @@
 
 package android.bluetooth.cts;
 
-import static android.Manifest.permission.BLUETOOTH_CONNECT;
+import static android.bluetooth.BluetoothGatt.GATT_SUCCESS;
 import static android.bluetooth.BluetoothProfile.STATE_CONNECTED;
 
-import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assume.assumeTrue;
 
-import android.app.UiAutomation;
-import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattServerCallback;
 import android.bluetooth.BluetoothGattService;
-import android.bluetooth.BluetoothManager;
 import android.bluetooth.GattOffloadSession;
 import android.content.Context;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -42,9 +36,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.CddTest;
 
-import org.junit.After;
-import org.junit.Assume;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -52,174 +43,57 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
-import java.util.UUID;
-
 @RunWith(AndroidJUnit4.class)
 public class BluetoothGattServerCallbackTest {
-
-    private final BluetoothGattServerCallback mCallbacks =
-            new BluetoothGattServerCallback() {
-                @Override
-                public void onConnectionStateChange(
-                        BluetoothDevice device, int status, int newState) {}
-
-                @Override
-                public void onServiceAdded(int status, BluetoothGattService service) {}
-
-                @Override
-                public void onCharacteristicReadRequest(
-                        BluetoothDevice device,
-                        int requestId,
-                        int offset,
-                        BluetoothGattCharacteristic characteristic) {}
-
-                @Override
-                public void onCharacteristicWriteRequest(
-                        BluetoothDevice device,
-                        int requestId,
-                        BluetoothGattCharacteristic characteristic,
-                        boolean preparedWrite,
-                        boolean responseNeeded,
-                        int offset,
-                        byte[] value) {}
-
-                @Override
-                public void onDescriptorReadRequest(
-                        BluetoothDevice device,
-                        int requestId,
-                        int offset,
-                        BluetoothGattDescriptor descriptor) {}
-
-                @Override
-                public void onDescriptorWriteRequest(
-                        BluetoothDevice device,
-                        int requestId,
-                        BluetoothGattDescriptor descriptor,
-                        boolean preparedWrite,
-                        boolean responseNeeded,
-                        int offset,
-                        byte[] value) {}
-
-                @Override
-                public void onExecuteWrite(
-                        BluetoothDevice device, int requestId, boolean execute) {}
-
-                @Override
-                public void onNotificationSent(BluetoothDevice device, int status) {}
-
-                @Override
-                public void onMtuChanged(BluetoothDevice device, int mtu) {}
-
-                @Override
-                public void onPhyUpdate(BluetoothDevice device, int txPhy, int rxPhy, int status) {}
-
-                @Override
-                public void onPhyRead(BluetoothDevice device, int txPhy, int rxPhy, int status) {}
-
-                @Override
-                @RequiresFlagsEnabled(Flags.FLAG_LE_SUBRATE_API)
-                public void onSubrateChange(BluetoothDevice device, int subrateMode, int status) {}
-
-                @Override
-                @RequiresFlagsEnabled(Flags.FLAG_GATT_OFFLOAD_API)
-                public void onCharacteristicsUnoffloaded(
-                        BluetoothDevice device, int sessionId, int status) {}
-            };
-    private final UUID TEST_UUID = UUID.fromString("0000110a-0000-1000-8000-00805f9b34fb");
-    private final byte[] mBytes = new byte[] {};
-    private static final int TEST_SESSION_ID = 1;
-    private Context mContext;
-    private BluetoothDevice mBluetoothDevice;
-    private BluetoothAdapter mAdapter;
-    private UiAutomation mUiAutomation;
-    private BluetoothGattService mBluetoothGattService;
-    private BluetoothGattDescriptor mBluetoothGattDescriptor;
-    private BluetoothGattCharacteristic mBluetoothGattCharacteristic;
-
-    @Mock private GattOffloadSession mGattOffloadSession;
-
     @Rule public final MockitoRule mockito = MockitoJUnit.rule();
 
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+    @Mock private BluetoothDevice mDevice;
+    @Mock private BluetoothGattServerCallback mCallbacks;
+    @Mock private GattOffloadSession mGattOffloadSession;
+    @Mock private BluetoothGattService mBluetoothGattService;
+    @Mock private BluetoothGattDescriptor mBluetoothGattDescriptor;
+    @Mock private BluetoothGattCharacteristic mBluetoothGattCharacteristic;
 
-    @Before
-    public void setUp() throws Exception {
-        mContext = InstrumentationRegistry.getInstrumentation().getContext();
-
-        Assume.assumeTrue(TestUtils.isBleSupported(mContext));
-
-        BluetoothManager manager = mContext.getSystemService(BluetoothManager.class);
-        mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
-        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
-        mAdapter = manager.getAdapter();
-        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
-        mBluetoothDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
-        mBluetoothGattService =
-                new BluetoothGattService(TEST_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
-        mBluetoothGattCharacteristic = new BluetoothGattCharacteristic(TEST_UUID, 0x0A, 0x11);
-        mBluetoothGattDescriptor = new BluetoothGattDescriptor(TEST_UUID, 0x11);
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        mAdapter = null;
-        mBluetoothDevice = null;
-        mBluetoothGattService = null;
-        mBluetoothGattCharacteristic = null;
-        mBluetoothGattDescriptor = null;
-        if (mUiAutomation != null) {
-            mUiAutomation.dropShellPermissionIdentity();
-        }
-    }
+    private static final byte[] BYTES = new byte[] {};
+    private static final int TEST_SESSION_ID = 1;
+    private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
-    public void allMethods() {
-        mCallbacks.onConnectionStateChange(mBluetoothDevice, STATE_CONNECTED, STATE_CONNECTED);
-        mCallbacks.onServiceAdded(BluetoothGatt.GATT_SUCCESS, mBluetoothGattService);
-        mCallbacks.onCharacteristicReadRequest(
-                mBluetoothDevice, 0, 0, mBluetoothGattCharacteristic);
+    // CTS doesn't run with a compatible remote device.
+    // In order to trigger the callbacks, there is no alternative to a direct call on mock
+    @SuppressWarnings("DirectInvocationOnMock")
+    public void fakeCallbackCoverage() {
+        assumeTrue(TestUtils.isBleSupported(mContext));
+        mCallbacks.onConnectionStateChange(mDevice, STATE_CONNECTED, STATE_CONNECTED);
+        mCallbacks.onServiceAdded(GATT_SUCCESS, mBluetoothGattService);
+        mCallbacks.onCharacteristicReadRequest(mDevice, 0, 0, mBluetoothGattCharacteristic);
         mCallbacks.onCharacteristicWriteRequest(
-                mBluetoothDevice, 0, mBluetoothGattCharacteristic, true, true, 0, mBytes);
-        mCallbacks.onDescriptorReadRequest(mBluetoothDevice, 0, 0, mBluetoothGattDescriptor);
+                mDevice, 0, mBluetoothGattCharacteristic, true, true, 0, BYTES);
+        mCallbacks.onDescriptorReadRequest(mDevice, 0, 0, mBluetoothGattDescriptor);
         mCallbacks.onDescriptorWriteRequest(
-                mBluetoothDevice, 0, mBluetoothGattDescriptor, true, true, 0, mBytes);
-        mCallbacks.onExecuteWrite(mBluetoothDevice, 0, true);
-        mCallbacks.onNotificationSent(mBluetoothDevice, BluetoothGatt.GATT_SUCCESS);
-        mCallbacks.onMtuChanged(mBluetoothDevice, 0);
+                mDevice, 0, mBluetoothGattDescriptor, true, true, 0, BYTES);
+        mCallbacks.onExecuteWrite(mDevice, 0, true);
+        mCallbacks.onNotificationSent(mDevice, GATT_SUCCESS);
+        mCallbacks.onMtuChanged(mDevice, 0);
         mCallbacks.onPhyUpdate(
-                mBluetoothDevice,
-                BluetoothDevice.PHY_LE_2M,
-                BluetoothDevice.PHY_LE_2M,
-                BluetoothGatt.GATT_SUCCESS);
+                mDevice, BluetoothDevice.PHY_LE_2M, BluetoothDevice.PHY_LE_2M, GATT_SUCCESS);
         mCallbacks.onPhyRead(
-                mBluetoothDevice,
-                BluetoothDevice.PHY_LE_2M,
-                BluetoothDevice.PHY_LE_2M,
-                BluetoothGatt.GATT_SUCCESS);
-    }
+                mDevice, BluetoothDevice.PHY_LE_2M, BluetoothDevice.PHY_LE_2M, GATT_SUCCESS);
 
-    @RequiresFlagsEnabled(Flags.FLAG_LE_SUBRATE_API)
-    @Test
-    public void bt5_3AddedMethods() {
-        mCallbacks.onSubrateChange(
-                mBluetoothDevice, BluetoothGatt.SUBRATE_MODE_OFF, BluetoothGatt.GATT_SUCCESS);
-        mCallbacks.onSubrateChange(
-                mBluetoothDevice, BluetoothGatt.SUBRATE_MODE_LOW, BluetoothGatt.GATT_SUCCESS);
-        mCallbacks.onSubrateChange(
-                mBluetoothDevice, BluetoothGatt.SUBRATE_MODE_BALANCED, BluetoothGatt.GATT_SUCCESS);
-        mCallbacks.onSubrateChange(
-                mBluetoothDevice, BluetoothGatt.SUBRATE_MODE_HIGH, BluetoothGatt.GATT_SUCCESS);
-    }
+        if (Flags.leSubrateApi()) {
+            mCallbacks.onSubrateChange(mDevice, BluetoothGatt.SUBRATE_MODE_OFF, GATT_SUCCESS);
+            mCallbacks.onSubrateChange(mDevice, BluetoothGatt.SUBRATE_MODE_LOW, GATT_SUCCESS);
+            mCallbacks.onSubrateChange(mDevice, BluetoothGatt.SUBRATE_MODE_BALANCED, GATT_SUCCESS);
+            mCallbacks.onSubrateChange(mDevice, BluetoothGatt.SUBRATE_MODE_HIGH, GATT_SUCCESS);
+        }
 
-    @RequiresFlagsEnabled(Flags.FLAG_GATT_OFFLOAD_API)
-    @Test
-    public void characteristicsOffloadMethods() {
-        mCallbacks.onCharacteristicsOffloaded(
-                mBluetoothDevice, mGattOffloadSession, GattOffloadSession.STATUS_SUCCESS);
+        if (Flags.gattOffloadApi()) {
+            mCallbacks.onCharacteristicsOffloaded(
+                    mDevice, mGattOffloadSession, GattOffloadSession.STATUS_SUCCESS);
 
-        mCallbacks.onCharacteristicsUnoffloaded(
-                mBluetoothDevice, TEST_SESSION_ID, GattOffloadSession.STATUS_SUCCESS);
+            mCallbacks.onCharacteristicsUnoffloaded(
+                    mDevice, TEST_SESSION_ID, GattOffloadSession.STATUS_SUCCESS);
+        }
     }
 }
