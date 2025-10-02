@@ -106,7 +106,9 @@ public class BaseAppVerifier {
                                     /* needed in order to be default sub */
                                     | PhoneAccount.CAPABILITY_CALL_PROVIDER
                                     /* needed to place ECC */
-                                    | PhoneAccount.CAPABILITY_PLACE_EMERGENCY_CALLS)
+                                    | PhoneAccount.CAPABILITY_PLACE_EMERGENCY_CALLS
+                                    /* needed for supporting holding ECC */
+                                    | PhoneAccount.CAPABILITY_SIM_SUBSCRIPTION)
                     .setHighlightColor(Color.RED)
                     .addSupportedUriScheme(PhoneAccount.SCHEME_SIP)
                     .addSupportedUriScheme(PhoneAccount.SCHEME_TEL)
@@ -140,7 +142,9 @@ public class BaseAppVerifier {
                                     /* needed in order to be default sub */
                                     | PhoneAccount.CAPABILITY_CALL_PROVIDER
                                     /* needed to place ECC */
-                                    | PhoneAccount.CAPABILITY_PLACE_EMERGENCY_CALLS)
+                                    | PhoneAccount.CAPABILITY_PLACE_EMERGENCY_CALLS
+                                    /* needed for supporting holding ECC */
+                                    | PhoneAccount.CAPABILITY_SIM_SUBSCRIPTION)
                     .setHighlightColor(Color.RED)
                     .addSupportedUriScheme(PhoneAccount.SCHEME_SIP)
                     .addSupportedUriScheme(PhoneAccount.SCHEME_TEL)
