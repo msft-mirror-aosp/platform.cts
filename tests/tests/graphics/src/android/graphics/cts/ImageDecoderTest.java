@@ -52,11 +52,15 @@ import android.media.MediaFormat;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.DisabledOnRavenwood;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.DisplayMetrics;
 import android.util.Size;
 import android.util.TypedValue;
 
+import androidx.annotation.NonNull;
 import androidx.core.content.FileProvider;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.LargeTest;
@@ -65,10 +69,12 @@ import androidx.test.filters.RequiresDevice;
 import com.android.compatibility.common.util.BitmapUtils;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.MediaUtils;
+import com.android.graphics.hwui.flags.Flags;
 
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -91,6 +97,9 @@ import java.util.function.ToIntFunction;
 
 @RunWith(JUnitParamsRunner.class)
 public class ImageDecoderTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     static final class Record {
         public final int resId;
         public final int width;
@@ -2284,6 +2293,42 @@ public class ImageDecoderTest {
     @Test(expected = IOException.class)
     public void testZeroLengthByteBuffer() throws IOException {
         ImageDecoder.decodeDrawable(ImageDecoder.createSource(ByteBuffer.wrap(new byte[10], 0, 0)));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_IMAGE_DECODER_GAINMAP_FAIL)
+    public void testGainmapExtractionPotentialFailure() throws IOException {
+        assumeTrue(ImageDecoder.isMimeTypeSupported("image/heic"));
+        DecodeException[] partialResult = new DecodeException[1];
+        Bitmap result =
+                ImageDecoder.decodeBitmap(
+                        ImageDecoder.createSource(getResources(), R.raw.heic_with_mono_gainmap),
+                        new ImageDecoder.OnHeaderDecodedListener() {
+                            @Override
+                            public void onHeaderDecoded(
+                                    @NonNull ImageDecoder decoder,
+                                    @NonNull ImageDecoder.ImageInfo info,
+                                    @NonNull ImageDecoder.Source source) {
+                                decoder.setOnPartialImageListener(
+                                        new OnPartialImageListener() {
+                                            @Override
+                                            public boolean onPartialImage(
+                                                    @NonNull DecodeException exception) {
+                                                assertNull(partialResult[0]);
+                                                partialResult[0] = exception;
+                                                return true;
+                                            }
+                                        });
+                            }
+                        });
+        assertNotNull(result);
+        if (partialResult[0] == null) {
+            // In case this is supported
+            assertTrue(result.hasGainmap());
+            return;
+        }
+        assertEquals(partialResult[0].getError(), DecodeException.GAINMAP_EXTRACTION_FAILED);
+        assertFalse(result.hasGainmap());
     }
 
     private interface ByteBufferSupplier extends Supplier<ByteBuffer> {};
