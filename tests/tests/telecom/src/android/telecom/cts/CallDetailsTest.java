@@ -533,12 +533,15 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
     /**
      * Tests whether the getCreationTimeMillis() getter returns the correct object.
      */
+    @ApiTest(apis = {"android.telecom.Call.Details#getCreationTimeMillis"})
     public void testCreationTimeMillis() {
         if (!mShouldTestTelecom) {
             return;
         }
 
         assertThat(mCall.getDetails().getCreationTimeMillis(), instanceOf(Long.class));
+        assertTrue("Call creation time should always be > 0.",
+                mCall.getDetails().getCreationTimeMillis() > 0);
     }
 
     /**
