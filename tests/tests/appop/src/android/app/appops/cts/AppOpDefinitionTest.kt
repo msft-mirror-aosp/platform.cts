@@ -245,6 +245,11 @@ class AppOpDefinitionTest {
             APP_OPS[AppOpsManager.OPSTR_READ_CELL_INFO] = 166
             APP_OPS[AppOpsManager.OPSTR_COMPUTER_CONTROL] = 167
             APP_OPS[AppOpsManager.OPSTR_READ_OTP_SMS] = 168
+            APP_OPS[AppOpsManager.OPSTR_ACCESS_LOCAL_NETWORK] = 169
+            APP_OPS[AppOpsManager.OPSTR_READ_BLOOD_PRESSURE] = 170
+            APP_OPS[AppOpsManager.OPSTR_READ_HEART_RATE_VARIABILITY] = 171
+            APP_OPS[AppOpsManager.OPSTR_READ_RESPIRATORY_RATE] = 172
+            APP_OPS[AppOpsManager.OPSTR_READ_VO2_MAX] = 173
         }
     }
 }
