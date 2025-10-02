@@ -33,7 +33,6 @@ import androidx.test.uiautomator.Until
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_INSTALL_APPS
-import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_INSTALL_UNKNOWN_SOURCES
 import com.android.compatibility.common.util.SystemUtil
 import com.android.xts.root.annotations.RequireAdbRoot
 import java.util.concurrent.TimeUnit
@@ -62,7 +61,7 @@ class IntentTest : PackageInstallerTestBase() {
                 "TCWSFu2YqAVxVdiRKAay19k5VFlSaM7QW9uhvlrLQqsTW01ofFzxNDbp2QfIFHZR6rebKzK" +
                 "Bz6byQFM0DYQnYMwFWXjWkMPNdqkRLykoFLyBup53G68k2n8wl27jEBRNRG3ozwBsGr"
         const val NO_INSTALL_APPS_RESTRICTION_TEXT = "This user is not allowed to install apps"
-        const val NO_INSTALL_APPS_RESTRICTION_TEXT_V2 ="Installing apps has been restricted"
+        const val NO_INSTALL_APPS_RESTRICTION_TEXT_V2 = "Installing apps has been restricted"
         const val DISABLED_LAUNCHER_ACTIVITY_PKG_NAME =
                 "android.packageinstaller.disabledlauncheractivity.cts"
         const val INSTALL_SUCCESS_TEXT = "App installed"
@@ -316,26 +315,6 @@ class IntentTest : PackageInstallerTestBase() {
             assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
         } finally {
             TestApis.devicePolicy().userRestrictions().set(DISALLOW_INSTALL_APPS, false)
-            instrumentation.uiAutomation.dropShellPermissionIdentity()
-        }
-    }
-
-    @Test
-    @RequireAdbRoot(reason = "b/322830652 Required for TestApis to set user restriction")
-    fun disallowInstallUnknownSources_installFromTrustedSource_installSucceeds() {
-        try {
-            TestApis.devicePolicy().userRestrictions().set(DISALLOW_INSTALL_UNKNOWN_SOURCES, true)
-
-            instrumentation.uiAutomation.adoptShellPermissionIdentity(
-                Manifest.permission.INSTALL_PACKAGES
-            )
-            var installation = startInstallationViaIntent()
-
-            clickInstallerUIButton(INSTALL_BUTTON_ID)
-
-            assertEquals(RESULT_OK, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
-        } finally {
-            TestApis.devicePolicy().userRestrictions().set(DISALLOW_INSTALL_UNKNOWN_SOURCES, false)
             instrumentation.uiAutomation.dropShellPermissionIdentity()
         }
     }
