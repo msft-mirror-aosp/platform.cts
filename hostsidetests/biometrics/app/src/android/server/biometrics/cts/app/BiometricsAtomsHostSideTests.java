@@ -30,9 +30,12 @@ import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Instrumentation;
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.hardware.biometrics.BiometricManager;
 import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.biometrics.BiometricTestSession;
@@ -89,6 +92,7 @@ public class BiometricsAtomsHostSideTests {
     private BiometricManager mBiometricManager;
     private List<SensorProperties> mSensorProperties;
     private String mUiPackage;
+    private Context mContext;
 
     @Before
     public void setup() {
@@ -98,10 +102,10 @@ public class BiometricsAtomsHostSideTests {
                 .adoptShellPermissionIdentity(TEST_BIOMETRIC, MANAGE_SECURE_LOCK_DEVICE);
         mDevice = UiDevice.getInstance(mInstrumentation);
 
-        mUserId = mInstrumentation.getContext().getUserId();
-        mAuthenticationPolicyManager =
-                mInstrumentation.getContext().getSystemService(AuthenticationPolicyManager.class);
-        mBiometricManager = mInstrumentation.getContext().getSystemService(BiometricManager.class);
+        mContext = mInstrumentation.getContext();
+        mUserId = mContext.getUserId();
+        mAuthenticationPolicyManager = mContext.getSystemService(AuthenticationPolicyManager.class);
+        mBiometricManager = mContext.getSystemService(BiometricManager.class);
         // ignore the legacy HIDL interface for all tests
         mSensorProperties = filterSensorProperties(mBiometricManager.getSensorProperties());
         mUiPackage = mBiometricManager.getUiPackage();
@@ -264,11 +268,22 @@ public class BiometricsAtomsHostSideTests {
 
     @Test
     public void testSecureLockDeviceStateChanged() throws Exception {
+        assumeFalse(
+                "Do not test on automotive",
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+        assumeFalse(
+                "Do not test on TV",
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK));
+        assumeFalse(
+                "Do not test on watch",
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH));
+
         final List<SensorProperties> strongFingerprintSensorProperties =
                 filterStrongFingerprintSensorProperties(mSensorProperties);
         assumeTrue(
                 "Device must have at least one strong fingerprint sensor",
                 !strongFingerprintSensorProperties.isEmpty());
+
         final SensorProperties prop = strongFingerprintSensorProperties.getFirst();
         int sensorId = prop.getSensorId();
 
