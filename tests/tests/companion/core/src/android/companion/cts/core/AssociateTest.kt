@@ -16,7 +16,6 @@
 
 package android.companion.cts.core
 
-import android.Manifest
 import android.Manifest.permission.REQUEST_COMPANION_SELF_MANAGED
 import android.companion.AssociationRequest
 import android.companion.AssociationRequest.DEVICE_PROFILE_COMPUTER
@@ -274,13 +273,6 @@ class AssociateTest : CoreTestBase() {
 
     @Test
     fun test_associate_profileNull_grantsExtraPermission() = with (testApp) {
-        var nearbyPerms = arrayOf(
-            Manifest.permission.BLUETOOTH_ADVERTISE,
-            Manifest.permission.BLUETOOTH_CONNECT,
-            Manifest.permission.BLUETOOTH_SCAN,
-            Manifest.permission.NEARBY_WIFI_DEVICES
-        )
-
         withShellPermissionIdentity {
             nearbyPerms.forEach { p ->
                 uiAutomation.revokeRuntimePermission(packageName, p)
@@ -306,13 +298,6 @@ class AssociateTest : CoreTestBase() {
 
     @Test
     fun test_associate_profileNotNull_doesNotGrantsExtraPermission() = with (testApp) {
-        var nearbyPerms = arrayOf(
-            Manifest.permission.BLUETOOTH_ADVERTISE,
-            Manifest.permission.BLUETOOTH_CONNECT,
-            Manifest.permission.BLUETOOTH_SCAN,
-            Manifest.permission.NEARBY_WIFI_DEVICES
-        )
-
         withShellPermissionIdentity {
             nearbyPerms.forEach { p ->
                 uiAutomation.revokeRuntimePermission(packageName, p)
@@ -338,13 +323,6 @@ class AssociateTest : CoreTestBase() {
 
     @Test
     fun test_disassociate_profileNull_revokesExtraPermission() = with(testApp) {
-        var nearbyPerms = arrayOf(
-            Manifest.permission.BLUETOOTH_ADVERTISE,
-            Manifest.permission.BLUETOOTH_CONNECT,
-            Manifest.permission.BLUETOOTH_SCAN,
-            Manifest.permission.NEARBY_WIFI_DEVICES
-        )
-
         associate(MAC_ADDRESS_A, "null", PERMISSION_NEARBY)
 
         nearbyPerms.forEach { p ->
