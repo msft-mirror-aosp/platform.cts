@@ -1528,7 +1528,7 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
     @Test
     public void testMediaTimeDiscontinuity() throws Exception {
         if (!checkLoadResource(
-                "bbb_s1_320x240_mp4_h264_mp2_800kbps_30fps_aac_lc_5ch_240kbps_44100hz.mp4")) {
+                "video_480x360_mp4_h264_1350kbps_30fps_aac_stereo_128kbps_44100hz.mp4")) {
             return; // skip
         }
 
