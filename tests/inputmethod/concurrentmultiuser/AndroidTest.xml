@@ -39,6 +39,7 @@
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <option name="run-command" value="am compat enable ALLOW_TEST_API_ACCESS com.android.cts.mockime" />
         <option name="run-command" value="setprop debug.wm.disable_deprecated_abi_dialog 1" />
         <option name="run-command" value="settings put secure show_ime_with_hard_keyboard 1" />
         <!-- Create a place to store files for DumpOnFailure -->
