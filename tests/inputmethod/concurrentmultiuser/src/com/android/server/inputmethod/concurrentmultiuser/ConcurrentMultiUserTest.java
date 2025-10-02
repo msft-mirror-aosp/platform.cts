@@ -66,7 +66,6 @@ import com.android.cts.mockime.MockImeSession;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -167,7 +166,6 @@ public final class ConcurrentMultiUserTest {
      * on the driver's display.
      */
     @Test
-    @Ignore("b/352823913")
     public void passengerShowImeNotAffectDriver() throws Exception {
         try (MockImeSession passengerImeSession =
                 MockImeSession.create(mPassengerContext, mUiAutomation, mPassengerImeSettings)) {
