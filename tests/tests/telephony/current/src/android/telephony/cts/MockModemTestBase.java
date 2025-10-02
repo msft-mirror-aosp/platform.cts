@@ -16,7 +16,11 @@
 
 package android.telephony.cts;
 
+import static android.telephony.SubscriptionManager.INVALID_SUBSCRIPTION_ID;
+
 import static com.android.internal.telephony.RILConstants.RIL_REQUEST_RADIO_POWER;
+
+import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -29,8 +33,10 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.ParcelUuid;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.telephony.mockmodem.MockModemManager;
@@ -38,16 +44,19 @@ import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.ShellIdentityUtils;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
-/**
- * Base class for test cases performed on MockModem.
- */
+/** Base class for test cases performed on MockModem. */
 public class MockModemTestBase {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -57,11 +66,13 @@ public class MockModemTestBase {
     private static final String RESOURCE_PACKAGE_NAME = "android";
     private static final boolean DEBUG_BUILD = !"user".equals(Build.TYPE);
     private static final int TIMEOUT_WAIT_FOR_SIM_STATE_SECONDS = 30;
+    private static final int TIMEOUT_WAIT_FOR_SUB_STATE_SECONDS = 30;
 
     protected static final boolean VDBG = true;
 
     protected static MockModemManager sMockModemManager;
     protected static TelephonyManager sTelephonyManager;
+    protected static SubscriptionManager sSubscriptionManager;
     protected static boolean sIsMultiSimDevice;
 
     protected static boolean beforeAllTestsCheck() throws Exception {
@@ -83,6 +94,7 @@ public class MockModemTestBase {
         sTelephonyManager =
                 (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
         sIsMultiSimDevice = isMultiSim(sTelephonyManager);
+        sSubscriptionManager = getContext().getSystemService(SubscriptionManager.class);
 
         return true;
     }
@@ -192,6 +204,7 @@ public class MockModemTestBase {
                         }
                     }
                 };
+        // TODO(b/457756111): Migrate to Bedstead.
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity();
@@ -217,6 +230,130 @@ public class MockModemTestBase {
             } finally {
                 getContext().unregisterReceiver(receiver);
             }
+        } finally {
+            InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation()
+                    .dropShellPermissionIdentity();
+        }
+    }
+
+    protected static int getActiveSubId(int phoneId) {
+        // TODO(b/457756111): Migrate to Bedstead.
+        int[] allSubs =
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        sSubscriptionManager, (sm) -> sm.getActiveSubscriptionIdList());
+        int sub = SubscriptionManager.getSubscriptionId(phoneId);
+        return Arrays.stream(allSubs).anyMatch(e -> e == sub)
+                ? sub
+                : SubscriptionManager.INVALID_SUBSCRIPTION_ID;
+    }
+
+    // TODO(b/445733351): Consolidate duplicate implementations into a utility class.
+    protected static void waitForSubscriptionCondition(String message, Supplier<Boolean> condition)
+            throws Exception {
+        if (condition.get()) {
+            return;
+        }
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        SubscriptionManager.OnSubscriptionsChangedListener listener =
+                new SubscriptionManager.OnSubscriptionsChangedListener() {
+                    @Override
+                    public void onSubscriptionsChanged() {
+                        if (condition.get()) {
+                            latch.countDown();
+                        }
+                    }
+                };
+
+        sSubscriptionManager.addOnSubscriptionsChangedListener(
+                getContext().getMainExecutor(), listener);
+
+        try {
+            if (!latch.await(TIMEOUT_WAIT_FOR_SUB_STATE_SECONDS, TimeUnit.SECONDS)) {
+                fail("Timeout waiting for " + message);
+            }
+        } finally {
+            sSubscriptionManager.removeOnSubscriptionsChangedListener(listener);
+        }
+    }
+
+    protected static int waitForValidSubscriptionId(int slotIndex) throws Exception {
+        final int[] subId = new int[] {INVALID_SUBSCRIPTION_ID};
+        waitForSubscriptionCondition(
+                "valid subscription ID on slot " + slotIndex,
+                () -> {
+                    SubscriptionInfo subInfo =
+                            sSubscriptionManager.getActiveSubscriptionInfoForSimSlotIndex(
+                                    slotIndex);
+                    if (subInfo != null) {
+                        subId[0] = subInfo.getSubscriptionId();
+                        return true;
+                    }
+                    return false;
+                });
+        return subId[0];
+    }
+
+    protected static int insertSimCard(int simSlotIndex, int simProfileId) throws Throwable {
+        // TODO(b/457756111): Migrate to Bedstead.
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity();
+        try {
+            assertThat(sMockModemManager.insertSimCard(simSlotIndex, simProfileId)).isTrue();
+            waitForSimCardState(simSlotIndex, TelephonyManager.SIM_STATE_PRESENT);
+            return waitForValidSubscriptionId(simSlotIndex);
+        } finally {
+            InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation()
+                    .dropShellPermissionIdentity();
+        }
+    }
+
+    protected static void setSubAsOpportunistic(int subId, boolean opportunistic) throws Throwable {
+        // TODO(b/457756111): Migrate to Bedstead.
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity();
+        try {
+            assertThat(sSubscriptionManager.setOpportunistic(opportunistic, subId)).isTrue();
+            waitForSubscriptionCondition(
+                    "opportunistic status on sub " + subId,
+                    () -> {
+                        SubscriptionInfo subInfo =
+                                sSubscriptionManager.getActiveSubscriptionInfo(subId);
+                        return subInfo != null && subInfo.isOpportunistic() == opportunistic;
+                    });
+        } finally {
+            InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation()
+                    .dropShellPermissionIdentity();
+        }
+    }
+
+    protected static ParcelUuid createSubGroupOf(List<Integer> subIds) throws Throwable {
+        // TODO(b/457756111): Migrate to Bedstead.
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity();
+        try {
+            ParcelUuid subGroupUuid = sSubscriptionManager.createSubscriptionGroup(subIds);
+            assertThat(subGroupUuid).isNotNull();
+            waitForSubscriptionCondition(
+                    "subscription group should have sub count: " + subIds.size(),
+                    () -> {
+                        List<SubscriptionInfo> subInfos =
+                                sSubscriptionManager.getSubscriptionsInGroup(subGroupUuid);
+                        return subInfos != null && subInfos.size() == subIds.size();
+                    });
+            List<SubscriptionInfo> subInfos =
+                    sSubscriptionManager.getSubscriptionsInGroup(subGroupUuid);
+            assertThat(subInfos.size()).isEqualTo(subIds.size());
+            for (SubscriptionInfo subInfo : subInfos) {
+                assertThat(subInfo.getSubscriptionId()).isIn(subIds);
+            }
+            return subGroupUuid;
         } finally {
             InstrumentationRegistry.getInstrumentation()
                     .getUiAutomation()

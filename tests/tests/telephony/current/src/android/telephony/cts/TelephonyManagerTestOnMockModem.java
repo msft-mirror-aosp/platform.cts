@@ -56,7 +56,6 @@ import android.telephony.CarrierInfo;
 import android.telephony.CarrierRestrictionRules;
 import android.telephony.NetworkRegistrationInfo;
 import android.telephony.ServiceState;
-import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyCallback;
 import android.telephony.TelephonyManager;
 import android.telephony.cts.util.TelephonyUtils;
@@ -228,21 +227,6 @@ public class TelephonyManagerTestOnMockModem extends MockModemTestBase {
             ex.printStackTrace();
         }
         return null;
-    }
-
-    private int getActiveSubId(int phoneId) {
-        InstrumentationRegistry.getInstrumentation()
-                .getUiAutomation()
-                .adoptShellPermissionIdentity("android.permission.READ_PRIVILEGED_PHONE_STATE");
-
-        int[] allSubs =
-                getContext()
-                        .getSystemService(SubscriptionManager.class)
-                        .getActiveSubscriptionIdList();
-        int subsLength = allSubs.length;
-        Log.d(TAG, " Active Sub length is " + subsLength);
-
-        return (phoneId < subsLength) ? allSubs[phoneId] : -1;
     }
 
     private NetworkRegistrationInfo getNri(int domain, int subId) {
