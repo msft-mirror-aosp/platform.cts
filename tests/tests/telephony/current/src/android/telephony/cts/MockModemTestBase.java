@@ -38,6 +38,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
+import android.telephony.TelephonyCallback;
 import android.telephony.TelephonyManager;
 import android.telephony.mockmodem.MockModemManager;
 import android.util.Log;
@@ -74,6 +75,24 @@ public class MockModemTestBase {
     protected static TelephonyManager sTelephonyManager;
     protected static SubscriptionManager sSubscriptionManager;
     protected static boolean sIsMultiSimDevice;
+
+    protected static class ActiveDataSubscriptionIdListener extends TelephonyCallback
+            implements TelephonyCallback.ActiveDataSubscriptionIdListener {
+        private int mExpectedSubId;
+        private CountDownLatch mLatch;
+
+        ActiveDataSubscriptionIdListener(int expectedSubId, CountDownLatch latch) {
+            this.mExpectedSubId = expectedSubId;
+            this.mLatch = latch;
+        }
+
+        @Override
+        public void onActiveDataSubscriptionIdChanged(int subId) {
+            if (mExpectedSubId == subId) {
+                mLatch.countDown();
+            }
+        }
+    }
 
     protected static boolean beforeAllTestsCheck() throws Exception {
         if (VDBG) Log.d(TAG, "beforeAllTests()");
@@ -124,7 +143,7 @@ public class MockModemTestBase {
     }
 
     @Before
-    public void beforeTest() {
+    public void beforeTest() throws Exception {
         if (VDBG) Log.d(TAG, "beforeTest");
         assumeTrue(hasTelephonyFeature());
     }
@@ -248,6 +267,17 @@ public class MockModemTestBase {
                 : SubscriptionManager.INVALID_SUBSCRIPTION_ID;
     }
 
+    protected static void waitForActiveDataSub(int expectedSubId) throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
+        ActiveDataSubscriptionIdListener callback =
+                new ActiveDataSubscriptionIdListener(expectedSubId, latch);
+        // The onActiveDataSubscriptionIdChanged callback is invoked at registration so no need to
+        // check current state explicitly.
+        sTelephonyManager.registerTelephonyCallback(getContext().getMainExecutor(), callback);
+        assertThat(latch.await(TIMEOUT_WAIT_FOR_SUB_STATE_SECONDS, TimeUnit.SECONDS)).isTrue();
+        sTelephonyManager.unregisterTelephonyCallback(callback);
+    }
+
     // TODO(b/445733351): Consolidate duplicate implementations into a utility class.
     protected static void waitForSubscriptionCondition(String message, Supplier<Boolean> condition)
             throws Exception {
@@ -295,7 +325,7 @@ public class MockModemTestBase {
         return subId[0];
     }
 
-    protected static int insertSimCard(int simSlotIndex, int simProfileId) throws Throwable {
+    protected static int insertSimCard(int simSlotIndex, int simProfileId) throws Exception {
         // TODO(b/457756111): Migrate to Bedstead.
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()
@@ -311,7 +341,26 @@ public class MockModemTestBase {
         }
     }
 
-    protected static void setSubAsOpportunistic(int subId, boolean opportunistic) throws Throwable {
+    protected static void removeSimCard(int simSlotIndex) throws Exception {
+        if (!sMockModemManager.isSimCardPresent(simSlotIndex)) {
+            return;
+        }
+        // TODO(b/457756111): Migrate to Bedstead.
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity();
+        try {
+            assertThat(sMockModemManager.removeSimCard(simSlotIndex)).isTrue();
+            // TODO(b/454087220): Wait for the SIM slot to become SIM_STATE_ABSENT once this is
+            // correctly reported by MockModem.
+        } finally {
+            InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation()
+                    .dropShellPermissionIdentity();
+        }
+    }
+
+    protected static void setSubAsOpportunistic(int subId, boolean opportunistic) throws Exception {
         // TODO(b/457756111): Migrate to Bedstead.
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()
@@ -332,7 +381,7 @@ public class MockModemTestBase {
         }
     }
 
-    protected static ParcelUuid createSubGroupOf(List<Integer> subIds) throws Throwable {
+    protected static ParcelUuid createSubGroupOf(List<Integer> subIds) throws Exception {
         // TODO(b/457756111): Migrate to Bedstead.
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()

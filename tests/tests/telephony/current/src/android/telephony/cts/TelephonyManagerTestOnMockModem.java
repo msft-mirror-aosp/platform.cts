@@ -187,7 +187,7 @@ public class TelephonyManagerTestOnMockModem extends MockModemTestBase {
     }
 
     @Before
-    public void beforeTest() {
+    public void beforeTest() throws Exception {
         super.beforeTest();
         assumeNotNull(
                 "Skipping tests (see logs around beforeAllTests for details)", sTelephonyManager);

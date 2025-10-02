@@ -201,7 +201,7 @@ public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
     }
 
     @Before
-    public void beforeTest() {
+    public void beforeTest() throws Exception {
         super.beforeTest();
         if (sInitError != null) throw sInitError;
         registerNetworkCallback();
