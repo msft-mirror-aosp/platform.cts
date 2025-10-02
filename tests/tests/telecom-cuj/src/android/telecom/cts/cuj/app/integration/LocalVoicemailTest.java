@@ -163,7 +163,7 @@ public class LocalVoicemailTest extends BaseAppVerifier {
                 new PhoneAccountHandle(new ComponentName("foo", "bar"), "90210");
 
         assertThrows(
-                "Expected IllegalArgumentException for duration above limit.",
+                "Expected IllegalArgumentException for invalid phone account.",
                 IllegalArgumentException.class,
                 () -> {
                     Duration duration =
@@ -176,31 +176,26 @@ public class LocalVoicemailTest extends BaseAppVerifier {
     @Test
     @ApiTest(
             apis = {
+                "android.telecom.TelecomManager#isLocalVoicemailEnabled",
                 "android.telecom.TelecomManager#getLocalVoicemailTimeout",
-                "android.telecom.TelecomManager#setLocalVoicemailTimeout"
+                "android.telecom.TelecomManager#enableLocalVoicemail",
+                "android.telecom.TelecomManager#disableLocalVoicemail"
             })
     public void testGetSetLocalVoicemailTimeout() throws Exception {
         assumeTrue("Skipped for devices with no FEATURE_TELECOM", mShouldTestTelecom);
         assumeTrue("Skipped for devices with no dialer role", mSupportsManagedCalls);
 
         AppControlWrapper managedApp = null;
-        Duration originalDuration = TelecomManager.LOCAL_VOICEMAIL_DISABLED;
         try {
+            configureTestLocalVoicemailServiceAndVerify();
             managedApp = bindToApp(ManagedConnectionServiceApp);
             registerAcctAndVerify(managedApp, MANAGED_DEFAULT_ACCOUNT_1);
-
-            originalDuration =
-                    invokeMethodWithShellPermissions(
-                            mTelecomManager,
-                            tm ->
-                                    tm.getLocalVoicemailTimeout(
-                                            MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle()));
 
             Duration newDuration = Duration.ofSeconds(90);
             invokeMethodWithShellPermissionsNoReturn(
                     mTelecomManager,
                     tm ->
-                            tm.setLocalVoicemailTimeout(
+                            tm.enableLocalVoicemail(
                                     MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle(), newDuration));
 
             Duration storedDuration =
@@ -212,13 +207,10 @@ public class LocalVoicemailTest extends BaseAppVerifier {
 
             assertEquals("Saved does not match expected.", newDuration, storedDuration);
         } finally {
-            // Lambdas need to be final.
-            final Duration toReset = originalDuration;
             invokeMethodWithShellPermissionsNoReturn(
                     mTelecomManager,
-                    tm ->
-                            tm.setLocalVoicemailTimeout(
-                                    MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle(), toReset));
+                    tm -> tm.disableLocalVoicemail(MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle()));
+            resetTestLocalVoicemailService();
             unregisterAcctAndVerify(managedApp, MANAGED_DEFAULT_ACCOUNT_1);
             tearDownApp(managedApp);
         }
@@ -227,16 +219,18 @@ public class LocalVoicemailTest extends BaseAppVerifier {
     @Test
     @ApiTest(
             apis = {
+                "android.telecom.TelecomManager#isLocalVoicemailEnabled",
                 "android.telecom.TelecomManager#getLocalVoicemailTimeout",
-                "android.telecom.TelecomManager#setLocalVoicemailTimeout"
+                "android.telecom.TelecomManager#enableLocalVoicemail",
+                "android.telecom.TelecomManager#disableLocalVoicemail"
             })
     public void testGetSetLocalVoicemailTimeoutBoundsCheck() throws Exception {
         assumeTrue("Skipped for devices with no FEATURE_TELECOM", mShouldTestTelecom);
         assumeTrue("Skipped for devices with no dialer role", mSupportsManagedCalls);
 
         AppControlWrapper managedApp = null;
-        Duration originalDuration = TelecomManager.LOCAL_VOICEMAIL_DISABLED;
         try {
+            configureTestLocalVoicemailServiceAndVerify();
             managedApp = bindToApp(ManagedConnectionServiceApp);
             Bundle boundsBundle = new Bundle();
             boundsBundle.putLong(PhoneAccount.EXTRA_LOCAL_VOICEMAIL_MINIMUM_TIMEOUT_MILLIS, 1000L);
@@ -245,13 +239,6 @@ public class LocalVoicemailTest extends BaseAppVerifier {
                     MANAGED_DEFAULT_ACCOUNT_1.toBuilder().setExtras(boundsBundle).build();
             registerAcctAndVerify(managedApp, accountWithBounds);
 
-            originalDuration =
-                    invokeMethodWithShellPermissions(
-                            mTelecomManager,
-                            tm ->
-                                    tm.getLocalVoicemailTimeout(
-                                            MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle()));
-
             assertThrows(
                     "Expected IllegalArgumentException for duration above limit.",
                     IllegalArgumentException.class,
@@ -259,7 +246,7 @@ public class LocalVoicemailTest extends BaseAppVerifier {
                             invokeMethodWithShellPermissionsNoReturn(
                                     mTelecomManager,
                                     tm ->
-                                            tm.setLocalVoicemailTimeout(
+                                            tm.enableLocalVoicemail(
                                                     MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle(),
                                                     Duration.ofSeconds(90000))));
 
@@ -270,17 +257,14 @@ public class LocalVoicemailTest extends BaseAppVerifier {
                             invokeMethodWithShellPermissionsNoReturn(
                                     mTelecomManager,
                                     tm ->
-                                            tm.setLocalVoicemailTimeout(
+                                            tm.enableLocalVoicemail(
                                                     MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle(),
                                                     Duration.ofMillis(10))));
         } finally {
-            // Lambdas need to be final.
-            final Duration toReset = originalDuration;
             invokeMethodWithShellPermissionsNoReturn(
                     mTelecomManager,
-                    tm ->
-                            tm.setLocalVoicemailTimeout(
-                                    MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle(), toReset));
+                    tm -> tm.disableLocalVoicemail(MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle()));
+            resetTestLocalVoicemailService();
             unregisterAcctAndVerify(managedApp, MANAGED_DEFAULT_ACCOUNT_1);
             tearDownApp(managedApp);
         }
@@ -297,17 +281,9 @@ public class LocalVoicemailTest extends BaseAppVerifier {
         assumeTrue("Skipped for devices with no dialer role", mSupportsManagedCalls);
 
         AppControlWrapper managedApp = null;
-        Duration originalDuration = TelecomManager.LOCAL_VOICEMAIL_DISABLED;
         try {
             managedApp = bindToApp(ManagedConnectionServiceApp);
             configureTestLocalVoicemailServiceAndVerify();
-
-            originalDuration =
-                    invokeMethodWithShellPermissions(
-                            mTelecomManager,
-                            tm ->
-                                    tm.getLocalVoicemailTimeout(
-                                            MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle()));
 
             // Start by assuming that the timeout is quite short; 1 sec.
             // This way we can ensure the local voicemail service picks up quickly without this test
@@ -315,7 +291,7 @@ public class LocalVoicemailTest extends BaseAppVerifier {
             invokeMethodWithShellPermissionsNoReturn(
                     mTelecomManager,
                     tm ->
-                            tm.setLocalVoicemailTimeout(
+                            tm.enableLocalVoicemail(
                                     MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle(),
                                     Duration.ofSeconds(1)));
 
@@ -329,21 +305,17 @@ public class LocalVoicemailTest extends BaseAppVerifier {
             assertEquals(incomingCallId, call.getId());
 
             // Disconnect the call as if the remote party dropped it.
-            managedApp.setCallState(incomingCallId, Call.STATE_DISCONNECTED, true, null);
+            managedApp.setCallState(incomingCallId, Call.STATE_DISCONNECTED, true, new Bundle());
 
             assertTrue(
                     "Expected unbind from the local voicemail service.",
                     CujLocalVoicemailService.getUnbindLatch()
                             .await(STATE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS));
         } finally {
-            resetTestLocalVoicemailService();
-            final Duration restoredDuration = originalDuration;
             invokeMethodWithShellPermissionsNoReturn(
                     mTelecomManager,
-                    tm ->
-                            tm.setLocalVoicemailTimeout(
-                                    MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle(),
-                                    restoredDuration));
+                    tm -> tm.disableLocalVoicemail(MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle()));
+            resetTestLocalVoicemailService();
             unregisterAcctAndVerify(managedApp, MANAGED_DEFAULT_ACCOUNT_1);
             tearDownApp(managedApp);
         }
@@ -360,17 +332,9 @@ public class LocalVoicemailTest extends BaseAppVerifier {
         assumeTrue("Skipped for devices with no dialer role", mSupportsManagedCalls);
 
         AppControlWrapper managedApp = null;
-        Duration originalDuration = TelecomManager.LOCAL_VOICEMAIL_DISABLED;
         try {
             managedApp = bindToApp(ManagedConnectionServiceApp);
             configureTestLocalVoicemailServiceAndVerify();
-
-            originalDuration =
-                    invokeMethodWithShellPermissions(
-                            mTelecomManager,
-                            tm ->
-                                    tm.getLocalVoicemailTimeout(
-                                            MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle()));
 
             // Start by assuming that the timeout is quite short; 1 sec.
             // This way we can ensure the local voicemail service picks up quickly without this test
@@ -378,7 +342,7 @@ public class LocalVoicemailTest extends BaseAppVerifier {
             invokeMethodWithShellPermissionsNoReturn(
                     mTelecomManager,
                     tm ->
-                            tm.setLocalVoicemailTimeout(
+                            tm.enableLocalVoicemail(
                                     MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle(),
                                     Duration.ofSeconds(1)));
 
@@ -401,14 +365,10 @@ public class LocalVoicemailTest extends BaseAppVerifier {
                     CujLocalVoicemailService.getUnbindLatch()
                             .await(STATE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS));
         } finally {
-            resetTestLocalVoicemailService();
-            final Duration restoredDuration = originalDuration;
             invokeMethodWithShellPermissionsNoReturn(
                     mTelecomManager,
-                    tm ->
-                            tm.setLocalVoicemailTimeout(
-                                    MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle(),
-                                    restoredDuration));
+                    tm -> tm.disableLocalVoicemail(MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle()));
+            resetTestLocalVoicemailService();
             unregisterAcctAndVerify(managedApp, MANAGED_DEFAULT_ACCOUNT_1);
             tearDownApp(managedApp);
         }
