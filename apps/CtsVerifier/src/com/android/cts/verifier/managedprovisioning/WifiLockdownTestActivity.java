@@ -163,23 +163,34 @@ public class WifiLockdownTestActivity extends PassFailButtons.TestListActivity {
 
         boolean isDppSupported = mWifiManager.isEasyConnectSupported();
         if (isDppSupported) {
-            adapter.add(Utils.createInteractiveTestItem(this,
-                    DISALLOW_SHARING_ADMIN_CONFIGURED_WIFI_ID,
-                    R.string.device_owner_disallow_sharing_admin_configure_wifi,
-                    R.string.device_owner_disallow_sharing_admin_configure_wifi_info,
-                    new ButtonInfo[] {
-                        new ButtonInfo(
-                                R.string.device_owner_user_restriction_set,
-                                CommandReceiverActivity.createSetCurrentUserRestrictionIntent(
-                                    UserManager.DISALLOW_SHARING_ADMIN_CONFIGURED_WIFI, true)),
-                        new ButtonInfo(
-                                R.string.device_owner_settings_go,
-                                new Intent(Settings.ACTION_WIFI_SETTINGS)),
-                        new ButtonInfo(
-                                R.string.device_owner_user_restriction_unset,
-                                CommandReceiverActivity.createSetCurrentUserRestrictionIntent(
-                                    UserManager.DISALLOW_SHARING_ADMIN_CONFIGURED_WIFI, false))
-                    }));
+            ButtonInfo setRestrictionButtonInfo =
+                    new ButtonInfo(
+                            R.string.device_owner_user_restriction_set,
+                            CommandReceiverActivity.createSetDeviceOwnerUserRestrictionIntent(
+                                    UserManager.DISALLOW_SHARING_ADMIN_CONFIGURED_WIFI, true));
+
+            ButtonInfo goToSettingsButtonInfo =
+                    new ButtonInfo(
+                            R.string.device_owner_settings_go,
+                            new Intent(Settings.ACTION_WIFI_SETTINGS));
+
+            ButtonInfo unsetRestrictionButtonInfo =
+                    new ButtonInfo(
+                            R.string.device_owner_user_restriction_unset,
+                            CommandReceiverActivity.createSetDeviceOwnerUserRestrictionIntent(
+                                    UserManager.DISALLOW_SHARING_ADMIN_CONFIGURED_WIFI, false));
+
+            adapter.add(
+                    Utils.createInteractiveTestItem(
+                            this,
+                            DISALLOW_SHARING_ADMIN_CONFIGURED_WIFI_ID,
+                            R.string.device_owner_disallow_sharing_admin_configure_wifi,
+                            R.string.device_owner_disallow_sharing_admin_configure_wifi_info,
+                            new ButtonInfo[] {
+                                setRestrictionButtonInfo,
+                                goToSettingsButtonInfo,
+                                unsetRestrictionButtonInfo
+                            }));
         }
     }
 
