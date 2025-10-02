@@ -377,11 +377,28 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       if abs(mean_brightness_diff) > _BRIGHTNESS_DIFF_THRESHOLD:
         e_msg.append('Device fails the brightness difference criteria.')
 
+      marginal_brightness_pass = False
+      marginal_pass_msg = []
+      if (abs(mean_brightness_diff) > (
+          _BRIGHTNESS_DIFF_THRESHOLD * its_session_utils.MARGINAL_PASS_FACTOR)
+          and
+          abs(mean_brightness_diff) <= (_BRIGHTNESS_DIFF_THRESHOLD)):
+        marginal_brightness_pass = True
+        marginal_pass_msg.append('Marginally passing brightness check.')
+
       # Get white balance diff between default and jca captures
       mean_white_balance_diff = ip_metrics_utils.do_white_balance_check(
           default_dynamic_range_patch_cells, jca_dynamic_range_patch_cells,
           'default', 'jca'
       )
+
+      marginal_while_balance_pass = False
+      if (abs(mean_white_balance_diff) > (
+          _AWB_DIFF_THRESHOLD * its_session_utils.MARGINAL_PASS_FACTOR)
+          and
+          abs(mean_white_balance_diff) <= (_AWB_DIFF_THRESHOLD)):
+        marginal_while_balance_pass = True
+        marginal_pass_msg.append('Marginally passing white balance diff check.')
 
       # Get cropped color cells
       default_cropped_color_cells = ce.get_cropped_color_cells(
@@ -401,9 +418,15 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       if not fov_match:
         e_msg.append('Device fails the FOV match check.')
       if e_msg:
-        raise AssertionError(
-            f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}\n\n{e_msg}')
-
+        if first_api_level <= its_session_utils.ANDROID17_API_LEVEL:
+          raise AssertionError(
+              f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}\n\n{e_msg}')
+        else:
+          raise AssertionError(e_msg)  # Checks mandated starting Android 17
+      else:  # Check for marginal pass
+        if (marginal_brightness_pass or marginal_while_balance_pass):
+          logging.warning('its_session_utils.MARGINAL_PASSING_MESSAGE\n %s',
+                          marginal_pass_msg)
 
 if __name__ == '__main__':
   test_runner.main()

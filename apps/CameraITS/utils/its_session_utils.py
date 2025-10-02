@@ -111,6 +111,7 @@ VIDEO_SCENES = ('scene_video',)
 JPG_SCENES = ('scene_wide_gamut',)
 NOT_YET_MANDATED_MESSAGE = 'Not yet mandated test'
 MARGINAL_PASSING_MESSAGE = '***Marginally passing test***'
+MARGINAL_PASS_FACTOR = 0.90
 RESULT_OK_STATUS = '-1'
 
 _FLASH_MODE_OFF = 0
