@@ -15,12 +15,15 @@
  */
 package com.android.bedstead.settings
 
+import android.Manifest.permission.READ_SYSTEM_PREFERENCES
+import android.Manifest.permission.WRITE_SYSTEM_PREFERENCES
 import android.service.settings.preferences.SetValueResult
 import android.service.settings.preferences.SettingsPreferenceMetadata
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.nene.types.OptionalBoolean
+import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.settingslib.flags.Flags.FLAG_SETTINGS_CATALYST
 import com.google.common.truth.Truth.assertThat
 import org.junit.ClassRule
@@ -33,6 +36,7 @@ class IsWritableSettingsPreferenceServiceClientTest {
 
     @Test
     @RequireFlagsEnabled(FLAG_SETTINGS_CATALYST)
+    @EnsureHasPermission(READ_SYSTEM_PREFERENCES, WRITE_SYSTEM_PREFERENCES)
     fun setValueResultWhenNoWritable_ResultIsDifferentThanOK(
         @SettingsPreferenceMetadataParameter(
             isWritable = OptionalBoolean.FALSE,
@@ -48,7 +52,7 @@ class IsWritableSettingsPreferenceServiceClientTest {
             .setValueResult(
                 argument,
                 getValueResult.value!!,
-                grantRequiredPermissions = true
+                grantRequiredPermissions = false
             )
 
         assertThat(setValueResult.resultCode).isNotEqualTo(SetValueResult.RESULT_OK)
@@ -56,6 +60,7 @@ class IsWritableSettingsPreferenceServiceClientTest {
 
     @Test
     @RequireFlagsEnabled(FLAG_SETTINGS_CATALYST)
+    @EnsureHasPermission(READ_SYSTEM_PREFERENCES, WRITE_SYSTEM_PREFERENCES)
     fun setValueResultWhenIsWritable_ResultOkReturned(
         @SettingsPreferenceMetadataParameter(
             isWritable = OptionalBoolean.TRUE,
@@ -70,7 +75,7 @@ class IsWritableSettingsPreferenceServiceClientTest {
             .setValueResult(
                 argument,
                 getValueResult.value!!,
-                grantRequiredPermissions = true
+                grantRequiredPermissions = false
             )
 
         assertThat(setValueResult.resultCode).isEqualTo(SetValueResult.RESULT_OK)
