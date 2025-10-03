@@ -23,6 +23,7 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
+import android.os.Build;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.provider.DeviceConfig;
@@ -191,7 +192,8 @@ public final class DeviceConfigApiTests {
 
     @Test
     public void testPropertiesIncludedInGetAllProperties() {
-        if (!SdkLevel.isAtLeastV()) {
+        // Fix for large binder transaction in #getAllProperties only included in B+ (36).
+        if (Build.VERSION.SDK_INT < 36) {
             return;
         }
 
