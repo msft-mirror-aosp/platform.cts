@@ -692,6 +692,10 @@
             android:foregroundServiceType="mediaProjection" />
 
         <activity android:name="android.server.wm.window.ScreenRecordingCallbackTests$ScreenRecordingCallbackActivity" />
+
+        <meta-data
+            android:name="android.car.displaycompat.requires_back_button"
+            android:value="false" />
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
