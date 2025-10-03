@@ -27,16 +27,21 @@ import static org.junit.Assert.assertTrue;
 
 import android.media.Utils;
 import android.media.VibrationUtils;
+import android.media.audio.Flags;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -49,6 +54,9 @@ import java.util.concurrent.TimeUnit;
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class UtilsTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Test
     public void testListenerList() throws Exception {
         // The ListenerList is a Test API only to enable a dedicated unit test
@@ -102,6 +110,7 @@ public class UtilsTest {
                 "android.media.VibrationUtils#VIBRATION_URI_PARAM",
                 "android.media.VibrationUtils#SYNCHRONIZED_VIBRATION"
             })
+    @RequiresFlagsEnabled(Flags.FLAG_RINGTONE_VIBRATION_UTILS_API)
     public void testHasVibrationParameter() throws IOException {
         Uri ringtoneUri;
         ringtoneUri = RINGTONE_TEST_URI;
