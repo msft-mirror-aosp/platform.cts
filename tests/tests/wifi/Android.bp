@@ -40,7 +40,6 @@ android_test {
     srcs: [
         "src/android/net/wifi/aware/cts/*.java",
         "src/android/net/wifi/cts/*.java",
-        "src/android/net/wifi/mockwifi/cts/*.java",
         "src/android/net/wifi/p2p/cts/*.java",
         "src/android/net/wifi/passpoint/cts/*.java",
         "src/android/net/wifi/rtt/cts/*.java",
@@ -56,7 +55,6 @@ android_test {
         "Nene",
         "net-utils-framework-common",
         "truth",
-        "android.wifi.mockwifi",
         "wifi_aconfig_flags_lib",
         "flag-junit",
     ],

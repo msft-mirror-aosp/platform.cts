@@ -236,9 +236,6 @@
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.WifiNetworkSuggestionTest#testConnectToSuggestionThenRemoveWithImmediateDisconnect"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.WifiNetworkSuggestionTest#testConnectToSuggestionThenRemoveWithLingering"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.WifiScannerTest#testGetCachedScanData"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.mockwifi.cts.MockWifiTest#testMockPnoScanResultsOnMockWifi"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.mockwifi.cts.MockWifiTest#testMockSignalPollOnMockWifi"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.mockwifi.cts.MockWifiTest#testZeroLengthSubElementIEOnMockWifi"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.p2p.cts.WifiP2pConfigTest#wifiP2pConfigBuilderForGroupClientIpProvisioningModeDefault"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.p2p.cts.WifiP2pConfigTest#wifiP2pConfigBuilderForGroupClientIpProvisioningModeIpv4Dhcp"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.p2p.cts.WifiP2pConfigTest#wifiP2pConfigBuilderForGroupClientIpProvisioningModeIpv6LinkLocal"/>
