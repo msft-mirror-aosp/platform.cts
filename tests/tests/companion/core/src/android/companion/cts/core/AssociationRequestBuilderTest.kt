@@ -18,7 +18,7 @@ package android.companion.cts.core
 
 import android.companion.AssociationRequest
 import android.companion.AssociationRequest.DEVICE_PROFILE_WATCH
-import android.companion.AssociationRequest.PERMISSION_NEARBY
+import android.companion.AssociationRequest.PERMISSION_GROUP_NEARBY
 import android.companion.BluetoothDeviceFilter
 import android.companion.Flags
 import android.companion.cts.common.assertEmpty
@@ -82,7 +82,7 @@ class AssociationRequestBuilderTest {
             if (Flags.associationDeviceIcon()) {
                 setDeviceIcon(deviceIcon)
             }
-            setExtraPermissions(setOf(PERMISSION_NEARBY))
+            setExtraPermissions(setOf(PERMISSION_GROUP_NEARBY))
         }.build()
 
         request.apply {
@@ -100,7 +100,7 @@ class AssociationRequestBuilderTest {
             }
             assertEquals(
                     actual = extraPermissions,
-                    expected = setOf(PERMISSION_NEARBY)
+                    expected = setOf(PERMISSION_GROUP_NEARBY)
             )
         }
     }

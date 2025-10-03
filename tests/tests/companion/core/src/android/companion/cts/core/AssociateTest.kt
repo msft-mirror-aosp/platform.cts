@@ -19,7 +19,7 @@ package android.companion.cts.core
 import android.Manifest.permission.REQUEST_COMPANION_SELF_MANAGED
 import android.companion.AssociationRequest
 import android.companion.AssociationRequest.DEVICE_PROFILE_COMPUTER
-import android.companion.AssociationRequest.PERMISSION_NEARBY
+import android.companion.AssociationRequest.PERMISSION_GROUP_NEARBY
 import android.companion.CompanionDeviceManager.FLAG_CALL_METADATA
 import android.companion.CompanionDeviceManager.FLAG_UNIVERSAL_MODES
 import android.companion.DeviceId
@@ -286,7 +286,7 @@ class AssociateTest : CoreTestBase() {
             )
         }
 
-        associate(MAC_ADDRESS_A, "null", PERMISSION_NEARBY)
+        associate(MAC_ADDRESS_A, "null", PERMISSION_GROUP_NEARBY)
 
         nearbyPerms.forEach { p ->
             assertEquals(
@@ -311,7 +311,7 @@ class AssociateTest : CoreTestBase() {
             )
         }
 
-        associate(MAC_ADDRESS_A, DEVICE_PROFILE_COMPUTER, PERMISSION_NEARBY)
+        associate(MAC_ADDRESS_A, DEVICE_PROFILE_COMPUTER, PERMISSION_GROUP_NEARBY)
 
         nearbyPerms.forEach { p ->
             assertEquals(
@@ -323,7 +323,7 @@ class AssociateTest : CoreTestBase() {
 
     @Test
     fun test_disassociate_profileNull_revokesExtraPermission() = with(testApp) {
-        associate(MAC_ADDRESS_A, "null", PERMISSION_NEARBY)
+        associate(MAC_ADDRESS_A, "null", PERMISSION_GROUP_NEARBY)
 
         nearbyPerms.forEach { p ->
             assertEquals(
@@ -332,7 +332,7 @@ class AssociateTest : CoreTestBase() {
             )
         }
 
-        associate(MAC_ADDRESS_B, "null", PERMISSION_NEARBY)
+        associate(MAC_ADDRESS_B, "null", PERMISSION_GROUP_NEARBY)
 
         disassociate(MAC_ADDRESS_A)
 

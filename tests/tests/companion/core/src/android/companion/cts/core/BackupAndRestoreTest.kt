@@ -19,7 +19,7 @@ package android.companion.cts.core
 import android.annotation.UserIdInt
 import android.companion.AssociationInfo
 import android.companion.AssociationRequest.DEVICE_PROFILE_WATCH
-import android.companion.AssociationRequest.PERMISSION_NEARBY
+import android.companion.AssociationRequest.PERMISSION_GROUP_NEARBY
 import android.companion.CompanionDeviceManager
 import android.companion.cts.common.AppHelper
 import android.companion.cts.common.MAC_ADDRESS_A
@@ -226,7 +226,7 @@ class BackupAndRestoreTest : CoreTestBase() {
 
     @Test
     fun test_applyRestoredPayload_nonProfile_grantsExtraPermissions() = with (testApp) {
-        associate(MAC_ADDRESS_A, "null", PERMISSION_NEARBY)
+        associate(MAC_ADDRESS_A, "null", PERMISSION_GROUP_NEARBY)
 
         val payload = getBackupPayload(userId)
         assertNotNull(payload)
@@ -246,7 +246,7 @@ class BackupAndRestoreTest : CoreTestBase() {
     @Test
     fun test_applyRestoredPayload_nonProfile_grantsExtraPermissionsToFuturePackage() =
         with (testApp) {
-            associate(MAC_ADDRESS_A, "null", PERMISSION_NEARBY)
+            associate(MAC_ADDRESS_A, "null", PERMISSION_GROUP_NEARBY)
             val payload = getBackupPayload(userId)
             assertNotNull(payload)
 
