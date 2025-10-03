@@ -633,6 +633,16 @@ public class MediaSessionTest {
         }
     }
 
+    @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
+    public void testSetMediaButtonBroadcastReceiver_withNull_doesNotThrow() {
+        try {
+            mSession.setMediaButtonBroadcastReceiver(null);
+        } finally {
+            MediaButtonBroadcastReceiver.setCallback(null);
+        }
+    }
+
     /** Test public APIs of {@link VolumeProvider}. */
     @Test
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
