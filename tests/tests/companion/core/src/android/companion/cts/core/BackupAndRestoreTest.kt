@@ -19,17 +19,18 @@ package android.companion.cts.core
 import android.annotation.UserIdInt
 import android.companion.AssociationInfo
 import android.companion.AssociationRequest.DEVICE_PROFILE_WATCH
+import android.companion.AssociationRequest.PERMISSION_NEARBY
 import android.companion.CompanionDeviceManager
 import android.companion.cts.common.AppHelper
 import android.companion.cts.common.MAC_ADDRESS_A
 import android.companion.cts.common.MAC_ADDRESS_B
 import android.companion.cts.common.waitFor
+import android.content.pm.PackageManager
 import android.net.MacAddress
 import android.platform.test.annotations.AppModeFull
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -222,6 +223,47 @@ class BackupAndRestoreTest : CoreTestBase() {
         // Correct version number but bad payload
         applyRestoredPayload("AAAAAKo=", userId)
     }
+
+    @Test
+    fun test_applyRestoredPayload_nonProfile_grantsExtraPermissions() = with (testApp) {
+        associate(MAC_ADDRESS_A, "null", PERMISSION_NEARBY)
+
+        val payload = getBackupPayload(userId)
+        assertNotNull(payload)
+
+        disassociateAll()
+        applyRestoredPayload(payload, userId)
+        assertAssociationsAddedFor(testApp, MAC_ADDRESS_A)
+
+        nearbyPerms.forEach { p ->
+            assertEquals(
+                PackageManager.PERMISSION_GRANTED,
+                pm.checkPermission(p, packageName)
+            )
+        }
+    }
+
+    @Test
+    fun test_applyRestoredPayload_nonProfile_grantsExtraPermissionsToFuturePackage() =
+        with (testApp) {
+            associate(MAC_ADDRESS_A, "null", PERMISSION_NEARBY)
+            val payload = getBackupPayload(userId)
+            assertNotNull(payload)
+
+            testApp.uninstall()
+            assertAssociationsRemovedFor(testApp)
+            applyRestoredPayload(payload, userId)
+
+            testApp.install()
+            assertAssociationsAddedFor(testApp, MAC_ADDRESS_A)
+
+            nearbyPerms.forEach { p ->
+                assertEquals(
+                    PackageManager.PERMISSION_GRANTED,
+                    pm.checkPermission(p, packageName)
+                )
+            }
+        }
 
     private fun getBackupPayload(userId: Int) =
             runShellCommand("cmd companiondevice get-backup-payload $userId")
