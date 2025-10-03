@@ -18,9 +18,9 @@ package android.security.net.config.cts;
 
 import static android.security.Flags.FLAG_ENCRYPTED_CLIENT_HELLO_CONFIGURATION;
 import static android.security.NetworkSecurityPolicy.DOMAIN_ENCRYPTION_MODE_DISABLED;
-import static android.security.NetworkSecurityPolicy.DOMAIN_ENCRYPTION_MODE_FAIL_CLOSED;
+import static android.security.NetworkSecurityPolicy.DOMAIN_ENCRYPTION_MODE_ENABLED;
 import static android.security.NetworkSecurityPolicy.DOMAIN_ENCRYPTION_MODE_OPPORTUNISTIC;
-import static android.security.NetworkSecurityPolicy.DOMAIN_ENCRYPTION_MODE_STRICT;
+import static android.security.NetworkSecurityPolicy.DOMAIN_ENCRYPTION_MODE_REQUIRED;
 
 import static org.junit.Assert.assertEquals;
 
@@ -57,9 +57,9 @@ public class ECHNetworkSecurityConfigTest {
         assertEquals(
                 DOMAIN_ENCRYPTION_MODE_DISABLED, mInstance.getDomainEncryptionMode("android.com"));
         assertEquals(
-                DOMAIN_ENCRYPTION_MODE_STRICT, mInstance.getDomainEncryptionMode("brambonne.com"));
+                DOMAIN_ENCRYPTION_MODE_ENABLED, mInstance.getDomainEncryptionMode("brambonne.com"));
         assertEquals(
-                DOMAIN_ENCRYPTION_MODE_FAIL_CLOSED,
+                DOMAIN_ENCRYPTION_MODE_REQUIRED,
                 mInstance.getDomainEncryptionMode("tls-ech.dev"));
     }
 }

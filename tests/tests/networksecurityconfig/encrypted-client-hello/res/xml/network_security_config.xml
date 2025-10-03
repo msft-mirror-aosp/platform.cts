@@ -5,11 +5,11 @@
     <domain>android.com</domain>
   </domain-config>
   <domain-config>
-    <domainEncryption mode="strict" />
+    <domainEncryption mode="enabled" />
     <domain>brambonne.com</domain>
   </domain-config>
   <domain-config>
-    <domainEncryption mode="closed" />
+    <domainEncryption mode="required" />
     <domain>tls-ech.dev</domain>
   </domain-config>
 </network-security-config>
