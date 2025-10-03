@@ -295,6 +295,9 @@ public final class InputMethodManagerTest {
     public void testInputMethodPickerShownItems() {
         assumeFalse(mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_AUTOMOTIVE));
+        // TODO(b/446170643): re-enable after the ImeContainer reparenting issue is fixed.
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_WATCH));
         assumeTrue(mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_INPUT_METHODS));
         enableImes(MOCK_IME_ID, HIDDEN_FROM_PICKER_IME_ID);
@@ -351,6 +354,9 @@ public final class InputMethodManagerTest {
     public void testInputMethodPickerSwitchIme() throws Exception {
         assumeFalse(mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_AUTOMOTIVE));
+        // TODO(b/446170643): re-enable after the ImeContainer reparenting issue is fixed.
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_WATCH));
         assumeTrue(mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_INPUT_METHODS));
         // Initialize MockIME (without setting it as current IME) before selecting it from the menu.
