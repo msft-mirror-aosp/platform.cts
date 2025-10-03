@@ -76,6 +76,8 @@ public class ProcessTest {
     private static final int SANDBOX_SDK_UID = 20001;
     private static final int ISOLATED_PROCESS_UID = 99037;
     private static final int APP_ZYGOTE_ISOLATED_UID = 90123;
+    private static final int FIRST_PCC_UID = 30000;
+    private static final int LAST_PCC_UID = 39999;
     private static final String TAG = "ProcessTest";
     private ISecondary mSecondaryService = null;
     private Intent mIntent;
@@ -359,6 +361,19 @@ public class ProcessTest {
         assertFalse(Process.isIsolatedUid(SANDBOX_SDK_UID));
         // App uid is not an isolated process uid
         assertFalse(Process.isIsolatedUid(APP_UID));
+    }
+
+    /** Tests for {@link Process#isPccUid() (boolean)} */
+    @Test
+    @RequiresFlagsEnabled(android.app.privatecompute.flags.Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT)
+    public void testPccUids() {
+        assertTrue(Process.isPccUid(FIRST_PCC_UID));
+        assertTrue(Process.isPccUid((FIRST_PCC_UID + LAST_PCC_UID) / 2));
+        assertTrue(Process.isPccUid(LAST_PCC_UID));
+        assertFalse(Process.isPccUid(Process.FIRST_APPLICATION_UID));
+        assertFalse(Process.isPccUid(Process.ROOT_UID));
+        assertFalse(Process.isPccUid(Process.PHONE_UID));
+        assertFalse(Process.isPccUid(Process.INVALID_UID));
     }
 
     @Test
