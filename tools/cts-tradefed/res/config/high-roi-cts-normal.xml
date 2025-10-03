@@ -1339,12 +1339,6 @@
     <option name="compatibility:include-filter" value="CtsGraphicsTestCases android.graphics.cts.SystemPaletteTest#testSystemPalette[dark_FF007FB4_MONOCHROMATIC]"/>
     <option name="compatibility:include-filter" value="CtsGraphicsTestCases android.graphics.cts.SystemPaletteTest#testSystemPalette[dark_FF007FB4_RAINBOW]"/>
     <option name="compatibility:include-filter" value="CtsGraphicsTestCases android.graphics.cts.SystemPaletteTest#testSystemPalette[dark_FF007FB4_SPRITZ]"/>
-    <option name="compatibility:include-filter" value="CtsGraphicsTestCases android.graphics.fonts.FontTest#testBuilder_asset_vf"/>
-    <option name="compatibility:include-filter" value="CtsGraphicsTestCases android.graphics.fonts.FontTest#testBuilder_buffer_vf"/>
-    <option name="compatibility:include-filter" value="CtsGraphicsTestCases android.graphics.fonts.FontTest#testBuilder_fd_subdata_vf"/>
-    <option name="compatibility:include-filter" value="CtsGraphicsTestCases android.graphics.fonts.FontTest#testBuilder_fd_vf"/>
-    <option name="compatibility:include-filter" value="CtsGraphicsTestCases android.graphics.fonts.FontTest#testBuilder_file_vf"/>
-    <option name="compatibility:include-filter" value="CtsGraphicsTestCases android.graphics.text.cts.TextRunShaperTest#shapeText_FontCreateFromNative_Override"/>
     <!-- CtsGraphicsTestCases[instant] -->
     <option name="compatibility:include-filter" value="CtsGraphicsTestCases[instant] android.graphics.cts.BitmapTest#testWriteToParcelPreserveMutability"/>
     <option name="compatibility:include-filter" value="CtsGraphicsTestCases[instant] android.graphics.cts.DynamicColorsTest#testDynamicColors[high_FF007FB4_EXPRESSIVE]"/>
@@ -4110,6 +4104,12 @@
     <option name="compatibility:include-filter" value="CtsTextTestCases android.text.cts.StaticLayoutLineBreakingVariantsTest#testPhraseFallback_Strict_Greedy"/>
     <option name="compatibility:include-filter" value="CtsTextTestCases android.text.cts.StaticLayoutLineBreakingVariantsTest#testPhraseFallback_Strict_Optimal"/>
     <option name="compatibility:include-filter" value="CtsTextTestCases android.text.cts.StaticLayoutMultilineBidiTest#testConsistentBidiDraw"/>
+    <option name="compatibility:include-filter" value="CtsTextTestCases android.text.cts.TextRunShaperTest#shapeText_FontCreateFromNative_Override"/>
+    <option name="compatibility:include-filter" value="CtsTextTestCases android.text.fonts.FontTest#testBuilder_asset_vf"/>
+    <option name="compatibility:include-filter" value="CtsTextTestCases android.text.fonts.FontTest#testBuilder_buffer_vf"/>
+    <option name="compatibility:include-filter" value="CtsTextTestCases android.text.fonts.FontTest#testBuilder_fd_subdata_vf"/>
+    <option name="compatibility:include-filter" value="CtsTextTestCases android.text.fonts.FontTest#testBuilder_fd_vf"/>
+    <option name="compatibility:include-filter" value="CtsTextTestCases android.text.fonts.FontTest#testBuilder_file_vf"/>
     <option name="compatibility:include-filter" value="CtsTextTestCases android.text.method.cts.DateTimeKeyListenerTest#testDateTimeKeyListener"/>
     <option name="compatibility:include-filter" value="CtsTextTestCases android.text.method.cts.DigitsKeyListenerTest#testDigitsKeyListener1"/>
     <!-- CtsThemeHostTestCases -->
