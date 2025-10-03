@@ -15,11 +15,14 @@
  */
 package android.content.pm.cts.shortcutmanager;
 
+import static android.server.wm.UiDeviceUtils.pressHomeButton;
+
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.assertWith;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.list;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.retryUntil;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.setDefaultLauncher;
 
+import android.app.ActivityManager;
 import android.app.ActivityOptions;
 import android.app.PendingIntent;
 import android.content.ComponentName;
@@ -38,6 +41,7 @@ import android.server.wm.WindowManagerStateHelper;
 import android.util.Log;
 
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.SystemUtil;
 
 import java.util.HashMap;
 import java.util.List;
@@ -457,6 +461,12 @@ public class ShortcutManagerRequestPinTest extends ShortcutManagerCtsTestsBase {
                 getTestContext().startActivity(requestIntent);
                 // waits for confirm pin activity to respond
             });
+            // Press home key to ensure stopAppSwitches is called because the last-stop-app-switch-time
+            // is a criteria of allowing background start.
+            pressHomeButton();
+            SystemUtil.runWithShellPermissionIdentity(ActivityManager::resumeAppSwitches);
+            mWmState.waitForHomeActivityVisible();
+            SystemUtil.runWithShellPermissionIdentity(ActivityManager::resumeAppSwitches);
             // waits for trampoline service to respond after it has launched the target activity.
         });
         boolean result = mWmState.waitForFocusedActivity(targetActivity);
