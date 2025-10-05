@@ -1455,9 +1455,11 @@
     <!-- Event sanitization for idle UIDs -->
     <string name="snsr_event_sanitization_test">Event sanitization for idle UID test</string>
     <string name="snsr_event_sanitization_test_setup">Run the \'adb shell cmd sensorservice set-uid-state com.android.cts.verifier idle\' shell command
-        to emulate the CtsVerifier UID being idle.</string>
+        to emulate the CtsVerifier UID being idle. Add the \'--user USER_ID\' parameter to the end of the command if the test is run on a secondary user
+        or in headless system user mode (HSUM), for example \'--user 10\'.</string>
     <string name="snsr_event_sanitization_test_cleanup">Run the \'adb shell cmd sensorservice reset-uid-state com.android.cts.verifier\' shell command
-        to stop emulating the CtsVerifier UID being idle. Failing to do that would lead to other tests failing!</string>
+        to stop emulating the CtsVerifier UID being idle. Add the same \'--user USER_ID\' parameter used test setup, if any. Failing to do that would lead
+        to other tests failing!</string>
     <string name="snsr_significant_motion_test_uid_idle">Move around with the device to try triggering significant motion</string>
     <string name="snsr_significant_motion_test_uid_idle_expectation">No trigger events should be generated while idle</string>
     <string name="snsr_proximity_test_uid_idle">Touch the proximity sensor to try triggering it</string>
