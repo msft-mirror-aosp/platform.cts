@@ -21,12 +21,14 @@ import static android.content.Intent.FLAG_ACTIVITY_NO_USER_ACTION;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityOptions;
+import android.app.IApplicationThread;
 import android.app.UiAutomation;
 import android.content.Context;
 import android.content.Intent;
@@ -39,9 +41,13 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 import android.view.SurfaceControl;
 import android.window.IRemoteTransitionFinishedCallback;
+import android.window.ITransitionPlayer;
 import android.window.RemoteTransition;
 import android.window.RemoteTransitionStub;
+import android.window.StartingWindowRemovalInfo;
 import android.window.TransitionInfo;
+import android.window.TransitionRequestInfo;
+import android.window.WindowOrganizer;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
@@ -253,6 +259,66 @@ public class ActivityManagerTest extends StsExtraBusinessLogicTestCase {
 
         assertFalse(remoteCalled[0]);
         assertTrue(securityException);
+    }
+
+    @AsbSecurityTest(cveBugId = 438742644)
+    @Test
+    public void testActivityManager_stripsAppThreadFromRemoteTransition() throws Exception {
+        Context targetContext = getInstrumentation().getTargetContext();
+        final Intent baseIntent = new Intent(targetContext, WaitEnterAnimActivity.class);
+        baseIntent.setFlags(FLAG_ACTIVITY_NO_USER_ACTION | FLAG_ACTIVITY_NEW_TASK);
+        RemoteTransition someRemote = new RemoteTransition(new RemoteTransitionStub() {
+            @Override
+            public void startAnimation(IBinder token, TransitionInfo info,
+                    SurfaceControl.Transaction t,
+                    IRemoteTransitionFinishedCallback finishCallback) throws RemoteException {
+                t.apply();
+                finishCallback.onTransitionFinished(null /* wct */, null /* sct */);
+            }
+        }, targetContext.getIApplicationThread(), "testRemote");
+        ActivityOptions opts = ActivityOptions.makeRemoteTransition(someRemote);
+        final WaitEnterAnimActivity baseActivity;
+
+        final UiAutomation uiAutomation = androidx.test.platform.app.InstrumentationRegistry
+                .getInstrumentation().getUiAutomation();
+        uiAutomation.adoptShellPermissionIdentity("android.permission.MANAGE_ACTIVITY_TASKS",
+                "android.permission.CONTROL_REMOTE_APP_TRANSITION_ANIMATIONS");
+        final WindowOrganizer windowOrganizer = new WindowOrganizer();
+        final IApplicationThread[] foundThread = new IApplicationThread[]{null};
+        final boolean[] requested = new boolean[]{false};
+        try {
+            ITransitionPlayer transitionPlayer = new ITransitionPlayer.Stub() {
+                @Override public void onTransitionReady(IBinder transitionToken,
+                        TransitionInfo info, SurfaceControl.Transaction t,
+                        SurfaceControl.Transaction finishT) {
+                    t.apply();
+                    finishT.apply();
+                    windowOrganizer.finishTransition(transitionToken, null /* wct */);
+                }
+                @Override public void requestStartTransition(IBinder transitionToken,
+                        TransitionRequestInfo request) {
+                    RemoteTransition remoteTransition = request.getRemoteTransition();
+                    if (remoteTransition != null) {
+                        foundThread[0] = remoteTransition.getAppThread();
+                        requested[0] = true;
+                    }
+                    windowOrganizer.startTransition(transitionToken, null /* wct */);
+                }
+                @Override public void removeStartingWindow(StartingWindowRemovalInfo removalInfo) {
+                }
+            };
+            windowOrganizer.registerTransitionPlayer(transitionPlayer);
+            try {
+                baseActivity = (WaitEnterAnimActivity)
+                        getInstrumentation().startActivitySync(baseIntent, opts.toBundle());
+                assertTrue(waitUntil(() -> (baseActivity.mAnimComplete && requested[0])));
+            } finally {
+                windowOrganizer.unregisterTransitionPlayer(transitionPlayer);
+            }
+            assertNull(foundThread[0]);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
     }
 
     @AsbSecurityTest(cveBugId = 289549315)
