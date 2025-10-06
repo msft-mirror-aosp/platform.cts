@@ -513,7 +513,6 @@ public class NotificationAssistantServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NOTIFICATION_CLASSIFICATION)
     public void testAdjustNotification_typeKey() throws Exception {
         setUpListeners();
 
@@ -570,7 +569,6 @@ public class NotificationAssistantServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.service.notification.Flags.FLAG_NOTIFICATION_CLASSIFICATION)
     public void testAdjustNotification_typeKey_userTurnedOff_doesNotMove() throws Exception {
         setUpListeners();
 
@@ -654,11 +652,7 @@ public class NotificationAssistantServiceTest {
         assertTrue(
                 mAssistant.mCurrentCapabilities.contains(
                         Adjustment.KEY_NOT_CONVERSATION));
-        if (android.service.notification.Flags.notificationClassification()) {
-            assertTrue(
-                    mAssistant.mCurrentCapabilities.contains(
-                            KEY_TYPE));
-        }
+        assertTrue(mAssistant.mCurrentCapabilities.contains(KEY_TYPE));
 
         mUi.dropShellPermissionIdentity();
     }
@@ -911,7 +905,6 @@ public class NotificationAssistantServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NOTIFICATION_CLASSIFICATION)
     public void testSetAdjustmentTypeSupportedState_false() throws Exception {
         setUpListeners(); // also enables assistant
         mAssistant.setAdjustmentTypeSupportedState(KEY_IMPORTANCE, false);
@@ -923,7 +916,6 @@ public class NotificationAssistantServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NOTIFICATION_CLASSIFICATION)
     public void testSetAdjustmentTypeSupportedState_true() throws Exception {
         setUpListeners(); // also enables assistant
         mAssistant.setAdjustmentTypeSupportedState(KEY_IMPORTANCE, false);
@@ -936,7 +928,6 @@ public class NotificationAssistantServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NOTIFICATION_CLASSIFICATION)
     public void testSetAdjustmentTypeSupportedState_default() throws Exception {
         setUpListeners(); // also enables assistant
         SystemUtil.runWithShellPermissionIdentity(() -> {
@@ -946,7 +937,6 @@ public class NotificationAssistantServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NOTIFICATION_CLASSIFICATION)
     public void testSetAdjustmentTypeSupportedState_updateDefault() throws Exception {
         setUpListeners(); // also enables assistant
 
@@ -962,7 +952,6 @@ public class NotificationAssistantServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NOTIFICATION_CLASSIFICATION)
     public void testAdjustNotification_importance_notAllowed() throws Exception {
         setUpListeners();
 
@@ -1006,7 +995,6 @@ public class NotificationAssistantServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NOTIFICATION_CLASSIFICATION)
     public void testAdjustNotification_importance_allowed() throws Exception {
         setUpListeners();
         try {
@@ -1055,7 +1043,6 @@ public class NotificationAssistantServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NOTIFICATION_CLASSIFICATION)
     public void testCannotPostToReservedChannel() throws Exception {
         setUpListeners();
         SystemUtil.runWithShellPermissionIdentity(() ->
@@ -1096,7 +1083,6 @@ public class NotificationAssistantServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NOTIFICATION_CLASSIFICATION)
     public void testCannotDeleteReservedChannel() throws Exception {
         setUpListeners();
 
