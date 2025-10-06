@@ -17,17 +17,16 @@
 package com.android.bedstead.enterprise;
 
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_DEVICE_OWNER;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_PROFILE_OWNER_PROFILE;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_TO_OWN_USER;
 
 import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
 
 import java.util.Set;
 
-/**
- * Policy for testing policy arguments.
- */
+/** Policy for testing policy arguments. */
 @EnterprisePolicy(
-        dpc = APPLIED_BY_DEVICE_OWNER | APPLIES_TO_OWN_USER)
+        dpc = APPLIED_BY_DEVICE_OWNER | APPLIES_TO_OWN_USER | APPLIED_BY_PROFILE_OWNER_PROFILE)
 public final class TestPolicyForPolicyArguments extends PolicyArguments<Integer> {
 
     public static final int POLICY_ARGUMENT_ONE = 2;

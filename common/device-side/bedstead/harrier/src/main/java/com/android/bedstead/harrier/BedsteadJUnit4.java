@@ -21,6 +21,7 @@ import androidx.annotation.Nullable;
 import com.android.bedstead.harrier.annotations.AnnotationCostRunPrecedence;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
+import com.android.bedstead.harrier.annotations.TestOrder;
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestGenerator;
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestWithArgumentGenerator;
 import com.android.bedstead.harrier.annotations.meta.BedsteadTest;
@@ -58,9 +59,12 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -75,7 +79,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
     private static final Map<Annotation, Integer> ANNOTATION_COST_CACHE = new HashMap<>();
     private static final Map<Annotation, Integer> ANNOTATION_PRIORITY_CACHE = new HashMap<>();
-
     private static final String LOG_TAG = "BedsteadJUnit4";
     private boolean mHasManualHarrierRule = false;
     private static final BedsteadServiceLocator mLocator = new BedsteadServiceLocator();
@@ -470,21 +473,21 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
             }
         }
 
-        modifiedTests = generateGeneralParameterisationMethods(modifiedTests);
-
-        sortMethodsByBedsteadAnnotations(modifiedTests);
+        modifiedTests =
+                processBedsteadMethodsPrioritization(
+                        generateGeneralParameterizationMethods(modifiedTests));
 
         return modifiedTests;
     }
 
-    private List<FrameworkMethod> generateGeneralParameterisationMethods(
+    private List<FrameworkMethod> generateGeneralParameterizationMethods(
             List<FrameworkMethod> modifiedTests) {
         return modifiedTests.stream()
-                .flatMap(this::generateGeneralParameterisationMethods)
+                .flatMap(this::generateGeneralParameterizationMethods)
                 .collect(Collectors.toList());
     }
 
-    private Stream<FrameworkMethod> generateGeneralParameterisationMethods(FrameworkMethod method) {
+    private Stream<FrameworkMethod> generateGeneralParameterizationMethods(FrameworkMethod method) {
         Stream<FrameworkMethod> expandedMethods = Stream.of(method);
         if (method.getMethod().getParameterCount() == 0) {
             return expandedMethods;
@@ -527,6 +530,48 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         }
 
         return expandedMethods;
+    }
+
+    private List<FrameworkMethod> processBedsteadMethodsPrioritization(
+            List<FrameworkMethod> modifiedTests) {
+        var defaultPriority = Integer.MIN_VALUE;
+        TreeMap<Integer, LinkedList<FrameworkMethod>> testRunPrioritization = new TreeMap<>(
+                Map.of(defaultPriority, new LinkedList<>()));
+
+        modifiedTests.forEach(
+                singleTestRun -> {
+                    Optional<TestOrder> optTestOrder =
+                            Optional.ofNullable(singleTestRun.getAnnotation(TestOrder.class));
+                    if (optTestOrder.isPresent()) {
+                        int testRunPriority = optTestOrder.get().order();
+                        if (testRunPriority == defaultPriority) {
+                            throw new IllegalArgumentException(
+                                    String.format(
+                                            "Value %s restricted for use with TestOrder annotation",
+                                            defaultPriority));
+                        }
+                        testRunPrioritization
+                                .computeIfAbsent(testRunPriority, k -> new LinkedList<>())
+                                .add(singleTestRun);
+                    } else {
+                        testRunPrioritization.get(defaultPriority).add(singleTestRun);
+                    }
+                });
+        TreeMap<Integer, LinkedList<FrameworkMethod>> prioritizedTestRuns =
+                testRunPrioritization.entrySet().stream()
+                        .sorted(Map.Entry.comparingByKey())
+                        .collect(Collectors.toMap(
+                                Map.Entry::getKey,
+                                Map.Entry::getValue,
+                                (u, v) -> u,
+                                TreeMap::new
+                        ));
+
+        prioritizedTestRuns.forEach(
+                (key, value) -> sortMethodsByBedsteadAnnotations(value));
+        return prioritizedTestRuns.values().stream()
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -782,4 +827,5 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
             runLeaf(statement, description, notifier);
         }
     }
+
 }
