@@ -750,7 +750,7 @@ class ProvisioningTest {
     @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING)
     @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
-    @RequireRunOnSystemUser(switchedToUser = TRUE)
+    @RequireRunOnSystemUser()
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserDevice",
         "android.app.admin.DevicePolicyManager#isDeviceManaged",
@@ -779,7 +779,7 @@ class ProvisioningTest {
     @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING)
     @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
-    @RequireRunOnSystemUser(switchedToUser = TRUE)
+    @RequireRunOnSystemUser()
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserDevice",
        "android.app.admin.DevicePolicyManager#MultiUserDeviceProvisioningParams"])
@@ -1111,7 +1111,7 @@ class ProvisioningTest {
     @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING)
     @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
-    @RequireRunOnSystemUser(switchedToUser = TRUE)
+    @RequireRunOnSystemUser()
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPreCondition",
         "android.app.admin.DevicePolicyManager#ACTION_PROVISION_MULTI_USER_DEVICE"])
@@ -1149,7 +1149,7 @@ class ProvisioningTest {
     @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING)
     @RequireNotHeadlessSystemUserMode(reason = "Device must not be in headless system user mode")
-    @RequireRunOnSystemUser(switchedToUser = TRUE)
+    @RequireRunOnSystemUser()
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPreCondition",
         "android.app.admin.DevicePolicyManager#ACTION_PROVISION_MULTI_USER_DEVICE"])
@@ -1168,7 +1168,7 @@ class ProvisioningTest {
     @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING)
     @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
-    @RequireRunOnSystemUser(switchedToUser = TRUE)
+    @RequireRunOnSystemUser()
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPreCondition",
         "android.app.admin.DevicePolicyManager#ACTION_PROVISION_MULTI_USER_DEVICE"])
@@ -1188,7 +1188,7 @@ class ProvisioningTest {
     @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING)
     @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
-    @RequireRunOnSystemUser(switchedToUser = TRUE)
+    @RequireRunOnSystemUser()
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPreCondition",
         "android.app.admin.DevicePolicyManager#ACTION_PROVISION_MULTI_USER_DEVICE"])
