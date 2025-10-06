@@ -41,6 +41,7 @@ import android.telecom.TelecomManager;
 
 import androidx.test.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 
 import java.util.Collection;
@@ -75,6 +76,7 @@ public class ConnectionServiceTest extends BaseTelecomTestWithMockServices {
         super.tearDown();
     }
 
+    @ApiTest(apis = {"android.telecom.ConnectionService#addExistingConnection"})
     public void testAddExistingConnection() {
         if (!mShouldTestTelecom) {
             return;
@@ -89,12 +91,52 @@ public class ConnectionServiceTest extends BaseTelecomTestWithMockServices {
             // Add second connection (add existing connection)
             final MockConnection connection = new MockConnection();
             connection.setOnHold();
+            connection.setCallerNumberVerificationStatus(Connection.VERIFICATION_STATUS_PASSED);
             CtsConnectionService.addExistingConnectionToTelecom(TEST_PHONE_ACCOUNT_HANDLE,
                             connection);
             assertNumCalls(mInCallCallbacks.getService(), 2);
             mInCallCallbacks.lock.drainPermits();
             final Call call = mInCallCallbacks.getService().getLastCall();
             assertCallState(call, Call.STATE_HOLDING);
+            assertEquals(
+                    Connection.VERIFICATION_STATUS_PASSED,
+                    call.getDetails().getCallerNumberVerificationStatus());
+        } finally {
+            InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation()
+                    .dropShellPermissionIdentity();
+        }
+    }
+
+    /**
+     * Similar to {@link #testAddExistingConnection()} but purposely does not set the verstat so we
+     * can verify that the default is to assume a number is not verified.
+     */
+    @ApiTest(apis = {"android.telecom.ConnectionService#addExistingConnection"})
+    public void testAddExistingConnectionNoVerstat() {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity("android.permission.MODIFY_PHONE_STATE");
+        try {
+            placeAndVerifyCall();
+            verifyConnectionForOutgoingCall();
+
+            // Add second connection (add existing connection)
+            final MockConnection connection = new MockConnection();
+            connection.setOnHold();
+            CtsConnectionService.addExistingConnectionToTelecom(
+                    TEST_PHONE_ACCOUNT_HANDLE, connection);
+            assertNumCalls(mInCallCallbacks.getService(), 2);
+            mInCallCallbacks.lock.drainPermits();
+            final Call call = mInCallCallbacks.getService().getLastCall();
+            assertCallState(call, Call.STATE_HOLDING);
+            assertEquals(
+                    Connection.VERIFICATION_STATUS_NOT_VERIFIED,
+                    call.getDetails().getCallerNumberVerificationStatus());
         } finally {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();
