@@ -530,6 +530,10 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
         assertTrue(isProvisioningAllowedForNormalUsers || isTv());
     }
 
+    /**
+     * This test checks if a DO has set DISALLOW_FACTORY_RESET on the device, then a legacy device
+     * admin can no longer call wipeData() to factory reset device.
+     */
     @Test
     public void testDisallowFactoryReset() throws Exception {
         if (isHeadlessSystemUserMode()) {
@@ -538,11 +542,10 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
         }
 
         int adminVersion = 24;
-        // NOTE: the restriction must be set on current user as it will launch SetPolicyActivity,
-        // but the admin must be installed on USER_SYSTEM, otherwise wipeData() on headless system
-        // user mode would wipe the current user (instead of factory resetting the device)
+        // TODO: this test should have been skipped on HSUM if the DO is set on affiliated mode, as
+        // the legacy device admin app wouldn't be installed on system user in that case
         changeUserRestrictionOrFail("no_factory_reset", true, mDeviceOwnerUserId, DEVICE_OWNER_PKG);
-        int adminUserId = USER_SYSTEM;
+        int adminUserId = mDeviceOwnerUserId;
 
         String deviceAdminPkg = DeviceAdminHelper.getDeviceAdminApkPackage(adminVersion);
         String deviceAdminReceiver = DeviceAdminHelper.getAdminReceiverComponent(adminVersion);
