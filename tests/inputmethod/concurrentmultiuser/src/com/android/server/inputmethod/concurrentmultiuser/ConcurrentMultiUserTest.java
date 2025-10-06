@@ -91,6 +91,7 @@ public final class ConcurrentMultiUserTest {
                     ConcurrentMultiUserTestActivity.class.getName());
     private static final long TIMEOUT_MILLIS =
             TimeUnit.SECONDS.toMillis(5) * BuildUtils.HW_TIMEOUT_MULTIPLIER;
+    private static final long TIMEOUT_NOT_EXPECT = TimeUnit.SECONDS.toMillis(1);
     private static final String MOCKIME_ID = "com.android.cts.mockime/.MockIme";
     private final Context mContext = getInstrumentation().getTargetContext();
 
@@ -149,14 +150,11 @@ public final class ConcurrentMultiUserTest {
                 final ImeEventStream passengerStream = passengerImeSession.openEventStream();
                 final ImeEventStream driverStream = driverImeSession.openEventStream();
 
-                notExpectEvent(driverStream, eventMatcher("onStartInputView"), TIMEOUT_MILLIS);
+                showDriverImeAndAssert(driverStream);
 
-                notExpectEvent(passengerStream, eventMatcher("onStartInputView"), TIMEOUT_MILLIS);
-
-                showDriverIme();
-                expectEvent(driverStream, eventMatcher("onStartInputView"), TIMEOUT_MILLIS);
-
-                notExpectEvent(passengerStream, eventMatcher("onStartInputView"), TIMEOUT_MILLIS);
+                // Assertion needed to make sure passenger MockIme not affected
+                notExpectEvent(
+                        passengerStream, eventMatcher("onStartInputView"), TIMEOUT_NOT_EXPECT);
             }
         }
     }
@@ -174,14 +172,10 @@ public final class ConcurrentMultiUserTest {
                 final ImeEventStream driverStream = driverImeSession.openEventStream();
                 final ImeEventStream passengerStream = passengerImeSession.openEventStream();
 
-                notExpectEvent(driverStream, eventMatcher("onStartInputView"), TIMEOUT_MILLIS);
+                showPassengerImeAndAssert(passengerStream);
 
-                notExpectEvent(passengerStream, eventMatcher("onStartInputView"), TIMEOUT_MILLIS);
-
-                showPassengerIme();
-                expectEvent(passengerStream, eventMatcher("onStartInputView"), TIMEOUT_MILLIS);
-
-                notExpectEvent(driverStream, eventMatcher("onStartInputView"), TIMEOUT_MILLIS);
+                // Assertion needed to make sure driver MockIme not affected
+                notExpectEvent(driverStream, eventMatcher("onStartInputView"), TIMEOUT_NOT_EXPECT);
             }
         }
     }
@@ -199,16 +193,13 @@ public final class ConcurrentMultiUserTest {
                 final ImeEventStream driverStream = driverImeSession.openEventStream();
                 final ImeEventStream passengerStream = passengerImeSession.openEventStream();
 
-                showDriverIme();
-                expectEvent(driverStream, eventMatcher("onStartInputView"), TIMEOUT_MILLIS);
+                showPassengerImeAndAssert(passengerStream);
+                showDriverImeAndAssert(driverStream);
+                hideDriverImeAndAssert(driverStream);
 
-                showPassengerIme();
-                expectEvent(passengerStream, eventMatcher("onStartInputView"), TIMEOUT_MILLIS);
-
-                hideDriverIme();
-                expectEvent(driverStream, eventMatcher("onFinishInputView"), TIMEOUT_MILLIS);
-
-                notExpectEvent(passengerStream, eventMatcher("onFinishInputView"), TIMEOUT_MILLIS);
+                // Assertion needed to make sure passenger MockIme not affected
+                notExpectEvent(
+                        passengerStream, eventMatcher("onFinishInputView"), TIMEOUT_NOT_EXPECT);
             }
         }
     }
@@ -227,16 +218,12 @@ public final class ConcurrentMultiUserTest {
                 final ImeEventStream driverStream = driverImeSession.openEventStream();
                 final ImeEventStream passengerStream = passengerImeSession.openEventStream();
 
-                showPassengerIme();
-                expectEvent(passengerStream, eventMatcher("onStartInputView"), TIMEOUT_MILLIS);
+                showPassengerImeAndAssert(passengerStream);
+                showDriverImeAndAssert(driverStream);
+                hidePassengerImeAndAssert(passengerStream);
 
-                showDriverIme();
-                notExpectEvent(driverStream, eventMatcher("onFinishInputView"), TIMEOUT_MILLIS);
-
-                hidePassengerIme();
-                expectEvent(passengerStream, eventMatcher("onFinishInputView"), TIMEOUT_MILLIS);
-
-                notExpectEvent(driverStream, eventMatcher("onFinishInputView"), TIMEOUT_MILLIS);
+                // Assertion needed to make sure driver MockIme not affected
+                notExpectEvent(driverStream, eventMatcher("onFinishInputView"), TIMEOUT_NOT_EXPECT);
             }
         }
     }
@@ -309,6 +296,36 @@ public final class ConcurrentMultiUserTest {
     public void setImePerUser() {
         setImeForUser(mDriverUser, mPassengerUser);
         setImeForUser(mPassengerUser, mDriverUser);
+    }
+
+    private void showDriverImeAndAssert(ImeEventStream driverStream) throws Exception {
+        showDriverIme();
+        assertImeShown(driverStream);
+    }
+
+    private void showPassengerImeAndAssert(ImeEventStream passengerStream) throws Exception {
+        showPassengerIme();
+        assertImeShown(passengerStream);
+    }
+
+    private void hideDriverImeAndAssert(ImeEventStream driverStream) throws Exception {
+        hideDriverIme();
+        expectEvent(driverStream, eventMatcher("onFinishInputView"), TIMEOUT_MILLIS);
+    }
+
+    private void hidePassengerImeAndAssert(ImeEventStream passengerStream) throws Exception {
+        hidePassengerIme();
+        expectEvent(passengerStream, eventMatcher("onFinishInputView"), TIMEOUT_MILLIS);
+    }
+
+    private void assertImeShown(ImeEventStream userStream) throws Exception {
+        expectEvent(userStream, eventMatcher("onCreate"), TIMEOUT_MILLIS);
+        expectEvent(userStream, eventMatcher("onStartInput"), TIMEOUT_MILLIS);
+        expectEvent(userStream, eventMatcher("onCreateInputView"), TIMEOUT_MILLIS);
+        expectEvent(userStream, eventMatcher("onStartInputView"), TIMEOUT_MILLIS);
+
+        // Assertion needed to make sure MockIme didn't flicker
+        notExpectEvent(userStream, eventMatcher("onFinishInputView"), TIMEOUT_NOT_EXPECT);
     }
 
     private void showDriverIme() throws Exception {
