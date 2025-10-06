@@ -16,10 +16,6 @@
 
 package android.telecom.cts;
 
-import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
-
-import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
-
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -32,7 +28,6 @@ import android.telecom.Call;
 import android.telecom.Connection;
 import android.telecom.DisconnectCause;
 import android.telecom.PhoneAccount;
-import android.telecom.TelecomManager;
 import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -76,20 +71,10 @@ public class EmergencyCallTests extends BaseTelecomTestWithMockServices {
         mLatchForDropBox = new CountDownLatch(3); //expect 3 entries
         dropBoxIntentFilter = new IntentFilter();
         dropBoxIntentFilter.addAction(DropBoxManager.ACTION_DROPBOX_ENTRY_ADDED);
-        runWithShellPermissionIdentity(() -> {
-            // Make sure there is a sim account registered.
-            mTelecomManager.registerPhoneAccount(TestUtils.TEST_SIM_PHONE_ACCOUNT);
-        });
-        TestUtils.enablePhoneAccount(getInstrumentation(), TestUtils.TEST_SIM_PHONE_ACCOUNT_HANDLE);
     }
 
     @Override
     protected void tearDown() throws Exception {
-        runWithShellPermissionIdentity(() -> {
-            // Make sure it is unregistered as well.
-            mTelecomManager.unregisterPhoneAccount(
-                    TestUtils.TEST_SIM_PHONE_ACCOUNT.getAccountHandle());
-        });
         super.tearDown();
     }
 
@@ -301,11 +286,6 @@ public class EmergencyCallTests extends BaseTelecomTestWithMockServices {
         Uri normalOutgoingCallNumber = createRandomTestNumber();
         Bundle extras = new Bundle();
         extras.putParcelable(TestUtils.EXTRA_PHONE_NUMBER, normalOutgoingCallNumber);
-        // The normal call needs to use a sim phone account handle in order for it to be held
-        // during the ECC since non-sim phone accounts will by default not supporting holding for
-        // ECC.
-        extras.putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE,
-                TestUtils.TEST_SIM_PHONE_ACCOUNT_HANDLE);
         placeAndVerifyCall(extras);
         Connection outgoingConnection = verifyConnectionForOutgoingCall();
         Call outgoingCall = getInCallService().getLastCall();
