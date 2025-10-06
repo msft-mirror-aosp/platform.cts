@@ -20,6 +20,10 @@ import static android.media.AudioManager.MODE_IN_CALL;
 import static android.media.AudioManager.MODE_NORMAL;
 import static android.telecom.cts.TestUtils.WAIT_FOR_STATE_CHANGE_TIMEOUT_MS;
 
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
+import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
+
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -27,6 +31,7 @@ import android.telecom.Call;
 import android.telecom.Connection;
 import android.telecom.ConnectionRequest;
 import android.telecom.PhoneAccountHandle;
+import android.telecom.TelecomManager;
 
 /**
  * Tests which verify functionality related to {@link android.telecom.Connection}s and
@@ -66,10 +71,20 @@ public class ExternalCallTest extends BaseTelecomTestWithMockServices {
                         return connection;
                     }
                 }, FLAG_REGISTER | FLAG_ENABLE);
+        runWithShellPermissionIdentity(() -> {
+            // Make sure there is a sim account registered.
+            mTelecomManager.registerPhoneAccount(TestUtils.TEST_SIM_PHONE_ACCOUNT);
+        });
+        TestUtils.enablePhoneAccount(getInstrumentation(), TestUtils.TEST_SIM_PHONE_ACCOUNT_HANDLE);
     }
 
     @Override
     protected void tearDown() throws Exception {
+        runWithShellPermissionIdentity(() -> {
+            // Make sure it is unregistered as well.
+            mTelecomManager.unregisterPhoneAccount(
+                    TestUtils.TEST_SIM_PHONE_ACCOUNT.getAccountHandle());
+        });
         super.tearDown();
     }
 
@@ -224,6 +239,11 @@ public class ExternalCallTest extends BaseTelecomTestWithMockServices {
         Uri testNumber = createRandomTestNumber();
         Bundle extras = new Bundle();
         extras.putParcelable(TestUtils.EXTRA_PHONE_NUMBER, testNumber);
+        // The external call needs to use a sim phone account handle in order for it to be held
+        // during the ECC since non-sim phone accounts will by default not supporting holding for
+        // ECC.
+        extras.putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE,
+                TestUtils.TEST_SIM_PHONE_ACCOUNT_HANDLE);
         placeAndVerifyCall(extras);
         verifyConnectionForOutgoingCall(testNumber);
 
