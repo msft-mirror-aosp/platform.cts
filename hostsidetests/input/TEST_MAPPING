@@ -3,5 +3,10 @@
     {
       "name": "CtsInputHostTestCases"
     }
+  ],
+  "desktop-presubmit": [
+    {
+      "name": "CtsInputHostTestCases"
+    }
   ]
 }
