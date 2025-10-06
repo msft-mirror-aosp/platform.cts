@@ -362,7 +362,8 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
         }
     }
 
-    private static boolean shouldTestManualConnectCarrierRoaming() {
+    /** Helper method to check whether manual connection mode can be tested. */
+    public static boolean shouldTestManualConnectCarrierRoaming() {
         if (!shouldTestSatelliteWithMockService()) return false;
         if (!isActiveSubId(sEsosSubId)) {
             logd(TAG, "Skip the test because the ESOS subId is not active.");
@@ -717,7 +718,7 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
      * This helper method adds "android.telephony.cts" to the list of supported apps for the
      * duration of the tests in this class.
      */
-    private void addCtsPackageToSupportedSmsApps(int subId) {
+    public static void addCtsPackageToSupportedSmsApps(int subId) {
         final String ctsPackageName = "android.telephony.cts";
 
         // Get the current list of supported messaging apps from the carrier config.
