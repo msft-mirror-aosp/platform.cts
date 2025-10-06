@@ -147,6 +147,11 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
         if ((mCall1.getParent() == conf) || (conf.getChildren().contains(mCall1))) {
             fail("Call 1 should not be still conferenced");
         }
+        // 🤫 It turns out this API, which was added in the original version of Telecom, has NEVER
+        // been called by the Telecom framework. The separate operation relies upon the API
+        // Conference#onSeparate(connection).
+        mConnection1.onSeparate();
+
         assertFalse(mConferenceObject.getConnections().contains(mConnection1));
     }
 

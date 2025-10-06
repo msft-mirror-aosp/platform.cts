@@ -91,12 +91,16 @@ public class SelfManagedConnection extends Connection {
 
     @Override
     public void onUsingAlternativeUi(boolean isUsingAlternativeUi) {
+        // Required for API coverage.
+        super.onUsingAlternativeUi(isUsingAlternativeUi);
         mIsAlternativeUiShowing = isUsingAlternativeUi;
         mInCallServiceTrackingLatch.countDown();
     }
 
     @Override
     public void onTrackedByNonUiService(boolean isTracked) {
+        // Required for API coverage
+        super.onTrackedByNonUiService(isTracked);
         mIsTracked = isTracked;
         mInCallServiceTrackingLatch.countDown();
     }

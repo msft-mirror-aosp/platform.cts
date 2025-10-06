@@ -108,7 +108,7 @@ public class MockConnection extends Connection {
 
     @Override
     public void onReject(String reason) {
-        super.onReject();
+        super.onReject(reason);
         setDisconnected(new DisconnectCause(DisconnectCause.REJECTED, reason));
         if (mRemoteConnection != null) {
             mRemoteConnection.reject();
@@ -275,6 +275,8 @@ public class MockConnection extends Connection {
 
     @Override
     public void onDeflect(Uri address) {
+        // Required for API coverage.
+        super.onDeflect(address);
         if (mInvokeCounterMap.get(ON_DEFLECT) != null) {
             mInvokeCounterMap.get(ON_DEFLECT).invoke(address);
         }
@@ -292,6 +294,8 @@ public class MockConnection extends Connection {
     @Override
     public void onCallFilteringCompleted(
             Connection.CallFilteringCompletionInfo callFilteringCompletionInfo) {
+        // Required for API coverage purposes.
+        super.onCallFilteringCompleted(callFilteringCompletionInfo);
         getInvokeCounter(ON_CALL_FILTERING_COMPLETED).invoke(callFilteringCompletionInfo);
 
         if (mRemoteConnection != null) {
