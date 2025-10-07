@@ -817,7 +817,12 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
             extras = new Bundle();
         }
         extras.putParcelable(TelecomManager.EXTRA_INCOMING_CALL_ADDRESS, incomingHandle);
-        mTelecomManager.addNewIncomingCall(TestUtils.TEST_PHONE_ACCOUNT_HANDLE, extras);
+        PhoneAccountHandle handle = TestUtils.TEST_PHONE_ACCOUNT_HANDLE;
+        if (extras.containsKey(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE)) {
+            handle = extras.getParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE,
+                    PhoneAccountHandle.class);
+        }
+        mTelecomManager.addNewIncomingCall(handle, extras);
 
         return currentCallCount;
     }
