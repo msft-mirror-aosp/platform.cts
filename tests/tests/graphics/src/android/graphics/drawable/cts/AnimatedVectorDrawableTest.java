@@ -22,9 +22,14 @@ import static junit.framework.TestCase.assertTrue;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assume.assumeNotNull;
+import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -35,6 +40,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.cts.R;
 import android.graphics.drawable.AnimatedVectorDrawable;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.Drawable.ConstantState;
 import android.util.AttributeSet;
 import android.util.Xml;
@@ -48,6 +54,7 @@ import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
+import com.android.graphics.hwui.flags.Flags;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -348,6 +355,32 @@ public class AnimatedVectorDrawableTest {
         waitForAVDStop(callback, MAX_TIMEOUT_MS);
         callback.assertStarted(false);
         callback.assertEnded(false);
+    }
+
+    @Test
+    public void testMixedResourcesLoading() {
+        // Fix is behind a flag
+        assumeTrue(Flags.fixAvdWrongResources());
+        // Assume that "com.android.systemui" is a valid package
+        Resources sysuiResources = getResourcesForPackage(mActivity, "com.android.systemui");
+        assumeNotNull(sysuiResources);
+        Resources.Theme sysuiTheme = sysuiResources.newTheme();
+        Drawable result = mResources.getDrawable(mResId, sysuiTheme);
+        assertNotNull(result);
+    }
+
+    private Resources getResourcesForPackage(Context context, String resPackage) {
+        final PackageManager pm = context.getPackageManager();
+        try {
+            ApplicationInfo ai =
+                    pm.getApplicationInfo(
+                            resPackage,
+                            PackageManager.MATCH_UNINSTALLED_PACKAGES
+                                    | PackageManager.GET_SHARED_LIBRARY_FILES);
+            return pm.getResourcesForApplication(ai);
+        } catch (PackageManager.NameNotFoundException e) {
+            return null;
+        }
     }
 
     // The time out is expected when the listener is removed successfully.
