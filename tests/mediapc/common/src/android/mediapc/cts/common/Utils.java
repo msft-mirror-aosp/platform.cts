@@ -53,8 +53,19 @@ public final class Utils {
     private static final int sPc = getMpc();
 
     private static int getMpc() {
-        Bundle bundle = InstrumentationRegistry.getArguments();
-        String value = bundle.getString(MEDIA_PERF_CLASS_KEY);
+        Bundle bundle = null;
+
+        try {
+            bundle = InstrumentationRegistry.getArguments();
+        } catch (IllegalStateException ignored) {
+            // Bundle is not guaranteed to be present under all instrumentations.
+        }
+
+        String value = null;
+        if (bundle != null) {
+            value = bundle.getString(MEDIA_PERF_CLASS_KEY);
+        }
+
         int valueInt = 0;
         if (value != null) {
             Log.d(TAG, "Running the tests with performance class set to " + value);
