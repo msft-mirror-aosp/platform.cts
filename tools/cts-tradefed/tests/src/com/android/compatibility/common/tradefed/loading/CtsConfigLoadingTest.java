@@ -88,6 +88,7 @@ public class CtsConfigLoadingTest {
                             "networking",
                             "neuralnetworks",
                             "nfc",
+                            "npumanager",
                             "packagemanager",
                             "permissions",
                             "print",
