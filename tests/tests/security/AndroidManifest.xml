@@ -358,6 +358,9 @@
             android:label="AttributionSourceService"
             android:process=":attributionSourceServiceProcess">
         </service>
+
+        <activity android:name="android.security.cts.BUG_406243581.EmptyActivity"
+             android:exported="true" />
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
