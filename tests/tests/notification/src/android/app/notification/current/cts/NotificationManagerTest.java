@@ -345,14 +345,9 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
         StatusBarNotification[] sbns = mNotificationManager.getActiveNotifications();
         for (StatusBarNotification sbn : sbns) {
-            final boolean expectAutogrouped;
-            if (android.service.notification.Flags.notificationForceGrouping()) {
-                expectAutogrouped = isAutogroupSummary(sbn.getNotification())
-                        || autoGroupedIds.contains(sbn.getId());
-            } else {
-                expectAutogrouped = isGroupSummary(sbn.getNotification())
-                        || autoGroupedIds.contains(sbn.getId());
-            }
+            final boolean expectAutogrouped = isAutogroupSummary(sbn.getNotification())
+                    || autoGroupedIds.contains(sbn.getId());
+
             if (expectAutogrouped) {
                 assertTrue(sbn.getKey() + " is unexpectedly not autogrouped",
                         sbn.getOverrideGroupKey() != null);
@@ -1874,7 +1869,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.service.notification.Flags.FLAG_NOTIFICATION_FORCE_GROUPING)
     public void testAutogrouping_groupWithoutSummary() throws Exception {
         assumeFalse("NotificationListeners do not support visible background users",
                 mUserHelper.isVisibleBackgroundUser());
@@ -1883,7 +1877,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.service.notification.Flags.FLAG_NOTIFICATION_FORCE_GROUPING)
     public void testAutogrouping_summaryWithoutChildren() throws Exception {
         assumeFalse("NotificationListeners do not support visible background users",
                 mUserHelper.isVisibleBackgroundUser());
@@ -1892,7 +1885,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({android.service.notification.Flags.FLAG_NOTIFICATION_FORCE_GROUPING,
+    @RequiresFlagsEnabled({
             com.android.server.notification.Flags.FLAG_NOTIFICATION_FORCE_GROUP_SINGLETONS})
     public void testAutogrouping_sparseGroups() throws Exception {
         assumeFalse("NotificationListeners do not support visible background users",
@@ -1953,7 +1946,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({android.service.notification.Flags.FLAG_NOTIFICATION_FORCE_GROUPING,
+    @RequiresFlagsEnabled({
             com.android.server.notification.Flags.FLAG_NOTIFICATION_FORCE_GROUP_SINGLETONS})
     public void testAutogrouping_sparseGroups_appCancelsRemovedSummary() throws Exception {
         assumeFalse("NotificationListeners do not support visible background users",
@@ -2051,14 +2044,12 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             assertOnlySomeNotificationsAutogrouped(postedIds);
         }
 
-        if (android.service.notification.Flags.notificationForceGrouping()) {
-            // post new group summary => avoid forced regrouping
-            int newGroupSummaryId = 999;
-            sendNotification(newGroupSummaryId, newGroup, true, R.drawable.yellow, false, null);
-            postingLatch.await(400, TimeUnit.MILLISECONDS);
-            rerankLatch.await(400, TimeUnit.MILLISECONDS);
-            assertNotificationCount(6);
-        }
+        // post new group summary => avoid forced regrouping
+        int newGroupSummaryId = 999;
+        sendNotification(newGroupSummaryId, newGroup, true, R.drawable.yellow, false, null);
+        postingLatch.await(400, TimeUnit.MILLISECONDS);
+        rerankLatch.await(400, TimeUnit.MILLISECONDS);
+        assertNotificationCount(6);
 
         // send a new non-grouped notification. since the autogroup summary still exists,
         // the notification should be added to it
