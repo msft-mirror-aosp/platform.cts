@@ -16,7 +16,6 @@
 
 package android.mediav2.cts;
 
-import static android.mediav2.common.cts.CodecTestBase.IS_AFTER_B;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
 
 import android.media.MediaFormat;
@@ -120,7 +119,7 @@ public class DolbyVisionDecoderParamPreparer extends DolbyVisionDecoderParamPrep
     public static List<Object[]> getDvTestParams(Class<?> clazz) {
         List<Object[]> argsList = new ArrayList<>();
 
-        if (DV_DEC_ASSET_MAP == null || !IS_AFTER_B) return argsList;
+        if (DV_DEC_ASSET_MAP == null) return argsList;
 
         for (Map.Entry<String, List<VideoAsset>> entry : DV_DEC_ASSET_MAP.entrySet()) {
             List<VideoAsset> assetList = entry.getValue();

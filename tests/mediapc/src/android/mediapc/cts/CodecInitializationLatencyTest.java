@@ -22,7 +22,6 @@ import static android.mediapc.cts.CodecTestBase.codecFilter;
 import static android.mediapc.cts.CodecTestBase.codecPrefix;
 import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
 import static android.mediapc.cts.DolbyVisionParamPreparer.getDvResForInitializationLatencyTest;
-import static android.mediav2.common.cts.CodecTestBase.IS_AFTER_B;
 import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_B;
 import static android.mediav2.common.cts.CodecTestBase.areFormatsSupported;
 import static android.mediav2.common.cts.CodecTestBase.compileMediaTypesList;
@@ -106,14 +105,12 @@ public class CodecInitializationLatencyTest {
         mTestFiles.put(MediaFormat.MIMETYPE_AUDIO_OPUS, "bbb_2ch_48kHz_opus.mka");
         mTestFiles.put(MediaFormat.MIMETYPE_AUDIO_RAW, "bbb_1ch_8kHz.wav");
         mTestFiles.put(MediaFormat.MIMETYPE_AUDIO_VORBIS, "bbb_stereo_48kHz_128kbps_vorbis.ogg");
-        if (IS_AFTER_B) {
-            if (iamfDefinitionsApi() && extractorMp4EnableIamf()) {
-                mTestFiles.put(MediaFormat.MIMETYPE_AUDIO_IAMF, "7_1_4_Opus_no_video.mp4");
-            }
-            mTestFiles.put(MediaFormat.MIMETYPE_AUDIO_AC3, "ac3_200_48kHz_128.mp4");
-            mTestFiles.put(MediaFormat.MIMETYPE_AUDIO_AC4, "ac4_510_48kHz_128.mp4");
-            mTestFiles.put(MediaFormat.MIMETYPE_AUDIO_EAC3, "eac3_200_48kHz_128.mp4");
+        if (IS_AT_LEAST_B && iamfDefinitionsApi() && extractorMp4EnableIamf()) {
+            mTestFiles.put(MediaFormat.MIMETYPE_AUDIO_IAMF, "7_1_4_Opus_no_video.mp4");
         }
+        mTestFiles.put(MediaFormat.MIMETYPE_AUDIO_AC3, "ac3_200_48kHz_128.mp4");
+        mTestFiles.put(MediaFormat.MIMETYPE_AUDIO_AC4, "ac4_510_48kHz_128.mp4");
+        mTestFiles.put(MediaFormat.MIMETYPE_AUDIO_EAC3, "eac3_200_48kHz_128.mp4");
 
         // Video media types
         mTestFiles.put(MediaFormat.MIMETYPE_VIDEO_AV1, "bbb_1920x1080_4mbps_30fps_av1.mp4");

@@ -85,6 +85,9 @@ public class CodecDecoderPauseTest extends CodecDecoderTestBase {
                 {MediaFormat.MIMETYPE_VIDEO_VP9, "bbb_cif_768kbps_30fps_vp9.mkv", CODEC_ALL},
                 {MediaFormat.MIMETYPE_VIDEO_AV1, "cosmat_520x390_24fps_768kbps_av1_10bit.mkv",
                         CODEC_ALL},
+                {MediaFormat.MIMETYPE_AUDIO_AC3, "audio/ac3_510_48kHz_256.mp4", CODEC_OPTIONAL},
+                {MediaFormat.MIMETYPE_AUDIO_AC4, "audio/ac4_510_48kHz_256.mp4", CODEC_OPTIONAL},
+                {MediaFormat.MIMETYPE_AUDIO_EAC3, "audio/eac3_510_48kHz_256.mp4", CODEC_OPTIONAL},
         }));
         if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
             exhaustiveArgsList.addAll(Arrays.asList(new Object[][] {
@@ -92,22 +95,11 @@ public class CodecDecoderPauseTest extends CodecDecoderTestBase {
                             CODEC_OPTIONAL},
             }));
         }
-        if (IS_AFTER_B) {
-            exhaustiveArgsList.addAll(Arrays.asList(new Object[][] {
-                    {MediaFormat.MIMETYPE_AUDIO_AC3, "audio/ac3_510_48kHz_256.mp4",
-                            CODEC_OPTIONAL},
-                    {MediaFormat.MIMETYPE_AUDIO_AC4, "audio/ac4_510_48kHz_256.mp4",
-                            CODEC_OPTIONAL},
-                    {MediaFormat.MIMETYPE_AUDIO_EAC3, "audio/eac3_510_48kHz_256.mp4",
-                            CODEC_OPTIONAL},
-            }));
-            exhaustiveArgsList.addAll(getDvTestParams(CodecDecoderPauseTest.class));
-        }
-        if (IS_AFTER_B && iamfDefinitionsApi() && extractorMp4EnableIamf()) {
+        if (IS_AT_LEAST_B && iamfDefinitionsApi() && extractorMp4EnableIamf()) {
             exhaustiveArgsList.add(new Object[] {MediaFormat.MIMETYPE_AUDIO_IAMF,
                     "audio/7_1_4_Opus_no_video.mp4", CODEC_OPTIONAL});
         }
-
+        exhaustiveArgsList.addAll(getDvTestParams(CodecDecoderPauseTest.class));
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, false);
     }
 
