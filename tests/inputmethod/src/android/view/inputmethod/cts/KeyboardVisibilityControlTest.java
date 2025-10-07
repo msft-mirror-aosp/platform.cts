@@ -271,7 +271,8 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
-            notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker),
+                    NOT_EXPECT_TIMEOUT);
             expectImeInvisible(TIMEOUT);
 
             final InputMethodManager imm = mTestActivity.getSystemService(InputMethodManager.class);
@@ -361,7 +362,8 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             }
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
-            notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker),
+                    NOT_EXPECT_TIMEOUT);
             expectImeInvisible(TIMEOUT);
 
             final InputMethodManager imm = testActivity.getSystemService(InputMethodManager.class);
@@ -421,7 +423,8 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
-            notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker),
+                    NOT_EXPECT_TIMEOUT);
             expectImeInvisible(TIMEOUT);
 
             final var imm = editText.getContext().getSystemService(InputMethodManager.class);
@@ -593,7 +596,8 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             imeSession.registerCustomImeBackCallback();
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
-            notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker),
+                    NOT_EXPECT_TIMEOUT);
             expectImeInvisible(TIMEOUT);
 
             // Verify that custom back callback is not registered in app process yet (by pressing
@@ -676,7 +680,8 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             imeSession.registerCustomImeBackCallback();
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
-            notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker),
+                    NOT_EXPECT_TIMEOUT);
             expectImeInvisible(TIMEOUT);
 
             final var imm = editText.getContext().getSystemService(InputMethodManager.class);
@@ -804,12 +809,13 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                     getOnMainSync(() -> imm.hasActiveInputConnection(nonFocusedEditText)));
             assertFalse("showSoftInput must fail if the View does not have IME focus",
                     getOnMainSync(() -> imm.showSoftInput(nonFocusedEditText, 0)));
-            notExpectEvent(stream, showSoftInputMatcher(InputMethod.SHOW_EXPLICIT), TIMEOUT);
+            notExpectEvent(stream, showSoftInputMatcher(InputMethod.SHOW_EXPLICIT),
+                    NOT_EXPECT_TIMEOUT);
 
             getOnMainSync(() -> imm.hideSoftInputFromWindow(
                     nonFocusedEditText.getWindowToken(), 0));
             // IME was never shown, so there should be no hideSoftInput.
-            notExpectEvent(stream, hideSoftInputMatcher(), TIMEOUT);
+            notExpectEvent(stream, hideSoftInputMatcher(), NOT_EXPECT_TIMEOUT);
             expectImeInvisible(TIMEOUT);
         }
     }
@@ -826,7 +832,8 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
-            notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker),
+                    NOT_EXPECT_TIMEOUT);
             expectImeInvisible(TIMEOUT);
 
             // Test toggleSoftInputFromWindow() flow
@@ -1029,7 +1036,8 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
-            notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker),
+                    NOT_EXPECT_TIMEOUT);
             expectImeInvisible(TIMEOUT);
 
             final InputMethodManager imm = mTestActivity.getSystemService(InputMethodManager.class);
@@ -1682,7 +1690,8 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             final EditText editText = launchTestActivity(marker);
             AtomicReference<CountDownLatch> imeInsetsHiddenLatchRef = new AtomicReference<>();
             expectEvent(stream, editorMatcher("onStartInput", marker), START_INPUT_TIMEOUT);
-            notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker),
+                    NOT_EXPECT_TIMEOUT);
             expectImeInvisible(TIMEOUT);
 
             TestUtils.runOnMainSync(() -> {
@@ -2033,8 +2042,9 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
             // During the hide animation, no other showSoftInput should be called
             expectImeInvisible(TIMEOUT);
-            notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
-            notExpectEvent(stream, showSoftInputMatcher(0), TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker),
+                    NOT_EXPECT_TIMEOUT);
+            notExpectEvent(stream, showSoftInputMatcher(0), NOT_EXPECT_TIMEOUT);
         }
     }
 
@@ -2599,7 +2609,7 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
             UiDevice uiDevice = UiDevice.getInstance(mInstrumentation);
             assertTrue("Notification Shade must have been opened", uiDevice.openNotification());
-            notExpectEvent(stream, hideSoftInputMatcher(), TIMEOUT);
+            notExpectEvent(stream, hideSoftInputMatcher(), NOT_EXPECT_TIMEOUT);
             expectImeInvisible(TIMEOUT);
 
             // Sometimes the notification is at the bottom, so we need to scroll down
