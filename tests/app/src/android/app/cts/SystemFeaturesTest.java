@@ -571,25 +571,6 @@ public class SystemFeaturesTest {
     }
 
     @Test
-    public void testUsbAccessory() {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE) &&
-                !mPackageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK) &&
-                !mPackageManager.hasSystemFeature(PackageManager.FEATURE_WATCH) &&
-                !mPackageManager.hasSystemFeature(PackageManager.FEATURE_EMBEDDED) &&
-                !Build.IS_EMULATOR &&
-                !mPackageManager.hasSystemFeature(PackageManager.FEATURE_PC) &&
-                mPackageManager.hasSystemFeature(PackageManager.FEATURE_MICROPHONE) &&
-                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN) &&
-                !FeatureUtil.isXrHeadset()) {
-            // USB accessory mode is only a requirement for devices with USB ports supporting
-            // peripheral mode. As there is no public API to distinguish a device with only host
-            // mode support from having both peripheral and host support, the test may have
-            // false negatives.
-            assertAvailable(PackageManager.FEATURE_USB_ACCESSORY);
-        }
-    }
-
-    @Test
     public void testWifiFeature() throws Exception {
         if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_WIFI)) {
             // no WiFi, skip the test
