@@ -848,6 +848,25 @@ public class VehiclePropertyVerifiers {
                                                     Arrays.asList(
                                                             hvacFanDirectionAvailableCarPropertyValue
                                                                     .getValue()));
+                                })
+                        .setSupportedValuesGenerator(
+                                (verifierContext, carPropertyConfig, areaId) -> {
+                                    ImmutableList.Builder<Integer> possibleValues =
+                                            ImmutableList.builder();
+                                    int[] availableHvacFanDirections =
+                                            verifierContext
+                                                    .getCarPropertyManager()
+                                                    .getIntArrayProperty(
+                                                            VehiclePropertyIds
+                                                                    .HVAC_FAN_DIRECTION_AVAILABLE,
+                                                            areaId);
+                                    for (int direction : availableHvacFanDirections) {
+                                        if (!CAR_HVAC_FAN_DIRECTION_UNWRITABLE_STATES.contains(
+                                                direction)) {
+                                            possibleValues.add(direction);
+                                        }
+                                    }
+                                    return possibleValues.build();
                                 });
 
         if (VehiclePropertyVerifier.isAtLeastU()) {
@@ -999,6 +1018,37 @@ public class VehiclePropertyVerifiers {
                                     minTempInCelsius,
                                     maxTempInCelsius,
                                     incrementInCelsius);
+                        })
+                .setSupportedValuesGenerator(
+                        (verifierContext, carPropertyConfig, areaId) -> {
+                            ImmutableList.Builder<Float> possibleValues = ImmutableList.builder();
+                            List<Integer> configArray = carPropertyConfig.getConfigArray();
+                            if (!configArray.isEmpty()) {
+                                // For HVAC_TEMPERATURE_SET, the configArray specifies the supported
+                                // temperature
+                                // values for the property. configArray[0] is the lower bound of the
+                                // supported
+                                // temperatures in Celsius. configArray[1] is the upper bound of the
+                                // supported
+                                // temperatures in Celsius. configArray[2] is the supported
+                                // temperature increment
+                                // between the two bounds. All configArray values are Celsius*10
+                                // since the
+                                // configArray is List<Integer> but HVAC_TEMPERATURE_SET is a Float
+                                // type property.
+                                for (int possibleHvacTempSetValue = configArray.get(0);
+                                        possibleHvacTempSetValue <= configArray.get(1);
+                                        possibleHvacTempSetValue += configArray.get(2)) {
+                                    possibleValues.add((float) possibleHvacTempSetValue / 10.0f);
+                                }
+                            } else {
+                                // If the configArray is not specified, then use min/max values.
+                                Float minValueFloat = (Float) carPropertyConfig.getMinValue(areaId);
+                                Float maxValueFloat = (Float) carPropertyConfig.getMaxValue(areaId);
+                                possibleValues.add(minValueFloat);
+                                possibleValues.add(maxValueFloat);
+                            }
+                            return possibleValues.build();
                         });
     }
 
@@ -1332,7 +1382,12 @@ public class VehiclePropertyVerifiers {
                                                 "RANGE_REMAINING Float value must be greater than"
                                                         + " or equal 0")
                                         .that(rangeRemaining)
-                                        .isAtLeast(0));
+                                        .isAtLeast(0))
+                .setSupportedValuesGenerator(
+                        (verifierContext, carPropertyConfig, areaId) -> {
+                            // Test when no range is remaining
+                            return ImmutableList.of(0f);
+                        });
     }
 
     /** Gets the verifier builder for {@link VehiclePropertyIds#EV_BATTERY_LEVEL}. */
