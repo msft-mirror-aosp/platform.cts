@@ -55,6 +55,7 @@ import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -225,15 +226,18 @@ public class MediaSession2ServiceTest {
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testOnGetSession_returnsDifferentSessions() throws InterruptedException {
         final List<Session2Token> tokens = new ArrayList<>();
-        StubMediaSession2Service.setTestInjector(new StubMediaSession2Service.TestInjector() {
-            @Override
-            MediaSession2 onGetSession(ControllerInfo controllerInfo) {
-                MediaSession2 session = createMediaSession2(
-                        "testOnGetSession_returnsDifferentSessions" + System.currentTimeMillis());
-                tokens.add(session.getToken());
-                return session;
-            }
-        });
+        StubMediaSession2Service.setTestInjector(
+                new StubMediaSession2Service.TestInjector() {
+                    @Override
+                    MediaSession2 onGetSession(ControllerInfo controllerInfo) {
+                        MediaSession2 session =
+                                createMediaSession2(
+                                        "testOnGetSession_returnsDifferentSessions"
+                                                + UUID.randomUUID());
+                        tokens.add(session.getToken());
+                        return session;
+                    }
+                });
 
         MediaController2 controller1 = createConnectedController(mToken);
         MediaController2 controller2 = createConnectedController(mToken);
@@ -309,18 +313,20 @@ public class MediaSession2ServiceTest {
     @Ignore("Flaky: b/434883057")
     public void testAllControllersDisconnected_multipleSessions() throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
-        StubMediaSession2Service.setTestInjector(new StubMediaSession2Service.TestInjector() {
-            @Override
-            MediaSession2 onGetSession(ControllerInfo controllerInfo) {
-                return createMediaSession2("testAllControllersDisconnected_multipleSession"
-                        + System.currentTimeMillis());
-            }
+        StubMediaSession2Service.setTestInjector(
+                new StubMediaSession2Service.TestInjector() {
+                    @Override
+                    MediaSession2 onGetSession(ControllerInfo controllerInfo) {
+                        return createMediaSession2(
+                                "testAllControllersDisconnected_multipleSession"
+                                        + UUID.randomUUID());
+                    }
 
-            @Override
-            void onServiceDestroyed() {
-                latch.countDown();
-            }
-        });
+                    @Override
+                    void onServiceDestroyed() {
+                        latch.countDown();
+                    }
+                });
 
         MediaController2 controller1 = createConnectedController(mToken);
         MediaController2 controller2 = createConnectedController(mToken);
