@@ -28,6 +28,8 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
+import android.hardware.devicestate.DeviceState;
+import android.hardware.devicestate.DeviceStateManager;
 import android.os.RemoteException;
 import android.platform.test.annotations.AppModeFull;
 import android.server.wm.ActivityManagerTestBase;
@@ -46,7 +48,10 @@ import androidx.test.uiautomator.UiScrollable;
 import androidx.test.uiautomator.UiSelector;
 import androidx.test.uiautomator.Until;
 
+import com.android.compatibility.common.util.PollingCheck;
+
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -64,6 +69,9 @@ public final class InputMethodManagerMultiDisplayTest extends ActivityManagerTes
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     private InputMethodManager mImManager;
 
+    private DeviceStateManager mDeviceStateManager;
+    private DeviceState mCurrentDeviceState = null;
+
     @Before
     public void setUp() throws Exception {
         super.setUp();
@@ -72,6 +80,11 @@ public final class InputMethodManagerMultiDisplayTest extends ActivityManagerTes
         assumeFalse(isWatch());
 
         mImManager = mContext.getSystemService(InputMethodManager.class);
+
+        mDeviceStateManager = mContext.getSystemService(DeviceStateManager.class);
+        Assert.assertNotNull(mDeviceStateManager);
+        mDeviceStateManager.registerCallback(Runnable::run, state -> mCurrentDeviceState = state);
+        PollingCheck.waitFor(TIMEOUT, () -> mCurrentDeviceState != null);
 
         enableAndSetIme();
     }
@@ -108,6 +121,7 @@ public final class InputMethodManagerMultiDisplayTest extends ActivityManagerTes
     public void testShowInputMethodAndSubtypeEnablerOnNonDefaultDisplay() {
         assumeFalse(isCar());
         assumeTrue(supportsMultiDisplay());
+        assumeTrue(deviceStateCanSupportSimulatedDisplays());
 
         try (VirtualDisplaySession session = new VirtualDisplaySession()) {
 
@@ -149,4 +163,14 @@ public final class InputMethodManagerMultiDisplayTest extends ActivityManagerTes
         runShellCommandOrThrow("ime set " + InputMethodManagerMultiDisplayTest.MOCK_IME_ID);
     }
 
+    /**
+     * Returns if the current state of the device can support simulated displays being created.
+     * TODO(b/449222961): Update when a more correct property is added to the states.
+     */
+    private boolean deviceStateCanSupportSimulatedDisplays() {
+        return !(mCurrentDeviceState.hasProperty(
+                        DeviceState.PROPERTY_FEATURE_DUAL_DISPLAY_INTERNAL_DEFAULT)
+                || mCurrentDeviceState.hasProperty(
+                        DeviceState.PROPERTY_FEATURE_REAR_DISPLAY_OUTER_DEFAULT));
+    }
 }
