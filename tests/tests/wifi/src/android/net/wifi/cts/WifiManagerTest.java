@@ -89,6 +89,7 @@ import android.net.wifi.WifiManager.SubsystemRestartTrackingCallback;
 import android.net.wifi.WifiManager.WifiLock;
 import android.net.wifi.WifiNetworkConnectionStatistics;
 import android.net.wifi.WifiNetworkSelectionConfig;
+import android.net.wifi.WifiNetworkSpecifier;
 import android.net.wifi.WifiNetworkSuggestion;
 import android.net.wifi.WifiScanner;
 import android.net.wifi.WifiSsid;
@@ -6151,6 +6152,53 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         PackageManager packageManager = sContext.getPackageManager();
         assertTrue("Passpoint must be supported",
                 packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI_PASSPOINT));
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_LOCAL_ONLY_DISCONNECT_REASON)
+    @ApiTest(
+            apis = {
+                "android.net.wifi.WifiManager#addLocalOnlyDisconnectionStatusListener",
+                "android.net.wifi.WifiManager#removeLocalOnlyDisconnectionStatusListener"
+            })
+    @Test
+    public void testAddRemoveLocalOnlyDisconnectionStatusListener() throws Exception {
+        if (!WifiFeature.isWifiSupported(sContext)) {
+            return;
+        }
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        TestLocalOnlyDisconnectionStatusListener listener =
+                new TestLocalOnlyDisconnectionStatusListener(countDownLatch);
+        assertThrows(
+                SecurityException.class,
+                () -> sWifiManager.addLocalOnlyDisconnectionStatusListener(mExecutor, listener));
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            sWifiManager.addLocalOnlyDisconnectionStatusListener(mExecutor, listener);
+            // TODO (b/440270888)
+            // This is just testing basic add/remove since implementation is still in progress.
+            // update to verify actual implementation after finishing it.
+            sWifiManager.removeLocalOnlyDisconnectionStatusListener(listener);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    private static class TestLocalOnlyDisconnectionStatusListener
+            implements WifiManager.LocalOnlyDisconnectionStatusListener {
+        private final CountDownLatch mBlocker;
+
+        TestLocalOnlyDisconnectionStatusListener(CountDownLatch countDownLatch) {
+            mBlocker = countDownLatch;
+        }
+
+        @Override
+        public void onDisconnectionStatus(
+                @androidx.annotation.NonNull WifiNetworkSpecifier networkSpecifier,
+                boolean isTriggeredByUser,
+                int reason) {
+            mBlocker.countDown();
+        }
     }
 
     /**
