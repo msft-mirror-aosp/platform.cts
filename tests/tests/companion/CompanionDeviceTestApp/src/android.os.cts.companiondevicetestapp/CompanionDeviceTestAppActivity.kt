@@ -28,7 +28,7 @@ import android.companion.AssociationRequest
 import android.companion.AssociationRequest.DEVICE_PROFILE_GLASSES
 import android.companion.AssociationRequest.DEVICE_PROFILE_MEDICAL
 import android.companion.AssociationRequest.DEVICE_PROFILE_WATCH
-import android.companion.AssociationRequest.PERMISSION_NEARBY
+import android.companion.AssociationRequest.PERMISSION_GROUP_NEARBY
 import android.companion.BluetoothDeviceFilter
 import android.companion.CompanionDeviceManager
 import android.content.ComponentName
@@ -116,7 +116,7 @@ class CompanionDeviceTestAppActivity : Activity() {
                     setDeviceProfile(DEVICE_PROFILE_MEDICAL)
                 }
                 if (nearbyCheckbox.isChecked) {
-                    setExtraPermissions(setOf(PERMISSION_NEARBY))
+                    setExtraPermissions(setOf(PERMISSION_GROUP_NEARBY))
                 }
                 addDeviceFilter(BluetoothDeviceFilter.Builder().apply {
                     if (!nameFilter.text.isEmpty()) {
