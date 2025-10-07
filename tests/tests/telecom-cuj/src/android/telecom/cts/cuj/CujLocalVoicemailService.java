@@ -34,10 +34,18 @@ public class CujLocalVoicemailService extends LocalVoicemailService {
     public static final LinkedBlockingQueue<Call.Details> sRequestedCalls =
             new LinkedBlockingQueue<>();
 
+    /** Queue of call information that was stopped local vm. */
+    public static final LinkedBlockingQueue<Call.Details> sStoppedCalls =
+            new LinkedBlockingQueue<>();
+
     public static CountDownLatch sUnbindLatch = new CountDownLatch(1);
 
     public static LinkedBlockingQueue<Call.Details> getRequestedCalls() {
         return sRequestedCalls;
+    }
+
+    public static LinkedBlockingQueue<Call.Details> getStoppedCalls() {
+        return sStoppedCalls;
     }
 
     public static CountDownLatch getUnbindLatch() {
@@ -57,17 +65,26 @@ public class CujLocalVoicemailService extends LocalVoicemailService {
     }
 
     @Override
+    public void onVoicemailStopped(@NonNull Call.Details call) {
+        Log.i(TAG, "onVoicemailStopped: callId=" + call.getId());
+        sStoppedCalls.offer(call);
+    }
+
+    @Override
     public IBinder onBind(Intent intent) {
+        Log.i(TAG, "onBind");
         sService = this;
+        sStoppedCalls.clear();
+        sUnbindLatch = new CountDownLatch(1);
         return super.onBind(intent);
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
+        Log.i(TAG, "onUnbind");
         sUnbindLatch.countDown();
         sService = null;
         sRequestedCalls.clear();
-        sUnbindLatch = new CountDownLatch(1);
         return super.onUnbind(intent);
     }
 }
