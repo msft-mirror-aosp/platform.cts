@@ -82,7 +82,7 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         test_utils.assume_not_watch(self.primary)
 
         # Skip if removeBond API flag is disabled
-        api_flags_utils.assume_enabled(self.primary, 'unpair_associated_device')
+        api_flags_utils.assume_enabled(self.primary, 'android.companion', 'unpair_associated_device')
 
         # Associate and assert successful pairing
         self.secondary.cdm.btBecomeDiscoverable(cdm_base_test.BT_DISCOVERABLE_TIME)
@@ -134,7 +134,7 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         test_utils.assume_not_watch(self.secondary)
 
         # Skip if device presence API flag is disabled
-        api_flags_utils.assume_enabled(self.primary, 'device_presence')
+        api_flags_utils.assume_enabled(self.primary, 'android.companion', 'device_presence')
 
         # Associate and start observing
         self.secondary.cdm.btBecomeDiscoverable(cdm_base_test.BT_DISCOVERABLE_TIME)
@@ -171,8 +171,8 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         test_utils.assume_not_watch(self.secondary)
 
         # Skip if data sync API flag is disabled
-        api_flags_utils.assume_enabled(self.primary, 'enable_data_sync')
-        api_flags_utils.assume_enabled(self.secondary, 'enable_data_sync')
+        api_flags_utils.assume_enabled(self.primary, 'android.companion', 'enable_data_sync')
+        api_flags_utils.assume_enabled(self.secondary, 'android.companion', 'enable_data_sync')
 
         # Assert both devices are on same build type (debug vs user)
         test_utils.assert_build_types_match(self.primary, self.secondary)

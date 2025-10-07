@@ -9,9 +9,8 @@ from mobly.controllers import android_device
 from mobly.tools import device_flags
 
 NAMESPACE = 'companion'
-PACKAGE_NAME = 'android.companion'
 
-def assume_enabled(ad: android_device.AndroidDevice, flag_name: str):
+def assume_enabled(ad: android_device.AndroidDevice, package_name: str, flag_name: str):
     """Assume that a CDM API flag is enabled on the android device.
 
     If the device is either missing the flag or the flag is disabled, then skip this test.
@@ -19,8 +18,9 @@ def assume_enabled(ad: android_device.AndroidDevice, flag_name: str):
 
     Args:
         ad: android device controller
+        package_name: package name of the API flag to assume enabled.
         flag_name: name of the API flag to assume enabled.
     """
     flags = device_flags.DeviceFlags(ad)
-    enabled = flags.get_value(NAMESPACE, f'{PACKAGE_NAME}.{flag_name}')
-    asserts.skip_if(not enabled, f'{flag_name} must be enabled for this test.')
+    enabled = flags.get_value(NAMESPACE, f'{package_name}.{flag_name}')
+    asserts.skip_if(not enabled, f'{package_name}.{flag_name} must be enabled for this test.')
