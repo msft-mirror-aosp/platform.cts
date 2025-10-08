@@ -101,7 +101,7 @@ public class NetworkingHelper {
 
         PackageManager packageManager = mContext.getPackageManager();
         mHasWifi = packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI);
-        mHasEthernet = packageManager.hasSystemFeature(PackageManager.FEATURE_ETHERNET);
+        mHasEthernet = context.getSystemService(Context.ETHERNET_SERVICE) != null;
         mHasTelephony = packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY);
 
         mInitialAirplaneModeState = isAirplaneModeOn();
