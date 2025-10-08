@@ -424,8 +424,8 @@ public class ShortcutManagerRequestPinTest extends ShortcutManagerCtsTestsBase {
         setDefaultLauncher(getInstrumentation(), mLauncherContext1);
 
         final ComponentName targetActivity = new ComponentName(
-            "android.content.pm.cts.shortcutmanager",
-            "android.content.pm.cts.shortcutmanager.MyActivity"
+            "android.content.pm.cts.shortcutmanager.packages.package4",
+            "android.content.pm.cts.shortcutmanager.packages.Launcher"
         );
         final ComponentName trampolineService = new ComponentName(
             "android.content.pm.cts.shortcutmanager.packages.package4",
