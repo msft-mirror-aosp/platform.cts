@@ -268,7 +268,7 @@ public class CodecEncoderTestBase extends CodecTestBase {
     }
 
     @After
-    public void tearDown() {
+    public void tearDownCodecEncoderTestBase() {
         if (mMuxer != null) {
             mMuxer.release();
             mMuxer = null;
@@ -488,8 +488,8 @@ public class CodecEncoderTestBase extends CodecTestBase {
             mSawOutputEOS = true;
         }
         if (info.size > 0) {
-            ByteBuffer buf = mCodec.getOutputBuffer(bufferIndex);
             if (mSaveToMem) {
+                ByteBuffer buf = mCodec.getOutputBuffer(bufferIndex);
                 MediaCodec.BufferInfo copy = new MediaCodec.BufferInfo();
                 copy.set(mOutputBuff.getOutStreamSize(), info.size, info.presentationTimeUs,
                         info.flags);
@@ -508,7 +508,8 @@ public class CodecEncoderTestBase extends CodecTestBase {
                     mMuxer.start();
                 }
                 if ((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
-                    mMuxer.writeSampleData(mTrackID, buf, info);
+                    ByteBuffer buffer = mCodec.getOutputBuffer(bufferIndex);
+                    mMuxer.writeSampleData(mTrackID, buffer, info);
                 }
             }
         }
