@@ -24,6 +24,7 @@ import android.companion.BluetoothDeviceFilter
 import android.companion.CompanionDeviceManager
 import android.companion.ObservingDevicePresenceRequest
 import android.companion.cts.common.CompanionActivity
+import android.companion.cts.common.HandoffActivity
 import android.companion.cts.common.PrimaryCompanionService
 import android.companion.cts.multidevice.CallbackUtils.SystemDataTransferCallback
 import android.companion.cts.uicommon.CompanionDeviceManagerUi
@@ -218,6 +219,23 @@ class CompanionDeviceManagerSnippet : Snippet {
     @Rpc(description = "Check if device is a watch.")
     fun isWatch(): Boolean {
         return context.packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)
+    }
+
+    /**
+     * Launch a test activity capable of Handoff, and return the hosted task ID of the launched
+     * activity.
+     */
+    @Rpc(description = "Launch a handoff activity with data.")
+    fun launchHandoffActivity(handoffData: Int): Int {
+        return HandoffActivity.launchHandoffActivity(context, handoffData)
+    }
+
+    /**
+     * Wait for the handoff activity to appear, and return the data it reports.
+     */
+    @Rpc(description = "Get the data from the handoff activity.")
+    fun waitForHandoff(): Int? {
+        return HandoffActivity.waitForHandoff()
     }
 
     companion object {
