@@ -39,11 +39,13 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.ActivityOptions;
 import android.app.Presentation;
 import android.app.UiAutomation;
 import android.app.UiModeManager;
@@ -86,9 +88,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 
+import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
 
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
@@ -128,6 +130,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -233,20 +236,6 @@ public class DisplayTest extends TestBase {
                     .toString();
         }
     }
-
-    @Rule
-    public ActivityTestRule<DisplayTestActivity> mDisplayTestActivity =
-            new ActivityTestRule<>(
-                    DisplayTestActivity.class,
-                    false /* initialTouchMode */,
-                    false /* launchActivity */);
-
-    @Rule
-    public ActivityTestRule<RetainedDisplayTestActivity> mRetainedDisplayTestActivity =
-            new ActivityTestRule<>(
-                    RetainedDisplayTestActivity.class,
-                    false /* initialTouchMode */,
-                    false /* launchActivity */);
 
     @Rule(order = 0)
     public WakeUpAndUnlockRule mWakeUpAndUnlockRule = new WakeUpAndUnlockRule();
@@ -654,10 +643,17 @@ public class DisplayTest extends TestBase {
      */
     @Test
     public void testActivityContextGetMetrics() {
-        final Activity activity = launchActivity(mDisplayTestActivity);
-        final DisplayManager dm =
-                (DisplayManager) activity.getSystemService(Context.DISPLAY_SERVICE);
-        testGetMetrics(dm);
+        testScenario(
+                DisplayTestActivity.class,
+                scenario -> {
+                    scenario.onActivity(
+                            activity -> {
+                                final DisplayManager dm =
+                                        (DisplayManager)
+                                                activity.getSystemService(Context.DISPLAY_SERVICE);
+                                testGetMetrics(dm);
+                            });
+                });
     }
 
     public void testGetMetrics(DisplayManager manager) {
@@ -730,27 +726,37 @@ public class DisplayTest extends TestBase {
                     DisplayUtil.getRefreshRateSwitchingType(mDisplayManager);
             mDisplayManager.setRefreshRateSwitchingType(DisplayManager.SWITCHING_TYPE_NONE);
 
-            final DisplayTestActivity activity = launchActivity(mRetainedDisplayTestActivity);
+            testScenario(
+                    RetainedDisplayTestActivity.class,
+                    scenario -> {
+                        try {
+                            // Create a deterministically shuffled list of display modes, which ends
+                            // with
+                            // the current active mode. We'll switch to the modes in this order. The
+                            // active
+                            // mode is last so we don't need an extra mode switch in case the test
+                            // completes successfully.
+                            Display.Mode activeMode = mDefaultDisplay.getMode();
 
-            // Create a deterministically shuffled list of display modes, which ends with the
-            // current active mode. We'll switch to the modes in this order. The active mode is last
-            // so we don't need an extra mode switch in case the test completes successfully.
-            Display.Mode activeMode = mDefaultDisplay.getMode();
+                            DisplayModeState activeModeState = new DisplayModeState(activeMode);
+                            List<Display.Mode> modesList = new ArrayList<>(modes.size());
+                            for (Map.Entry<DisplayModeState, Display.Mode> mode :
+                                    modes.entrySet()) {
+                                if (!activeModeState.equals(mode.getKey())) {
+                                    modesList.add(mode.getValue());
+                                }
+                            }
+                            Random random = new Random(42);
+                            Collections.shuffle(modesList, random);
+                            modesList.add(activeMode);
 
-            DisplayModeState activeModeState = new DisplayModeState(activeMode);
-            List<Display.Mode> modesList = new ArrayList<>(modes.size());
-            for (Map.Entry<DisplayModeState, Display.Mode> mode : modes.entrySet()) {
-                if (!activeModeState.equals(mode.getKey())) {
-                    modesList.add(mode.getValue());
-                }
-            }
-            Random random = new Random(42);
-            Collections.shuffle(modesList, random);
-            modesList.add(activeMode);
-
-            for (Display.Mode mode : modesList) {
-                testSwitchToModeId(activity, mode);
-            }
+                            for (Display.Mode mode : modesList) {
+                                testSwitchToModeId(scenario, mode);
+                            }
+                        } catch (Exception e) {
+                            fail(e.getMessage());
+                        }
+                    });
         } finally {
             mDisplayManager.setShouldAlwaysRespectAppRequestedMode(false);
             mDisplayManager.setRefreshRateSwitchingType(mInitialRefreshRateSwitchingType);
@@ -758,11 +764,11 @@ public class DisplayTest extends TestBase {
     }
 
     /**
-     * Test that a mode switch to another display mode works when the requesting Activity
-     * is destroyed and re-created as part of the configuration change from the display mode.
+     * Test that a mode switch to another display mode works when the requesting Activity is
+     * destroyed and re-created as part of the configuration change from the display mode.
      */
     @Test
-    public void testModeSwitchOnPrimaryDisplayWithRestart() throws Exception {
+    public void testModeSwitchOnPrimaryDisplayWithRestart() {
         final Display.Mode oldMode = mDefaultDisplay.getMode();
         final Optional<Display.Mode> newMode = Arrays.stream(mDefaultDisplay.getSupportedModes())
                 .filter(x -> !getPhysicalSize(x).equals(getPhysicalSize(oldMode)))
@@ -775,7 +781,15 @@ public class DisplayTest extends TestBase {
             mInitialRefreshRateSwitchingType =
                     DisplayUtil.getRefreshRateSwitchingType(mDisplayManager);
             mDisplayManager.setRefreshRateSwitchingType(DisplayManager.SWITCHING_TYPE_NONE);
-            testSwitchToModeId(launchActivity(mDisplayTestActivity), newMode.get());
+            testScenario(
+                    DisplayTestActivity.class,
+                    scenario -> {
+                        try {
+                            testSwitchToModeId(scenario, newMode.get());
+                        } catch (Exception e) {
+                            fail(e.getMessage());
+                        }
+                    });
         } finally {
             mDisplayManager.setShouldAlwaysRespectAppRequestedMode(false);
             mDisplayManager.setRefreshRateSwitchingType(mInitialRefreshRateSwitchingType);
@@ -786,8 +800,8 @@ public class DisplayTest extends TestBase {
         return new Point(mode.getPhysicalWidth(), mode.getPhysicalHeight());
     }
 
-    private void testSwitchToModeId(DisplayTestActivity activity, Display.Mode targetMode)
-            throws Exception {
+    private <A extends DisplayTestActivity> void testSwitchToModeId(
+            ActivityScenario<A> scenario, Display.Mode targetMode) throws Exception {
         final DisplayModeState initialMode = new DisplayModeState(mDefaultDisplay);
         Log.i(TAG, "Testing switching to mode " + targetMode + ". Current mode = " + initialMode);
 
@@ -836,13 +850,10 @@ public class DisplayTest extends TestBase {
         Handler handler = new Handler(Looper.getMainLooper());
         mDisplayManager.registerDisplayListener(listener, handler);
 
-        final CountDownLatch presentationSignal = new CountDownLatch(1);
-        handler.post(() -> {
-            activity.setPreferredDisplayMode(targetMode);
-            presentationSignal.countDown();
-        });
-
-        assertTrue(presentationSignal.await(5, TimeUnit.SECONDS));
+        scenario.onActivity(
+                activity -> {
+                    activity.setPreferredDisplayMode(targetMode);
+                });
 
         // Wait until the display change is effective.
         assertTrue(changeSignal.await(5, TimeUnit.SECONDS));
@@ -1259,28 +1270,44 @@ public class DisplayTest extends TestBase {
     }
 
     @Test
-    public void testFailBrightnessChangeWithoutPermission() throws Exception {
-        final DisplayTestActivity activity = launchActivity(mDisplayTestActivity);
-        final int originalValue = Settings.System.getInt(mContext.getContentResolver(),
-                Settings.System.SCREEN_BRIGHTNESS, BRIGHTNESS_MAX);
+    public void testFailBrightnessChangeWithoutPermission() {
+        testScenario(
+                DisplayTestActivity.class,
+                scenario -> {
+                    final int originalValue =
+                            Settings.System.getInt(
+                                    mContext.getContentResolver(),
+                                    Settings.System.SCREEN_BRIGHTNESS,
+                                    BRIGHTNESS_MAX);
+                    try {
+                        int valueToSet =
+                                originalValue > 128 ? 40 : 200; // sufficiently different value
+                        boolean wasSet = setBrightness(((float) valueToSet) / BRIGHTNESS_MAX);
 
-        try {
-            final int valueToSet = originalValue > 128 ? 40 : 200;  // sufficiently different value
-            boolean wasSet = setBrightness(((float) valueToSet) / BRIGHTNESS_MAX);
-
-            assertFalse(wasSet);
-            int newValue = Settings.System.getInt(mContext.getContentResolver(),
-                    Settings.System.SCREEN_BRIGHTNESS, BRIGHTNESS_MAX);
-            assertEquals(originalValue, newValue);  // verify that setting the new value failed.
-        } finally {
-            try {
-                // Clean up just in case the test fails and we did actually manage to change the
-                // brightness.
-                Settings.System.putInt(mContext.getContentResolver(),
-                        Settings.System.SCREEN_BRIGHTNESS, originalValue);
-            } catch (Exception e) {
-            }
-        }
+                        assertFalse(wasSet);
+                        int newValue =
+                                Settings.System.getInt(
+                                        mContext.getContentResolver(),
+                                        Settings.System.SCREEN_BRIGHTNESS,
+                                        BRIGHTNESS_MAX);
+                        assertEquals(
+                                originalValue,
+                                newValue); // verify that setting the new value failed.
+                    } catch (Exception e) {
+                        fail(e.getMessage());
+                    } finally {
+                        try {
+                            // Clean up just in case the test fails and we did actually manage to
+                            // change the
+                            // brightness.
+                            Settings.System.putInt(
+                                    mContext.getContentResolver(),
+                                    Settings.System.SCREEN_BRIGHTNESS,
+                                    originalValue);
+                        } catch (Exception e) {
+                        }
+                    }
+                });
     }
 
     @Test
@@ -1463,5 +1490,19 @@ public class DisplayTest extends TestBase {
         String[] parts = value.split("x");
         assertEquals(2, parts.length);
         return new Point(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
+    }
+
+    private static <A extends Activity> void testScenario(
+            Class<A> activityClass, Consumer<ActivityScenario<A>> testAction) {
+        try (ActivityScenario<A> scenario =
+                ActivityScenario.launch(activityClass, createLaunchBundle())) {
+            testAction.accept(scenario);
+        }
+    }
+
+    private static Bundle createLaunchBundle() {
+        final ActivityOptions options = ActivityOptions.makeBasic();
+        options.setLaunchDisplayId(DEFAULT_DISPLAY);
+        return options.toBundle();
     }
 }
