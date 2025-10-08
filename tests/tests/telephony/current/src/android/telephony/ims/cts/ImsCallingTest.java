@@ -441,6 +441,15 @@ public class ImsCallingTest extends ImsCallingBase {
         // Ensure the original call was reused for the conference and thus is still ACTIVE:
         isCallActive(call, callSession);
 
+        // Verify that hold capabilities are present.
+        int capabilities = call.getDetails().getCallCapabilities();
+        assertTrue(
+                "Call should have CAPABILITY_SUPPORT_HOLD when in a remotely hosted conf.",
+                (capabilities & Call.Details.CAPABILITY_SUPPORT_HOLD) != 0);
+        assertTrue(
+                "Call should have CAPABILITY_HOLD when in a remotely hosted conf..",
+                (capabilities & Call.Details.CAPABILITY_HOLD) != 0);
+
         // End the conference call and ensure it is cleaned up correctly:
         callSession.terminateIncomingCall();
         isCallDisconnected(call, callSession);
