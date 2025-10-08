@@ -366,8 +366,7 @@ public class RingtoneTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(
-            com.android.server.telecom.flags.Flags.FLAG_RESOLVE_HIDDEN_DEPENDENCIES_TWO)
+    @RequiresFlagsEnabled(com.android.media.flags.Flags.FLAG_RELEASE_RINGTONE_AS_API)
     @ApiTest(apis = {"android.media.Ringtone#hasHapticChannels"})
     public void testHasHapticChannels() {
         final String uriPrefix =
