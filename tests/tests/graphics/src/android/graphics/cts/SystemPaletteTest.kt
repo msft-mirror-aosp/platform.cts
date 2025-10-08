@@ -38,6 +38,7 @@ import com.google.ux.material.libmonet.hct.Hct
 import java.io.Serializable
 import kotlin.math.ceil
 import org.junit.Assert
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -55,6 +56,7 @@ class SystemPaletteTest(
         @JvmStatic
         @Parameterized.BeforeParam
         fun setup(color: String, style: String, mode: String) {
+            assumeTrue(isSupportedDevice)
             val isTestingNightMode = mode == "dark"
             val expectedMode = if (isTestingNightMode) MODE_NIGHT_YES else MODE_NIGHT_NO
 
