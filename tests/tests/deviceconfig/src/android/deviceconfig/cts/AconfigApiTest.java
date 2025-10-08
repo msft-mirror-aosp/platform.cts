@@ -22,7 +22,12 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Build;
+import android.os.IBinder;
 import android.os.flagging.AconfigPackage;
 import android.os.flagging.AconfigStorageReadException;
 import android.platform.test.annotations.DisabledOnRavenwood;
@@ -30,9 +35,11 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.flags.Flags;
-
+import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
-
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -127,5 +134,42 @@ public final class AconfigApiTest {
                         AconfigStorageReadException.ERROR_GENERIC, new Exception("parent"));
         assertEquals(AconfigStorageReadException.ERROR_GENERIC, ae.getErrorCode());
         assertTrue(ae.getMessage().contains("ERROR_GENERIC:"));
+    }
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_NEW_STORAGE_PUBLIC_API})
+    public void testAconfigInIsolatedProcess() throws Exception {
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            return;
+        }
+        final Context context = InstrumentationRegistry.getContext();
+        final CountDownLatch latch = new CountDownLatch(1);
+        final AtomicReference<IAconfigIsolatedService> serviceRef = new AtomicReference<>();
+
+        ServiceConnection connection = new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName name, IBinder service) {
+                serviceRef.set(IAconfigIsolatedService.Stub.asInterface(service));
+                latch.countDown();
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName name) {
+            }
+        };
+
+        Intent intent = new Intent(context, AconfigIsolatedProcessService.class);
+        try {
+            assertTrue("Failed to bind to service",
+                    context.bindService(intent, connection, Context.BIND_AUTO_CREATE));
+            assertTrue("Timed out waiting for service connection",
+                    latch.await(5, TimeUnit.SECONDS));
+
+            IAconfigIsolatedService service = serviceRef.get();
+            assertNotNull("Service interface is null", service);
+            assertTrue("Aconfig read failed in isolated service", service.readAconfigFlag());
+        } finally {
+            context.unbindService(connection);
+        }
     }
 }
