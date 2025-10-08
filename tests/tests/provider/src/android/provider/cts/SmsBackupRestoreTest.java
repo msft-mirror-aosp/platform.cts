@@ -21,6 +21,7 @@ import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
@@ -72,6 +73,7 @@ public class SmsBackupRestoreTest extends TestCaseThatRunsIfTelephonyIsEnabled {
     private String mOldTransport;
     private boolean mOldBackupEnabled;
     private boolean mHasFeature;
+    private PackageManager mPackageManager;
 
     @Override
     protected void setUp() throws Exception {
@@ -81,6 +83,7 @@ public class SmsBackupRestoreTest extends TestCaseThatRunsIfTelephonyIsEnabled {
         mContext = getInstrumentation().getContext();
         mContentResolver = mContext.getContentResolver();
         mUiAutomation = getInstrumentation().getUiAutomation();
+        mPackageManager = mContext.getPackageManager();
         mHasFeature = isFeatureSupported();
         if (mHasFeature) {
             ProviderTestUtils.setDefaultSmsApp(true, mContext.getPackageName(), mUiAutomation);
@@ -107,7 +110,7 @@ public class SmsBackupRestoreTest extends TestCaseThatRunsIfTelephonyIsEnabled {
 
     private boolean isFeatureSupported() throws Exception {
         return (ProviderTestUtils.hasBackupTransport(LOCAL_BACKUP_COMPONENT, mUiAutomation)
-                && TelephonyManager.from(mContext).isDeviceSmsCapable());
+                && mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING));
     }
 
     private void clearMessages() {
