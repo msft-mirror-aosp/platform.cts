@@ -25,6 +25,7 @@ import static android.server.wm.dndsourceapp.Components.DRAG_SOURCE_DROP_TARGET;
 import static android.server.wm.dndtargetapp.Components.DROP_TARGET;
 import static android.server.wm.dndtargetappsdk23.Components.DROP_TARGET_SDK23;
 import static android.view.Display.DEFAULT_DISPLAY;
+import static android.view.Surface.ROTATION_0;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -207,6 +208,7 @@ public class CrossAppDragAndDropTests extends ActivityManagerTestBase {
                         String sourceMode,
                         ComponentName targetComponentName,
                         String targetMode) {
+                    setDeviceRotationTo0();
                     mEnableDefaultDisplayInTopologyState = isDefaultDisplayInTopologyEnabled();
                     setEnableDefaultDisplayInTopology(/* enable= */ 1);
 
@@ -245,6 +247,23 @@ public class CrossAppDragAndDropTests extends ActivityManagerTestBase {
                 @Override
                 public String toString() {
                     return "CrossDisplay";
+                }
+
+                // TODO(b/449871044): Temporary workaround due to events from mouse with associated
+                //   displayId are not processed correctly when default display and external display
+                //   has a different rotation
+                private void setDeviceRotationTo0() {
+                    if (mTestCase.getDeviceRotation(DEFAULT_DISPLAY) == ROTATION_0) {
+                        return;
+                    }
+                    mTestCase.mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
+                    // Portrait / Landscape orientation is not important, as long as it's at
+                    // ROTATION_0. Note that RotationSession is managed by ActivityManagerTestBase
+                    // and will be cleaned up in tearDown()
+                    mTestCase
+                            .createManagedRotationSession()
+                            .set(ROTATION_0, /* waitForRotation= */ true);
+                    mTestCase.mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
                 }
 
                 private int isDefaultDisplayInTopologyEnabled() {
