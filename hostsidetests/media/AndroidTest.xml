@@ -29,5 +29,6 @@
         <option name="restore-settings" value="true" />
         <option name="force-skip-system-props" value="true" />
     </target_preparer>
+    <target_preparer class="com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer" />
 </configuration>
 
