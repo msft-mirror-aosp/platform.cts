@@ -26,7 +26,6 @@ import android.app.UiAutomation;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.graphics.Region;
 import android.os.IBinder;
 import android.os.SystemClock;
 import android.os.SystemProperties;
@@ -542,7 +541,7 @@ public class CtsWindowInfoUtils {
 
     private interface InterruptableRunnable {
         void run() throws InterruptedException;
-    }
+    };
 
     private static void runWithSurfaceFlingerPermission(
             @NonNull InterruptableRunnable runnable, @Nullable UiAutomation uiAutomation)
@@ -1044,128 +1043,6 @@ public class CtsWindowInfoUtils {
 
         runWithSurfaceFlingerPermission(waitForState, null /*uiAutomation*/);
         return consumer.getState();
-    }
-
-    /**
-     * Waits until no windows overlap the target rect.
-     *
-     * @param timeout The amount of time to wait for target rect to become touchable.
-     * @param windowTokenSupplier Supplies the token used to identify the window the target rect is
-     *                            contained in.
-     * @param rect The target rect within the window identified by {@code windowTokenSupplier}.
-     * @return {@code true} if no windows overlap the target rect.
-     * @throws InterruptedException when interrupted before the rect becomes touchable.
-     */
-    public static boolean waitForTouchableRect(@NonNull Duration timeout,
-            @NonNull Supplier<IBinder> windowTokenSupplier, Rect rect)
-            throws InterruptedException {
-        var consumer = new BiConsumer<List<WindowInfo>, List<DisplayInfo>>() {
-
-            private final CountDownLatch mLatch = new CountDownLatch(1);
-
-            @GuardedBy("this")
-            private boolean mSatisfied = false;
-
-            @GuardedBy("this")
-            private List<WindowInfo> mWindows;
-
-            @GuardedBy("this")
-            @Nullable
-            private WindowInfo mTarget;
-
-            @GuardedBy("this")
-            @Nullable
-            private WindowInfo mBlocking;
-
-            @Override
-            public void accept(List<WindowInfo> windows, List<DisplayInfo> displays) {
-                synchronized (this) {
-                    acceptLocked(windows);
-                }
-            }
-
-            private void acceptLocked(List<WindowInfo> windows) {
-                if (mSatisfied) {
-                    return;
-                }
-
-                mWindows = windows;
-
-                OptionalInt targetWindowIndex =
-                        IntStream.range(0, windows.size())
-                                .filter(i -> windowTokenSupplier.get()
-                                        == windows.get(i).windowToken)
-                                .findFirst();
-
-                mTarget = targetWindowIndex.isPresent() ? windows.get(
-                        targetWindowIndex.getAsInt()) : null;
-                if (mTarget == null) {
-                    return;
-                }
-
-                Rect displaySpaceRect = new Rect(rect);
-                displaySpaceRect.offset(mTarget.bounds.left, mTarget.bounds.top);
-
-                mBlocking =
-                        windows.subList(0, targetWindowIndex.getAsInt())
-                                .stream()
-                                .filter(window -> {
-                                    // The window must be on the same display, visible, and have
-                                    // bounds that overlap with the target Rect.
-                                    if (window.displayId != mTarget.displayId
-                                            || !window.isVisible
-                                            || !Rect.intersects(window.bounds,
-                                            displaySpaceRect)) {
-                                        return false;
-                                    }
-
-                                    // If this window isn't a trusted overlay, then touches on the
-                                    // target Rect are blocked.
-                                    if (!window.isTrustedOverlay) {
-                                        return true;
-                                    }
-
-                                    // If this window is a trusted overlay, then consider touches
-                                    // blocked if the trusted overlay's touchable region overlaps
-                                    // with the target Rect.
-                                    return new Region(window.touchableRegion).op(displaySpaceRect,
-                                            Region.Op.INTERSECT);
-
-                                })
-                                .findFirst()
-                                .orElse(null);
-
-                if (mBlocking == null) {
-                    mSatisfied = true;
-                    mLatch.countDown();
-                }
-            }
-
-            boolean waitForCondition() throws InterruptedException {
-                var ignored = mLatch.await(timeout.toMillis(), TimeUnit.MILLISECONDS);
-                synchronized (this) {
-                    if (!mSatisfied) {
-                        Log.d(TAG, String.format(
-                                "(waitForTouchableRect) - target window: %s, blocking window: %s",
-                                mTarget, mBlocking));
-                        dumpWindows(TAG, "(waitForTouchableRect)", mWindows);
-                    }
-                    return mSatisfied;
-                }
-            }
-        };
-
-        boolean[] result = {false};
-        runWithSurfaceFlingerPermission(() -> {
-            var listener = new WindowInfosListenerForTest();
-            try {
-                listener.addWindowInfosListener(consumer);
-                result[0] = consumer.waitForCondition();
-            } finally {
-                listener.removeWindowInfosListener(consumer);
-            }
-        }, null /*uiAutomation*/);
-        return result[0];
     }
 
     private static String getHashCode(Object obj) {
