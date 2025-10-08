@@ -823,8 +823,13 @@ public class SurfaceViewPreviewTest extends Camera2SurfaceViewTestCase {
 
         Size maxPreviewSz = mOrderedPreviewSizes.get(0);
         SimpleImageReaderListener imageListener = new SimpleImageReaderListener();
-        ImageReader previewReader = makeImageReader(maxPreviewSz, ImageFormat.PRIVATE,
-                MAX_READER_IMAGES, imageListener, mHandler);
+        ImageReader.Builder builder = (new ImageReader.Builder(
+                maxPreviewSz.getWidth(), maxPreviewSz.getHeight())).
+                setImageFormat(ImageFormat.PRIVATE).
+                setMaxImages(MAX_READER_IMAGES).
+                setUsage(HardwareBuffer.USAGE_VIDEO_ENCODE);
+        ImageReader previewReader = builder.build();
+        previewReader.setOnImageAvailableListener(imageListener, mHandler);
         Surface previewSurface = previewReader.getSurface();
         List<OutputConfiguration> outputConfigs = new ArrayList<OutputConfiguration>();
         OutputConfiguration previewConfig =
