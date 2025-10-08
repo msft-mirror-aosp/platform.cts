@@ -16,6 +16,8 @@
 
 package android.location.cts.none;
 
+import static android.location.flags.Flags.FLAG_SUPPORT_CODETYPE_IN_GNSS_STATUS;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -23,9 +25,13 @@ import static org.junit.Assert.assertTrue;
 import android.location.GnssMeasurement;
 import android.location.GnssStatus;
 import android.os.Parcel;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -33,6 +39,9 @@ import org.junit.runner.RunWith;
 public class GnssMeasurementTest {
 
     private static final double DELTA = 0.001;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
     public void testDescribeContents() {
@@ -115,6 +124,14 @@ public class GnssMeasurementTest {
         assertTrue(measurement.hasSatelliteInterSignalBiasUncertaintyNanos());
         measurement.resetSatelliteInterSignalBiasUncertaintyNanos();
         assertFalse(measurement.hasSatelliteInterSignalBiasUncertaintyNanos());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SUPPORT_CODETYPE_IN_GNSS_STATUS)
+    public void testSetCodeType() {
+        GnssMeasurement measurement = new GnssMeasurement();
+        measurement.setCodeType(GnssMeasurement.CODE_TYPE_C);
+        assertEquals(GnssMeasurement.CODE_TYPE_C, measurement.getCodeType());
     }
 
     private static void setTestValues(GnssMeasurement measurement) {
