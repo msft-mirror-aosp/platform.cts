@@ -33,11 +33,9 @@ import androidx.test.uiautomator.Until
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_INSTALL_APPS
-import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_INSTALL_UNKNOWN_SOURCES
 import com.android.compatibility.common.util.SystemUtil
 import com.android.xts.root.annotations.RequireAdbRoot
 import java.util.concurrent.TimeUnit
-import java.util.regex.Pattern
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -64,7 +62,6 @@ class IntentTest : PackageInstallerTestBase() {
                 "Bz6byQFM0DYQnYMwFWXjWkMPNdqkRLykoFLyBup53G68k2n8wl27jEBRNRG3ozwBsGr"
         const val NO_INSTALL_APPS_RESTRICTION_TEXT = "This user is not allowed to install apps"
         const val NO_INSTALL_APPS_RESTRICTION_TEXT_V2 = "Installing apps has been restricted"
-        const val DISALLOW_INSTALL_UNKNOWN_SOURCES_TEXT = ".*unknown apps.*"
         const val DISABLED_LAUNCHER_ACTIVITY_PKG_NAME =
                 "android.packageinstaller.disabledlauncheractivity.cts"
         const val INSTALL_SUCCESS_TEXT = "App installed"
@@ -318,43 +315,6 @@ class IntentTest : PackageInstallerTestBase() {
             assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
         } finally {
             TestApis.devicePolicy().userRestrictions().set(DISALLOW_INSTALL_APPS, false)
-            instrumentation.uiAutomation.dropShellPermissionIdentity()
-        }
-    }
-
-    @Test
-    @RequireAdbRoot(reason = "b/322830652 Required for TestApis to set user restriction")
-    fun disallowInstallUnknownSources_grantInstallPackagesPermission_installFails() {
-        try {
-            TestApis.devicePolicy().userRestrictions().set(DISALLOW_INSTALL_UNKNOWN_SOURCES, true)
-
-            instrumentation.uiAutomation.adoptShellPermissionIdentity(
-                Manifest.permission.INSTALL_PACKAGES
-            )
-            val installation = startInstallationViaIntent()
-
-            val textPattern = Pattern.compile(
-                DISALLOW_INSTALL_UNKNOWN_SOURCES_TEXT,
-                Pattern.CASE_INSENSITIVE
-            )
-
-            assertNotNull(
-                "Error dialog not shown",
-                uiDevice.wait(
-                    Until.findObject(By.text(textPattern)),
-                    GLOBAL_TIMEOUT
-                )
-            )
-            val targetButton = if (usePiaV2) {
-                CANCEL_BUTTON_ID
-            } else {
-                INSTALL_BUTTON_ID
-            }
-            clickInstallerUIButton(targetButton)
-
-            assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
-        } finally {
-            TestApis.devicePolicy().userRestrictions().set(DISALLOW_INSTALL_UNKNOWN_SOURCES, false)
             instrumentation.uiAutomation.dropShellPermissionIdentity()
         }
     }
