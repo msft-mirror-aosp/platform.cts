@@ -226,6 +226,12 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
                         4122701060L, CODEC_ALL},
                 {MediaFormat.MIMETYPE_VIDEO_AV1, "bbb_340x280_768kbps_30fps_av1.mp4", null, -1.0f,
                         400672933L, CODEC_ALL},
+                {MediaFormat.MIMETYPE_AUDIO_AC3, "audio/ac3_510_48kHz_256.mp4", null, -1.0f,
+                        -1L, CODEC_OPTIONAL},
+                {MediaFormat.MIMETYPE_AUDIO_AC4, "audio/ac4_510_48kHz_256.mp4", null, -1.0f,
+                        -1L, CODEC_OPTIONAL},
+                {MediaFormat.MIMETYPE_AUDIO_EAC3, "audio/eac3_510_48kHz_256.mp4", null, -1.0f,
+                        -1L, CODEC_OPTIONAL},
         }));
         // Framework P010 support added with android T.
         // These codecs are not required to support P010, but if they advertise support,
@@ -255,21 +261,11 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
                             null, -1.0f, -1L, CODEC_OPTIONAL},
             }));
         }
-        if (IS_AFTER_B) {
-            exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
-                    {MediaFormat.MIMETYPE_AUDIO_AC3, "audio/ac3_510_48kHz_256.mp4", null, -1.0f,
-                            -1L, CODEC_OPTIONAL},
-                    {MediaFormat.MIMETYPE_AUDIO_AC4, "audio/ac4_510_48kHz_256.mp4", null, -1.0f,
-                            -1L, CODEC_OPTIONAL},
-                    {MediaFormat.MIMETYPE_AUDIO_EAC3, "audio/eac3_510_48kHz_256.mp4", null, -1.0f,
-                            -1L, CODEC_OPTIONAL},
-            }));
-            exhaustiveArgsList.addAll(getDvTestParams(CodecDecoderTest.class));
-        }
-        if (IS_AFTER_B && iamfDefinitionsApi() && extractorMp4EnableIamf()) {
+        if (IS_AT_LEAST_B && iamfDefinitionsApi() && extractorMp4EnableIamf()) {
             exhaustiveArgsList.add(new Object[] {MediaFormat.MIMETYPE_AUDIO_IAMF,
                     "audio/7_1_4_Opus_no_video.mp4", null, -1.0f, -1L, CODEC_OPTIONAL});
         }
+        exhaustiveArgsList.addAll(getDvTestParams(CodecDecoderTest.class));
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, true);
     }
 

@@ -744,6 +744,26 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
                         null, -1.0f, -1L, 44100, 2, -1, -1, CODEC_DEFAULT},
                 {MEDIA_TYPE_AAC, new String[]{"audio/bbb_2ch_48kHz_usac.m4a"},
                         null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_DEFAULT},
+
+                // ac3
+                {MEDIA_TYPE_AC3, new String[]{"audio/ac3_200_48kHz_128.mp4"},
+                    null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
+                {MEDIA_TYPE_AC3, new String[]{"audio/ac3_200_48kHz_256.mp4"},
+                    null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
+
+                // ac4
+                {MEDIA_TYPE_AC4, new String[]{"audio/ac4_200_48kHz_48.mp4"},
+                    null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
+                {MEDIA_TYPE_AC4, new String[]{"audio/ac4_510_48kHz_96.mp4"},
+                    null, -1.0f, -1L, 48000, 6, -1, -1, CODEC_OPTIONAL},
+                {MEDIA_TYPE_AC4, new String[]{"audio/ac4_510_48kHz_128.mp4"},
+                    null, -1.0f, -1L, 48000, 6, -1, -1, CODEC_OPTIONAL},
+
+                // eac3
+                {MEDIA_TYPE_EAC3, new String[]{"audio/eac3_200_48kHz_128.mp4"},
+                    null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
+                {MEDIA_TYPE_EAC3, new String[]{"audio/eac3_200_48kHz_256.mp4"},
+                    null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
         }));
         if (IS_AT_LEAST_U) {
             exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
@@ -763,33 +783,9 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
                             CODEC_ALL},
             }));
         }
-        if (IS_AFTER_B) {
-            exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
-                    // ac3
-                    {MEDIA_TYPE_AC3, new String[]{"audio/ac3_200_48kHz_128.mp4"},
-                            null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
-                    {MEDIA_TYPE_AC3, new String[]{"audio/ac3_200_48kHz_256.mp4"},
-                            null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
-
-                    // ac4
-                    {MEDIA_TYPE_AC4, new String[]{"audio/ac4_200_48kHz_48.mp4"},
-                            null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
-                    {MEDIA_TYPE_AC4, new String[]{"audio/ac4_510_48kHz_96.mp4"},
-                            null, -1.0f, -1L, 48000, 6, -1, -1, CODEC_OPTIONAL},
-                    {MEDIA_TYPE_AC4, new String[]{"audio/ac4_510_48kHz_128.mp4"},
-                            null, -1.0f, -1L, 48000, 6, -1, -1, CODEC_OPTIONAL},
-
-                    // eac3
-                    {MEDIA_TYPE_EAC3, new String[]{"audio/eac3_200_48kHz_128.mp4"},
-                            null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
-                    {MEDIA_TYPE_EAC3, new String[]{"audio/eac3_200_48kHz_256.mp4"},
-                            null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
-            }));
-            exhaustiveArgsList.addAll(getDvTestParams(CodecDecoderValidationTest.class));
-        }
 
         // iamf
-        if (IS_AFTER_B && iamfDefinitionsApi() && extractorMp4EnableIamf()) {
+        if (IS_AT_LEAST_B && iamfDefinitionsApi() && extractorMp4EnableIamf()) {
             exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
                     {MEDIA_TYPE_IAMF, new String[]{"audio/7_1_4_Opus_no_video.mp4"},
                             null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
@@ -869,6 +865,7 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
                             null, -1.0f, 3902485256L, -1, -1, 1280, 720, CODEC_ANY},
             }));
         }
+        exhaustiveArgsList.addAll(getDvTestParams(CodecDecoderValidationTest.class));
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, false);
     }
 
