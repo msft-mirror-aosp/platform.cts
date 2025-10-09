@@ -1224,6 +1224,18 @@ public class ItsTestActivity extends DialogTestListActivity {
             }
         }
 
+        // Access the build number from the generated BuildConfig
+        String buildNumber = BuildConfig.BUILD_NUMBER;
+        Log.i(TAG, "CtsVerifier ITS Test. Android Build Number: " + buildNumber);
+
+        if ("local".equals(buildNumber)) {
+            Log.w(TAG, "Note: This appears to be a local build.");
+        } else {
+            // Potentially add logic specific to official builds
+            Log.i(TAG, "Running on build from ab/" + buildNumber);
+        }
+
+
         super.onCreate(savedInstanceState);
 
         if (!mIsFoldableDevice) {
