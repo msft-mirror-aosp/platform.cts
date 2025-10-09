@@ -19,7 +19,6 @@ import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 import static android.server.wm.CtsWindowInfoUtils.getWindowBoundsInDisplaySpace;
 import static android.server.wm.CtsWindowInfoUtils.getWindowCenter;
 import static android.server.wm.CtsWindowInfoUtils.waitForNthWindowFromTop;
-import static android.server.wm.CtsWindowInfoUtils.waitForTouchableRect;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowFocus;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowInfo;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowInfos;
@@ -259,6 +258,10 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         mInstrumentation.waitForIdleSync();
         // Wait for device animation that shows above the activity to leave.
         waitForWindowOnTop(mActivity.getWindow());
+
+        // This is necessary to call waitForWindowInfos
+        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
+                android.Manifest.permission.ACCESS_SURFACE_FLINGER);
 
         mSvCreatedLatch = new CountDownLatch(1);
     }
@@ -1427,13 +1430,9 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
             final FrameLayout content = new FrameLayout(mActivity);
             mSurfaceView = new MotionRecordingSurfaceView(mActivity);
             mSurfaceView.setZOrderOnTop(true);
-            final FrameLayout.LayoutParams lp =
-                    new FrameLayout.LayoutParams(width, height, Gravity.LEFT | Gravity.TOP);
-            lp.leftMargin = 100;
-            lp.topMargin = 100;
-            content.addView(mSurfaceView, lp);
-            mActivity.setContentView(
-                    content, new ViewGroup.LayoutParams(width + 100, height + 100));
+            content.addView(mSurfaceView, new FrameLayout.LayoutParams(
+                    width, height, Gravity.LEFT | Gravity.TOP));
+            mActivity.setContentView(content, new ViewGroup.LayoutParams(width, height));
             mSurfaceView.getHolder().addCallback(this);
         });
     }
@@ -1510,31 +1509,24 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
     public void testEmbeddedViewCanSetTouchableRegion() throws Throwable {
         TouchPunchingView tpv;
         mEmbeddedView = tpv = new TouchPunchingView(mActivity);
-        Rect embeddedViewBoundsInWindowSpace = new Rect(0, 0, mEmbeddedViewWidth,
-                mEmbeddedViewHeight);
 
         addMotionRecordingSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
         mInstrumentation.waitForIdleSync();
-        assertTrue("Failed to wait for region to be touchable",
-                waitForTouchableRect(Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * 5L),
-                        mEmbeddedView::getWindowToken, embeddedViewBoundsInWindowSpace));
+        waitUntilEmbeddedViewDrawn();
         mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView);
         mInstrumentation.waitForIdleSync();
 
         MotionRecordingSurfaceView mrsv = (MotionRecordingSurfaceView) mSurfaceView;
-        assertFalse("MotionRecordingSurfaceView should not have received touch event",
-                mrsv.gotEvent());
+        assertFalse(mrsv.gotEvent());
         mActivityRule.runOnUiThread(() -> {
             tpv.punchHoleInTouchableRegion();
         });
         mInstrumentation.waitForIdleSync();
-        assertTrue("Failed to wait for region to be touchable",
-                waitForTouchableRect(Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * 5L),
-                        mEmbeddedView::getWindowToken, embeddedViewBoundsInWindowSpace));
+        waitForEmbeddedWindowComposited(true /*onTop*/, false /*remote*/);
 
         mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView);
         mInstrumentation.waitForIdleSync();
-        assertTrue("MotionRecordingSurfaceView should have received touch event", mrsv.gotEvent());
+        assertTrue(mrsv.gotEvent());
     }
 
     @Test
