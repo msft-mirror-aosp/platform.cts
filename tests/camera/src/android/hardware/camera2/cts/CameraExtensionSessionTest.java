@@ -76,6 +76,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.DeviceReportLog;
+import com.android.compatibility.common.util.PropertyUtil;
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
 import com.android.compatibility.common.util.Stat;
@@ -1069,6 +1070,9 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
         for (String id : getCameraIdsUnderTest()) {
             StaticMetadata staticMeta =
                     new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));
+            if (!PropertyUtil.areCameraXExtensionsEnabled()) {
+                continue;
+            }
             if (!staticMeta.isNightModeIndicatorSupported()) {
                 continue;
             }
