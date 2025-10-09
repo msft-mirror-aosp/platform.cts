@@ -23,6 +23,7 @@ import android.mediapc.cts.common.Preconditions;
 import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Requirements.AdaptivePlaybackFrameDropRequirement;
 import android.mediapc.cts.common.Utils;
+import android.mediav2.common.cts.CodecTestBase;
 
 import androidx.test.filters.LargeTest;
 
