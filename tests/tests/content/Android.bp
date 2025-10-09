@@ -274,6 +274,7 @@ android_test {
         ":HelloWorldAppV2",
         ":HelloWorldMimeGroup",
         ":HelloWorldNoAppStorage",
+        ":HelloWorldPcc",
         ":HelloWorldResHardening",
         ":HelloWorldSettings",
         ":HelloWorldSettings2",
