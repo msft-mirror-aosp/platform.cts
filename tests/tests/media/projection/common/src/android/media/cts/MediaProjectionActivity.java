@@ -62,11 +62,15 @@ public class MediaProjectionActivity extends Activity {
     private static final int TIMEOUT_MS = 10000;
     private static final String TAG = "MediaProjectionActivity";
     private static final String SYSTEM_UI_PACKAGE = "com.android.systemui";
+    private static final String SYSTEM_UI_PACKAGE_WEAR =
+            "com.google.android.apps.wearable.systemui";
 
     // Builds from 24Q3 and earlier will have screen_share_mode_spinner, while builds from
     // 24Q4 onwards will have screen_share_mode_options, so need to check both options here
     private static final String SCREEN_SHARE_OPTIONS_REGEX =
-            SYSTEM_UI_PACKAGE + ":id/screen_share_mode_(options|spinner)";
+            String.format(
+                    "(%s|%s):id/screen_share_mode_(options|spinner)",
+                    SYSTEM_UI_PACKAGE, SYSTEM_UI_PACKAGE_WEAR);
 
     // Extra used to specify a foreground service to use for the MediaProjection session.
     // If unset MediaProjection will default to the LocalMediaProjectionService implementation.
@@ -225,27 +229,24 @@ public class MediaProjectionActivity extends Activity {
         // Thus, we try to click that button multiple times.
         do {
             assertTrue("Can't get the permission", count <= retryCount);
-            boolean isWatch = getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
             String optionString =
                     displayName != null
                             ? getResourceString(
                                     this, CONNECTED_DISPLAY_STRING_RES_NAME, displayName)
                             : getResourceString(this, ENTIRE_SCREEN_STRING_RES_NAME);
-            dismissPermissionDialog(isWatch, optionString);
+            dismissPermissionDialog(optionString);
             count++;
         } while (!mCountDownLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS));
     }
 
     /** The permission dialog will be auto-opened by the activity - find it and accept */
-    private static void dismissPermissionDialog(boolean isWatch, @Nullable String optionString) {
+    private static void dismissPermissionDialog(@Nullable String optionString) {
         // Ensure the device is initialized before interacting with any UI elements.
         UiDevice.getInstance(getInstrumentation());
-        if (optionString != null && !isWatch) {
-            // if not testing on a watch device, then we need to select the entire screen option
-            // before pressing "Start recording" button. This is because single app capture is
-            // not supported on watches.
+        if (optionString != null) {
+            // Select the screen option before pressing "Start recording" button.
             if (!selectScreenOption(optionString)) {
-                Log.e(TAG, "Couldn't select entire screen option");
+                Log.e(TAG, "Couldn't select screen option: " + optionString);
             }
         }
         pressStartRecording();
@@ -307,15 +308,23 @@ public class MediaProjectionActivity extends Activity {
     @Nullable
     public static String getResourceString(
             @NonNull Context context, String resName, Object... args) {
+        boolean isWatch =
+                context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
+        String systemUiPackage = isWatch ? SYSTEM_UI_PACKAGE_WEAR : SYSTEM_UI_PACKAGE;
+        return getResourceString(context, systemUiPackage, resName, args);
+    }
+
+    @Nullable
+    private static String getResourceString(
+            Context context, String packageName, String resName, Object[] args) {
         Resources sysUiResources;
         try {
-            sysUiResources =
-                    context.getPackageManager().getResourcesForApplication(SYSTEM_UI_PACKAGE);
+            sysUiResources = context.getPackageManager().getResourcesForApplication(packageName);
         } catch (NameNotFoundException e) {
             return null;
         }
         int resourceId =
-                sysUiResources.getIdentifier(resName, /* defType= */ "string", SYSTEM_UI_PACKAGE);
+                sysUiResources.getIdentifier(resName, /* defType= */ "string", packageName);
         if (resourceId == 0) {
             // Resource id not found
             return null;

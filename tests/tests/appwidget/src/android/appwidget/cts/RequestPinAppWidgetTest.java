@@ -17,6 +17,7 @@
 package android.appwidget.cts;
 
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
+import static android.server.wm.UiDeviceUtils.pressHomeButton;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -255,6 +256,15 @@ public class RequestPinAppWidgetTest extends AppWidgetTestCase {
         // Accept the request
         context.sendBroadcast(new Intent(Constants.ACTION_CONFIRM_PIN)
                 .setPackage(launcherPkg));
+
+        if (!directActivityLaunch) {
+            // Press home key to ensure stopAppSwitches is called because the last-stop-app-switch-time
+            // is a criteria of allowing background start.
+            pressHomeButton();
+            SystemUtil.runWithShellPermissionIdentity(ActivityManager::resumeAppSwitches);
+            mWmState.waitForHomeActivityVisible();
+            SystemUtil.runWithShellPermissionIdentity(ActivityManager::resumeAppSwitches);
+        }
 
         boolean result = false;
         // The background activity will be launched 11s after the BalService starts. The
