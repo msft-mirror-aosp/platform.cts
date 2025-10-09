@@ -230,7 +230,7 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
         if (!mShouldTestTelecom) {
             return;
         }
-        if (!Flags.multiPartyAnchorConf()) {
+        if (!android.telecom.flags.Flags.multiPartyAnchorConf()) {
             // We have a dependency on this 26Q2 flag.
             return;
         }
