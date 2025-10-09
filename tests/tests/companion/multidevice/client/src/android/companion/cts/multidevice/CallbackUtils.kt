@@ -19,6 +19,8 @@ package android.companion.cts.multidevice
 import android.companion.AssociationInfo
 import android.companion.CompanionDeviceManager
 import android.companion.CompanionException
+import android.companion.datatransfer.continuity.TaskContinuityManager
+import android.companion.datatransfer.continuity.RemoteTask
 import android.content.IntentSender
 import android.os.OutcomeReceiver
 import android.security.attestationverification.VerificationToken
@@ -122,6 +124,50 @@ object CallbackUtils {
             }
 
             return result.get()
+        }
+    }
+
+    class HandoffRequestCallback : TaskContinuityManager.HandoffRequestCallback {
+        private val completed = CountDownLatch(1)
+
+        var result: Result? = null
+
+        data class Result(val associationId: Int, val remoteTaskId: Int, val resultCode: Int)
+
+        override fun onHandoffRequestFinished(
+            associationId: Int,
+            remoteTaskId: Int,
+            resultCode: Int,
+        ) {
+            result = Result(associationId, remoteTaskId, resultCode)
+            completed.countDown()
+        }
+
+        fun waitForCompletion(): Result? {
+            if (!completed.await(CALLBACK_TIMEOUT_SEC, SECONDS)) {
+                throw TimeoutException("Handoff request timed out.")
+            }
+
+            return result
+        }
+    }
+
+    class RemoteTaskCallback() : TaskContinuityManager.RemoteTaskListener {
+
+        private val callCountLatch = CountDownLatch(1)
+        var lastRemoteTasks: List<RemoteTask> = emptyList()
+
+        override fun onRemoteTasksChanged(remoteTasks: List<RemoteTask>) {
+            lastRemoteTasks = remoteTasks
+            callCountLatch.countDown()
+        }
+
+        fun waitForCompletion(): List<RemoteTask> {
+            if (!callCountLatch.await(CALLBACK_TIMEOUT_SEC, SECONDS)) {
+                throw TimeoutException("Remote task listener timed out.")
+            }
+
+            return lastRemoteTasks
         }
     }
 }
