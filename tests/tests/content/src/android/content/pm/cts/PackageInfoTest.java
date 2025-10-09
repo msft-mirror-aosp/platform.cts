@@ -35,6 +35,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageItemInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
+import android.content.pm.UsesPermissionPurposeInfo;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.DisabledOnRavenwood;
@@ -48,6 +49,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.Arrays;
+import java.util.Map;
 
 @RunWith(AndroidJUnit4.class)
 @AppModeFull // TODO(Instant) Figure out which APIs should work.
@@ -139,6 +141,8 @@ public class PackageInfoTest {
         checkSignatureInfo(expected.signatures, actual.signatures);
         checkConfigInfo(expected.configPreferences, actual.configPreferences);
         checkAttributionInfo(expected.attributions, actual.attributions);
+        checkUsesPermissionPurposeInfoSameSize(
+                expected.requestedPermissionsPurposes, actual.requestedPermissionsPurposes);
     }
 
     private void checkAppInfo(ApplicationInfo expected, ApplicationInfo actual) {
@@ -216,5 +220,11 @@ public class PackageInfoTest {
         } else {
             assertEquals(0, actual.length);
         }
+    }
+
+    private void checkUsesPermissionPurposeInfoSameSize(
+            Map<String, UsesPermissionPurposeInfo> expected,
+            Map<String, UsesPermissionPurposeInfo> actual) {
+        assertEquals(expected.size(), actual.size());
     }
 }

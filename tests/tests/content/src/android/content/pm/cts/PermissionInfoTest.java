@@ -20,11 +20,13 @@ package android.content.pm.cts;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.PermissionInfo;
+import android.content.pm.ValidGeneralPurposeInfo;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeFull;
 import android.test.AndroidTestCase;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 
 @AppModeFull // TODO(Instant) Figure out which APIs should work.
@@ -38,6 +40,12 @@ public class PermissionInfoTest extends AndroidTestCase {
             + "to send data to the internet, so this permission is not required to send data to "
             + "the internet.";
     private static final int TEST_TARGET_SDK_VERSION = 37;
+    private static final Map<String, ValidGeneralPurposeInfo> TEST_VALID_PURPOSES =
+            Map.of(
+                    "purpose1",
+                    new ValidGeneralPurposeInfo("purpose1", 37),
+                    "purpose2",
+                    new ValidGeneralPurposeInfo("purpose2", 37));
 
     public void testPermissionInfo() throws NameNotFoundException {
         PackageManager pm = getContext().getPackageManager();
@@ -47,6 +55,7 @@ public class PermissionInfoTest extends AndroidTestCase {
         PermissionInfo permissionInfo = pm.getPermissionInfo(PERMISSION_NAME, 0);
         permissionInfo.knownCerts = TEST_CERTS;
         permissionInfo.requiresGeneralPurposeTargetSdkVersion = TEST_TARGET_SDK_VERSION;
+        permissionInfo.validGeneralPurposes = TEST_VALID_PURPOSES;
         PermissionInfo infoFromExisted = new PermissionInfo(permissionInfo);
         checkInfoSame(permissionInfo, infoFromExisted);
 
@@ -72,5 +81,6 @@ public class PermissionInfoTest extends AndroidTestCase {
         assertEquals(
                 expected.requiresGeneralPurposeTargetSdkVersion,
                 actual.requiresGeneralPurposeTargetSdkVersion);
+        assertEquals(expected.validGeneralPurposes, actual.validGeneralPurposes);
     }
 }
