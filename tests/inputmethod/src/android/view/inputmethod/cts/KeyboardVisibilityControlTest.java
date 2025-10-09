@@ -1066,9 +1066,11 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
     @Test
     public void testImeVisibilityWhenDismissingDialogWithImeFocused() throws Exception {
-        // TODO(b/391378502): Fix this test (or consider writing an equivalent test) on Automotive
-        // Scalable UI with Auto-Enhance on.
-        assumeFalse(isAutomotiveScalableUI());
+        // TODO(b/391378502): Write an equivalent test for Android Multi-Window surface.
+        assumeFalse(
+                "Skip in automotive multi-window: IME attaches to display, but test "
+                        + "requires it on the activity.",
+                isAutomotiveMultiWindow());
 
         final Instrumentation instrumentation = mInstrumentation;
         try (MockImeSession imeSession = MockImeSession.create(
@@ -1905,7 +1907,7 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     }
 
     private int calculateNewKeyboardHeight(TestActivity testActivity) {
-        if (!isAutomotiveScalableUI()) {
+        if (!isAutomotiveMultiWindow()) {
             return NEW_KEYBOARD_HEIGHT;
         }
         // To ensure the mock IME overlaps the test dialog in automotive multi-window,
@@ -1945,9 +1947,10 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             + "UinputKeyboard to send KeyEvents to specific displays.")
     @Test
     public void testImeHiddenWhenImeLayeringTargetDelayedToShowInAppSwitch() throws Exception {
-        // In Automotive multi-window environment, the IME is linked to the display, not the
-        // activity, making this test inapplicable.
-        assumeFalse(isAutomotiveScalableUI());
+        assumeFalse(
+                "Skip in automotive multi-window: IME attaches to display, but test "
+                        + "requires it on the activity.",
+                isAutomotiveMultiWindow());
 
         assumeTrue(hasRecentsScreen());
 
