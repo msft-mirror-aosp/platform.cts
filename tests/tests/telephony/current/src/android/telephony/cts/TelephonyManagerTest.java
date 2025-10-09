@@ -712,7 +712,7 @@ public class TelephonyManagerTest {
 
     @Test
     @RequiresFlagsEnabled(
-            com.android.server.telecom.flags.Flags.FLAG_MOVE_GET_TTY_MODE_TO_TELEPHONY_MANAGER)
+            android.telecom.flags.Flags.FLAG_MOVE_GET_TTY_MODE_TO_TELEPHONY_MANAGER)
     public void testGetCurrentTtyMode() {
         assumeTrue("Test requires Telephony feature",
                 mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
