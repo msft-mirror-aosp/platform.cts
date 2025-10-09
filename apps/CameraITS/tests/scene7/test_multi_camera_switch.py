@@ -70,6 +70,10 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
       failed_af_msg = []
 
       # check SKIP conditions
+      vendor_api_level = its_session_utils.get_vendor_api_level(self.dut.serial)
+      camera_properties_utils.skip_unless(
+          vendor_api_level >= its_session_utils.ANDROID16_API_LEVEL)
+
       first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
       multi_camera_switch_utils.check_lens_switch_conditions(
           props, first_api_level, _ZOOM_RANGE_UW_W)
