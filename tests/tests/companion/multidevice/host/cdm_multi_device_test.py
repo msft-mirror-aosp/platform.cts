@@ -218,6 +218,54 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         asserts.assert_equal(1, metadata.get('version'), 'Received incorrect metadata.')
 
 
+    @ApiTest(apis=[
+            'android.companion.CompanionDeviceManager#requestHandoff(int, int, java.util.concurrent.Executor, android.companion.CompanionDeviceManager.HandoffRequestCallback)',
+            'android.companion.CompanionDeviceManager#registerRemoteTaskListener(java.util.concurrent.Executor, android.companion.CompanionDeviceManager.RemoteTaskListener)',
+            'android.companion.CompanionDeviceManager#unregisterRemoteTaskListener(android.companion.CompanionDeviceManager.RemoteTaskListener)',
+    ])
+    def test_handoff(self):
+        """Test that handoff can exchange data between devices"""
+
+        # Assert both devices are on same build type (debug vs user)
+        test_utils.assert_build_types_match(self.primary, self.secondary)
+
+        # If on user build, assert AVF compliance for peer profiles
+        test_utils.assert_attestation_verified(self.primary, self.secondary)
+
+        # Skip if task continuity flag is disabled
+        api_flags_utils.assume_enabled(self.primary, 'desktop_better_together', 'enable_task_continuity')
+        api_flags_utils.assume_enabled(self.secondary, 'desktop_better_together', 'enable_task_continuity')
+
+        # Create associations
+        self.secondary.cdm.btBecomeDiscoverable(cdm_base_test.BT_DISCOVERABLE_TIME)
+        secondary_id = self.primary.cdm.associate(self.secondary.address)
+
+        self.primary.cdm.btBecomeDiscoverable(cdm_base_test.BT_DISCOVERABLE_TIME)
+        primary_id = self.secondary.cdm.associate(self.primary.address)
+
+        # Enable handoff and attach transports
+        self.bt_pair_devices()
+        self.primary.cdm.enableHandoffForAssociation(secondary_id)
+        self.secondary.cdm.enableHandoffForAssociation(primary_id)
+        self.secondary.cdm.attachServerSocket(primary_id)
+        self.primary.cdm.attachClientSocket(secondary_id)
+
+        # Launch handoff activity on secondary device with attached "data" to hand off between devices
+        handoff_extras_data = 1
+        task_id = self.secondary.cdm.launchHandoffActivity(handoff_extras_data)
+        # Expect task information to be sent to primary device
+        didSynchronizeTask = self.primary.cdm.wasRemoteTaskReceived(task_id)
+        asserts.assert_true(didSynchronizeTask, 'Task not synchronized.')
+
+        # Request handoff and expect success
+        status = self.primary.cdm.requestTaskHandoffAndGetStatus(secondary_id, task_id)
+        asserts.assert_equal(0, status, 'Expected success.')
+
+        # Get data from handoff activity on secondary device to be accurate
+        launched_handoff_activity_data = self.primary.cdm.waitForHandoff()
+        asserts.assert_equal(handoff_extras_data, launched_handoff_activity_data, 'Invalid data received.')
+
+
 if __name__ == '__main__':
     # Take test args
     if '--' in sys.argv:
