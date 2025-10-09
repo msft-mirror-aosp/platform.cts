@@ -753,8 +753,12 @@ public class ArchiveTest {
     }
 
     private void installPackage(@NonNull String path, @NonNull String installerPackageName) {
-        assertEquals("Success\n", SystemUtil.runShellCommand(
-                String.format("pm install -r -i %s -t -g %s", installerPackageName, path)));
+        assertEquals(
+                "Success\n",
+                SystemUtil.runShellCommand(
+                        String.format(
+                                "pm install -r --user %d -i %s -t -g %s",
+                                mContext.getUserId(), installerPackageName, path)));
     }
 
     private boolean isInstalled() {
