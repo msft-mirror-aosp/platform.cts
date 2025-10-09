@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.graphics.cts
+package android.systemui.cts
 
 import android.app.Instrumentation
 import android.app.UiModeManager

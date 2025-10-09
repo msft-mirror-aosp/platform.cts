@@ -47,6 +47,13 @@ android_test {
         "com_android_systemui_flags_lib",
         "ui-trace-collector",
         "collector-device-lib",
+        "libmonet",
+        "androidx.compose.ui_ui-unit",
+        "androidx.compose.foundation_foundation",
+        "androidx.compose.runtime_runtime",
+        "androidx.compose.ui_ui-test-junit4",
+        "platform-screenshot-diff-core",
+        "ravenwood-junit",
     ],
     srcs: [
         "src/**/*.java",
