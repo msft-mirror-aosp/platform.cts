@@ -391,6 +391,28 @@ public class VibrationEffectTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NORMALIZED_PWLE_EFFECTS)
+    public void testParcelingBasicEnvelopeEffects() {
+        Parcel p = Parcel.obtain();
+        VibrationEffect testBasicEnvelope = getTestBasicEnvelope();
+        testBasicEnvelope.writeToParcel(p, 0);
+        p.setDataPosition(0);
+        VibrationEffect parceledEffect = VibrationEffect.CREATOR.createFromParcel(p);
+        assertThat(parceledEffect).isEqualTo(testBasicEnvelope);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NORMALIZED_PWLE_EFFECTS)
+    public void testParcelingWaveformEnvelopeEffects() {
+        Parcel p = Parcel.obtain();
+        VibrationEffect testWaveformEnvelope = getTestWaveformEnvelope();
+        testWaveformEnvelope.writeToParcel(p, 0);
+        p.setDataPosition(0);
+        VibrationEffect parceledEffect = VibrationEffect.CREATOR.createFromParcel(p);
+        assertThat(parceledEffect).isEqualTo(testWaveformEnvelope);
+    }
+
+    @Test
     @RequiresFlagsEnabled(FLAG_VENDOR_VIBRATION_EFFECTS)
     public void testParcelingVendorEffect() {
         VibrationEffect vendorEffect = VibrationEffect.createVendorEffect(createTestVendorData());
@@ -748,7 +770,7 @@ public class VibrationEffectTest {
 
         VibrationEffect otherWithInitialFrequency =
                 new VibrationEffect.WaveformEnvelopeBuilder()
-                .setInitialFrequencyHz(/*initialFrequencyHz=*/ 30)
+                        .setInitialFrequencyHz(/* initialFrequencyHz= */ 30)
                         // amplitude, frequencyHz, durationMillis
                         .addControlPoint(0.0f, 60f, 20)
                         .addControlPoint(0.3f, 100f, 50)
@@ -776,7 +798,7 @@ public class VibrationEffectTest {
 
         VibrationEffect otherWithInitialFrequency =
                 new VibrationEffect.WaveformEnvelopeBuilder()
-                .setInitialFrequencyHz(/*initialFrequencyHz=*/ 30)
+                        .setInitialFrequencyHz(/* initialFrequencyHz= */ 30)
                         // amplitude, frequencyHz, durationMillis
                         .addControlPoint(0.4f, 120f, 50)
                         .addControlPoint(0.0f, 120f, 40)
@@ -802,7 +824,7 @@ public class VibrationEffectTest {
 
         VibrationEffect otherWithInitialFrequency =
                 new VibrationEffect.WaveformEnvelopeBuilder()
-                .setInitialFrequencyHz(/*initialFrequencyHz=*/ 40)
+                        .setInitialFrequencyHz(/* initialFrequencyHz= */ 40)
                         // amplitude, frequencyHz, durationMillis
                         .addControlPoint(0.4f, 120f, 50)
                         .addControlPoint(0.0f, 120f, 40)
@@ -829,7 +851,7 @@ public class VibrationEffectTest {
 
         VibrationEffect otherWithInitialFrequency =
                 new VibrationEffect.WaveformEnvelopeBuilder()
-                .setInitialFrequencyHz(/*initialFrequencyHz=*/ 30)
+                        .setInitialFrequencyHz(/* initialFrequencyHz= */ 30)
                         // amplitude, frequencyHz, durationMillis
                         .addControlPoint(0.4f, 120f, 50)
                         .addControlPoint(0.0f, 120f, 40)
