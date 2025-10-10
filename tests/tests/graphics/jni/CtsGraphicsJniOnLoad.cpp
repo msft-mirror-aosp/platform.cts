@@ -59,8 +59,6 @@ jint JNI_OnLoad(JavaVM* vm, void* /*reserved*/) {
         return JNI_ERR;
     if (register_android_graphics_cts_CameraVulkanGpuTest(env))
         return JNI_ERR;
-    if (register_android_graphics_fonts_cts_SystemFontTest(env))
-        return JNI_ERR;
     if (register_android_graphics_cts_ComputeAhbTest(env))
         return JNI_ERR;
     return JNI_VERSION_1_4;

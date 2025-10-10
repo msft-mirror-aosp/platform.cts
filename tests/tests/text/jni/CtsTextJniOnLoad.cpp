@@ -18,6 +18,7 @@
 #include <stdio.h>
 
 extern int register_android_text_format_cts_NativeTimeFunctions(JNIEnv*);
+extern int register_android_text_fonts_cts_SystemFontTest(JNIEnv *env);
 
 jint JNI_OnLoad(JavaVM *vm, void *) {
     JNIEnv *env = NULL;
@@ -27,6 +28,10 @@ jint JNI_OnLoad(JavaVM *vm, void *) {
     }
 
     if (register_android_text_format_cts_NativeTimeFunctions(env)) {
+        return JNI_ERR;
+    }
+
+    if (register_android_text_fonts_cts_SystemFontTest(env)) {
         return JNI_ERR;
     }
 

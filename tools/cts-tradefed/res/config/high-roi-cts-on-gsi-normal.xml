@@ -557,7 +557,6 @@
     <option name="compatibility:include-filter" value="CtsGraphicsTestCases android.graphics.cts.FrameRateOverrideTest#testGlobalChoreographer"/>
     <option name="compatibility:include-filter" value="CtsGraphicsTestCases android.graphics.cts.SetFrameRateTest#testAtLeast_NonSeamless"/>
     <option name="compatibility:include-filter" value="CtsGraphicsTestCases android.graphics.cts.SetFrameRateTest#testAtLeast_Seamless"/>
-    <option name="compatibility:include-filter" value="CtsGraphicsTestCases android.graphics.text.cts.TextRunShaperTest#shapeText_FontCreateFromNative_Override"/>
     <!-- CtsHardwareTestCases -->
     <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.cts.HardwareBufferTest#testCreateOptionalFormats[15]"/>
     <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.cts.HardwareBufferTest#testCreateOptionalFormats[16]"/>
@@ -2091,6 +2090,7 @@
     <!-- CtsTextTestCases -->
     <option name="compatibility:include-filter" value="CtsTextTestCases android.text.cts.EmojiTest#testEmojiGlyphWebView"/>
     <option name="compatibility:include-filter" value="CtsTextTestCases android.text.cts.FontVariationSettingsTest#testFontVariationSettingsEffectiveMerge"/>
+    <option name="compatibility:include-filter" value="CtsTextTestCases android.text.cts.TextRunShaperTest#shapeText_FontCreateFromNative_Override"/>
     <option name="compatibility:include-filter" value="CtsTextTestCases android.text.method.cts.DateKeyListenerTest#testDateTimeKeyListener"/>
     <option name="compatibility:include-filter" value="CtsTextTestCases android.text.method.cts.DateTimeKeyListenerTest#testDateTimeKeyListener"/>
     <option name="compatibility:include-filter" value="CtsTextTestCases android.text.method.cts.DigitsKeyListenerTest#testDigitsKeyListener1"/>
