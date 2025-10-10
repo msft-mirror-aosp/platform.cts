@@ -48,12 +48,16 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
+import android.telecom.PhoneAccount;
+import android.telecom.PhoneAccountHandle;
+import android.telecom.TelecomManager;
 
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.ShellIdentityUtils;
 
 import org.junit.After;
 import org.junit.Before;
@@ -62,6 +66,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 @RunWith(AndroidJUnit4.class)
@@ -69,6 +75,7 @@ public class RingtoneManagerTest {
 
     private static final String PKG = "android.media.audio.cts";
     private static final String TAG = "RingtoneManagerTest";
+    private static final String EMERGENCY_PHONE_ACCOUNT_HANDLE_ID = "E";
     private static final int RAMPING_RINGER_VIBRATION_DURATION = 5000;
     private static final int RAMPING_RINGER_DURATION = 10000;
     private static final float EPSILON = 1e-6f;
@@ -81,6 +88,10 @@ public class RingtoneManagerTest {
     private AudioManager mAudioManager;
     private int mOriginalRingerMode;
     private Uri mDefaultUri;
+    private Uri mDefaultUriForPhoneAccountHandle1;
+    private Uri mDefaultUriForPhoneAccountHandle2;
+    private PhoneAccountHandle mPhoneAccountHandle1;
+    private PhoneAccountHandle mPhoneAccountHandle2;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -107,6 +118,15 @@ public class RingtoneManagerTest {
         mDefaultUri = ContentProvider.maybeAddUserId(
                 RingtoneManager.getActualDefaultRingtoneUri(
                         mContext, RingtoneManager.TYPE_RINGTONE), mContext.getUserId());
+        initPhoneAccountHandle();
+        mDefaultUriForPhoneAccountHandle1 = ContentProvider.maybeAddUserId(
+                RingtoneManager.getRingtoneUriForPhoneAccountHandle(mContext,
+                        mPhoneAccountHandle1),
+                mContext.getUserId());
+        mDefaultUriForPhoneAccountHandle2 = ContentProvider.maybeAddUserId(
+                RingtoneManager.getRingtoneUriForPhoneAccountHandle(mContext,
+                        mPhoneAccountHandle2),
+                mContext.getUserId());
 
         mOriginalRingerMode = mAudioManager.getRingerMode();
         if (mAudioManager.getRingerMode() != AudioManager.RINGER_MODE_NORMAL) {
@@ -119,6 +139,36 @@ public class RingtoneManagerTest {
                         mContext.getPackageName(), mInstrumentation, false);
             }
         }
+    }
+
+    private void initPhoneAccountHandle() {
+        List<PhoneAccountHandle> accountHandles = getPhoneAccountHandles();
+        if (accountHandles == null || accountHandles.size() == 0) {
+            return;
+        }
+        mPhoneAccountHandle1 = accountHandles.get(0);
+        if (accountHandles.size() > 1) {
+            mPhoneAccountHandle2 = accountHandles.get(1);
+        }
+    }
+
+    private List<PhoneAccountHandle> getPhoneAccountHandles() {
+        TelecomManager telecomManager = (TelecomManager) mContext
+                .getSystemService(Context.TELECOM_SERVICE);
+        List<PhoneAccountHandle> subscriptionAccountHandles = new ArrayList<>();
+        List<PhoneAccountHandle> accountHandles = ShellIdentityUtils
+                .invokeMethodWithShellPermissions(telecomManager,
+                        (tm) -> tm.getCallCapablePhoneAccounts(true));
+        for (PhoneAccountHandle accountHandle : accountHandles) {
+            PhoneAccount phoneAccount = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                    telecomManager, (tm) ->tm.getPhoneAccount(accountHandle));
+            // Emergency phone account also has CAPABILITY_SIM_SUBSCRIPTION, so should exclude it.
+            if (phoneAccount.hasCapabilities(PhoneAccount.CAPABILITY_SIM_SUBSCRIPTION)
+                    && !EMERGENCY_PHONE_ACCOUNT_HANDLE_ID.equals(accountHandle.getId())) {
+                subscriptionAccountHandles.add(accountHandle);
+            }
+        }
+        return subscriptionAccountHandles;
     }
 
     @After
@@ -136,6 +186,10 @@ public class RingtoneManagerTest {
         }
         RingtoneManager.setActualDefaultRingtoneUri(mContext, RingtoneManager.TYPE_RINGTONE,
                 mDefaultUri);
+        RingtoneManager.setRingtoneUri(
+                mContext, mDefaultUriForPhoneAccountHandle1, mPhoneAccountHandle1);
+        RingtoneManager.setRingtoneUri(
+                mContext, mDefaultUriForPhoneAccountHandle2, mPhoneAccountHandle2);
         Utils.disableAppOps(mContext.getPackageName(), "android:write_settings", mInstrumentation);
     }
 
@@ -171,10 +225,24 @@ public class RingtoneManagerTest {
         RingtoneManager.setActualDefaultRingtoneUri(mContext, RingtoneManager.TYPE_RINGTONE, uri);
 
         Uri actualDefaultRingtoneUri = ContentProvider.maybeAddUserId(
-                RingtoneManager.getActualDefaultRingtoneUri(
-                        mContext, RingtoneManager.TYPE_RINGTONE), mContext.getUserId());
-
+                RingtoneManager.getActualDefaultRingtoneUri(mContext,
+                        RingtoneManager.TYPE_RINGTONE),
+                mContext.getUserId());
         assertEquals(uri, actualDefaultRingtoneUri);
+
+        RingtoneManager.setRingtoneUri(mContext, uri, mPhoneAccountHandle1);
+        Uri phoneAccountHandle1Uri = ContentProvider.maybeAddUserId(
+                RingtoneManager.getRingtoneUriForPhoneAccountHandle(
+                        mContext, mPhoneAccountHandle1),
+                mContext.getUserId());
+        assertEquals(uri, phoneAccountHandle1Uri);
+
+        RingtoneManager.setRingtoneUri(mContext, uri, mPhoneAccountHandle2);
+        Uri phoneAccountHandle2Uri = ContentProvider.maybeAddUserId(
+                RingtoneManager.getRingtoneUriForPhoneAccountHandle(
+                        mContext, mPhoneAccountHandle2),
+                mContext.getUserId());
+        assertEquals(uri, phoneAccountHandle2Uri);
 
         try (AssetFileDescriptor afd = RingtoneManager.openDefaultRingtoneUri(
                 mActivity, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE))) {
