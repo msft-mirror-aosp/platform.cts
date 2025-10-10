@@ -56,7 +56,6 @@ class SystemPaletteTest(
         @JvmStatic
         @Parameterized.BeforeParam
         fun setup(color: String, style: String, mode: String) {
-            assumeTrue(isSupportedDevice)
             val isTestingNightMode = mode == "dark"
             val expectedMode = if (isTestingNightMode) MODE_NIGHT_YES else MODE_NIGHT_NO
 
@@ -82,6 +81,7 @@ class SystemPaletteTest(
     @Test
     @CddTest(requirements = ["3.8.6/C-1-4,C-1-5,C-1-6"])
     fun testSystemPalette() {
+        assumeTrue(isSupportedDevice)
         val goldenName = "Palette_${mode}_${color}_$style".replace("#", "")
         val bitmap = generatePaletteBitmap()
         assertGoldenImage(bitmap, goldenName)
