@@ -247,6 +247,7 @@ public abstract class WindowUntrustedTouchTestBase {
     }
 
     void assertAnimationRunning() {
+        mWmState.computeState();
         assertThat(mWmState.getDisplay(mActivityDisplayId).getAppTransitionState())
                 .isEqualTo(WindowManagerStateHelper.APP_STATE_RUNNING);
     }
