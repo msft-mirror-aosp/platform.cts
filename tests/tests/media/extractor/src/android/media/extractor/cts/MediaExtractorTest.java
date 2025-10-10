@@ -454,23 +454,20 @@ public class MediaExtractorTest {
     public void testDolbyVisionMediaExtractorProfileDvav1() throws Exception {
         TestMediaDataSource dataSource = setDataSource("video_dovi_3840x2160_30fps_dav1_10.mp4");
 
-        if (advertisesDolbyVision()) {
-            assertEquals(1, mExtractor.getTrackCount());
+        assumeTrue("Device does not provide a Dolby Vision decoder", advertisesDolbyVision());
+        assertEquals(1, mExtractor.getTrackCount());
 
-            // Dvav1 10 exposes a single backward compatible track.
-            final MediaFormat trackFormat = mExtractor.getTrackFormat(0);
-            final String mimeType = trackFormat.getString(MediaFormat.KEY_MIME);
+        // Dvav1 10 exposes a single backward compatible track.
+        final MediaFormat trackFormat = mExtractor.getTrackFormat(0);
+        final String mimeType = trackFormat.getString(MediaFormat.KEY_MIME);
 
-            assertEquals("video/dolby-vision", mimeType);
+        assertEquals("video/dolby-vision", mimeType);
 
-            final int profile = trackFormat.getInteger(MediaFormat.KEY_PROFILE);
-            final int level = trackFormat.getInteger(MediaFormat.KEY_LEVEL);
+        final int profile = trackFormat.getInteger(MediaFormat.KEY_PROFILE);
+        final int level = trackFormat.getInteger(MediaFormat.KEY_LEVEL);
 
-            assertEquals(MediaCodecInfo.CodecProfileLevel.DolbyVisionProfileDvav110, profile);
-            assertEquals(MediaCodecInfo.CodecProfileLevel.DolbyVisionLevelUhd30, level);
-        } else {
-            MediaUtils.skipTest("Device does not provide a Dolby Vision decoder");
-        }
+        assertEquals(MediaCodecInfo.CodecProfileLevel.DolbyVisionProfileDvav110, profile);
+        assertEquals(MediaCodecInfo.CodecProfileLevel.DolbyVisionLevelUhd30, level);
     }
 
     // DolbyVisionMediaExtractor for profile-level (Dvav1 10.1/Uhd30)
@@ -530,7 +527,7 @@ public class MediaExtractorTest {
         assertEquals(1, mExtractor.getTrackCount());
 
         // The following values below require API Build.VERSION_CODES.S
-        if (!MediaUtils.check(IS_AT_LEAST_S, "test needs Android 12")) return;
+        assumeTrue("test needs Android 12", IS_AT_LEAST_S);
 
         MediaFormat trackFormat = mExtractor.getTrackFormat(0);
         final String mimeType = trackFormat.getString(MediaFormat.KEY_MIME);
@@ -550,7 +547,7 @@ public class MediaExtractorTest {
         assertEquals(1, mExtractor.getTrackCount());
 
         // The following values below require API Build.VERSION_CODES.S
-        if (!MediaUtils.check(IS_AT_LEAST_S, "test needs Android 12")) return;
+        assumeTrue("test needs Android 12", IS_AT_LEAST_S);
 
         MediaFormat trackFormat = mExtractor.getTrackFormat(0);
         final String mimeType = trackFormat.getString(MediaFormat.KEY_MIME);
