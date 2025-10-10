@@ -308,6 +308,11 @@ public class BaseAppVerifier {
         mBaseAppVerifierImpl.setConnectionPropertiesOnCall(appControl, callId, properties);
     }
 
+    public int getAudioProcessingUseCase(AppControlWrapper appControl, String callId)
+        throws Exception {
+        return mBaseAppVerifierImpl.getAudioProcessingUseCase(appControl, callId);
+    }
+
     public String addOutgoingCallAndVerify(AppControlWrapper appControl)
             throws Exception {
         CallAttributes outgoingAttributes = mBaseAppVerifierImpl.getRandomAttributes(

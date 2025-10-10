@@ -54,6 +54,7 @@ import android.telecom.cts.apps.CallEndpointTransaction;
 import android.telecom.cts.apps.CallExceptionTransaction;
 import android.telecom.cts.apps.CallResources;
 import android.telecom.cts.apps.IAppControl;
+import android.telecom.cts.apps.IntegerTransaction;
 import android.telecom.cts.apps.IRemoteOperationConsumer;
 import android.telecom.cts.apps.LatchedOutcomeReceiver;
 import android.telecom.cts.apps.NoDataTransaction;
@@ -557,6 +558,12 @@ public class TransactionalVoipAppControlMain extends Service {
                         return new BooleanTransaction(TestAppTransaction.Failure, e);
                     }
                 }
+
+              @Override
+              public IntegerTransaction getAudioProcessingUseCase(String callId) {
+                // Not supported for transactional app for now.
+                return new IntegerTransaction(TestAppTransaction.Success, 0);
+              }
 
                 private TransactionalCall getCallOrThrowError(String id, List<String> stackTrace) {
                     if (!mIdToControl.containsKey(id)) {
