@@ -55,7 +55,7 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
     private MockModemConfigInterface mMockModemConfigInterface;
     private final Object mCacheUpdateMutex;
     private final Handler mHandler;
-    private int mSubId;
+    private int mLogicalSlotIndex;
     private String mTag;
 
     // ***** Events
@@ -90,7 +90,7 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
         mMockModemConfigInterface = configInterface;
         mCacheUpdateMutex = new Object();
         mHandler = new IRadioNetworkHandler();
-        mSubId = instanceId;
+        mLogicalSlotIndex = instanceId;
         mServiceState = new MockNetworkService(context);
 
         // Default network type GPRS|EDGE|UMTS|HSDPA|HSUPA|HSPA|LTE|HSPA+|GSM|LTE_CA|NR
@@ -105,9 +105,9 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
         mNullCipherAndIntegrityEnabled = true;
 
         mMockModemConfigInterface.registerForRadioStateChanged(
-                mSubId, mHandler, EVENT_RADIO_STATE_CHANGED, null);
+                mLogicalSlotIndex, mHandler, EVENT_RADIO_STATE_CHANGED, null);
         mMockModemConfigInterface.registerForCardStatusChanged(
-                mSubId, mHandler, EVENT_SIM_STATUS_CHANGED, null);
+                mLogicalSlotIndex, mHandler, EVENT_SIM_STATUS_CHANGED, null);
     }
 
     /** Handler class to handle callbacks */
@@ -162,7 +162,7 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
     private void notifyServiceStateChange() {
         Log.d(mTag, "notifyServiceStateChange");
 
-        Handler handler = mMockModemConfigInterface.getMockModemConfigHandler(mSubId);
+        Handler handler = mMockModemConfigInterface.getMockModemConfigHandler(mLogicalSlotIndex);
         Message msg =
                 handler.obtainMessage(
                         MockModemConfigBase.EVENT_SERVICE_STATE_CHANGE, mServiceState);
@@ -216,7 +216,7 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
             android.hardware.radio.sim.AppStatus rilAppStatus = cardStatus.applications[i];
             if (rilAppStatus.appState == android.hardware.radio.sim.AppStatus.APP_STATE_READY) {
                 Log.i(mTag, "SIM is ready");
-                simPlmn = mMockModemConfigInterface.getSimInfo(mSubId,
+                simPlmn = mMockModemConfigInterface.getSimInfo(mLogicalSlotIndex,
                         SimInfoChangedResult.SIM_INFO_TYPE_MCC_MNC, mTag);
                 mServiceState.updateSimPlmn(simPlmn);
                 return true;

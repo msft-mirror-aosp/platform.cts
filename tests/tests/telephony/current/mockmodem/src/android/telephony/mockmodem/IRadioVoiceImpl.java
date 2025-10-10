@@ -53,7 +53,7 @@ public class IRadioVoiceImpl extends IRadioVoice.Stub {
     private final Object mCacheUpdateMutex;
     private final HandlerThread mHandlerThread;
     private final Handler mHandler;
-    private int mSubId;
+    private int mLogicalSlotIndex;
     private String mTag;
 
     // ***** Events
@@ -73,7 +73,7 @@ public class IRadioVoiceImpl extends IRadioVoice.Stub {
 
         this.mService = service;
         mMockModemConfigInterface = configInterface;
-        mSubId = instanceId;
+        mLogicalSlotIndex = instanceId;
         mCacheUpdateMutex = new Object();
         mHandlerThread = new HandlerThread(mTag);
         mHandlerThread.start();
@@ -82,12 +82,12 @@ public class IRadioVoiceImpl extends IRadioVoice.Stub {
 
         // Register events
         mMockModemConfigInterface.registerForCallStateChanged(
-                mSubId, mHandler, EVENT_CALL_STATE_CHANGED, null);
+                mLogicalSlotIndex, mHandler, EVENT_CALL_STATE_CHANGED, null);
         mMockModemConfigInterface.registerForCurrentCallsResponse(
-                mSubId, mHandler, EVENT_CURRENT_CALLS_RESPONSE, null);
+                mLogicalSlotIndex, mHandler, EVENT_CURRENT_CALLS_RESPONSE, null);
         mMockModemConfigInterface.registerForCallIncoming(
-                mSubId, mHandler, EVENT_CALL_INCOMING, null);
-        mMockModemConfigInterface.registerRingbackTone(mSubId, mHandler, EVENT_RINGBACK_TONE, null);
+                mLogicalSlotIndex, mHandler, EVENT_CALL_INCOMING, null);
+        mMockModemConfigInterface.registerRingbackTone(mLogicalSlotIndex, mHandler, EVENT_RINGBACK_TONE, null);
 
         for (int i = 0; i < LATCH_MAX; i++) {
             mLatches[i] = new CountDownLatch(1);
@@ -214,7 +214,7 @@ public class IRadioVoiceImpl extends IRadioVoice.Stub {
         }
 
         if (mMockModemConfigInterface != null
-                && mMockModemConfigInterface.getNumberOfCalls(mSubId, mTag) == numOfCalls) {
+                && mMockModemConfigInterface.getNumberOfCalls(mLogicalSlotIndex, mTag) == numOfCalls) {
             calls = new android.hardware.radio.voice.Call[numOfCalls];
 
             if (calls != null) {
@@ -284,7 +284,7 @@ public class IRadioVoiceImpl extends IRadioVoice.Stub {
         int responseError = RadioError.NONE;
 
         if (mMockModemConfigInterface != null) {
-            boolean ret = mMockModemConfigInterface.acceptVoiceCall(mSubId, mTag);
+            boolean ret = mMockModemConfigInterface.acceptVoiceCall(mLogicalSlotIndex, mTag);
 
             if (!ret) {
                 Log.e(mTag, "Failed: accept request failed");
@@ -335,7 +335,7 @@ public class IRadioVoiceImpl extends IRadioVoice.Stub {
         if (mMockModemConfigInterface != null) {
             boolean ret =
                     mMockModemConfigInterface.dialVoiceCall(
-                            mSubId, dialInfo.address, dialInfo.clir, dialInfo.uusInfo, mTag);
+                            mLogicalSlotIndex, dialInfo.address, dialInfo.clir, dialInfo.uusInfo, mTag);
 
             if (!ret) {
                 Log.e(mTag, "Failed: dial request failed");
@@ -369,7 +369,7 @@ public class IRadioVoiceImpl extends IRadioVoice.Stub {
         if (mMockModemConfigInterface != null) {
             boolean ret =
                     mMockModemConfigInterface.dialEccVoiceCall(
-                            mSubId, dialInfo.address, categories, urns, routing, mTag);
+                            mLogicalSlotIndex, dialInfo.address, categories, urns, routing, mTag);
 
             if (!ret) {
                 Log.e(mTag, "Failed: dial request failed");
@@ -491,7 +491,7 @@ public class IRadioVoiceImpl extends IRadioVoice.Stub {
             }
 
             if (responseError == RadioError.NONE) {
-                boolean ret = mMockModemConfigInterface.getCurrentCalls(mSubId, mTag);
+                boolean ret = mMockModemConfigInterface.getCurrentCalls(mLogicalSlotIndex, mTag);
 
                 if (!ret) {
                     Log.e(mTag, "Failed: getCurrentCalls request failed");
@@ -521,7 +521,7 @@ public class IRadioVoiceImpl extends IRadioVoice.Stub {
         int responseError = RadioError.NONE;
 
         if (mMockModemConfigInterface != null) {
-            failCauseInfo = mMockModemConfigInterface.getLastCallFailCause(mSubId, mTag);
+            failCauseInfo = mMockModemConfigInterface.getLastCallFailCause(mLogicalSlotIndex, mTag);
 
             if (failCauseInfo == null) {
                 Log.e(mTag, "Failed: get last call fail cause request failed");
@@ -548,7 +548,7 @@ public class IRadioVoiceImpl extends IRadioVoice.Stub {
         boolean muteMode = false;
 
         if (mMockModemConfigInterface != null) {
-            muteMode = mMockModemConfigInterface.getVoiceMuteMode(mSubId, mTag);
+            muteMode = mMockModemConfigInterface.getVoiceMuteMode(mLogicalSlotIndex, mTag);
         } else {
             Log.e(mTag, "Failed: mMockModemConfigInterface == null");
             responseError = RadioError.INTERNAL_ERR;
@@ -606,7 +606,7 @@ public class IRadioVoiceImpl extends IRadioVoice.Stub {
         int responseError = RadioError.NONE;
 
         if (mMockModemConfigInterface != null) {
-            boolean ret = mMockModemConfigInterface.hangupVoiceCall(mSubId, gsmIndex, mTag);
+            boolean ret = mMockModemConfigInterface.hangupVoiceCall(mLogicalSlotIndex, gsmIndex, mTag);
 
             if (!ret) {
                 Log.e(mTag, "Failed: hangup request failed");
@@ -668,7 +668,7 @@ public class IRadioVoiceImpl extends IRadioVoice.Stub {
         int responseError = RadioError.NONE;
 
         if (mMockModemConfigInterface != null) {
-            boolean ret = mMockModemConfigInterface.rejectVoiceCall(mSubId, mTag);
+            boolean ret = mMockModemConfigInterface.rejectVoiceCall(mLogicalSlotIndex, mTag);
 
             if (!ret) {
                 Log.e(mTag, "Failed: reject request failed");
@@ -795,7 +795,7 @@ public class IRadioVoiceImpl extends IRadioVoice.Stub {
         int responseError = RadioError.NONE;
 
         if (mMockModemConfigInterface != null) {
-            boolean ret = mMockModemConfigInterface.setVoiceMuteMode(mSubId, enable, mTag);
+            boolean ret = mMockModemConfigInterface.setVoiceMuteMode(mLogicalSlotIndex, enable, mTag);
 
             if (!ret) {
                 Log.e(mTag, "Failed: setMute request failed");
