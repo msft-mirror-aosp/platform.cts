@@ -280,7 +280,7 @@ public class VehiclePropertyVerifier<T> {
                     DetailedErrorCode.NOT_AVAILABLE_SAFETY);
     private static final boolean CAR_PROPERTY_SUPPORTED_VALUE_FLAG =
             isAtLeastB() && Flags.carPropertySupportedValue();
-    private static final ImmutableSet<Integer> VALID_CAR_PROPERTY_VALUE_STATUSES_BEFORE_26Q2 =
+    private static final ImmutableSet<Integer> VALID_CAR_PROPERTY_VALUE_STATUSES_BEFORE_C =
             ImmutableSet.of(
                     CarPropertyValue.STATUS_AVAILABLE,
                     CarPropertyValue.STATUS_UNAVAILABLE,
@@ -1628,9 +1628,8 @@ public class VehiclePropertyVerifier<T> {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA;
     }
 
-    // TODO(b/416768353): Update this to 26Q2 once we have the version for it.
-    public static boolean isAtLeast26Q2() {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.CUR_DEVELOPMENT;
+    public static boolean isAtLeastC() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN;
     }
 
     /** Gets the possible values for an integer property. */
@@ -2184,7 +2183,7 @@ public class VehiclePropertyVerifier<T> {
                         carPropertyValue,
                         carPropertyValue.getAreaId(),
                         CAR_PROPERTY_VALUE_SOURCE_CALLBACK);
-                if (isAtLeast26Q2() && Flags.carPropertyStatusDetailedNotAvailable()) {
+                if (isAtLeastC() && Flags.carPropertyStatusDetailedNotAvailable()) {
                     if (mContext.checkSelfPermission(Car.PERMISSION_READ_PROPERTY_VENDOR_STATUS)
                             != PERMISSION_GRANTED) {
                         assertThrows(
@@ -2744,8 +2743,8 @@ public class VehiclePropertyVerifier<T> {
                 .isTrue();
 
         ImmutableSet<Integer> validStatuses = VALID_CAR_PROPERTY_VALUE_STATUSES;
-        if (!(isAtLeast26Q2() && Flags.carPropertyStatusDetailedNotAvailable())) {
-            validStatuses = VALID_CAR_PROPERTY_VALUE_STATUSES_BEFORE_26Q2;
+        if (!(isAtLeastC() && Flags.carPropertyStatusDetailedNotAvailable())) {
+            validStatuses = VALID_CAR_PROPERTY_VALUE_STATUSES_BEFORE_C;
         }
         assertWithMessage(
                         mPropertyName
