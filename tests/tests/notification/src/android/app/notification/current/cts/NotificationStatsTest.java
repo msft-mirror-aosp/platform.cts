@@ -96,7 +96,6 @@ public class NotificationStatsTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_LIFETIME_EXTENSION_REFACTOR)
     public void testSmartReplied() {
         NotificationStats stats = new NotificationStats();
         stats.setSmartReplied();
