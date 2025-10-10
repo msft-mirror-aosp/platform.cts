@@ -17,6 +17,11 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
+java_library_host {
+    name: "CtsHostMultiuserMessagingJavaHost",
+    srcs: ["test-apps/MultiuserApp/src/com/android/os/cts/multiuser/messaging/*.java"],
+}
+
 java_test_host {
     name: "CtsMultiUserHostTestCases",
     defaults: ["cts_defaults"],
@@ -34,6 +39,7 @@ java_test_host {
         // because of annotations such as @CddTest and @ApiTest; adding both doesn't sound right,
         // but those annotations are deprecated, so at some point we should remove them...
         "compatibility-host-util-axt",
+        "CtsHostMultiuserMessagingJavaHost",
     ],
     device_common_data: [
         ":CtsMultiuserApp",
