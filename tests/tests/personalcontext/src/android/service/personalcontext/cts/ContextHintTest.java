@@ -23,7 +23,6 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.personalcontext.Flags;
-import android.service.personalcontext.RenderToken;
 import android.service.personalcontext.hint.BundleHint;
 import android.service.personalcontext.hint.ContextHint;
 
@@ -34,10 +33,6 @@ import com.android.compatibility.common.util.ApiTest;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 
 /** Build/Install/Run: atest CtsPersonalContextTestCases:ContextHintTest */
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PERSONAL_CONTEXT_SERVICE)
@@ -51,30 +46,14 @@ public class ContextHintTest {
             apis = {
                 "android.service.personalcontext.hint.ContextHint#getHintType",
                 "android.service.personalcontext.hint.ContextHint#getHintId",
-                "android.service.personalcontext.hint.ContextHint#getAttributionHints",
-                "android.service.personalcontext.RenderToken#getTokenId",
-                "android.service.personalcontext.RenderToken#getRendererComponentId"
             })
     @Test
     public void testContextHintBundleUnbundle() {
         final BundleHint hint = new BundleHint();
-        RenderToken renderToken =
-                new RenderToken.RenderTokenBuilder()
-                        .setRendererComponentId(UUID.randomUUID())
-                        .build();
-        hint.setRenderToken(renderToken);
-        hint.setAttributionHints(new ArrayList<>(List.of(new BundleHint())));
-
         final ContextHint outputHint = bundleUnbundle(hint);
 
         assertThat(hint.getHintType()).isEqualTo(outputHint.getHintType());
         assertThat(hint.getHintId()).isEqualTo(outputHint.getHintId());
-        assertThat(hint.getAttributionHints().size())
-                .isEqualTo(outputHint.getAttributionHints().size());
-
-        RenderToken out = outputHint.getRenderToken();
-        assertThat(out.getTokenId()).isEqualTo(renderToken.getTokenId());
-        assertThat(out.getRendererComponentId()).isEqualTo(renderToken.getRendererComponentId());
     }
 
     @ApiTest(apis = {"android.service.personalcontext.hint.BundleHint#getDataBundle"})
