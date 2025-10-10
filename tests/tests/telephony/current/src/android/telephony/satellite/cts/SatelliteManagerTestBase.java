@@ -706,6 +706,7 @@ public class SatelliteManagerTestBase {
         private final Semaphore mModemOffSemaphore = new Semaphore(0);
         private final Semaphore mModemIdleOrNotConnectedSemaphore = new Semaphore(0);
         private boolean mIsEmergency = false;
+        private final Object mEmergencyModeLock = new Object();
         private final Semaphore mEmergencyModeSemaphore = new Semaphore(0);
 
         @Override
@@ -742,7 +743,9 @@ public class SatelliteManagerTestBase {
         @Override
         public void onEmergencyModeChanged(boolean isEmergency) {
             logd("onEmergencyModeChanged: enabled=" + isEmergency);
-            mIsEmergency = isEmergency;
+            synchronized (mEmergencyModeLock) {
+                mIsEmergency = isEmergency;
+            }
             try {
                 mEmergencyModeSemaphore.release();
             } catch (Exception ex) {
@@ -828,6 +831,9 @@ public class SatelliteManagerTestBase {
                 mSemaphore.drainPermits();
                 mModemOffSemaphore.drainPermits();
                 mModemIdleOrNotConnectedSemaphore.drainPermits();
+            }
+            synchronized (mEmergencyModeLock) {
+                logd("onSatelliteModemStateChanged: clearEmergencyModes");
                 mEmergencyModeSemaphore.drainPermits();
             }
         }
@@ -845,7 +851,9 @@ public class SatelliteManagerTestBase {
         }
 
         public boolean getEmergencyMode() {
-            return mIsEmergency;
+            synchronized (mEmergencyModeLock) {
+                return mIsEmergency;
+            }
         }
 
         public int getTotalCountOfModemStates() {
