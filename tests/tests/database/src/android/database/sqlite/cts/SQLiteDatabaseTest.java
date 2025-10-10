@@ -2285,7 +2285,7 @@ public class SQLiteDatabaseTest {
     private static boolean versionIsOkay(int[] expected, int[] actual) {
         return expected[0] == actual[0]
                 && expected[1] == actual[1]
-                && expected[2] >= actual[2];
+                && expected[2] <= actual[2];
     }
 
     @Test
