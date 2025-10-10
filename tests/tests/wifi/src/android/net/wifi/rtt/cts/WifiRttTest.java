@@ -1547,5 +1547,58 @@ public class WifiRttTest extends TestBase {
         copiedConfig = copiedBuilder.build();
         assertTrue(copiedConfig.equals(originalConfig));
     }
+
+    /** Test RangingResult with STATUS_BUSY_TRY_LATER. */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_RTT_BUSY_TRY_LATER_API)
+    public void testRangingResultBusyTryLaterStatus() {
+        final int retryAfterDurationMillis = 1000;
+        RangingResult rangingResult =
+                new RangingResult.Builder()
+                        .setMacAddress(MacAddress.fromString("00:11:22:33:44:55"))
+                        .setStatus(RangingResult.STATUS_BUSY_TRY_LATER)
+                        .setRetryAfterDurationMillis(retryAfterDurationMillis)
+                        .build();
+
+        assertEquals(RangingResult.STATUS_BUSY_TRY_LATER, rangingResult.getStatus());
+        assertEquals(retryAfterDurationMillis, rangingResult.getRetryAfterDurationMillis());
+
+        try {
+            rangingResult.getDistanceMm();
+            fail("getDistanceMm should throw IllegalStateException for STATUS_BUSY_TRY_LATER");
+        } catch (IllegalStateException e) {
+            // expected
+        }
+
+        try {
+            rangingResult.getDistanceStdDevMm();
+            fail(
+                    "getDistanceStdDevMm should throw IllegalStateException for "
+                            + "STATUS_BUSY_TRY_LATER");
+        } catch (IllegalStateException e) {
+            // expected
+        }
+
+        try {
+            rangingResult.getRssi();
+            fail("getRssi should throw IllegalStateException for STATUS_BUSY_TRY_LATER");
+        } catch (IllegalStateException e) {
+            // expected
+        }
+
+        RangingResult successResult =
+                new RangingResult.Builder()
+                        .setMacAddress(MacAddress.fromString("00:11:22:33:44:55"))
+                        .setStatus(RangingResult.STATUS_SUCCESS)
+                        .build();
+        try {
+            successResult.getRetryAfterDurationMillis();
+            fail(
+                    "getRetryAfterDurationMillis should throw IllegalStateException for non-busy "
+                            + "status");
+        } catch (IllegalStateException e) {
+            // expected
+        }
+    }
 }
 
