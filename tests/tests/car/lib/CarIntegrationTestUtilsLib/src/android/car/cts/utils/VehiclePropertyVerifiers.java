@@ -1402,31 +1402,31 @@ public class VehiclePropertyVerifiers {
                                 evBatteryLevel) -> {
                             assertWithMessage(
                                             "EV_BATTERY_LEVEL Float value must be greater than or"
-                                                    + " equal 0")
+                                                    + " equal to 0")
                                     .that(evBatteryLevel)
                                     .isAtLeast(0);
 
                             if (verifierContext
                                             .getCarPropertyManager()
                                             .getCarPropertyConfig(
-                                                    VehiclePropertyIds.INFO_EV_BATTERY_CAPACITY)
+                                                    VehiclePropertyIds.EV_CURRENT_BATTERY_CAPACITY)
                                     == null) {
                                 return;
                             }
 
-                            CarPropertyValue<?> infoEvBatteryCapacityValue =
+                            CarPropertyValue<?> evCurrentBatteryCapacityValue =
                                     verifierContext
                                             .getCarPropertyManager()
                                             .getProperty(
-                                                    VehiclePropertyIds.INFO_EV_BATTERY_CAPACITY,
-                                                    VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL);
+                                                    VehiclePropertyIds.EV_CURRENT_BATTERY_CAPACITY,
+                                                    /* areaId= */ 0);
 
                             assertWithMessage(
                                             "EV_BATTERY_LEVEL Float value must not exceed "
-                                                    + "INFO_EV_BATTERY_CAPACITY Float "
+                                                    + "EV_CURRENT_BATTERY_CAPACITY Float "
                                                     + "value")
                                     .that(evBatteryLevel)
-                                    .isAtMost((Float) infoEvBatteryCapacityValue.getValue());
+                                    .isAtMost((Float) evCurrentBatteryCapacityValue.getValue());
                         });
     }
 
