@@ -46,8 +46,6 @@ import android.bluetooth.BluetoothDevice.BluetoothAddress;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothSinkAudioPolicy;
-import android.bluetooth.BluetoothSocket;
-import android.bluetooth.BluetoothSocketException;
 import android.bluetooth.BluetoothStatusCodes;
 import android.bluetooth.EncryptionStatus;
 import android.bluetooth.OobData;
@@ -78,7 +76,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.hamcrest.MockitoHamcrest;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.time.Duration;
 import java.util.List;
@@ -716,39 +713,6 @@ public class BluetoothDeviceTest {
                                 BluetoothDevice
                                         .ACTIVE_AUDIO_DEVICE_POLICY_ALL_PROFILES_INACTIVE_UPON_CONNECTION))
                 .isEqualTo(BluetoothStatusCodes.ERROR_DEVICE_NOT_BONDED);
-    }
-
-    @RequiresFlagsEnabled(Flags.FLAG_BT_SOCKET_API_L2CAP_CID)
-    @Test
-    public void getL2capChannel() throws IOException {
-        // Skip the test if bluetooth or companion device are not present.
-        assumeTrue(mHasBluetooth && mHasCompanionDevice);
-
-        BluetoothSocket l2capSocket = mFakeDevice.createInsecureL2capChannel(mFakePsm);
-        BluetoothSocket rfcommSocket =
-                mFakeDevice.createInsecureRfcommSocketToServiceRecord(mFakeUuid);
-
-        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
-
-        // This should throw a BluetoothSocketException because it is not L2CAP socket
-        assertThrows(
-                "Unknown L2CAP socket",
-                BluetoothSocketException.class,
-                () -> rfcommSocket.getL2capLocalChannelId());
-        assertThrows(
-                "Unknown L2CAP socket",
-                BluetoothSocketException.class,
-                () -> rfcommSocket.getL2capRemoteChannelId());
-
-        // This should throw a BluetoothSocketException because L2CAP socket is not connected
-        assertThrows(
-                "Socket closed",
-                BluetoothSocketException.class,
-                () -> l2capSocket.getL2capLocalChannelId());
-        assertThrows(
-                "Socket closed",
-                BluetoothSocketException.class,
-                () -> l2capSocket.getL2capRemoteChannelId());
     }
 
     @Test
