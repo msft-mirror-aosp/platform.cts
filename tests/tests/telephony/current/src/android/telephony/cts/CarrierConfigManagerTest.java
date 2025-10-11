@@ -258,17 +258,20 @@ public class CarrierConfigManagerTest {
                     config.getInt(
                             KEY_SATELLITE_CONNECTION_HYSTERESIS_SEC_INT),
                     180);
-            assertEquals("KEY_SATELLITE_IGNORE_DATA_ROAMING_SETTING_BOOL "
+            assertEquals(
+                    "KEY_SATELLITE_IGNORE_DATA_ROAMING_SETTING_BOOL "
                             + "doesn't match static default.",
                     config.getBoolean(
                             CarrierConfigManager.KEY_SATELLITE_IGNORE_DATA_ROAMING_SETTING_BOOL),
-                    false);
+                    true);
             assertTrue("KEY_OVERRIDE_WFC_ROAMING_MODE_WHILE_USING_NTN_BOOL "
                             + "doesn't match static default.",
                     config.getBoolean(KEY_OVERRIDE_WFC_ROAMING_MODE_WHILE_USING_NTN_BOOL));
-            assertEquals("KEY_SATELLITE_ENTITLEMENT_STATUS_REFRESH_DAYS_INT "
-                    + "doesn't match static default.",
-                    config.getInt(KEY_SATELLITE_ENTITLEMENT_STATUS_REFRESH_DAYS_INT), 7);
+            assertEquals(
+                    "KEY_SATELLITE_ENTITLEMENT_STATUS_REFRESH_DAYS_INT "
+                            + "doesn't match static default.",
+                    config.getInt(KEY_SATELLITE_ENTITLEMENT_STATUS_REFRESH_DAYS_INT),
+                    1);
             assertFalse("KEY_EMERGENCY_MESSAGING_SUPPORTED_BOOL "
                             + "doesn't match static default.",
                     config.getBoolean(KEY_EMERGENCY_MESSAGING_SUPPORTED_BOOL));
