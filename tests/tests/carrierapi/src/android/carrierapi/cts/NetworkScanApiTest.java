@@ -90,7 +90,7 @@ public class NetworkScanApiTest extends BaseCarrierApiTest {
     private NetworkScan mNetworkScan;
     private NetworkScanRequest mNetworkScanRequest;
     private NetworkScanCallbackImpl mNetworkScanCallback;
-    private static final int LOCATION_SETTING_CHANGE_WAIT_MS = 1000;
+    private static final int LOCATION_SETTING_CHANGE_WAIT_MS = 3000; // 3 seconds
     private static final int MAX_CELLINFO_WAIT_MILLIS = 5000; // 5 seconds
     private static final int SCAN_SEARCH_TIME_SECONDS = 60;
     // Wait one second longer than the max scan search time to give the test time to receive the
