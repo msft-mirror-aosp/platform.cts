@@ -70,6 +70,7 @@ android_test {
         ":CtsCantSaveState2",
         ":StorageDelegator",
         ":CtsActivityManagerApi29",
+        ":CtsAppTestClearSelf",
         ":WallpaperTest",
     ],
     per_testcase_directory: true,

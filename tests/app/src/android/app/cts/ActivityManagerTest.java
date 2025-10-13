@@ -33,11 +33,15 @@ import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
 import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED;
 import static android.content.pm.PackageManager.DONT_KILL_APP;
+import static android.content.pm.PackageManager.FLAG_PERMISSION_GRANTED_BY_ROLE;
+import static android.content.pm.PackageManager.FLAG_PERMISSION_USER_SET;
 import static android.content.pm.PackageManager.MATCH_DEFAULT_ONLY;
 
 import static com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity;
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
+
+import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -50,6 +54,7 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RecentTaskInfo;
@@ -125,6 +130,7 @@ import com.android.compatibility.common.util.AmUtils;
 import com.android.compatibility.common.util.AppStandbyUtils;
 import com.android.compatibility.common.util.PropertyUtil;
 import com.android.compatibility.common.util.ShellIdentityUtils;
+import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
@@ -181,6 +187,9 @@ public final class ActivityManagerTest {
 
     private static final String CANT_SAVE_STATE_1_PACKAGE_NAME = "com.android.test.cantsavestate1";
     private static final String ACTION_FINISH = "com.android.test.action.FINISH";
+
+    private static final String SELF_CLEARING_PACKAGE_NAME = "com.android.clearsself";
+    private static final String CLEAR_SELF_ACTIVITY = ".ClearSelfDataActivity";
 
     private static final String MCC_TO_UPDATE = "987";
     private static final String MNC_TO_UPDATE = "654";
@@ -2292,6 +2301,67 @@ public final class ActivityManagerTest {
 
         runWithShellPermissionIdentity(() ->
                 assumeTrue(mActivityManager.switchUser(UserHandle.SYSTEM)));
+    }
+
+    // This test also serves as a proxy for the behavior of GRANTED_BY_DEFAULT permissions.
+    // However, a test cannot set that permission flag.
+    @Test
+    public void testClearApplicationUserDataDoesntResetGrantedByRolePermissions() throws Exception {
+        // Set the camera permission as granted by role and user denied. Set Record Audio as granted
+        runWithShellPermissionIdentity(
+                () -> {
+                    mPackageManager.revokeRuntimePermission(
+                            SELF_CLEARING_PACKAGE_NAME,
+                            Manifest.permission.CAMERA,
+                            Process.myUserHandle());
+                    mPackageManager.grantRuntimePermission(
+                            SELF_CLEARING_PACKAGE_NAME,
+                            Manifest.permission.RECORD_AUDIO,
+                            Process.myUserHandle());
+                    int flags = FLAG_PERMISSION_GRANTED_BY_ROLE | FLAG_PERMISSION_USER_SET;
+                    mPackageManager.updatePermissionFlags(
+                            SELF_CLEARING_PACKAGE_NAME,
+                            Manifest.permission.RECORD_AUDIO,
+                            FLAG_PERMISSION_USER_SET,
+                            FLAG_PERMISSION_USER_SET,
+                            Process.myUserHandle());
+                    mPackageManager.updatePermissionFlags(
+                            SELF_CLEARING_PACKAGE_NAME,
+                            Manifest.permission.CAMERA,
+                            flags,
+                            flags,
+                            Process.myUserHandle());
+                });
+        assertThat(
+                mPackageManager.checkPermission(
+                        Manifest.permission.RECORD_AUDIO, SELF_CLEARING_PACKAGE_NAME))
+                .isEqualTo(PackageManager.PERMISSION_GRANTED);
+        assertThat(
+                mPackageManager.checkPermission(
+                        Manifest.permission.CAMERA, SELF_CLEARING_PACKAGE_NAME))
+                .isEqualTo(PackageManager.PERMISSION_DENIED);
+
+        // Prepare to start an activity from another APK.
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setComponent(
+                new ComponentName(
+                        SELF_CLEARING_PACKAGE_NAME, STUB_PACKAGE_NAME + CLEAR_SELF_ACTIVITY));
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        mTargetContext.startActivity(intent);
+
+        // Wait for record audio to be denied. Camera should remain denied.
+        SystemUtil.eventually(
+                () -> {
+                    assertThat(
+                            mPackageManager.checkPermission(
+                                    Manifest.permission.RECORD_AUDIO,
+                                    SELF_CLEARING_PACKAGE_NAME))
+                            .isEqualTo(PackageManager.PERMISSION_DENIED);
+                    assertThat(
+                            mPackageManager.checkPermission(
+                                    Manifest.permission.CAMERA, SELF_CLEARING_PACKAGE_NAME))
+                            .isEqualTo(PackageManager.PERMISSION_DENIED);
+                });
     }
 
     @Test
