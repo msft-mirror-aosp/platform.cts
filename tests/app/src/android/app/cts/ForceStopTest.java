@@ -292,7 +292,7 @@ public final class ForceStopTest {
     private void verifyNoBootCompletedBroadcastsGeneric(Runnable r) throws Exception {
         // Re-install the app to reset the notLaunched package state
         executeShellCommand("pm uninstall " + APP_PACKAGE);
-        executeShellCommand("pm install -r --force-queryable " + APP_APK);
+        executeShellCommand("pm install -r -g --force-queryable " + APP_APK);
 
         final ConditionVariable gotLockedBoot = new ConditionVariable();
         final ConditionVariable gotBoot = new ConditionVariable();
