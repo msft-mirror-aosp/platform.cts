@@ -54,13 +54,10 @@ public class EncoderInput {
                     .setBytesPerSample(2)
                     .setColorFormat(ImageFormat.YCBCR_P010)
                     .build();
-    // FIXME: Currently there are no rgba8888 raw clips in the zip. There is an abgr2101010 clip.
-    // Use it as abgr8888. Visually it won't look ok. But for feeding inputs to the encoder it
-    // should not pose problems
     private static final RawResource INPUT_VIDEO_FILE_RGB =
             new RawResource.Builder()
-                    .setFileName(MEDIA_DIR + "cosmat_cif_24fps_abgr2101010.raw", false)
-                    .setDimension(352, 288)
+                    .setFileName(MEDIA_DIR + "stefan_sif_abgr8888_30fps.raw", false)
+                    .setDimension(352, 240)
                     .setBytesPerSample(4)
                     .setColorFormat(PixelFormat.RGBA_8888)
                     .build();
