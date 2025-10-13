@@ -42,9 +42,11 @@ import com.android.compatibility.common.util.Preconditions;
 import org.junit.After;
 import org.junit.Before;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -110,6 +112,118 @@ public class CodecDecoderTestBase extends CodecTestBase {
         }
         fail("No track with mediaType: " + mediaType + " found in file: " + fileName + "\n");
         return maxSampleSize;
+    }
+
+    private static Pair<MediaFormat, Long> createInputList(String srcFile, String mediaType,
+            ByteBuffer buffer, List<MediaCodec.BufferInfo> list, int offset, long ptsOffset)
+            throws IOException {
+        Preconditions.assertTestFileExists(srcFile);
+        MediaExtractor extractor = new MediaExtractor();
+        extractor.setDataSource(srcFile);
+        MediaFormat format = null;
+        for (int trackID = 0; trackID < extractor.getTrackCount(); trackID++) {
+            MediaFormat fmt = extractor.getTrackFormat(trackID);
+            if (mediaType.equalsIgnoreCase(fmt.getString(MediaFormat.KEY_MIME))) {
+                format = fmt;
+                extractor.selectTrack(trackID);
+                break;
+            }
+        }
+        if (format == null) {
+            extractor.release();
+            throw new IllegalArgumentException(
+                    "No track with mediaType: " + mediaType + " found in file: " + srcFile);
+        }
+        if (hasCSD(format)) {
+            MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
+            bufferInfo.offset = offset;
+            bufferInfo.size = 0;
+            // For some devices with VNDK versions till Android U, sending a zero
+            // timestamp for CSD results in out of order timestamps at the output.
+            // For devices with VNDK versions > Android U, codecs are expected to
+            // handle CSD buffers with timestamp set to zero.
+            bufferInfo.presentationTimeUs = VNDK_IS_AT_MOST_U ? ptsOffset : 0;
+            bufferInfo.flags = MediaCodec.BUFFER_FLAG_CODEC_CONFIG;
+            for (int i = 0; ; i++) {
+                String csdKey = "csd-" + i;
+                if (format.containsKey(csdKey)) {
+                    ByteBuffer csdBuffer = format.getByteBuffer(csdKey);
+                    bufferInfo.size += csdBuffer.limit();
+                    buffer.put(csdBuffer);
+                    format.removeKey(csdKey);
+                } else break;
+            }
+            list.add(bufferInfo);
+            offset += bufferInfo.size;
+        }
+        long maxPts = ptsOffset;
+        while (true) {
+            MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
+            bufferInfo.size = extractor.readSampleData(buffer, offset);
+            if (bufferInfo.size < 0) break;
+            bufferInfo.offset = offset;
+            bufferInfo.presentationTimeUs = ptsOffset + extractor.getSampleTime();
+            maxPts = Math.max(maxPts, bufferInfo.presentationTimeUs);
+            int flags = extractor.getSampleFlags();
+            bufferInfo.flags = 0;
+            if ((flags & MediaExtractor.SAMPLE_FLAG_SYNC) != 0) {
+                bufferInfo.flags |= MediaCodec.BUFFER_FLAG_KEY_FRAME;
+            }
+            list.add(bufferInfo);
+            extractor.advance();
+            offset += bufferInfo.size;
+        }
+        buffer.clear();
+        buffer.position(offset);
+        extractor.release();
+        return Pair.create(format, maxPts);
+    }
+
+    public static class APBTestInputData {
+        public final ByteBuffer mByteBuffer;
+        public final List<MediaCodec.BufferInfo> mInfoList;
+        public final List<MediaFormat> mFormats;
+
+        public APBTestInputData(ByteBuffer byteBuffer, List<MediaCodec.BufferInfo> infoList,
+                List<MediaFormat> formats) {
+            mByteBuffer = byteBuffer;
+            mInfoList = infoList;
+            mFormats = formats;
+        }
+    }
+
+    /**
+     * Prepares input data for Adaptive Playback Testing of decoders from a list of resource
+     * files. This method reads all samples from the specified media tracks in the given files
+     * and combines them into a single ByteBuffer and a list of BufferInfos.
+     *
+     * @param resFiles   A list of paths to the media files.
+     * @param mediaType  The media type of the media track to extract (e.g., "video/avc").
+     * @return An {@link APBTestInputData} object containing the combined ByteBuffer, a list of
+     *         {@link MediaCodec.BufferInfo}, and a list of {@link MediaFormat} for each file.
+     * @throws IOException If an I/O error occurs while accessing the files.
+     */
+    public static APBTestInputData prepareInputList(List<String> resFiles, String mediaType)
+            throws IOException {
+        int totalSize = 0;
+        for (String filePath : resFiles) {
+            File file = new File(filePath);
+            totalSize += (int) file.length();
+        }
+        ByteBuffer buffer = ByteBuffer.allocate(totalSize);
+        ArrayList<MediaCodec.BufferInfo> list = new ArrayList<>();
+        ArrayList<MediaFormat> formats = new ArrayList<>();
+        long ptsOffset = 0;
+        int buffOffset = 0;
+        for (String file : resFiles) {
+            Pair<MediaFormat, Long> metadata =
+                    createInputList(file, mediaType, buffer, list, buffOffset, ptsOffset);
+            formats.add(metadata.first);
+            ptsOffset = metadata.second + 1000000L;
+            MediaCodec.BufferInfo lastInfo = list.get(list.size() - 1);
+            buffOffset = lastInfo.offset + lastInfo.size;
+        }
+        return new APBTestInputData(buffer, list, formats);
     }
 
     protected MediaFormat setUpSource(String srcFile) throws IOException {
