@@ -214,6 +214,17 @@ public class ContactsContract_AccountAttributesTest {
     @Test
     @RequiresFlagsEnabled({FLAG_NEW_ACCOUNT_ATTRIBUTES_API_ENABLED})
     public void testUpdateAccountAttributes_throwsExceptionOnSemanticConflict() {
+        // DATA_ORIGIN attribute must be set
+        assertThrows(
+                "Missing DATA_ORIGIN should fail",
+                IllegalStateException.class,
+                () ->
+                        setAccountAttributesInternal(
+                                mResolver,
+                                mAccount1,
+                                null,
+                                AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC));
+
         // Conflict DATA_ORIGIN attributes.
         assertThrows(
                 "Adding a conflicting DATA_ORIGIN should fail",
@@ -231,11 +242,13 @@ public class ContactsContract_AccountAttributesTest {
                 mResolver,
                 mAccount1,
                 null,
-                AccountAttributes.ATTRIBUTE_SYNC_MODE_UP_SYNC
+                AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD
+                        | AccountAttributes.ATTRIBUTE_SYNC_MODE_UP_SYNC
                         | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC);
         assertThat(getAccountAttributesInternal(mResolver, mAccount1, null))
                 .isEqualTo(
-                        AccountAttributes.ATTRIBUTE_SYNC_MODE_UP_SYNC
+                        AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD
+                                | AccountAttributes.ATTRIBUTE_SYNC_MODE_UP_SYNC
                                 | AccountAttributes.ATTRIBUTE_SYNC_MODE_DOWN_SYNC);
     }
 
@@ -290,9 +303,11 @@ public class ContactsContract_AccountAttributesTest {
         assertThat(getAccountAttributesInternal(mResolver, mAccount2, null))
                 .isEqualTo(initialAttributes2);
 
-        // Set ACCT_1's attributes to 0
-        setAccountAttributesInternal(mResolver, mAccount1, null, 0L);
-        assertThat(getAccountAttributesInternal(mResolver, mAccount1, null)).isEqualTo(0);
+        // Set ACCT_1's attributes to ATTRIBUTE_DATA_ORIGIN_CLOUD
+        setAccountAttributesInternal(
+                mResolver, mAccount1, null, AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD);
+        assertThat(getAccountAttributesInternal(mResolver, mAccount1, null))
+                .isEqualTo(AccountAttributes.ATTRIBUTE_DATA_ORIGIN_CLOUD);
     }
 
     @Test
