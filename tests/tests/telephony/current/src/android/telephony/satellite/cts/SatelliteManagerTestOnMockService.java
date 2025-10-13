@@ -278,7 +278,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         }
 
         grantSatellitePermission();
-        setUpSatelliteAccessAllowedAtDefaultTestLocation();
         try {
             setupMockSatelliteService();
         } catch (AssertionError e) {
@@ -292,6 +291,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertTrue(sMockSatelliteServiceManager.setCtsMode(true));
         sMockSatelliteServiceManager.setDatagramControllerBooleanConfig(false,
                 DatagramController.BOOLEAN_TYPE_WAIT_FOR_DEVICE_ALIGNMENT_IN_DEMO_DATAGRAM, true);
+        setUpSatelliteAccessAllowedAtDefaultTestLocation();
         sNtnOnlySubId = getDefaultActiveSubIdForSatelliteTest();
         assumeTrue(sNtnOnlySubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
         setUpNtnOnlySubscription();
