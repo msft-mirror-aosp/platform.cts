@@ -22,6 +22,7 @@ android_test {
     defaults: ["cts_defaults"],
     static_libs: [
         "android.view.contentcapture.flags-aconfig-java",
+        "android.view.contentprotection.flags-aconfig-java",
         "androidx.annotation_annotation",
         "androidx.test.ext.junit",
         "compatibility-device-util-axt",
