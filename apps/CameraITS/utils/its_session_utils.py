@@ -14,7 +14,6 @@
 """Utility functions to form an ItsSession and perform various camera actions.
 """
 
-
 import collections
 import fnmatch
 import glob
@@ -22,6 +21,7 @@ import json
 import logging
 import math
 import os
+import re
 import socket
 import subprocess
 import sys
@@ -29,14 +29,13 @@ import time
 import types
 import unicodedata
 
-from mobly.controllers.android_device_lib import adb
-import numpy
-
 import camera_properties_utils
 import capture_request_utils
 import error_util
 import image_processing_utils
 import its_device_utils
+from mobly.controllers.android_device_lib import adb
+import numpy
 import opencv_processing_utils
 import ui_interaction_utils
 
@@ -45,6 +44,7 @@ ANDROID14_API_LEVEL = 34
 ANDROID15_API_LEVEL = 35
 ANDROID16_API_LEVEL = 36
 ANDROID17_API_LEVEL = 37
+FIRST_SEPARATE_VENDOR_API_LEVEL = 202404
 CAMERA_TYPE_TELE = 'telephoto'
 CAMERA_TYPE_ULTRAWIDE = 'ultrawide'
 CAMERA_TYPE_WIDE = 'wide'
@@ -3249,6 +3249,15 @@ def get_vendor_api_level(device_id):
   cmd = f'adb -s {device_id} shell getprop ro.vendor.api_level'
   try:
     vendor_api_level = int(subprocess.check_output(cmd.split()).rstrip())
+    if re.match(r'^\d{4}\d{2}$', str(vendor_api_level)):
+      logging.debug('Vendor API level is in modern YYYYMM format. %s',
+                    str(vendor_api_level))
+      # TODO(ruchamk): Remove this once the vendor API level is queried from
+      # AVendorSupport_getVendorApiLevelOf
+      if vendor_api_level >= FIRST_SEPARATE_VENDOR_API_LEVEL:
+        # Subtract 2024 from the vendor API level to get the Android version
+        # and add 35 to the Android version to get the vendor API level.
+        vendor_api_level = ANDROID15_API_LEVEL + vendor_api_level//100 - 2024
     logging.debug('First vendor API level: %d', vendor_api_level)
   except (subprocess.CalledProcessError, ValueError):
     logging.error('No vendor_api_level. Setting to build version.')
