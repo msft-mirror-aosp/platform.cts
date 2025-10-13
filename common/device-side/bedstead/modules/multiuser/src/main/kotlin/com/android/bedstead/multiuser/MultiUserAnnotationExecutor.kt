@@ -21,6 +21,7 @@ import com.android.bedstead.harrier.UserType
 import com.android.bedstead.multiuser.annotations.EnsureCanAddSecondaryUser
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser
+import com.android.bedstead.multiuser.annotations.EnsureOnlySpecifiedUsersExist
 import com.android.bedstead.multiuser.annotations.OtherUser
 import com.android.bedstead.multiuser.annotations.RequireHasMainUser
 import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode
@@ -81,6 +82,7 @@ class MultiUserAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationE
             is RequireNotVisibleBackgroundUsersOnDefaultDisplay -> logic()
             is RequireRunOnVisibleBackgroundNonProfileUser -> logic()
             is RequireRunNotOnVisibleBackgroundNonProfileUser -> logic()
+            is EnsureOnlySpecifiedUsersExist -> usersComponent.ensureOnlySpecifiedUsersExist()
             else -> applyAnnotationUsingReflection(annotation)
         }
     }

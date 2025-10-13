@@ -30,6 +30,7 @@ import com.android.bedstead.multiuser.annotations.EnsureHasNoTvProfile
 import com.android.bedstead.multiuser.annotations.EnsureHasPrivateProfile
 import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
 import com.android.bedstead.multiuser.annotations.EnsureHasTvProfile
+import com.android.bedstead.multiuser.annotations.EnsureOnlySpecifiedUsersExist
 import com.android.bedstead.multiuser.annotations.OtherUser
 import com.android.bedstead.multiuser.annotations.RequireGuestUserIsEphemeral
 import com.android.bedstead.multiuser.annotations.RequireGuestUserIsNotEphemeral
@@ -53,6 +54,7 @@ import com.android.bedstead.multiuser.annotations.RequireVisibleBackgroundUsersO
 import com.android.bedstead.nene.TestApis.resources
 import com.android.bedstead.nene.TestApis.users
 import com.android.bedstead.nene.types.OptionalBoolean
+import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.users.UserType.SECONDARY_USER_TYPE_NAME
 import com.android.bedstead.nene.users.UserType.SYSTEM_USER_TYPE_NAME
 import com.google.common.truth.Truth.assertThat
@@ -446,6 +448,58 @@ class MultiUserAnnotationExecutorTest {
         Assert.assertThrows(IllegalStateException::class.java) {
             deviceState.otherUser()
         }
+    }
+
+    @Test
+    @EnsureOnlySpecifiedUsersExist
+    fun ensureOnlySpecifiedUsersExist_removesNonSpecifiedUsers() {
+        assertOnlySpecifiedUsersExist()
+    }
+
+    @Test
+    @EnsureHasSecondaryUser
+    @EnsureOnlySpecifiedUsersExist
+    fun ensureOnlySpecifiedUsersExist_withEnsureHasSecondaryUser_onlySpecifiedUsersExist() {
+        assertOnlySpecifiedUsersExist(deviceState.secondaryUser())
+    }
+
+    @Test
+    @EnsureHasCloneProfile
+    @EnsureOnlySpecifiedUsersExist
+    fun ensureOnlySpecifiedUsersExist_withEnsureHasCloneProfile_onlySpecifiedUsersExist() {
+        assertOnlySpecifiedUsersExist(deviceState.cloneProfile())
+    }
+
+    @Test
+    @EnsureHasAdditionalUser
+    @EnsureOnlySpecifiedUsersExist
+    fun ensureOnlySpecifiedUsersExist_withEnsureHasAdditionalUser_onlySpecifiedUsersExist() {
+        assertOnlySpecifiedUsersExist(deviceState.additionalUser())
+    }
+
+    @Test
+    @EnsureHasPrivateProfile
+    @EnsureOnlySpecifiedUsersExist
+    fun ensureOnlySpecifiedUsersExist_withEnsureHasPrivateProfile_onlySpecifiedUsersExist() {
+        assertOnlySpecifiedUsersExist(deviceState.privateProfile())
+    }
+
+    @Test
+    @EnsureHasTvProfile
+    @EnsureOnlySpecifiedUsersExist
+    fun ensureOnlySpecifiedUsersExist_withEnsureHasTvProfile_onlySpecifiedUsersExist() {
+        assertOnlySpecifiedUsersExist(deviceState.tvProfile())
+    }
+
+    private fun assertOnlySpecifiedUsersExist(vararg expectedUsers: UserReference) {
+        val specifiedUsers = expectedUsers.toSet() + expectedUsers.mapNotNull { it.parent() }
+
+        val unexpectedRemovableUsers = users().all().filter {
+            users().isRemovable(it) && it !in specifiedUsers
+        }
+
+        assertWithMessage("Found unexpected removable users: $unexpectedRemovableUsers")
+            .that(unexpectedRemovableUsers).isEmpty()
     }
 
     @RequireRunOnSystemUser(switchedToUser = OptionalBoolean.ANY)

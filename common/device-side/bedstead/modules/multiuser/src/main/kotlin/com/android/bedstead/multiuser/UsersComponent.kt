@@ -734,6 +734,20 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
         )
     }
 
+    fun ensureOnlySpecifiedUsersExist() {
+        val specifiedUsers = mUsers.values
+        val specifiedProfiles = profiles.values.flatMap { it.values }
+
+        val allowedUsers: Set<UserReference> =
+            (specifiedUsers + specifiedProfiles + listOfNotNull(mAdditionalUser)).toSet()
+
+        try {
+            users().ensureNoOtherUsersExcept { user -> user in allowedUsers }
+        } catch (e: NeneException) {
+            throw IllegalStateException("Error ensuring no non-specified users", e)
+        }
+    }
+
     companion object {
         private const val LOG_TAG = "UsersComponent"
         private const val CLONE_PROFILE_TYPE_NAME: String = "android.os.usertype.profile.CLONE"
