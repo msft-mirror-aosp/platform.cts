@@ -1023,6 +1023,10 @@ def _watch_start(device_id, pkg_name):
           'android.control.zoomRatio,'
           'android.scaler.cropRegion,'
           'android.control.zoomMethod,'
+          'android.tonemap.mode,'
+          'android.shading.mode,'
+          'android.sensor.sensitivity,'
+          'android.sensor.exposureTime,'
           '3a'
       ),
       '-c',
