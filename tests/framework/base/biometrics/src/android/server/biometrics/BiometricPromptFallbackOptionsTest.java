@@ -25,6 +25,7 @@ import static com.android.server.biometrics.nano.BiometricServiceStateProto.STAT
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.any;
@@ -497,7 +498,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
                 "android.hardware.biometrics.BiometricPrompt#getMaxFallbackOptions"
             })
     @RequiresFlagsEnabled({Flags.FLAG_BP_FALLBACK_OPTIONS, Flags.FLAG_ADD_FALLBACK})
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testFallbackOptions_exceedsMaxOptions() throws Exception {
         for (SensorProperties props : mSensorProperties) {
             if (props.getSensorStrength() == SensorProperties.STRENGTH_CONVENIENCE) {
@@ -520,10 +521,15 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
                                 .setConfirmationRequired(true)
                                 .setAllowBackgroundAuthentication(true);
 
-                // Add 1 more than max fallback options
-                for (int i = 0; i < BiometricPrompt.getMaxFallbackOptions() + 1; i++) {
-                    builder.addFallbackOption("fallback " + i, 0, executor, (dialog, which) -> {});
-                }
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () -> {
+                            // Add 1 more than max fallback options
+                            for (int i = 0; i < BiometricPrompt.getMaxFallbackOptions() + 1; i++) {
+                                builder.addFallbackOption(
+                                        "fallback " + i, 0, executor, (dialog, which) -> {});
+                            }
+                        });
             }
         }
     }
