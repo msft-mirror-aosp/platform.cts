@@ -59,6 +59,7 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.PackageManager.PackageInfoFlags;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -127,8 +128,6 @@ public class ArchiveTest {
             + "CtsArchiveInstallerApp.apk";
     private static final String ARCHIVE_INSTALLER_APP_PACKAGE_NAME =
             "android.packageinstaller.archiveinstaller.cts";
-
-    private static final String SYSTEM_PACKAGE_NAME = "android";
 
     private static final String HELLO_WORLD_PACKAGE_NAME = "com.example.helloworld";
     private static final String HELLO_WORLD_V1_APK = SAMPLE_APK_BASE
@@ -513,6 +512,10 @@ public class ArchiveTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ARCHIVING)
     public void startUnarchival_permissionDialog() throws Exception {
+        // unable to run on work profile
+        final UserManager um = mContext.getSystemService(UserManager.class);
+        assumeTrue("Test does not run on a work profile.", !um.isManagedProfile());
+
         installPackage(ARCHIVE_APK);
         prepareDevice();
         ArchiveCompatibilityParams options = new ArchiveCompatibilityParams();
@@ -558,6 +561,10 @@ public class ArchiveTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ARCHIVING)
     public void startUnarchival_errorDialog() throws Exception {
+        // unable to run on work profile
+        final UserManager um = mContext.getSystemService(UserManager.class);
+        assumeTrue("Test does not run on a work profile.", !um.isManagedProfile());
+
         installPackage(ARCHIVE_APK);
         prepareDevice();
         LocalIntentSender archiveSender = new LocalIntentSender();
