@@ -37,7 +37,6 @@ import android.content.Context;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.media.audio.Flags;
 import android.platform.test.annotations.AppModeFull;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
@@ -127,12 +126,9 @@ public class AudioFocusWithVdmTest {
 
         // Since the mVirtualDeviceManager is configured with default device policy
         // expect focus lost if multi focus is not enabled
-        boolean expectedFocusLost = true;
-        if (Flags.audioFocusDesktop()) {
-            AudioManager audioManager = defaultContext.getSystemService(AudioManager.class);
-            assumeNotNull(audioManager);
-            expectedFocusLost = !audioManager.isMultiAudioFocusEnabled();
-        }
+        AudioManager audioManager = defaultContext.getSystemService(AudioManager.class);
+        assumeNotNull(audioManager);
+        boolean expectedFocusLost = !audioManager.isMultiAudioFocusEnabled();
 
         if (expectedFocusLost) {
             assertThat(defaultDevicePlayback.getLastFocusChange().isPresent()).isTrue();
