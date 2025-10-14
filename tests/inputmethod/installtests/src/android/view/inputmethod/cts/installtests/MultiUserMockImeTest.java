@@ -16,6 +16,7 @@
 
 package android.view.inputmethod.cts.installtests;
 
+import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED;
 import static android.view.inputmethod.cts.util.InputMethodVisibilityVerifier.expectImeInvisible;
 import static android.view.inputmethod.cts.util.InputMethodVisibilityVerifier.expectImeVisible;
@@ -300,6 +301,7 @@ public final class MultiUserMockImeTest {
             // Launch in the same process for the current user. We need the activity reference so
             // that we can launch it in split screen together with activity2 below.
             final TestActivity activity1 = new TestActivity.Starter().asNewTask()
+                    .withWindowingMode(WINDOWING_MODE_FULLSCREEN)
                     .startSync(activity -> {
                         final LinearLayout layout = new LinearLayout(activity);
                         layout.setOrientation(LinearLayout.VERTICAL);
