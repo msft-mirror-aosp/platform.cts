@@ -34,8 +34,7 @@ public class KeepClearRectsActivity extends BroadcastReceiverActivity {
         final List<Rect> keepClearRects =
                 getIntent().getParcelableArrayListExtra(EXTRA_KEEP_CLEAR_RECTS);
         if (keepClearRects != null) {
-            findViewById(R.id.rootView).setPreferKeepClearRects(keepClearRects);
+            getWindow().getDecorView().setPreferKeepClearRects(keepClearRects);
         }
     }
 }
-
