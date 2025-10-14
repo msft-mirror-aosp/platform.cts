@@ -89,6 +89,7 @@ import android.server.wm.scvh.Components;
 import android.server.wm.scvh.ICrossProcessSurfaceControlViewHostTestService;
 import android.util.ArrayMap;
 import android.view.Gravity;
+import android.view.InputEvent;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.SurfaceControl;
@@ -112,9 +113,9 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.cts.input.BlockingQueueEventVerifier;
 import com.android.cts.input.UinputTouchDevice;
 import com.android.cts.input.UinputTouchScreen;
 import com.android.cts.mockime.ImeEventStream;
@@ -132,7 +133,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -180,7 +183,6 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
             DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
-    private CtsTouchUtils mCtsTouchUtils;
     private Activity mActivity;
     private SurfaceView mSurfaceView;
     private ViewGroup mViewParent;
@@ -188,8 +190,6 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
     private SurfaceControlViewHost mVr;
     private View mEmbeddedView;
 
-    private volatile boolean mClicked = false;
-    private volatile boolean mPopupClicked = false;
     private volatile PopupWindow mPopupWindow;
 
     private SurfaceControlViewHost.SurfacePackage mRemoteSurfacePackage;
@@ -241,7 +241,6 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        mClicked = false;
         mPopupWindow = null;
         mRemoteSurfacePackage = null;
         mViewInitializer =
@@ -251,7 +250,6 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
             mImeSession = createManagedMockImeSession(this);
         }
 
-        mCtsTouchUtils = new CtsTouchUtils(mInstrumentation.getTargetContext());
         mActivity = mActivityRule.launchActivity(null);
         mDisplayId = mActivity.getDisplayId();
         mTouchScreen = new UinputTouchScreen(mInstrumentation, mActivity.getDisplay());
@@ -264,6 +262,60 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
                 android.Manifest.permission.ACCESS_SURFACE_FLINGER);
 
         mSvCreatedLatch = new CountDownLatch(1);
+    }
+
+    /**
+     * A button that keeps track of clicks that occur. This allows tests to assert that a click
+     * happened (or did not happen) in a thread-safe manner.
+     */
+    private static class ClickableButton extends Button {
+        // Keep track of clicks that this view receives.
+        private final BlockingQueue<Object> mClicks = new LinkedBlockingQueue<>();
+
+        ClickableButton(Context context) {
+            super(context);
+            setOnClickListener(
+                    v -> {
+                        try {
+                            mClicks.put(new Object());
+                        } catch (InterruptedException e) {
+                            fail("Interrupted unexpectedly: " + e);
+                        }
+                    });
+        }
+
+        private void assertClicked(boolean shouldBeClicked, Duration timeout, String message) {
+            try {
+                final Object click = mClicks.poll(timeout.toMillis(), TimeUnit.MILLISECONDS);
+                if (shouldBeClicked) {
+                    assertNotNull(message, click);
+                } else {
+                    assertNull(message, click);
+                }
+            } catch (InterruptedException e) {
+                fail("Interrupted while waiting for click: " + e);
+            }
+        }
+
+        /**
+         * Asserts that the button was clicked.
+         *
+         * <p>This will wait up to 5 seconds for the click to be registered. This long timeout is
+         * used to avoid flakiness in tests, as the click event is asynchronous.
+         */
+        void assertClicked() {
+            assertClicked(true, Duration.ofSeconds(5), "Button was not clicked within the timeout");
+        }
+
+        /**
+         * Asserts that the button was not clicked.
+         *
+         * <p>This will wait for a short duration (50ms) to ensure no click event occurred. This
+         * short timeout is used to keep tests fast when verifying the absence of a click.
+         */
+        void assertNotClicked() {
+            assertClicked(false, Duration.ofMillis(50), "Button was clicked unexpectedly");
+        }
     }
 
     @After
@@ -531,18 +583,15 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
     @Test
     public void testEmbeddedViewReceivesInput() throws Throwable {
-        mEmbeddedView = new Button(mActivity);
-        mEmbeddedView.setOnClickListener((View v) -> {
-            mClicked = true;
-        });
+        mEmbeddedView = new ClickableButton(mActivity);
 
         addSurfaceViewAbove(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
         mInstrumentation.waitForIdleSync();
         waitUntilEmbeddedViewDrawn();
         waitForEmbeddedWindowComposited(true /*onTop*/, false /*remote*/);
 
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView);
-        assertTrue(mClicked);
+        globalTapOnViewCenter(mSurfaceView);
+        ((ClickableButton) mEmbeddedView).assertClicked();
     }
 
     @Test
@@ -628,9 +677,6 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
             return;
         }
         mEmbeddedView = new Button(mActivity);
-        mEmbeddedView.setOnClickListener((View v) -> {
-            mClicked = true;
-        });
 
         addSurfaceViewAbove(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
         mInstrumentation.waitForIdleSync();
@@ -646,10 +692,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
     @Test
     public void testEmbeddedViewResizes() throws Throwable {
-        mEmbeddedView = new Button(mActivity);
-        mEmbeddedView.setOnClickListener((View v) -> {
-            mClicked = true;
-        });
+        mEmbeddedView = new ClickableButton(mActivity);
 
         final int bigEdgeLength = mEmbeddedViewWidth * 3;
 
@@ -660,8 +703,8 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         mInstrumentation.waitForIdleSync();
         waitForEmbeddedWindowComposited(true /*onTop*/, false /*remote*/);
 
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView);
-        assertFalse(mClicked);
+        globalTapOnViewCenter(mSurfaceView);
+        ((ClickableButton) mEmbeddedView).assertNotClicked();
 
         mActivityRule.runOnUiThread(() -> {
             mVr.relayout(bigEdgeLength, bigEdgeLength);
@@ -670,40 +713,33 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         waitUntilEmbeddedViewDrawn();
 
         // But after the click should hit.
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView);
-        assertTrue(mClicked);
+        globalTapOnViewCenter(mSurfaceView);
+        ((ClickableButton) mEmbeddedView).assertClicked();
     }
 
     @Test
     public void testEmbeddedViewReleases() throws Throwable {
-        mEmbeddedView = new Button(mActivity);
-        mEmbeddedView.setOnClickListener((View v) -> {
-            mClicked = true;
-        });
+        mEmbeddedView = new ClickableButton(mActivity);
 
         addSurfaceViewAbove(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
         mInstrumentation.waitForIdleSync();
         waitForEmbeddedWindowComposited(true /*onTop*/, false /*remote*/);
 
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView);
-        assertTrue(mClicked);
+        globalTapOnViewCenter(mSurfaceView);
+        ((ClickableButton) mEmbeddedView).assertClicked();
 
         mActivityRule.runOnUiThread(() -> {
             mVr.release();
         });
         mInstrumentation.waitForIdleSync();
 
-        mClicked = false;
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView);
-        assertFalse(mClicked);
+        globalTapOnViewCenter(mSurfaceView);
+        ((ClickableButton) mEmbeddedView).assertNotClicked();
     }
 
     @Test
     public void testDisableInputTouch() throws Throwable {
-        mEmbeddedView = new Button(mActivity);
-        mEmbeddedView.setOnClickListener((View v) -> {
-            mClicked = true;
-        });
+        mEmbeddedView = new ClickableButton(mActivity);
 
         final WindowManager.LayoutParams embeddedLayoutParams =
                 new WindowManager.LayoutParams(
@@ -725,8 +761,8 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
                 });
         mInstrumentation.waitForIdleSync();
 
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView);
-        assertFalse(mClicked);
+        globalTapOnViewCenter(mSurfaceView);
+        ((ClickableButton) mEmbeddedView).assertNotClicked();
 
         mActivityRule.runOnUiThread(
                 () -> {
@@ -735,8 +771,8 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
                 });
         mInstrumentation.waitForIdleSync();
 
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView);
-        assertTrue(mClicked);
+        globalTapOnViewCenter(mSurfaceView);
+        ((ClickableButton) mEmbeddedView).assertClicked();
     }
 
     @Test
@@ -963,7 +999,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // assert host does not have focus
         assertWindowFocused(mSurfaceView, false);
 
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView);
+        globalTapOnViewCenter(mSurfaceView);
         final ImeEventStream stream = mImeSession.openEventStream();
         expectEvent(stream, editorMatcher("onStartInputView",
                 editText.getPrivateImeOptions()), TIMEOUT_MS);
@@ -1041,7 +1077,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // wait for input to get the updated touch regions
         mInstrumentation.getUiAutomation().syncInputTransactions(true);
 
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView);
+        globalTapOnViewCenter(mSurfaceView);
         final ImeEventStream stream = mImeSession.openEventStream();
         expectEvent(
                 stream,
@@ -1075,7 +1111,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // assert host does not have focus
         assertWindowFocused(mSurfaceView, false);
 
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView);
+        globalTapOnViewCenter(mSurfaceView);
 
         // Verify that IME is z-ordered above the embedded window
         Predicate<List<WindowInfo>> imeInExpectedLocation =
@@ -1206,25 +1242,32 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         // Create a surface view and wait for its surface to be created.
         CountDownLatch surfaceCreated = new CountDownLatch(1);
-        mActivityRule.runOnUiThread(() -> {
-            final FrameLayout content = new FrameLayout(mActivity);
-            mSurfaceView = new SurfaceView(mActivity);
-            mSurfaceView.setZOrderOnTop(true);
-            content.addView(mSurfaceView, new FrameLayout.LayoutParams(
-                    DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT,
-                    Gravity.LEFT | Gravity.TOP));
-            mActivity.setContentView(content, new ViewGroup.LayoutParams(DEFAULT_SURFACE_VIEW_WIDTH,
-                    DEFAULT_SURFACE_VIEW_HEIGHT));
-            mSurfaceView.getHolder().addCallback(new SurfaceCreatedCallback(surfaceCreated));
+        mActivityRule.runOnUiThread(
+                () -> {
+                    final FrameLayout content = new FrameLayout(mActivity);
+                    mSurfaceView = new SurfaceView(mActivity);
+                    mSurfaceView.setZOrderOnTop(true);
+                    content.addView(
+                            mSurfaceView,
+                            new FrameLayout.LayoutParams(
+                                    DEFAULT_SURFACE_VIEW_WIDTH,
+                                    DEFAULT_SURFACE_VIEW_HEIGHT,
+                                    Gravity.LEFT | Gravity.TOP));
+                    mActivity.setContentView(
+                            content,
+                            new ViewGroup.LayoutParams(
+                                    DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT));
+                    mSurfaceView
+                            .getHolder()
+                            .addCallback(new SurfaceCreatedCallback(surfaceCreated));
 
-            // Create an embedded view.
-            mVr = new SurfaceControlViewHost(mActivity, mActivity.getDisplay(),
-                    mSurfaceView.getHostToken());
-            mEmbeddedView = new Button(mActivity);
-            mEmbeddedView.setOnClickListener((View v) -> mClicked = true);
-            mVr.setView(mEmbeddedView, mEmbeddedViewWidth, mEmbeddedViewHeight);
-
-        });
+                    // Create an embedded view.
+                    mVr =
+                            new SurfaceControlViewHost(
+                                    mActivity, mActivity.getDisplay(), mSurfaceView.getHostToken());
+                    mEmbeddedView = new ClickableButton(mActivity);
+                    mVr.setView(mEmbeddedView, mEmbeddedViewWidth, mEmbeddedViewHeight);
+                });
         assertTrue("Failed to wait for SurfaceView created",
                 surfaceCreated.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));
 
@@ -1250,7 +1293,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // Check if SurfacePackage copy remains valid even though the original package has
         // been released.
         globalTapOnWindowCenter(mEmbeddedView::getWindowToken);
-        PollingCheck.waitFor(() -> mClicked);
+        ((ClickableButton) mEmbeddedView).assertClicked();
     }
 
     @Test
@@ -1263,48 +1306,58 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         AtomicReference<SurfacePackage> surfacePackageCopyRef = new AtomicReference<>(null);
         AtomicReference<SurfaceView> secondSurfaceRef = new AtomicReference<>(null);
 
-        mActivityRule.runOnUiThread(() -> {
-            final FrameLayout content = new FrameLayout(mActivity);
-            mSurfaceView = new SurfaceView(mActivity);
-            mSurfaceView.setZOrderOnTop(true);
-            content.addView(mSurfaceView, new FrameLayout.LayoutParams(DEFAULT_SURFACE_VIEW_WIDTH,
-                    DEFAULT_SURFACE_VIEW_HEIGHT, Gravity.LEFT | Gravity.TOP));
-            mActivity.setContentView(content, new ViewGroup.LayoutParams(DEFAULT_SURFACE_VIEW_WIDTH,
-                    DEFAULT_SURFACE_VIEW_HEIGHT));
-            mSurfaceView.getHolder().addCallback(new SurfaceCreatedCallback(surfaceCreated));
+        mActivityRule.runOnUiThread(
+                () -> {
+                    final FrameLayout content = new FrameLayout(mActivity);
+                    mSurfaceView = new SurfaceView(mActivity);
+                    mSurfaceView.setZOrderOnTop(true);
+                    content.addView(
+                            mSurfaceView,
+                            new FrameLayout.LayoutParams(
+                                    DEFAULT_SURFACE_VIEW_WIDTH,
+                                    DEFAULT_SURFACE_VIEW_HEIGHT,
+                                    Gravity.LEFT | Gravity.TOP));
+                    mActivity.setContentView(
+                            content,
+                            new ViewGroup.LayoutParams(
+                                    DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT));
+                    mSurfaceView
+                            .getHolder()
+                            .addCallback(new SurfaceCreatedCallback(surfaceCreated));
 
-            // Create an embedded view.
-            mVr = new SurfaceControlViewHost(mActivity, mActivity.getDisplay(),
-                    mSurfaceView.getHostToken());
-            mEmbeddedView = new Button(mActivity);
-            mEmbeddedView.setOnClickListener((View v) -> mClicked = true);
-            mVr.setView(mEmbeddedView, mEmbeddedViewWidth, mEmbeddedViewHeight);
+                    // Create an embedded view.
+                    mVr =
+                            new SurfaceControlViewHost(
+                                    mActivity, mActivity.getDisplay(), mSurfaceView.getHostToken());
+                    mEmbeddedView = new ClickableButton(mActivity);
+                    mVr.setView(mEmbeddedView, mEmbeddedViewWidth, mEmbeddedViewHeight);
 
-            SurfacePackage surfacePackage = mVr.getSurfacePackage();
-            surfacePackageRef.set(surfacePackage);
-            surfacePackageCopyRef.set(new SurfacePackage(surfacePackage));
+                    SurfacePackage surfacePackage = mVr.getSurfacePackage();
+                    surfacePackageRef.set(surfacePackage);
+                    surfacePackageCopyRef.set(new SurfacePackage(surfacePackage));
 
-            // Assign the surface package to the first surface
-            mSurfaceView.setChildSurfacePackage(surfacePackage);
+                    // Assign the surface package to the first surface
+                    mSurfaceView.setChildSurfacePackage(surfacePackage);
 
-            // Create the second surface view to which we'll assign the surface package copy
-            SurfaceView secondSurface = new SurfaceView(mActivity);
-            secondSurfaceRef.set(secondSurface);
+                    // Create the second surface view to which we'll assign the surface package copy
+                    SurfaceView secondSurface = new SurfaceView(mActivity);
+                    secondSurfaceRef.set(secondSurface);
 
-            mSurfaceView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
-                @Override
-                public void onViewAttachedToWindow(View v) {
-                }
+                    mSurfaceView.addOnAttachStateChangeListener(
+                            new View.OnAttachStateChangeListener() {
+                                @Override
+                                public void onViewAttachedToWindow(View v) {}
 
-                @Override
-                public void onViewDetachedFromWindow(View v) {
-                    viewDetached.countDown();
-                }
-            });
+                                @Override
+                                public void onViewDetachedFromWindow(View v) {
+                                    viewDetached.countDown();
+                                }
+                            });
 
-            secondSurface.getHolder().addCallback(new SurfaceCreatedCallback(surface2Created));
-
-        });
+                    secondSurface
+                            .getHolder()
+                            .addCallback(new SurfaceCreatedCallback(surface2Created));
+                });
         surfaceCreated.await();
 
         // Add the second surface view and assign it the surface package copy
@@ -1329,9 +1382,8 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         // Check if SurfacePackage copy remains valid even though the original package has
         // been released and the original surface view removed.
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule,
-                secondSurfaceRef.get());
-        assertTrue(mClicked);
+        globalTapOnViewCenter(secondSurfaceRef.get());
+        ((ClickableButton) mEmbeddedView).assertClicked();
     }
 
     @Test
@@ -1366,16 +1418,17 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         CountDownLatch hostReady = new CountDownLatch(1);
         // Create a second surface view and wait for its surface to be created.
-        mActivityRule.runOnUiThread(() -> {
-            // Create an embedded view.
-            mVr = new SurfaceControlViewHost(mActivity, mActivity.getDisplay(),
-                    mSurfaceView.getHostToken());
-            mEmbeddedView = new Button(mActivity);
-            mEmbeddedView.setOnClickListener((View v) -> mClicked = true);
-            mVr.setView(mEmbeddedView, mEmbeddedViewWidth, mEmbeddedViewHeight);
-            hostReady.countDown();
-            mSurfaceView.setChildSurfacePackage(mVr.getSurfacePackage());
-        });
+        mActivityRule.runOnUiThread(
+                () -> {
+                    // Create an embedded view.
+                    mVr =
+                            new SurfaceControlViewHost(
+                                    mActivity, mActivity.getDisplay(), mSurfaceView.getHostToken());
+                    mEmbeddedView = new ClickableButton(mActivity);
+                    mVr.setView(mEmbeddedView, mEmbeddedViewWidth, mEmbeddedViewHeight);
+                    hostReady.countDown();
+                    mSurfaceView.setChildSurfacePackage(mVr.getSurfacePackage());
+                });
         hostReady.await();
         mInstrumentation.waitForIdleSync();
         waitUntilEmbeddedViewDrawn();
@@ -1384,34 +1437,23 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // Check to see if the click went through - this only would happen if the surface package
         // was replaced
         globalTapOnWindowCenter(mEmbeddedView::getWindowToken);
-        PollingCheck.waitFor(() -> mClicked);
+        ((ClickableButton) mEmbeddedView).assertClicked();
     }
 
     class MotionRecordingSurfaceView extends SurfaceView {
-        boolean mGotEvent = false;
+        private final BlockingQueue<InputEvent> mMotionEvents = new LinkedBlockingQueue<>();
+        public final BlockingQueueEventVerifier verifier =
+                new BlockingQueueEventVerifier(mMotionEvents);
 
         MotionRecordingSurfaceView(Context c) {
             super(c);
         }
 
+        @Override
         public boolean onTouchEvent(MotionEvent e) {
             super.onTouchEvent(e);
-            synchronized (this) {
-                mGotEvent = true;
-            }
+            mMotionEvents.add(MotionEvent.obtain(e));
             return true;
-        }
-
-        boolean gotEvent() {
-            synchronized (this) {
-                return mGotEvent;
-            }
-        }
-
-        void reset() {
-            synchronized (this) {
-                mGotEvent = false;
-            }
         }
     }
 
@@ -1513,20 +1555,22 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         addMotionRecordingSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
         mInstrumentation.waitForIdleSync();
         waitUntilEmbeddedViewDrawn();
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView);
+        globalTapOnViewCenter(mSurfaceView);
         mInstrumentation.waitForIdleSync();
 
         MotionRecordingSurfaceView mrsv = (MotionRecordingSurfaceView) mSurfaceView;
-        assertFalse(mrsv.gotEvent());
+        mrsv.verifier.assertNoEvents();
         mActivityRule.runOnUiThread(() -> {
             tpv.punchHoleInTouchableRegion();
         });
         mInstrumentation.waitForIdleSync();
         waitForEmbeddedWindowComposited(true /*onTop*/, false /*remote*/);
 
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView);
+        globalTapOnViewCenter(mSurfaceView);
         mInstrumentation.waitForIdleSync();
-        assertTrue(mrsv.gotEvent());
+        mrsv.verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_DOWN));
+        mrsv.verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_UP));
+        mrsv.verifier.assertNoEvents();
     }
 
     @Test
@@ -1579,10 +1623,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
                 + "lack of a correct display coordinates transform from logical to physical this "
                 + "test fails on android15", hasAutomotiveSplitscreenMultitaskingFeature());
 
-        mEmbeddedView = new Button(mActivity);
-        mEmbeddedView.setOnClickListener((View v) -> {
-            mClicked = true;
-        });
+        mEmbeddedView = new ClickableButton(mActivity);
 
         addSurfaceViewBelow(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
         mInstrumentation.waitForIdleSync();
@@ -1592,7 +1633,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // We should receive no input until we punch a hole
         globalTapOnViewCenter(mSurfaceView);
         mInstrumentation.waitForIdleSync();
-        assertFalse(mClicked);
+        ((ClickableButton) mEmbeddedView).assertNotClicked();
 
         String originalRegion = getTouchableRegionFromDump();
 
@@ -1611,7 +1652,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         waitForTouchableRegionChanged(originalRegion);
 
         globalTapOnViewCenter(mSurfaceView);
-        PollingCheck.waitFor(() -> mClicked);
+        ((ClickableButton) mEmbeddedView).assertClicked();
     }
 
     private ICrossProcessSurfaceControlViewHostTestService getService() throws Exception {
@@ -1707,24 +1748,17 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
     @Test
     public void testPopupWindowReceivesInput() throws Throwable {
-        mEmbeddedView = new Button(mActivity);
-        mEmbeddedView.setOnClickListener((View v) -> {
-            mClicked = true;
-        });
+        mEmbeddedView = new ClickableButton(mActivity);
         addSurfaceViewAbove(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
         mInstrumentation.waitForIdleSync();
         waitUntilEmbeddedViewDrawn();
 
-        Button[] popupButton = {null};
+        ClickableButton[] popupButton = {null};
         mActivityRule.runOnUiThread(
                 () -> {
                     PopupWindow pw = new PopupWindow();
                     mPopupWindow = pw;
-                    popupButton[0] = new Button(mActivity);
-                    popupButton[0].setOnClickListener(
-                            (View v) -> {
-                                mPopupClicked = true;
-                            });
+                    popupButton[0] = new ClickableButton(mActivity);
                     pw.setWidth(DEFAULT_SURFACE_VIEW_WIDTH);
                     pw.setHeight(DEFAULT_SURFACE_VIEW_HEIGHT);
                     pw.setContentView(popupButton[0]);
@@ -1736,18 +1770,17 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
                         popupButton[0]::getWindowToken));
         mInstrumentation.waitForIdleSync();
 
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView);
-        assertTrue(mPopupClicked);
-        assertFalse(mClicked);
+        globalTapOnViewCenter(mSurfaceView);
+        popupButton[0].assertClicked();
+        ((ClickableButton) mEmbeddedView).assertNotClicked();
 
         mActivityRule.runOnUiThread(() -> {
             mPopupWindow.dismiss();
         });
         mInstrumentation.waitForIdleSync();
 
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView);
-        mInstrumentation.waitForIdleSync();
-        assertTrue(mClicked);
+        globalTapOnViewCenter(mSurfaceView);
+        ((ClickableButton) mEmbeddedView).assertClicked();
     }
 
     @Test
@@ -1956,23 +1989,20 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // on-screen.
         final int[] viewOnScreenXY = new int[2];
         mSurfaceView.getLocationOnScreen(viewOnScreenXY);
+
         final int injectedX = viewOnScreenXY[0] + 1;
         final int injectedY = viewOnScreenXY[1] + 1;
-        final UiAutomation uiAutomation = mInstrumentation.getUiAutomation();
-        long downTime = SystemClock.uptimeMillis();
 
         // We inject a down event
-        mCtsTouchUtils.injectDownEvent(mInstrumentation, downTime, injectedX, injectedY, null);
-
+        UinputTouchDevice.Pointer pointer = mTouchScreen.touchDown(injectedX, injectedY);
 
         // And this down event should arrive on the embedded view, which should transfer the touch
         // focus
         ttv.waitForEmbeddedTouch();
         ttv.waitForCancel();
 
-        downTime = SystemClock.uptimeMillis();
         // Now we inject an up event
-        mCtsTouchUtils.injectUpEvent(mInstrumentation, downTime, false, injectedX, injectedY, null);
+        pointer.lift();
         // This should arrive on the host now, since we have transferred the touch focus
         synchronized (this) {
             if (!mHostGotEvent) {
@@ -2205,8 +2235,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
                     mVr =
                             new SurfaceControlViewHost(
                                     (Context) mActivity, mActivity.getDisplay(), (IBinder) null);
-                    mEmbeddedView = new Button(mActivity);
-                    mEmbeddedView.setOnClickListener((View v) -> mClicked = true);
+                    mEmbeddedView = new ClickableButton(mActivity);
                     mVr.setView(mEmbeddedView, mEmbeddedViewWidth, mEmbeddedViewHeight);
                 });
         assertTrue(
