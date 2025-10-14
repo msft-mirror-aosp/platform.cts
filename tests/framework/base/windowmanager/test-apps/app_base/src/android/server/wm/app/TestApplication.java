@@ -46,6 +46,12 @@ public class TestApplication extends Application {
         MainThreadUnresponsivenessDetector.register(this);
     }
 
+    /** Signal to send for dumping when the Activity is unresponsive. */
+    int signalToSendOnUnresponsive() {
+        // Dump to an ANR file stored as '/data/anr/trace_*'
+        return SIGNAL_QUIT;
+    }
+
     /**
      * A mechanism to detect if the Android main thread becomes unresponsive after an Activity is
      * created, and if so, dumps its call stack to the log.
@@ -58,16 +64,29 @@ public class TestApplication extends Application {
         private static final long UNRESPONSIVE_THRESHOLD_MS = 2500; // 2.5 seconds
         private final Handler mMainHandler = new Handler(Looper.getMainLooper());
         private final ConcurrentMap<Activity, Thread> mMonitorThreads = new ConcurrentHashMap<>();
+        private final TestApplication mTestApp;
 
-        static void register(@NonNull Application application) {
+        static void register(@NonNull TestApplication application) {
             application.registerActivityLifecycleCallbacks(
-                    new MainThreadUnresponsivenessDetector());
+                    new MainThreadUnresponsivenessDetector(application));
             Log.d(TAG, "MainThreadUnresponsivenessDetector registered.");
+        }
+
+        private static boolean shouldSkipDetectActivity(@NonNull Activity activity) {
+            return activity instanceof UnresponsiveActivityInterface;
+        }
+
+        private MainThreadUnresponsivenessDetector(@NonNull TestApplication testApp) {
+            mTestApp = testApp;
         }
 
         @Override
         public void onActivityCreated(
                 @NonNull Activity activity, @Nullable Bundle savedInstanceState) {
+            if (shouldSkipDetectActivity(activity)) {
+                return;
+            }
+
             final String activityName = activity.getClass().getSimpleName();
             Log.d(
                     TAG,
@@ -155,10 +174,10 @@ public class TestApplication extends Application {
             Log.e(TAG, "--- End Main Thread Call Stack ---");
         }
 
-        /** Dumps all threads to an ANR file stored as '/data/anr/trace_*' */
+        /** Dumps all threads. */
         private void dumpAllThreadCallStack() {
             Log.w(TAG, "Dumping all thread stacks now...");
-            sendSignal(myPid(), SIGNAL_QUIT);
+            sendSignal(myPid(), mTestApp.signalToSendOnUnresponsive());
         }
 
         @Override

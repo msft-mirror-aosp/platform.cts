@@ -26,7 +26,7 @@ import android.os.SystemClock;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 
-public class UnresponsiveActivity extends Activity {
+public class UnresponsiveActivity extends Activity implements UnresponsiveActivityInterface {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
