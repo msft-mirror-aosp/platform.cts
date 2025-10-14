@@ -343,6 +343,11 @@ public class BaseAppVerifierImpl {
         appControl.setConnectionProperties(callId, properties);
     }
 
+    public int getAudioProcessingUseCase(AppControlWrapper appControl, String callId)
+        throws Exception {
+        return appControl.getAudioProcessingUseCase(callId);
+    }
+
     public int addCall(AppControlWrapper appControl, CallAttributes attributes)
             throws Exception {
         int currentCallCount = mVerifierMethods.getCurrentCallCount();

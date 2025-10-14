@@ -568,6 +568,76 @@ public class SingleCallingTest extends BaseAppVerifier {
         }
     }
 
+    /**
+     * Test the scenario where a new MANAGED incoming call is created in the RINGING state and
+     * Connection#getAudioProcessingUseCase() is called.
+     * <h3> Test Steps: </h3>
+     * <ul>
+     *  1. create a managed call that is backed by a {@link android.telecom.ConnectionService }
+     *  via {@link android.telecom.TelecomManager#addNewIncomingCall(PhoneAccountHandle, Bundle)}
+     * <p>
+     *  2. call getAudioProcessingUseCase on the connection via
+     *  {@link Connection#getAudioProcessingUseCase()}
+     * <p>
+     *  </ul>
+     *  Catch the IllegalStateException and assert the call was not transitioned to AUDIO_PROCESSING.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_AUDIO_PROCESSING_USE_CASE)
+    public void testIncomingCallGetAudioProcessingUseCase_shouldFail_ManagedConnectionServiceApp()
+        throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        AppControlWrapper managedApp = bindToApp(ManagedConnectionServiceApp);
+        String mt = addIncomingCallAndVerify(managedApp);
+        try {
+            verifyCallIsInState(mt, STATE_RINGING);
+            getAudioProcessingUseCase(managedApp, mt);
+        } catch (IllegalStateException e) {
+            verifyCallIsInState(mt, STATE_RINGING);
+        } finally {
+            tearDownApp(managedApp);
+        }
+    }
+
+    /**
+     * Test the scenario where a new MANAGED incoming call is created in the RINGING state and
+     * Connection#getAudioProcessingUseCase() is called.
+     * <h3> Test Steps: </h3>
+     * <ul>
+     *  1. create a managed call that is backed by a {@link android.telecom.ConnectionService }
+     *  via {@link android.telecom.TelecomManager#addNewIncomingCall(PhoneAccountHandle, Bundle)}
+     * <p>
+     *  2. transition the call to AUDIO_PROCESSING via
+     *  {@link Call#enterBackgroundAudioProcessing(AUDIO_PROCESSING_USE_CASE_VOICE_MAIL)}
+     *  3. call getAudioProcessingUseCase on the connection via
+     *  {@link Connection#getAudioProcessingUseCase()}
+     * <p>
+     *  </ul>
+     *  Assert that the returned AudioProcessingUseCase is equal to AUDIO_PROCESSING_USE_CASE_VOICEMAIL.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_AUDIO_PROCESSING_USE_CASE)
+    public void testIncomingCallGetAudioProcessingUseCase_ManagedConnectionServiceApp()
+        throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        AppControlWrapper managedApp = bindToApp(ManagedConnectionServiceApp);
+        String mt = addIncomingCallAndVerify(managedApp);
+        try {
+            verifyCallIsInState(mt, STATE_RINGING);
+            setConnectionProperties(managedApp, mt, Connection.PROPERTY_IS_EXTERNAL_CALL);
+            setCallStateAndVerify(managedApp, mt, STATE_AUDIO_PROCESSING,
+                AUDIO_PROCESSING_USE_CASE_VOICEMAIL);
+            int useCase = getAudioProcessingUseCase(managedApp, mt);
+            assertTrue(useCase == AUDIO_PROCESSING_USE_CASE_VOICEMAIL);
+        } finally {
+            tearDownApp(managedApp);
+        }
+    }
+
     /*********************************************************************************************
      *                           ConnectionServiceVoipAppMain
      /*********************************************************************************************/

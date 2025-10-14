@@ -323,6 +323,18 @@ public class AppControlWrapper {
         }
     }
 
+    public int getAudioProcessingUseCase(String callId) throws RemoteException {
+        Log.i(TAG, "getAudioProcessingUseCase: callId=" + callId);
+        try {
+            IntegerTransaction transactionResult = mBinder.getAudioProcessingUseCase(callId);
+            maybeFailTest(transactionResult);
+            return transactionResult.getIntegerResult();
+        } catch (RemoteException e) {
+            handleRemoteException(e, "getAudioProcessingUseCase");
+        }
+        return -1;
+    }
+
     /**
      * Sets the mute state
      */

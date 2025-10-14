@@ -58,6 +58,7 @@ import android.telecom.cts.apps.CallControlExtras;
 import android.telecom.cts.apps.CallEndpointTransaction;
 import android.telecom.cts.apps.CallExceptionTransaction;
 import android.telecom.cts.apps.IAppControl;
+import android.telecom.cts.apps.IntegerTransaction;
 import android.telecom.cts.apps.IRemoteOperationConsumer;
 import android.telecom.cts.apps.LatchedEndpointOutcomeReceiver;
 import android.telecom.cts.apps.ManagedConnection;
@@ -625,10 +626,24 @@ public class ManagedAppControl extends Service {
                     return mIdToConnection.get(id);
                 }
 
-                @Override
-                public void cleanup() {
-                    cleanupImplementation();
+              @Override
+              public IntegerTransaction getAudioProcessingUseCase(String callId) {
+                List<String> stackTrace =
+                    createStackTraceList(
+                        CLASS_NAME + ".getAudioProcessingUseCase(" + (callId) + ")");
+                try {
+                  ManagedConnection connection = getConnectionOrThrow(callId, stackTrace);
+                  int audioProcessingUseCase = connection.getAudioProcessingUseCase();
+                  return new IntegerTransaction(TestAppTransaction.Success, audioProcessingUseCase);
+                } catch (TestAppException e) {
+                  return new IntegerTransaction(TestAppTransaction.Failure, e);
                 }
+              }
+
+              @Override
+              public void cleanup() {
+                cleanupImplementation();
+              }
             };
 
     @Nullable
