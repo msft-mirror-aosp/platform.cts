@@ -1325,7 +1325,6 @@ public class NotificationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
     public void testProgressStyle_ignoresInvalidSegments() {
         final Notification.ProgressStyle expectedProgressStyle = new Notification.ProgressStyle();
         expectedProgressStyle
