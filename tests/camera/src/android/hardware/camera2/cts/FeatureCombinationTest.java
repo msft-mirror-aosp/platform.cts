@@ -250,7 +250,6 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                                     + ", fpsRange "
                                     + fpsRange.toString();
 
-                    boolean haveSession = false;
                     try {
                         CaptureRequest.Builder builder = cameraDeviceSetup.createCaptureRequest(
                                 CameraDevice.TEMPLATE_PREVIEW);
@@ -277,10 +276,15 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                             continue;
                         }
 
-                        haveSession =
-                                verifyCombinationStreaming(outputConfigs, dynamicProfile,
-                                        stabilizationMode, fpsRange, combinationStr,
-                                        hasReadoutTimestamp, /*mpc*/false, jpegTargets);
+                        verifyCombinationStreaming(
+                                outputConfigs,
+                                dynamicProfile,
+                                stabilizationMode,
+                                fpsRange,
+                                combinationStr,
+                                hasReadoutTimestamp, /*mpc*/
+                                false,
+                                jpegTargets);
 
                         assertEquals(jpegTargets.size(), jpegListeners.size());
                         for (int i = 0; i < jpegTargets.size(); i++) {
@@ -299,7 +303,8 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                                 "Output combination %s failed due to: %s",
                                 combinationStr, e.getMessage()));
                     }
-                    if (haveSession) {
+
+                    if (mCameraSession != null) {
                         try {
                             Log.i(TAG, String.format(
                                     "Done with camera %s, config %s, closing session",
@@ -310,6 +315,18 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                                     "Closing down for output combination %s failed due to: %s",
                                     combinationStr, e.getMessage()));
                         }
+                    }
+
+                    // Drain the ImageReaders and the listeners
+                    for (int i = 0; i < jpegTargets.size(); i++) {
+                        ImageReader jpegReader = jpegTargets.get(i);
+                        SimpleImageReaderListener listener = jpegListeners.get(i);
+
+                        Image img = jpegReader.acquireLatestImage();
+                        if (img != null) {
+                            img.close();
+                        }
+                        listener.drain();
                     }
                 }
             }
@@ -327,15 +344,18 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
 
     }
 
-    private boolean verifyCombinationStreaming(
-            List<OutputConfiguration> outputConfigs, Long dynamicProfile,
-            int stabilizationMode, @Nullable Range<Integer> fpsRange,
-            String combinationStr, boolean checkReadoutTimeStamp, boolean mpc,
+    private void verifyCombinationStreaming(
+            List<OutputConfiguration> outputConfigs,
+            Long dynamicProfile,
+            int stabilizationMode,
+            @Nullable Range<Integer> fpsRange,
+            String combinationStr,
+            boolean checkReadoutTimeStamp,
+            boolean mpc,
             List<ImageReader> jpegTargets)
             throws Exception {
 
         createSessionByConfigs(outputConfigs);
-        boolean haveSession = true;
 
         Set<List<Surface>> surfaceSets = new HashSet<>();
         List<Surface> surfaceList = new ArrayList<>();
@@ -452,7 +472,6 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                 }
             }
         }
-        return haveSession;
     }
 
     /**
@@ -497,17 +516,22 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                         combinationStr), isSessionConfigSupported, true, /*mpc*/true);
             }
 
-            haveSession = verifyCombinationStreaming(outputConfigs, DynamicRangeProfiles.HLG10,
+            verifyCombinationStreaming(
+                    outputConfigs,
+                    DynamicRangeProfiles.HLG10,
                     CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION,
-                    /*fpsRange*/null, combinationStr,
-                    /*checkReadoutTimeStamp*/false, /*mpc*/true, jpegTargets);
-
+                    /*fpsRange*/ null,
+                    combinationStr,
+                    /*checkReadoutTimeStamp*/ false, /*mpc*/
+                    true,
+                    jpegTargets);
         } catch (Throwable e) {
             Log.e(TAG, String.format("Output combination %s failed due to: %s",
                             combinationStr, e.getMessage()));
             mCollector.addMPCFailure();
         }
-        if (haveSession) {
+
+        if (mCameraSession != null) {
             try {
                 Log.i(TAG, String.format(
                         "Done with camera %s, config %s, closing session",
