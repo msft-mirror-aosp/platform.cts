@@ -68,9 +68,10 @@ public class NfcTestActivity extends PassFailButtons.TestListActivity {
         }
 
         if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC_HOST_CARD_EMULATION)
+                && Build.VERSION.SDK_INT_FULL > Build.VERSION_CODES_FULL.BAKLAVA
                 && nfcAdapter != null
                 && nfcAdapter.isObserveModeSupported()
-                && Build.VERSION.SDK_INT_FULL > Build.VERSION_CODES_FULL.BAKLAVA) {
+                && nfcAdapter.isReaderModeAnnotationSupported()) {
             adapter.add(TestListItem.newCategory(this, R.string.nfc_hce));
             if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC)) {
                 adapter.add(
