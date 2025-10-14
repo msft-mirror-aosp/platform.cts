@@ -170,24 +170,25 @@ public final class Utils {
                 && !pm.hasSystemFeature(pm.FEATURE_AUTOMOTIVE);
     }
 
-    private static boolean meetsAvcCodecPreconditions(boolean isEncoder) {
-        // Latency tests need the following instances of codecs at 30 fps
-        // 1920x1080 encoder in MediaRecorder for load conditions
-        // 1920x1080 decoder and 1920x1080 encoder for load conditions
-        // 1920x1080 encoder for initialization test
-        // Since there is no way to know if encoder and decoder are supported concurrently at their
-        // maximum load, we will test the above combined requirements are met for both encoder and
-        // decoder (so a minimum of 4 instances required for both encoder and decoder)
-        int minInstancesRequired = 4;
-        int width = 1920;
-        int height = 1080;
-        double fps = 30 /* encoder for media recorder */
-                + 30 /* 1080p decoder for transcoder */
-                + 30 /* 1080p encoder for transcoder */
-                + 30 /* 1080p encoder for latency test */;
-
+    /**
+     * Checks if the AVC codec meets the required performance preconditions.
+     *
+     * @param isEncoder True for encoder, false for decoder.
+     * @param width frame width.
+     * @param height frame height.
+     * @param fps frame rate
+     * @param concurrentInstancesCount required concurrent instances
+     * @return True if the codec meets the preconditions, false otherwise.
+     */
+    private static boolean meetsAvcCodecPreconditions(boolean isEncoder, int width, int height,
+             double fps, int concurrentInstancesCount) {
         String avcMediaType = MediaFormat.MIMETYPE_VIDEO_AVC;
-        PerformancePoint pp1080p = new PerformancePoint(width, height, (int) fps);
+        // It should be noted that getMaxSupportedInstances() does not make use of the configuration
+        // under test. It is a predefined constant defined in xml. To verify if concurrent instances
+        // of a given configuration are supported, scale the fps such that the performance point is
+        // equivalent to n instances of wxh@fps in terms of throughput.
+        double scaledFps = fps * concurrentInstancesCount;
+        PerformancePoint ppReq = new PerformancePoint(width, height, (int) scaledFps);
         MediaCodec codec;
         try {
             codec = isEncoder ? MediaCodec.createEncoderByType(avcMediaType) :
@@ -208,13 +209,14 @@ public final class Utils {
         }
         boolean supportsRequiredRate = false;
         for (PerformancePoint pp : pps) {
-            if (pp.covers(pp1080p)) {
+            if (pp.covers(ppReq)) {
                 supportsRequiredRate = true;
             }
         }
 
         boolean supportsRequiredSize = caps.getVideoCapabilities().isSizeSupported(width, height);
-        boolean supportsRequiredInstances = caps.getMaxSupportedInstances() >= minInstancesRequired;
+        boolean supportsRequiredInstances =
+                caps.getMaxSupportedInstances() >= concurrentInstancesCount;
         codec.release();
         Log.d(TAG, info.getName() + " supports required FPS : " + supportsRequiredRate
                 + ", supports required size : " + supportsRequiredSize
@@ -223,8 +225,34 @@ public final class Utils {
     }
 
     private static boolean meetsAvcCodecPreconditions() {
-        return meetsAvcCodecPreconditions(/* isEncoder */ true)
-                && meetsAvcCodecPreconditions(/* isEncoder */ false);
+        // AVC Codec performance class minimum pre-requisites:
+        //
+        // CDD - [5.1/H-1-2] & [5.1/H-1-4]
+        // - 720@30fps encoding support (6 instances concurrent)
+        // - 720@30fps decoding support (6 instances concurrent)
+        //
+        // CDD - [5.1/H-1-6]
+        // - 720@30fps encoding/decoding support (6 instances concurrent, any combination)
+        //
+        // CDD - [5.1/H-1-7]
+        // Load:
+        // - 1080p@30fps encoding support for video recording session
+        // - 720p@30fps encoding support for video transcoding session
+        // - 1080p@30fps decoding support for video transcoding session
+        // Test:
+        // - 1080p@30fps encoding support for testing initialization latency
+        // - above instances have to be supported concurrently
+        // NOTES: 720p@30fps can be viewed as 0.45 * 1080p@30fps in terms of throughput
+        // [5.1/H-1-7] (viewed alternatively):
+        // - 1080p@73.33fps encoding support
+        // - 1080p@30fps decoding support
+        // CDD - [5.1/H-1-2] & [5.1/H-1-4] (viewed alternatively):
+        // - 1080p@80fps encoding/decoding support
+        // - In terms of throughput, [5.1/H-1-2 or 4 or 6] covers [5.1/H-1-7] as well
+        return meetsAvcCodecPreconditions(/* isEncoder */ true, 1920, 1080, 30, 2)
+                && meetsAvcCodecPreconditions(/* isEncoder */ false, 1920, 1080, 30, 2)
+                && meetsAvcCodecPreconditions(/* isEncoder */ true, 1280, 720, 30, 6)
+                && meetsAvcCodecPreconditions(/* isEncoder */ false, 1280, 720, 30, 6);
     }
 
     public static int getPerfClass() {
