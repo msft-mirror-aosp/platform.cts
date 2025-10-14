@@ -1671,6 +1671,79 @@ public class ImsCallingTest extends ImsCallingBase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_IGNORE_INCALL_MMI_FOR_EMERGENCY)
+    public void testOutgoingEmergencyCall_InCallMmiCode() throws Exception {
+        if (!ImsUtils.shouldTestImsCall()) {
+            return;
+        }
+
+        boolean supportDomainSelection =
+                ShellIdentityUtils.invokeMethodWithShellPermissions(sTelephonyManager,
+                        (tm) -> tm.isDomainSelectionSupported());
+
+        // A similar test is implemented in EmergencyCallDomainSelectionTestOnMockModem to test the
+        // case where domain selection is supported.
+        if (supportDomainSelection) {
+            return;
+        }
+
+        LinkedBlockingQueue<List<CallState>> queue = new LinkedBlockingQueue<>();
+        ImsCallingTest.TestTelephonyCallbackForCallStateChange testCb =
+                new ImsCallingTest.TestTelephonyCallbackForCallStateChange(queue);
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                sTelephonyManager, (tm) -> tm.registerTelephonyCallback(Runnable::run, testCb));
+
+        testCb.setTestEmergencyNumber(TEST_EMERGENCY_NUMBER);
+        setupForEmergencyCalling(TEST_EMERGENCY_NUMBER);
+        assertTrue(testCb.waitForTestEmergencyNumberConfigured());
+
+        bindImsService();
+        mServiceCallBack = new ServiceCallBack();
+        InCallServiceStateValidator.setCallbacks(mServiceCallBack);
+
+        TelecomManager telecomManager = (TelecomManager) InstrumentationRegistry
+                .getInstrumentation().getContext().getSystemService(Context.TELECOM_SERVICE);
+
+        // It is possible on some devices (particularly wearables) that
+        // the packages/services/Telephony/res/values/config.xml value
+        // `config_pstnCanPlaceEmergencyCalls` is `FALSE`.  In this case, there will be no
+        // TelephonyConnectionService phone account registered with
+        // `CAPABILITY_PLACE_EMERGENCY_CALLS`; as a consequence this test would fail because Telecom
+        // will not be able to find a phone account capable of placing an emergency call, even
+        // though we're using a test ImsService.
+        assumeTrue(
+                "Device has `config_pstnCanPlaceEmergencyCalls` set `false`, skipping",
+                ImsUtils.hasEmergencyCallCapablePhoneAccount());
+
+        // Place outgoing emergency call
+        telecomManager.placeCall(TEST_EMERGENCY_URI, new Bundle());
+
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        Call call = getCall(mCurrentCallId);
+        waitForCallSessionToNotBe(null);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+
+        assertTrue(testCb.waitForOutgoingEmergencyCall(TEST_EMERGENCY_NUMBER));
+        assertTrue(testCb.waitForCallActive());
+
+        TestImsCallSessionImpl callSession = sServiceConnector.getCarrierService().getMmTelFeature()
+                .getImsCallsession();
+        isCallActive(call, callSession);
+
+        // Send InCall MMI code to hang up the emergency call and ensure it does not affect the
+        // ACTIVE emergency call.
+        telecomManager.placeCall(TEST_HANG_UP_IN_CALL_MMI_URI, new Bundle());
+        TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
+        isCallActive(call, callSession);
+
+        call.disconnect();
+        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        isCallDisconnected(call, callSession);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        waitForUnboundService();
+    }
+
+    @Test
     @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_IMS_MMTEL_INTERFACE)
     public void testCallSessionTransferred() throws Exception {
         if (!ImsUtils.shouldTestImsCall()) {

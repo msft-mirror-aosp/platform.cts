@@ -67,8 +67,11 @@ public class ImsCallingBase {
     protected static final String COMMAND_SET_DEFAULT_DIALER = "telecom set-default-dialer ";
     protected static final String COMMAND_GET_DEFAULT_DIALER = "telecom get-default-dialer";
     protected static final String TEST_EMERGENCY_NUMBER = "5553637";
+    protected static final String TEST_HANGUP_IN_CALL_MMI_CODE = "1";
     protected static final Uri TEST_EMERGENCY_URI =
             Uri.fromParts("tel", TEST_EMERGENCY_NUMBER, null);
+            protected static final Uri TEST_HANG_UP_IN_CALL_MMI_URI =
+            Uri.fromParts("tel", TEST_HANGUP_IN_CALL_MMI_CODE, null);
     protected static final String INCALL_COMPONENT =
             "android.telephony.cts/.InCallServiceStateValidator";
 
