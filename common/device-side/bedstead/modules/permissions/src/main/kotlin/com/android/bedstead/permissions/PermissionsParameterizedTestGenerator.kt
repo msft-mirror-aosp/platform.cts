@@ -17,9 +17,9 @@ package com.android.bedstead.permissions
 
 import com.android.bedstead.harrier.DynamicParameterizedAnnotation
 import com.android.bedstead.harrier.ParameterizedTestGenerator
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
+import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.bedstead.permissions.annotations.PermissionTest
-import com.android.bedstead.permissions.annotations.ensureDoesNotHavePermission
-import com.android.bedstead.permissions.annotations.ensureHasPermission
 
 /**
  * [ParameterizedTestGenerator] for permissions
@@ -36,7 +36,9 @@ class PermissionsParameterizedTestGenerator : ParameterizedTestGenerator {
         return emptyList()
     }
 
-    private fun generatePermissionAnnotations(annotation: PermissionTest): List<DynamicParameterizedAnnotation> {
+    private fun generatePermissionAnnotations(
+        annotation: PermissionTest
+    ): List<DynamicParameterizedAnnotation> {
         val allPermissions: MutableSet<String> = annotation.value.toHashSet()
         val replacementAnnotations = mutableListOf<DynamicParameterizedAnnotation>()
 
@@ -46,8 +48,8 @@ class PermissionsParameterizedTestGenerator : ParameterizedTestGenerator {
                 DynamicParameterizedAnnotation(
                     permission,
                     arrayOf(
-                        ensureHasPermission(permission),
-                        ensureDoesNotHavePermission(allPermissions.toTypedArray())
+                        EnsureHasPermission(permission),
+                        EnsureDoesNotHavePermission(*allPermissions.toTypedArray())
                     ),
                     annotation.priority
                 )

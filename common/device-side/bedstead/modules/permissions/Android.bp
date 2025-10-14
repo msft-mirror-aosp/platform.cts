@@ -7,26 +7,24 @@ package {
 // Harrier and Nene. We need to split Harrier and Nene into core targets to get the dependencies
 // flowing in a single direction to split these targets
 filegroup {
-    name: "bedstead-permissions-common-srcs",
-    srcs: [
-        "src/main/kotlin/com/android/bedstead/permissions/annotations/*.kt",
-        "src/main/kotlin/com/android/bedstead/permissions/annotations/*.java",
-        "src/main/kotlin/com/android/bedstead/permissions/CommonPermissions.java",
-    ],
-}
-
-filegroup {
-    name: "bedstead-permissions-harrier-srcs",
-    srcs: [
-        "src/main/kotlin/com/android/bedstead/permissions/*.kt",
-    ],
-}
-
-filegroup {
     name: "bedstead-permissions-nene-srcs",
     srcs: [
         "src/main/kotlin/com/android/bedstead/permissions/*.java",
     ],
+}
+
+android_library {
+    name: "bedstead-permissions",
+    sdk_version: "system_current",
+    min_sdk_version: "29",
+    srcs: [
+        "src/main/kotlin/**/*.java",
+        "src/main/kotlin/**/*.kt",
+    ],
+    static_libs: [
+        "HarrierInternal",
+    ],
+    manifest: "src/main/AndroidManifest.xml",
 }
 
 android_test {
