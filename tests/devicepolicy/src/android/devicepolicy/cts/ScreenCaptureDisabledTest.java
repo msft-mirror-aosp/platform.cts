@@ -452,6 +452,34 @@ public final class ScreenCaptureDisabledTest {
         assertThat(sLocalDevicePolicyManager.getScreenCaptureDisabled(/* admin= */ null)).isFalse();
     }
 
+    /** Check that setting the policy at the device scope to null works */
+    @PolicyAppliesTest(policy = ScreenCaptureDisabledDevice.class)
+    @Postsubmit(reason = "new test")
+    @ApiTest(
+            apis = {
+                "android.app.admin.DevicePolicyManager#setPolicy",
+                "android.app.admin.DevicePolicyManager#getScreenCaptureDisabled",
+                "android.app.admin.DevicePolicyManager#POLICY_SCOPE_DEVICE",
+                "android.app.admin.PolicyIdentifier#SCREEN_CAPTURE"
+            })
+    @RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING)
+    public void setPolicy_deviceScope_null_works() {
+        boolean isParentInstance = dpc(sDeviceState).isParentInstance();
+        if (isParentInstance) {
+            // TODO(b/434655549): Support the parent scope.
+
+            return;
+        }
+
+        dpc(sDeviceState)
+                .devicePolicyManager()
+                .clearPolicy(
+                        PolicyIdentifier.SCREEN_CAPTURE.getId(),
+                        DevicePolicyManager.POLICY_SCOPE_DEVICE);
+
+        assertThat(sLocalDevicePolicyManager.getScreenCaptureDisabled(/* admin= */ null)).isFalse();
+    }
+
     /** Check that setting the policy at the device scope to true works */
     @PolicyAppliesTest(policy = ScreenCaptureDisabledUser.class)
     @Postsubmit(reason = "new test")
@@ -506,6 +534,34 @@ public final class ScreenCaptureDisabledTest {
                         PolicyIdentifier.SCREEN_CAPTURE.getId(),
                         DevicePolicyManager.POLICY_SCOPE_USER,
                         PolicyIdentifier.SCREEN_CAPTURE_ALLOWED);
+
+        assertThat(sLocalDevicePolicyManager.getScreenCaptureDisabled(/* admin= */ null)).isFalse();
+    }
+
+    /** Check that setting the policy at the user scope to null works */
+    @PolicyAppliesTest(policy = ScreenCaptureDisabledUser.class)
+    @Postsubmit(reason = "new test")
+    @ApiTest(
+            apis = {
+                "android.app.admin.DevicePolicyManager#setPolicy",
+                "android.app.admin.DevicePolicyManager#getScreenCaptureDisabled",
+                "android.app.admin.DevicePolicyManager#POLICY_SCOPE_USER",
+                "android.app.admin.PolicyIdentifier#SCREEN_CAPTURE"
+            })
+    @RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING)
+    public void setPolicy_userScope_null_works() {
+        boolean isParentInstance = dpc(sDeviceState).isParentInstance();
+        if (isParentInstance) {
+            // TODO(b/434655549): Support the parent scope.
+
+            return;
+        }
+
+        dpc(sDeviceState)
+                .devicePolicyManager()
+                .clearPolicy(
+                        PolicyIdentifier.SCREEN_CAPTURE.getId(),
+                        DevicePolicyManager.POLICY_SCOPE_USER);
 
         assertThat(sLocalDevicePolicyManager.getScreenCaptureDisabled(/* admin= */ null)).isFalse();
     }
