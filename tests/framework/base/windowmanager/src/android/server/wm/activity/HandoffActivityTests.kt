@@ -39,7 +39,6 @@ import org.junit.Test
     "android.app.Activity#onHandoffActivityDataRequested",
     "android.app.Activity#setHandoffEnabled",
     "android.app.Activity#isHandoffEnabled",
-    "android.app.Activity#isFullTaskRecreationAllowed"
     ]
 )
 class HandoffActivityTests : WindowManagerTestBase() {
@@ -57,15 +56,12 @@ class HandoffActivityTests : WindowManagerTestBase() {
         val activity = startTestActivity()
 
         assertFalse(activity.isHandoffEnabled)
-        assertFalse(activity.isHandoffFullTaskRecreationAllowed)
 
-        activity.setHandoffEnabled(true, true)
+        activity.setHandoffEnabled(true)
         assertTrue(activity.isHandoffEnabled)
-        assertTrue(activity.isHandoffFullTaskRecreationAllowed)
 
-        activity.setHandoffEnabled(false, true)
+        activity.setHandoffEnabled(false)
         assertFalse(activity.isHandoffEnabled)
-        assertFalse(activity.isHandoffFullTaskRecreationAllowed)
     }
 
     /**
