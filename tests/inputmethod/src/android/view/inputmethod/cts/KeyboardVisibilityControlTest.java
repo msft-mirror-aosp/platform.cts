@@ -2684,8 +2684,6 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
      */
     @Test
     @AppModeFull
-    @RequireNotVisibleBackgroundUsers(reason = "More investigation needed why this test is flaky "
-            + "on auto MUMD passenger. Tracking bug: b/445100097")
     public void testImeUnbindsOnImePackageCleared() throws Exception {
         final String marker = getTestMarker();
         AtomicReference<EditText> editTextRef = new AtomicReference<>();
