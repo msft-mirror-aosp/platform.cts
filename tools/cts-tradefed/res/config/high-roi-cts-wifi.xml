@@ -16,50 +16,13 @@
 <configuration description="Run high ROI CTS wifi tests.">
     <include name="cts-automated"/>
     <!-- CtsWifiTestCases -->
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#attachDiscoveryAddressChanges"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#attachDiscoveryWithConfigRequest"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#attachNoIdentity"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#attachOffload"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#availabilityStatusChange"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#availableAwareResources"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#awarePairingConfig"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#awareParams"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#awareParamsInvalid"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#awareParamsWithoutPermission"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#awareResourcesConstructor"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#awareWhenInfraStaDisabled"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#characteristics"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#dataPathOpenOutOfBandFail"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#dataPathPassphraseOutOfBandFail"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#dataPathPmkOutOfBandFail"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#parcelablePeerHandle"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#publishDiscoverySuccess"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#publishFailureWithSuspendableSession"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#publishLimitedTtlSuccess"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#publishSuccessWithSuspendableSession"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#publishWithInstantCommunicationModeSuccess"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#publishWithPeriodicRangingEnabled"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#publishWithSecurityConfig"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#sendMessageFail"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#setMasterPreference"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#setOpportunistic"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#subscribeDiscoverySuccess"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#subscribeFailureWithSuspendableSession"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#subscribeLimitedTtlSuccess"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#subscribeSuccessWithSuspendableSession"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#subscribeWithInstantCommunicationModeSuccess"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#subscribeWithPeriodicRanging"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#suspendResumeFailWithoutNdpOnPublishSession"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#suspendResumeFailWithoutNdpOnSubscribeSession"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.aware.cts.SingleDeviceTest#wifiAwareNetworkSpecifier"/>
+    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.ConcurrencyTest#testDiscoverPeersOnSpecificFreq"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.ConcurrencyTest#testSetDeviceName"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.ConcurrencyTest#testWifiP2pListener"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.ConnectedNetworkScorerTest#testConnectedNetworkScorerWithSessionId"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.ConnectedNetworkScorerTest#testConnectedNetworkScorerWithSessionInfo"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.ConnectedNetworkScorerTest#testSetWifiConnectedNetworkScorerForOemPaidSuggestionConnection"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.ConnectedNetworkScorerTest#testSetWifiConnectedNetworkScorerForOemPrivateSuggestionConnection"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.ConnectedNetworkScorerTest#testSetWifiConnectedNetworkScorerForSpecifierConnection"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.ConnectedNetworkScorerTest#testSetWifiConnectedNetworkScorerOnSubsystemRestart"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.MultiStaConcurrencyWifiNetworkSpecifierTest#testConnectToInternetNetworkWhenConnectedToPeerPeerNetwork"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.MultiStaConcurrencyWifiNetworkSpecifierTest#testConnectToPeerPeerNetworkWhenConnectedToInternetNetwork"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.MultiStaConcurrencyWifiNetworkSpecifierTest#testPeerToPeerConnectionRejectWhenConnectedToInternetNetwork"/>
@@ -96,7 +59,6 @@
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.WifiManagerTest#testEnableAndDisableMscs"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.WifiManagerTest#testEnablePasspoint"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.WifiManagerTest#testEnablePasspointWithoutPermission"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.WifiManagerTest#testEnableWifi7"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.WifiManagerTest#testFactoryReset"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.WifiManagerTest#testFlushPasspointAnqpCache"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.WifiManagerTest#testGetAllWifiConfigForMatchedNetworkSuggestion"/>
@@ -224,39 +186,21 @@
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.WifiManagerTest#testWifiManagerScanWhenWifiOffLocationTurnedOn"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.WifiManagerTest#testWifiNetworkConnectionStatistics"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.WifiManagerTest#testWifiNetworkStateChangeListener"/>
+    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.WifiManagerTest#testWifiSetDeviceMobilityStatePermission"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.WifiManagerTest#testWifiStateChangedListener"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.WifiManagerTest#testZxingNetworkFromUriParserCanBeAdded"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.WifiNetworkSpecifierTest#testConnectionWithBssidPattern"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.WifiNetworkSpecifierTest#testConnectionWithSpecificBssid"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.WifiNetworkSpecifierTest#testConnectionWithSpecificSsid"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.WifiNetworkSpecifierTest#testConnectionWithSsidPattern"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.WifiNetworkSpecifierTest#testEnsureAutoConnectToInternetConnectionOnRelease"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.WifiNetworkSpecifierTest#testWifiBandInNetworkCallback"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.WifiNetworkSuggestionTest#testConnectToRestrictedSuggestion"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.WifiNetworkSuggestionTest#testConnectToSuggestionThenRemoveWithImmediateDisconnect"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.WifiNetworkSuggestionTest#testConnectToSuggestionThenRemoveWithLingering"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.cts.WifiScannerTest#testGetCachedScanData"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.p2p.cts.WifiP2pConfigTest#wifiP2pConfigBuilderForGroupClientIpProvisioningModeDefault"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.p2p.cts.WifiP2pConfigTest#wifiP2pConfigBuilderForGroupClientIpProvisioningModeIpv4Dhcp"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.p2p.cts.WifiP2pConfigTest#wifiP2pConfigBuilderForGroupClientIpProvisioningModeIpv6LinkLocal"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.p2p.cts.WifiP2pConfigTest#wifiP2pConfigBuilderForNonPersist"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.p2p.cts.WifiP2pConfigTest#wifiP2pConfigBuilderForPersist"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.p2p.cts.WifiP2pConfigTest#wifiP2pConfigBuilderWithAuthorizeConnectionFromPeer"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.p2p.cts.WifiP2pConfigTest#wifiP2pConfigBuilderWithJoinExistingGroupSet"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.p2p.cts.WifiP2pConfigTest#wifiP2pConfigBuilderWithPccModeConnectionType"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.p2p.cts.WifiP2pConfigTest#wifiP2pConfigBuilderWithVendorData"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.p2p.cts.WifiP2pConfigTest#wifiP2pConfigBuilderWithWifiP2pPairingBootstrappingConfig"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.p2p.cts.WifiP2pConfigTest#wifiP2pConfigCopyConstructor"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.p2p.cts.WifiP2pConfigTest#wifiP2pConfigSetGetGroupOwnerVersion"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.p2p.cts.WifiP2pDeviceTest#defaultBootstrappingMethodSupportCheck"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.p2p.cts.WifiP2pDeviceTest#defaultDeviceCapabilityCheck"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.p2p.cts.WifiP2pDeviceTest#defaultWpsMethodSupportCheck"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.p2p.cts.WifiP2pDeviceTest#getIpAddress"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.p2p.cts.WifiP2pDeviceTest#getVendorElements"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.p2p.cts.WifiP2pServiceRequestTest#invalidRawRequest"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.p2p.cts.WifiP2pServiceRequestTest#validRawRequest"/>
+    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.mockwifi.cts.MockWifiTest#testMockPnoScanResultsOnMockWifi"/>
+    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.mockwifi.cts.MockWifiTest#testZeroLengthSubElementIEOnMockWifi"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.rtt.cts.WifiRttTest#testAwareRttWithMacAddress"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.rtt.cts.WifiRttTest#testRangingResultBuilder"/>
+    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.rtt.cts.WifiRttTest#testRangingToTest11azApUsingResponderConfig"/>
+    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.rtt.cts.WifiRttTest#testRangingToTest11azApUsingScanResult"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.rtt.cts.WifiRttTest#testRangingToTest11mcApUsingListResponderConfig"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.rtt.cts.WifiRttTest#testRangingToTest11mcApUsingResponderConfig"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.rtt.cts.WifiRttTest#testRangingToTest11mcApUsingScanResult"/>
@@ -264,12 +208,5 @@
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.rtt.cts.WifiRttTest#testRangingToTestNon11mcApUsingResponderConfig"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.rtt.cts.WifiRttTest#testRangingToTestNon11mcApUsingScanResult"/>
     <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.rtt.cts.WifiRttTest#testRequestTooLarge"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.usd.cts.SingleDeviceTest#characteristics"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.usd.cts.SingleDeviceTest#discoveryResult"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.usd.cts.SingleDeviceTest#publish"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.usd.cts.SingleDeviceTest#publishConfig"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.usd.cts.SingleDeviceTest#publishWithOperatingFrequencies"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.usd.cts.SingleDeviceTest#subscribe"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.usd.cts.SingleDeviceTest#subscribeConfig"/>
-    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.usd.cts.SingleDeviceTest#subscribeWithOperatingFrequencies"/>
+    <option name="compatibility:include-filter" value="CtsWifiTestCases android.net.wifi.rtt.cts.WifiRttTest#testSecureRangingToTest11azApUsingScanResult"/>
 </configuration>
