@@ -3295,6 +3295,22 @@ public class SatelliteManagerTestBase {
 
     protected static void setUpSatelliteAccessAllowedAtDefaultTestLocation() {
         logd("setUpSatelliteAccessAllowedAtDefaultTestLocation...");
+        if (!isSatelliteSupported()) {
+            logd("setUpSatelliteAccessAllowedAtDefaultTestLocation: satellite is not supported");
+            SatelliteSupportedStateCallbackTest satelliteSupportedStateCallbackTest =
+                new SatelliteSupportedStateCallbackTest();
+            /* Register callback for satellite supported state changed event */
+            @SatelliteManager.SatelliteResult int registerError =
+                    sSatelliteManager.registerForSupportedStateChanged(
+                            getContext().getMainExecutor(), satelliteSupportedStateCallbackTest);
+            assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerError);
+            assertTrue(satelliteSupportedStateCallbackTest.waitUntilResult(1));
+
+            if (!satelliteSupportedStateCallbackTest.isSupported) {
+                assertTrue(satelliteSupportedStateCallbackTest.waitUntilResult(1));
+                assertTrue(satelliteSupportedStateCallbackTest.isSupported);
+            }
+        }
         assertTrue(sMockSatelliteServiceManager
                 .setIsSatelliteCommunicationAllowedForCurrentLocationCache("disable"));
         assertTrue(sMockSatelliteServiceManager.setCountryCodes(false, "US", null, null, 0));
