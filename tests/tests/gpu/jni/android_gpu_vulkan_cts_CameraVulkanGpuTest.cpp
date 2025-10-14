@@ -158,8 +158,8 @@ static JNINativeMethod gMethods[] = {
      (void *)loadCameraAndVerifyFrameImportWithAIMAGE_FORMAT_YUV_420_888},
 };
 
-int register_android_graphics_cts_CameraVulkanGpuTest(JNIEnv *env) {
-  jclass clazz = env->FindClass("android/graphics/cts/CameraVulkanGpuTest");
+int register_android_gpu_vulkan_cts_CameraVulkanGpuTest(JNIEnv *env) {
+  jclass clazz = env->FindClass("android/gpu/vulkan/cts/CameraVulkanGpuTest");
   return env->RegisterNatives(clazz, gMethods,
                               sizeof(gMethods) / sizeof(JNINativeMethod));
 }

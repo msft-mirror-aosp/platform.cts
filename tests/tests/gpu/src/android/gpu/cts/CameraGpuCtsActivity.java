@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.graphics.cts;
+package android.gpu.cts;
 
 import android.app.Activity;
 import android.opengl.GLSurfaceView;
@@ -34,7 +34,7 @@ import javax.microedition.khronos.opengles.GL10;
 public class CameraGpuCtsActivity extends Activity {
 
     static {
-        System.loadLibrary("ctsgraphics_jni");
+        System.loadLibrary("ctsgpu_jni");
     }
 
     private static final String TAG = "CameraGpuCtsActivity";

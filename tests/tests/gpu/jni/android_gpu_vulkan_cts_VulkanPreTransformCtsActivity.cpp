@@ -31,7 +31,7 @@ namespace {
 
 jboolean validatePixelValues(JNIEnv* env, jint width, jint height, jboolean setPreTransform,
                              jint preTransformHint) {
-    jclass clazz = env->FindClass("android/graphics/cts/VulkanPreTransformTest");
+    jclass clazz = env->FindClass("android/gpu/vulkan/cts/VulkanPreTransformTest");
     jmethodID mid = env->GetStaticMethodID(clazz, "validatePixelValuesAfterRotation", "(IIZI)Z");
     if (mid == 0) {
         ALOGE("Failed to find method ID");
@@ -87,7 +87,7 @@ const std::array<JNINativeMethod, 1> JNI_METHODS = {{
 
 } // anonymous namespace
 
-int register_android_graphics_cts_VulkanPreTransformCtsActivity(JNIEnv* env) {
-    jclass clazz = env->FindClass("android/graphics/cts/VulkanPreTransformCtsActivity");
+int register_android_gpu_vulkan_cts_VulkanPreTransformCtsActivity(JNIEnv* env) {
+    jclass clazz = env->FindClass("android/gpu/vulkan/cts/VulkanPreTransformCtsActivity");
     return env->RegisterNatives(clazz, JNI_METHODS.data(), JNI_METHODS.size());
 }

@@ -338,7 +338,7 @@ const std::vector<JNINativeMethod> gMethods = {{
 
 }  // namespace
 
-int register_android_graphics_cts_CameraGpuCtsActivity(JNIEnv* env) {
-    jclass clazz = env->FindClass("android/graphics/cts/CameraGpuCtsActivity");
+int register_android_gpu_cts_CameraGpuCtsActivity(JNIEnv* env) {
+    jclass clazz = env->FindClass("android/gpu/cts/CameraGpuCtsActivity");
     return env->RegisterNatives(clazz, gMethods.data(), gMethods.size());
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.graphics.cts;
+package android.gpu.vulkan.cts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -22,6 +22,7 @@ import static org.junit.Assert.assertNotNull;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.gpu.cts.R;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.util.Log;

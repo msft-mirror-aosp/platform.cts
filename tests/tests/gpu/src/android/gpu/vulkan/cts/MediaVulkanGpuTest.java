@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package android.graphics.cts;
+package android.gpu.vulkan.cts;
 
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
@@ -31,7 +31,7 @@ import org.junit.runner.RunWith;
 public class MediaVulkanGpuTest {
 
     static {
-        System.loadLibrary("ctsgraphics_jni");
+        System.loadLibrary("ctsgpu_jni");
     }
 
     private int[] getFramePixels() throws Exception {

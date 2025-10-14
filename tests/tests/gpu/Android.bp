@@ -1,0 +1,65 @@
+// Copyright (C) 2025 The Android Open Source Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package {
+    default_team: "trendy_team_android_gpu",
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+android_test {
+    name: "CtsGpuTestCases",
+    defaults: ["cts_defaults"],
+    manifest: "AndroidManifest.xml",
+    test_config: "AndroidTest.xml",
+    compile_multilib: "both",
+    libs: [
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
+    ],
+    static_libs: [
+        "androidx.test.rules",
+        "mockito-target-minus-junit4",
+        "compatibility-device-util-axt",
+        "ctsdeviceutillegacy-axt",
+        "ctstestrunner-axt",
+        "androidx.annotation_annotation",
+        "hamcrest-library",
+        "junit",
+        "flag-junit",
+        "cts-display-lib",
+        "junit-params",
+        "SurfaceFlingerProperties",
+        "androidx.core_core",
+        "framework_graphics_flags_java_lib",
+        "ravenwood-junit",
+    ],
+    jni_libs: ["libctsgpu_jni"],
+    srcs: [
+        "src/**/*.java",
+    ],
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+    // Enforce public / test api only
+    sdk_version: "test_current",
+}
+
+test_module_config {
+    name: "CtsGpuTestCases_cts_vulkanpretransformtest",
+    base: "CtsGpuTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.vulkan.cts.VulkanPreTransformTest"],
+}

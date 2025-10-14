@@ -293,8 +293,8 @@ static JNINativeMethod gMethods[] = {
      (void *)verifyComputeShaderWrite},
 };
 
-int register_android_graphics_cts_ComputeAhbTest(JNIEnv *env) {
-  jclass clazz = env->FindClass("android/graphics/cts/ComputeAhbTest");
+int register_android_gpu_vulkan_cts_ComputeAhbTest(JNIEnv *env) {
+  jclass clazz = env->FindClass("android/gpu/vulkan/cts/ComputeAhbTest");
   return env->RegisterNatives(clazz, gMethods,
                               sizeof(gMethods) / sizeof(JNINativeMethod));
 }

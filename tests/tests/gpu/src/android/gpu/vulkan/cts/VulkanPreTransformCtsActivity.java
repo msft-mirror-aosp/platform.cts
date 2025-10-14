@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package android.graphics.cts;
+package android.gpu.vulkan.cts;
 
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.content.res.AssetManager;
 import android.content.res.Configuration;
+import android.gpu.cts.R;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Surface;
@@ -33,7 +34,7 @@ import android.view.WindowManager;
  */
 public class VulkanPreTransformCtsActivity extends Activity implements SurfaceHolder.Callback {
     static {
-        System.loadLibrary("ctsgraphics_jni");
+        System.loadLibrary("ctsgpu_jni");
     }
 
     private static final String TAG = VulkanPreTransformCtsActivity.class.getSimpleName();

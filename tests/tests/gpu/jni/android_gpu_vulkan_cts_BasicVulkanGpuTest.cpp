@@ -149,8 +149,8 @@ static JNINativeMethod gMethods[] = {
      (void *)verifyBasicBufferImport},
 };
 
-int register_android_graphics_cts_BasicVulkanGpuTest(JNIEnv *env) {
-  jclass clazz = env->FindClass("android/graphics/cts/BasicVulkanGpuTest");
+int register_android_gpu_vulkan_cts_BasicVulkanGpuTest(JNIEnv *env) {
+  jclass clazz = env->FindClass("android/gpu/vulkan/cts/BasicVulkanGpuTest");
   return env->RegisterNatives(clazz, gMethods,
                               sizeof(gMethods) / sizeof(JNINativeMethod));
 }

@@ -244,8 +244,8 @@ static JNINativeMethod gMethods[] = {
 
 } // anonymous namespace
 
-int register_android_graphics_cts_VulkanFeaturesTest(JNIEnv* env) {
-    jclass clazz = env->FindClass("android/graphics/cts/VulkanFeaturesTest");
+int register_android_gpu_vulkan_cts_VulkanFeaturesTest(JNIEnv* env) {
+    jclass clazz = env->FindClass("android/gpu/vulkan/cts/VulkanFeaturesTest");
     return env->RegisterNatives(clazz, gMethods,
             sizeof(gMethods) / sizeof(JNINativeMethod));
 }
