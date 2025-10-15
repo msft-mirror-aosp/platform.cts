@@ -38,14 +38,22 @@ import android.platform.test.rule.ScreenRecordRule.ScreenRecord
 import androidx.test.InstrumentationRegistry
 import androidx.test.filters.SdkSuppress
 import androidx.test.runner.AndroidJUnit4
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.Until
+import com.android.bedstead.harrier.DeviceState
+import com.android.bedstead.nene.TestApis
+import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_INSTALL_UNKNOWN_SOURCES
 import com.android.compatibility.common.util.AppOpsUtils
 import com.android.compatibility.common.util.SystemUtil
+import com.android.xts.root.annotations.RequireAdbRoot
 import java.util.concurrent.TimeUnit
+import java.util.regex.Pattern
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
+import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -61,8 +69,17 @@ class SessionTest : PackageInstallerTestBase() {
     @get:Rule
     val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
+    companion object {
+        @JvmField
+        @ClassRule
+        @Rule
+        val deviceState = DeviceState()
+
+        const val DISALLOW_INSTALL_UNKNOWN_SOURCES_TEXT = ".*unknown apps.*"
+    }
+
     private val uiAutomation: UiAutomation =
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
 
     /**
      * Check the session should not pass the status receiver from an immutable PendingIntent
@@ -89,9 +106,9 @@ class SessionTest : PackageInstallerTestBase() {
     @Test
     fun confirmMultiPackageInstallation() {
         val installation = startInstallationViaMultiPackageSession(
-                installFlags = 0,
-                TEST_APK_NAME,
-                needFuture = true
+            installFlags = 0,
+            TEST_APK_NAME,
+            needFuture = true
         )!!
         clickInstallerUIButton(INSTALL_BUTTON_ID)
 
@@ -134,20 +151,20 @@ class SessionTest : PackageInstallerTestBase() {
         installPackage(TEST_APK_NAME)
         assertEquals(
             COMPONENT_ENABLED_STATE_DEFAULT,
-                pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME)
+            pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME)
         )
 
         disablePackage()
         assertEquals(
             COMPONENT_ENABLED_STATE_DISABLED,
-                pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME)
+            pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME)
         )
 
         // enabled setting should be reset to default after reinstall
         installPackage(TEST_APK_NAME)
         assertEquals(
             COMPONENT_ENABLED_STATE_DEFAULT,
-                pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME)
+            pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME)
         )
 
         disablePackage()
@@ -239,6 +256,38 @@ class SessionTest : PackageInstallerTestBase() {
         val sessionInfo = pi.getSessionInfo(sessionId)
         assertNull(sessionInfo!!.resolvedBaseApkPath)
         clickInstallerUIButton(CANCEL_BUTTON_ID)
+    }
+
+    @Test
+    @RequireAdbRoot(reason = "b/322830652 Required for TestApis to set user restriction")
+    fun disallowInstallUnknownSources_installViaSessionApi_installBlocked() {
+        try {
+            TestApis.devicePolicy().userRestrictions().set(DISALLOW_INSTALL_UNKNOWN_SOURCES, true)
+
+            val installation = startInstallationViaSession(needFuture = true)
+            val textPattern = Pattern.compile(
+                DISALLOW_INSTALL_UNKNOWN_SOURCES_TEXT,
+                Pattern.CASE_INSENSITIVE
+            )
+
+            assertNotNull(
+                "Error dialog not shown",
+                uiDevice.wait(
+                    Until.findObject(By.text(textPattern)),
+                    GLOBAL_TIMEOUT
+                )
+            )
+            val targetButton = if (usePiaV2) {
+                CANCEL_BUTTON_ID
+            } else {
+                INSTALL_BUTTON_ID
+            }
+            clickInstallerUIButton(targetButton)
+
+            assertEquals(RESULT_CANCELED, installation!!.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
+        } finally {
+            TestApis.devicePolicy().userRestrictions().set(DISALLOW_INSTALL_UNKNOWN_SOURCES, false)
+        }
     }
 
     private fun disablePackage() {
