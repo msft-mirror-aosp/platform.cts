@@ -53,8 +53,7 @@ import android.graphics.Insets;
 import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.platform.test.annotations.Presubmit;
-import android.server.wm.WindowInsetsAnimationTestBase.TestActivity;
-import android.server.wm.WindowManagerTestBase;
+import android.server.wm.WindowInsetsAnimationTestBase;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowInsets;
@@ -72,14 +71,12 @@ import android.view.inputmethod.InputMethodManager;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.android.compatibility.common.util.OverrideAnimationScaleRule;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ErrorCollector;
 import org.junit.runner.RunWith;
@@ -106,7 +103,7 @@ import java.util.stream.Collectors;
 // TODO(b/159167851) @Presubmit
 @RunWith(Parameterized.class)
 @android.server.wm.annotation.Group2
-public class WindowInsetsAnimationControllerTests extends WindowManagerTestBase {
+public class WindowInsetsAnimationControllerTests extends WindowInsetsAnimationTestBase {
 
     private static final String TAG = "InsetsAnimCtrlTests";
 
@@ -142,10 +139,6 @@ public class WindowInsetsAnimationControllerTests extends WindowManagerTestBase 
             {navigationBars(), "navigationBars"}
         };
     }
-
-    @Rule
-    public final OverrideAnimationScaleRule mEnableAnimationsRule =
-            new OverrideAnimationScaleRule(1.0f);
 
     public static class ControllerTestActivity extends TestActivity {
         @Override
