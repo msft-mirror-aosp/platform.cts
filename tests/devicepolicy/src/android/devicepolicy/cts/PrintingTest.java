@@ -39,15 +39,17 @@ import com.android.bedstead.enterprise.annotations.EnsureDoesNotHaveUserRestrict
 import com.android.bedstead.enterprise.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.enterprise.policies.DisallowPrinting;
+import com.android.bedstead.enterprise.policies.DisallowPrintingMultiUserManagement;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
-import com.android.bedstead.enterprise.policies.DisallowPrinting;
 import com.android.bedstead.nene.TestApis;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -112,6 +114,40 @@ public final class PrintingTest {
                      new CleanUpDisallowPrintingResource()) {
             dpc(sDeviceState).devicePolicyManager().addUserRestriction(
                     dpc(sDeviceState).componentName(), DISALLOW_PRINTING);
+
+            assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_PRINTING))
+                    .isFalse();
+        }
+    }
+
+    @PolicyAppliesTest(policy = DisallowPrintingMultiUserManagement.class)
+    @Ignore(
+            "b/461439459 Re-enable once either the feature flag is added or tests are moved to"
+                    + "a different suite.")
+    @ApiTest(apis = "android.os.UserManager#DISALLOW_PRINTING")
+    public void addUserRestriction_disallowPrinting_multiUserManagement_isSet() {
+        try (CleanUpDisallowPrintingResource cleanUpResource =
+                new CleanUpDisallowPrintingResource()) {
+            dpc(sDeviceState)
+                    .devicePolicyManager()
+                    .addUserRestriction(dpc(sDeviceState).componentName(), DISALLOW_PRINTING);
+
+            assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_PRINTING))
+                    .isTrue();
+        }
+    }
+
+    @PolicyDoesNotApplyTest(policy = DisallowPrintingMultiUserManagement.class)
+    @Ignore(
+            "b/461439459 Re-enable once either the feature flag is added or tests are moved to"
+                    + "a different suite.")
+    @ApiTest(apis = "android.os.UserManager#DISALLOW_PRINTING")
+    public void addUserRestriction_disallowPrinting_multiUserManagement_isNotSet() {
+        try (CleanUpDisallowPrintingResource cleanUpResource =
+                new CleanUpDisallowPrintingResource()) {
+            dpc(sDeviceState)
+                    .devicePolicyManager()
+                    .addUserRestriction(dpc(sDeviceState).componentName(), DISALLOW_PRINTING);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_PRINTING))
                     .isFalse();
