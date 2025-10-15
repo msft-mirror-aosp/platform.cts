@@ -154,4 +154,10 @@ public class MockModemTestBase {
 
         return isSimHotSwapCapable;
     }
+
+    // Return the same MockModemManager object for test case which can't inherit MockModemTestBase
+    // but still want to depend on it to simplify the setUp/tearDown processes.
+    public static MockModemManager getMockModemManager() {
+        return sMockModemManager;
+    }
 }
