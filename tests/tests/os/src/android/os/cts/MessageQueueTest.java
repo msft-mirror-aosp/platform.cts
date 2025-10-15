@@ -1290,6 +1290,40 @@ public class MessageQueueTest {
         thread.quitAndRethrow();
     }
 
+    /*
+     * Ensure that submitting an async message while a barrier is in place and the looper
+     * thread is already sleeping on an earlier message doesn't throw the submit path into an
+     * infinite loop.
+     */
+    @Test
+    public void testBarrierWithAsyncMessages() throws Throwable {
+        final CountDownLatch latch = new CountDownLatch(1);
+        AssertableHandlerThread thread = new AssertableHandlerThread();
+        thread.start();
+
+        Handler handler = Handler.createAsync(thread.getLooper());
+        MessageQueue queue = thread.getLooper().getQueue();
+
+        syncWait(handler);
+
+        int token = queue.postSyncBarrier();
+        assertNotEquals(-1, token);
+
+        final int what = 1;
+        Message earlyAsyncMsg = handler.obtainMessage(what);
+        handler.sendMessageDelayed(earlyAsyncMsg, 10_000_000);
+
+        Thread.sleep(TIMEOUT);
+
+        Message asyncMsg = handler.obtainMessage(what);
+        handler.sendMessageDelayed(asyncMsg, 15_000_000);
+
+        queue.removeSyncBarrier(token);
+        handler.removeMessages(what);
+
+        thread.quitAndRethrow();
+    }
+
     private void syncWait(Handler handler) throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
         handler.post(new Runnable() {
