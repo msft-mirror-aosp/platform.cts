@@ -16,6 +16,7 @@
 
 package android.view.inputmethod.cts;
 
+import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.provider.Settings.Secure.STYLUS_HANDWRITING_DEFAULT_VALUE;
 import static android.provider.Settings.Secure.STYLUS_HANDWRITING_ENABLED;
 import static android.view.inputmethod.ConnectionlessHandwritingCallback.CONNECTIONLESS_HANDWRITING_ERROR_NO_TEXT_RECOGNIZED;
@@ -2734,16 +2735,19 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             final String secondaryMarker = getTestMarker(SECOND_EDIT_TEXT_TAG);
 
             // Launch an editor activity to be on the split primary task.
-            final TestActivity splitPrimaryActivity = TestActivity.startSync(activity -> {
-                final LinearLayout layout = new LinearLayout(activity);
-                layout.setOrientation(LinearLayout.VERTICAL);
-                final EditText editText = new EditText(activity);
-                layout.addView(editText);
-                editText.setHint("focused editText");
-                editText.setPrivateImeOptions(primaryMarker);
-                editText.requestFocus();
-                return layout;
-            });
+            final TestActivity splitPrimaryActivity = new TestActivity.Starter()
+                    .asNewTask()
+                    .withWindowingMode(WINDOWING_MODE_FULLSCREEN)
+                    .startSync(activity -> {
+                        final LinearLayout layout = new LinearLayout(activity);
+                        layout.setOrientation(LinearLayout.VERTICAL);
+                        final EditText editText = new EditText(activity);
+                        layout.addView(editText);
+                        editText.setHint("focused editText");
+                        editText.setPrivateImeOptions(primaryMarker);
+                        editText.requestFocus();
+                        return layout;
+                    }, TestActivity.class);
             expectEvent(stream, editorMatcher("onStartInput", primaryMarker), TIMEOUT);
             notExpectEvent(stream, editorMatcher("onStartInputView", primaryMarker),
                     NOT_EXPECT_TIMEOUT);
@@ -2807,16 +2811,19 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
             // Launch an editor activity to be on the split primary task.
             final AtomicReference<EditText> editTextPrimaryRef = new AtomicReference<>();
-            final TestActivity splitPrimaryActivity = TestActivity.startSync(activity -> {
-                final LinearLayout layout = new LinearLayout(activity);
-                layout.setOrientation(LinearLayout.VERTICAL);
-                final EditText editText = new EditText(activity);
-                layout.addView(editText);
-                editTextPrimaryRef.set(editText);
-                editText.setHint("focused editText");
-                editText.setPrivateImeOptions(primaryMarker);
-                return layout;
-            });
+            final TestActivity splitPrimaryActivity = new TestActivity.Starter()
+                    .asNewTask()
+                    .withWindowingMode(WINDOWING_MODE_FULLSCREEN)
+                    .startSync(activity -> {
+                        final LinearLayout layout = new LinearLayout(activity);
+                        layout.setOrientation(LinearLayout.VERTICAL);
+                        final EditText editText = new EditText(activity);
+                        layout.addView(editText);
+                        editTextPrimaryRef.set(editText);
+                        editText.setHint("focused editText");
+                        editText.setPrivateImeOptions(primaryMarker);
+                        return layout;
+                    }, TestActivity.class);
             notExpectEvent(stream,
                     editorMatcher("onStartInput", primaryMarker), NOT_EXPECT_TIMEOUT);
             notExpectEvent(stream,

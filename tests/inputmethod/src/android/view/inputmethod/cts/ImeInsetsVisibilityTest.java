@@ -502,6 +502,8 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
             final AtomicReference<EditText> primaryEditTextRef = new AtomicReference<>();
             final TestActivity primaryActivity =
                     new TestActivity.Starter()
+                            .asNewTask()
+                            .withWindowingMode(WINDOWING_MODE_FULLSCREEN)
                             .fitsSystemWindows(false)
                             .startSync(
                                     activity -> {

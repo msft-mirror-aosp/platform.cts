@@ -2069,17 +2069,20 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
             // Launch an editor activity to be on the split primary task.
             final AtomicReference<EditText> editTextRef = new AtomicReference<>();
-            final TestActivity splitPrimaryActivity = TestActivity.startSync(activity -> {
-                final LinearLayout layout = new LinearLayout(activity);
-                layout.setOrientation(LinearLayout.VERTICAL);
-                final EditText editText = new EditText(activity);
-                editTextRef.set(editText);
-                layout.addView(editText);
-                editText.setHint("focused editText");
-                editText.setPrivateImeOptions(marker);
-                editText.requestFocus();
-                return layout;
-            });
+            final TestActivity splitPrimaryActivity = new TestActivity.Starter()
+                    .asNewTask()
+                    .withWindowingMode(WINDOWING_MODE_FULLSCREEN)
+                    .startSync(activity -> {
+                        final LinearLayout layout = new LinearLayout(activity);
+                        layout.setOrientation(LinearLayout.VERTICAL);
+                        final EditText editText = new EditText(activity);
+                        editTextRef.set(editText);
+                        layout.addView(editText);
+                        editText.setHint("focused editText");
+                        editText.setPrivateImeOptions(marker);
+                        editText.requestFocus();
+                        return layout;
+                    }, TestActivity.class);
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
             notExpectEvent(stream, editorMatcher("onStartInputView", marker), NOT_EXPECT_TIMEOUT);
             expectImeInvisible(TIMEOUT);
@@ -2148,7 +2151,11 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             final ImeEventStream stream = imeSession.openEventStream();
             final String marker = getTestMarker();
 
-            final TestActivity splitPrimaryActivity = TestActivity.startSync(LinearLayout::new);
+            final TestActivity splitPrimaryActivity =
+                    new TestActivity.Starter()
+                            .asNewTask()
+                            .withWindowingMode(WINDOWING_MODE_FULLSCREEN)
+                            .startSync(LinearLayout::new, TestActivity.class);
 
             final AtomicReference<AlertDialog> dialogRef = new AtomicReference<>();
             final AtomicReference<EditText> editTextRef = new AtomicReference<>();
@@ -2247,7 +2254,11 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 mInstrumentation.getUiAutomation(),
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
-            final TestActivity splitPrimaryActivity = TestActivity.startSync(LinearLayout::new);
+            final TestActivity splitPrimaryActivity =
+                    new TestActivity.Starter()
+                            .asNewTask()
+                            .withWindowingMode(WINDOWING_MODE_FULLSCREEN)
+                            .startSync(LinearLayout::new, TestActivity.class);
 
             // Launch another test activity in split-screen with 2 editor views
             final AtomicReference<EditText> editText1Ref = new AtomicReference<>();
@@ -2359,7 +2370,11 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
         try (MockImeSession imeSession = MockImeSession.create(mInstrumentation.getContext(),
                 mInstrumentation.getUiAutomation(), new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
-            final TestActivity splitPrimaryActivity = TestActivity.startSync(LinearLayout::new);
+            final TestActivity splitPrimaryActivity =
+                    new TestActivity.Starter()
+                            .asNewTask()
+                            .withWindowingMode(WINDOWING_MODE_FULLSCREEN)
+                            .startSync(LinearLayout::new, TestActivity.class);
 
             // Launch another test activity in split-screen with edit field
             final AtomicReference<EditText> editTextRef = new AtomicReference<>();
