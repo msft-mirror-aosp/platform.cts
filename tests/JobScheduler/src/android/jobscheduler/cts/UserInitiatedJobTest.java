@@ -122,6 +122,9 @@ public final class UserInitiatedJobTest {
         SystemUtil.runShellCommand("am set-deterministic-uid-idle false");
         try (PermissionContext p = TestApis.permissions().withPermission(
                 Manifest.permission.MANAGE_LOW_POWER_STANDBY)) {
+            if (mPowerManager == null) {
+                mPowerManager = mContext.getSystemService(PowerManager.class);
+            }
             mPowerManager.setLowPowerStandbyEnabled(mInitialLowPowerStandbyEnabled);
         }
     }
