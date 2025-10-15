@@ -209,7 +209,7 @@ public class OutgoingCallScreeningServiceTest {
     }
 
     private void setCallScreeningService(String componentName) {
-        final String command = "cmd telecom set-call-screening-service " + componentName;
+        final String command = "cmd telecom set-oem-call-screening-service " + componentName;
         try {
             SystemUtil.runShellCommand(InstrumentationRegistry.getInstrumentation(), command);
         } catch (IOException e) {
