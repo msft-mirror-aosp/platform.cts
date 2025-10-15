@@ -683,6 +683,15 @@ public class SmsManagerTest {
     public void testOtpSmsBroadcastReceivedByRetrieverApp() throws Exception {
         init();
 
+        assumeFalse("SIM card does not provide phone number. Use a suitable SIM Card.",
+                TextUtils.isEmpty(mDestAddr));
+        int carrierId = mTelephonyManager.getSimCarrierId();
+        assumeFalse("Carrier [carrier-id: "
+                        + carrierId
+                        + "] does not support "
+                        + "loop back messages. Use another carrier.",
+                CarrierCapability.UNSUPPORT_LOOP_BACK_MESSAGES.contains(carrierId));
+
         // Get app hash belong to the test app: android.telephony.cts
         Context context = getInstrumentation().getContext();
         Intent intent = new Intent("android.provider.Telephony.SMS_RECEIVED")
