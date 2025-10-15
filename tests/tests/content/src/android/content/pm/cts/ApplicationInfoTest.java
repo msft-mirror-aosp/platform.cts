@@ -45,6 +45,9 @@ import android.os.Process;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.DisabledOnRavenwood;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.StringBuilderPrinter;
 
@@ -65,6 +68,8 @@ import org.junit.runner.RunWith;
 public class ApplicationInfoTest {
     @Rule
     public final RavenwoodRule mRavenwood = new RavenwoodRule();
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String SYNC_ACCOUNT_ACCESS_STUB_PACKAGE_NAME = "com.android.cts.stub";
     private static final String DIRECT_BOOT_UNAWARE_PACKAGE_NAME =
@@ -122,6 +127,10 @@ public class ApplicationInfoTest {
         assertEquals(applicationInfo.enabled, info.enabled);
         assertEquals(applicationInfo.manageSpaceActivityName, info.manageSpaceActivityName);
         assertEquals(applicationInfo.descriptionRes, info.descriptionRes);
+        if (android.security.Flags.appLockApis()) {
+            assertEquals(applicationInfo.isAppLockSupported, info.isAppLockSupported);
+            assertEquals(applicationInfo.isAppLockEnabled, info.isAppLockEnabled);
+        }
     }
 
     @Test
@@ -227,6 +236,29 @@ public class ApplicationInfoTest {
         assertEquals(0, applicationInfo.uiOptions);
         assertEquals(CATEGORY_UNDEFINED, applicationInfo.category);
         assertFalse(applicationInfo.hasFragileUserData());
+        if (android.security.Flags.appLockApis()) {
+            assertFalse(applicationInfo.isAppLockSupported);
+            assertFalse(applicationInfo.isAppLockEnabled);
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    public void testWriteToParcelWithAppLockFlags() throws NameNotFoundException {
+        ApplicationInfo applicationInfo = getContext().getPackageManager().getApplicationInfo(
+                getPackageName(), PackageManager.ApplicationInfoFlags.of(0));
+        // Manually enable the flags before writing to parcel
+        applicationInfo.isAppLockSupported = true;
+        applicationInfo.isAppLockEnabled = true;
+
+        Parcel p = Parcel.obtain();
+        applicationInfo.writeToParcel(p, 0);
+
+        p.setDataPosition(0);
+        ApplicationInfo info = ApplicationInfo.CREATOR.createFromParcel(p);
+        assertTrue(info.isAppLockSupported);
+        assertTrue(info.isAppLockEnabled);
     }
 
     @Test(expected=IllegalArgumentException.class)
