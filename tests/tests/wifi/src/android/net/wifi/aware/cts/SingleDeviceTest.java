@@ -1820,6 +1820,77 @@ public class SingleDeviceTest extends WifiJUnit4TestBase {
 
         // 1. subscribe
         session.subscribe(subscribeConfig, discoveryCb, mHandler);
+        assertTrue(
+                "Subscribe started",
+                discoveryCb.waitForCallback(DiscoverySessionCallbackTest.ON_SUBSCRIBE_STARTED));
+        SubscribeDiscoverySession discoverySession = discoveryCb.getSubscribeDiscoverySession();
+        assertNotNull("Subscribe session", discoverySession);
+        assertFalse(
+                discoveryCb.waitForCallback(DiscoverySessionCallbackTest.ON_SERVICE_DISCOVERED));
+        assertFalse(
+                discoveryCb.waitForCallback(
+                        DiscoverySessionCallbackTest.ON_RANGING_RESULTS_RECEIVED));
+        assertFalse(
+                discoveryCb.waitForCallback(
+                        DiscoverySessionCallbackTest.ON_SESSION_DISCOVERED_LOST));
+
+        // 2. destroy
+        assertFalse(
+                "Subscribe not terminated",
+                discoveryCb.hasCallbackAlreadyHappened(
+                        DiscoverySessionCallbackTest.ON_SESSION_TERMINATED));
+        discoverySession.close();
+        session.close();
+    }
+
+    /** Validate success subscribe with supported periodic ranging. */
+    @Test
+    @RequiresFlagsEnabled(com.android.wifi.flags.Flags.FLAG_AWARE_PERIODIC_RANGING_INTERVALS)
+    @ApiTest(apis = {"android.net.wifi.aware.Characteristics#getSupportedPeriodicRangingIntervals"})
+    public void subscribeWithSupportedPeriodicRanging() {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
+            return;
+        }
+        Characteristics characteristics = mWifiAwareManager.getCharacteristics();
+
+        if (!characteristics.isPeriodicRangingSupported()
+                || characteristics.getSupportedPeriodicRangingIntervals()
+                        == Characteristics.SUPPORTED_PERIODIC_RANGING_INTERVAL_NONE) {
+            return;
+        }
+        final String serviceName = "SubscribeName";
+        WifiAwareSession session = attachAndGetSession();
+        // Get the first supported periodic ranging interval
+        int periodicRangingInterval =
+                Integer.lowestOneBit(characteristics.getSupportedPeriodicRangingIntervals());
+
+        SubscribeConfig subscribeConfig =
+                new SubscribeConfig.Builder()
+                        .setServiceName(serviceName)
+                        .setPeriodicRangingEnabled(true)
+                        .setPeriodicRangingInterval(periodicRangingInterval)
+                        .setRttBurstSize(MIN_RTT_BURST_SIZE)
+                        .setFrequencyMhz(2437)
+                        .setCenterFreq0Mhz(0)
+                        .setCenterFreq1Mhz(0)
+                        .setPreamble(ScanResult.PREAMBLE_LEGACY)
+                        .setChannelWidth(ScanResult.CHANNEL_WIDTH_20MHZ)
+                        .build();
+
+        // validate periodic ranging config
+        assertTrue(subscribeConfig.isPeriodicRangingEnabled());
+        assertEquals(periodicRangingInterval, subscribeConfig.getPeriodicRangingInterval());
+        assertEquals(MIN_RTT_BURST_SIZE, subscribeConfig.getRttBurstSize());
+        assertEquals(2437, subscribeConfig.getFrequencyMhz());
+        assertEquals(0, subscribeConfig.getCenterFreq0Mhz());
+        assertEquals(0, subscribeConfig.getCenterFreq1Mhz());
+        assertEquals(ScanResult.PREAMBLE_LEGACY, subscribeConfig.getPreamble());
+        assertEquals(ScanResult.CHANNEL_WIDTH_20MHZ, subscribeConfig.getChannelWidth());
+
+        DiscoverySessionCallbackTest discoveryCb = new DiscoverySessionCallbackTest();
+
+        // 1. subscribe
+        session.subscribe(subscribeConfig, discoveryCb, mHandler);
         assertTrue("Subscribe started",
                 discoveryCb.waitForCallback(DiscoverySessionCallbackTest.ON_SUBSCRIBE_STARTED));
         SubscribeDiscoverySession discoverySession = discoveryCb.getSubscribeDiscoverySession();
