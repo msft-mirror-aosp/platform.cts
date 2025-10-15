@@ -347,8 +347,7 @@ public class RingtoneManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(
-            com.android.server.telecom.flags.Flags.FLAG_RESOLVE_HIDDEN_DEPENDENCIES_TWO)
+    @RequiresFlagsEnabled(com.android.media.flags.Flags.FLAG_RELEASE_RINGTONE_AS_API)
     @ApiTest(apis = {"android.media.RingtoneManager#getRingtone"})
     public void testGetRingtone() {
         AudioAttributes audioAttributes =
