@@ -1864,8 +1864,21 @@ public final class ActivityManagerFgsBgStartTest {
                     PACKAGE_NAME_APP2,
                     0,
                     null);
-            uidWatcher.waitFor(WatchUidRunner.CMD_CACHED, null);
+            // Wait for the process to lose STATE_FG_SERVICE. The process state can be either
+            // STATE_LAST (uid state is cached) or STATE_IMPORTANT_BG if the host task is
+            // perceptible (by IActivityTaskManager#setTaskIsPerceptible) in desktop environment.
+            uidWatcher.waitFor(createCachedOrImportantBgPredicate(), null /* failurePredicate */);
         }
+    }
+
+    private WatchUidRunner.WatchUidPredicate createCachedOrImportantBgPredicate() {
+        final WatchUidRunner.WatchUidPredicate perceptibleTaskPredicate =
+                new WatchUidRunner.WatchUidPredicate.Builder(WatchUidRunner.CMD_PROCSTATE)
+                        .setExpectedProcState(WatchUidRunner.STATE_IMPORTANT_BG)
+                        .build();
+        return new WatchUidRunner.WatchUidPredicate.Builder(WatchUidRunner.CMD_CACHED)
+                .orPredicate(perceptibleTaskPredicate)
+                .build();
     }
 
     /**
