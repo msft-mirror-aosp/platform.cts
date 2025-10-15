@@ -21,7 +21,6 @@ import static android.Manifest.permission.ACCESS_HIDDEN_PROFILES_FULL;
 import static android.multiuser.Flags.FLAG_ADD_LAUNCHER_USER_CONFIG;
 import static android.multiuser.Flags.FLAG_ENABLE_HIDING_PROFILES;
 import static android.multiuser.Flags.FLAG_ENABLE_PERMISSION_TO_ACCESS_HIDDEN_PROFILES;
-import static android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE;
 import static android.os.Flags.FLAG_GET_PRIVATE_SPACE_SETTINGS;
 
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
