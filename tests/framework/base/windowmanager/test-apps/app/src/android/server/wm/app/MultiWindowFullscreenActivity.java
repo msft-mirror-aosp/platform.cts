@@ -24,23 +24,58 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.OutcomeReceiver;
+import android.util.Log;
 
 public class MultiWindowFullscreenActivity extends Activity {
-    private BroadcastReceiver mReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent != null) {
-                switch (intent.getAction()) {
-                    case ACTION_REQUEST_FULLSCREEN:
-                        requestFullscreenMode(FULLSCREEN_MODE_REQUEST_ENTER, null);
-                        break;
-                    case ACTION_RESTORE_FREEFORM:
-                        requestFullscreenMode(FULLSCREEN_MODE_REQUEST_EXIT, null);
-                        break;
+    private static final String TAG = MultiWindowFullscreenActivity.class.getSimpleName();
+
+    private final OutcomeReceiver<Void, Throwable> mEnterOutcomeReceiver =
+            new OutcomeReceiver<>() {
+                @Override
+                public void onResult(Void result) {
+                    Log.i(TAG, "Request to enter fullscreen succeeded");
                 }
-            }
-        }
-    };
+
+                @Override
+                public void onError(Throwable t) {
+                    Log.e(TAG, "Request to enter fullscreen failed", t);
+                }
+            };
+
+    private final OutcomeReceiver<Void, Throwable> mExitOutcomeReceiver =
+            new OutcomeReceiver<>() {
+                @Override
+                public void onResult(Void result) {
+                    Log.i(TAG, "Request to exit fullscreen succeeded");
+                }
+
+                @Override
+                public void onError(Throwable t) {
+                    Log.e(TAG, "Request to exit fullscreen failed", t);
+                }
+            };
+
+    private final BroadcastReceiver mReceiver =
+            new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    if (intent == null) {
+                        Log.e(TAG, "Received null intent.");
+                        return;
+                    }
+
+                    switch (intent.getAction()) {
+                        case ACTION_REQUEST_FULLSCREEN ->
+                                requestFullscreenMode(
+                                        FULLSCREEN_MODE_REQUEST_ENTER, mEnterOutcomeReceiver);
+                        case ACTION_RESTORE_FREEFORM ->
+                                requestFullscreenMode(
+                                        FULLSCREEN_MODE_REQUEST_EXIT, mExitOutcomeReceiver);
+                        default -> Log.e(TAG, "Unknown action: " + intent.getAction());
+                    }
+                }
+            };
 
     @Override
     protected void onStart() {
