@@ -43,6 +43,7 @@ import android.util.Log;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 
+import androidx.test.filters.FlakyTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.harrier.DeviceState;
@@ -142,6 +143,7 @@ public final class ClusterHomeManagerTest {
     }
 
     @Test
+    @FlakyTest(bugId = 401260312)
     @RequiresFlagsEnabled(FLAG_CLUSTER_HEALTH_MONITORING)
     @ApiTest(apis = {"android.car.cluster.ClusterHomeManager#startVisibilityMonitoring(Activity)"})
     public void testStartVisibilityMonitoring() throws Exception {
