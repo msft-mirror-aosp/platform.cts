@@ -23,6 +23,7 @@ import android.companion.AssociationRequest.PERMISSION_GROUP_NEARBY
 import android.companion.CompanionDeviceManager.FLAG_CALL_METADATA
 import android.companion.CompanionDeviceManager.FLAG_UNIVERSAL_MODES
 import android.companion.DeviceId
+import android.companion.Flags
 import android.companion.cts.common.CUSTOM_ID_A
 import android.companion.cts.common.CUSTOM_ID_B
 import android.companion.cts.common.CUSTOM_ID_INVALID
@@ -32,15 +33,22 @@ import android.companion.cts.common.RecordingCallback
 import android.companion.cts.common.RecordingCallback.OnAssociationPending
 import android.companion.cts.common.SIMPLE_EXECUTOR
 import android.companion.cts.common.getAssociationForPackage
+import android.companion.cts.core.TransportsListenerTest.BlockedInputStream
 import android.content.pm.PackageManager
 import android.net.MacAddress
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.compatibility.common.util.FeatureUtil
+import java.io.ByteArrayOutputStream
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 import org.junit.Assume.assumeFalse
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -54,6 +62,9 @@ import org.junit.runner.RunWith
 @AppModeFull(reason = "CompanionDeviceManager APIs are not available to the instant apps.")
 @RunWith(AndroidJUnit4::class)
 class AssociateTest : CoreTestBase() {
+    @get:Rule
+    val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+
     @Test
     fun test_associate() {
         assumeFalse(FeatureUtil.isWatch())
@@ -351,6 +362,44 @@ class AssociateTest : CoreTestBase() {
                 pm.checkPermission(p, packageName)
             )
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DATA_SYNC)
+    fun test_isTransportAttached_flagIsUpdatedCorrectly() {
+        targetApp.associate(MAC_ADDRESS_A)
+
+        // 2. VERIFY INITIAL STATE: The flag must be false by default.
+        var association = cdm.myAssociations[0]
+        assertFalse(
+            association.isTransportAttached,
+            "isTransportAttached should be false on a new association."
+        )
+
+        // 3. ATTACH TRANSPORT: Call the API that modifies the flag.
+        val input = BlockedInputStream()
+        val output = ByteArrayOutputStream()
+
+        cdm.attachSystemDataTransport(association.id, input, output)
+
+        // 4. VERIFY ATTACHED STATE: The flag must now be true.
+        association = cdm.myAssociations[0]
+        assertTrue(
+            association.isTransportAttached,
+            "isTransportAttached should be true after transport is attached."
+        )
+
+        // 5. DETACH TRANSPORT
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.detachSystemDataTransport(association.id)
+        }
+
+        association = cdm.myAssociations[0]
+        // 6. VERIFY DETACHED STATE: The flag must revert to false.
+        assertFalse(
+            association.isTransportAttached,
+            "isTransportAttached should be false after transport is detached."
+        )
     }
 
     private fun createDeviceId(id: String?, macAddress: MacAddress?): DeviceId {

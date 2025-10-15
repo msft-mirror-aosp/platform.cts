@@ -23,6 +23,8 @@ import android.companion.ActionRequest.OP_DEACTIVATE
 import android.companion.ActionRequest.REQUEST_NEARBY_ADVERTISING
 import android.companion.ActionRequest.REQUEST_NEARBY_SCANNING
 import android.companion.ActionRequest.REQUEST_TRANSPORT
+import android.companion.ActionResult
+import android.companion.ActionResult.RESULT_ACTIVATED
 import android.companion.DevicePresenceEvent
 import android.companion.Flags
 import android.companion.cts.common.DEVICE_DISPLAY_NAME_A
@@ -88,6 +90,14 @@ class RequestActionTest : CoreTestBase() {
                 expectedAssociationId = associationIdA,
                 expectedAction = action
             )
+
+            val resultFromApp = ActionResult.Builder(
+                action,
+                RESULT_ACTIVATED
+            ).build()
+            withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+                cdm.notifyActionResult(associationIdA, resultFromApp)
+            }
 
             // 2. Second "start" request from service B. App should NOT be notified.
             withShellPermissionIdentity(USE_COMPANION_TRANSPORTS) {
