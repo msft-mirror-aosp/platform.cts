@@ -123,6 +123,7 @@ import android.car.hardware.property.LaneDepartureWarningState;
 import android.car.hardware.property.LaneKeepAssistState;
 import android.car.hardware.property.LowSpeedAutomaticEmergencyBrakingState;
 import android.car.hardware.property.LowSpeedCollisionWarningState;
+import android.car.hardware.property.PropertyAccessDeniedSecurityException;
 import android.car.hardware.property.PropertyNotAvailableAndRetryException;
 import android.car.hardware.property.PropertyNotAvailableException;
 import android.car.hardware.property.Subscription;
@@ -4058,7 +4059,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                 continue;
                             } catch (PropertyNotAvailableAndRetryException
                                     | PropertyNotAvailableException
-                                    | CarInternalErrorException e) {
+                                    | CarInternalErrorException
+                                    | PropertyAccessDeniedSecurityException e) {
                                 Log.w(
                                         TAG,
                                         "Failed to get property:"
@@ -4370,7 +4372,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                 continue;
                             } catch (PropertyNotAvailableAndRetryException
                                     | PropertyNotAvailableException
-                                    | CarInternalErrorException e) {
+                                    | CarInternalErrorException
+                                    | PropertyAccessDeniedSecurityException e) {
                                 Log.w(
                                         TAG,
                                         "Failed getIntArrayProperty for property:"
