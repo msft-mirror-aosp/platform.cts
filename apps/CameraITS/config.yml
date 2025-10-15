@@ -79,3 +79,4 @@ TestBeds:
       img_size: 640,480  # width, height
       test_length: 7
       debug_mode: "False"  # quotes are needed here
+      parallel_execution: "True"  # "False" for low-performance hosts
