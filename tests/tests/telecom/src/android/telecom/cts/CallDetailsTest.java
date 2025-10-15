@@ -53,6 +53,7 @@ import android.telephony.TelephonyManager;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FileUtils;
+import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.server.telecom.flags.Flags;
 
 import java.io.InputStream;
@@ -159,7 +160,6 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
 
                 mInCallService = mInCallCallbacks.getService();
                 mCall = mInCallService.getLastCall();
-
                 assertCallState(mCall, Call.STATE_DIALING);
                 isSetUpComplete = true;
             } finally {
@@ -1147,7 +1147,6 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
         if (!mShouldTestTelecom) {
             return;
         }
-
         assertEquals(Call.Details.DIRECTION_OUTGOING, mCall.getDetails().getCallDirection());
         assertFalse(Call.Details.DIRECTION_INCOMING == mCall.getDetails().getCallDirection());
         assertFalse(Call.Details.DIRECTION_UNKNOWN == mCall.getDetails().getCallDirection());
@@ -1328,10 +1327,86 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
         }
         mConnection.setActive();
         assertCallState(mCall, Call.STATE_ACTIVE);
-
         mConnection.setPhoneAccountHandle(TEST_PHONE_ACCOUNT_HANDLE_2);
         assertEquals(TEST_PHONE_ACCOUNT_HANDLE_2, mConnection.getPhoneAccountHandle());
         mOnPhoneAccountChangedCounter.waitForCount(1, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
         assertEquals(TEST_PHONE_ACCOUNT_HANDLE_2, mOnPhoneAccountChangedCounter.getArgs(0)[1]);
+    }
+
+    /**
+     * Verifies that the audio mode is set to MODE_RINGTONE when a call with CRS (Customized Ringing
+     * Signal) is received.
+     */
+    public void testRingToneModeForCRS() throws Exception {
+        if (!mShouldTestTelecom || !android.telecom.flags.Flags.isUsingCrs()) {
+            return;
+        }
+
+        // 1. Registered the phone account with CAPABILITY_SIM_SUBSCRIPTION.
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                mTelecomManager,
+                tm -> tm.registerPhoneAccount(TestUtils.TEST_SIM_PHONE_ACCOUNT_2),
+                "android.permission.REGISTER_SIM_SUBSCRIPTION");
+        TestUtils.enablePhoneAccount(
+                getInstrumentation(), TestUtils.TEST_SIM_PHONE_ACCOUNT_HANDLE_2);
+        mConnection.setPhoneAccountHandle(TestUtils.TEST_SIM_PHONE_ACCOUNT_HANDLE_2);
+        assertEquals(
+                TestUtils.TEST_SIM_PHONE_ACCOUNT_HANDLE_2, mConnection.getPhoneAccountHandle());
+
+        // 2. Create a bundle to simulate CRS enabled.
+        Bundle extras = new Bundle();
+        extras.putInt(
+                android.telecom.Call.EXTRA_CRS_AUDIO_MODE, android.telecom.Call.CRS_MODE_RINGTONE);
+        extras.putInt(
+                android.telecom.Call.EXTRA_CRS_MEDIA_TYPE,
+                android.telecom.Call.CRS_MEDIA_TYPE_AUDIO);
+        mConnection.putExtras(extras);
+        mOnExtrasChangedCounter.waitForCount(2, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+
+        // 3. Setup the call to be in a ringing state.
+        mConnection.setRinging();
+        assertCallState(mCall, Call.STATE_RINGING);
+
+        // 4. Get the AudioManager instance and check for the mode.
+        AudioManager audioManager = mContext.getSystemService(AudioManager.class);
+        assertAudioMode(audioManager, AudioManager.MODE_RINGTONE);
+    }
+
+    /**
+     * Verifies that the audio mode is set to MODE_IN_CALL when a call with CRS (Customized Ringing
+     * Signal) is received.
+     */
+    public void testInCallModeForCRS() throws Exception {
+        if (!mShouldTestTelecom || !android.telecom.flags.Flags.isUsingCrs()) {
+            return;
+        }
+        // 1. Registered the phone account with CAPABILITY_SIM_SUBSCRIPTION.
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                mTelecomManager,
+                tm -> tm.registerPhoneAccount(TestUtils.TEST_SIM_PHONE_ACCOUNT_2),
+                "android.permission.REGISTER_SIM_SUBSCRIPTION");
+        TestUtils.enablePhoneAccount(
+                getInstrumentation(), TestUtils.TEST_SIM_PHONE_ACCOUNT_HANDLE_2);
+        mConnection.setPhoneAccountHandle(TestUtils.TEST_SIM_PHONE_ACCOUNT_HANDLE_2);
+        assertEquals(
+                TestUtils.TEST_SIM_PHONE_ACCOUNT_HANDLE_2, mConnection.getPhoneAccountHandle());
+
+        // 2. Create a bundle to simulate CRS enabled.
+        Bundle extras = new Bundle();
+        extras.putInt(
+                android.telecom.Call.EXTRA_CRS_AUDIO_MODE, android.telecom.Call.CRS_MODE_IN_CALL);
+        extras.putInt(
+                android.telecom.Call.EXTRA_CRS_MEDIA_TYPE,
+                android.telecom.Call.CRS_MEDIA_TYPE_AUDIO);
+        mConnection.putExtras(extras);
+        mOnExtrasChangedCounter.waitForCount(2, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+
+        // 3. Setup the call to be in a ringing state.
+        mConnection.setRinging();
+        assertCallState(mCall, Call.STATE_RINGING);
+
+        // 4. Get the AudioManager instance and check for the mode.
+        AudioManager audioManager = mContext.getSystemService(AudioManager.class);
+        assertAudioMode(audioManager, AudioManager.MODE_IN_CALL);
     }
 }
