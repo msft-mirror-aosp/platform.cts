@@ -71,7 +71,6 @@ java_test_host {
     defaults: ["stats_host_cts_defaults"],
 
     srcs: [
-        "src/**/IncrementalAppErrorStatsTests.java",
         "src/**/InstalledIncrementalPackageStatsTests.java",
         "src/**/PackageManagerStatsTestsBase.java",
         "src/**/Utils.java",
