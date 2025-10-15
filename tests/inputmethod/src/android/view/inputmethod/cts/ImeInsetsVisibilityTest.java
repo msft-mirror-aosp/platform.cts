@@ -540,6 +540,7 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
                                         return layout;
                                     },
                                     TestActivity2.class);
+            TestUtils.waitOnMainUntil(secondaryActivity::hasWindowFocus, TIMEOUT);
             expectImeInvisible(TIMEOUT);
 
             final boolean isVerticallySplit = isVerticallySplit(primaryActivity, secondaryActivity);
