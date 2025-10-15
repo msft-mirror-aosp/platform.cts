@@ -46,7 +46,7 @@ class AppOpsMemoryUsageTest {
     val api29Pkg = "android.app.appops.cts.api29appops"
     val rootPkg = "root"
     val proxiedUid = Process.SHELL_UID
-    val op = AppOpsManager.OPSTR_VIBRATE
+    val op = AppOpsManager.OPSTR_WIFI_SCAN
     val intentExtra = "extra_op"
 
     // Proxy apps could use the attribution tag validation exemption for certain system apps to
@@ -98,7 +98,7 @@ class AppOpsMemoryUsageTest {
             attributionTag,
             null
         )
-        assertEquals("expected to be able to start a VIBRATE op", MODE_ALLOWED, result)
+        assertEquals("expected to be able to start a $op op", MODE_ALLOWED, result)
         val activeOps = callWithShellPermissionIdentity {
             appOpsManager.getOpsForPackage(
                 proxiedUid,
