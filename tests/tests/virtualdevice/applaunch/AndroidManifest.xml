@@ -27,6 +27,8 @@
         <activity android:name=".AppComponents$EmptyActivity"
             android:allowEmbedded="true" />
         <activity android:name=".AppComponents$SecondActivity" />
+        <activity android:name=".AppComponents$SecureActivity" />
+        <activity android:name=".AppComponents$SecureActivity2" />
         <activity
             android:name=".ActivityBlockingTest$CannotDisplayOnRemoteActivity"
             android:canDisplayOnRemoteDevices="false"
