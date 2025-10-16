@@ -38,6 +38,7 @@ import android.hardware.camera2.params.ColorSpaceTransform;
 import android.hardware.camera2.params.Face;
 import android.hardware.camera2.params.LensShadingMap;
 import android.hardware.camera2.params.MeteringRectangle;
+import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.RggbChannelVector;
 import android.hardware.camera2.params.TonemapCurve;
 import android.hardware.cts.helpers.CameraUtils;
@@ -58,6 +59,7 @@ import android.util.Size;
 import android.view.Surface;
 
 import com.android.compatibility.common.util.PropertyUtil;
+import com.android.ex.camera2.blocking.BlockingSessionCallback;
 import com.android.internal.camera.flags.Flags;
 
 import org.junit.Rule;
@@ -1106,6 +1108,45 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
                 }
                 openDevice(id);
                 testAeModeOnLowLightBoostBrightnessPriorityTestByCamera();
+            } finally {
+                closeDevice();
+            }
+        }
+    }
+
+    /**
+     * Test AE mode ON_LOW_LIGHT_BOOST_BRIGHTNESS_PRIORITY for the following stream use cases:
+     * DEFAULT, PREVIEW, STILL_CAPTURE, VIDEO_RECORD, PREVIEW_VIDEO_STILL, VIDEO_CALL
+     */
+    @Test
+    public void testAeModeOnLowLightBoostBrightnessPriorityWithStreamUseCase() throws Exception {
+        long[] streamUseCases = {
+                CameraMetadata.SCALER_AVAILABLE_STREAM_USE_CASES_DEFAULT,
+                CameraMetadata.SCALER_AVAILABLE_STREAM_USE_CASES_PREVIEW,
+                CameraMetadata.SCALER_AVAILABLE_STREAM_USE_CASES_STILL_CAPTURE,
+                CameraMetadata.SCALER_AVAILABLE_STREAM_USE_CASES_VIDEO_RECORD,
+                CameraMetadata.SCALER_AVAILABLE_STREAM_USE_CASES_PREVIEW_VIDEO_STILL,
+                CameraMetadata.SCALER_AVAILABLE_STREAM_USE_CASES_VIDEO_CALL,
+        };
+
+        for (String id : getCameraIdsUnderTest()) {
+            try {
+                StaticMetadata staticInfo = mAllStaticInfo.get(id);
+                if (!staticInfo.isAeModeLowLightBoostSupported()) {
+                    Log.i(TAG, "Camera " + id + " does not have AE mode "
+                            + "ON_LOW_LIGHT_BOOST_BRIGHTNESS_PRIORITY, skipping");
+                    continue;
+                }
+                if (!staticInfo.isCapabilitySupported(
+                        CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_STREAM_USE_CASE)) {
+                    Log.i(TAG, "Camera " + id + " does not support stream use case, skipping");
+                    continue;
+                }
+                openDevice(id);
+                for (long streamUseCase : streamUseCases) {
+                    testAeModeOnLowLightBoostBrightnessPriorityTestByCameraWithStreamUseCase(
+                        streamUseCase);
+                }
             } finally {
                 closeDevice();
             }
@@ -3718,6 +3759,35 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
                 CameraMetadata.CONTROL_AE_MODE_ON_LOW_LIGHT_BOOST_BRIGHTNESS_PRIORITY);
         SimpleCaptureCallback listener = new SimpleCaptureCallback();
         startPreview(requestBuilder, maxPreviewSize, listener);
+
+        assertLowLightBoostApplied(listener);
+    }
+
+    private void testAeModeOnLowLightBoostBrightnessPriorityTestByCameraWithStreamUseCase(
+        long streamUseCase) throws Exception {
+        Size maxPreviewSize = mOrderedPreviewSizes.get(0);
+        CaptureRequest.Builder requestBuilder =
+                mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+        requestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
+                CameraMetadata.CONTROL_AE_MODE_ON_LOW_LIGHT_BOOST_BRIGHTNESS_PRIORITY);
+
+        updatePreviewSurface(maxPreviewSize);
+
+        OutputConfiguration outputConfiguration = new OutputConfiguration(mPreviewSurface);
+        outputConfiguration.setStreamUseCase(streamUseCase);
+
+        SimpleCaptureCallback listener = new SimpleCaptureCallback();
+        mSessionListener = new BlockingSessionCallback();
+        mSession = CameraTestUtils.configureCameraSessionWithConfig(mCamera,
+                List.of(outputConfiguration), mSessionListener, mHandler);
+
+        requestBuilder.addTarget(mPreviewSurface);
+        mSession.setRepeatingRequest(requestBuilder.build(), listener, mHandler);
+
+        assertLowLightBoostApplied(listener);
+    }
+
+    private void assertLowLightBoostApplied(SimpleCaptureCallback listener) {
         waitForSettingsApplied(listener, NUM_FRAMES_WAITED_FOR_UNKNOWN_LATENCY);
         CaptureResult result = listener.getCaptureResult(WAIT_FOR_RESULT_TIMEOUT_MS);
         // Expect that AE_MODE is ON_LOW_LIGHT_BOOST_BRIGHTNESS_PRIORITY
