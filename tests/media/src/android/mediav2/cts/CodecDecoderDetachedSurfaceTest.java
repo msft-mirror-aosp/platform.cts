@@ -23,7 +23,7 @@ import static android.mediav2.cts.DolbyVisionDecoderParamPreparer.getDvTestParam
 
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -184,9 +184,9 @@ public class CodecDecoderDetachedSurfaceTest extends CodecDecoderTestBase {
     public void tearDown() {
         mSurfaces.clear();
         for (ImageSurface imgSurface : mImageSurfaces) {
-            assertFalse("All buffers are accounted for, but image surface indicates that"
-                            + " some frames were dropped. \n" + mTestConfig + mTestEnv,
-                    imgSurface.hasQueueOverflowed());
+            assertEquals("All buffers are accounted for, but image surface indicates that"
+                             + " some images are yet unprocessed. \n" + mTestConfig + mTestEnv,
+                    0, imgSurface.getAvailableImageCount());
             imgSurface.release();
         }
         mImageSurfaces.clear();
@@ -276,16 +276,17 @@ public class CodecDecoderDetachedSurfaceTest extends CodecDecoderTestBase {
         boolean hasImage;
         int framesReceived = 0;
         do {
+            hasImage = false;
             try (Image image = mImageSurfaces.get(surfaceId).getImage(WAIT_FOR_IMAGE_TIMEOUT_MS)) {
                 onFrameReceived(new ImageSurface.ImageAndAttributes(image, surfaceId));
                 if (image != null) {
                     hasImage = true;
                     framesReceived++;
-                } else {
-                    hasImage = false;
                 }
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
+            } finally {
+                if (hasImage) mImageSurfaces.get(surfaceId).pop();
             }
         } while (hasImage && framesReceived < targetFrames);
     }
