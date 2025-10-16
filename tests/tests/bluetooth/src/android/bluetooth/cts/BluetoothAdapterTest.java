@@ -694,10 +694,18 @@ public class BluetoothAdapterTest {
                 NullPointerException.class,
                 () -> mAdapter.setPreferredAudioProfiles(null, preferences));
 
+        Permissions.enforceEachPermissions(
+                () -> mAdapter.getPreferredAudioProfiles(device),
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
+        Permissions.enforceEachPermissions(
+                () -> mAdapter.setPreferredAudioProfiles(device, preferences),
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
         // Check what happens when the device is not bonded
-        assertThat(mAdapter.getPreferredAudioProfiles(device).isEmpty()).isTrue();
-        assertThat(mAdapter.setPreferredAudioProfiles(device, preferences))
-                .isEqualTo(BluetoothStatusCodes.ERROR_DEVICE_NOT_BONDED);
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
+            assertThat(mAdapter.getPreferredAudioProfiles(device).isEmpty()).isTrue();
+            assertThat(mAdapter.setPreferredAudioProfiles(device, preferences))
+                    .isEqualTo(BluetoothStatusCodes.ERROR_DEVICE_NOT_BONDED);
+        }
     }
 
     @Test
