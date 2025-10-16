@@ -20,6 +20,9 @@ import threading
 
 import camera_properties_utils
 import gen2_rig_controller_utils
+import image_processing_utils
+import ip_chart_extraction_utils as ce
+import ip_metrics_utils
 import its_base_test
 import its_device_utils
 import its_session_utils
@@ -29,14 +32,18 @@ import sensor_fusion_utils
 from snippet_uiautomator import uiautomator
 import ui_interaction_utils
 
+
 _JETPACK_CAMERA_APP_PACKAGE_NAME = 'com.google.jetpackcamera'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _SCREEN_RECORDING_PATH = f'/sdcard/{_NAME}_screen_recording.mp4'
+_AWB_DIFF_THRESHOLD = 4  # Determined empirically
 
 
 class JcaJpegRImageParityClassTest(its_base_test.ItsBaseTest):
   """Test for JCA preview and captured image parity."""
 
+  # TODO(ruchamk): Move the setup_gen2rig method in a util classto reduce code
+  # duplication.
   def _setup_gen2rig(self):
     logging.debug('Setting up gen2 rig')
     # Configure and setup gen2 rig
@@ -180,8 +187,64 @@ class JcaJpegRImageParityClassTest(its_base_test.ItsBaseTest):
       )
       os.rename(jca_path, jca_capture_path)
 
-      # TODO(b/427212603): Convert the JCA snapshot to HDR and
-      # do the color accuracy analysis
+      jca_preview_path = pathlib.Path(jca_preview_path)
+      preview_path = os.path.join(self.log_path, jca_preview_path)
+      jca_preview_path = pathlib.Path(preview_path)
+      jca_preview_path = jca_preview_path.with_name(
+          f'{jca_preview_path.stem}_jca{jca_preview_path.suffix}'
+      )
+      os.rename(preview_path, jca_preview_path)
+
+      # Decompress UltraHDR image to RGB image
+      jca_capture_rgb_path = jca_capture_path.with_name(
+          f'{jca_capture_path.stem}_rgb{jca_capture_path.suffix}'
+      )
+      image_processing_utils.decompress_ultrahdr_image(
+          jca_capture_path, jca_capture_rgb_path
+      )
+
+      # Compare the JCA capture and preview images
+      # Get cropped dynamic range patch cells
+      jca_capture_dynamic_range_patch_cells = (
+          ce.get_cropped_dynamic_range_patch_cells(
+              jca_capture_rgb_path, self.log_path, 'jca_capture')
+      )
+      jca_preview_dynamic_range_patch_cells = ce.get_cropped_dynamic_range_patch_cells(
+          jca_preview_path, self.log_path, 'jca_preview'
+      )
+
+      # Get white balance diff between JCA capture and preview
+      mean_white_balance_diff = ip_metrics_utils.do_white_balance_check(
+          jca_capture_dynamic_range_patch_cells, jca_preview_dynamic_range_patch_cells,
+          'capture', 'preview'
+      )
+      marginal_pass_msg = []
+      e_msg = []
+      marginal_while_balance_pass = False
+      if (abs(mean_white_balance_diff) > (
+          _AWB_DIFF_THRESHOLD * its_session_utils.MARGINAL_PASS_FACTOR)
+          and
+          abs(mean_white_balance_diff) <= (_AWB_DIFF_THRESHOLD)):
+        marginal_while_balance_pass = True
+        marginal_pass_msg.append('Marginally passing white balance diff check.')
+
+      # Logging for data collection
+      result_str = f'{_NAME}_mean_white_balance_diff: {mean_white_balance_diff}'
+      print(f'{_NAME}_{result_str}')
+      logging.debug('%s', result_str)
+      if abs(mean_white_balance_diff) > _AWB_DIFF_THRESHOLD:
+        e_msg.append('Device fails the white balance difference criteria.')
+      if e_msg:
+        if first_api_level < its_session_utils.ANDROID17_API_LEVEL:
+          raise AssertionError(
+              f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}\n\n{e_msg}')
+        else:
+          raise AssertionError(e_msg)  # Checks mandated starting Android 17
+      else:  # Check for marginal pass
+        if marginal_while_balance_pass:
+          logging.warning('its_session_utils.MARGINAL_PASSING_MESSAGE\n %s',
+                          marginal_pass_msg)
+
 
 if __name__ == '__main__':
   test_runner.main()
