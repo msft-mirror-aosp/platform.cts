@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.graphics.cts
+package android.systemui.cts
 
 import android.app.UiModeManager.MODE_NIGHT_YES
 import android.content.theming.ThemeStyle

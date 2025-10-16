@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.graphics.cts
+package android.systemui.cts
 
 import android.R
 import android.app.UiModeManager.MODE_NIGHT_NO
