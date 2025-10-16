@@ -33,7 +33,10 @@ import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.assertThrows;
+
 import android.Manifest;
+import android.app.Instrumentation;
 import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
@@ -60,6 +63,9 @@ import android.os.Process;
 import android.os.SystemClock;
 import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 
@@ -77,6 +83,7 @@ import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -101,6 +108,7 @@ public class MediaSessionTest {
     private static final String TEST_VALUE = "test-val";
     private static final String TEST_SESSION_EVENT = "test-session-event";
     private static final String TEST_VOLUME_CONTROL_ID = "test-volume-control-id";
+    private static final String DIFFERENT_PACKAGE_NAME = "com.different.package";
     private static final int TEST_CURRENT_VOLUME = 10;
     private static final int TEST_MAX_VOLUME = 11;
     private static final long TEST_QUEUE_ID = 12L;
@@ -117,8 +125,15 @@ public class MediaSessionTest {
     private Context mContext;
     private Optional<Integer> mCloneProfileId = Optional.empty();
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private Context getContext() {
         return InstrumentationRegistry.getInstrumentation().getContext();
+    }
+
+    private Instrumentation getInstrumentation() {
+        return InstrumentationRegistry.getInstrumentation();
     }
 
     @Before
@@ -208,6 +223,41 @@ public class MediaSessionTest {
                 anotherSession.release();
             }
         }
+    }
+
+    @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
+    @RequiresFlagsEnabled(
+            com.android.media.mediasession.flags.Flags.FLAG_OVERRIDE_MEDIA_SESSION_OWNER)
+    public void testMediaSessionForPackage_fails() {
+        assertThrows(
+                "Expected security exception for unauthorized calls to override owner of session",
+                SecurityException.class,
+                () ->
+                        new MediaSession(
+                                getContext(),
+                                TEST_SESSION_TAG,
+                                /* sessionInfo= */ null,
+                                DIFFERENT_PACKAGE_NAME));
+    }
+
+    @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
+    @RequiresFlagsEnabled(
+            com.android.media.mediasession.flags.Flags.FLAG_OVERRIDE_MEDIA_SESSION_OWNER)
+    public void testMediaSessionForPackage_withPermissionPasses() {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.OVERRIDE_MEDIA_SESSION_OWNER);
+        MediaSession mediaSession =
+                new MediaSession(
+                        getContext(),
+                        TEST_SESSION_TAG,
+                        /* sessionInfo= */ null,
+                        DIFFERENT_PACKAGE_NAME);
+        MediaController controller = mediaSession.getController();
+
+        assertThat(controller.getPackageName()).isEqualTo(DIFFERENT_PACKAGE_NAME);
     }
 
     /** Tests MediaSession.Token created in the constructor of MediaSession. */
