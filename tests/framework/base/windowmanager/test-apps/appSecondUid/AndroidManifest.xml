@@ -23,7 +23,7 @@
     </queries>
 
     <application
-        android:name="android.server.wm.app.TestApplication"
+        android:name="android.server.wm.app.CrashUnresponsiveAppTestApplication"
         android:debuggable="true">
         <activity
             android:name=".EmbeddingActivity"

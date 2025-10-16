@@ -276,10 +276,19 @@ public abstract class ActivityManagerTestBase {
     /** The last rule to handle all errors. */
     private final ErrorCollector mPostAssertionRule = new PostAssertionRule();
 
+    /**
+     * Test rule to collect tombstones from {@link
+     * android.server.wm.app.CrashUnresponsiveAppTestApplication} in case the test activity is
+     * unresponsive during test.
+     */
+    private final TombstoneCollectorRule mTombstoneCollectorRule = new TombstoneCollectorRule();
+
     /** The necessary procedures of set up and tear down. */
     @Rule
-    public final TestRule mBaseRule = RuleChain.outerRule(mPostAssertionRule)
-            .around(new WrapperRule(null /* before */, this::tearDownBase));
+    public final TestRule mBaseRule =
+            RuleChain.outerRule(mPostAssertionRule)
+                    .around(mTombstoneCollectorRule)
+                    .around(new WrapperRule(null /* before */, this::tearDownBase));
 
     /**
      * Whether to wait for the rotation to be stable state after testing. It can be set if the

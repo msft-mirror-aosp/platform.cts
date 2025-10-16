@@ -135,6 +135,8 @@
         <option name="directory-keys" value="/sdcard/DumpOnFailure" />
         <!-- Collect the files generated on error -->
         <option name="pull-pattern-keys" value="android.device.collectors.ScreenshotOnFailureCollector.*\.png" />
+        <!-- Collect the tombstones from `TombstoneCollectorRule` for app crash during test. -->
+        <option name="pull-pattern-keys" value="tombstone_file_.*" />
         <option name="collect-on-run-ended-only" value="true" />
         <option name="clean-up" value="true" />
     </metrics_collector>
