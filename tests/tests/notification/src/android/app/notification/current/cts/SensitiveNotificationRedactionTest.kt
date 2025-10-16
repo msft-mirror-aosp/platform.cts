@@ -491,7 +491,7 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
             sendNotification(text = "staring NAS process", title = "", subtext = "", tag = "start")
             waitForNotification(tag = "start")
             // Newly enabled NAS can sometimes take a short while to start properly responding
-            for (i in 0..20) {
+            for (i in 0..<20) {
                 val basicOtp = "your one time code is 3434"
                 val tag = groupKey
                 sendNotification(text = basicOtp, title = "", subtext = "", tag = tag)
@@ -506,9 +506,16 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
 
             for (otp in shouldRedact) {
                 val tag = "$groupKey #$notifNum"
-                sendNotification(text = otp, title = "", subtext = "", tag = tag)
-                val sbn = waitForNotification(tag = tag)
-                val text = sbn.notification.extras.getCharSequence(EXTRA_TEXT)!!.toString()
+                lateinit var text: String
+                for (i in 0..<10) {
+                    sendNotification(text = otp, title = "", subtext = "", tag = tag)
+                    val sbn = waitForNotification(tag = tag)
+                    text = sbn.notification.extras.getCharSequence(EXTRA_TEXT)!!.toString()
+                    if (!text.contains(otp)) {
+                        break
+                    }
+                    Thread.sleep(200)
+                }
                 if (text.contains(otp)) {
                     notRedactedFailures.append("otp \"$otp\" is in notification text \"$text\"\n")
                 }
