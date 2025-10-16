@@ -121,7 +121,9 @@ public class Av1FilmGrainValidationTest extends CodecDecoderTestBase {
         }
         mCodec.releaseOutputBuffer(bufferIndex, mSurface != null);
         if (info.size > 0) {
+            boolean gotImage = false;
             try (Image image = mImageSurface.getImage(1000)) {
+                gotImage = image != null;
                 assertNotNull("no image received from surface \n" + mTestConfig + mTestEnv, image);
                 if (mRefFrameVarList.containsKey(mOutputCount - 1)) {
                     MediaFormat format = getOutputFormat();
@@ -133,6 +135,8 @@ public class Av1FilmGrainValidationTest extends CodecDecoderTestBase {
                 }
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
+            } finally {
+                if (gotImage) mImageSurface.pop();
             }
         }
     }
