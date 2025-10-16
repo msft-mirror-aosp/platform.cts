@@ -29,6 +29,7 @@ android_test {
         "androidx.test.ext.junit",
         "testng",
         "platform-compat-test-rules",
+        "platform-test-rules",
         "android.app.wearable.flags-aconfig-java",
         "android.permission.flags-aconfig-java",
         "android.service.voice.flags-aconfig-java",
@@ -73,6 +74,7 @@ android_test {
     data: [
         ":CtsNoRecognitionVoiceInteractionService",
         ":CtsVoiceInteractionApp",
+        ":CtsVoiceInteractionTestAssistantApp",
         ":CtsVoiceInteractionService",
     ],
     per_testcase_directory: true,

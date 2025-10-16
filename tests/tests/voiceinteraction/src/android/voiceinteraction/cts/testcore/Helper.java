@@ -18,12 +18,16 @@ package android.voiceinteraction.cts.testcore;
 
 import static android.media.AudioFormat.CHANNEL_IN_FRONT;
 
+import static com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity;
+import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import android.app.compat.CompatChanges;
+import android.app.role.RoleManager;
 import android.content.Context;
 import android.hardware.soundtrigger.SoundTrigger;
 import android.hardware.soundtrigger.SoundTrigger.KeyphraseRecognitionExtra;
@@ -57,10 +61,12 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 
 /**
  * Helper for common functionalities.
@@ -73,6 +79,9 @@ public final class Helper {
     public static final long WAIT_TIMEOUT_IN_MS = 10_000;
     public static final long WAIT_LONG_TIMEOUT_IN_MS = 15_000;
     public static final long WAIT_EXPECTED_NO_CALL_TIMEOUT_IN_MS = 3_000;
+
+    // Role helper method timeout
+    private static final long ROLE_TIMEOUT_MILLIS = 15_000;
 
     // The test package
     public static final String CTS_SERVICE_PACKAGE = "android.voiceinteraction.cts";
@@ -407,5 +416,81 @@ public final class Helper {
      */
     public static void waitForVoidFutureAndAssertSuccessful(Future<Void> future) {
         assertThat(waitForFutureDoneAndAssertSuccessful(future)).isNull();
+    }
+
+    /**
+     * Returns the current list of role holders for assistant role
+     *
+     * @param roleManager RoleManager instance
+     * @return list of role holders for assistant role
+     * @throws Exception if not successful
+     */
+    public static List<String> getAssistRoleHolders(RoleManager roleManager) throws Exception {
+        return callWithShellPermissionIdentity(
+                () -> roleManager.getRoleHolders(RoleManager.ROLE_ASSISTANT));
+    }
+
+    /**
+     * Adds the specified package as the current assistant role holder
+     *
+     * @param packageName package to be set as role holder
+     * @param context Context to use
+     * @param roleManager RoleManager instance
+     * @throws Exception if not successful
+     */
+    public static void addAssistRoleHolder(
+            String packageName, Context context, RoleManager roleManager) throws Exception {
+        Log.i(TAG, "addAssistRoleHolder for " + packageName);
+        final CallbackFuture future = new CallbackFuture("addAssistRoleHolder");
+        runWithShellPermissionIdentity(
+                () -> {
+                    roleManager.addRoleHolderAsUser(
+                            RoleManager.ROLE_ASSISTANT,
+                            packageName,
+                            RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP,
+                            Process.myUserHandle(),
+                            context.getMainExecutor(),
+                            future);
+                });
+        assertThat(future.get(ROLE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)).isTrue();
+    }
+
+    /**
+     * Removes the specified package as the current assistant role holder
+     *
+     * @param packageName package to be removed as role holder
+     * @param context Context to use
+     * @param roleManager RoleManager instance
+     * @throws Exception if not successful
+     */
+    public static void removeAssistRoleHolder(
+            String packageName, Context context, RoleManager roleManager) throws Exception {
+        Log.i(TAG, "removeAssistRoleHolder for " + packageName);
+        final CallbackFuture future = new CallbackFuture("removeAssistRoleHolder");
+        runWithShellPermissionIdentity(
+                () ->
+                        roleManager.removeRoleHolderAsUser(
+                                RoleManager.ROLE_ASSISTANT,
+                                packageName,
+                                0,
+                                Process.myUserHandle(),
+                                context.getMainExecutor(),
+                                future));
+        future.get(ROLE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+    }
+
+    private static class CallbackFuture extends CompletableFuture<Boolean>
+            implements Consumer<Boolean> {
+        String mMethodName;
+
+        CallbackFuture(String methodName) {
+            mMethodName = methodName;
+        }
+
+        @Override
+        public void accept(Boolean successful) {
+            Log.i(TAG, mMethodName + " result " + successful);
+            complete(successful);
+        }
     }
 }
