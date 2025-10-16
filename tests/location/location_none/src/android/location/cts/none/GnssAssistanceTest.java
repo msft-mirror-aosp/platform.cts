@@ -16,7 +16,6 @@
 
 package android.location.cts.none;
 
-import static android.location.flags.Flags.FLAG_FIX_GLONASS_ALMANAC_FREQUENCY_CHANNEL_RANGE;
 import static android.location.flags.Flags.FLAG_GNSS_ASSISTANCE_INTERFACE;
 import static android.location.flags.Flags.FLAG_SUPPORT_IONEX_ASSISTANCE;
 import static android.location.flags.Flags.FLAG_SUPPORT_TOA_IN_GNSS_SATELLITE_ALMANAC;
@@ -114,7 +113,6 @@ public class GnssAssistanceTest {
         parcel.recycle();
     }
 
-    @RequiresFlagsEnabled(FLAG_FIX_GLONASS_ALMANAC_FREQUENCY_CHANNEL_RANGE)
     @Test
     public void testGlonassAlmanacFreqChannelRange() {
         GlonassSatelliteAlmanac.Builder glonassSatelliteAlmanacBuilder =
