@@ -318,6 +318,14 @@ def jca_ui_zoom(dut, zoom_ratio, log_path):
   """
   zoom_ratio = round(zoom_ratio, 2)  # JCA only supports 2 decimal places
   current_zoom_ratio_text = dut.ui(res=UI_ZOOM_RATIO_TEXT_RESOURCE_ID).text
+  if not current_zoom_ratio_text:
+    dut.take_screenshot(log_path, prefix='no_zoom_ratio_text')
+    logging.debug(
+        'No zoom ratio text found, so pressing back button and trying again. '
+        'Current UI dump: %s', dut.ui.dump()
+    )
+    dut.ui.press.back()
+    current_zoom_ratio_text = dut.ui(res=UI_ZOOM_RATIO_TEXT_RESOURCE_ID).text
   logging.debug('current zoom ratio text: %s', current_zoom_ratio_text)
   current_zoom_ratio = float(current_zoom_ratio_text[:-1])  # remove `x`
   if math.isclose(zoom_ratio, current_zoom_ratio):
