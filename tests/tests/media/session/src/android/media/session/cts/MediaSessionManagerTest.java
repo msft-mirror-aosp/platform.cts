@@ -43,10 +43,14 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Process;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 
+import androidx.annotation.Nullable;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
@@ -55,6 +59,7 @@ import com.android.bedstead.harrier.annotations.UserTest;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.media.mediasession.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -82,6 +87,9 @@ public class MediaSessionManagerTest {
 
     @Rule public final ResourceReleaser mResourceReleaser = new ResourceReleaser();
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private Context mContext;
     private AudioManager mAudioManager;
     private MediaSessionManager mSessionManager;
@@ -91,6 +99,10 @@ public class MediaSessionManagerTest {
 
     private Instrumentation getInstrumentation() {
         return InstrumentationRegistry.getInstrumentation();
+    }
+
+    private String getPackageName() {
+        return getInstrumentation().getContext().getPackageName();
     }
 
     @Before
@@ -691,6 +703,97 @@ public class MediaSessionManagerTest {
         }
     }
 
+    @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
+    @RequiresFlagsEnabled(Flags.FLAG_FETCH_MEDIA_CONTROLLERS_FOR_APP)
+    public void testGetActiveControllersForPackage_withoutPermission_throwsSecurityException() {
+        assertThrows(
+                "Expected security exception for unauthorized call to"
+                        + " getActiveControllersForPackage",
+                SecurityException.class,
+                () -> mSessionManager.getActiveSessionsForPackage("com.different.package"));
+    }
+
+    @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
+    @RequiresFlagsEnabled(Flags.FLAG_FETCH_MEDIA_CONTROLLERS_FOR_APP)
+    public void testGetActiveControllersForPackage_returnsAllExistingControllers() {
+        createSessions(5);
+
+        List<MediaSession.Token> controllers =
+                mSessionManager.getActiveSessionsForPackage(getPackageName());
+
+        assertThat(controllers.size()).isEqualTo(5);
+    }
+
+    @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
+    @RequiresFlagsEnabled(Flags.FLAG_FETCH_MEDIA_CONTROLLERS_FOR_APP)
+    public void testAddOnActiveSessionChangedForPackageListener_updatesChangesInSession()
+            throws Exception {
+        List<MediaSession> sessions = createSessions(2);
+        List<MediaSession.Token> controllers =
+                mSessionManager.getActiveSessionsForPackage(getPackageName());
+        assertThat(controllers.size()).isEqualTo(sessions.size());
+
+        SessionChangeListener listener = new SessionChangeListener(1);
+        mSessionManager.addOnActiveSessionsForPackageChangedListener(
+                createExecutorWithScheduledShutdown(), getPackageName(), listener);
+        mResourceReleaser.add(
+                () -> mSessionManager.removeOnActiveSessionsForPackageChangedListener(listener));
+
+        // Set the first session as non-active
+        sessions.get(0).setActive(false);
+
+        assertThat(listener.mCountDownLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+        assertThat(listener.mMediaControllers).hasSize(1);
+    }
+
+    @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
+    @RequiresFlagsEnabled(Flags.FLAG_FETCH_MEDIA_CONTROLLERS_FOR_APP)
+    public void testRemoveOnActiveSessionsChangedForPackageListener_doNotUpdateChangesInSession()
+            throws Exception {
+        List<MediaSession> sessions = createSessions(2);
+        List<MediaSession.Token> controllers =
+                mSessionManager.getActiveSessionsForPackage(getPackageName());
+        assertThat(controllers.size()).isEqualTo(2);
+
+        SessionChangeListener listener = new SessionChangeListener(1);
+        mSessionManager.addOnActiveSessionsForPackageChangedListener(
+                createExecutorWithScheduledShutdown(), getPackageName(), listener);
+
+        // Remove the listener
+        mSessionManager.removeOnActiveSessionsForPackageChangedListener(listener);
+
+        // Set the first session as non-active
+        sessions.get(0).setActive(false);
+
+        // Assert that there was no update to the listener.
+        assertThat(listener.mCountDownLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isFalse();
+    }
+
+    @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
+    @RequiresFlagsEnabled({
+        Flags.FLAG_FETCH_MEDIA_CONTROLLERS_FOR_APP,
+        Flags.FLAG_OVERRIDE_MEDIA_SESSION_OWNER
+    })
+    public void testRegisterSessionWithPackageNameOverride_returnsSessionForPackage()
+            throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        Manifest.permission.MEDIA_CONTENT_CONTROL,
+                        Manifest.permission.OVERRIDE_MEDIA_SESSION_OWNER);
+        createSessionWithOverride(3, "com.different.package");
+
+        List<MediaSession.Token> controllers =
+                mSessionManager.getActiveSessionsForPackage("com.different.package");
+
+        assertThat(controllers).hasSize(3);
+    }
+
     private boolean listContainsToken(List<Session2Token> tokens, Session2Token token) {
         for (int i = 0; i < tokens.size(); i++) {
             if (tokens.get(i).equals(token)) {
@@ -698,6 +801,26 @@ public class MediaSessionManagerTest {
             }
         }
         return false;
+    }
+
+    private void createSessionWithOverride(int count, String packageName) {
+        for (int i = 0; i < count; i++) {
+            MediaSession session =
+                    new MediaSession(mContext, TAG + i, /* sessionInfo= */ null, packageName);
+            session.setActive(true);
+            mResourceReleaser.add(session::release);
+        }
+    }
+
+    private List<MediaSession> createSessions(int count) {
+        List<MediaSession> mediaSessions = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            MediaSession session = new MediaSession(mContext, TAG + i);
+            mediaSessions.add(session);
+            session.setActive(true);
+            mResourceReleaser.add(session::release);
+        }
+        return mediaSessions;
     }
 
     private Executor createExecutorWithScheduledShutdown() {
@@ -740,6 +863,22 @@ public class MediaSessionManagerTest {
             }
         }
         return listeners;
+    }
+
+    private static class SessionChangeListener
+            implements MediaSessionManager.OnActiveSessionsChangedListener {
+        private List<MediaController> mMediaControllers = null;
+        private final CountDownLatch mCountDownLatch;
+
+        SessionChangeListener(int count) {
+            mCountDownLatch = new CountDownLatch(count);
+        }
+
+        @Override
+        public void onActiveSessionsChanged(@Nullable List<MediaController> controllers) {
+            mCountDownLatch.countDown();
+            mMediaControllers = controllers;
+        }
     }
 
     private class VolumeKeyLongPressListener
