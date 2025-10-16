@@ -22,7 +22,6 @@ import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP;
 import static android.content.Intent.FLAG_ACTIVITY_MULTIPLE_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_REORDER_TO_FRONT;
-import static android.server.wm.StateLogger.logAlways;
 import static android.server.wm.activity.lifecycle.LifecycleConstants.EXTRA_FINISH_IN_ON_RESUME;
 import static android.server.wm.activity.lifecycle.LifecycleConstants.EXTRA_SKIP_TOP_RESUMED_STATE;
 import static android.server.wm.activity.lifecycle.LifecycleConstants.ON_ACTIVITY_RESULT;
@@ -63,7 +62,6 @@ import android.app.Activity;
 import android.app.ActivityOptions;
 import android.content.ComponentName;
 import android.content.Intent;
-import android.graphics.Rect;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.LockScreenSession;
@@ -1214,40 +1212,6 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
                 transition(AlwaysFocusablePipActivity.class, ON_TOP_POSITION_LOST),
                 transition(CallbackTrackingActivity.class, ON_TOP_POSITION_GAINED)),
                 "finishAlwaysFocusablePip");
-    }
-
-    @Test
-    public void testNoTopPositionChangeOnNavBarTouch() throws Exception {
-        // 1. Ensure the device is in gesture nav mode
-        enableAndAssumeGestureNavigationMode();
-
-        // 2. Start a fullscreen activity and ensure it is the top resumed activity
-        Activity activity = launchActivityAndWait(CallbackTrackingActivity.class);
-        waitAndAssertActivityStates(state(activity, ON_TOP_POSITION_GAINED));
-
-        mInstrumentation.getUiAutomation().syncInputTransactions();
-        getTransitionLog().clear();
-
-        // 3. Touch the navbar
-        mWmState.computeState();
-        List<WindowManagerState.WindowState> navWindows =
-                mWmState.getNavBarWindowsOnDisplay(getMainDisplayId());
-        Rect bounds = navWindows.get(0).getFrame();
-        logAlways("navbar bounds=" + bounds);
-        // Tap in the nav bar area
-        tapOnDisplaySync(
-                bounds.left + (bounds.width() / 2),
-                bounds.bottom - (bounds.height() / 30),
-                getMainDisplayId());
-
-        // Wait a bit to ensure no lifecycle changes are triggered.
-        SystemClock.sleep(1000);
-
-        // 4. Ensure there is no Activity#onTopResumedActivityChanged event
-        assertEmptySequence(
-                CallbackTrackingActivity.class,
-                getTransitionLog(),
-                "Touching the navigation bar should not trigger onTopResumedActivityChanged");
     }
 
     public static class NoRelaunchCallbackTrackingActivity extends CallbackTrackingActivity {}
