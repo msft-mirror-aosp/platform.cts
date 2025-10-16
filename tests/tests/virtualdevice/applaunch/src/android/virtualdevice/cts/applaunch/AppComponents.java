@@ -25,7 +25,9 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Binder;
+import android.os.Bundle;
 import android.os.IBinder;
+import android.view.WindowManager;
 
 import androidx.test.rule.ServiceTestRule;
 
@@ -40,6 +42,21 @@ public class AppComponents {
 
     /** Another empty activity that does nothing. */
     public static class SecondActivity extends Activity {}
+
+    /** An activity which is secure. */
+    public static class SecureActivity extends Activity {
+        @Override
+        protected void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+            getWindow()
+                    .setFlags(
+                            WindowManager.LayoutParams.FLAG_SECURE,
+                            WindowManager.LayoutParams.FLAG_SECURE);
+        }
+    }
+
+    /** Another activity which is secure. */
+    public static class SecureActivity2 extends SecureActivity {}
 
     /** A test service to test pending intents and context association with virtual devices. */
     public static class TestService extends Service {

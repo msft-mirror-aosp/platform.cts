@@ -24,6 +24,8 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.after;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -43,6 +45,8 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.view.WindowManager;
 import android.virtualdevice.cts.applaunch.AppComponents.EmptyActivity;
 import android.virtualdevice.cts.applaunch.AppComponents.SecondActivity;
+import android.virtualdevice.cts.applaunch.AppComponents.SecureActivity;
+import android.virtualdevice.cts.applaunch.AppComponents.SecureActivity2;
 import android.virtualdevice.cts.applaunch.AppComponents.TestService;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
@@ -81,6 +85,10 @@ public class ActivityManagementTest {
             new ComponentName(mContext, EmptyActivity.class);
     private final ComponentName mSecondActivityComponent =
             new ComponentName(mContext, SecondActivity.class);
+    private final ComponentName mSecureActivityComponent =
+            new ComponentName(mContext, SecureActivity.class);
+    private final ComponentName mSecureActivity2Component =
+            new ComponentName(mContext, SecureActivity2.class);
 
     private VirtualDevice mVirtualDevice;
     private int mVirtualDisplayId;
@@ -149,9 +157,10 @@ public class ActivityManagementTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_CONTROL_API)
     @Test
-    public void activityListener_shouldCallOnSecureWindowShown() {
+    public void windowFlagChanged_onTopActivity_shouldCallSecureWindowCallbacks() {
         EmptyActivity activity =
                 mRule.startActivityOnDisplaySync(mVirtualDisplayId, EmptyActivity.class);
+
         getInstrumentation().runOnMainSync(() ->
                 activity.getWindow().setFlags(
                         WindowManager.LayoutParams.FLAG_SECURE,
@@ -163,6 +172,119 @@ public class ActivityManagementTest {
                 activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE));
         verify(mActivityListener, timeout(TIMEOUT_MILLIS).times(1)).onSecureWindowHidden(
                 eq(mVirtualDisplayId));
+    }
+
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ACTIVITY_CONTROL_API,
+        Flags.FLAG_GWPC_SECURE_WINDOW_STATE_TRACKING
+    })
+    @Test
+    public void windowFlagChanged_notOnTopActivity_shouldNotCallSecureWindowCallbacks() {
+        // Set an insecure top activity.
+        EmptyActivity activity =
+                mRule.startActivityOnDisplaySync(mVirtualDisplayId, EmptyActivity.class);
+
+        // Set a new insecure top activity.
+        mRule.startActivityOnDisplaySync(mVirtualDisplayId, SecondActivity.class);
+
+        // Previous activity (which is not on top anymore) now has secure window.
+        getInstrumentation()
+                .runOnMainSync(
+                        () ->
+                                activity.getWindow()
+                                        .setFlags(
+                                                WindowManager.LayoutParams.FLAG_SECURE,
+                                                WindowManager.LayoutParams.FLAG_SECURE));
+        // Verify that onSecureWindowShown is never invoked (as the top activity never had a
+        // secure window).
+        verify(mActivityListener, after(TIMEOUT_MILLIS).never())
+                .onSecureWindowShown(eq(mVirtualDisplayId), any(), any());
+
+        // Previous activity (which is not on top anymore) now doesn't have secure window.
+        getInstrumentation()
+                .runOnMainSync(
+                        () ->
+                                activity.getWindow()
+                                        .clearFlags(WindowManager.LayoutParams.FLAG_SECURE));
+        // Verify that onSecureWindowHidden is never invoked (as the top activity secure window
+        // state never changed).
+        verify(mActivityListener, after(TIMEOUT_MILLIS).never())
+                .onSecureWindowHidden(eq(mVirtualDisplayId));
+    }
+
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ACTIVITY_CONTROL_API,
+        Flags.FLAG_GWPC_SECURE_WINDOW_STATE_TRACKING
+    })
+    @Test
+    public void activityChanged_topActivitySecureStateChanged_shouldCallSecureWindowCallbacks() {
+        // Set a secure top activity.
+        mRule.startActivityOnDisplaySync(mVirtualDisplayId, SecureActivity.class);
+        // Verify that onSecureWindowShown is called.
+        verify(mActivityListener, timeout(TIMEOUT_MILLIS).times(1))
+                .onSecureWindowShown(
+                        eq(mVirtualDisplayId),
+                        eq(mSecureActivityComponent),
+                        eq(mContext.getUser()));
+
+        // Set an insecure top activity.
+        mRule.startActivityOnDisplaySync(mVirtualDisplayId, SecondActivity.class);
+        // Verify that onSecureWindowHidden is called.
+        verify(mActivityListener, timeout(TIMEOUT_MILLIS).times(1))
+                .onSecureWindowHidden(eq(mVirtualDisplayId));
+
+        // Again set a new secure top activity.
+        mRule.startActivityOnDisplaySync(mVirtualDisplayId, SecureActivity2.class);
+        // Verify that onSecureWindowShown is called.
+        verify(mActivityListener, timeout(TIMEOUT_MILLIS).times(1))
+                .onSecureWindowShown(
+                        eq(mVirtualDisplayId),
+                        eq(mSecureActivity2Component),
+                        eq(mContext.getUser()));
+    }
+
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ACTIVITY_CONTROL_API,
+        Flags.FLAG_GWPC_SECURE_WINDOW_STATE_TRACKING
+    })
+    @Test
+    public void activityChanged_topActivitySecureStateSame_shouldNotCallSecureWindowCallbacks() {
+        // Set an insecure top activity.
+        EmptyActivity activity =
+                mRule.startActivityOnDisplaySync(mVirtualDisplayId, EmptyActivity.class);
+        // Set a new secure top activity.
+        mRule.startActivityOnDisplaySync(mVirtualDisplayId, SecureActivity.class);
+        // Verify that onSecureWindowShown is called.
+        verify(mActivityListener, timeout(TIMEOUT_MILLIS).times(1))
+                .onSecureWindowShown(
+                        eq(mVirtualDisplayId),
+                        eq(mSecureActivityComponent),
+                        eq(mContext.getUser()));
+        clearInvocations(mActivityListener);
+
+        // Previous activity (which is not on top anymore) now has secure window.
+        getInstrumentation()
+                .runOnMainSync(
+                        () ->
+                                activity.getWindow()
+                                        .setFlags(
+                                                WindowManager.LayoutParams.FLAG_SECURE,
+                                                WindowManager.LayoutParams.FLAG_SECURE));
+        // Verify that onSecureWindowShown is never invoked (as the top activity secure window
+        // state did not change).
+        verify(mActivityListener, after(TIMEOUT_MILLIS).never())
+                .onSecureWindowShown(eq(mVirtualDisplayId), any(), any());
+
+        // Previous activity (which is not on top anymore) now doesn't have secure window.
+        getInstrumentation()
+                .runOnMainSync(
+                        () ->
+                                activity.getWindow()
+                                        .clearFlags(WindowManager.LayoutParams.FLAG_SECURE));
+        // Verify that onSecureWindowHidden is never invoked (as the top activity secure window
+        // state did not change).
+        verify(mActivityListener, after(TIMEOUT_MILLIS).never())
+                .onSecureWindowHidden(eq(mVirtualDisplayId));
     }
 
     @Test
