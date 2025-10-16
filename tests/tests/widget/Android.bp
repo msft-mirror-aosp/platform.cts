@@ -66,6 +66,9 @@ android_test {
         ":CtsWidgetApp",
     ],
     per_testcase_directory: true,
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
 
 test_module_config {
