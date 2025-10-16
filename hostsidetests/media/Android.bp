@@ -41,6 +41,7 @@ java_test_host {
         "CompatChangeGatingTestBase",
         "cts-host-utils",
         "cts-statsd-atom-host-test-utils",
+        "device-policy-users-preparer",
         "CtsMediaHostTestCommon",
         "flag-junit-host",
         "modules-utils-build-testing",

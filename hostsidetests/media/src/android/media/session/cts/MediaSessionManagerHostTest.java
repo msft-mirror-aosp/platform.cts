@@ -22,14 +22,13 @@ import static android.media.cts.MediaSessionTestHelperConstants.FLAG_SET_MEDIA_S
 import static android.media.cts.MediaSessionTestHelperConstants.MEDIA_SESSION_TEST_HELPER_APK;
 import static android.media.cts.MediaSessionTestHelperConstants.MEDIA_SESSION_TEST_HELPER_PKG;
 
-import static com.google.common.truth.Truth.assertWithMessage;
-
 import android.media.cts.BaseMultiUserTest;
 import android.media.cts.MediaSessionTestHelperConstants;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
 import android.platform.test.annotations.RequiresDevice;
 
+import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.ddmlib.Log.LogLevel;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
@@ -183,17 +182,10 @@ public class MediaSessionManagerHostTest extends BaseMultiUserTest {
             return;
         }
 
-        Integer parentUser = getDevice().getMainUserId();
-        if (parentUser == null) {
-            // Only devices with a main user can have a restricted profile
-            CLog.logAndDisplay(LogLevel.INFO,
-                    "Device doesn't have a main user. Skipping restricted user test cases.");
-            return;
-        }
-
         // Test if another restricted profile can get the session.
         // Remove the created user first not to exceed system's user number limit.
         // Restricted profile's parent must be the primary user (the system user).
+        int parentUser = getParentUserIdForTesting();
         int newUser = createAndStartRestrictedProfile(parentUser);
         installAppAsUser(DEVICE_SIDE_TEST_APK, DEVICE_SIDE_TEST_PKG, newUser, instant);
         setAllowGetActiveSessionForTest(true, newUser);
@@ -231,7 +223,8 @@ public class MediaSessionManagerHostTest extends BaseMultiUserTest {
         // Remove the created user first not to exceed system's user number limit.
         // Managed profile's parent must not be the primary user (in the context of this test, we
         // use the main user).
-        int newUser = createAndStartManagedProfile(getUserIdForTesting());
+        int parentUser = getParentUserIdForTesting();
+        int newUser = createAndStartManagedProfile(parentUser);
         installAppAsUser(DEVICE_SIDE_TEST_APK, DEVICE_SIDE_TEST_PKG, newUser, instant);
         setAllowGetActiveSessionForTest(true, newUser);
         runTestAsUser("testGetActiveSessions_noMediaSession", newUser);
@@ -345,25 +338,12 @@ public class MediaSessionManagerHostTest extends BaseMultiUserTest {
         runDeviceTests(DEVICE_SIDE_TEST_PKG, DEVICE_SIDE_TEST_CLASS, testMethodName, userId);
     }
 
-    /**
-     * If running headless system user mode, returns the current user. Otherwise, returns the main
-     * user.
-     *
-     * <p>Historically, some tests in this class would use the main user for running device-side
-     * tests. Headless surfaces (like Android Auto) do not have a main user. As a result, on
-     * headless surfaces, we use the current user in replacement of the missing main user.
-     */
     private int getUserIdForTesting() throws DeviceNotAvailableException {
-        if (getDevice().isHeadlessSystemUserMode()) {
-            int currentUserId = getDevice().getCurrentUser();
-            assertWithMessage(
-                            "Unable to fetch a valid current user id in headless system user mode.")
-                    .that(currentUserId)
-                    .isNotEqualTo(INVALID_USER_ID);
-            return currentUserId;
-        } else {
-            return getDevice().getMainUserId();
-        }
+        return mInitialUserId;
+    }
+
+    private int getParentUserIdForTesting() throws DeviceNotAvailableException {
+        return DevicePolicyUsersPreparer.getProfileParentUserIds().get(0);
     }
 
     /**
