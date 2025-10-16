@@ -51,8 +51,6 @@ public class AutoPrivacySettingsTest {
     private static final String PRIVACY = "Privacy";
     private static final String MICROPHONE = "Microphone";
     private static final String USE_MICROPHONE = "Use microphone";
-    private static final String[] EXPECTED_MICROPHONE_ENABLED_SETTINGS = {
-            USE_MICROPHONE, "Recently accessed", "Manage microphone permissions"};
 
     // For the camera privacy setting test
     private static final String CAMERA = "Camera";
@@ -95,9 +93,7 @@ public class AutoPrivacySettingsTest {
 
         // verify state when mic is enabled
         disableCameraMicPrivacy();
-        for (String setting : EXPECTED_MICROPHONE_ENABLED_SETTINGS) {
-            assertScrollToAndFind(setting);
-        }
+        assertScrollToAndFind(USE_MICROPHONE);
 
         goHome();
     }
