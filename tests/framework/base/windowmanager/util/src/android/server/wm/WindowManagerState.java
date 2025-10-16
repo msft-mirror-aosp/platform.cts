@@ -1038,7 +1038,7 @@ public class WindowManagerState {
     }
 
     @NonNull
-    List<WindowState> getNavBarWindowsOnDisplay(int displayId) {
+    public List<WindowState> getNavBarWindowsOnDisplay(int displayId) {
         return mDisplays.stream()
                 .filter(dc -> dc.mId == displayId)
                 .filter(dc -> dc.mProviders != null)
