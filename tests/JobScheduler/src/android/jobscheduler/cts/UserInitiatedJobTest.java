@@ -76,8 +76,10 @@ public final class UserInitiatedJobTest {
     private static final long DEFAULT_WAIT_TIMEOUT_MS = 2_000;
     private static final int JOB_ID = UserInitiatedJobTest.class.hashCode();
 
-    private Context mContext;
-    private PowerManager mPowerManager;
+    private final Context mContext =
+            InstrumentationRegistry.getInstrumentation().getTargetContext();
+    private final PowerManager mPowerManager = mContext.getSystemService(PowerManager.class);
+
     private UiDevice mUiDevice;
     private TestAppInterface mTestAppInterface;
     private NetworkingHelper mNetworkingHelper;
@@ -88,7 +90,6 @@ public final class UserInitiatedJobTest {
 
     @Before
     public void setUp() throws Exception {
-        mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         mUiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         mTestAppInterface = new TestAppInterface(mContext, JOB_ID);
         setTestPackageStandbyBucket(mUiDevice, JobThrottlingTest.Bucket.ACTIVE);
@@ -104,7 +105,6 @@ public final class UserInitiatedJobTest {
                 Settings.Global.ACTIVITY_MANAGER_CONSTANTS, "background_settle_time=0");
         SystemUtil.runShellCommand("am set-deterministic-uid-idle true");
 
-        mPowerManager = mContext.getSystemService(PowerManager.class);
         mInitialLowPowerStandbyEnabled = mPowerManager.isLowPowerStandbyEnabled();
         try (PermissionContext p = TestApis.permissions().withPermission(
                 Manifest.permission.MANAGE_LOW_POWER_STANDBY)) {
@@ -115,16 +115,17 @@ public final class UserInitiatedJobTest {
 
     @After
     public void tearDown() throws Exception {
-        mTestAppInterface.cleanup();
-        mNetworkingHelper.tearDown();
+        if (mTestAppInterface != null) {
+            mTestAppInterface.cleanup();
+        }
+        if (mNetworkingHelper != null) {
+            mNetworkingHelper.tearDown();
+        }
         Settings.Global.putString(mContext.getContentResolver(),
                 Settings.Global.ACTIVITY_MANAGER_CONSTANTS, mInitialActivityManagerConstants);
         SystemUtil.runShellCommand("am set-deterministic-uid-idle false");
         try (PermissionContext p = TestApis.permissions().withPermission(
                 Manifest.permission.MANAGE_LOW_POWER_STANDBY)) {
-            if (mPowerManager == null) {
-                mPowerManager = mContext.getSystemService(PowerManager.class);
-            }
             mPowerManager.setLowPowerStandbyEnabled(mInitialLowPowerStandbyEnabled);
         }
     }
