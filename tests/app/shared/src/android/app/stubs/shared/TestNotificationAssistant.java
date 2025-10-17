@@ -55,6 +55,9 @@ public class TestNotificationAssistant extends NotificationAssistantService {
     public ArrayList<CharSequence> mSmartReplies = null;
     private NotificationManager mNotificationManager;
 
+    public List<Adjustment> mSystemAdjustments = new ArrayList<>();
+    private CountDownLatch mSystemAdjustmentsLatch = null;
+
     public Map<String, Integer> mRemoved = new HashMap<>();
     private CountDownLatch mAllowedAdjustmentsLatch = null;
 
@@ -86,6 +89,8 @@ public class TestNotificationAssistant extends NotificationAssistantService {
         mSnoozedKey = null;
         mSnoozedUntilContext = null;
         mRemoved.clear();
+        mSystemAdjustments.clear();
+        mSystemAdjustmentsLatch = null;
     }
 
     @Override
@@ -212,6 +217,19 @@ public class TestNotificationAssistant extends NotificationAssistantService {
             return;
         }
         mRemoved.put(sbn.getKey(), reason);
+    }
+
+    @Override
+    public void onSystemAdjustmentsRequest(List<Adjustment> adjustments) {
+        mSystemAdjustments.addAll(adjustments);
+        if (mSystemAdjustmentsLatch != null) {
+            mSystemAdjustmentsLatch.countDown();
+        }
+    }
+
+    public CountDownLatch setSystemAdjustmentsLatch(int count) {
+        mSystemAdjustmentsLatch = new CountDownLatch(count);
+        return mSystemAdjustmentsLatch;
     }
 
     public CountDownLatch setAllowedAdjustmentCountdown(int countDownNumber) {
