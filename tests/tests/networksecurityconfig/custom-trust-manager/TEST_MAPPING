@@ -1,7 +1,12 @@
 {
   "postsubmit": [
     {
-      "name": "CtsNetSecConfigCustomTrustManagerTestCases"
+      "name": "CtsNetSecConfigCustomTrustManagerTestCases",
+      "options": [
+        {
+          "exclude-annotation": "org.junit.Ignore"
+        }
+      ]
     }
   ]
 }
