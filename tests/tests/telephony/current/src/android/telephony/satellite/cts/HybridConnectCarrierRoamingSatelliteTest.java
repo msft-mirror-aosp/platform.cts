@@ -20,17 +20,30 @@ import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN
 import static android.telephony.satellite.cts.ManualConnectCarrierRoamingSatelliteTest.addCtsPackageToSupportedSmsApps;
 import static android.telephony.satellite.cts.ManualConnectCarrierRoamingSatelliteTest.shouldTestManualConnectCarrierRoaming;
 
+import static com.android.bedstead.nene.notifications.NotificationListenerQuerySubject.assertThat;
+
 import static junit.framework.Assert.assertTrue;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assume.assumeTrue;
 
+import android.app.Notification;
+import android.content.Context;
+import android.os.Bundle;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.service.notification.StatusBarNotification;
 import android.telephony.satellite.SatelliteManager;
 import android.telephony.satellite.stub.SatelliteModemState;
 import android.telephony.satellite.stub.SatelliteResult;
+
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.nene.notifications.NotificationListener;
+import com.android.bedstead.nene.notifications.NotificationListenerQuery;
+import com.android.internal.R;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -94,9 +107,9 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
      *
      * @throws Exception exception
      */
-    public void setUp_AutoConnect() throws Exception {
+    public void setUp_AutoConnect(boolean shouldMoveToInService) throws Exception {
         setUpHybridConnectAutoTestEnvironment(
-                SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_FET, PHONE_NUMBER_0, true);
+                SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_FET, PHONE_NUMBER_0, shouldMoveToInService);
     }
 
     /**
@@ -104,9 +117,14 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
      *
      * @throws Exception exception
      */
-    public void setUp_ManualConnect() throws Exception {
+    public void setUp_ManualConnect(boolean shouldMoveToInService) throws Exception {
         setUpHybridConnectManualTestEnvironment(
-                ESOS_SLOT_ID, MOCK_SIM_PROFILE_ID_TWN_FET, PHONE_NUMBER_0, true, true, true);
+                ESOS_SLOT_ID,
+                MOCK_SIM_PROFILE_ID_TWN_FET,
+                PHONE_NUMBER_0,
+                true,
+                true,
+                shouldMoveToInService);
         assumeTrue(shouldTestManualConnectCarrierRoaming());
         assumeTrue(sMockSatelliteServiceManager != null);
 
@@ -158,7 +176,7 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
     @Ignore("b/449612427 - Need to fix and re-enable this test.")
     public void testCarrierRoamingNtnModeListener_AutoConnect() throws Exception {
         logd(TAG, "testCarrierRoamingNtnModeListener_AutoConnect");
-        setUp_AutoConnect();
+        setUp_AutoConnect(true);
 
         CarrierRoamingNtnListenerTest listener = new CarrierRoamingNtnListenerTest();
         listener.clearModeChanges();
@@ -210,7 +228,7 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
     @Test
     public void testCarrierRoamingNtnModeListener_ManualConnect() throws Exception {
         logd(TAG, "testCarrierRoamingNtnModeListener_ManualConnect");
-        setUp_ManualConnect();
+        setUp_ManualConnect(true);
 
         CarrierRoamingNtnListenerTest listener = new CarrierRoamingNtnListenerTest();
         listener.clearModeChanges();
@@ -265,6 +283,134 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
             dropShellIdentity();
             tearDown_ManualConnect();
             cleanUpMockSim(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_FET, true);
+        }
+    }
+
+    @Test
+    public void testNotificationContent_AutoConnect() throws Exception {
+        logd(TAG, "testNotificationContent_AutoConnect");
+
+        CarrierRoamingNtnListenerTest ntnStateListener = new CarrierRoamingNtnListenerTest();
+        ntnStateListener.clearModeChanges();
+
+        try (NotificationListener listener = TestApis.notifications().createListener()) {
+            try {
+                adoptShellIdentity();
+                sTelephonyManager.registerTelephonyCallback(
+                        getContext().getMainExecutor(), ntnStateListener);
+
+                setUp_AutoConnect(true);
+                assertTrue(ntnStateListener.waitForModeChanged(1));
+                assertTrue(ntnStateListener.getNtnMode());
+
+                Context context = getContext();
+                String expectedTitle = context.getString(R.string.satellite_notification_title);
+                String expectedSummary = context.getString(R.string.satellite_notification_summary);
+
+                NotificationListenerQuery satelliteNotificationQuery =
+                        listener.query()
+                                .wherePackageName()
+                                .isEqualTo("com.android.phone")
+                                .whereNotification()
+                                .channelId()
+                                .isEqualTo("satellite")
+                                .whereNotification()
+                                .tag()
+                                .isEqualTo("SatelliteController");
+
+                com.android.bedstead.nene.notifications.Notification satelliteNotification =
+                        satelliteNotificationQuery.poll();
+
+                assertNotNull(satelliteNotification);
+
+                StatusBarNotification statusBarNotification =
+                        satelliteNotification.getStatusBarNotification();
+
+                assertNotNull(statusBarNotification);
+
+                Notification notification = statusBarNotification.getNotification();
+                assertNotNull(notification);
+
+                Bundle notificationContents = notification.extras;
+                assertNotNull(notificationContents);
+
+                String actualTitle = notificationContents.getString(Notification.EXTRA_TITLE);
+                String actualText = notificationContents.getString(Notification.EXTRA_TEXT);
+
+                assertEquals(expectedTitle, actualTitle);
+                assertEquals(expectedSummary, actualText);
+            } finally {
+                sTelephonyManager.unregisterTelephonyCallback(ntnStateListener);
+                dropShellIdentity();
+                tearDown_AutoConnect();
+            }
+        }
+    }
+
+    @Test
+    public void testNotificationDismissed_AutoConnect() throws Exception {
+        logd(TAG, "testNotificationDismissed_AutoConnect");
+
+        CarrierRoamingNtnListenerTest ntnStateListener = new CarrierRoamingNtnListenerTest();
+        ntnStateListener.clearModeChanges();
+
+        try {
+            adoptShellIdentity();
+            sTelephonyManager.registerTelephonyCallback(
+                    getContext().getMainExecutor(), ntnStateListener);
+
+            setUp_AutoConnect(true);
+            assertTrue(ntnStateListener.waitForModeChanged(1));
+            assertTrue(ntnStateListener.getNtnMode());
+            // triggers the satellite notification
+
+            // satellite notification should be posted
+            try (NotificationListener listener = TestApis.notifications().createListener()) {
+                NotificationListenerQuery satelliteNotificationQuery =
+                        listener.query()
+                                .wherePackageName()
+                                .isEqualTo("com.android.phone")
+                                .whereNotification()
+                                .channelId()
+                                .isEqualTo("satellite")
+                                .whereNotification()
+                                .tag()
+                                .isEqualTo("SatelliteController");
+                assertThat(satelliteNotificationQuery).wasPosted();
+            }
+
+            // Satellite network is lost, no callback as hysteresis timeout is not expired
+            sMockModemManager.changeNetworkService(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_FET, false);
+            assertFalse(ntnStateListener.waitForModeChanged(1));
+            ntnStateListener.clearModeChanges();
+
+            // Callback is received after hysteresis timeout
+            assertTrue(ntnStateListener.waitForModeChanged(1));
+            assertFalse(ntnStateListener.getNtnMode());
+
+            // satellite notification should now be dismissed
+
+            try (NotificationListener listener = TestApis.notifications().createListener()) {
+                NotificationListenerQuery satelliteNotificationQuery =
+                        listener.query()
+                                .wherePackageName()
+                                .isEqualTo("com.android.phone")
+                                .whereNotification()
+                                .channelId()
+                                .isEqualTo("satellite")
+                                .whereNotification()
+                                .tag()
+                                .isEqualTo("SatelliteController");
+
+                com.android.bedstead.nene.notifications.Notification satelliteNotification =
+                        satelliteNotificationQuery.poll();
+
+                assertNull(satelliteNotification);
+            }
+        } finally {
+            sTelephonyManager.unregisterTelephonyCallback(ntnStateListener);
+            dropShellIdentity();
+            tearDown_AutoConnect();
         }
     }
 }
