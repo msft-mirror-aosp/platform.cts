@@ -1355,8 +1355,7 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
 
         // 2. Create a bundle to simulate CRS enabled.
         Bundle extras = new Bundle();
-        extras.putInt(
-                android.telecom.Call.EXTRA_CRS_AUDIO_MODE, android.telecom.Call.CRS_MODE_RINGTONE);
+        extras.putInt(android.telecom.Call.EXTRA_CRS_AUDIO_MODE, AudioManager.MODE_RINGTONE);
         extras.putInt(
                 android.telecom.Call.EXTRA_CRS_MEDIA_TYPE,
                 android.telecom.Call.CRS_MEDIA_TYPE_AUDIO);
@@ -1393,8 +1392,7 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
 
         // 2. Create a bundle to simulate CRS enabled.
         Bundle extras = new Bundle();
-        extras.putInt(
-                android.telecom.Call.EXTRA_CRS_AUDIO_MODE, android.telecom.Call.CRS_MODE_IN_CALL);
+        extras.putInt(android.telecom.Call.EXTRA_CRS_AUDIO_MODE, AudioManager.MODE_IN_CALL);
         extras.putInt(
                 android.telecom.Call.EXTRA_CRS_MEDIA_TYPE,
                 android.telecom.Call.CRS_MEDIA_TYPE_AUDIO);
