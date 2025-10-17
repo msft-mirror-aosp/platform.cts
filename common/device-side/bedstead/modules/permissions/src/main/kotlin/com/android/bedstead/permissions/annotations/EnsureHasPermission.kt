@@ -19,7 +19,6 @@ package com.android.bedstead.permissions.annotations
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
 import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
-import com.google.auto.value.AutoAnnotation
 
 /**
  * Ensure that the given permission is granted before running the test.
@@ -64,9 +63,8 @@ annotation class EnsureHasPermission(
 
 /**
  * Return an instance of the generated class that conforms to the specification of
- * [EnsureHasPermission]. See [AutoAnnotation].
+ * [EnsureHasPermission].
  */
-@AutoAnnotation
 fun ensureHasPermission(vararg value: String): EnsureHasPermission {
-    return AutoAnnotation_EnsureHasPermissionKt_ensureHasPermission(value)
+    return EnsureHasPermission(*value)
 }
