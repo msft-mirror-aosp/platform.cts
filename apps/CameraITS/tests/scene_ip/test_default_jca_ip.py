@@ -425,7 +425,7 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
           raise AssertionError(e_msg)  # Checks mandated starting Android 17
       else:  # Check for marginal pass
         if (marginal_brightness_pass or marginal_while_balance_pass):
-          logging.warning('its_session_utils.MARGINAL_PASSING_MESSAGE\n %s',
+          logging.warning('%s\n %s', its_session_utils.MARGINAL_PASSING_MESSAGE,
                           marginal_pass_msg)
 
 if __name__ == '__main__':
