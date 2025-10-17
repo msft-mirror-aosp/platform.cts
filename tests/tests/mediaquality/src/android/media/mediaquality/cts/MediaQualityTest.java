@@ -524,19 +524,40 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
-    public void testGetPictureProfileHandle() {
+    public void testGetPictureProfileHandle() throws InterruptedException {
         PictureProfile profile = getTestPictureProfile("testGetPictureProfileHandle");
 
         mManager.createPictureProfile(profile);
-        PictureProfile created =
+        boolean created =
+            waitForCondition(
+                    () -> mManager.getPictureProfile(
+                                    profile.getProfileType(),
+                                    profile.getName(),
+                                    includeParams(false))
+                            != null);
+        Assert.assertTrue("Profile was not created within the timeout for handle test.", created);
+        PictureProfile createdProfile =
                 mManager.getPictureProfile(
                         profile.getProfileType(), profile.getName(), includeParams(false));
-        assertNotNull(created);
+        Assert.assertNotNull(createdProfile);
+        String[] ids = {createdProfile.getProfileId()};
+        List<PictureProfileHandle> ppHandle = new ArrayList<>();
+        boolean handleRetrieved =
+            waitForCondition(
+                    () -> {
+                        List<PictureProfileHandle> handles = mManager.getPictureProfileHandle(ids);
+                        if (handles != null && !handles.isEmpty()) {
+                            ppHandle.clear();
+                            ppHandle.addAll(handles);
+                            return true;
+                        }
+                        return false;
+                    });
+        Assert.assertTrue(
+                "PictureProfileHandle was not retrieved within the timeout.", handleRetrieved);
 
-        String[] ids = {created.getProfileId()};
-        List<PictureProfileHandle> ppHandle = mManager.getPictureProfileHandle(ids);
-        assertNotNull(ppHandle);
-        assertEquals(ppHandle.size(), 1);
+        Assert.assertNotNull(ppHandle);
+        Assert.assertEquals(1, ppHandle.size());
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
