@@ -457,9 +457,9 @@ public class WatchUidRunner {
                         return true;
                     }
                 }
-                if (orPredicate != null && orPredicate.test(line)) {
-                    return true;
-                }
+            }
+            if (orPredicate != null && orPredicate.test(line)) {
+                return true;
             }
             return false;
         }
