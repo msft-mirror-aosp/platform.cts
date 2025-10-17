@@ -17,6 +17,7 @@
 package android.view.inputmethod.cts.installtests;
 
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
+import static android.server.wm.WindowManagerState.STATE_RESUMED;
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED;
 import static android.view.inputmethod.cts.util.InputMethodVisibilityVerifier.expectImeInvisible;
 import static android.view.inputmethod.cts.util.InputMethodVisibilityVerifier.expectImeVisible;
@@ -27,6 +28,8 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.hideSoftInputMatcher;
+
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -341,6 +344,12 @@ public final class MultiUserMockImeTest {
                 expectEvent(stream2, eventMatcher("onCreate"), TIMEOUT);
                 expectEvent(stream2, editorMatcher("onStartInput", marker2), TIMEOUT);
                 expectEvent(stream1, eventMatcher("onDestroy"), TIMEOUT);
+
+                mWmState.waitForAppTransitionIdleOnDisplay(display.getDisplayId());
+                assertWithMessage("Second activity should be resumed after launch in split screen")
+                        .that(mWmState.waitForActivityState(MockTestActivityUtil.TEST_ACTIVITY,
+                                STATE_RESUMED))
+                        .isTrue();
 
                 MockTestActivityUtil.sendBroadcastAction(
                         MockTestActivityUtil.EXTRA_SHOW_SOFT_INPUT, workUserId);
