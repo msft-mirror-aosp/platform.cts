@@ -27,6 +27,7 @@ import android.os.ConditionVariable;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.UserHandle;
+import android.platform.test.annotations.AppModeFull;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -53,6 +54,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @RunWith(AndroidJUnit4.class)
+@AppModeFull(reason = "This test needs to access files on device and install apps incrementally")
 public class LoadingProgressTest {
     private static final String SAMPLE_APK_BASE = "/data/local/tmp/cts/content/";
     private static final String HELLO_WORLD_PACKAGE_NAME = "com.example.helloworld";
