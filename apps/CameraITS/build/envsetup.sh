@@ -75,6 +75,12 @@ do
         echo ">> Unit test for $M failed" >&2
 done
 
+# TODO: b/449780314 - add results_uploader setup check for credentials and GCP project configuration
+command -v results_uploader >/dev/null 2>&1 || \
+    echo ">> [OPTIONAL] results_uploader not in PATH. To upload results to ResultStore, \
+please follow the instructions at \
+https://github.com/android/mobly-android-partner-tools?tab=readme-ov-file#results-uploader" >&2
+
 echo -e "\n*****Please execute below adb command on your dut before running the tests*****\n"
 echo -e "adb -s <device_id> shell am compat enable ALLOW_TEST_API_ACCESS com.android.cts.verifier\n\n"
 echo -e "If using an environment manager, please run the command \"rename_libtinfo\" to handle cleanup.\n\n"
