@@ -18,8 +18,8 @@ package android.autofillservice.cts.commontests;
 
 import static android.autofillservice.cts.testcore.Helper.DEVICE_CONFIG_AUTOFILL_DIALOG_HINTS;
 import static android.autofillservice.cts.testcore.Helper.getContext;
-import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.SERVICE_CLASS;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.SERVICE_NAME;
+import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.SERVICE_CLASS;
 import static android.content.Context.CLIPBOARD_SERVICE;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
@@ -451,19 +451,14 @@ public final class AutoFillServiceTestCase {
                 .around(new RequiredFeatureRule(PackageManager.FEATURE_INPUT_METHODS));
 
         public BaseTestCase() {
-            this(sDefaultUiBot);
+            mPackageName = mContext.getPackageName();
+            mUiBot = sDefaultUiBot;
         }
 
         private BaseTestCase(@NonNull UiBot uiBot) {
             mPackageName = mContext.getPackageName();
             mUiBot = uiBot;
             mUiBot.reset();
-            // Context#getDisplayId() always returns the default display ID, even if it is called
-            // from an app running as a visible background user (b/356478691).
-            // To work around it, let's set the correct display ID manually.
-            if (mContext.getDisplayId() != mUiBot.getDisplayId()) {
-                mContext.updateDisplay(mUiBot.getDisplayId());
-            }
         }
 
         protected int getSmartSuggestionMode() {
