@@ -5213,7 +5213,7 @@ public class ItsService extends Service implements SensorEventListener {
         /**
          * Time to wait for autofocus to converge.
          */
-        private static final long PREVIEW_AUTOFOCUS_TIMEOUT_MS = 1000;
+        private static final long PREVIEW_AUTOFOCUS_TIMEOUT_MS = 2000;
 
         /**
          * {@link ConditionVariable} to open when autofocus has converged.
