@@ -29,6 +29,7 @@ import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.audiofx.BassBoost;
 import android.media.audiofx.Equalizer;
+import android.media.audiofx.Virtualizer;
 import android.media.audiofx.Visualizer;
 import android.os.Build;
 import android.os.SystemClock;
@@ -66,7 +67,13 @@ public class AudioOffloadNativeEffectsTest {
     private long mStreamHandle = 0;
     private BassBoost mBassBoost = null;
     private Equalizer mEqualizer = null;
+    private Virtualizer mVirtualizer = null;
     private Visualizer mVisualizer = null;
+
+    private enum EffectType {
+        BASS_BOOST,
+        VIRTUALIZER
+    }
 
     static {
         System.loadLibrary("audiocts_aaudio_jni");
@@ -121,6 +128,9 @@ public class AudioOffloadNativeEffectsTest {
         if (mEqualizer != null) {
             mEqualizer.release();
         }
+        if (mVirtualizer != null) {
+            mVirtualizer.release();
+        }
         if (mVisualizer != null) {
             mVisualizer.release();
         }
@@ -160,6 +170,38 @@ public class AudioOffloadNativeEffectsTest {
         Visualizer.MeasurementPeakRms measurement = new Visualizer.MeasurementPeakRms();
         assertEquals(Visualizer.SUCCESS, mVisualizer.getMeasurementPeakRms(measurement));
         return measurement.mRms;
+    }
+
+    private void testIncreasingStrength(EffectType effect) throws InterruptedException {
+        // Initialize the Visualizer to capture and measure the rms of audio output.
+        setupVisualizer();
+
+        final float testFrequencyHz = 100.0f;
+        final short[] testIncreasingStrength = {0, 500, 1000};
+        int prevRmsMb = Integer.MIN_VALUE;
+
+        for (short strength : testIncreasingStrength) {
+            switch (effect) {
+                case BASS_BOOST:
+                    mBassBoost.setStrength(strength);
+                    break;
+
+                case VIRTUALIZER:
+                    mVirtualizer.setStrength(strength);
+                    break;
+            }
+            final int currRmsMb = playAndGetRms(testFrequencyHz);
+            assumeTrue(
+                    "Curr Rms ( "
+                            + currRmsMb
+                            + " ) at strength "
+                            + strength
+                            + " should be more than Prev Rms ( "
+                            + prevRmsMb
+                            + " )",
+                    currRmsMb > prevRmsMb);
+            prevRmsMb = currRmsMb;
+        }
     }
 
     @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
@@ -213,22 +255,16 @@ public class AudioOffloadNativeEffectsTest {
         assumeNotNull("Failed to create BassBoost effect", mBassBoost);
         assumeTrue(BassBoost.SUCCESS == mBassBoost.setEnabled(true));
 
-        // Initialize the Visualizer to capture and measure the rms of audio output.
-        setupVisualizer();
+        testIncreasingStrength(EffectType.BASS_BOOST);
+    }
 
-        final float testFrequencyHz = 100.0f;
-        final short[] testIncreasingBassBoostStrength = {0, 500, 1000};
-        int prevRmsMb = Integer.MIN_VALUE;
+    @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
+    public void testMmapPcmOffloadWithVirtualizerEffect() throws InterruptedException {
+        mVirtualizer = new Virtualizer(0, mSessionId);
+        assumeNotNull("Failed to create Virtualizer effect", mVirtualizer);
+        assumeTrue(Virtualizer.SUCCESS == mVirtualizer.setEnabled(true));
 
-        for (short strength : testIncreasingBassBoostStrength) {
-            mBassBoost.setStrength(strength);
-            final int currRmsMb = playAndGetRms(testFrequencyHz);
-            Log.i(TAG, "Measured Curr Rms : " + currRmsMb);
-            assumeTrue(
-                    "Curr Rms at strength " + strength + " should be more than " + prevRmsMb,
-                    currRmsMb > prevRmsMb);
-            prevRmsMb = currRmsMb;
-        }
+        testIncreasingStrength(EffectType.VIRTUALIZER);
     }
 
     private static native long nativeOpenStream();
