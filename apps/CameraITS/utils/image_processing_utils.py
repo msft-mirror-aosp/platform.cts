@@ -479,6 +479,21 @@ def convert_yuv420_planar_to_rgb_image(y_plane, u_plane, v_plane,
   return rgb.astype(numpy.float32) / 255.0
 
 
+def decompress_jpeg_to_rgb_image(jpeg_buffer):
+  """Decompress a JPEG-compressed image, returning as an RGB image.
+
+  Args:
+    jpeg_buffer: The JPEG stream.
+
+  Returns:
+     A numpy array for the RGB image, with pixels in [0,1].
+  """
+  img = Image.open(io.BytesIO(jpeg_buffer))
+  w = img.size[0]
+  h = img.size[1]
+  return numpy.array(img).reshape((h, w, 3)) / 255.0
+
+
 def decompress_ultrahdr_image(ultrahdr_image_path, rgb_hdr_out_path):
   """Decompress a UltraHDR-compressed image, returning as an RGB image.
 
