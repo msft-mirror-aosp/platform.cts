@@ -36,7 +36,6 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.accessibilityservice.AccessibilityServiceInfo;
@@ -64,7 +63,6 @@ import android.view.accessibility.AccessibilityManager;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.Direction;
 
-import com.android.compatibility.common.util.UserHelper;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.MockImeSession;
 
@@ -466,12 +464,6 @@ public class InlineLoginActivityTest extends LoginActivityCommonTestCase {
 
     @Test
     public void testScrollSuggestionView() throws Exception {
-        final UserHelper userHelper = new UserHelper(mContext);
-        // TODO(b/436936141): enable this test for visible background users.
-        assumeFalse(
-                "Unable to scroll the suggestion view of MockIME on passenger display",
-                userHelper.isVisibleBackgroundUser());
-
         // Set service.
         enableService();
 

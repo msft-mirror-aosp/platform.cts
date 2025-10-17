@@ -46,16 +46,16 @@ public final class InlineUiBot extends UiBot {
     private static final String TAG = "AutoFillInlineCtsUiBot";
     public static final String SUGGESTION_STRIP_DESC = "MockIme Inline Suggestion View";
 
+    private static final BySelector SUGGESTION_STRIP_SELECTOR = By.desc(SUGGESTION_STRIP_DESC);
+
     private static final RequiredFeatureRule REQUIRES_IME_RULE = new RequiredFeatureRule(
             PackageManager.FEATURE_INPUT_METHODS);
 
     private final Context mContext;
-    private final BySelector mSuggestionStripSelector;
 
     public InlineUiBot(Context context) {
         super(UI_TIMEOUT);
         mContext = context;
-        mSuggestionStripSelector = By.desc(SUGGESTION_STRIP_DESC);
     }
 
     public static RuleChain annotateRule(TestRule rule) {
@@ -69,8 +69,8 @@ public final class InlineUiBot extends UiBot {
 
     @Override
     public void assertNoDatasetsEver() throws Exception {
-        assertNeverShown(
-                "suggestion strip", mSuggestionStripSelector, DATASET_PICKER_NOT_SHOWN_NAPTIME_MS);
+        assertNeverShown("suggestion strip", SUGGESTION_STRIP_SELECTOR,
+                DATASET_PICKER_NOT_SHOWN_NAPTIME_MS);
     }
 
     /**
@@ -172,7 +172,7 @@ public final class InlineUiBot extends UiBot {
     }
 
     private UiObject2 findSuggestionStrip() throws Exception {
-        return waitForObject(mSuggestionStripSelector, Timeouts.UI_TIMEOUT);
+        return waitForObject(SUGGESTION_STRIP_SELECTOR, Timeouts.UI_TIMEOUT);
     }
 
     private int getEdgeSensitivityWidth(int defaultWidth) {

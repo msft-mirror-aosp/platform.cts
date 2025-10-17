@@ -33,8 +33,6 @@ import static android.service.autofill.SaveInfo.SAVE_DATA_TYPE_GENERIC_CARD;
 import static android.service.autofill.SaveInfo.SAVE_DATA_TYPE_PASSWORD;
 import static android.service.autofill.SaveInfo.SAVE_DATA_TYPE_PAYMENT_CARD;
 import static android.service.autofill.SaveInfo.SAVE_DATA_TYPE_USERNAME;
-import static android.view.KeyEvent.KEYCODE_BACK;
-import static android.view.KeyEvent.KEYCODE_HOME;
 
 import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
 
@@ -58,6 +56,7 @@ import android.text.Html;
 import android.text.Spanned;
 import android.text.style.URLSpan;
 import android.util.Log;
+import android.view.Display;
 import android.view.InputDevice;
 import android.view.MotionEvent;
 import android.view.Surface;
@@ -84,13 +83,11 @@ import androidx.test.uiautomator.UiSelector;
 import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.RetryableException;
-import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.Timeout;
 import com.android.compatibility.common.util.UserHelper;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -151,6 +148,18 @@ public class UiBot {
     private static final String RESOURCE_ID_FILL_DIALOG_BUTTON_NO = "autofill_dialog_no";
     private static final String RESOURCE_ID_FILL_DIALOG_BUTTON_YES = "autofill_dialog_yes";
 
+    static final BySelector DATASET_PICKER_SELECTOR = By.res("android", RESOURCE_ID_DATASET_PICKER);
+    private static final BySelector SAVE_UI_SELECTOR = By.res("android", RESOURCE_ID_SAVE_SNACKBAR);
+    private static final BySelector DATASET_HEADER_SELECTOR =
+            By.res("android", RESOURCE_ID_DATASET_HEADER);
+    private static final BySelector FILL_DIALOG_SELECTOR =
+            By.res("android", RESOURCE_ID_FILL_DIALOG_PICKER);
+    private static final BySelector FILL_DIALOG_HEADER_SELECTOR =
+            By.res("android", RESOURCE_ID_FILL_DIALOG_HEADER);
+    private static final BySelector FILL_DIALOG_DATASET_SELECTOR =
+            By.res("android", RESOURCE_ID_FILL_DIALOG_DATASET);
+
+
     // TODO: figure out a more reliable solution that does not depend on SystemUI resources.
     private static final String SPLIT_WINDOW_DIVIDER_ID =
             "com.android.systemui:id/docked_divider_background";
@@ -181,13 +190,6 @@ public class UiBot {
     private final UiAutomation mAutoman;
     private final Timeout mDefaultTimeout;
     private final boolean mIsAutomotive;
-    private final int mMyDisplayId;
-    private final BySelector mDatasetPickerSelector;
-    private final BySelector mSaveUiSelector;
-    private final BySelector mDatasetHeaderSelector;
-    private final BySelector mFillDialogSelector;
-    private final BySelector mFillDialogHeaderSelector;
-    private final BySelector mDialogDatasetSelector;
 
     private boolean mOkToCallAssertNoDatasets;
 
@@ -204,15 +206,6 @@ public class UiBot {
         mPackageName = mContext.getPackageName();
         mAutoman = instrumentation.getUiAutomation();
         mIsAutomotive = mContext.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE);
-        mMyDisplayId = mUserHelper.getMainDisplayId();
-
-        Configurator.getInstance().setDefaultDisplayId(mMyDisplayId);
-        mDatasetPickerSelector = By.res("android", RESOURCE_ID_DATASET_PICKER);
-        mSaveUiSelector = By.res("android", RESOURCE_ID_SAVE_SNACKBAR);
-        mDatasetHeaderSelector = By.res("android", RESOURCE_ID_DATASET_HEADER);
-        mFillDialogSelector = By.res("android", RESOURCE_ID_FILL_DIALOG_PICKER);
-        mFillDialogHeaderSelector = By.res("android", RESOURCE_ID_FILL_DIALOG_HEADER);
-        mDialogDatasetSelector = By.res("android", RESOURCE_ID_FILL_DIALOG_DATASET);
     }
 
     public void waitForIdle() {
@@ -313,7 +306,7 @@ public class UiBot {
             throw new IllegalStateException(
                     "Cannot call assertNoDatasets() without calling assertDatasets first");
         }
-        mDevice.wait(Until.gone(mDatasetPickerSelector), UI_DATASET_PICKER_TIMEOUT.ms());
+        mDevice.wait(Until.gone(DATASET_PICKER_SELECTOR), UI_DATASET_PICKER_TIMEOUT.ms());
         mOkToCallAssertNoDatasets = false;
     }
 
@@ -324,8 +317,8 @@ public class UiBot {
      * cases where the dataset picker was not previous shown.
      */
     public void assertNoDatasetsEver() throws Exception {
-        assertNeverShown(
-                "dataset picker", mDatasetPickerSelector, DATASET_PICKER_NOT_SHOWN_NAPTIME_MS);
+        assertNeverShown("dataset picker", DATASET_PICKER_SELECTOR,
+                DATASET_PICKER_NOT_SHOWN_NAPTIME_MS);
     }
 
     /**
@@ -368,8 +361,8 @@ public class UiBot {
         final List<String> expectedChild = new ArrayList<>();
         if (header != null) {
             if (Helper.isAutofillWindowFullScreen(mContext)) {
-                final UiObject2 headerView =
-                        waitForObject(mDatasetHeaderSelector, UI_DATASET_PICKER_TIMEOUT);
+                final UiObject2 headerView = waitForObject(DATASET_HEADER_SELECTOR,
+                        UI_DATASET_PICKER_TIMEOUT);
                 assertWithMessage("fullscreen wrong dataset header")
                         .that(getChildrenAsText(headerView))
                         .containsExactlyElementsIn(Arrays.asList(header)).inOrder();
@@ -708,26 +701,14 @@ public class UiBot {
     /** Presses the Back button and waits for idle. */
     public void pressBack() {
         Log.d(TAG, "pressBack()");
-        try {
-            SystemUtil.runShellCommand(
-                    InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-                    String.format("input -d %d keyevent %d", mMyDisplayId, KEYCODE_BACK));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        mDevice.pressBack();
         waitForIdle();
     }
 
     /** Presses the Home button and waits for idle. */
     public void pressHome() {
         Log.d(TAG, "pressHome()");
-        try {
-            SystemUtil.runShellCommand(
-                    InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-                    String.format("input -d %d keyevent %d", mMyDisplayId, KEYCODE_HOME));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        mDevice.pressHome();
         waitForIdle();
         if (mIsAutomotive) {
             try {
@@ -744,9 +725,7 @@ public class UiBot {
      * Asserts the save snackbar is not showing.
      */
     public void assertSaveNotShowing(int type) throws Exception {
-        assertNeverShown(
-                "save UI for type " + saveTypeToString(type),
-                mSaveUiSelector,
+        assertNeverShown("save UI for type " + saveTypeToString(type), SAVE_UI_SELECTOR,
                 SAVE_NOT_SHOWN_NAPTIME_MS);
     }
 
@@ -755,14 +734,12 @@ public class UiBot {
      */
     public void assertSaveNotShowing(int type, @Nullable String when) throws Exception {
         String suffix = when == null ? "" : " when " + when;
-        assertNeverShown(
-                "save UI for type " + saveTypeToString(type) + suffix,
-                mSaveUiSelector,
+        assertNeverShown("save UI for type " + saveTypeToString(type) + suffix, SAVE_UI_SELECTOR,
                 SAVE_NOT_SHOWN_NAPTIME_MS);
     }
 
     public void assertSaveNotShowing() throws Exception {
-        assertNeverShown("save UI", mSaveUiSelector, SAVE_NOT_SHOWN_NAPTIME_MS);
+        assertNeverShown("save UI", SAVE_UI_SELECTOR, SAVE_NOT_SHOWN_NAPTIME_MS);
     }
 
     private String getSaveTypeString(int type) {
@@ -861,7 +838,7 @@ public class UiBot {
             int positiveButtonStyle, String description, Timeout timeout, String serviceLabel,
             int... types) throws Exception {
 
-        final UiObject2 snackbar = waitForObject(mSaveUiSelector, timeout);
+        final UiObject2 snackbar = waitForObject(SAVE_UI_SELECTOR, timeout);
 
         final UiObject2 titleView =
                 waitForObject(snackbar, By.res("android", RESOURCE_ID_SAVE_TITLE), timeout);
@@ -1248,7 +1225,7 @@ public class UiBot {
         final String expectedTitle = getString(RESOURCE_STRING_DATASET_PICKER_ACCESSIBILITY_TITLE);
         while (retryCount < MAX_UIOBJECT_RETRY_COUNT) {
             try {
-                picker = waitForObject(mDatasetPickerSelector, timeout);
+                picker = waitForObject(DATASET_PICKER_SELECTOR, timeout);
                 assertAccessibilityTitle(picker, expectedTitle);
                 break;
             } catch (StaleObjectException e) {
@@ -1295,7 +1272,7 @@ public class UiBot {
                 InstrumentationRegistry.getInstrumentation()
                         .getContext()
                         .getSystemService(DisplayManager.class)
-                        .getDisplay(mMyDisplayId)
+                        .getDisplay(Display.DEFAULT_DISPLAY)
                         .getRotation();
         return orientation == currentRotation;
     }
@@ -1314,12 +1291,9 @@ public class UiBot {
         // waitForIdle(). waitForIdle() is not needed here because in AutoFillServiceTestCase we
         // always use UiBot#setScreenOrientation() to change the screen rotation, which blocks until
         // new rotation is reflected on the device.
-        final int currentRotation =
-                InstrumentationRegistry.getInstrumentation()
-                        .getContext()
-                        .getSystemService(DisplayManager.class)
-                        .getDisplay(mMyDisplayId)
-                        .getRotation();
+        final int currentRotation = InstrumentationRegistry.getInstrumentation().getContext()
+                .getSystemService(DisplayManager.class).getDisplay(Display.DEFAULT_DISPLAY)
+                .getRotation();
         mAutoman.setRotation(orientation);
 
         if (orientation == currentRotation) {
@@ -1514,9 +1488,8 @@ public class UiBot {
                 }
             }
 
-            String command =
-                    String.format(
-                            "input -d %d swipe %d %d %d %d", mMyDisplayId, x, startY, x, endY);
+            // TODO(b/280116881): update this command for secondary display.
+            String command = String.format("input swipe %d %d %d %d", x, startY, x, endY);
             runShellCommand(command);
             waitForIdle();
         }
@@ -1621,7 +1594,7 @@ public class UiBot {
      */
     public void touchOutsideSaveDialog() throws Exception {
         Log.v(TAG, "touchOutsideSaveDialog()");
-        final UiObject2 picker = waitForObject(mSaveUiSelector, SAVE_TIMEOUT);
+        final UiObject2 picker = waitForObject(SAVE_UI_SELECTOR, SAVE_TIMEOUT);
         Log.v(TAG, "got picker: " + picker);
         final Rect bounds = picker.getVisibleBounds();
         assertThat(injectClick(new Point(bounds.left, bounds.top / 2))).isTrue();
@@ -1639,27 +1612,22 @@ public class UiBot {
     }
 
     private UiObject2 findFillDialogPicker() throws Exception {
-        return waitForObject(mFillDialogSelector, UI_DATASET_PICKER_TIMEOUT);
+        return waitForObject(FILL_DIALOG_SELECTOR, UI_DATASET_PICKER_TIMEOUT);
     }
 
     public UiObject2 findFillDialogDatasetPicker() throws Exception {
-        return waitForObject(mDialogDatasetSelector, UI_DATASET_PICKER_TIMEOUT);
+        return waitForObject(FILL_DIALOG_DATASET_SELECTOR, UI_DATASET_PICKER_TIMEOUT);
     }
 
     public UiObject2 findFillDialogHeaderPicker() throws Exception {
-        return waitForObject(mFillDialogHeaderSelector, UI_DATASET_PICKER_TIMEOUT);
+        return waitForObject(FILL_DIALOG_HEADER_SELECTOR, UI_DATASET_PICKER_TIMEOUT);
     }
 
     /**
      * Asserts the fill dialog is not shown.
      */
     public void assertNoFillDialog() throws Exception {
-        assertNeverShown("Fill dialog", mFillDialogSelector, DATASET_PICKER_NOT_SHOWN_NAPTIME_MS);
-    }
-
-    /** Returns the display ID. */
-    public int getDisplayId() {
-        return mMyDisplayId;
+        assertNeverShown("Fill dialog", FILL_DIALOG_SELECTOR, DATASET_PICKER_NOT_SHOWN_NAPTIME_MS);
     }
 
     /**
