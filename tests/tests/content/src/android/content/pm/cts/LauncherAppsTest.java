@@ -17,7 +17,6 @@
 package android.content.pm.cts;
 
 import static android.content.pm.Flags.FLAG_ARCHIVING;
-import static android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE;
 
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.getDefaultLauncher;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.setDefaultLauncher;
