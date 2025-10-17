@@ -140,8 +140,14 @@ class YuvJpegCaptureSamenessTest(its_base_test.ItsBaseTest):
           rgb_yuv, rgb_jpg)
       msg = f'RMS diff: {rms_diff:.4f}'
       logging.debug('%s', msg)
+      marginal_pass_msg = []
       if rms_diff >= _THRESHOLD_MAX_RMS_DIFF_YUV_JPEG:
-        raise AssertionError(f'{msg}, ATOL: {_THRESHOLD_MAX_RMS_DIFF_YUV_JPEG}')
+        raise AssertionError(f'{msg}, ATOL: {_THRESHOLD_MAX_RMS_DIFF_YUV_JPEG:.4f}')
+      else:
+        marginal_pass_tol = (_THRESHOLD_MAX_RMS_DIFF_YUV_JPEG *
+                             its_session_utils.MARGINAL_PASS_FACTOR)
+        if rms_diff >= marginal_pass_tol:
+          marginal_pass_msg.append(f'{msg}, ATOL: {marginal_pass_tol:.4f}')
 
       # Create requests for all use cases, and make sure they are at least
       # similar enough with the STILL_CAPTURE YUV. For example, the color
@@ -164,10 +170,23 @@ class YuvJpegCaptureSamenessTest(its_base_test.ItsBaseTest):
         msg = (f'RMS diff for single {use_case_name} use case & still capture '
                f'YUV: {rms_diff:.4f}')
         logging.debug('%s', msg)
+        marginal_pass_tol_use_case = (
+            _THRESHOLD_MAX_RMS_DIFF_USE_CASE *
+            its_session_utils.MARGINAL_PASS_FACTOR
+        )
         if rms_diff >= _THRESHOLD_MAX_RMS_DIFF_USE_CASE:
           logging.error('%s, ATOL: %.2f', msg, _THRESHOLD_MAX_RMS_DIFF_USE_CASE)
           num_fail += 1
-
+        else:
+          if rms_diff >= marginal_pass_tol_use_case:
+            marginal_pass_msg.append(
+                f'Marginal pass for use case {use_case_name}, '
+                f'RMS diff: {rms_diff:.4f}, '
+                f'ATOL: {marginal_pass_tol_use_case:.4f}')
+      if marginal_pass_msg:
+        for msg in marginal_pass_msg:
+          logging.warning('%s\n%s',
+                          its_session_utils.MARGINAL_PASSING_MESSAGE, msg)
       if num_fail > 0:
         raise AssertionError(f'Number of fails: {num_fail} / {num_tests}')
 
