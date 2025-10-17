@@ -105,8 +105,10 @@ import org.junit.runner.RunWith;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -2524,5 +2526,18 @@ public class SingleDeviceTest extends WifiJUnit4TestBase {
         int cbCalled = attachCb.waitForAnyCallback();
         assertEquals("Wi-Fi Aware attach", AttachCallbackTest.ATTACHED, cbCalled);
         return attachCb;
+    }
+
+    @ApiTest(apis = {"android.net.wifi.aware.WifiAwareManager#getTxtRecordTlvBuffer",
+            "android.net.wifi.aware.WifiAwareManager#getTxtRecordMap"})
+    @Test
+    public void testTxtRecordTlvBuffer() {
+        Map<String, String> txtRecord = new HashMap<>();
+        txtRecord.put("key1", "value1");
+        txtRecord.put("key2", "value2");
+        byte[] txtRecordTlvBuffer = WifiAwareManager.getTxtRecordTlvBuffer(txtRecord);
+        Map<String, String> rereadTxtRecord = WifiAwareManager.getTxtRecordMap(txtRecordTlvBuffer);
+        assertEquals(txtRecord.size(), rereadTxtRecord.size());
+        assertEquals(txtRecord, rereadTxtRecord);
     }
 }
