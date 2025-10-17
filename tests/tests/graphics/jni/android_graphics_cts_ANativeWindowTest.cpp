@@ -85,6 +85,41 @@ void tryAllocateBuffers(JNIEnv* env, jclass, jobject jSurface) {
     }
 }
 
+jint setProducerThrottlingEnabled(JNIEnv* env, jclass, jobject jSurface, jboolean enabled) {
+    ANativeWindow* window = nullptr;
+    if (jSurface) {
+        window = ANativeWindow_fromSurface(env, jSurface);
+    }
+
+    int32_t status = ANativeWindow_setProducerThrottlingEnabled(window, enabled);
+
+    if (window) {
+        ANativeWindow_release(window);
+    }
+
+    return status;
+}
+
+jint isProducerThrottlingEnabled(JNIEnv* env, jclass, jobject jSurface) {
+    ANativeWindow* window = nullptr;
+    if (jSurface) {
+        window = ANativeWindow_fromSurface(env, jSurface);
+    }
+
+    bool result;
+    int32_t status = ANativeWindow_isProducerThrottlingEnabled(window, &result);
+
+    if (window) {
+        ANativeWindow_release(window);
+    }
+
+    if (status != 0) {
+        return status;
+    }
+
+    return result ? 1 : 0;
+}
+
 jobject readFromParcel(JNIEnv* env, jclass, jobject jParcel) {
     ndk::ScopedAParcel parcel(AParcel_fromJavaParcel(env, jParcel));
     ANativeWindow* window = nullptr;
@@ -105,19 +140,19 @@ void writeToParcel(JNIEnv* env, jclass, jobject jSurface, jobject jParcel) {
     ASSERT_EQ(STATUS_OK, result);
 }
 
-const std::array<JNINativeMethod, 7> JNI_METHODS = {{
-    {"nPushBufferWithTransform", "(Landroid/view/Surface;I)V",
-     (void*)pushBufferWithTransform},
-    {"nSetBuffersDataSpace", "(Landroid/view/Surface;I)I",
-     (void*)setBuffersDataSpace},
-    {"nGetBuffersDataSpace", "(Landroid/view/Surface;)I",
-     (void*)getBuffersDataSpace},
-    {"nGetBuffersDefaultDataSpace", "(Landroid/view/Surface;)I",
-     (void*)getBuffersDefaultDataspace},
-    {"nTryAllocateBuffers", "(Landroid/view/Surface;)V",
-     (void*)tryAllocateBuffers},
-    {"nReadFromParcel", "(Landroid/os/Parcel;)Landroid/view/Surface;", (void*)readFromParcel},
-    {"nWriteToParcel", "(Landroid/view/Surface;Landroid/os/Parcel;)V", (void*)writeToParcel},
+const std::array<JNINativeMethod, 9> JNI_METHODS = {{
+        {"nPushBufferWithTransform", "(Landroid/view/Surface;I)V", (void*)pushBufferWithTransform},
+        {"nSetBuffersDataSpace", "(Landroid/view/Surface;I)I", (void*)setBuffersDataSpace},
+        {"nGetBuffersDataSpace", "(Landroid/view/Surface;)I", (void*)getBuffersDataSpace},
+        {"nGetBuffersDefaultDataSpace", "(Landroid/view/Surface;)I",
+         (void*)getBuffersDefaultDataspace},
+        {"nTryAllocateBuffers", "(Landroid/view/Surface;)V", (void*)tryAllocateBuffers},
+        {"nSetProducerThrottlingEnabled", "(Landroid/view/Surface;Z)I",
+         (void*)setProducerThrottlingEnabled},
+        {"nIsProducerThrottlingEnabled", "(Landroid/view/Surface;)I",
+         (void*)isProducerThrottlingEnabled},
+        {"nReadFromParcel", "(Landroid/os/Parcel;)Landroid/view/Surface;", (void*)readFromParcel},
+        {"nWriteToParcel", "(Landroid/view/Surface;Landroid/os/Parcel;)V", (void*)writeToParcel},
 }};
 }
 
