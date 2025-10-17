@@ -704,6 +704,7 @@ public class MediaSessionManagerTest {
     }
 
     @Test
+    @FrameworkSpecificTest
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     @RequiresFlagsEnabled(Flags.FLAG_FETCH_MEDIA_CONTROLLERS_FOR_APP)
     public void testGetActiveControllersForPackage_withoutPermission_throwsSecurityException() {
@@ -715,6 +716,7 @@ public class MediaSessionManagerTest {
     }
 
     @Test
+    @FrameworkSpecificTest
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     @RequiresFlagsEnabled(Flags.FLAG_FETCH_MEDIA_CONTROLLERS_FOR_APP)
     public void testGetActiveControllersForPackage_returnsAllExistingControllers() {
@@ -727,6 +729,7 @@ public class MediaSessionManagerTest {
     }
 
     @Test
+    @FrameworkSpecificTest
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     @RequiresFlagsEnabled(Flags.FLAG_FETCH_MEDIA_CONTROLLERS_FOR_APP)
     public void testAddOnActiveSessionChangedForPackageListener_updatesChangesInSession()
@@ -750,6 +753,7 @@ public class MediaSessionManagerTest {
     }
 
     @Test
+    @FrameworkSpecificTest
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     @RequiresFlagsEnabled(Flags.FLAG_FETCH_MEDIA_CONTROLLERS_FOR_APP)
     public void testRemoveOnActiveSessionsChangedForPackageListener_doNotUpdateChangesInSession()
@@ -774,6 +778,7 @@ public class MediaSessionManagerTest {
     }
 
     @Test
+    @FrameworkSpecificTest
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     @RequiresFlagsEnabled({
         Flags.FLAG_FETCH_MEDIA_CONTROLLERS_FOR_APP,
@@ -786,6 +791,7 @@ public class MediaSessionManagerTest {
                 .adoptShellPermissionIdentity(
                         Manifest.permission.MEDIA_CONTENT_CONTROL,
                         Manifest.permission.OVERRIDE_MEDIA_SESSION_OWNER);
+
         createSessionWithOverride(3, "com.different.package");
 
         List<MediaSession.Token> controllers =
