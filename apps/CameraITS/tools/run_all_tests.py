@@ -261,7 +261,9 @@ _EXTENSION_NAMES = (
     'hdr',
     'low_light',
 )
-
+_RESULTSTORE_UPLOAD_KEYWORDS = [
+    'zoom', 'feature_combination', 'test_default_jca_ip', 'test_jca_jpegr_ip'
+]
 _DST_SCENE_DIR = '/sdcard/Download/'
 _DST_ROOT_DIR = '/sdcard/'
 _SUB_CAMERA_LEVELS = 2
@@ -678,6 +680,24 @@ def get_config_file_contents_for_scenes(config_file_contents, scenes):
   }
 
 
+def _upload_results_to_resultstore(artifacts_path):
+  """Upload results to ResultStore.
+
+  Args:
+    artifacts_path: Path to the artifacts directory.
+  """
+  try:
+    subprocess.run(
+        f'results_uploader {artifacts_path}', check=True, shell=True,
+    )
+    logging.info('Uploaded results at %s to ResultStore.', artifacts_path)
+  except subprocess.CalledProcessError as e:
+    logging.error('Failed to upload results to ResultStore: %s', e)
+  except FileNotFoundError as e:
+    logging.error('Failed to upload results to ResultStore. '
+                  'Please check if results_uploader is in PATH. %s', e)
+
+
 def main():
   """Run all the Camera ITS automated tests.
 
@@ -1025,6 +1045,8 @@ def main():
       num_marginal_passing = 0
       num_fail = 0
       for test in scene_test_list:
+        is_uploadable_test = any(
+            keyword in test for keyword in _RESULTSTORE_UPLOAD_KEYWORDS)
         # Handle repeated test
         if 'tests/' in test:
           cmd = [
@@ -1041,6 +1063,8 @@ def main():
               f'{new_yml_file_name}'
           ]
         return_string = ''
+        requested_upload = test_params_content.get(
+            'resultstore_upload') == 'True'
         for num_try in range(NUM_TRIES):
           # Saves to mobly test summary file
           # print only messages for manual lighting control testing
@@ -1050,6 +1074,9 @@ def main():
           with output.stdout, open(
               os.path.join(topdir, MOBLY_TEST_SUMMARY_TXT_FILE), 'wb'
           ) as file:
+            if not output.stdout:
+              logging.info('No output from test')
+              continue
             for line in iter(output.stdout.readline, b''):
               out = line.decode('utf-8').strip()
               if '<ENTER>' in out: print(out)
@@ -1095,6 +1122,9 @@ def main():
             for one_line in lines:
               if 'root_output_path:' in one_line:
                 root_output_path = one_line.split(':')[1].strip()
+                if requested_upload and is_uploadable_test and root_output_path:
+                  logging.info('Uploading results to ResultStore for %s', test)
+                  _upload_results_to_resultstore(root_output_path)
             # Find feature combination query proto
             for one_line in lines:
               # regular expression pattern must match in ItsTestActivity.java.
