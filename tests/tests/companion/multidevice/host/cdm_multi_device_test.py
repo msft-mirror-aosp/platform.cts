@@ -233,8 +233,8 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         test_utils.assert_attestation_verified(self.primary, self.secondary)
 
         # Skip if task continuity flag is disabled
-        api_flags_utils.assume_enabled(self.primary, 'desktop_better_together', 'enable_task_continuity')
-        api_flags_utils.assume_enabled(self.secondary, 'desktop_better_together', 'enable_task_continuity')
+        api_flags_utils.assume_enabled(self.primary, 'companion', 'task_continuity')
+        api_flags_utils.assume_enabled(self.secondary, 'companion', 'task_continuity')
 
         # Create associations
         self.secondary.cdm.btBecomeDiscoverable(cdm_base_test.BT_DISCOVERABLE_TIME)
