@@ -345,6 +345,14 @@ public class MediaMetricsAtomHostSideTests {
     @Test
     public void testEditingEndedEvent_default() throws Exception {
         turnOnForTesting();
+        // Set the metrics mode to blocklist but with an empty blocklist, so UID can be logged.
+        mDeviceConfigStateHelper.set(
+                new DeviceConfig.Properties.Builder(DeviceConfig.NAMESPACE_MEDIA)
+                        .setString(MEDIA_METRICS_MODE, MEDIA_METRICS_MODE_BLOCKLIST)
+                        .setString(PLAYER_METRICS_PER_APP_ATTRIBUTION_BLOCKLIST, "")
+                        .setString(PLAYER_METRICS_APP_BLOCKLIST, "")
+                        .build());
+        Thread.sleep(DEVICE_PROPERTY_PROPAGATION_DELAY_MICROSECONDS);
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
         MediaMetricsManager manager = context.getSystemService(MediaMetricsManager.class);
         try (EditingSession s = manager.createEditingSession()) {

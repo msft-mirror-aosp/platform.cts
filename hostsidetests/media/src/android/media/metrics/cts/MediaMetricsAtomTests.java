@@ -19,6 +19,7 @@ package android.media.metrics.cts;
 import static android.media.cts.MediaMetricsTestConstants.LOG_SESSION_ID_KEY;
 import static android.os.statsd.media.MediaEditingExtensionAtoms.MEDIA_EDITING_ENDED_REPORTED_FIELD_NUMBER;
 
+import static com.android.media.editing.flags.Flags.FLAG_ADD_UID_TO_MEDIA_METRICS_EDITING;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -27,6 +28,9 @@ import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
 import android.os.statsd.media.MediaEditingExtensionAtoms;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
 import com.android.os.AtomsProto;
 import com.android.os.StatsLog;
@@ -47,6 +51,7 @@ import com.google.protobuf.ExtensionRegistry;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -60,6 +65,10 @@ import javax.annotation.Nullable;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
 
     private static final String TEST_RUNNER = "androidx.test.runner.AndroidJUnitRunner";
     private static final String TAG = "MediaMetricsAtomTests";
@@ -472,6 +481,38 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
         assertThat(atom.getMuxerName()).isEqualTo("");
         assertThat(atom.getFinalState().toString()).isEqualTo("FINAL_STATE_SUCCEEDED");
         assertThat(atom.getErrorCode().toString()).isEqualTo("ERROR_CODE_NONE");
+    }
+
+    @RequiresFlagsEnabled(FLAG_ADD_UID_TO_MEDIA_METRICS_EDITING)
+    @Test
+    public void testEditingEndedEventWithRequesterUid_default() throws Exception {
+        ConfigUtils.uploadConfigForPushedAtom(
+                getDevice(), TEST_PKG, MEDIA_EDITING_ENDED_REPORTED_FIELD_NUMBER);
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        MediaEditingExtensionAtoms.registerAllExtensions(registry);
+
+        DeviceUtils.runDeviceTests(
+                getDevice(),
+                TEST_PKG,
+                "android.media.metrics.cts.MediaMetricsAtomHostSideTests",
+                "testEditingEndedEvent_default",
+                new LogSessionIdListener());
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+
+        List<StatsLog.EventMetricData> data =
+                ReportUtils.getEventMetricDataList(getDevice(), registry);
+        assertThat(data).hasSize(1);
+        MediaEditingExtensionAtoms.MediaEditingEndedReported atom =
+                data.get(0)
+                        .getAtom()
+                        .getExtension(MediaEditingExtensionAtoms.mediaEditingEndedReported);
+        assertThat(atom.getFinalProgressPercent()).isEqualTo(-1f);
+        assertThat(atom.getTimeSinceEditingCreatedMillis()).isEqualTo(-1L);
+        assertThat(atom.getExporterName()).isEqualTo("");
+        assertThat(atom.getMuxerName()).isEqualTo("");
+        assertThat(atom.getFinalState().toString()).isEqualTo("FINAL_STATE_SUCCEEDED");
+        assertThat(atom.getErrorCode().toString()).isEqualTo("ERROR_CODE_NONE");
+        assertThat(atom.getRequesterUid()).isEqualTo(DeviceUtils.getAppUid(getDevice(), TEST_PKG));
     }
 
     @Test
