@@ -139,8 +139,8 @@ class BurstSamenessManualTest(its_base_test.ItsBaseTest):
                 f'Spread: {spread:.4f}, THRESH: {spread_thresh:.2f}')
 
       if marginal_pass_msg:
-        logging.warning('its_session_utils.MARGINAL_PASSING_MESSAGE\n %s',
-                        marginal_pass_msg)
+        logging.warning('%s\n %s', its_session_utils.MARGINAL_PASSING_MESSAGE,
+                          marginal_pass_msg)
 
 
 if __name__ == '__main__':
