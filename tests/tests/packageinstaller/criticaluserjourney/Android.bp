@@ -473,4 +473,7 @@ android_test {
         "general-tests",
     ],
     test_config_template: ":CtsPackageInstallerCUJInstallationTestCases-test-config_v2",
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }

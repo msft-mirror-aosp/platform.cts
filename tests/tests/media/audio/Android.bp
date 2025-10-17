@@ -139,6 +139,9 @@ android_test {
     ],
     target_sdk_version: "31",
     min_sdk_version: "31",
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
 
 test_module_config {

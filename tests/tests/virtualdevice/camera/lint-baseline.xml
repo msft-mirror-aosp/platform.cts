@@ -3,6 +3,17 @@
 
     <issue
         id="MissingCheckFlagsRule"
+        message="Class `VirtualCameraCameraXTest` uses @RequiresFlagsEnabled or @RequiresFlagsDisabled and must have a CheckFlagsRule."
+        errorLine1="class VirtualCameraCameraXTest {"
+        errorLine2="      ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/tests/virtualdevice/camera/src/android/virtualdevice/cts/camera/VirtualCameraCameraXTest.kt"
+            line="79"
+            column="7"/>
+    </issue>
+
+    <issue
+        id="MissingCheckFlagsRule"
         message="Class `VirtualCameraCaptureTest` uses @RequiresFlagsEnabled or @RequiresFlagsDisabled and must have a CheckFlagsRule."
         errorLine1="public class VirtualCameraCaptureTest {"
         errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~">
@@ -41,7 +52,7 @@
         errorLine2="             ~~~~~~~~~~~~~~~~~">
         <location
             file="cts/tests/tests/virtualdevice/camera/src/android/virtualdevice/cts/camera/VirtualCameraTest.java"
-            line="114"
+            line="116"
             column="14"/>
     </issue>
 

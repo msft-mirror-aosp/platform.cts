@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 8.4.0-alpha08" type="baseline" client="" dependencies="true" name="" variant="all" version="8.4.0-alpha08">
+
+    <issue
+        id="MissingCheckFlagsRule"
+        message="Class `VirtualSensorTest` uses @RequiresFlagsEnabled or @RequiresFlagsDisabled and must have a CheckFlagsRule."
+        errorLine1="public class VirtualSensorTest {"
+        errorLine2="             ~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/tests/virtualdevice/sensor/src/android/virtualdevice/cts/sensor/VirtualSensorTest.java"
+            line="93"
+            column="14"/>
+    </issue>
+
+</issues>

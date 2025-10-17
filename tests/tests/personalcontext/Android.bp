@@ -45,4 +45,7 @@ android_test {
         ":CtsDeviceServicesTestApp",
     ],
     instrumentation_for: "CtsAppTestStubs",
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
