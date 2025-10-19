@@ -22,6 +22,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
 
+import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -30,6 +31,7 @@ import android.bluetooth.BluetoothGattServer;
 import android.bluetooth.BluetoothGattServerCallback;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.content.Context;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -53,27 +55,23 @@ public class BluetoothGattServerTest {
 
     private static final int LATCH_TIMEOUT_MS = 1000;
     private final UUID TEST_UUID = UUID.fromString("0000110a-0000-1000-8000-00805f9b34fb");
-    private Context mContext;
-    private BluetoothAdapter mBluetoothAdapter;
+    private final BluetoothAdapter mAdapter = BlockingBluetoothAdapter.getAdapter();
+    private final BluetoothManager mManager = BlockingBluetoothAdapter.getManager();
+    private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
+    private final Context mContext = mInstrumentation.getContext();
+    private final UiAutomation mUIAutomation = mInstrumentation.getUiAutomation();
+
     private BluetoothGattServer mBluetoothGattServer;
-    private BluetoothManager mBluetoothManager;
-    private UiAutomation mUIAutomation;
     private CountDownLatch mLatch;
 
     @Before
     public void setUp() throws Exception {
-        mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
-
         Assume.assumeTrue(TestUtils.isBleSupported(mContext));
-
-        mUIAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         mUIAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
-        mBluetoothAdapter = mContext.getSystemService(BluetoothManager.class).getAdapter();
-        assertThat(BTAdapterUtils.enableAdapter(mBluetoothAdapter, mContext)).isTrue();
-        mBluetoothManager = mContext.getSystemService(BluetoothManager.class);
+        assertThat(BlockingBluetoothAdapter.enable()).isTrue();
         mLatch = new CountDownLatch(1);
         mBluetoothGattServer =
-                mBluetoothManager.openGattServer(
+                mManager.openGattServer(
                         mContext,
                         new BluetoothGattServerCallback() {
                             @Override
@@ -89,12 +87,11 @@ public class BluetoothGattServerTest {
             mUIAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
         }
 
-        if (mBluetoothAdapter != null && mBluetoothGattServer != null) {
+        if (mAdapter != null && mBluetoothGattServer != null) {
             mBluetoothGattServer.close();
             mBluetoothGattServer = null;
         }
 
-        mBluetoothAdapter = null;
         mLatch = null;
 
         if (mUIAutomation != null) {
@@ -153,7 +150,7 @@ public class BluetoothGattServerTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void readPhy() {
-        BluetoothDevice testDevice = mBluetoothAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
+        BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
         mUIAutomation.dropShellPermissionIdentity();
         assertThrows(SecurityException.class, () -> mBluetoothGattServer.readPhy(testDevice));
     }
@@ -161,7 +158,7 @@ public class BluetoothGattServerTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void setPreferredPhy() {
-        BluetoothDevice testDevice = mBluetoothAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
+        BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
         mUIAutomation.dropShellPermissionIdentity();
         assertThrows(
                 SecurityException.class,
@@ -176,7 +173,7 @@ public class BluetoothGattServerTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void notifyCharacteristicChanged_withValueOverMaxLength() {
-        BluetoothDevice testDevice = mBluetoothAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
+        BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
         BluetoothGattCharacteristic characteristic =
                 new BluetoothGattCharacteristic(TEST_UUID, 0x0A, 0x11);
         BluetoothGattService service =

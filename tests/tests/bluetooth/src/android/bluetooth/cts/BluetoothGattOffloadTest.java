@@ -79,17 +79,15 @@ public class BluetoothGattOffloadTest {
     private static final long TEST_ENDPOINT_ID = 2;
     private static final int MOCKITO_TIMEOUT_MS = 1000;
 
-    private final Context mContext =
-            InstrumentationRegistry.getInstrumentation().getTargetContext();
+    private final BluetoothAdapter mAdapter = BlockingBluetoothAdapter.getAdapter();
+    private final BluetoothManager mManager = BlockingBluetoothAdapter.getManager();
+    private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
     private final boolean mHasBluetooth =
             mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH);
-    private final BluetoothAdapter mAdapter =
-            mContext.getSystemService(BluetoothManager.class).getAdapter();
 
     private BluetoothDevice mBluetoothDevice;
     private BluetoothGatt mBluetoothGatt;
     private BluetoothGattServer mBluetoothGattServer;
-    private BluetoothManager mBluetoothManager;
     private BluetoothGattService mBluetoothGattService;
 
     @Mock private BluetoothGattServerCallback mMockGattServerCallback;
@@ -120,9 +118,7 @@ public class BluetoothGattOffloadTest {
                             BluetoothDevice.PHY_LE_1M,
                             handler);
             assertThat(mBluetoothGatt).isNotNull();
-            mBluetoothManager = mContext.getSystemService(BluetoothManager.class);
-            mBluetoothGattServer =
-                    mBluetoothManager.openGattServer(mContext, mMockGattServerCallback);
+            mBluetoothGattServer = mManager.openGattServer(mContext, mMockGattServerCallback);
             assumeNotNull(mBluetoothGattServer);
         }
     }
