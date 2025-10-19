@@ -31,8 +31,8 @@ import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
-import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothStatusCodes;
+import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.bluetooth.test_utils.Permissions;
 import android.content.AttributionSource;
 import android.content.Context;
@@ -70,14 +70,13 @@ public class BasicBluetoothGattTest {
     private static final String TEST_DEVICE_ADDRESS = "99:11:22:AA:BB:CC";
     private static final UUID TEST_UUID = UUID.fromString("0000110a-0000-1000-8000-00805f9b34fb");
 
-    private final Context mContext =
-            InstrumentationRegistry.getInstrumentation().getTargetContext();
+    private final BluetoothAdapter mAdapter = BlockingBluetoothAdapter.getAdapter();
+    private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
     private final boolean mHasBluetooth =
             mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH);
     private final boolean mHasCompanionDevice =
             mContext.getPackageManager()
                     .hasSystemFeature(PackageManager.FEATURE_COMPANION_DEVICE_SETUP);
-    private BluetoothAdapter mBluetoothAdapter;
     private BluetoothDevice mBluetoothDevice;
     private BluetoothGatt mBluetoothGatt;
 
@@ -87,16 +86,11 @@ public class BasicBluetoothGattTest {
     @Before
     public void setUp() {
         Assume.assumeTrue(TestUtils.isBleSupported(mContext));
-
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(android.Manifest.permission.BLUETOOTH_CONNECT);
-
-        mBluetoothAdapter = mContext.getSystemService(BluetoothManager.class).getAdapter();
-        if (!mBluetoothAdapter.isEnabled()) {
-            assertThat(BTAdapterUtils.enableAdapter(mBluetoothAdapter, mContext)).isTrue();
-        }
-        mBluetoothDevice = mBluetoothAdapter.getRemoteDevice(TEST_DEVICE_ADDRESS);
+        assertThat(BlockingBluetoothAdapter.enable()).isTrue();
+        mBluetoothDevice = mAdapter.getRemoteDevice(TEST_DEVICE_ADDRESS);
 
         HandlerThread handlerThread = new HandlerThread("BluetoothGattTest");
         handlerThread.start();
@@ -229,15 +223,15 @@ public class BasicBluetoothGattTest {
                     () -> mBluetoothGatt.requestSubrateMode(BluetoothGatt.SUBRATE_MODE_BALANCED));
         }
 
-        assertThat(BTAdapterUtils.disableAdapter(mBluetoothAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
 
         // Verify error with Bluetooth disabled
         assertThat(mBluetoothGatt.requestSubrateMode(BluetoothGatt.SUBRATE_MODE_BALANCED))
                 .isEqualTo(BluetoothStatusCodes.ERROR_BLUETOOTH_NOT_ENABLED);
 
         // Re-enable Adapter
-        if (!mBluetoothAdapter.isEnabled()) {
-            assertThat(BTAdapterUtils.enableAdapter(mBluetoothAdapter, mContext)).isTrue();
+        if (!mAdapter.isEnabled()) {
+            assertThat(BlockingBluetoothAdapter.enable()).isTrue();
         }
     }
 
