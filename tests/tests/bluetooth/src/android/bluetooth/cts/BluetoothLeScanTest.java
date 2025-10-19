@@ -18,15 +18,17 @@ package android.bluetooth.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.app.Instrumentation;
 import android.app.PendingIntent;
+import android.app.UiAutomation;
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanRecord;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
+import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.content.Context;
 import android.content.Intent;
 import android.os.ParcelUuid;
@@ -75,38 +77,29 @@ public class BluetoothLeScanTest {
     private static final int SCAN_DURATION_MILLIS = 10000;
     private static final int BATCH_SCAN_REPORT_DELAY_MILLIS = 20000;
     private static final int SCAN_STOP_TIMEOUT = 2000;
-    private CountDownLatch mFlushBatchScanLatch;
 
-    private Context mContext;
-    private BluetoothAdapter mBluetoothAdapter;
+    private final BluetoothAdapter mAdapter = BlockingBluetoothAdapter.getAdapter();
+    private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
+    private final Context mContext = mInstrumentation.getContext();
+    private final UiAutomation mUIAutomation = mInstrumentation.getUiAutomation();
+
+    private CountDownLatch mFlushBatchScanLatch;
     private BluetoothLeScanner mScanner;
     // Whether location is on before running the tests.
     private boolean mLocationOn;
 
     @Before
     public void setUp() {
-        mContext = InstrumentationRegistry.getInstrumentation().getContext();
-
         Assume.assumeTrue(TestUtils.isBleSupported(mContext));
-
-        InstrumentationRegistry.getInstrumentation()
-                .getUiAutomation()
-                .adoptShellPermissionIdentity(android.Manifest.permission.BLUETOOTH_CONNECT);
-        BluetoothManager manager =
-                (BluetoothManager) mContext.getSystemService(Context.BLUETOOTH_SERVICE);
-        mBluetoothAdapter = manager.getAdapter();
-        if (!mBluetoothAdapter.isEnabled()) {
-            assertThat(BTAdapterUtils.enableAdapter(mBluetoothAdapter, mContext)).isTrue();
-        }
-        mScanner = mBluetoothAdapter.getBluetoothLeScanner();
+        mUIAutomation.adoptShellPermissionIdentity(android.Manifest.permission.BLUETOOTH_CONNECT);
+        assertThat(BlockingBluetoothAdapter.enable()).isTrue();
+        mScanner = mAdapter.getBluetoothLeScanner();
         mLocationOn = TestUtils.isLocationOn(mContext);
         if (!mLocationOn) {
             TestUtils.enableLocation(mContext);
         }
-        InstrumentationRegistry.getInstrumentation()
-                .getUiAutomation()
-                .grantRuntimePermission(
-                        "android.bluetooth.cts", android.Manifest.permission.ACCESS_FINE_LOCATION);
+        mUIAutomation.grantRuntimePermission(
+                "android.bluetooth.cts", android.Manifest.permission.ACCESS_FINE_LOCATION);
     }
 
     @After
@@ -114,9 +107,7 @@ public class BluetoothLeScanTest {
         if (!mLocationOn) {
             TestUtils.disableLocation(mContext);
         }
-        InstrumentationRegistry.getInstrumentation()
-                .getUiAutomation()
-                .dropShellPermissionIdentity();
+        mUIAutomation.dropShellPermissionIdentity();
     }
 
     /** Basic test case for BLE scans. Checks BLE scan timestamp is within correct range. */
@@ -124,9 +115,7 @@ public class BluetoothLeScanTest {
     @MediumTest
     @Test
     public void basicBleScan() {
-        InstrumentationRegistry.getInstrumentation()
-                .getUiAutomation()
-                .adoptShellPermissionIdentity(android.Manifest.permission.BLUETOOTH_SCAN);
+        mUIAutomation.adoptShellPermissionIdentity(android.Manifest.permission.BLUETOOTH_SCAN);
         long scanStartMillis = SystemClock.elapsedRealtime();
         Collection<ScanResult> scanResults = scan();
         long scanEndMillis = SystemClock.elapsedRealtime();
@@ -143,11 +132,9 @@ public class BluetoothLeScanTest {
     @MediumTest
     @Test
     public void scanFilter() {
-        InstrumentationRegistry.getInstrumentation()
-                .getUiAutomation()
-                .adoptShellPermissionIdentity(
-                        android.Manifest.permission.BLUETOOTH_CONNECT,
-                        android.Manifest.permission.BLUETOOTH_SCAN);
+        mUIAutomation.adoptShellPermissionIdentity(
+                android.Manifest.permission.BLUETOOTH_CONNECT,
+                android.Manifest.permission.BLUETOOTH_SCAN);
         List<ScanFilter> filters = new ArrayList<>();
         ScanFilter filter = createScanFilter();
         if (filter == null) {
@@ -173,13 +160,11 @@ public class BluetoothLeScanTest {
     @MediumTest
     @Test
     public void scanFromSourceWithoutFilters() {
-        InstrumentationRegistry.getInstrumentation()
-                .getUiAutomation()
-                .adoptShellPermissionIdentity(
-                        android.Manifest.permission.BLUETOOTH_CONNECT,
-                        android.Manifest.permission.BLUETOOTH_PRIVILEGED,
-                        android.Manifest.permission.BLUETOOTH_SCAN,
-                        android.Manifest.permission.UPDATE_DEVICE_STATS);
+        mUIAutomation.adoptShellPermissionIdentity(
+                android.Manifest.permission.BLUETOOTH_CONNECT,
+                android.Manifest.permission.BLUETOOTH_PRIVILEGED,
+                android.Manifest.permission.BLUETOOTH_SCAN,
+                android.Manifest.permission.UPDATE_DEVICE_STATS);
         BleScanCallback filterLeScanCallback = new BleScanCallback();
         mScanner.startScanFromSource(null, filterLeScanCallback);
         TestUtils.sleep(SCAN_DURATION_MILLIS);
@@ -192,13 +177,11 @@ public class BluetoothLeScanTest {
     @MediumTest
     @Test
     public void scanFromSourceWithFilters() {
-        InstrumentationRegistry.getInstrumentation()
-                .getUiAutomation()
-                .adoptShellPermissionIdentity(
-                        android.Manifest.permission.BLUETOOTH_CONNECT,
-                        android.Manifest.permission.BLUETOOTH_PRIVILEGED,
-                        android.Manifest.permission.BLUETOOTH_SCAN,
-                        android.Manifest.permission.UPDATE_DEVICE_STATS);
+        mUIAutomation.adoptShellPermissionIdentity(
+                android.Manifest.permission.BLUETOOTH_CONNECT,
+                android.Manifest.permission.BLUETOOTH_PRIVILEGED,
+                android.Manifest.permission.BLUETOOTH_SCAN,
+                android.Manifest.permission.UPDATE_DEVICE_STATS);
         BleScanCallback filterLeScanCallback = new BleScanCallback();
         ScanSettings settings =
                 new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build();
@@ -249,9 +232,7 @@ public class BluetoothLeScanTest {
     @Test
     @Ignore("b/70865144 - Test fails because it obtains results from GmsCore explicit scan.")
     public void opportunisticScan() {
-        InstrumentationRegistry.getInstrumentation()
-                .getUiAutomation()
-                .adoptShellPermissionIdentity(android.Manifest.permission.BLUETOOTH_SCAN);
+        mUIAutomation.adoptShellPermissionIdentity(android.Manifest.permission.BLUETOOTH_SCAN);
 
         ScanSettings opportunisticScanSettings =
                 new ScanSettings.Builder()
@@ -261,8 +242,7 @@ public class BluetoothLeScanTest {
         assertThat(emptyScanCallback.getScanResults()).isEmpty();
 
         // No scans are really started with opportunistic scans only.
-        mScanner.startScan(
-                Collections.<ScanFilter>emptyList(), opportunisticScanSettings, emptyScanCallback);
+        mScanner.startScan(Collections.emptyList(), opportunisticScanSettings, emptyScanCallback);
         TestUtils.sleep(SCAN_DURATION_MILLIS);
         assertThat(emptyScanCallback.getScanResults()).isEmpty();
 
@@ -297,11 +277,9 @@ public class BluetoothLeScanTest {
     @Test
     public void batchScan() {
         Assume.assumeTrue(isBleBatchScanSupported());
-        InstrumentationRegistry.getInstrumentation()
-                .getUiAutomation()
-                .adoptShellPermissionIdentity(
-                        android.Manifest.permission.BLUETOOTH_CONNECT,
-                        android.Manifest.permission.BLUETOOTH_SCAN);
+        mUIAutomation.adoptShellPermissionIdentity(
+                android.Manifest.permission.BLUETOOTH_CONNECT,
+                android.Manifest.permission.BLUETOOTH_SCAN);
 
         ScanSettings batchScanSettings =
                 new ScanSettings.Builder()
@@ -332,11 +310,9 @@ public class BluetoothLeScanTest {
     @Test
     public void startScanPendingIntent_nullnull() throws Exception {
         Assume.assumeTrue(isBleBatchScanSupported());
-        InstrumentationRegistry.getInstrumentation()
-                .getUiAutomation()
-                .adoptShellPermissionIdentity(
-                        android.Manifest.permission.BLUETOOTH_CONNECT,
-                        android.Manifest.permission.BLUETOOTH_SCAN);
+        mUIAutomation.adoptShellPermissionIdentity(
+                android.Manifest.permission.BLUETOOTH_CONNECT,
+                android.Manifest.permission.BLUETOOTH_SCAN);
 
         Intent broadcastIntent = new Intent();
         broadcastIntent.setClass(mContext, BluetoothScanReceiver.class);
@@ -356,11 +332,9 @@ public class BluetoothLeScanTest {
     @Test
     public void startScanPendingIntent() throws Exception {
         Assume.assumeTrue(isBleBatchScanSupported());
-        InstrumentationRegistry.getInstrumentation()
-                .getUiAutomation()
-                .adoptShellPermissionIdentity(
-                        android.Manifest.permission.BLUETOOTH_CONNECT,
-                        android.Manifest.permission.BLUETOOTH_SCAN);
+        mUIAutomation.adoptShellPermissionIdentity(
+                android.Manifest.permission.BLUETOOTH_CONNECT,
+                android.Manifest.permission.BLUETOOTH_SCAN);
 
         ScanSettings batchScanSettings =
                 new ScanSettings.Builder()
@@ -407,9 +381,8 @@ public class BluetoothLeScanTest {
         return regularLeScanCallback.getScanResults();
     }
 
-    // Returns whether offloaded scan batching is supported.
     private boolean isBleBatchScanSupported() {
-        return mBluetoothAdapter.isOffloadedScanBatchingSupported();
+        return mAdapter.isOffloadedScanBatchingSupported();
     }
 
     // Helper class for BLE scan callback.
