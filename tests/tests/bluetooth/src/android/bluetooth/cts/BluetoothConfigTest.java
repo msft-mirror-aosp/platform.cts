@@ -26,10 +26,9 @@ import static org.junit.Assume.assumeTrue;
 
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothStatusCodes;
-import android.content.Context;
+import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.sysprop.BluetoothProperties;
 import android.util.Log;
 
@@ -50,31 +49,22 @@ import java.util.List;
 public class BluetoothConfigTest {
     private static final String TAG = MethodHandles.lookup().lookupClass().getSimpleName();
 
-    private Context mContext;
+    private final BluetoothAdapter mAdapter = BlockingBluetoothAdapter.getAdapter();
+    private final UiAutomation mUiAutomation =
+            InstrumentationRegistry.getInstrumentation().getUiAutomation();
     private boolean mHasBluetooth;
-    private BluetoothAdapter mAdapter;
-    private UiAutomation mUiAutomation;
 
     @Before
     public void setUp() throws Exception {
-        mContext = InstrumentationRegistry.getInstrumentation().getContext();
-
         mHasBluetooth = TestUtils.hasBluetooth();
         if (!mHasBluetooth) return;
-
-        mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
-
-        BluetoothManager manager = mContext.getSystemService(BluetoothManager.class);
-        mAdapter = manager.getAdapter();
-        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.enable()).isTrue();
     }
 
     @After
     public void tearDown() throws Exception {
         if (!mHasBluetooth) return;
-
-        mAdapter = null;
         mUiAutomation.dropShellPermissionIdentity();
     }
 
