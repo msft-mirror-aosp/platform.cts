@@ -24,10 +24,11 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
 
+import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothServerSocket;
+import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.content.Context;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -45,23 +46,21 @@ import java.io.IOException;
 @SmallTest
 public class BluetoothServerSocketTest {
     private static final int SCAN_STOP_TIMEOUT = 1000;
+    private final BluetoothAdapter mAdapter = BlockingBluetoothAdapter.getAdapter();
+    private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
+    private final Context mContext = mInstrumentation.getContext();
+    private final UiAutomation mUiAutomation = mInstrumentation.getUiAutomation();
+
     private BluetoothServerSocket mBluetoothServerSocket;
-    private BluetoothAdapter mAdapter;
-    private UiAutomation mUiAutomation;
     private boolean mHasBluetooth;
-    private Context mContext;
 
     @Before
     public void setUp() throws IOException {
-        mContext = InstrumentationRegistry.getInstrumentation().getContext();
         mHasBluetooth = mContext.getPackageManager().hasSystemFeature(FEATURE_BLUETOOTH);
         assumeTrue(mHasBluetooth);
 
-        mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
-        BluetoothManager manager = mContext.getSystemService(BluetoothManager.class);
-        mAdapter = manager.getAdapter();
-        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.enable()).isTrue();
         mBluetoothServerSocket = mAdapter.listenUsingL2capChannel();
     }
 
