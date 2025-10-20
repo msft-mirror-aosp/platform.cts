@@ -54,6 +54,7 @@ android_test {
         "androidx.compose.ui_ui-test-junit4",
         "platform-screenshot-diff-core",
         "ravenwood-junit",
+        "android.app.flags-aconfig-java",
     ],
     srcs: [
         "src/**/*.java",
