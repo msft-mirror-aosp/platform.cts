@@ -39,16 +39,17 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothDevice.BluetoothAddress;
-import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothSinkAudioPolicy;
 import android.bluetooth.BluetoothStatusCodes;
 import android.bluetooth.EncryptionStatus;
 import android.bluetooth.OobData;
+import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.bluetooth.test_utils.Permissions;
 import android.content.AttributionSource;
 import android.content.BroadcastReceiver;
@@ -84,12 +85,16 @@ import java.util.UUID;
 @RunWith(AndroidJUnit4.class)
 @LargeTest
 public class BluetoothDeviceTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    private Context mContext;
+    private final BluetoothAdapter mAdapter = BlockingBluetoothAdapter.getAdapter();
+    private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
+    private final Context mContext = mInstrumentation.getContext();
+    private final UiAutomation mUiAutomation = mInstrumentation.getUiAutomation();
+
     private boolean mHasBluetooth;
     private boolean mHasCompanionDevice;
-    private BluetoothAdapter mAdapter;
-    private UiAutomation mUiAutomation;
 
     private final String mFakeDeviceAddress = "00:11:22:AA:BB:CC";
     private BluetoothDevice mFakeDevice;
@@ -97,13 +102,8 @@ public class BluetoothDeviceTest {
     private UUID mFakeUuid = UUID.fromString("0000111E-0000-1000-8000-00805F9B34FB");
     private int mFakeKeySize = 16;
 
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
     @Before
     public void setUp() throws Exception {
-        mContext = InstrumentationRegistry.getInstrumentation().getContext();
-
         mHasBluetooth =
                 mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH);
 
@@ -112,11 +112,8 @@ public class BluetoothDeviceTest {
                         .hasSystemFeature(PackageManager.FEATURE_COMPANION_DEVICE_SETUP);
 
         if (mHasBluetooth && mHasCompanionDevice) {
-            BluetoothManager manager = mContext.getSystemService(BluetoothManager.class);
-            mAdapter = manager.getAdapter();
-            mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
             mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
-            assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
+            assertThat(BlockingBluetoothAdapter.enable()).isTrue();
             mFakeDevice = mAdapter.getRemoteDevice(mFakeDeviceAddress);
         }
     }
@@ -124,7 +121,6 @@ public class BluetoothDeviceTest {
     @After
     public void tearDown() throws Exception {
         if (mHasBluetooth && mHasCompanionDevice) {
-            mAdapter = null;
             mUiAutomation.dropShellPermissionIdentity();
         }
     }
@@ -180,7 +176,7 @@ public class BluetoothDeviceTest {
                         "cmd companiondevice disassociate %d %s %s",
                         userId, packageName, mFakeDeviceAddress));
 
-        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
         assertThat(mFakeDevice.getAlias()).isNull();
         assertThat(mFakeDevice.setAlias(testDeviceAlias))
                 .isEqualTo(BluetoothStatusCodes.ERROR_BLUETOOTH_NOT_ENABLED);
@@ -263,7 +259,7 @@ public class BluetoothDeviceTest {
         assertThrows(SecurityException.class, () -> mFakeDevice.getBatteryLevel());
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
 
-        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
         assertThat(mFakeDevice.getBatteryLevel())
                 .isEqualTo(BluetoothDevice.BATTERY_LEVEL_BLUETOOTH_OFF);
     }
@@ -279,7 +275,7 @@ public class BluetoothDeviceTest {
         assertThrows(SecurityException.class, () -> mFakeDevice.isBondingInitiatedLocally());
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
 
-        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
         assertThat(mFakeDevice.isBondingInitiatedLocally()).isFalse();
     }
 
@@ -305,7 +301,7 @@ public class BluetoothDeviceTest {
         assertThrows(SecurityException.class, () -> mFakeDevice.setPin("123456"));
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
 
-        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
         assertThat(mFakeDevice.setPin("123456")).isFalse();
     }
 
@@ -328,7 +324,7 @@ public class BluetoothDeviceTest {
         assertThrows(SecurityException.class, () -> mFakeDevice.cancelBondProcess());
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
 
-        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
         assertThat(mFakeDevice.cancelBondProcess()).isFalse();
     }
 
@@ -341,7 +337,7 @@ public class BluetoothDeviceTest {
         assertThrows(SecurityException.class, () -> mFakeDevice.createBond(TRANSPORT_AUTO));
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
 
-        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
         assertThat(mFakeDevice.createBond(TRANSPORT_AUTO)).isFalse();
     }
 
@@ -373,7 +369,7 @@ public class BluetoothDeviceTest {
         assertThrows(SecurityException.class, () -> mFakeDevice.getUuids());
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
 
-        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
         assertThat(mFakeDevice.getUuids()).isNull();
     }
 
@@ -389,7 +385,7 @@ public class BluetoothDeviceTest {
         assertThrows(SecurityException.class, () -> mFakeDevice.isEncrypted());
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
 
-        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
         assertThat(mFakeDevice.isEncrypted()).isFalse();
     }
 
@@ -405,7 +401,7 @@ public class BluetoothDeviceTest {
         assertThrows(SecurityException.class, () -> mFakeDevice.removeBond());
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
 
-        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
         assertThat(mFakeDevice.removeBond()).isFalse();
     }
 
@@ -426,7 +422,7 @@ public class BluetoothDeviceTest {
                 SecurityException.class, () -> mFakeDevice.setPin(convertPinToBytes("123456")));
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
 
-        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
         assertThat(mFakeDevice.setPin(convertPinToBytes("123456"))).isFalse();
     }
 
@@ -471,7 +467,7 @@ public class BluetoothDeviceTest {
         assertThrows(SecurityException.class, () -> mFakeDevice.fetchUuidsWithSdp(TRANSPORT_BREDR));
         assertThrows(SecurityException.class, () -> mFakeDevice.fetchUuidsWithSdp(TRANSPORT_LE));
 
-        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
         assertThat(mFakeDevice.fetchUuidsWithSdp(TRANSPORT_AUTO)).isFalse();
     }
 
@@ -767,7 +763,7 @@ public class BluetoothDeviceTest {
                 List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
         try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
             // Test when Bluetooth is disabled
-            assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+            assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
             assertThat(mFakeDevice.setOnHeadDetectionEnabled(true))
                     .isEqualTo(BluetoothStatusCodes.ERROR_BLUETOOTH_NOT_ENABLED);
         }
@@ -775,14 +771,14 @@ public class BluetoothDeviceTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_PRIORITIZED_IN_EAR_ROUTING)
     @Test
-    public void testsetOnHead_permissionsAndEdgeCases() {
+    public void testSetOnHead_permissionsAndEdgeCases() {
         assumeTrue(mHasBluetooth);
         Permissions.enforceEachPermissions(
                 () -> mFakeDevice.setOnHead(true),
                 List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
         try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
             // Test when Bluetooth is disabled
-            assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+            assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
             assertThat(mFakeDevice.setOnHead(true))
                     .isEqualTo(BluetoothStatusCodes.ERROR_BLUETOOTH_NOT_ENABLED);
         }
