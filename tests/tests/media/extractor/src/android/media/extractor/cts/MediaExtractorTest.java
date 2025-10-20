@@ -21,6 +21,7 @@ import static android.media.MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION;
 
 import static com.android.media.extractor.flags.Flags.FLAG_EXTRACTOR_MP4_ENABLE_APV;
 import static com.android.media.extractor.flags.Flags.FLAG_EXTRACTOR_MP4_ENABLE_IAMF;
+import static com.android.media.extractor.flags.Flags.FLAG_EXTRACTOR_MP4_ENABLE_VVC;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -262,6 +263,23 @@ public class MediaExtractorTest {
                 "Mismatched profile",
                 MediaCodecInfo.CodecProfileLevel.IAMFProfileSimplePcm,
                 profile);
+    }
+
+    @RequiresFlagsEnabled(FLAG_EXTRACTOR_MP4_ENABLE_VVC)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.CINNAMON_BUN)
+    @Test
+    public void testVvcMediaExtractor() throws Exception {
+        String testFileName = "bbb_320x180_360kbps_24fps_vvc_nob.mp4";
+        Preconditions.assertTestFileExists(mInpPrefix + testFileName);
+
+        TestMediaDataSource dataSource = setDataSource(testFileName);
+        assertNotNull("Extractor failed to initialize", mExtractor);
+
+        MediaFormat trackFormat = mExtractor.getTrackFormat(0);
+        assertNotNull("expected to find a track", trackFormat);
+
+        final String mimeType = trackFormat.getString(MediaFormat.KEY_MIME);
+        assertEquals("Unexpected Mime type value", "video/vvc", mimeType);
     }
 
     private boolean advertisesDolbyVision() {
