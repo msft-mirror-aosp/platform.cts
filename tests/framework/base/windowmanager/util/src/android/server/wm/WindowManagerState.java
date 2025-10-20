@@ -2514,6 +2514,7 @@ public class WindowManagerState {
         private List<Rect> mUnrestrictedKeepClearRects;
         private List<InsetsSource> mMergedLocalInsetsSources;
         private int mFlags;
+        private int mForciblyShownTypes;
         private Rect mDimBounds;
 
         WindowState(WindowStateProto proto) {
@@ -2523,6 +2524,7 @@ public class WindowManagerState {
             if (proto.hasAttributes()) {
                 mType = proto.getAttributes().getType();
                 mFlags = proto.getAttributes().getFlags();
+                mForciblyShownTypes = proto.getAttributes().getForciblyShownTypes();
             }
             if (proto.hasAnimator()) {
                 WindowStateAnimatorProto animatorProto = proto.getAnimator();
@@ -2585,6 +2587,7 @@ public class WindowManagerState {
             if (proto.attributes != null) {
                 mType = proto.attributes.type;
                 mFlags = proto.attributes.flags;
+                mForciblyShownTypes = proto.attributes.forciblyShownTypes;
             }
             com.android.server.wm.nano.WindowStateAnimatorProto animatorProto = proto.animator;
             if (animatorProto != null) {
@@ -2718,6 +2721,10 @@ public class WindowManagerState {
 
         public int getFlags() {
             return mFlags;
+        }
+
+        public int getForciblyShownTypes() {
+            return mForciblyShownTypes;
         }
 
         @Nullable

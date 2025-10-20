@@ -53,6 +53,7 @@ import androidx.annotation.NonNull;
 import com.android.compatibility.common.util.OverrideAnimationScaleRule;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Rule;
 import org.mockito.InOrder;
 
@@ -73,6 +74,30 @@ public class WindowInsetsAnimationTestBase extends WindowManagerTestBase {
 
     protected TestActivity mActivity;
     protected View mRootView;
+
+    @Before
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        logForciblyShownTypes();
+    }
+
+    private void logForciblyShownTypes() {
+        mWmState.computeState();
+        final StringBuilder sb = new StringBuilder();
+        for (WindowManagerState.WindowState win : mWmState.getWindows()) {
+            final int forciblyShownTypes = win.getForciblyShownTypes();
+            if (forciblyShownTypes != 0) {
+                sb.append("\n ")
+                        .append(win.getName())
+                        .append(" forcibly shows types: ")
+                        .append(WindowInsets.Type.toString(forciblyShownTypes));
+            }
+        }
+        if (!sb.isEmpty()) {
+            Log.w(getClass().getSimpleName(), "Insets are forcibly shown. Because:" + sb);
+        }
+    }
 
     protected void commonAnimationAssertions(TestActivity activity, WindowInsets before,
             boolean show, int types) {
