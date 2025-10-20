@@ -19,6 +19,7 @@ package android.devicepolicy.cts
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.multiuser.annotations.EnsureCanAddSecondaryUser
+import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.multiuser.annotations.RequireGuestUserIsEphemeral
 import com.android.bedstead.multiuser.annotations.RequireGuestUserIsNotEphemeral
 import com.android.bedstead.nene.TestApis
@@ -56,7 +57,7 @@ class EphemeralUserTest {
 
     @Test
     @RequireGuestUserIsNotEphemeral
-    @EnsureCanAddSecondaryUser // TODO(b/442891661) Check specifically for Guest creation support
+    @EnsureCanAddUser(UserType.USER_TYPE_FULL_GUEST)
     fun guestUser_isNotEphemeral() {
         TestApis.users()
                 .createUser()
@@ -69,7 +70,7 @@ class EphemeralUserTest {
 
     @Test
     @RequireGuestUserIsEphemeral
-    @EnsureCanAddSecondaryUser // TODO(b/442891661) Check specifically for Guest creation support
+    @EnsureCanAddUser(UserType.USER_TYPE_FULL_GUEST)
     fun guestUser_isEphemeral() {
         TestApis.users()
                 .createUser()

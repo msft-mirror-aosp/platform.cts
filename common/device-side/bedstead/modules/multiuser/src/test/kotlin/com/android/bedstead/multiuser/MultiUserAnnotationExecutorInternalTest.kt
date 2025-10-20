@@ -17,8 +17,9 @@ package com.android.bedstead.multiuser
 
 import com.android.bedstead.harrier.DeviceStateTester
 import com.android.bedstead.harrier.annotations.FailureMode
-import com.android.bedstead.multiuser.annotations.EnsureCanAddSecondaryUser
+import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.nene.exceptions.NeneException
+import com.android.bedstead.nene.users.UserType.SECONDARY_USER_TYPE_NAME
 import com.android.bedstead.nene.utils.Assert.assertThrows
 import org.junit.After
 import org.junit.Test
@@ -42,11 +43,15 @@ class MultiUserAnnotationExecutorInternalTest {
     }
 
     @Test
-    fun ensureCanAddSecondaryUser_usersExceedsDeviceLimit_throwsException() {
+    fun EnsureCanAddUser_usersExceedsDeviceLimit_throwsException() {
         assertThrows(NeneException::class.java) {
             mDeviceState
-                    .stepName("EnsureCanAddSecondaryUser")
-                    .apply(listOf(EnsureCanAddSecondaryUser(9999, failureMode = FailureMode.FAIL)))
+                    .stepName("EnsureCanAddUser")
+                    .apply(listOf(EnsureCanAddUser(
+                        SECONDARY_USER_TYPE_NAME,
+                        9999,
+                        failureMode = FailureMode.FAIL
+                    )))
         }
     }
 }

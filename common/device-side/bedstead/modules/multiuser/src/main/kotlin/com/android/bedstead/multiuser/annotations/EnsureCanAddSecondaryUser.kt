@@ -15,10 +15,6 @@
  */
 package com.android.bedstead.multiuser.annotations
 
-import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
-import com.android.bedstead.harrier.annotations.FailureMode
-import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
-
 /**
  * Mark that a test method requires the ability to add a new secondary user.
  *
@@ -33,21 +29,9 @@ import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
 )
 @Retention(AnnotationRetention.RUNTIME)
 @RequireMultiUserSupport
-@UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
+@EnsureCanAddUser("android.os.usertype.full.SECONDARY")
 annotation class EnsureCanAddSecondaryUser(
-    /** The number of users we need space for. Defaults to 1.  */
-    val number: Int = 1,
-    val failureMode: FailureMode = FailureMode.SKIP,
-    /**
-     * Priority sets the order that annotations will be resolved.
-     *
-     * Annotations with a lower priority will be resolved before annotations with a higher
-     * priority.
-     *
-     * If there is an order requirement between annotations, ensure that the priority of the
-     * annotation which must be resolved first is lower than the one which must be resolved later.
-     *
-     * Priority can be set to a [AnnotationPriorityRunPrecedence] constant, or to any [int].
-     */
-    val priority: Int = AnnotationPriorityRunPrecedence.MIDDLE
+    // This annotation is just a convenient shorthand for the default-valued above-noted
+    // @RequireMultiUserSupport and @EnsureCanAddUser("android.os.usertype.full.SECONDARY").
+    // It has no actual body.
 )

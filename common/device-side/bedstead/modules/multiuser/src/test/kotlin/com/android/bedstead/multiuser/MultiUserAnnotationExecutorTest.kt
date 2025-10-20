@@ -20,7 +20,7 @@ import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.EnsureHasNoSecondaryUser
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
-import com.android.bedstead.multiuser.annotations.EnsureCanAddSecondaryUser
+import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasCloneProfile
 import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser
@@ -35,6 +35,7 @@ import com.android.bedstead.multiuser.annotations.RequireGuestUserIsEphemeral
 import com.android.bedstead.multiuser.annotations.RequireGuestUserIsNotEphemeral
 import com.android.bedstead.multiuser.annotations.RequireHasMainUser
 import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode
+import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport
 import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode
 import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsers
 import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsersOnDefaultDisplay
@@ -66,7 +67,8 @@ import org.junit.runner.RunWith
 @RunWith(BedsteadJUnit4::class)
 class MultiUserAnnotationExecutorTest {
 
-    @EnsureCanAddSecondaryUser(number = 2)
+    @EnsureCanAddUser(value = SECONDARY_USER_TYPE_NAME, number = 2)
+    @RequireMultiUserSupport
     @Test
     fun ensureCanAddSecondaryUser_canAddUsers() {
         users().createUser().create().use { _ ->
