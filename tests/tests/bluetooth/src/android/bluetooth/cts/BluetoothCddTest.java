@@ -25,6 +25,7 @@ import static com.google.common.truth.Truth.assertThat;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothStatusCodes;
+import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.content.Context;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -48,20 +49,19 @@ public class BluetoothCddTest {
     private static final int PROFILE_LE_CALL_CONTROL = 27;
     // Some devices need some extra time after entering STATE_OFF
     private static final int BLUETOOTH_TOGGLE_DELAY_MS = 2000;
-    private Context mContext;
+
+    private final BluetoothAdapter mAdapter = BlockingBluetoothAdapter.getAdapter();
+    private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
+
     private boolean mHasBluetooth;
-    private BluetoothAdapter mAdapter;
 
     @Before
     public void setUp() {
-        mContext = InstrumentationRegistry.getInstrumentation().getContext();
         mHasBluetooth = TestUtils.hasBluetooth();
         Assume.assumeTrue(mHasBluetooth);
         TestUtils.adoptPermissionAsShellUid(
                 BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED, BLUETOOTH_SCAN);
-        mAdapter = TestUtils.getBluetoothAdapterOrDie();
-
-        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.enable()).isTrue();
     }
 
     @After
@@ -69,17 +69,15 @@ public class BluetoothCddTest {
         if (!mHasBluetooth) {
             return;
         }
-        if (mAdapter != null && mAdapter.getState() != BluetoothAdapter.STATE_OFF) {
+        if (mAdapter.getState() != BluetoothAdapter.STATE_OFF) {
             if (mAdapter.getState() == BluetoothAdapter.STATE_ON) {
-                assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+                assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
             }
             try {
                 Thread.sleep(BLUETOOTH_TOGGLE_DELAY_MS);
             } catch (InterruptedException ignored) {
             }
         }
-        mAdapter = null;
-        mContext = null;
         TestUtils.dropPermissionAsShellUid();
     }
 
