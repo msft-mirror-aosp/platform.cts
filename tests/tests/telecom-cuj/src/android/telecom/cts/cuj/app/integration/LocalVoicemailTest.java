@@ -39,6 +39,7 @@ import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
 import android.telecom.cts.apps.AppControlWrapper;
+import android.telecom.cts.apps.ShellCommandExecutor;
 import android.telecom.cts.cuj.BaseAppVerifier;
 import android.telecom.cts.cuj.CujLocalVoicemailService;
 
@@ -192,7 +193,7 @@ public class LocalVoicemailTest extends BaseAppVerifier {
         try {
             configureTestLocalVoicemailServiceAndVerify();
             managedApp = bindToApp(ManagedConnectionServiceApp);
-            registerAcctAndVerify(managedApp, MANAGED_DEFAULT_ACCOUNT_1);
+            registerAcctAndVerify(MANAGED_DEFAULT_ACCOUNT_1);
 
             Duration newDuration = Duration.ofSeconds(90);
             invokeMethodWithShellPermissionsNoReturn(
@@ -215,7 +216,7 @@ public class LocalVoicemailTest extends BaseAppVerifier {
                     mTelecomManager,
                     tm -> tm.disableLocalVoicemail(MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle()));
             resetTestLocalVoicemailService();
-            unregisterAcctAndVerify(managedApp, MANAGED_DEFAULT_ACCOUNT_1);
+            unregisterAcctAndVerify(MANAGED_DEFAULT_ACCOUNT_1);
         }
     }
 
@@ -240,7 +241,7 @@ public class LocalVoicemailTest extends BaseAppVerifier {
             boundsBundle.putLong(PhoneAccount.EXTRA_LOCAL_VOICEMAIL_MAXIMUM_TIMEOUT_MILLIS, 60000L);
             PhoneAccount accountWithBounds =
                     MANAGED_DEFAULT_ACCOUNT_1.toBuilder().setExtras(boundsBundle).build();
-            registerAcctAndVerify(managedApp, accountWithBounds);
+            registerAcctAndVerify(accountWithBounds);
 
             assertThrows(
                     "Expected IllegalArgumentException for duration above limit.",
@@ -269,7 +270,7 @@ public class LocalVoicemailTest extends BaseAppVerifier {
                     mTelecomManager,
                     tm -> tm.disableLocalVoicemail(MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle()));
             resetTestLocalVoicemailService();
-            unregisterAcctAndVerify(managedApp, MANAGED_DEFAULT_ACCOUNT_1);
+            unregisterAcctAndVerify(MANAGED_DEFAULT_ACCOUNT_1);
         }
     }
 
@@ -322,7 +323,7 @@ public class LocalVoicemailTest extends BaseAppVerifier {
                     mTelecomManager,
                     tm -> tm.disableLocalVoicemail(MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle()));
             resetTestLocalVoicemailService();
-            unregisterAcctAndVerify(managedApp, MANAGED_DEFAULT_ACCOUNT_1);
+            unregisterAcctAndVerify(MANAGED_DEFAULT_ACCOUNT_1);
         }
     }
 
@@ -378,7 +379,7 @@ public class LocalVoicemailTest extends BaseAppVerifier {
                     mTelecomManager,
                     tm -> tm.disableLocalVoicemail(MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle()));
             resetTestLocalVoicemailService();
-            unregisterAcctAndVerify(managedApp, MANAGED_DEFAULT_ACCOUNT_1);
+            unregisterAcctAndVerify(MANAGED_DEFAULT_ACCOUNT_1);
         }
     }
 
@@ -446,7 +447,7 @@ public class LocalVoicemailTest extends BaseAppVerifier {
                     mTelecomManager,
                     tm -> tm.disableLocalVoicemail(MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle()));
             resetTestLocalVoicemailService();
-            unregisterAcctAndVerify(managedApp, MANAGED_DEFAULT_ACCOUNT_1);
+            unregisterAcctAndVerify(MANAGED_DEFAULT_ACCOUNT_1);
         }
     }
 
@@ -504,7 +505,7 @@ public class LocalVoicemailTest extends BaseAppVerifier {
                     mTelecomManager,
                     tm -> tm.disableLocalVoicemail(MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle()));
             resetTestLocalVoicemailService();
-            unregisterAcctAndVerify(managedApp, MANAGED_DEFAULT_ACCOUNT_1);
+            unregisterAcctAndVerify(MANAGED_DEFAULT_ACCOUNT_1);
         }
     }
 
@@ -533,15 +534,17 @@ public class LocalVoicemailTest extends BaseAppVerifier {
                 "Expected successful shell command reset of local VM", result.contains("Success"));
     }
 
-    private void registerAcctAndVerify(AppControlWrapper wrapper, PhoneAccount phoneAccount)
-            throws Exception {
-        wrapper.registerCustomPhoneAccount(phoneAccount);
+    private void registerAcctAndVerify(final PhoneAccount phoneAccount) throws Exception {
+        invokeMethodWithShellPermissionsNoReturn(
+                mTelecomManager, tm -> tm.registerPhoneAccount(phoneAccount));
+        ShellCommandExecutor.enablePhoneAccount(
+                InstrumentationRegistry.getInstrumentation(), phoneAccount.getAccountHandle());
         assertTrue(isPhoneAccountRegistered(phoneAccount.getAccountHandle()));
     }
 
-    private void unregisterAcctAndVerify(AppControlWrapper wrapper, PhoneAccount phoneAccount)
-            throws Exception {
-        wrapper.unregisterPhoneAccountWithHandle(phoneAccount.getAccountHandle());
+    private void unregisterAcctAndVerify(PhoneAccount phoneAccount) throws Exception {
+        invokeMethodWithShellPermissionsNoReturn(
+                mTelecomManager, tm -> tm.unregisterPhoneAccount(phoneAccount.getAccountHandle()));
         assertFalse(isPhoneAccountRegistered(phoneAccount.getAccountHandle()));
     }
 
