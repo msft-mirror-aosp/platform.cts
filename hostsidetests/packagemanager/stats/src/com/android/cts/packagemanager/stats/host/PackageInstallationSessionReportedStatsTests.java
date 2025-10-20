@@ -78,7 +78,8 @@ public class PackageInstallationSessionReportedStatsTests extends PackageManager
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 AtomsProto.Atom.PACKAGE_INSTALLATION_SESSION_REPORTED_FIELD_NUMBER);
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
-        DeviceUtils.installTestApp(getDevice(), TEST_INSTALL_APK, TEST_INSTALL_PACKAGE, mCtsBuild);
+        DeviceUtils.installTestAppWithAdb(
+                getDevice(), TEST_INSTALL_APK, TEST_INSTALL_PACKAGE, mCtsBuild);
         assertThat(getDevice().isPackageInstalled(TEST_INSTALL_PACKAGE,
                 String.valueOf(getDevice().getCurrentUser()))).isTrue();
         installPackageUsingIncremental(new String[]{TEST_INSTALL_APK_V2});
@@ -201,7 +202,8 @@ public class PackageInstallationSessionReportedStatsTests extends PackageManager
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 AtomsProto.Atom.PACKAGE_UNINSTALLATION_REPORTED_FIELD_NUMBER);
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
-        DeviceUtils.installTestApp(getDevice(), TEST_INSTALL_APK, TEST_INSTALL_PACKAGE, mCtsBuild);
+        DeviceUtils.installTestAppWithAdb(
+                getDevice(), TEST_INSTALL_APK, TEST_INSTALL_PACKAGE, mCtsBuild);
         assertThat(getDevice().isPackageInstalled(TEST_INSTALL_PACKAGE,
                 String.valueOf(getDevice().getCurrentUser()))).isTrue();
         final int expectedUid = getAppUid(TEST_INSTALL_PACKAGE);
@@ -231,14 +233,19 @@ public class PackageInstallationSessionReportedStatsTests extends PackageManager
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 AtomsProto.Atom.PACKAGE_INSTALLATION_SESSION_REPORTED_FIELD_NUMBER);
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
-        DeviceUtils.installTestApp(getDevice(), TEST_INSTALL_APK_V2, TEST_INSTALL_PACKAGE,
-                mCtsBuild);
+        DeviceUtils.installTestAppWithAdb(
+                getDevice(), TEST_INSTALL_APK_V2, TEST_INSTALL_PACKAGE, mCtsBuild);
         assertThat(getDevice().isPackageInstalled(TEST_INSTALL_PACKAGE,
                 String.valueOf(getDevice().getCurrentUser()))).isTrue();
         // Second install should fail because of version downgrade
         CompatibilityBuildHelper buildHelper = new CompatibilityBuildHelper(mCtsBuild);
-        final String result = getDevice().installPackage(buildHelper.getTestFile(TEST_INSTALL_APK),
-                /*reinstall=*/true, /*grantPermissions=*/true);
+        final String result =
+                getDevice()
+                        .adbInstallPackage(
+                                buildHelper.getTestFile(TEST_INSTALL_APK),
+                                /* reinstall= */ true,
+                                /* grantPermissions= */ true,
+                                "--no-streaming");
         assertThat(result).isNotNull();
 
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
@@ -248,21 +255,70 @@ public class PackageInstallationSessionReportedStatsTests extends PackageManager
                 reports.add(data.getAtom().getPackageInstallationSessionReported());
             }
         }
-        assertThat(reports.size()).isEqualTo(2);
+
+        // Find the successful V2 installation report
+        AtomsProto.PackageInstallationSessionReported ApkV2Report =
+                reports.stream()
+                        .filter(
+                                r ->
+                                        r.getPublicReturnCode() == 1 /* success */
+                                                && r.getVersionCode() == 2)
+                        .findFirst()
+                        .orElse(null);
+
+        // Find the failed V1 downgrade report
+        AtomsProto.PackageInstallationSessionReported ApkV1Report =
+                reports.stream()
+                        .filter(
+                                r ->
+                                        r.getPublicReturnCode()
+                                                == -25 /* INSTALL_FAILED_VERSION_DOWNGRADE */)
+                        .findFirst()
+                        .orElse(null);
+
+        // Assert that we found both reports we care about
+        assertThat(ApkV2Report).isNotNull();
+        assertThat(ApkV1Report).isNotNull();
+
         final int expectedUid = getAppUid(TEST_INSTALL_PACKAGE);
         final int expectedUser = getDevice().getCurrentUser();
-        checkReportResult(reports.get(0), expectedUid, Collections.singletonList(expectedUser),
-                Collections.emptyList(), 1 /* success */, 0 /* internalErrorCode */,
-                2 /* versionCode */, getTestFileSize(TEST_INSTALL_APK_V2), 0 /* dataLoaderType */,
-                0 /* expectedUserActionRequiredType */, false,
-                false, false, false, false, false, false);
-        checkDurationResult(reports.get(0));
         checkReportResult(
-                reports.get(1), -1 /* uid */, Collections.emptyList(), Collections.emptyList(),
-                -25 /* INSTALL_FAILED_VERSION_DOWNGRADE */, 0 /* internalErrorCode */,
-                0 /* versionCode */, 0, 0 /* dataLoaderType */,
-                0 /* expectedUserActionRequiredType */, false,
-                false, false, false, false, false, false);
+                ApkV2Report,
+                expectedUid,
+                Collections.singletonList(expectedUser),
+                Collections.emptyList(),
+                1 /* success */,
+                0 /* internalErrorCode */,
+                2 /* versionCode */,
+                getTestFileSize(TEST_INSTALL_APK_V2),
+                0 /* dataLoaderType */,
+                0 /* expectedUserActionRequiredType */,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false);
+        checkDurationResult(ApkV2Report);
+        checkReportResult(
+                ApkV1Report,
+                -1 /* uid */,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                -25 /* INSTALL_FAILED_VERSION_DOWNGRADE */,
+                0 /* internalErrorCode */,
+                0 /* versionCode */,
+                0,
+                0 /* dataLoaderType */,
+                0 /* expectedUserActionRequiredType */,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false);
     }
 
     public void testPackageInstallationFailedInternalErrorReported() throws Exception {
@@ -270,15 +326,23 @@ public class PackageInstallationSessionReportedStatsTests extends PackageManager
                 AtomsProto.Atom.PACKAGE_INSTALLATION_SESSION_REPORTED_FIELD_NUMBER);
         Thread.sleep(AtomTestUtils.WAIT_TIME_SHORT);
         CompatibilityBuildHelper buildHelper = new CompatibilityBuildHelper(mCtsBuild);
-        String result = getDevice().installPackage(buildHelper.getTestFile(
-                TEST_INSTALL_STATIC_SHARED_LIB_V1_APK),
-                /*reinstall=*/true, /*grantPermissions=*/true);
+        String result =
+                getDevice()
+                        .adbInstallPackage(
+                                buildHelper.getTestFile(TEST_INSTALL_STATIC_SHARED_LIB_V1_APK),
+                                /* reinstall= */ true,
+                                /* grantPermissions= */ true,
+                                "--no-streaming");
         assertThat(result).isNull();
         assertThat(isLibraryInstalled(TEST_INSTALL_STATIC_SHARED_LIB_NAME)).isTrue();
         // Second install should fail because of static shared lib version order mismatch
-        result = getDevice().installPackage(buildHelper.getTestFile(
-                TEST_INSTALL_STATIC_SHARED_LIB_V2_APK),
-                /*reinstall=*/true, /*grantPermissions=*/true);
+        result =
+                getDevice()
+                        .adbInstallPackage(
+                                buildHelper.getTestFile(TEST_INSTALL_STATIC_SHARED_LIB_V2_APK),
+                                /* reinstall= */ true,
+                                /* grantPermissions= */ true,
+                                "--no-streaming");
         assertThat(result).isNotNull();
 
         Thread.sleep(AtomTestUtils.WAIT_TIME_SHORT);
@@ -288,22 +352,70 @@ public class PackageInstallationSessionReportedStatsTests extends PackageManager
                 reports.add(data.getAtom().getPackageInstallationSessionReported());
             }
         }
-        assertThat(reports.size()).isEqualTo(2);
+
+        // Find the successful V1 installation report.
+        // Key identifiers: publicReturnCode is 1 (success) and versionCode is 1.
+        AtomsProto.PackageInstallationSessionReported LibV1Report =
+                reports.stream()
+                        .filter(r -> r.getPublicReturnCode() == 1 && r.getVersionCode() == 1)
+                        .findFirst()
+                        .orElse(null);
+
+        // Find the failed V2 installation report.
+        // Key identifiers: publicReturnCode is -110 and internalErrorCode is -14.
+        AtomsProto.PackageInstallationSessionReported LibV2Report =
+                reports.stream()
+                        .filter(
+                                r ->
+                                        r.getPublicReturnCode()
+                                                        == -110 /* INSTALL_FAILED_INTERNAL_ERROR */
+                                                && r.getInternalErrorCode()
+                                                        == -14 /* INTERNAL_ERROR_STATIC_SHARED_LIB_VERSION_CODES_ORDER */)
+                        .findFirst()
+                        .orElse(null);
+
+        // Assert that we found both of the reports we were looking for.
+        assertThat(LibV1Report).isNotNull();
+        assertThat(LibV2Report).isNotNull();
+
         final int expectedUid = getAppUid(TEST_INSTALL_STATIC_SHARED_LIB_V1_PACKAGE);
         final int expectedUser = getDevice().getCurrentUser();
-        checkReportResult(reports.get(0), expectedUid, Collections.singletonList(expectedUser),
-                Collections.emptyList(), 1 /* success */, 0 /* internalErrorCode */,
-                1 /* versionCode */, getTestFileSize(TEST_INSTALL_APK_V2), 0 /* dataLoaderType */,
-                0 /* expectedUserActionRequiredType */, false,
-                false, false, false, false, false, false);
-        checkDurationResult(reports.get(0));
         checkReportResult(
-                reports.get(1), -1 /* uid */, Collections.emptyList(), Collections.emptyList(),
+                LibV1Report,
+                expectedUid,
+                Collections.singletonList(expectedUser),
+                Collections.emptyList(),
+                1 /* success */,
+                0 /* internalErrorCode */,
+                1 /* versionCode */,
+                getTestFileSize(TEST_INSTALL_APK_V2),
+                0 /* dataLoaderType */,
+                0 /* expectedUserActionRequiredType */,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false);
+        checkDurationResult(LibV1Report);
+        checkReportResult(
+                LibV2Report,
+                -1 /* uid */,
+                Collections.emptyList(),
+                Collections.emptyList(),
                 -110 /* INSTALL_FAILED_INTERNAL_ERROR */,
                 -14 /* INTERNAL_ERROR_STATIC_SHARED_LIB_VERSION_CODES_ORDER */,
                 0 /* versionCode */,
-                0, 0 /* dataLoaderType */,
-                0 /* expectedUserActionRequiredType */, false,
-                false, false, false, false, false, false);
+                0,
+                0 /* dataLoaderType */,
+                0 /* expectedUserActionRequiredType */,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false);
     }
 }

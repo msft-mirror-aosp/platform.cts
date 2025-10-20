@@ -186,6 +186,22 @@ public final class DeviceUtils {
         allowBackgroundServices(device, pkgName);
     }
 
+    /** Install a test app to the device. */
+    public static void installTestAppWithAdb(
+            ITestDevice device, String apkName, String pkgName, IBuildInfo ctsBuildInfo)
+            throws FileNotFoundException, DeviceNotAvailableException {
+        CLog.d("Installing app " + apkName);
+        CompatibilityBuildHelper buildHelper = new CompatibilityBuildHelper(ctsBuildInfo);
+        final String result =
+                device.adbInstallPackage(
+                        buildHelper.getTestFile(apkName),
+                        /* reinstall= */ true,
+                        /* grantPermissions= */ true,
+                        "--no-streaming");
+        assertWithMessage("Failed to install " + apkName + ": " + result).that(result).isNull();
+        allowBackgroundServices(device, pkgName);
+    }
+
     /**
      * Required to successfully start a background service from adb, starting in O.
      */
