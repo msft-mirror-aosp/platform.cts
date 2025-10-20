@@ -26,6 +26,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothLeAudioContentMetadata;
 import android.bluetooth.BluetoothLeBroadcastReceiveState;
 import android.bluetooth.BluetoothProfile;
+import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.content.Context;
 import android.os.Build;
 import android.os.Parcel;
@@ -60,21 +61,19 @@ public class BluetoothLeBroadcastReceiveStateTest {
             BluetoothLeBroadcastReceiveState.BIG_ENCRYPTION_STATE_NOT_ENCRYPTED;
     private static final int TEST_NUM_SUBGROUPS = 1;
 
-    private Context mContext;
-    private BluetoothAdapter mAdapter;
+    private final BluetoothAdapter mAdapter = BlockingBluetoothAdapter.getAdapter();
+    private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
+
     private boolean mIsBroadcastSourceSupported;
     private boolean mIsBroadcastAssistantSupported;
 
     @Before
     public void setUp() {
-        mContext = InstrumentationRegistry.getInstrumentation().getContext();
-
         Assume.assumeTrue(ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU));
         Assume.assumeTrue(TestUtils.isBleSupported(mContext));
 
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
-        mAdapter = TestUtils.getBluetoothAdapterOrDie();
-        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.enable()).isTrue();
 
         mIsBroadcastAssistantSupported =
                 mAdapter.isLeAudioBroadcastAssistantSupported() == FEATURE_SUPPORTED;
@@ -94,7 +93,6 @@ public class BluetoothLeBroadcastReceiveStateTest {
 
     @After
     public void tearDown() {
-        mAdapter = null;
         TestUtils.dropPermissionAsShellUid();
     }
 
