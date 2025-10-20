@@ -17,23 +17,23 @@ package android.devicepolicy.cts
 
 import android.app.Notification
 import android.stats.devicepolicy.EventId
-import com.android.bedstead.harrier.BedsteadJUnit4
-import com.android.bedstead.harrier.DeviceState
-import com.android.bedstead.harrier.UserType
-import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
-import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser
-import com.android.bedstead.harrier.annotations.EnsureWillTakeQuickBugReports
-import com.android.bedstead.harrier.annotations.NotificationsTest
-import com.android.bedstead.harrier.annotations.SlowApiTest
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
 import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
 import com.android.bedstead.enterprise.dpc
 import com.android.bedstead.enterprise.dpcOnly
 import com.android.bedstead.enterprise.policies.RequestBugReport
+import com.android.bedstead.harrier.BedsteadJUnit4
+import com.android.bedstead.harrier.DeviceState
+import com.android.bedstead.harrier.UserType
+import com.android.bedstead.harrier.annotations.EnsureWillTakeQuickBugReports
+import com.android.bedstead.harrier.annotations.NotificationsTest
+import com.android.bedstead.harrier.annotations.SlowApiTest
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder
 import com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat
 import com.android.bedstead.multiuser.additionalUser
+import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
+import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.notifications.NotificationListener
 import com.android.bedstead.nene.types.OptionalBoolean.TRUE
@@ -54,14 +54,6 @@ class BugReportTest {
 
     // TODO: Add (interactive?) tests that proper transparency is given during bug reports
 
-    @Before
-    @After
-    fun cleanupBugreportNotifications() {
-        TestApis.notifications().createListener().use { notifications ->
-            cleanupBugreportNotification(notifications)
-        }
-    }
-
     @CanSetPolicyTest(policy = [RequestBugReport::class], singleTestOnly = true)
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#requestBugReport",
@@ -80,6 +72,7 @@ class BugReportTest {
             n.notification.actions[1].actionIntent.send()
 
             assertThat(deviceState.dpc().events().bugReportShared()).eventOccurred()
+            cleanupBugreportNotification(notifications)
         }
     }
 
@@ -101,6 +94,7 @@ class BugReportTest {
             n.notification.actions[0].actionIntent.send()
 
             assertThat(deviceState.dpc().events().bugReportSharingDeclined()).eventOccurred()
+            cleanupBugreportNotification(notifications)
         }
     }
 
@@ -244,7 +238,7 @@ class BugReportTest {
             .whereNotification().extras().key(Notification.EXTRA_TITLE).stringValue().startsWith("Share bug report")
             .poll()
         // The first action is to decline
-        n?.notification?.actions?.get(0)?.actionIntent?.send();
+        n?.notification?.actions?.get(0)?.actionIntent?.send()
     }
 
     companion object {
