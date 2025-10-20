@@ -40,6 +40,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import platform.test.desktop.DesktopMouseTestRule
+import platform.test.desktop.LogicalDisplayPointPx
 
 @RunWith(AndroidJUnit4::class)
 class MouseToTouchCompatChangeTest {
@@ -71,11 +72,15 @@ class MouseToTouchCompatChangeTest {
         // Move twice to make sure at least one event is dispatched before the test starts.
         // Use ceil() to ensure coord moves from windowCenter even with mouseMinMovePx < 1f
         desktopMouseRule.move(
-            DEFAULT_DISPLAY,
-            windowCenter.x - ceil(mouseMinMovePx.dx).toInt(),
-            windowCenter.y - ceil(mouseMinMovePx.dy).toInt()
+            LogicalDisplayPointPx(
+                DEFAULT_DISPLAY,
+                windowCenter.x - ceil(mouseMinMovePx.dx).toInt(),
+                windowCenter.y - ceil(mouseMinMovePx.dy).toInt()
+            )
         )
-        desktopMouseRule.move(DEFAULT_DISPLAY, windowCenter.x, windowCenter.y)
+        desktopMouseRule.move(
+            LogicalDisplayPointPx(DEFAULT_DISPLAY, windowCenter.x, windowCenter.y)
+        )
 
         // DesktopMouseRule splits move into multiple deltas. Consume events until it reaches the
         // center.
