@@ -20,6 +20,12 @@
     <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
     <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
+    <target_preparer class="com.android.tradefed.targetprep.HsumBootStrategyPreparer">
+        <!-- On HSUM devices, TradeFed would override the HSUM boot strategy to 0, which boots to
+        the previous user. Here we restore the HSUM boot strategy to its default, so
+        UserManagerHostTest can test the device default strategy. -->
+        <option name="hsum-boot-strategy" value="default_behavior" />
+    </target_preparer>
     <test class="com.android.compatibility.common.tradefed.testtype.JarHostTest" >
         <option name="jar" value="CtsMultiUserHostTestCases.jar" />
         <option name="runtime-hint" value="8m" />
