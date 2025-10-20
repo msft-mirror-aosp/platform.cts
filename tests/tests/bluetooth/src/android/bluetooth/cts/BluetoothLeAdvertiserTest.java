@@ -31,6 +31,7 @@ import static org.mockito.Mockito.isNotNull;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothGattServer;
@@ -40,6 +41,7 @@ import android.bluetooth.le.AdvertisingSet;
 import android.bluetooth.le.AdvertisingSetCallback;
 import android.bluetooth.le.AdvertisingSetParameters;
 import android.bluetooth.le.BluetoothLeAdvertiser;
+import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
@@ -52,44 +54,42 @@ import com.android.compatibility.common.util.CddTest;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
 
 @RunWith(AndroidJUnit4.class)
 public class BluetoothLeAdvertiserTest {
+    @Rule public final MockitoRule mockito = MockitoJUnit.rule();
+
+    @Mock private AdvertisingSetCallback mCallback;
+
     private static final int TIMEOUT_MS = 5000;
     private static final AdvertisingSetParameters ADVERTISING_SET_PARAMETERS =
             new AdvertisingSetParameters.Builder().setLegacyMode(true).build();
-
     private static final AdvertisingSetParameters ADVERTISING_SET_USING_NRPA_PARAMETERS =
             new AdvertisingSetParameters.Builder()
                     .setLegacyMode(true)
                     .setOwnAddressType(AdvertisingSetParameters.ADDRESS_TYPE_RANDOM_NON_RESOLVABLE)
                     .build();
 
-    private Context mContext;
-    private UiAutomation mUiAutomation;
-    private BluetoothManager mManager;
-    private BluetoothAdapter mAdapter;
+    private final BluetoothAdapter mAdapter = BlockingBluetoothAdapter.getAdapter();
+    private final BluetoothManager mManager = BlockingBluetoothAdapter.getManager();
+    private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
+    private final Context mContext = mInstrumentation.getContext();
+    private final UiAutomation mUiAutomation = mInstrumentation.getUiAutomation();
+
     private BluetoothLeAdvertiser mAdvertiser;
-    @Mock private AdvertisingSetCallback mCallback;
 
     @Before
     public void setUp() throws Exception {
-        MockitoAnnotations.initMocks(this);
-        mContext = InstrumentationRegistry.getInstrumentation().getContext();
-
         Assume.assumeTrue(TestUtils.isBleSupported(mContext));
-
-        mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_ADVERTISE);
-
-        mManager = mContext.getSystemService(BluetoothManager.class);
-        mAdapter = mManager.getAdapter();
-        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.enable()).isTrue();
         mAdvertiser = mAdapter.getBluetoothLeAdvertiser();
     }
 
@@ -99,7 +99,6 @@ public class BluetoothLeAdvertiserTest {
             mAdvertiser.stopAdvertisingSet(mCallback);
             verify(mCallback, timeout(TIMEOUT_MS)).onAdvertisingSetStopped(any());
         }
-
         if (mUiAutomation != null) {
             mUiAutomation.dropShellPermissionIdentity();
         }
