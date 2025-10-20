@@ -41,6 +41,7 @@ import android.os.OutcomeReceiver;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.server.wm.DumpOnFailure;
 import android.server.wm.WindowManagerTestBase;
 import android.view.Display;
 import android.view.View;
@@ -71,6 +72,8 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
+    @Rule public final DumpOnFailure mDumpOnFailure = new DumpOnFailure();
+
     @RequiresFlagsEnabled(FLAG_READBACK_SCREENSHOT)
     @ApiTest(
             apis = {
@@ -94,11 +97,7 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                     bitmap[0] = makeSoftwareBitmap(result);
                 });
 
-        int expectedMatchingPixels = contentBounds.width() * contentBounds.height();
-        int actualMatchingPixels =
-                new BitmapPixelChecker(Color.RED, contentBounds)
-                        .getNumMatchingPixels(bitmap[0], contentBounds);
-        assertEquals(expectedMatchingPixels, actualMatchingPixels);
+        verifyBitmap(Color.RED, bitmap[0], contentBounds);
     }
 
     @RequiresFlagsEnabled(FLAG_READBACK_SCREENSHOT)
@@ -149,11 +148,7 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                     bitmap[0] = makeSoftwareBitmap(result);
                 });
 
-        int expectedMatchingPixels = contentBounds.width() * contentBounds.height();
-        int actualMatchingPixels =
-                new BitmapPixelChecker(Color.RED, contentBounds)
-                        .getNumMatchingPixels(bitmap[0], contentBounds);
-        assertEquals(expectedMatchingPixels, actualMatchingPixels);
+        verifyBitmap(Color.RED, bitmap[0], contentBounds);
     }
 
     @RequiresFlagsEnabled(FLAG_READBACK_SCREENSHOT)
@@ -241,11 +236,7 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                     bitmap[0] = makeSoftwareBitmap(result);
                 });
 
-        int expectedMatchingPixels = contentBounds.width() * contentBounds.height();
-        int actualMatchingPixels =
-                new BitmapPixelChecker(Color.BLACK, contentBounds)
-                        .getNumMatchingPixels(bitmap[0], contentBounds);
-        assertEquals(expectedMatchingPixels, actualMatchingPixels);
+        verifyBitmap(Color.BLACK, bitmap[0], contentBounds);
     }
 
     @RequiresFlagsEnabled(FLAG_READBACK_SCREENSHOT)
@@ -344,6 +335,16 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                     Bitmap.wrapHardwareBuffer(hardwareBuffer, result.getColorSpace());
             return hardwareBitmap.copy(Bitmap.Config.ARGB_8888, false);
         }
+    }
+
+    private void verifyBitmap(int expectedColor, Bitmap bitmap, Rect contentBounds)
+            throws AssertionError {
+        int expectedMatchingPixels = contentBounds.width() * contentBounds.height();
+        int actualMatchingPixels =
+                new BitmapPixelChecker(expectedColor, contentBounds)
+                        .getNumMatchingPixels(bitmap, contentBounds);
+        mDumpOnFailure.dumpOnFailure("ScreenCaptureResult", bitmap);
+        assertEquals(expectedMatchingPixels, actualMatchingPixels);
     }
 
     public static class TestActivity extends FocusableActivity {
