@@ -24,6 +24,9 @@ import android.os.Bundle;
 import android.util.Log;
 
 public class BalActivity extends Activity {
+    private static final String TAG = "BalActivity";
+    private boolean mHasRequestedAppWidget;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -32,10 +35,12 @@ public class BalActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        requestAppWidget();
+        if (!mHasRequestedAppWidget) {
+            mHasRequestedAppWidget = requestAppWidget();
+        }
     }
 
-    private void requestAppWidget() {
+    private boolean requestAppWidget() {
         try {
             PendingIntent pinResult;
             if (getIntent().getBooleanExtra("DIRECT_LAUNCH", false)) {
@@ -54,9 +59,11 @@ public class BalActivity extends Activity {
             android.content.ComponentName firstWidgetProvider =
                     new android.content.ComponentName(this, BalAppWidgetProvider.class);
             appWidgetManager.requestPinAppWidget(firstWidgetProvider, null, pinResult);
-            Log.i("BalActivity", "requested pin App widget");
+            Log.i(TAG, "requested pin App widget");
+            return true;
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e(TAG, "Failed to request app widget.", e);
+            return false;
         }
     }
 }
