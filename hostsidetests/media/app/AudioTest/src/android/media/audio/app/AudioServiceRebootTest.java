@@ -49,7 +49,6 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 public class AudioServiceRebootTest {
 
@@ -89,23 +88,34 @@ public class AudioServiceRebootTest {
         setup();
 
         mAm.setStreamVolume(STREAM_MUSIC, TEST_MUSIC_VOLUME, 0);
+        mAm.adjustStreamVolume(STREAM_MUSIC, AudioManager.ADJUST_UNMUTE, 0);
         mAm.setStreamVolume(STREAM_ALARM, TEST_ALARM_VOLUME, 0);
+        mAm.setStreamVolume(STREAM_RING, TEST_RING_VOLUME, 0);
         mAm.adjustStreamVolume(STREAM_RING, AudioManager.ADJUST_MUTE, 0);
 
         mAm.waitForAudioHandlerBarrier();
         AmUtils.waitForBroadcastBarrier();
 
         assertThat(mAm.getStreamVolume(STREAM_MUSIC)).isEqualTo(TEST_MUSIC_VOLUME);
+        assertThat(mAm.isStreamMute(STREAM_MUSIC)).isFalse();
         assertThat(mAm.getStreamVolume(STREAM_ALARM)).isEqualTo(TEST_ALARM_VOLUME);
+        assertThat(mAm.getStreamVolume(STREAM_RING)).isEqualTo(0);
         assertThat(mAm.isStreamMute(STREAM_RING)).isTrue();
     }
 
     @Test
     public void testVolumePersistence_postReboot() {
         assertThat(mAm.getStreamVolume(STREAM_MUSIC)).isEqualTo(TEST_MUSIC_VOLUME);
+        assertThat(mAm.isStreamMute(STREAM_MUSIC)).isFalse();
         assertThat(mAm.getStreamVolume(STREAM_ALARM)).isEqualTo(TEST_ALARM_VOLUME);
-        // TODO this doesn't persist
-        // assertThat(mAm.isStreamMute(STREAM_RING)).isTrue();
+        assertThat(mAm.isStreamMute(STREAM_RING)).isTrue();
+        assertThat(mAm.getStreamVolume(STREAM_RING)).isEqualTo(0);
+
+        mAm.adjustStreamVolume(STREAM_RING, AudioManager.ADJUST_UNMUTE, 0);
+        mAm.waitForAudioHandlerBarrier();
+        AmUtils.waitForBroadcastBarrier();
+
+        assertThat(mAm.getStreamVolume(STREAM_RING)).isEqualTo(TEST_RING_VOLUME);
     }
 
     @Test
