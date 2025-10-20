@@ -761,7 +761,7 @@ public abstract class ActivityManagerTestBase {
             mWmState.waitForDisplayUnfrozen();
         }
 
-        if (!mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY)) {
+        if (!mWmState.waitForAppTransitionIdleOnDisplay(getMainDisplayId())) {
             mPostAssertionRule.addError(
                     new IllegalStateException("Shell transition left unfinished!"));
         }
