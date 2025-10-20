@@ -27,6 +27,7 @@ import android.content.pm.PackageManager;
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioManager;
+import android.media.audiofx.BassBoost;
 import android.media.audiofx.Equalizer;
 import android.media.audiofx.Visualizer;
 import android.os.Build;
@@ -63,6 +64,7 @@ public class AudioOffloadNativeEffectsTest {
     private int mOriginalVolume;
     private int mSessionId = 0;
     private long mStreamHandle = 0;
+    private BassBoost mBassBoost = null;
     private Equalizer mEqualizer = null;
     private Visualizer mVisualizer = null;
 
@@ -112,6 +114,9 @@ public class AudioOffloadNativeEffectsTest {
     public void teardown() {
         if (mAudioManager != null) {
             mAudioManager.setStreamVolume(mStreamType, mOriginalVolume, /* flag */ 0);
+        }
+        if (mBassBoost != null) {
+            mBassBoost.release();
         }
         if (mEqualizer != null) {
             mEqualizer.release();
@@ -198,6 +203,30 @@ public class AudioOffloadNativeEffectsTest {
             assumeTrue(
                     "Curr Rms at band level " + bandLevelMb + " should be less than " + prevRmsMb,
                     currRmsMb < prevRmsMb);
+            prevRmsMb = currRmsMb;
+        }
+    }
+
+    @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
+    public void testMmapPcmOffloadWithBassBoostEffect() throws InterruptedException {
+        mBassBoost = new BassBoost(0, mSessionId);
+        assumeNotNull("Failed to create BassBoost effect", mBassBoost);
+        assumeTrue(BassBoost.SUCCESS == mBassBoost.setEnabled(true));
+
+        // Initialize the Visualizer to capture and measure the rms of audio output.
+        setupVisualizer();
+
+        final float testFrequencyHz = 100.0f;
+        final short[] testIncreasingBassBoostStrength = {0, 500, 1000};
+        int prevRmsMb = Integer.MIN_VALUE;
+
+        for (short strength : testIncreasingBassBoostStrength) {
+            mBassBoost.setStrength(strength);
+            final int currRmsMb = playAndGetRms(testFrequencyHz);
+            Log.i(TAG, "Measured Curr Rms : " + currRmsMb);
+            assumeTrue(
+                    "Curr Rms at strength " + strength + " should be more than " + prevRmsMb,
+                    currRmsMb > prevRmsMb);
             prevRmsMb = currRmsMb;
         }
     }
