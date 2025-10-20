@@ -28,6 +28,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.le.DistanceMeasurementResult;
 import android.bluetooth.le.DistanceMeasurementSession;
+import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.content.Context;
 import android.os.Build;
 
@@ -45,8 +46,8 @@ import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
 public class DistanceMeasurementSessionTest {
-    private Context mContext;
-    private BluetoothAdapter mAdapter;
+    private final BluetoothAdapter mAdapter = BlockingBluetoothAdapter.getAdapter();
+    private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
 
     private DistanceMeasurementSession.Callback mTestcallback =
             new DistanceMeasurementSession.Callback() {
@@ -61,12 +62,9 @@ public class DistanceMeasurementSessionTest {
 
     @Before
     public void setUp() {
-        mContext = InstrumentationRegistry.getInstrumentation().getContext();
         Assume.assumeTrue(ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU));
         Assume.assumeTrue(TestUtils.isBleSupported(mContext));
-
-        mAdapter = TestUtils.getBluetoothAdapterOrDie();
-        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.enable()).isTrue();
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
         Assume.assumeTrue(mAdapter.isDistanceMeasurementSupported() == FEATURE_SUPPORTED);
     }
@@ -74,7 +72,6 @@ public class DistanceMeasurementSessionTest {
     @After
     public void tearDown() {
         TestUtils.dropPermissionAsShellUid();
-        mAdapter = null;
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
