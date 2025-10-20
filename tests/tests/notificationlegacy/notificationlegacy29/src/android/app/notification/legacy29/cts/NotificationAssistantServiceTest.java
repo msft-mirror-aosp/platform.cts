@@ -70,6 +70,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Telephony;
 import android.service.notification.Adjustment;
+import android.service.notification.DynamicBundle;
 import android.service.notification.Flags;
 import android.service.notification.NotificationAssistantService;
 import android.service.notification.NotificationListenerService;
@@ -1189,6 +1190,21 @@ public class NotificationAssistantServiceTest {
         out = new NotificationListenerService.Ranking();
         mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
         assertNull(out.getSummarization());
+    }
+
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_NM_CONTEXTUAL_DISPLAY)
+    @Test
+    public void testDynamicBundles() throws Exception {
+        setUpListeners();
+
+        mAssistant.createDynamicBundle(100, "name");
+
+        assertThat(mAssistant.getDynamicBundles())
+                .contains(new DynamicBundle(100, "name"));
+
+        mAssistant.deleteDynamicBundle(100);
+
+        assertThat(mAssistant.getDynamicBundles()).isEmpty();
     }
 
     @Test
