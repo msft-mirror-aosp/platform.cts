@@ -697,7 +697,7 @@
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioDeviceVolumeManagerTest#setDeviceAbsoluteVolumeBehavior_muteOnActiveDevice"/>
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioDeviceVolumeManagerTest#setDeviceAbsoluteVolumeBehavior_noMatchingStreamType_useVolumeForDevice"/>
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioMixTest#testEqualsInjectSilence"/>
-    <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioOffloadNativeTest#testMmapPcmOffload"/>
+    <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioOffloadNativeEffectsTest#testMmapPcmOffload"/>
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioPlaybackCaptureTest#testCaptureExcludeUid"/>
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioPlaybackCaptureTest#testCaptureExcludeUsage"/>
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioPlaybackCaptureTest#testCaptureMatchingAllowedUsageMedia"/>
