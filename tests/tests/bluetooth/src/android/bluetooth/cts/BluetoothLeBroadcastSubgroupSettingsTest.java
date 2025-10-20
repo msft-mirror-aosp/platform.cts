@@ -25,6 +25,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothLeAudioContentMetadata;
 import android.bluetooth.BluetoothLeBroadcastSubgroupSettings;
 import android.bluetooth.BluetoothProfile;
+import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.content.Context;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -48,19 +49,18 @@ public class BluetoothLeBroadcastSubgroupSettingsTest {
     private static final String TEST_LANGUAGE = "deu";
     private static final int TEST_QUALITY = BluetoothLeBroadcastSubgroupSettings.QUALITY_STANDARD;
 
-    private Context mContext;
-    private BluetoothAdapter mAdapter;
+    private final BluetoothAdapter mAdapter = BlockingBluetoothAdapter.getAdapter();
+    private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
+
     private boolean mIsBroadcastSourceSupported;
     private boolean mIsBroadcastAssistantSupported;
 
     @Before
     public void setUp() {
-        mContext = InstrumentationRegistry.getInstrumentation().getContext();
         Assume.assumeTrue(TestUtils.isBleSupported(mContext));
 
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
-        mAdapter = TestUtils.getBluetoothAdapterOrDie();
-        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.enable()).isTrue();
 
         mIsBroadcastAssistantSupported =
                 mAdapter.isLeAudioBroadcastAssistantSupported() == FEATURE_SUPPORTED;
