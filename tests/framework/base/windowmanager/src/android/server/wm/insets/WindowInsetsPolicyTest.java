@@ -129,8 +129,9 @@ public class WindowInsetsPolicyTest extends ActivityManagerTestBase {
         assumeTrue("Skipping test: no split multi-window support",
                 supportsSplitScreenMultiWindow());
 
-        final TestActivity activity =
-                launchAndWait(TestActivity.class, ActivityOptions.makeBasic());
+        final ActivityOptions fullscreenOptions = ActivityOptions.makeBasic();
+        fullscreenOptions.setLaunchWindowingMode(WindowConfiguration.WINDOWING_MODE_FULLSCREEN);
+        final TestActivity activity = launchAndWait(TestActivity.class, fullscreenOptions);
         final int rotation = activity.getDisplay().getRotation();
         final boolean isPortrait = activity.getResources().getConfiguration()
                 .orientation == ORIENTATION_PORTRAIT;
@@ -158,7 +159,7 @@ public class WindowInsetsPolicyTest extends ActivityManagerTestBase {
 
         // Ensure that top insets are fully consumed for FULLSCREEN
         final TestActivity fullscreenActivity =
-                launchAndWait(FullscreenTestActivity.class, ActivityOptions.makeBasic());
+                launchAndWait(FullscreenTestActivity.class, fullscreenOptions);
         insets = getOnMainSync(fullscreenActivity::getDispatchedInsets);
         assertEquals("top insets must be consumed if FULLSCREEN is set",
                 0, insets.getSystemWindowInsetTop());
@@ -166,7 +167,7 @@ public class WindowInsetsPolicyTest extends ActivityManagerTestBase {
         // Ensure that top insets are fully consumed for FULLSCREEN when setting it over wm
         // layout params
         final TestActivity fullscreenWmFlagsActivity =
-                launchAndWait(FullscreenWmFlagsTestActivity.class, ActivityOptions.makeBasic());
+                launchAndWait(FullscreenWmFlagsTestActivity.class, fullscreenOptions);
         insets = getOnMainSync(fullscreenWmFlagsActivity::getDispatchedInsets);
         assertEquals("top insets must be consumed if FULLSCREEN is set",
                 0, insets.getSystemWindowInsetTop());
