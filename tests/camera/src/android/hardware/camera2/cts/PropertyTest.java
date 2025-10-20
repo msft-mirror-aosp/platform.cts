@@ -22,6 +22,7 @@ import android.Manifest;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.res.CameraCompatibilityInfo;
 import android.hardware.camera2.CameraManager;
 import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeFull;
@@ -29,6 +30,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
+import android.view.Surface;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
@@ -115,11 +117,17 @@ public class PropertyTest {
         if (SystemProperties.getBoolean(CameraManager.LANDSCAPE_TO_PORTRAIT_PROP, false)) {
             // `App1` has the override enabled.
             Log.i(TAG, "System property enabled, testing getRotationOverride");
-            assertEquals(
-                    "getRotationOverride should return" + " ROTATION_OVERRIDE_OVERRIDE_TO_PORTRAIT",
+            final CameraCompatibilityInfo expectedCameraCompatModeOn = new CameraCompatibilityInfo
+                    .Builder()
+                    .setRotateAndCropRotation(Surface.ROTATION_90)
+                    .setShouldOverrideSensorOrientation(true)
+                    .build();
+
+            final CameraCompatibilityInfo actualCameraCompatMode =
                     CameraManager.getRotationOverride(
-                            mContext, mPackageManager, PROPERTY_APP1_PACKAGE_NAME),
-                    CameraManager.ROTATION_OVERRIDE_OVERRIDE_TO_PORTRAIT);
+                            mContext, mPackageManager, PROPERTY_APP1_PACKAGE_NAME);
+            assertEquals("getRotationOverride should return camera compat mode on.",
+                    expectedCameraCompatModeOn, actualCameraCompatMode);
         } else {
             Log.i(TAG, "LANDSCAPE_TO_PORTRAIT_PROP System property disabled.");
         }
@@ -131,11 +139,13 @@ public class PropertyTest {
         if (SystemProperties.getBoolean(CameraManager.LANDSCAPE_TO_PORTRAIT_PROP, false)) {
             // `App2` has the override disabled.
             Log.i(TAG, "System property enabled, testing getRotationOverride");
-            assertEquals(
-                    "getRotationOverride should return ROTATION_OVERRIDE_NONE",
+            final CameraCompatibilityInfo expectedCameraCompatModeOff = new CameraCompatibilityInfo
+                    .Builder().build();
+            final CameraCompatibilityInfo actualCameraCompatMode =
                     CameraManager.getRotationOverride(
-                            mContext, mPackageManager, PROPERTY_APP2_PACKAGE_NAME),
-                    CameraManager.ROTATION_OVERRIDE_NONE);
+                            mContext, mPackageManager, PROPERTY_APP2_PACKAGE_NAME);
+            assertEquals("getRotationOverride should return camera compat mode off.",
+                    expectedCameraCompatModeOff, actualCameraCompatMode);
         } else {
             Log.i(TAG, "LANDSCAPE_TO_PORTRAIT_PROP System property enabled.");
         }

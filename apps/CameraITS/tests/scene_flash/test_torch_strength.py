@@ -57,8 +57,7 @@ _TORCH_STRENGTH_MIN = 0
 
 # TODO: b/344675052 - Add torch strength control in do_3a()
 def _take_captures(
-    self, lighting_control_port, out_surfaces, cam,
-    img_name_prefix, ae_mode, torch_strength, use_gen2
+    self, out_surfaces, cam, img_name_prefix, ae_mode, torch_strength
 ):
   """Takes video captures and returns the captured images.
 
@@ -80,8 +79,8 @@ def _take_captures(
   if torch_strength == 0:
     # turn OFF lights to darken scene
     lighting_control_utils.set_lighting_state(
-        lighting_control_port, self.lighting_ch,
-        lighting_control_utils.LIGHT_OFF, use_gen2
+        self.lighting_control_port, self.lighting_ch,
+        lighting_control_utils.LIGHT_OFF, self.use_gen2
     )
     cam.do_3a(do_af=False, lock_awb=True, out_surfaces=out_surfaces)
     cap_req = capture_request_utils.auto_capture_request()
@@ -93,8 +92,8 @@ def _take_captures(
     cap = cam.do_capture(cap_req, out_surfaces, reuse_session=True)
     # turn lights back ON
     lighting_control_utils.set_lighting_state(
-        lighting_control_port, self.lighting_ch,
-        lighting_control_utils.LIGHT_ON, use_gen2
+        self.lighting_control_port, self.lighting_ch,
+        lighting_control_utils.LIGHT_ON, self.use_gen2
     )
     return [cap]
 
@@ -104,8 +103,8 @@ def _take_captures(
               out_surfaces=out_surfaces)
     # turn OFF lights to darken scene
     lighting_control_utils.set_lighting_state(
-        lighting_control_port, self.lighting_ch,
-        lighting_control_utils.LIGHT_OFF, use_gen2
+        self.lighting_control_port, self.lighting_ch,
+        lighting_control_utils.LIGHT_OFF, self.use_gen2
     )
     cap_req = capture_request_utils.auto_capture_request()
     cap_req['android.control.aeMode'] = ae_mode
@@ -119,8 +118,8 @@ def _take_captures(
     caps = cam.do_capture(reqs, out_surfaces, reuse_session=True)
     # turn the lights back on
     lighting_control_utils.set_lighting_state(
-        lighting_control_port, self.lighting_ch,
-        lighting_control_utils.LIGHT_ON, use_gen2
+        self.lighting_control_port, self.lighting_ch,
+        lighting_control_utils.LIGHT_ON, self.use_gen2
     )
     for i, cap in enumerate(caps):
       img = image_processing_utils.convert_capture_to_rgb_image(cap)
@@ -230,8 +229,17 @@ def _compare_means(formats_means, ae_mode, flash_strengths):
 class TorchStrengthTest(its_base_test.ItsBaseTest):
   """Test if torch strength control feature works as intended."""
 
+  def setup_class(self):
+    super().setup_class()
+    # establish connection with lighting controller
+    self.use_gen2 = (self.lighting_cntl ==
+                gen2_rig_controller_utils.DEFAULT_GEN2_LIGHTS_NAME)
+    self.lighting_control_port = lighting_control_utils.lighting_control(
+        self.lighting_cntl, self.lighting_ch, self.use_gen2)
+
   def teardown_test(self):
-    if self.use_gen2: self.lighting_control_port.close()
+    if self.lighting_control_port:
+      self.lighting_control_port.close()
 
   def test_torch_strength(self):
     name_with_path = os.path.join(self.log_path, _TEST_NAME)
@@ -250,14 +258,6 @@ class TorchStrengthTest(its_base_test.ItsBaseTest):
           camera_properties_utils.flash(props) and
           max_flash_strength > _SINGLE_STRENGTH_CONTROL_THRESHOLD and
           max_torch_strength > _TORCH_STRENGTH_CONTROL_THRESHOLD
-      )
-
-      # establish connection with lighting controller
-      use_gen2 = (self.lighting_cntl ==
-                  gen2_rig_controller_utils.DEFAULT_GEN2_LIGHTS_NAME
-                  )
-      lighting_control_port = lighting_control_utils.lighting_control(
-          self.lighting_cntl, self.lighting_ch, use_gen2
       )
 
       failure_messages = []
@@ -299,9 +299,8 @@ class TorchStrengthTest(its_base_test.ItsBaseTest):
             out_surfaces = {'format': _FORMAT_NAME,
                             'width': width, 'height': height}
             # take capture and evaluate
-            caps = _take_captures(
-                self, lighting_control_port, out_surfaces, cam,
-                img_name_prefix, ae_mode, strength, use_gen2
+            caps = _take_captures(self, out_surfaces, cam,
+                img_name_prefix, ae_mode, strength
             )
             formats_means.append(_get_img_patch_mean(caps, props))
 
@@ -311,8 +310,8 @@ class TorchStrengthTest(its_base_test.ItsBaseTest):
 
     # turn lights back ON
     lighting_control_utils.set_lighting_state(
-        lighting_control_port, self.lighting_ch,
-        lighting_control_utils.LIGHT_ON, use_gen2
+        self.lighting_control_port, self.lighting_ch,
+        lighting_control_utils.LIGHT_ON, self.use_gen2
     )
     # assert correct behavior and print error message(s)
     if failure_messages:

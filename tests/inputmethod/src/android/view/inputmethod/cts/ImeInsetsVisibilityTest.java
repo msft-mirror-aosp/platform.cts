@@ -16,6 +16,8 @@
 
 package android.view.inputmethod.cts;
 
+import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
+import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.content.Intent.ACTION_CLOSE_SYSTEM_DIALOGS;
 import static android.content.Intent.FLAG_RECEIVER_FOREGROUND;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
@@ -28,21 +30,27 @@ import static android.view.inputmethod.cts.util.TestUtils.getOnMainSync;
 import static android.view.inputmethod.cts.util.TestUtils.isInputMethodPickerShown;
 
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEventWithKeyValue;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.hideSoftInputMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.showSoftInputMatcher;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.graphics.Insets;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Pair;
@@ -53,7 +61,10 @@ import android.view.WindowManager;
 import android.view.inputmethod.InputMethod;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.cts.util.EndToEndImeTestBase;
+import android.view.inputmethod.cts.util.FixedDeviceOrientationSession;
+import android.view.inputmethod.cts.util.FixedDeviceOrientationSession.Orientation;
 import android.view.inputmethod.cts.util.TestActivity;
+import android.view.inputmethod.cts.util.TestActivity2;
 import android.view.inputmethod.cts.util.TestUtils;
 import android.view.inputmethod.cts.util.UnlockScreenRule;
 import android.widget.EditText;
@@ -67,6 +78,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.cts.input.UinputTouchScreen;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
@@ -322,36 +334,65 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
     }
 
     /**
-     * Test the IME window won't cover the editor when the app creates a panel window to receive
-     * the IME insets.
+     * Test the IME window won't cover the editor when the app creates a panel window to receive the
+     * IME insets.
      *
-     * <p>Regression test for Bug 195765264 and Bug 152304051.</p>
+     * <p>Regression test for Bug 195765264 and Bug 152304051.
      */
     @Test
-    public void testEditorWontCoveredByImeWhenInputWindowBehindPanel() throws Exception {
+    public void testEditorWontCoveredByImeWhenInputWindowBehindPanel_fullscreenWindow()
+            throws Exception {
+        runEditorWontCoveredByImeWhenInputWindowBehindPanel(WINDOWING_MODE_FULLSCREEN);
+    }
+
+    /**
+     * Test the IME window won't cover the editor when the app creates a panel window to receive the
+     * IME insets.
+     *
+     * <p>Regression test for Bug 195765264 and Bug 152304051.
+     */
+    @Test
+    public void testEditorWontCoveredByImeWhenInputWindowBehindPanel_freeformWindow()
+            throws Exception {
+        assumeTrue(isFreeformSupported());
+        runEditorWontCoveredByImeWhenInputWindowBehindPanel(WINDOWING_MODE_FREEFORM);
+    }
+
+    private void runEditorWontCoveredByImeWhenInputWindowBehindPanel(int windowingMode)
+            throws Exception {
         try (MockImeSession imeSession = MockImeSession.create(
                 mInstrumentation.getContext(),
                 mInstrumentation.getUiAutomation(),
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
             final String marker = getTestMarker();
-            // Launch a test activity with SOFT_INPUT_ADJUST_NOTHING to not resize by IME insets.
             final AtomicReference<EditText> editTextRef = new AtomicReference<>();
-            final TestActivity testActivity = TestActivity.startSync(activity -> {
-                final LinearLayout layout = new LinearLayout(activity);
-                layout.setOrientation(LinearLayout.VERTICAL);
-                layout.setGravity(Gravity.BOTTOM);
-                final EditText editText = new EditText(activity);
-                editText.setHint("focused editText");
-                editText.setPrivateImeOptions(marker);
-                // Initial editor visibility as GONE for testing IME visibility controlled by panel.
-                editText.setVisibility(View.GONE);
-                editTextRef.set(editText);
-                layout.addView(editText);
-                activity.getWindow().setSoftInputMode(
-                        WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING);
-                return layout;
-            });
+
+            // Launch a test activity with SOFT_INPUT_ADJUST_NOTHING to not resize by IME insets.
+            final TestActivity testActivity =
+                    new TestActivity.Starter()
+                            .asNewTask()
+                            .withWindowingMode(windowingMode)
+                            .startSync(
+                                    activity -> {
+                                        final LinearLayout layout = new LinearLayout(activity);
+                                        layout.setOrientation(LinearLayout.VERTICAL);
+                                        layout.setGravity(Gravity.BOTTOM);
+                                        final EditText editText = new EditText(activity);
+                                        editText.setHint("focused editText");
+                                        editText.setPrivateImeOptions(marker);
+                                        // Initial editor visibility as GONE for testing IME
+                                        // visibility controlled by panel.
+                                        editText.setVisibility(View.GONE);
+                                        editTextRef.set(editText);
+                                        layout.addView(editText);
+                                        activity.getWindow()
+                                                .setSoftInputMode(
+                                                        WindowManager.LayoutParams
+                                                                .SOFT_INPUT_ADJUST_NOTHING);
+                                        return layout;
+                                    },
+                                    TestActivity.class);
             final EditText editText = editTextRef.get();
             // Create a panel window to receive IME insets for adjusting editText position.
             final View panelView = TestUtils.getOnMainSync(() -> {
@@ -398,6 +439,169 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
             expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
             expectImeVisible(TIMEOUT);
+        }
+    }
+
+    /**
+     * Regression test for bug 381134667.
+     *
+     * <p>This verifies that in split screen, windows (that is stretching end-to-end) receive insets
+     * change exactly once on IME show and hide animation.
+     */
+    @Test
+    public void testImeInsetsChangesOnceInSplitScreenE2EApp() throws Exception {
+        assumeTrue(TestUtils.supportsSplitScreenMultiWindow());
+
+        class InsetsListener implements View.OnApplyWindowInsetsListener {
+            private boolean mInsetsVisible = false;
+            private boolean mImeInsetsHasSize = false;
+            int mInsetsVisibilityToggleCount;
+            int mInsetsSizeToggleCount;
+
+            @Override
+            public WindowInsets onApplyWindowInsets(View v, WindowInsets insets) {
+                boolean wasVisible = mInsetsVisible;
+                boolean isVisible = insets.isVisible(WindowInsets.Type.ime());
+                if (wasVisible != isVisible) {
+                    mInsetsVisibilityToggleCount++;
+                }
+                mInsetsVisible = isVisible;
+
+                boolean hadSize = mImeInsetsHasSize;
+                boolean hasSize = insets.getInsets(WindowInsets.Type.ime()).bottom > 0;
+                if (hadSize != hasSize) {
+                    mInsetsSizeToggleCount++;
+                }
+                mImeInsetsHasSize = hasSize;
+                return v.onApplyWindowInsets(insets);
+            }
+
+            private void resetCount() {
+                mInsetsVisibilityToggleCount = 0;
+                mInsetsSizeToggleCount = 0;
+            }
+
+            private void assertChangeCount(String message, int expected) {
+                assertEquals(message, expected, mInsetsVisibilityToggleCount);
+                assertEquals(message, expected, mInsetsSizeToggleCount);
+            }
+        }
+        InsetsListener primaryInsetsListener = new InsetsListener();
+        InsetsListener secondaryInsetsListener = new InsetsListener();
+
+        try (var orientationSession = new FixedDeviceOrientationSession(Orientation.LANDSCAPE);
+                MockImeSession imeSession =
+                        MockImeSession.create(
+                                mInstrumentation.getContext(),
+                                mInstrumentation.getUiAutomation(),
+                                new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+            final String marker = getTestMarker();
+
+            // Launch primary activity
+            final AtomicReference<EditText> primaryEditTextRef = new AtomicReference<>();
+            final TestActivity primaryActivity =
+                    new TestActivity.Starter()
+                            .asNewTask()
+                            .withWindowingMode(WINDOWING_MODE_FULLSCREEN)
+                            .fitsSystemWindows(false)
+                            .startSync(
+                                    activity -> {
+                                        final LinearLayout layout = new LinearLayout(activity);
+                                        layout.setOrientation(LinearLayout.VERTICAL);
+                                        layout.setGravity(Gravity.CENTER);
+                                        final EditText editText = new EditText(activity);
+                                        primaryEditTextRef.set(editText);
+                                        layout.addView(editText);
+                                        editText.setHint("Primary EditText");
+                                        editText.setPrivateImeOptions(marker);
+                                        editText.getRootView()
+                                                .setOnApplyWindowInsetsListener(
+                                                        primaryInsetsListener);
+                                        editText.getRootView().setFitsSystemWindows(false);
+                                        return layout;
+                                    },
+                                    TestActivity.class);
+            expectImeInvisible(TIMEOUT);
+
+            // Launch secondary activity in split screen
+            final TestActivity secondaryActivity =
+                    new TestActivity.Starter()
+                            .asMultipleTask()
+                            .withAdditionalFlags(Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT)
+                            .fitsSystemWindows(false)
+                            .startSync(
+                                    primaryActivity,
+                                    activity -> {
+                                        final LinearLayout layout = new LinearLayout(activity);
+                                        layout.getRootView()
+                                                .setOnApplyWindowInsetsListener(
+                                                        secondaryInsetsListener);
+                                        return layout;
+                                    },
+                                    TestActivity2.class);
+            TestUtils.waitOnMainUntil(secondaryActivity::hasWindowFocus, TIMEOUT);
+            expectImeInvisible(TIMEOUT);
+
+            final boolean isVerticallySplit = isVerticallySplit(primaryActivity, secondaryActivity);
+
+            final EditText primaryEditText = primaryEditTextRef.get();
+            final var display = primaryEditText.getContext().getDisplay();
+            try (var touch = new UinputTouchScreen(mInstrumentation, display)) {
+                primaryInsetsListener.resetCount();
+                secondaryInsetsListener.resetCount();
+
+                // Tap the editor on the primary task to focus the window and show the IME.
+                touch.tapOnViewCenter(primaryEditText);
+                TestUtils.waitOnMainUntil(primaryEditText::hasWindowFocus, TIMEOUT);
+                // Next tap to show the IME.
+                touch.tapOnViewCenter(primaryEditText);
+
+                expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+                expectImeVisible(TIMEOUT);
+
+                mInstrumentation.waitForIdleSync();
+
+                if (!isVerticallySplit) {
+                    primaryInsetsListener.assertChangeCount(
+                            "Insets should become visible once on primary activity", 1);
+                }
+                secondaryInsetsListener.assertChangeCount(
+                        "Insets should become visible once on secondary activity", 1);
+
+                // Resets the state.
+                primaryInsetsListener.resetCount();
+                secondaryInsetsListener.resetCount();
+
+                // Tap the split secondary task to switch focus and hide IME.
+                View secondaryDecorView = secondaryActivity.getWindow().getDecorView();
+                Insets insets =
+                        secondaryDecorView
+                                .getRootWindowInsets()
+                                .getInsets(
+                                        WindowInsets.Type.systemBars() | WindowInsets.Type.ime());
+                int availableHeight = secondaryDecorView.getHeight() - insets.bottom - insets.top;
+                int[] xy = new int[2];
+                secondaryDecorView.getLocationOnScreen(xy);
+                xy[0] += secondaryDecorView.getWidth() / 2;
+                xy[1] += insets.top + availableHeight / 2;
+                touch.touchDown(xy[0], xy[1]).lift();
+            }
+
+            expectEvent(stream, hideSoftInputMatcher(), TIMEOUT);
+            expectEvent(stream, eventMatcher("onFinishInputView"), TIMEOUT);
+            expectEventWithKeyValue(
+                    stream, "onWindowVisibilityChanged", "visible", View.GONE, TIMEOUT);
+            expectImeInvisible(TIMEOUT);
+
+            mInstrumentation.waitForIdleSync();
+
+            if (!isVerticallySplit) {
+                primaryInsetsListener.assertChangeCount(
+                        "Insets should become invisible once on primary activity", 1);
+            }
+            secondaryInsetsListener.assertChangeCount(
+                    "Insets should become invisible once on secondary activity", 1);
         }
     }
 
@@ -512,5 +716,11 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
                 .getTargetContext().getSystemService(InputMethodManager.class);
         assertNotNull(imm);
         return imm;
+    }
+
+    private static boolean isVerticallySplit(Activity act1, Activity act2) {
+        final Rect r1 = act1.getWindowManager().getCurrentWindowMetrics().getBounds();
+        final Rect r2 = act2.getWindowManager().getCurrentWindowMetrics().getBounds();
+        return r1.left == r2.left && r1.right == r2.right && r1.bottom <= r2.top;
     }
 }

@@ -18,6 +18,7 @@ package android.telecom.cts;
 
 import android.graphics.SurfaceTexture;
 import android.net.Uri;
+import android.os.Handler;
 import android.telecom.Call;
 import android.telecom.Connection;
 import android.telecom.Connection.VideoProvider;
@@ -557,6 +558,85 @@ public class VideoCallTest extends BaseTelecomTestWithMockServices {
         // Clear the surface
         videoCall.setDisplaySurface(null);
         assertDisplaySurfaceChanged(mockVideoProvider, false);
+    }
+
+    /**
+     * Coverage for video call constructor.
+     */
+    public void testConstructors() {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+
+        // This is super awkward; Telecom implements this in VideoCallImpl, which means the cts
+        // coverage of this API will never be met in general operation.  Yet, we never expect an
+        // InCallService to actually implement this API.
+        InCallService.VideoCall videoCall = new InCallService.VideoCall() {
+                        @Override
+            public void registerCallback(Callback callback) {
+
+            }
+
+            @Override
+            public void registerCallback(Callback callback, Handler handler) {
+
+            }
+
+            @Override
+            public void unregisterCallback(Callback callback) {
+
+            }
+
+            @Override
+            public void setCamera(String cameraId) {
+
+            }
+
+            @Override
+            public void setPreviewSurface(Surface surface) {
+
+            }
+
+            @Override
+            public void setDisplaySurface(Surface surface) {
+
+            }
+
+            @Override
+            public void setDeviceOrientation(int rotation) {
+
+            }
+
+            @Override
+            public void setZoom(float value) {
+
+            }
+
+            @Override
+            public void sendSessionModifyRequest(VideoProfile requestProfile) {
+
+            }
+
+            @Override
+            public void sendSessionModifyResponse(VideoProfile responseProfile) {
+
+            }
+
+            @Override
+            public void requestCameraCapabilities() {
+
+            }
+
+            @Override
+            public void requestCallDataUsage() {
+
+            }
+
+            @Override
+            public void setPauseImage(Uri uri) {
+
+            }
+        };
     }
 
     /**

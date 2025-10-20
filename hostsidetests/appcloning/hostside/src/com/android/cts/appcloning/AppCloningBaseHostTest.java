@@ -24,6 +24,8 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
+import android.platform.test.flag.junit.host.DeviceFlags;
+
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.log.LogUtil;
@@ -119,7 +121,7 @@ public class AppCloningBaseHostTest extends BaseHostTestCase {
         setDevice(device);
 
         assumeTrue("Hardware type doesn't support clone profiles", isHardwareSupported());
-        assumeTrue("Device doesn't support multiple users", supportsMultipleUsers());
+        assumeTrue("Device doesn't support clone profiles", supportsCloneProfiles());
         assumeFalse("Device is in headless system user mode", isHeadlessSystemUserMode());
         assumeTrue(isAtLeastS());
         assumeFalse("Device uses sdcardfs", usesSdcardFs());
@@ -136,8 +138,11 @@ public class AppCloningBaseHostTest extends BaseHostTestCase {
     }
 
     public static boolean isAppCloningSupportedOnDevice() throws Exception {
-        return supportsMultipleUsers() && !isHeadlessSystemUserMode() && isAtLeastS()
-                && !usesSdcardFs() && isHardwareSupported();
+        return supportsCloneProfiles()
+                && !isHeadlessSystemUserMode()
+                && isAtLeastS()
+                && !usesSdcardFs()
+                && isHardwareSupported();
     }
 
     protected static void assumeHasDeviceFeature(String feature)
@@ -146,8 +151,12 @@ public class AppCloningBaseHostTest extends BaseHostTestCase {
     }
 
     protected static boolean supportsMoreThanTwoUsers() throws DeviceNotAvailableException {
-        return sDevice.getMaxNumberOfUsersSupported() > 2
-                && sDevice.getMaxNumberOfRunningUsersSupported() > 2;
+        if (!Boolean.valueOf(DeviceFlags.createDeviceFlags(sDevice)
+                .getFlagValue("android.multiuser.consistent_max_users"))) {
+            return sDevice.getMaxNumberOfUsersSupported() > 2
+                    && sDevice.getMaxNumberOfRunningUsersSupported() > 2;
+        }
+        return sDevice.getMaxNumberOfRunningUsersSupported() > 2;
     }
 
     protected static boolean doesDeviceHaveFeature(String feature)

@@ -21,11 +21,8 @@ android_test_helper_app {
     name: "CallRedirectionServiceTestApp",
     srcs: [
         "src/**/*.java",
-        "aidl/**/I*.aidl",
+        ":redirection-app-aidl",
     ],
-    aidl: {
-        local_include_dirs: ["aidl/"],
-    },
     sdk_version: "test_current",
     test_suites: [
         "cts",

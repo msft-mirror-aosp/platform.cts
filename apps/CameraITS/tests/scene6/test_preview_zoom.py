@@ -37,12 +37,7 @@ _MINIMUM_ARUCO_MARKERS_TO_DETECT = 1
 _MP4V = 'mp4v'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 50
-_SINGLE_CAMERA_NUMBER_OF_CAMERAS_TO_TEST = 1
 _STANDARD_TEST_MAX_ZOOM_RATIO = 4.0
-_ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST = 2  # UW and W
-_WIDE_ONLY_ZOOM_RATIO_THRESHOLD = 4.0
-_WIDE_ZOOM_THIRD_CAMERA_CHECK_ZOOM_RATIO = 2.0
-_WIDE_ZOOM_RATIO_MAX = 2.5
 
 # Note: b/284232490: 1080p could be 1088. 480p could be 704 or 640 too.
 #       Use for tests not sensitive to variations of 1080p or 480p.
@@ -165,11 +160,6 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
       # Determine test zoom range and step size
       z_range = props['android.control.zoomRatioRange']
       z_range[1] = min(z_range[1], _STANDARD_TEST_MAX_ZOOM_RATIO)
-      # Truncate zoom range if test_preview_zoom_tele will be run
-      if tele_camera_found:
-        logging.debug('Tele camera found, truncating zoom range max to %.2f',
-                      _WIDE_ZOOM_RATIO_MAX)
-        z_range[1] = _WIDE_ZOOM_RATIO_MAX
       logging.debug('z_range = %s', str(z_range))
       z_min, z_max, z_step_size = zoom_capture_utils.get_preview_zoom_params(
           z_range, _NUM_STEPS)
@@ -204,16 +194,6 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
         if phy_id:
           physical_ids.add(phy_id)
         logging.debug('Physical IDs: %s', physical_ids)
-        # Ignore captures at higher zooms where smooth zoom can affect results.
-        if (tele_camera_found and
-            len(physical_ids) >= _ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST and
-            z > _WIDE_ZOOM_THIRD_CAMERA_CHECK_ZOOM_RATIO):
-          logging.debug('Found enough zoom data, given that tele camera found: '
-                        '%d physical IDs at zoom ratio %.2f, ignoring '
-                        'remaining captures.',
-                        len(physical_ids), z)
-          z_max = z
-          break
 
         # read image
         img_bgr = cv2.imread(os.path.join(log_path, img_name))
@@ -256,10 +236,8 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
         except AssertionError as e:
           logging.debug('Could not find ArUco marker at zoom ratio %.2f: %s',
                         z, e)
-          if not tele_camera_found and z > _WIDE_ONLY_ZOOM_RATIO_THRESHOLD:
-            logging.debug('No Tele camera found and zoom ratio %.2f is greater '
-                          'than threshold %.2f, ignoring remaining captures.',
-                          z, _WIDE_ONLY_ZOOM_RATIO_THRESHOLD)
+          if tele_camera_found:
+            # Since TELE will be tested separately, allow premature exit.
             z_max = z
           break
 
@@ -302,17 +280,8 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
 
       plot_name_stem = f'{os.path.join(log_path, _NAME)}'
       # TODO: b/369852004 - decrease TOL for test_preview_zoom
-      number_of_cameras_to_test = (
-          _ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST
-          if ultrawide_camera_found and cam.is_primary_camera()
-          else _SINGLE_CAMERA_NUMBER_OF_CAMERAS_TO_TEST
-      )
-      # Make reporting active physical IDs optional
-      if all(d.physical_id is None for d in test_data):
-        number_of_cameras_to_test = 0
       test_success, msg = zoom_capture_utils.verify_preview_zoom_results(
-          test_data, size, z_max, z_min, z_step_size, plot_name_stem,
-          number_of_cameras_to_test=number_of_cameras_to_test)
+          test_data, size, z_max, z_min, z_step_size, plot_name_stem)
       if not test_success:
         first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
         if first_api_level >= its_session_utils.ANDROID15_API_LEVEL:

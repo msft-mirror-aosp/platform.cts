@@ -20,13 +20,11 @@ import static android.media.MediaCodecInfo.CodecProfileLevel.AV1Level51;
 import static android.media.MediaCodecInfo.CodecProfileLevel.AV1ProfileMain10;
 import static android.media.MediaCodecInfo.CodecProfileLevel.AV1ProfileMain8;
 import static android.media.MediaFormat.MIMETYPE_VIDEO_AV1;
-import static android.mediapc.cts.CodecTestBase.SELECT_HARDWARE;
-import static android.mediapc.cts.CodecTestBase.SELECT_VIDEO;
-import static android.mediapc.cts.CodecTestBase.getCodecCapabilities;
-import static android.mediapc.cts.CodecTestBase.getCodecInfo;
-import static android.mediapc.cts.CodecTestBase.getMediaTypesOfAvailableCodecs;
-import static android.mediapc.cts.CodecTestBase.selectCodecs;
-import static android.mediapc.cts.CodecTestBase.selectHardwareCodecs;
+import static android.mediav2.common.cts.CodecTestBase.compileMediaTypesList;
+import static android.mediav2.common.cts.CodecTestBase.getCodecCapabilities;
+import static android.mediav2.common.cts.CodecTestBase.getCodecInfo;
+import static android.mediav2.common.cts.CodecTestBase.selectCodecs;
+import static android.mediav2.common.cts.CodecTestBase.selectHardwareCodecs;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -43,6 +41,8 @@ import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.PerformanceClassTestRule;
 import android.mediapc.cts.common.Preconditions;
 import android.mediapc.cts.common.Requirements;
+import android.mediav2.common.cts.CodecTestBase;
+import android.mediav2.common.cts.CodecTestBase.ComponentClass;
 import android.util.Log;
 import android.util.Range;
 
@@ -77,7 +77,9 @@ public class VideoCodecRequirementsTest {
 
     private Set<String> get4k60HwCodecSet(boolean isEncoder) throws IOException {
         Set<String> codecSet = new HashSet<>();
-        Set<String> codecMediaTypes = getMediaTypesOfAvailableCodecs(SELECT_VIDEO, SELECT_HARDWARE);
+        ArrayList<String> codecMediaTypes =
+                compileMediaTypesList(
+                        ComponentClass.HARDWARE, false /* need audio */, true /* need video */);
         PerformancePoint PP4k60 = new PerformancePoint(3840, 2160, 60);
         for (String codecMediaType : codecMediaTypes) {
             ArrayList<String> hwVideoCodecs =

@@ -32,7 +32,11 @@ java_test_host {
         "hamcrest",
         "hamcrest-library",
     ],
-    static_libs: ["cts-install-lib-host"],
+    static_libs: [
+        "android.content.pm.flags-aconfig-java-host",
+        "cts-install-lib-host",
+        "flag-junit-host",
+    ],
     data: [
         ":deapexer.zip",
     ],
@@ -56,6 +60,7 @@ android_test_helper_app {
         ":ApexKeyRotationTestV2_SignedBobRotRollback",
         ":ApexKeyRotationTestV3_SignedBob",
         ":ApexKeyRotationTestV3_SignedBobRot",
+        ":CtsShimPrivUpgradePrebuilt",
         ":StagedInstallTestApexV1_NotPreInstalled",
         ":StagedInstallTestApexV2_AdditionalFile",
         ":StagedInstallTestApexV2_AdditionalFolder",

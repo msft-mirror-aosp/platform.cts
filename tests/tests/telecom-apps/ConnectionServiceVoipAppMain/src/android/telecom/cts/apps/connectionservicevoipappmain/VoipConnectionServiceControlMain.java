@@ -61,6 +61,7 @@ import android.telecom.cts.apps.CallEndpointTransaction;
 import android.telecom.cts.apps.CallExceptionTransaction;
 import android.telecom.cts.apps.CallResources;
 import android.telecom.cts.apps.IAppControl;
+import android.telecom.cts.apps.IntegerTransaction;
 import android.telecom.cts.apps.IRemoteOperationConsumer;
 import android.telecom.cts.apps.LatchedEndpointOutcomeReceiver;
 import android.telecom.cts.apps.NoDataTransaction;
@@ -137,7 +138,8 @@ public class VoipConnectionServiceControlMain extends Service {
                 }
 
                 @Override
-                public NoDataTransaction addFailedCall(CallAttributes callAttributes) {
+                public NoDataTransaction addFailedCall(
+                        CallAttributes callAttributes, Bundle extras) {
                     Log.i(mTag, "addFailedCall: enter");
                     try {
                         List<String> stackTrace =
@@ -336,7 +338,7 @@ public class VoipConnectionServiceControlMain extends Service {
 
                 @Override
                 public NoDataTransaction setConnectionProperties(String callId, int properties) {
-                  return new NoDataTransaction(TestAppTransaction.Success);
+                    return new NoDataTransaction(TestAppTransaction.Success);
                 }
 
                 @Override
@@ -533,6 +535,12 @@ public class VoipConnectionServiceControlMain extends Service {
                                     "isForegroundServiceDelegationActive: handle=[%s]", handle));
                     return new BooleanTransaction(TestAppTransaction.Success, false);
                 }
+
+              @Override
+              public IntegerTransaction getAudioProcessingUseCase(String callId) {
+                // Not supported for transactional app for now.
+                return new IntegerTransaction(TestAppTransaction.Success, 0);
+              }
 
                 private VoipConnection getConnectionOrThrow(String id, List<String> stackTrace) {
                     if (!mIdToConnection.containsKey(id)) {

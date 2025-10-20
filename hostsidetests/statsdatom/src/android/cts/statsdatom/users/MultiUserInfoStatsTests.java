@@ -64,7 +64,7 @@ public class MultiUserInfoStatsTests extends DeviceTestCase implements IBuildRec
     }
 
     public void testMultiUserInfo() throws Exception {
-        int maxSupportedUsers = getDevice().getMaxNumberOfUsersSupported();
+        int maxSwitchableUsers = getDevice().getMaxNumberOfUsersSupported();
         boolean isUserSwitcherEnabled = isUserSwitcherEnabled();
         // Atoms are collected only if isUserSwitcher is enabled
         uploadConfigForPulledAtom();
@@ -74,7 +74,7 @@ public class MultiUserInfoStatsTests extends DeviceTestCase implements IBuildRec
         if (isUserSwitcherEnabled) {
             assertThat(data).isNotEmpty();
             MultiUserInfo multiUserInfo = data.get(0).getMultiUserInfo();
-            assertThat(multiUserInfo.getMaxSupportedUsers()).isEqualTo(maxSupportedUsers);
+            assertThat(multiUserInfo.getMaxSupportedUsers()).isEqualTo(maxSwitchableUsers);
             assertThat(multiUserInfo.getMultiUserSettingOn()).isEqualTo(true);
             assertThat(multiUserInfo.getSupportsAddingFullUsers()).isEqualTo(true);
         }

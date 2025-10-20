@@ -17,10 +17,13 @@
 package android.app.cts.wallpapers.util;
 
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.os.Parcel;
+import android.os.ParcelFileDescriptor;
 
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
@@ -45,6 +48,13 @@ public class WallpaperTestUtils {
         drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
         drawable.draw(canvas);
         return result;
+    }
+
+    /**
+     * Helper get a bitmap from a parcelFileDescriptor
+     */
+    public static Bitmap getBitmap(ParcelFileDescriptor pfd) {
+        return pfd == null ? null : BitmapFactory.decodeFileDescriptor(pfd.getFileDescriptor());
     }
 
     /**
@@ -106,5 +116,13 @@ public class WallpaperTestUtils {
     public static boolean isSimilar(Drawable drawable1, Drawable drawable2,
             boolean requireSameDimensions) {
         return isSimilar(getBitmap(drawable1), getBitmap(drawable2), requireSameDimensions);
+    }
+
+    /**
+     * @see #isSimilar(Bitmap, Bitmap, boolean)
+     */
+    public static boolean isSimilar(Drawable drawable, ParcelFileDescriptor wallpaperFile,
+            boolean requireSameDimensions) {
+        return isSimilar(getBitmap(drawable), getBitmap(wallpaperFile), requireSameDimensions);
     }
 }

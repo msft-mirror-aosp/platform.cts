@@ -22,7 +22,6 @@ import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
 /**
@@ -33,13 +32,12 @@ import org.junit.runner.RunWith;
 @RunWith(DeviceJUnit4ClassRunner.class)
 public final class CreateUsersNoAppCrashesTest extends BaseMultiUserTest {
 
-    @Rule
-    public final RuleChain mLookAllThoseRules = RuleChain.outerRule(new SupportsMultiUserRule(this))
-            .around(new AppCrashRetryRule());
+    @Rule public final AppCrashRetryRule mAppCrashRetryRule = new AppCrashRetryRule();
 
     @Presubmit
     @Test
     public void testCanCreateGuestUser() throws Exception {
+        assumeSupportsGuest();
         // The device may already have a guest present if it is configured with
         // config_guestUserAutoCreated. If so, skip the test.
         assumeGuestDoesNotExist();
@@ -52,6 +50,8 @@ public final class CreateUsersNoAppCrashesTest extends BaseMultiUserTest {
     @Presubmit
     @Test
     public void testCanCreateSecondaryUser() throws Exception {
+        assumeSupportsSecondaryUser();
+
         int userId = getDevice().createUser(
                 "TestUser_" + System.currentTimeMillis() /* name */,
                 false /* guest */,

@@ -23,8 +23,6 @@ import static android.view.Display.DEFAULT_DISPLAY;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import static org.junit.Assume.assumeFalse;
-
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityOptions;
@@ -162,7 +160,6 @@ public final class ActivityManagerHelperTest extends ActivityManagerTestBase {
 
     @Test
     public void testSetFocusedTask() throws Exception {
-        assumeFalse(hasAutomotiveSplitscreenMultitaskingFeature());
         // setup
         ActivityA task1BottomActivity = launchTestActivity(ActivityA.class);
         ActivityB task1TopActivity = launchTestActivity(ActivityB.class);

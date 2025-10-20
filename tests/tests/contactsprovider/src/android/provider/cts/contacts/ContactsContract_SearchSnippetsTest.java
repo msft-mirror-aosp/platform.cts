@@ -29,7 +29,6 @@ import android.provider.ContactsContract.CommonDataKinds.StructuredName;
 import android.provider.ContactsContract.CommonDataKinds.StructuredPostal;
 import android.provider.ContactsContract.Contacts;
 import android.provider.ContactsContract.Directory;
-import android.provider.ContactsContract.RawContacts;
 import android.provider.ContactsContract.SearchSnippets;
 import android.provider.cts.contacts.ContactsContract_TestDataBuilder.TestContact;
 import android.provider.cts.contacts.ContactsContract_TestDataBuilder.TestRawContact;
@@ -327,8 +326,6 @@ public class ContactsContract_SearchSnippetsTest extends InstrumentationTestCase
      */
     private long[] setupTestData() throws Exception {
         TestRawContact rawContact = mBuilder.newRawContact()
-                .with(RawContacts.ACCOUNT_TYPE, "test_account")
-                .with(RawContacts.ACCOUNT_NAME, "test_name")
                 .insert();
         rawContact.newDataRow(StructuredName.CONTENT_ITEM_TYPE)
                 .with(StructuredName.DISPLAY_NAME, "Hot Tamale")
@@ -341,8 +338,6 @@ public class ContactsContract_SearchSnippetsTest extends InstrumentationTestCase
         TestContact contact = rawContact.getContact().load();
 
         TestRawContact rawContact2 = mBuilder.newRawContact()
-                .with(RawContacts.ACCOUNT_TYPE, "test_account")
-                .with(RawContacts.ACCOUNT_NAME, "test_name")
                 .insert();
         rawContact2.newDataRow(StructuredName.CONTENT_ITEM_TYPE)
                 .with(StructuredName.DISPLAY_NAME, "Cold Tamago")
@@ -360,8 +355,6 @@ public class ContactsContract_SearchSnippetsTest extends InstrumentationTestCase
         TestContact contact2 = rawContact2.getContact().load();
 
         TestRawContact rawContact3 = mBuilder.newRawContact()
-                .with(RawContacts.ACCOUNT_TYPE, "test_account")
-                .with(RawContacts.ACCOUNT_NAME, "test_name")
                 .insert();
         rawContact3.newDataRow(StructuredName.CONTENT_ITEM_TYPE)
                 .with(StructuredName.DISPLAY_NAME, "John Doe")

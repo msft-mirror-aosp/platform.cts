@@ -20,7 +20,7 @@ import android.os.UserHandle
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.EnsureHasNoSecondaryUser
-import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
+import com.android.bedstead.multiuser.annotations.EnsureCanAddSecondaryUser
 import com.android.bedstead.multiuser.annotations.EnsureHasCloneProfile
 import com.android.bedstead.multiuser.annotations.EnsureHasNoCloneProfile
 import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
@@ -77,7 +77,7 @@ class UsersTest {
     }
 
     @Test
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     fun all_containsCreatedUser() {
         val user = TestApis.users().createUser().create()
 
@@ -89,7 +89,7 @@ class UsersTest {
     }
 
     @Test
-    @EnsureCanAddUser(number = 2)
+    @EnsureCanAddSecondaryUser(number = 2)
     fun all_userAddedSinceLastCallToUsers_containsNewUser() {
         val user = TestApis.users().createUser().create()
         TestApis.users().all()
@@ -104,7 +104,7 @@ class UsersTest {
     }
 
     @Test
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     fun all_userRemovedSinceLastCallToUsers_doesNotContainRemovedUser() {
         val user = TestApis.users().createUser().create()
 
@@ -114,7 +114,7 @@ class UsersTest {
     }
 
     @Test
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     fun find_userExists_returnsUserReference() {
         val user = TestApis.users().createUser().create()
 
@@ -141,7 +141,6 @@ class UsersTest {
     }
 
     @Test
-    @EnsureCanAddUser
     fun createUser_additionalSystemUser_throwsException() {
         assertThrows(NeneException::class.java) {
             TestApis.users().createUser()
@@ -151,7 +150,7 @@ class UsersTest {
     }
 
     @Test
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     fun createUser_userIsCreated_andIsNotEphemeralOrGuest() {
         val user = TestApis.users().createUser().create()
 
@@ -165,7 +164,7 @@ class UsersTest {
     }
 
     @Test
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     fun createUser_createdUserHasCorrectName() {
         val userReference = TestApis
                 .users()
@@ -181,7 +180,7 @@ class UsersTest {
     }
 
     @Test
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     fun createUser_createdUserHasCorrectTypeName() {
         val userReference = TestApis.users().createUser()
                 .type(mSecondaryUserType)
@@ -195,7 +194,7 @@ class UsersTest {
     }
 
     @Test
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     fun createUser_specifiesNullStringUserType_throwsException() {
         val userBuilder = TestApis.users().createUser()
 
@@ -205,7 +204,7 @@ class UsersTest {
     }
 
     @Test
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     fun createUser_specifiesNullUserType_throwsException() {
         val userBuilder = TestApis.users().createUser()
 
@@ -215,7 +214,6 @@ class UsersTest {
     }
 
     @Test
-    @EnsureCanAddUser
     fun createUser_specifiesSystemUserType_throwsException() {
         val type = TestApis.users().supportedType(UserType.SYSTEM_USER_TYPE_NAME)
         val userBuilder = TestApis.users().createUser()
@@ -225,7 +223,7 @@ class UsersTest {
     }
 
     @Test
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     fun createUser_specifiesSecondaryUserType_createsUser() {
         val user = TestApis.users().createUser().type(mSecondaryUserType).create()
 
@@ -238,7 +236,7 @@ class UsersTest {
 
     @Test
     @EnsureHasNoCloneProfile
-    @EnsureCanAddUser
+    // TODO(b/442891661) Check that Clone is supported?
     fun createUser_createsProfile_parentIsSet() {
         val personalUser = TestApis.users().instrumented()
         val user = TestApis
@@ -257,7 +255,7 @@ class UsersTest {
     }
 
     @Test
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     fun createUser_specifiesParentOnNonProfileType_throwsException() {
         val systemUser = TestApis.users().system()
         val userBuilder = TestApis.users().createUser()
@@ -267,7 +265,7 @@ class UsersTest {
     }
 
     @Test
-    @EnsureCanAddUser
+    // TODO(b/442891661) Check that Clone is supported?
     fun createUser_specifiesProfileTypeWithoutParent_throwsException() {
         val userBuilder = TestApis.users().createUser().type(mCloneProfileType)
 
@@ -275,7 +273,7 @@ class UsersTest {
     }
 
     @Test
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     fun createAndStart_isStarted() {
         var user: UserReference? = null
         try {
@@ -317,7 +315,7 @@ class UsersTest {
             "TODO: Re-enable when harrier .secondaryUser() only" +
                     " returns the harrier-managed secondary user"
     )
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     fun findUsersOfType_returnsUsers() {
         TestApis.users().createUser().create().use { additionalUser ->
 
@@ -348,7 +346,7 @@ class UsersTest {
 
     @Test
     @EnsureHasSecondaryUser
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     fun findUserOfType_multipleMatchingUsers_throwsException() {
         TestApis.users().createUser().create().use { _ ->
 
@@ -503,7 +501,7 @@ class UsersTest {
     }
 
     @Test
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     fun createEphemeralUser() {
         TestApis.users()
                 .createUser()
@@ -515,7 +513,7 @@ class UsersTest {
     }
 
     @Test
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser // TODO(b/442891661) Check specifically for Guest creation support
     fun createGuestUser() {
         TestApis.users()
                 .createUser()
@@ -524,6 +522,13 @@ class UsersTest {
 
                     assertThat(user.isGuest).isTrue()
                 }
+    }
+
+    // TODO(b/444765027): for now it' just making sure it doesn't fail (for example, if it tries to
+    // remove the last admin on "mainless-user" devices), but ideally it should assert some state
+    @Test
+    fun ensureNoOtherUsers_works() {
+        TestApis.users().ensureNoOtherUsers()
     }
 
     companion object {

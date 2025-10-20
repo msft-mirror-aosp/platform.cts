@@ -15,115 +15,124 @@
  */
 package android.server.wm.backnavigation;
 
-import static android.server.wm.UiDeviceUtils.wakeUpAndUnlock;
+import static android.server.wm.WindowManagerState.STATE_RESUMED;
+import static android.view.Display.DEFAULT_DISPLAY;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import android.app.Activity;
+import android.app.Application;
 import android.app.Dialog;
-import android.app.Instrumentation;
+import android.content.Context;
+import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
+import android.server.wm.ActivityManagerTestBase;
+import android.server.wm.Condition;
 import android.server.wm.TouchHelper;
 import android.view.KeyEvent;
 import android.window.OnBackInvokedCallback;
 import android.window.OnBackInvokedDispatcher;
 
-import androidx.lifecycle.Lifecycle;
-import androidx.test.core.app.ActivityScenario;
-import androidx.test.ext.junit.rules.ActivityScenarioRule;
-import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Integration test for back navigation
- */
+/** Integration test for back navigation */
 @Presubmit
-public class BackNavigationTests {
-    @Rule
-    public final ActivityScenarioRule<BackNavigationActivity> mScenarioRule =
-            new ActivityScenarioRule<>(BackNavigationActivity.class);
-    private ActivityScenario<BackNavigationActivity> mScenario;
-    private Instrumentation mInstrumentation;
+public class BackNavigationTests extends ActivityManagerTestBase {
+    private TestActivitySession<BackNavigationActivity> mActivitySession;
+    private BackNavigationActivity mActivity;
 
     @Before
-    public void setup() {
-        mInstrumentation = InstrumentationRegistry.getInstrumentation();
-        wakeUpAndUnlock(mInstrumentation.getContext());
-        mScenario = mScenarioRule.getScenario();
-    }
-
-    @Test
-    public void registerCallback_initialized() {
-        CountDownLatch latch = registerBackCallback();
-        mScenario.moveToState(Lifecycle.State.RESUMED);
-        invokeBackAndAssertCallbackIsCalled(latch);
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        mActivitySession = createManagedTestActivitySession();
     }
 
     @Test
     public void registerCallback_created() {
-        mScenario.moveToState(Lifecycle.State.CREATED);
-        CountDownLatch latch = registerBackCallback();
-        mScenario.moveToState(Lifecycle.State.RESUMED);
-        invokeBackAndAssertCallbackIsCalled(latch);
+        try (LifecycleMonitor helper = new LifecycleMonitor()) {
+            helper.registerCallbackAtCreate();
+            launchTestActivity();
+            mWmState.waitAndAssertActivityState(mActivity.getComponentName(), STATE_RESUMED);
+            CountDownLatch latch = helper.mRegisterCallbackResult;
+            invokeBackAndAssertCallbackIsCalled(latch);
+        }
     }
 
     @Test
     public void registerCallback_resumed() {
-        mScenario.moveToState(Lifecycle.State.RESUMED);
+        launchTestActivity();
         CountDownLatch latch = registerBackCallback();
         invokeBackAndAssertCallbackIsCalled(latch);
     }
 
     @Test
     public void registerCallback_dialog() {
+        launchTestActivity();
         CountDownLatch backInvokedLatch = new CountDownLatch(1);
-        mScenario.onActivity(activity -> {
-            Dialog dialog = new Dialog(activity, 0);
-            dialog.getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
-                    OnBackInvokedDispatcher.PRIORITY_DEFAULT, () -> {
-                        backInvokedLatch.countDown();
-                    });
-            dialog.show();
-        });
+        mActivitySession.runOnMainSyncAndWait(
+                () -> {
+                    Dialog dialog = new Dialog(mActivity, 0);
+                    dialog.getOnBackInvokedDispatcher()
+                            .registerOnBackInvokedCallback(
+                                    OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                                    backInvokedLatch::countDown);
+                    dialog.show();
+                });
         invokeBackAndAssertCallbackIsCalled(backInvokedLatch);
     }
 
     @Test
     public void onBackPressedNotCalled() {
-        mScenario.moveToState(Lifecycle.State.RESUMED);
+        launchTestActivity();
         CountDownLatch latch = registerBackCallback();
         invokeBackAndAssertCallbackIsCalled(latch);
-        mScenario.onActivity((activity) ->
-                assertFalse("Activity.onBackPressed should not be called",
-                        activity.mOnBackPressedCalled));
+        mInstrumentation.runOnMainSync(
+                () ->
+                        assertFalse(
+                                "Activity.onBackPressed should not be called",
+                                mActivity.mOnBackPressedCalled));
     }
 
     @Test
     public void onUserInteractionCalled() {
-        mScenario.moveToState(Lifecycle.State.RESUMED);
+        launchTestActivity();
         CountDownLatch latch = registerBackCallback();
         invokeBackAndAssertCallbackIsCalled(latch);
-        mScenario.onActivity((activity) ->
-                assertTrue("Activity.onUserInteraction should be called",
-                        activity.mOnUserInteractionCalled));
+        mInstrumentation.runOnMainSync(
+                () ->
+                        assertTrue(
+                                "Activity.onUserInteraction should be called",
+                                mActivity.mOnUserInteractionCalled));
     }
 
     @Test
     public void registerCallback_relaunch() {
-        mScenario.moveToState(Lifecycle.State.RESUMED);
+        launchTestActivity();
         CountDownLatch latch1 = registerBackCallback();
-
-        ActivityScenario<BackNavigationActivity> newScenario = mScenario.recreate();
-        newScenario.moveToState(Lifecycle.State.RESUMED);
-        CountDownLatch latch2 = registerBackCallback(newScenario, true);
-
+        CountDownLatch latch2;
+        try (LifecycleMonitor helper = new LifecycleMonitor()) {
+            mActivitySession.runOnMainSyncAndWait(() -> mActivity.recreate());
+            if (!Condition.waitFor(
+                    "Wait for activity recreate...", () -> helper.mLaunchedActivity != null)) {
+                fail("Test activity did not recreate");
+            }
+            mWmState.waitAndAssertActivityState(mActivity.getComponentName(), STATE_RESUMED);
+            latch2 =
+                    registerBackCallback(
+                            helper.mLaunchedActivity,
+                            true /* unregisterAfterCalled */,
+                            false /* inMainThread */);
+        }
         invokeBackAndAssertCallbackIsCalled(latch2);
         invokeBackAndAssertCallback(latch1, false);
     }
@@ -150,36 +159,98 @@ public class BackNavigationTests {
         }
     }
 
-    private CountDownLatch registerBackCallback() {
-        return registerBackCallback(mScenario, false);
+    private void launchTestActivity() {
+        mActivitySession.launchTestActivityOnDisplaySync(
+                BackNavigationActivity.class, DEFAULT_DISPLAY);
+        mActivity = mActivitySession.getActivity();
     }
 
-    private CountDownLatch registerBackCallback(ActivityScenario<?> scenario,
-            boolean unregisterAfterCalled) {
-        CountDownLatch backInvokedLatch = new CountDownLatch(1);
-        CountDownLatch backRegisteredLatch = new CountDownLatch(1);
-        final OnBackInvokedCallback callback = new OnBackInvokedCallback() {
-            @Override
-            public void onBackInvoked() {
-                backInvokedLatch.countDown();
-                if (unregisterAfterCalled) {
-                    scenario.onActivity(activity -> activity.getOnBackInvokedDispatcher()
-                            .unregisterOnBackInvokedCallback(this));
-                }
-            }
-        };
+    private class LifecycleMonitor implements AutoCloseable {
+        final Application mApplication;
+        final Application.ActivityLifecycleCallbacks mActivityCallbacks;
+        boolean mRegisterCallbackAtCreate;
+        CountDownLatch mRegisterCallbackResult;
+        Activity mLaunchedActivity;
 
-        scenario.onActivity(activity -> {
+        LifecycleMonitor() {
+            final Context targetContext = mInstrumentation.getTargetContext();
+            mApplication = (Application) targetContext.getApplicationContext();
+            mActivityCallbacks =
+                    new Application.ActivityLifecycleCallbacks() {
+
+                        @Override
+                        public void onActivityCreated(
+                                @NonNull Activity activity, @Nullable Bundle savedInstanceState) {
+                            mLaunchedActivity = activity;
+                            if (mRegisterCallbackAtCreate) {
+                                mRegisterCallbackResult =
+                                        registerBackCallback(
+                                                activity,
+                                                false /* unregisterAfterCalled */,
+                                                true /* inMainThread */);
+                            }
+                        }
+
+                        @Override
+                        public void onActivityStarted(@NonNull Activity activity) {}
+
+                        @Override
+                        public void onActivityResumed(@NonNull Activity activity) {}
+
+                        @Override
+                        public void onActivityPaused(@NonNull Activity activity) {}
+
+                        @Override
+                        public void onActivityStopped(@NonNull Activity activity) {}
+
+                        @Override
+                        public void onActivitySaveInstanceState(
+                                @NonNull Activity activity, @NonNull Bundle outState) {}
+
+                        @Override
+                        public void onActivityDestroyed(@NonNull Activity activity) {}
+                    };
+            mApplication.registerActivityLifecycleCallbacks(mActivityCallbacks);
+        }
+
+        void registerCallbackAtCreate() {
+            mRegisterCallbackAtCreate = true;
+        }
+
+        @Override
+        public void close() {
+            mApplication.unregisterActivityLifecycleCallbacks(mActivityCallbacks);
+        }
+    }
+
+    private CountDownLatch registerBackCallback() {
+        return registerBackCallback(
+                mActivity, false /* unregisterAfterCalled */, false /* inMainThread */);
+    }
+
+    private CountDownLatch registerBackCallback(
+            Activity activity, boolean unregisterAfterCalled, boolean inMainThread) {
+        CountDownLatch backInvokedLatch = new CountDownLatch(1);
+        final OnBackInvokedCallback callback =
+                new OnBackInvokedCallback() {
+                    @Override
+                    public void onBackInvoked() {
+                        backInvokedLatch.countDown();
+                        if (unregisterAfterCalled) {
+                            activity.getOnBackInvokedDispatcher()
+                                    .unregisterOnBackInvokedCallback(this);
+                        }
+                    }
+                };
+
+        if (inMainThread) {
             activity.getOnBackInvokedDispatcher().registerOnBackInvokedCallback(0, callback);
-            backRegisteredLatch.countDown();
-        });
-        try {
-            if (!backRegisteredLatch.await(100, TimeUnit.MILLISECONDS)) {
-                fail("Back callback was not registered on the Activity thread. This might be "
-                        + "an error with the test itself.");
-            }
-        } catch (InterruptedException e) {
-            fail(e.getMessage());
+        } else {
+            mInstrumentation.runOnMainSync(
+                    () -> {
+                        activity.getOnBackInvokedDispatcher()
+                                .registerOnBackInvokedCallback(0, callback);
+                    });
         }
         return backInvokedLatch;
     }

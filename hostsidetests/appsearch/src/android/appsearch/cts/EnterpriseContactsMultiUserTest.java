@@ -17,19 +17,21 @@
 package android.appsearch.cts;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assume.assumeTrue;
 
-import com.android.compatibility.common.util.UserUtil;
+import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.device.UserInfo;
 import com.android.tradefed.invoker.TestInformation;
-import com.android.tradefed.log.LogUtil;
+import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.targetprep.suite.SuiteApkInstaller;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.AfterClassWithInfo;
 import com.android.tradefed.testtype.junit4.BeforeClassWithInfo;
+import com.android.tradefed.util.CommandResult;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -53,33 +55,33 @@ import java.util.List;
  */
 @RunWith(DeviceJUnit4ClassRunner.class)
 public final class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase {
+
+    public static final String FEATURE_MANAGED_USERS = "android.software.managed_users";
+
     private static int sParentUserId;
     private static int sSecondaryUserId;
     private static int sEnterpriseUserId;
     private static boolean sIsTemporaryEnterpriseUser;
+    private static boolean sFeaturesSupported;
     private static ITestDevice sDevice;
     private static final List<SuiteApkInstaller> sInstallers = new ArrayList<>();
 
     @BeforeClassWithInfo
     public static void setUpClass(TestInformation testInfo) throws Exception {
-        ITestDevice device = testInfo.getDevice();
-        assumeTrue("Multi-user is not supported on this device", device.isMultiUserSupported());
+        sDevice = testInfo.getDevice();
+        assumeTrue("Multi-user is not supported on this device", sDevice.isMultiUserSupported());
+        assumeTrue(
+                "Device doesn't have feature " + FEATURE_MANAGED_USERS,
+                sDevice.hasFeature(FEATURE_MANAGED_USERS));
+        sFeaturesSupported = true;
 
-        Integer mainUserId = device.getMainUserId();
-        if (mainUserId == null) {
-            // Check if enterprise profile can be created on any user
-            boolean supportsMainlessUser = new UserUtil(device).isProfilesOnNonMainUserSupported();
-            assumeTrue("device doesn't have main user and doesn't support profiles on other users",
-                    supportsMainlessUser);
-            sParentUserId = device.getCurrentUser();
-        } else {
-            sParentUserId = mainUserId;
-        }
+        sParentUserId = DevicePolicyUsersPreparer.getProfileParentUserIds().getFirst();
 
-        sSecondaryUserId = createSecondaryUser(device);
-        assumeTrue("Could not find or create an enterprise profile on this device",
-                setUpEnterpriseProfile(testInfo.getDevice()));
-        sDevice = device;
+        sSecondaryUserId = createSecondaryUser(sDevice);
+        CLog.d(
+                "setupClass(): sParentUserId=%d, sSecondaryUserId=%d",
+                sParentUserId, sSecondaryUserId);
+        setUpEnterpriseProfile(sDevice);
         installPackageAsUser(testInfo, sParentUserId);
         installPackageAsUser(testInfo, sSecondaryUserId);
         installPackageAsUser(testInfo, sEnterpriseUserId);
@@ -87,14 +89,21 @@ public final class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase
 
     @AfterClassWithInfo
     public static void tearDownClass(TestInformation testInfo) throws Exception {
+        if (!sFeaturesSupported) {
+            CLog.d("tearDownClass(): skipping because sFeaturesSupported is false");
+            return;
+        }
         for (SuiteApkInstaller installer : sInstallers) {
             installer.tearDown(testInfo, null);
         }
+        ITestDevice device = testInfo.getDevice();
         if (sSecondaryUserId > 0) {
-            testInfo.getDevice().removeUser(sSecondaryUserId);
+            CLog.d("removing secondary user (%d)", sSecondaryUserId);
+            device.removeUser(sSecondaryUserId);
         }
         if (sIsTemporaryEnterpriseUser) {
-            testInfo.getDevice().removeUser(sEnterpriseUserId);
+            CLog.d("removing temporary user profile(%d)", sEnterpriseUserId);
+            device.removeUser(sEnterpriseUserId);
         }
     }
 
@@ -105,32 +114,47 @@ public final class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase
         return profileId;
     }
 
-    /**
-     * Gets or creates an enterprise profile and sets the user id. Returns false if could neither
-     * get or create an enterprise profile.
-     */
-    private static boolean setUpEnterpriseProfile(ITestDevice device)
+    /** Gets or creates an enterprise profile and sets the {@link #sEnterpriseUserId user id } */
+    private static void setUpEnterpriseProfile(ITestDevice device)
             throws DeviceNotAvailableException {
         // Search for a managed profile
         for (UserInfo userInfo : device.getUserInfos().values()) {
             if (userInfo.isManagedProfile()) {
                 sEnterpriseUserId = userInfo.userId();
-                return true;
+                CLog.d("Set sEnterpriseUserId as existing user (%d)", sEnterpriseUserId);
+                startEnterpriseProfile(device);
+                return;
             }
         }
         // If no managed profile, set up a temporary one
-        try {
-            // Create a managed profile "work" under the main user
-            String createUserOutput = device.executeShellCommand(
-                    "pm create-user --profileOf " + sParentUserId + " --managed work");
-            sEnterpriseUserId = Integer.parseInt(createUserOutput.split(" id ")[1].trim());
-            assertThat(device.startUser(sEnterpriseUserId, /*waitFlag=*/ true)).isTrue();
-            sIsTemporaryEnterpriseUser = true;
-            return true;
-        } catch (Exception e) {
-            LogUtil.CLog.w("Could not set up enterprise profile for test: %s", e);
-            return false;
+
+        // Create a managed profile "work" under the main user
+        String cmd = "pm create-user --profileOf " + sParentUserId + " --managed work";
+        CommandResult result = device.executeShellV2Command(cmd);
+        CLog.d("Result of command %s: %s", cmd, result);
+        String output = result.getStdout();
+
+        if (!output.startsWith("Success:")) {
+            assertWithMessage("Command %s failed: %s", cmd, result).fail();
+            return;
         }
+        try {
+            sEnterpriseUserId = Integer.parseInt(output.split(" id ")[1].trim());
+            CLog.d("Set sEnterpriseUserId as new user (%d)", sEnterpriseUserId);
+        } catch (Exception e) {
+            assertWithMessage("Failed to parse output (%s) of command %s: %s", output, cmd, e)
+                    .fail();
+            return;
+        }
+        startEnterpriseProfile(device);
+        sIsTemporaryEnterpriseUser = true;
+    }
+
+    private static void startEnterpriseProfile(ITestDevice device)
+            throws DeviceNotAvailableException {
+        assertWithMessage("Started user %s", sEnterpriseUserId)
+                .that(device.startUser(sEnterpriseUserId, /* waitFlag= */ true))
+                .isTrue();
     }
 
     private static void installPackageAsUser(TestInformation testInfo, int userId)

@@ -66,6 +66,7 @@ import android.util.Pair;
 
 import androidx.test.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.internal.telephony.flags.Flags;
 
@@ -886,6 +887,10 @@ public class PhoneStateListenerTest {
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING));
         TelephonyUtils.addTestEmergencyNumber(
                 InstrumentationRegistry.getInstrumentation(), TEST_EMERGENCY_NUMBER);
+        PollingCheck.waitFor(
+                1000,
+                () -> mTelephonyManager.isEmergencyNumber(TEST_EMERGENCY_NUMBER),
+                "Timeout waiting for isEmergencyNumber(" + TEST_EMERGENCY_NUMBER + ").");
 
         LinkedBlockingQueue<Pair<EmergencyNumber, Integer>> smsCallbackQueue =
                 new LinkedBlockingQueue<>(1);

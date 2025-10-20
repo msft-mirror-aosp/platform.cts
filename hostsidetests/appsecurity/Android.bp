@@ -82,6 +82,23 @@ java_defaults {
     per_testcase_directory: true,
 }
 
+// Unit tests for utilities used by the CTS tests - not CTS itself
+java_test_host {
+    name: "AppSecurityHostUnitTestCases",
+    srcs: [
+        "src/**/Utils.java",
+        "src/**/UtilsTest.java",
+    ],
+    static_libs: [
+        "mockito-hostside-prebuilt",
+        "tradefed",
+    ],
+    test_suites: [
+        "general-tests",
+    ],
+    test_config: "AppSecurityHostUnitTestCases.xml",
+}
+
 java_test_host {
     name: "CtsAppSecurityHostTestCases",
     defaults: ["appsecurity_cts_defaults"],
@@ -210,6 +227,8 @@ java_test_host {
         ":KeyStoreManagerTestGranterApp",
     ],
     device_common_java_resources: [":all_apex_certs{.avbpubkey}"],
+
+    test_config: "AppSecurityHostTestCases.xml",
 }
 
 java_test_host {
@@ -287,7 +306,6 @@ java_test_host {
     srcs: [
         "src/**/ApplicationVisibilityTest.java",
         "src/**/BaseInstallMultiple.java",
-        "src/**/IsolatedSplitsTests.java",
         "src/**/MajorVersionTest.java",
         "src/**/PackageResolutionHostTest.java",
         "src/**/PackageSetInstallerTest.kt",
@@ -297,28 +315,12 @@ java_test_host {
         "src/**/SessionReferrerUriTest.java",
         "src/**/SettingsProviderInvalidKeyTest.java",
         "src/**/SharedUserIdTest.java",
-        "src/**/SplitTests.java",
         "src/**/UseProcessTest.java",
     ],
     device_common_data: [
         // ApplicationVisibilityTest
         ":CtsPkgInstallTinyApp",
         ":CtsApplicationVisibilityCrossUserApp",
-        // IsolatedSplitsTests
-        ":CtsIsolatedSplitApp",
-        ":CtsIsolatedSplitAppExtractNativeLibsFalseJni",
-        ":CtsIsolatedSplitAppExtractNativeLibsFalseNumberProviderA",
-        ":CtsIsolatedSplitAppExtractNativeLibsFalseNumberProviderB",
-        ":CtsIsolatedSplitAppExtractNativeLibsFalseNumberProxy",
-        ":CtsIsolatedSplitAppExtractNativeLibsTrue",
-        ":CtsIsolatedSplitAppExtractNativeLibsTrueJni",
-        ":CtsIsolatedSplitAppExtractNativeLibsTrueNumberProviderA",
-        ":CtsIsolatedSplitAppExtractNativeLibsTrueNumberProviderB",
-        ":CtsIsolatedSplitAppExtractNativeLibsTrueNumberProxy",
-        ":CtsIsolatedSplitAppFeatureA",
-        ":CtsIsolatedSplitAppFeatureADiffRev",
-        ":CtsIsolatedSplitAppFeatureB",
-        ":CtsIsolatedSplitAppFeatureC",
         // MajorVersionTest
         ":CtsMajorVersion000000000000ffff",
         ":CtsMajorVersion00000000ffffffff",
@@ -350,6 +352,56 @@ java_test_host {
         // SharedUserIdTest
         ":CtsSharedUidInstall",
         ":CtsSharedUidInstallDiffCert",
+        // UseProcessTest
+        ":CtsUseProcessFailActivity",
+        ":CtsUseProcessFailApplication",
+        ":CtsUseProcessFailProvider",
+        ":CtsUseProcessFailReceiver",
+        ":CtsUseProcessFailService",
+        ":CtsUseProcessSuccess",
+    ],
+    test_config_template: "PackageManagerTests.xml",
+}
+
+java_test_host {
+    name: "CtsPackageManagerIsolatedSplitHostTestCases",
+    defaults: ["appsecurity_cts_defaults"],
+
+    test_suites: CTS_TEST_SUITES_DEFAULT,
+
+    srcs: [
+        "src/**/IsolatedSplitsTests.java",
+    ],
+    device_common_data: [
+        // IsolatedSplitsTests
+        ":CtsIsolatedSplitApp",
+        ":CtsIsolatedSplitAppExtractNativeLibsFalseJni",
+        ":CtsIsolatedSplitAppExtractNativeLibsFalseNumberProviderA",
+        ":CtsIsolatedSplitAppExtractNativeLibsFalseNumberProviderB",
+        ":CtsIsolatedSplitAppExtractNativeLibsFalseNumberProxy",
+        ":CtsIsolatedSplitAppExtractNativeLibsTrue",
+        ":CtsIsolatedSplitAppExtractNativeLibsTrueJni",
+        ":CtsIsolatedSplitAppExtractNativeLibsTrueNumberProviderA",
+        ":CtsIsolatedSplitAppExtractNativeLibsTrueNumberProviderB",
+        ":CtsIsolatedSplitAppExtractNativeLibsTrueNumberProxy",
+        ":CtsIsolatedSplitAppFeatureA",
+        ":CtsIsolatedSplitAppFeatureADiffRev",
+        ":CtsIsolatedSplitAppFeatureB",
+        ":CtsIsolatedSplitAppFeatureC",
+    ],
+    test_config_template: "PackageManagerTests.xml",
+}
+
+java_test_host {
+    name: "CtsPackageManagerSplitHostTestCases",
+    defaults: ["appsecurity_cts_defaults"],
+
+    test_suites: CTS_TEST_SUITES_DEFAULT,
+
+    srcs: [
+        "src/**/SplitTests.java",
+    ],
+    device_common_data: [
         // SplitTests
         ":CtsInvalidRequiredSplitTypeSplitApp",
         ":CtsNeedSplitApp",
@@ -393,15 +445,8 @@ java_test_host {
         ":CtsSplitAppTypeLocale",
         ":CtsSplitAppTypeMultiple",
         ":CtsSplitInstantApp",
-        // UseProcessTest
-        ":CtsUseProcessFailActivity",
-        ":CtsUseProcessFailApplication",
-        ":CtsUseProcessFailProvider",
-        ":CtsUseProcessFailReceiver",
-        ":CtsUseProcessFailService",
-        ":CtsUseProcessSuccess",
     ],
-    test_config: "PackageManagerTests.xml",
+    test_config_template: "PackageManagerTests.xml",
 }
 
 java_test_host {
@@ -585,25 +630,11 @@ filegroup {
 }
 
 test_module_config_host {
-    name: "CtsPackageManagerHostTestCases_cts_splittests",
-    base: "CtsPackageManagerHostTestCases",
-    test_suites: ["general-tests"],
-    include_filters: ["android.appsecurity.cts.SplitTests"],
-}
-
-test_module_config_host {
     name: "CtsInstantAppsHostTestCases_cts_ephemeraltest",
     base: "CtsInstantAppsHostTestCases",
     test_suites: ["general-tests"],
     include_filters: ["android.appsecurity.cts.EphemeralTest"],
     exclude_annotations: ["android.platform.test.annotations.FlakyTest"],
-}
-
-test_module_config_host {
-    name: "CtsPackageManagerHostTestCases_cts_isolatedsplitstests",
-    base: "CtsPackageManagerHostTestCases",
-    test_suites: ["general-tests"],
-    include_filters: ["android.appsecurity.cts.IsolatedSplitsTests"],
 }
 
 test_module_config_host {
@@ -643,6 +674,22 @@ test_module_config_host {
 test_module_config_host {
     name: "CtsPackageManagerHostTestCases_pm_Presubmit",
     base: "CtsPackageManagerHostTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+    exclude_annotations: ["android.platform.test.annotations.Postsubmit"],
+}
+
+test_module_config_host {
+    name: "CtsPackageManagerSplitHostTestCases_pm_Presubmit",
+    base: "CtsPackageManagerSplitHostTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+    exclude_annotations: ["android.platform.test.annotations.Postsubmit"],
+}
+
+test_module_config_host {
+    name: "CtsPackageManagerIsolatedSplitHostTestCases_pm_Presubmit",
+    base: "CtsPackageManagerIsolatedSplitHostTestCases",
     test_suites: ["general-tests"],
     include_annotations: ["android.platform.test.annotations.Presubmit"],
     exclude_annotations: ["android.platform.test.annotations.Postsubmit"],

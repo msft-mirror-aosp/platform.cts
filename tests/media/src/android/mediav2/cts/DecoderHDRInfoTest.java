@@ -53,7 +53,7 @@ import java.util.Map;
  */
 @RunWith(Parameterized.class)
 // P010 support was added in Android T, hence limit the following tests to Android T and above
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU, codeName = "Tiramisu")
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
 public class DecoderHDRInfoTest extends HDRDecoderTestBase {
     private static final String LOG_TAG = DecoderHDRInfoTest.class.getSimpleName();
     private static final String MEDIA_DIR = WorkDir.getMediaDirString();

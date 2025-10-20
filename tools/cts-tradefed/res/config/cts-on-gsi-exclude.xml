@@ -234,6 +234,7 @@
     <option name="compatibility:exclude-filter" value="CtsIdentityTestCases android.security.identity.cts.ReaderAuthTest" />
     <option name="compatibility:exclude-filter" value="CtsIdentityTestCases android.security.identity.cts.UserAuthTest" />
     <option name="compatibility:exclude-filter" value="CtsIdentityTestCases android.security.identity.cts.MultiDocumentPresentationTest#multipleDocuments" />
+    <option name="compatibility:exclude-filter" value="CtsIdentityTestCases android.security.identity.cts.NoSessionEncryptionTest" />
 
     <!-- b/212223944 placeholder to avoid automerging the test exclusioin from android15-tests-dev -->
 

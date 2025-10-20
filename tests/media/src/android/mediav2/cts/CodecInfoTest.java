@@ -33,6 +33,7 @@ import static android.media.codec.Flags.hlgEditing;
 import static android.mediav2.common.cts.CodecTestBase.BOARD_FIRST_SDK_IS_AT_LEAST_202404;
 import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.FIRST_SDK_IS_AT_LEAST_T;
+import static android.mediav2.common.cts.CodecTestBase.IS_AFTER_B;
 import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_V;
 import static android.mediav2.common.cts.CodecTestBase.IS_HDR_CAPTURE_SUPPORTED;
@@ -152,11 +153,17 @@ public class CodecInfoTest {
      */
     // Some devices running versions older than Android V fail this test.
     // As this requirement was not enforced earlier, limit the test to Android V and above.
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-            codeName = "VanillaIceCream")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
     @ApiTest(apis = "android.media.MediaCodecInfo.CodecCapabilities#profileLevels")
     @Test
     public void testCodecProfileSupport() {
+        if (mMediaType.equalsIgnoreCase(MediaFormat.MIMETYPE_AUDIO_IAMF)) {
+            // TODO (b/440618955)
+            // iamf incorrect profile mapping has been fixed in 25Q4 which is not part
+            // of mainline module. hence limiting the test to run from build versions > BAKLAVA
+            Assume.assumeTrue("Test requires build version greater than Baklava to run",
+                    IS_AFTER_B);
+        }
         MediaCodecInfo.CodecCapabilities caps = mCodecInfo.getCapabilitiesForType(mMediaType);
         assertNotNull(mCodecName + " did not provide capabilities \n", caps);
         Assume.assumeTrue("Test is not applicable for media types with no profile list",
@@ -320,8 +327,7 @@ public class CodecInfoTest {
      */
     @Test
     @RequiresFlagsEnabled(FLAG_IN_PROCESS_SW_AUDIO_CODEC)
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-            codeName = "VanillaIceCream")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
     @ApiTest(apis = "android.media.MediaCodecInfo#getSecurityModel")
     public void testSecurityModel() {
         assertTrue("Codecs in REGULAR_CODECS list should have security model "
@@ -336,8 +342,7 @@ public class CodecInfoTest {
      * dynamic color aspects feature on CHIPSETs that set ro.board.first_api_level to V or higher.
      */
     @RequiresFlagsEnabled(FLAG_DYNAMIC_COLOR_ASPECTS)
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-            codeName = "VanillaIceCream")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
     @VsrTest(requirements = {"VSR-4.2-005.001"})
     @Test
     public void testDynamicColorAspectSupport() {

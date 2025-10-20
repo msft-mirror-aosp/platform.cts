@@ -32,16 +32,20 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.Process;
 import android.os.UserHandle;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.telecom.Call;
 import android.telecom.PhoneAccount;
 import android.telecom.TelecomManager;
 import android.telecom.cts.redirectiontestapp.CtsCallRedirectionService;
+import android.telecom.cts.redirectiontestapp2.CtsCallRedirectionService2;
 import android.telecom.cts.redirectiontestapp.CtsCallRedirectionServiceController;
+import android.telecom.cts.redirectiontestapp2.CtsCallRedirectionServiceController2;
 import android.telecom.cts.redirectiontestapp.ICtsCallRedirectionServiceController;
 import android.text.TextUtils;
 import android.util.Log;
 
 import com.android.compatibility.common.util.CddTest;
+import com.android.server.telecom.flags.Flags;
 
 import junit.framework.AssertionFailedError;
 
@@ -109,6 +113,9 @@ public class CallRedirectionServiceTest extends BaseTelecomTestWithMockServices 
             // Remove the test app from the redirection role.
             removeRoleHolder(ROLE_CALL_REDIRECTION,
                     CtsCallRedirectionService.class.getPackage().getName());
+
+            removeRoleHolder(ROLE_CALL_REDIRECTION,
+                    CtsCallRedirectionService2.class.getPackage().getName());
 
             if (!TextUtils.isEmpty(mPreviousCallRedirectionPackage)) {
                 addRoleHolder(ROLE_CALL_REDIRECTION, mPreviousCallRedirectionPackage);
@@ -178,6 +185,67 @@ public class CallRedirectionServiceTest extends BaseTelecomTestWithMockServices 
         assertEquals(TestUtils.TEST_PHONE_ACCOUNT_HANDLE_2, mCall.getDetails().getAccountHandle());
         assertTrue(Call.STATE_DISCONNECTED != mCall.getState());
     }
+
+    @RequiresFlagsEnabled(Flags.FLAG_PLACE_CALL_TO_ALTERNATE_NUMBER)
+    public void testPlaceCallToAlternateNumber() throws Exception {
+        if (!shouldTestTelecom(mContext)) {
+            return;
+        }
+        mCallRedirectionServiceController.setPlaceCallToAlternateNumber(
+                SAMPLE_HANDLE, TestUtils.TEST_PHONE_ACCOUNT_HANDLE_2, false);
+        placeAndVerifyCallByRedirection(false /* cancelledByCallRedirection */);
+        mInCallService = mInCallCallbacks.getService();
+        assertCallDetailsConstructed(mInCallService.getLastCall(), true);
+        mCall = mInCallService.getLastCall();
+
+        // Assert that no gateway info is present, as the number is replaced directly.
+        assertNull(mCall.getDetails().getGatewayInfo());
+
+        // Assert that the handle is the alternate number provided.
+        assertEquals(SAMPLE_HANDLE, mCall.getDetails().getHandle());
+
+        // Assert that the PhoneAccountHandle is the target account provided.
+        assertEquals(TestUtils.TEST_PHONE_ACCOUNT_HANDLE_2, mCall.getDetails().getAccountHandle());
+
+        // Assert that the call is active.
+        assertTrue(Call.STATE_DISCONNECTED != mCall.getState());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_PLACE_CALL_TO_ALTERNATE_NUMBER)
+    public void testPlaceCallToAlternateNumberWithPostDialDigits() throws Exception {
+        if (!shouldTestTelecom(mContext)) {
+            return;
+        }
+        mCallRedirectionServiceController.setPlaceCallToAlternateNumber(
+                SAMPLE_REDIRECT_HANDLE, TestUtils.TEST_PHONE_ACCOUNT_HANDLE_2, false);
+
+        Bundle extras = new Bundle();
+        extras.putParcelable(TestUtils.EXTRA_PHONE_NUMBER, SAMPLE_HANDLE_WITH_POST_DIAL);
+
+        placeAndVerifyCallByRedirection(extras, false /* cancelledByCallRedirection */);
+        mInCallService = mInCallCallbacks.getService();
+        assertCallDetailsConstructed(mInCallService.getLastCall(), true);
+        mCall = mInCallService.getLastCall();
+
+        // Assert that no gateway info is present, as the number is replaced directly.
+        assertNull(mCall.getDetails().getGatewayInfo());
+
+        // Assert that the handle is the alternate number provided.
+        assertEquals(SAMPLE_REDIRECT_HANDLE_WITH_POST_DIAL, mCall.getDetails().getHandle());
+
+        // Assert that the PhoneAccountHandle is the target account provided.
+        assertEquals(TestUtils.TEST_PHONE_ACCOUNT_HANDLE_2, mCall.getDetails().getAccountHandle());
+
+        // The , (pause) separators get URI encoded in the call intent; compare decoded scheme to
+        // ensure proper equality for what it essentially the same thing  displayed.
+        assertEquals(Uri.decode(SAMPLE_REDIRECT_HANDLE_WITH_POST_DIAL.getSchemeSpecificPart()),
+                 Uri.decode(mCall.getDetails().getHandle().getSchemeSpecificPart()));
+
+        // Assert that the call is active.
+        assertTrue(Call.STATE_DISCONNECTED != mCall.getState());
+    }
+
+
 
     public void testCancelCall() throws Exception {
         if (!shouldTestTelecom(mContext)) {
@@ -250,6 +318,27 @@ public class CallRedirectionServiceTest extends BaseTelecomTestWithMockServices 
         assertTrue(TestUtils.waitForLatchCountDown(
                 NullBindingCallRedirectionServiceController.sUnbindLatch));
     }
+
+    public void testCallRedirectionwithOriginalHandle() throws Exception {
+        if (!shouldTestTelecom(mContext) || !TestUtils.hasTelephonyFeature(mContext)) {
+            return;
+        }
+        setupControlBinder(CtsCallRedirectionServiceController2.CONTROL_INTERFACE_ACTION,
+                CtsCallRedirectionServiceController2.CONTROL_INTERFACE_COMPONENT);
+        Bundle extras = new Bundle();
+        // Ensure CTS-2 app holds the call redirection role.
+        addRoleHolder(ROLE_CALL_REDIRECTION,
+                CtsCallRedirectionService2.class.getPackage().getName());
+
+        mCallRedirectionServiceController.setRedirectCall(
+                SAMPLE_HANDLE, TestUtils.TEST_PHONE_ACCOUNT_HANDLE_2, false);
+        extras.putParcelable(TestUtils.EXTRA_PHONE_NUMBER,
+                SAMPLE_HANDLE);
+        placeAndVerifyCallByRedirection(extras, false /* cancelledByCallRedirection */);
+        assertTrue(mCallRedirectionServiceController.waitForOnPlaceCallInvoked());
+        assertEquals(SAMPLE_HANDLE, mCallRedirectionServiceController.getReceivedOriginalHandle());
+    }
+
 
     /**
      * Sets up a binder used to control the CallRedirectionServiceCtsTestApp.

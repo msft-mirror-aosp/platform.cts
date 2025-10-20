@@ -21,6 +21,7 @@ package {
         "Android-Apache-2.0",
         "cts_apps_CtsVerifier_fatcow_license",
     ],
+    default_team: "trendy_team_partner_eng",
 }
 
 license {
@@ -141,6 +142,12 @@ android_test {
         "libaudioloopback_jni",
         "libmegaaudio_jni",
     ],
+
+    // Disable coverage since it pushes us over the dex limit and we
+    // don't actually need to measure the tests themselves.
+    jacoco: {
+        exclude_filter: ["**"],
+    },
 }
 
 // opencv library
@@ -176,6 +183,7 @@ android_library {
     srcs: [
         "src/com/android/cts/verifier/camera/its/*.java",
         "src/com/android/cts/verifier/camera/performance/*.java",
+        ":its_service_build_config",
     ],
 
     static_libs: [
@@ -302,6 +310,18 @@ genrule {
     ],
     out: ["android-cts-verifier-app-list.txt"],
     cmd: "echo $(locations :cts_apps_to_include) $(location :CtsVerifier) > $(out)",
+}
+
+genrule {
+    name: "its_service_build_config",
+    out: ["com/android/cts/verifier/camera/its/BuildConfig.java"],
+    cmd: "BUILD_NUM=$${BUILD_NUMBER:-local} && " + // Use default "local" if BUILD_NUMBER is not set
+        "mkdir -p $(genDir)/com/android/cts/verifier/camera/its && " +
+        "echo 'package com.android.cts.verifier.camera.its;' > $(out) && " +
+        "echo 'public final class BuildConfig {' >> $(out) && " +
+        "echo '    public static final String BUILD_NUMBER = \"'$$BUILD_NUM'\";' >> $(out) && " +
+        "echo '    private BuildConfig() {}' >> $(out) && " +
+        "echo '}' >> $(out)",
 }
 
 filegroup {

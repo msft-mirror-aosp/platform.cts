@@ -193,7 +193,8 @@ public class CtsContentCaptureService extends ContentCaptureService {
         }
     }
 
-    private static ServiceWatcher getServiceWatcher() {
+    /** Returns the current ServiceWatcher instance. */
+    public static ServiceWatcher getServiceWatcher() {
         synchronized (sLock) {
             return sServiceWatcher;
         }
@@ -647,6 +648,16 @@ public class CtsContentCaptureService extends ContentCaptureService {
         private Pair<Set<String>, Set<ComponentName>> mWhitelist;
 
         private CtsContentCaptureService mService;
+
+        /** Returns the ContentCaptureService instance. */
+        public CtsContentCaptureService getCurrentServiceInstance() throws InterruptedException {
+            await(mCreated, "not created");
+
+            if (mService == null) {
+                throw new IllegalStateException("not created");
+            }
+            return mService;
+        }
 
         @NonNull
         public CtsContentCaptureService waitOnCreate() throws InterruptedException {

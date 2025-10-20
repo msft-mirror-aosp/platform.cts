@@ -3,5 +3,10 @@
     {
       "name": "CtsMultiUserTestCases"
     }
+  ],
+  "desktop-presubmit": [
+    {
+      "name": "CtsMultiUserTestCases"
+    }
   ]
 }

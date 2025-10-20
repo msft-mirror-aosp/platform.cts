@@ -64,7 +64,6 @@ import androidx.test.filters.SmallTest;
 import com.android.compatibility.common.util.BitmapUtils;
 import com.android.compatibility.common.util.ColorUtils;
 import com.android.compatibility.common.util.WidgetTestUtils;
-import com.android.graphics.hwui.flags.Flags;
 
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
@@ -89,9 +88,6 @@ import java.util.List;
 @SmallTest
 @RunWith(JUnitParamsRunner.class)
 public class BitmapTest {
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     // small alpha values cause color values to be pre-multiplied down, losing accuracy
     private static final int PREMUL_COLOR = Color.argb(2, 255, 254, 253);
@@ -1926,7 +1922,6 @@ public class BitmapTest {
      * immutable, since we won't be mutating the bitmap after writing it to the parcel.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_BITMAP_PARCEL_ASHMEM_AS_IMMUTABLE)
     public void testWriteToParcelImplicitAshmemCopyIsImmutable() {
         // A sufficiently large Bitmap so that it's implicitly copied to ashmem.
         Bitmap chonkySource = Bitmap.createBitmap(1000, 1000, Config.ARGB_8888);

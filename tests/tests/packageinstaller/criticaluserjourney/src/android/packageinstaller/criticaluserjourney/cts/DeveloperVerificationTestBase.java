@@ -20,6 +20,7 @@ import static org.junit.Assume.assumeTrue;
 
 import com.android.compatibility.common.util.SystemUtil;
 
+import org.junit.After;
 import org.junit.Before;
 
 import java.util.Arrays;
@@ -30,6 +31,9 @@ public class DeveloperVerificationTestBase extends InstallationTestBase {
     static final int RESPONSE_COMPLETE_WITH_REJECT = 2;
     static final int RESPONSE_INCOMPLETE_UNKNOWN = 3;
     static final int RESPONSE_INCOMPLETE_NETWORK = 4;
+    static final int RESPONSE_INCOMPLETE_TIMEOUT = 5;
+    static final int RESPONSE_INCOMPLETE_DISCONNECT = 6;
+    static final int RESPONSE_INCOMPLETE_INFEASIBLE = 7;
 
     @Before
     @Override
@@ -37,6 +41,17 @@ public class DeveloperVerificationTestBase extends InstallationTestBase {
         super.setup();
         // Developer verification CUJs are only available on Pia V2
         assumeTrue(sUsePiaV2);
+        uninstallPackage(EMPTY_TEST_APP_PACKAGE_NAME);
+    }
+
+    @After
+    @Override
+    public void tearDown() throws Exception {
+        uninstallPackage(EMPTY_TEST_APP_PACKAGE_NAME);
+        // Clear any developer verification experiment configuration for all potential test apps
+        clearDeveloperVerificationResult(TEST_APP_PACKAGE_NAME);
+        clearDeveloperVerificationResult(EMPTY_TEST_APP_PACKAGE_NAME);
+        super.tearDown();
     }
 
     void grantPermissionAndAbortOnDeveloperVerificationDialog(
@@ -81,7 +96,7 @@ public class DeveloperVerificationTestBase extends InstallationTestBase {
         assertDeveloperVerificationUserConfirmationDialog(
                 /* assertBypassAllowed= */ true, isAppUpdating);
 
-        clickInstallWithoutVerifyingButton(isAppUpdating);
+        clickInstallWithoutVerifyingButton(isAppUpdating, /* expectingMoreDialogs= */ false);
     }
 
     void grantPermissionAndRetryOnDeveloperVerificationDialog(boolean isAppUpdating, int retryCount)
@@ -94,7 +109,7 @@ public class DeveloperVerificationTestBase extends InstallationTestBase {
         clickRetryButton(retryCount);
     }
 
-    private void clickTillDeveloperVerificationUserConfirmationDialog(boolean isAppUpdating)
+    void clickTillDeveloperVerificationUserConfirmationDialog(boolean isAppUpdating)
             throws Exception {
         waitForUiIdle();
 
@@ -130,5 +145,10 @@ public class DeveloperVerificationTestBase extends InstallationTestBase {
                         Arrays.stream(results)
                                 .mapToObj(String::valueOf)
                                 .collect(Collectors.joining(" "))));
+    }
+
+    private static void clearDeveloperVerificationResult(String packageName) {
+        SystemUtil.runShellCommand(
+                String.format("pm clear-developer-verification-result %s", packageName));
     }
 }

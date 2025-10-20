@@ -48,6 +48,7 @@ public class GenericDeviceInfo extends DeviceInfo {
     public static final String BUILD_SERIAL = "build_serial";
     public static final String BUILD_VERSION_RELEASE = "build_version_release";
     public static final String BUILD_VERSION_SDK = "build_version_sdk";
+    public static final String BUILD_VERSION_SDK_INT = "build_version_sdk_int";
     public static final String BUILD_MINOR_VERSION_SDK = "build_minor_version_sdk";
     public static final String BUILD_VERSION_BASE_OS = "build_version_base_os";
     public static final String BUILD_VERSION_SECURITY_PATCH = "build_version_security_patch";
@@ -82,6 +83,7 @@ public class GenericDeviceInfo extends DeviceInfo {
             store.addResult(BUILD_VERSION_RELEASE, Build.VERSION.RELEASE);
         }
         store.addResult(BUILD_VERSION_SDK, Build.VERSION.SDK);
+        store.addResult(BUILD_VERSION_SDK_INT, Integer.toString(Build.VERSION.SDK_INT));
         if (ApiLevelUtil.isAtLeast(Build.VERSION_CODES.BAKLAVA)) {
             store.addResult(
                     BUILD_MINOR_VERSION_SDK,

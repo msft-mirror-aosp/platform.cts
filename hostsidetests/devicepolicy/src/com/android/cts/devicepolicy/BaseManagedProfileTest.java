@@ -19,6 +19,7 @@ package com.android.cts.devicepolicy;
 import static com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.FEATURE_MANAGED_USERS;
 
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresAdditionalFeatures;
+import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 
 // We need multi user to be supported in order to create a profile of the user owner.
 @RequiresAdditionalFeatures({FEATURE_MANAGED_USERS})
@@ -53,7 +54,7 @@ public abstract class BaseManagedProfileTest extends BaseDevicePolicyTest {
         if (mFeaturesCheckerRule.hasRequiredFeatures()) {
 
             removeTestUsers();
-            mParentUserId = getMainUser();
+            mParentUserId = DevicePolicyUsersPreparer.getProfileParentUserIds().getFirst();
             mProfileUserId = createManagedProfile(mParentUserId);
             startUserAndWait(mProfileUserId);
 

@@ -119,6 +119,7 @@ class BurstSamenessManualTest(its_base_test.ItsBaseTest):
           self.dut.serial) >= _API_LEVEL_30:
         spread_thresh = _SPREAD_THRESH_API_LEVEL_30
 
+      marginal_pass_msg = []
       # PASS/FAIL based on center patch similarity
       for plane, means in enumerate([r_means, g_means, b_means]):
         spread = max(means) - min(means)
@@ -131,6 +132,16 @@ class BurstSamenessManualTest(its_base_test.ItsBaseTest):
                 imgs[i], f'{name_with_path}_frame{i:03d}.jpg')
           raise AssertionError(f'{_COLORS[plane]} spread > THRESH. spread: '
                                f'{spread:.4f}, THRESH: {spread_thresh:.2f}')
+        else:
+          if spread > (spread_thresh * its_session_utils.MARGINAL_PASS_FACTOR):
+            marginal_pass_msg.append(
+                f'Marginally passing {_COLORS[plane]} spread check.'
+                f'Spread: {spread:.4f}, THRESH: {spread_thresh:.2f}')
+
+      if marginal_pass_msg:
+        logging.warning('%s\n %s', its_session_utils.MARGINAL_PASSING_MESSAGE,
+                          marginal_pass_msg)
+
 
 if __name__ == '__main__':
   test_runner.main()

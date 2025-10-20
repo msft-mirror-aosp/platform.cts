@@ -1455,9 +1455,11 @@
     <!-- Event sanitization for idle UIDs -->
     <string name="snsr_event_sanitization_test">Event sanitization for idle UID test</string>
     <string name="snsr_event_sanitization_test_setup">Run the \'adb shell cmd sensorservice set-uid-state com.android.cts.verifier idle\' shell command
-        to emulate the CtsVerifier UID being idle.</string>
+        to emulate the CtsVerifier UID being idle. Add the \'--user USER_ID\' parameter to the end of the command if the test is run on a secondary user
+        or in headless system user mode (HSUM), for example \'--user 10\'.</string>
     <string name="snsr_event_sanitization_test_cleanup">Run the \'adb shell cmd sensorservice reset-uid-state com.android.cts.verifier\' shell command
-        to stop emulating the CtsVerifier UID being idle. Failing to do that would lead to other tests failing!</string>
+        to stop emulating the CtsVerifier UID being idle. Add the same \'--user USER_ID\' parameter used test setup, if any. Failing to do that would lead
+        to other tests failing!</string>
     <string name="snsr_significant_motion_test_uid_idle">Move around with the device to try triggering significant motion</string>
     <string name="snsr_significant_motion_test_uid_idle_expectation">No trigger events should be generated while idle</string>
     <string name="snsr_proximity_test_uid_idle">Touch the proximity sensor to try triggering it</string>
@@ -2376,7 +2378,8 @@
          \n\u2022 Segment 2 is 30% of the bar and is filled and its color is green.
          \n\u2022 Segment 3 is 10% of the bar and is filled and its color is red.
          \n\u2022 Segment 4 is 40% of the bar and is unfilled and segment’s appearance should indicate that it is not completed yet.
-         \nImportant: On slimmer devices, the color segments may be replaced with a theme color.
+         \n\u2022 or ALTERNATIVELY, a single theme-based color is used for all segments.
+         \nImportant: In narrower views, the color segments may be replaced with a theme color.
     </string>
     <string name="progress_style_multiple_points" formatted="false">A progress style notification with multiple progress points was posted. Expand it (if it\'s not already expanded), and verify that:
          \n\u2022 The left 60% of the progress bar should be filled and the rest is unfilled.
@@ -2408,39 +2411,77 @@
     <string name="progress_style_not_styled_by_progress" formatted="false">A progress style notification which is not styled by its progress was posted. Expand it (if it\'s not already expanded), and verify that:
          \n\u2022 The progress tracker icon should be displayed, and its position should be at 60% of the progress bar\'s length.
          \n\u2022 The progress tracker icon should be a white arrow in a blue filled circle.
-         \n\u2022 Segments 1, 2 and 3 should look filled with orange, green and red respectively.
+         \n\u2022 Segments 1, 2 and 3 should look filled with orange, green and red respectively (ALTERNATIVELY, a single theme-based color is used for all segments).
          \n\u2022 Points 1, 2, 3, and 4 should look filled with  orange, green, orange and red, respectively.
-         \nImportant: On slimmer devices, the color segments may be replaced with a theme color.
+         \nImportant: In narrower views, the color segments may be replaced with a theme color.
     </string>
     <string name="progress_style_rtl_enabled" formatted="false">A progress style notification was posted.  Change device layout direction to RTL (Developer options > Drawing > Force RTL layout direction). Expand the notification (if it’s not already expanded), and verify that:
          \n\u2022 The progress tracker icon should be displayed, and its position should be at 60% of the progress bar\'s length.
          \n\u2022 The progress tracker icon should be a white arrow in a blue filled circle.
-         \n\u2022 Segments from left to right should look filled with red, green and orange colors respectively.
+         \n\u2022 Segments from left to right should look filled with red, green, and orange colors respectively (ALTERNATIVELY, a single theme-based color is used for all segments).
          \n\u2022 Points from left to right  should look filled with  red, orange, green and orange colors respectively.
          \n\u2022 The arrow on the bar should point away from the S and toward the E.
          \n\u2022 S icon should appear on the right and it is not mirrored.
          \n\u2022 E icon should appear on the left and it is not mirrored.
-         \nImportant: On slimmer devices, the color segments may be replaced with a theme color.
+         \nImportant: In narrower views, the color segments may be replaced with a theme color.
          \nImportant: Make sure to disable RTL mode at the end of the test.
     </string>
     <string name="progress_style_many_segments_with_same_color" formatted="false">A progress style notification with 75% progress was posted. Expand it (if it’s not already expanded), and verify that:
          \n\u2022 75% of the bar should look filled and the rest of it should look unfilled.
          \n\u2022 The progress bar color should be orange.
     </string>
+    <string name="live_update_enable_step" formatted="false">Enable Live updates for \"CTS Verifier\".</string>
+    <string name="live_update_disable_step" formatted="false">Disable Live updates for \"CTS Verifier\".</string>
+    <string name="live_update_promoted_ongoing_set">Notification should have \"FLAG_PROMOTED_ONGOING\" set.</string>
+    <string name="live_update_open_settings">Open Settings</string>
+    <string name="live_update_notification_appearance_expanded" formatted="false"><b>Notification Appearance: Expanded</b>
+         \n A ProgressStyle Live Update Notification is posted.
+         \n View the Live Update notification in the shade and verify that it includes a <b>progress bar</b> and it does not have an <b>expander icon</b>.
+    </string>
+    <string name="live_update_notification_appearance_text_styling" formatted="false"><b>Notification Appearance: Text Styling</b>
+         \n A ProgressStyle Live Update Notification is posted.
+         \n View the Live Update notification in the shade and verify that it has correctly <b>styled text</b> (bold, underlined, and italic).
+    </string>
+    <string name="live_update_notification_appearance_action" formatted="false"><b>Notification Appearance: Action</b>
+         \n A ProgressStyle Live Update Notification is posted.
+         \n View the Live Update notification in the shade and verify that it has an <b>Open</b> action.
+    </string>
+    <string name="live_update_notification_appearance_reply_action" formatted="false"><b>Notification Appearance: No Reply Actions</b>
+         \n A ProgressStyle Live Update Notification is posted.
+         \n View the Live Update notification in the shade and verify that it does not have a <b>Reply</b> action.
+    </string>
+    <string name="live_update_notification_appearance_reply_contextual_action" formatted="false"><b>Notification Appearance: No Contextual Actions</b>
+         \n A ProgressStyle Live Update Notification is posted.
+         \n View the Live Update notification in the shade and verify that it does not have a <b>Share</b> contextual action.
+    </string>
+    <string name="live_update_notification_demoted_appearance_expander" formatted="false"><b>Notification Appearance: Expander</b>
+         \n A demoted ProgressStyle Live Update Notification is posted.
+         \n View the demoted Live Update notification in the shade and verify that it has an <b>expander icon</b>.
+    </string>
+    <string name="live_update_notification_demoted_appearance_text_styling" formatted="false"><b>Notification Appearance: No Text Styling</b>
+         \n A demoted ProgressStyle Live Update Notification is posted.
+         \n View the demoted Live Update notification in the shade and verify that it does not have text styling.
+    </string>
+    <string name="live_update_notification_demoted_appearance_action" formatted="false"><b>Notification Appearance: Action Button</b>
+         \n A demoted ProgressStyle Live Update Notification is posted.
+         \n View the demoted Live Update notification in the shade and verify that it has an <b>Open</b> action.
+    </string>
+    <string name="live_update_notification_demoted_appearance_reply_action" formatted="false"><b>Notification Appearance: Render Reply Actions</b>
+         \n A demoted ProgressStyle Live Update Notification is posted.
+         \n View the demoted Live Update notification in the shade and verify that it has a <b>Reply</b> action.
+    </string>
+    <string name="live_update_notification_demoted_appearance_contextual_action" formatted="false"><b>Notification Appearance: Render Contextual Actions</b>
+         \n A demoted ProgressStyle Live Update Notification is posted.
+         \n View the demoted Live Update notification in the shade and verify that it has a <b>Share</b> contextual action.
+    </string>
+    <string name="live_update_demote_step" formatted="false"><b>Demote Live Update</b>
+        \n View the Live Update notification in the shade and <b>long-press</b> on it to open its <b>demotion menu</b>. Tap the button to turn off Live Updates for this app.
+    </string>
     <string name="live_update_notification_priority" formatted="false"> <b>Notification Priority</b>
          \n Two notifications are posted, including one Live Update notification.
          \n <b>Verification Instructions</b>:
-         \n\u2022 <b>Open the Notification Shade</b>, Confirm the <b>Live Update notification</b> is displayed at <b>top</b> of the shade.
-         \n\u2022 <b>Open the Lock Screen</b>, Confirm <b>the Live Update notification</b> is displayed at <b>top</b> of the lock screen.
-    </string>
-    <string name="live_update_notification_appearance" formatted="false"><b>Notification Appearance</b>
-         \n A ProgressStyle Live Update Notification is posted.
-         \n Text will be \"Styled text examples; <b>bold</b>, <u>underlined</u> and <i>italic</i>\".
-         \n <b>Verification Instructions</b>:
-         \n\u2022 <b>Open the Notification Shade</b>.
-         \n\u2022 Confirm the notification’s <b>progress bar</b> is visible.
-         \n\u2022 Confirm the notification does not have <b>an expander icon</b>.
-         \n\u2022 Confirm Styled text examples are <b>correctly styled</b>.
+         \n <b>Open the Notification Shade</b>, Confirm the <b>Live Update notification</b> is displayed at <b>top</b> of the shade.
+         \n <b>Open the Lock Screen</b>, Confirm <b>the Live Update notification</b> is displayed at <b>top</b> of the lock screen.
     </string>
     <string name="live_update_notification_styled_text">Styled text examples; <b>bold</b>, <u>underlined</u> and <i>italic</i></string>
     <string name="live_update_notification_status_bar_chip" formatted="false"><b>Status Bar Chip</b>
@@ -2454,34 +2495,25 @@
          \n\t\u2022 Option 1: <b>the app opens</b>.
          \n\t\u2022 Option 2: <b>the notification appears</b>. In this case, tap <b>the chip</b> again and confirm <b>the notification disappears</b>.
     </string>
-    <string name="live_update_notification_demotion_off_and_on" formatted="false"><b>Turn Off/On Demotion</b>
+
+    <string name="live_update_notification_status_bar_chip_chronometer" formatted="false"><b>Status Bar Chip Chronometer</b>
          \n A Live Update Notification is posted.
          \n <b>Verification Instructions</b>:
-         \n\u2022 <b>Open the Notification Shade</b> and <b>long-press</b> the Live Update notification to open its <b>demotion menu</b>.
-         \n\u2022 Tap the <b>"Turn off" button</b>. Confirm the notification <b>no longer appears as a Live Update</b>.
-         \n\u2022 <b>Open the notification settings</b> for this notification. Verify that <b>Live Updates settings</b> are present.
-         \n\u2022 <b>Turn Live Updates back on</b>. Confirm the notification <b>reverts to its Live Update appearance</b>.
+         \n\u2022 <b>Exit the app</b>.
+         \n\u2022 Confirm that <b>the chip</b> appears on <b>the status bar</b>.
+         \n\u2022 Confirm that the icon of the chip is \“C\”.
+         \n\u2022 Confirm the text on the chip counts up like a Chronometer.
     </string>
-    <string name="live_update_notification_remote_input" formatted="false"><b>Remote Input</b>
+
+    <string name="live_update_notification_status_bar_chip_timer" formatted="false"><b>Status Bar Chip Chronometer</b>
          \n A Live Update Notification is posted.
          \n <b>Verification Instructions</b>:
-         \n\u2022 <b>Open the Notification Shade</b>.
-         \n\u2022 Confirm the Live Update notification <b>does not display the reply-capable action</b>.
-         \n\u2022 <b>Demote the Live Update notification.</b>.
-         \n\u2022 <b>Verify the reply action is now shown</b>.
-         \n <b>Post-test Action:</b>:
-         \n\u2022 Re-enable Live Updates for the tested notification.
+         \n\u2022 <b>Exit the app</b>.
+         \n\u2022 Confirm that <b>the chip</b> appears on <b>the status bar</b>.
+         \n\u2022 Confirm that the icon of the chip is \“C\”.
+         \n\u2022 Confirm the text on the chip text should be \“2min\”.
     </string>
-    <string name="live_update_notification_contextual_action" formatted="false"><b>Contextual Action</b>
-         \n A Live Update Notification is posted.
-         \n <b>Verification Instructions</b>:
-         \n\u2022 <b>Open the Notification Shade</b>.
-         \n\u2022 Confirm the Live Update notification <b>does not display the contextual action</b>.
-         \n\u2022 <b>Demote the Live Update notification.</b>.
-         \n\u2022 <b>Verify the contextual action is now shown</b>.
-         \n <b>Post-test Action:</b>:
-         \n\u2022 Re-enable Live Updates for the tested notification.
-    </string>
+
     <string name="notification_style_test">Notification Styles Test</string>
     <string name="notification_style_test_info">This test checks that Notification Styles are rendered as expected.</string>
     <string name="live_update_notification_test">Live Update Notification Test</string>
@@ -2708,7 +2740,7 @@ You may also be able to edit the tile to make it large and show the name.
     <string name="cacert_install_cert_title">Tap to install a CA certificate</string>
     <string name="cacert_install_cert">Press the button to open Security settings. Navigate to \"Install a certificate\" (normally under \"Encryptions &amp; credentials\") and select \"CA certificate\". Pick \"MyCA.cer\" from device storage and proceed with the installation. If this button does nothing, pass the test and move on.</string>
     <string name="cacert_check_cert_in_settings">Visit the user-installed trusted credentials page and confirm that the "Internet Widgits Pty Ltd" cert appears in the list.</string>
-    <string name="cacert_remove_screen_lock">You may have been prompted to set a screen lock when installing the certificate. If so, remove it. If not, you may skip this step.</string>
+    <string name="cacert_remove_screen_lock">Make sure that you remove the screen lock prior to installing the certificate.</string>
     <string name="cacert_check_notification">Look at the system notifications. Confirm that:\n
 1. There is a notification saying a certificate authority is installed.\n
 2. Tapping that notification brings up a more detailed explanation and a button to check trusted credentials.\n
@@ -6951,7 +6983,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="bubbles_test_bubbles_in_overflow_title">Bubble overflow (with bubbles)</string>
     <string name="bubbles_test_bubbles_in_overflow_verify">1. Press the button below to create
         several bubbles.\n\n
-        2. Expand the stack and drag down two of the bubbles to dismiss them.\n\n
+        2. Expand the stack and drag two of the bubbles to dismiss them.\n\n
         3. Tap on the bubble overflow, pass this test if the two bubbles you dismissed are in
         the overflow. </string>
     <string name="bubbles_test_bubbles_in_overflow_button">Send several bubbles</string>
@@ -6975,7 +7007,9 @@ You should be prompted to select credentials; choose the ones you just installed
     </string>
     <string name="bubbles_test_tap_notif_with_overflow_verify">1. Press the button to create a
         bubble.\n\n
-        2. Dismiss the bubble without opening it.\n\n
+        2. Dismiss the bubble without opening it.\n
+        \t\t a. If the bubble is hidden under the bar in the corner (bubble bar), slowly swipe up
+        from the center of the display to show the bubble, where you can dismiss it easily.\n\n
         3. Tap on the notification. Pass this test if the notification opened as a bubble.</string>
     <string name="bubbles_test_tap_notif_with_overflow_button">Send bubble</string>
     <!-- Portrait & landscape positioning -->
@@ -7572,6 +7606,14 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="sharesheet_result_test_incorrect_result">Incorrect result received - test failed</string>
     <string name="sharesheet_result_test_no_button">Action not available - test passed</string>
 
+    <string name="sharesheet_interactive_chooser_test">Interactive Session Test</string>
+    <string name="sharesheet_interactive_chooser_start_instruction">Press the \"Share\" button below to launch the Chooser.</string>
+    <string name="sharesheet_interactive_chooser_test_instruction">The Chooser now should be launched and the \"Close\" button should be positioned above it.
+        \nIf the Chooser can be moved (e.g. by dragging up or down), move it as part of the test. Verify that the Close button\'s position changes accordingly, except for the case when there\'s not enough vertical space for both the button and the Chooser to be placed side-by-side.
+        \nPress the Close button.</string>
+    <string name="sharesheet_interactive_chooser_confirmation_instruction">Did the Close button track the Chooser\'s movement (if movable), and was the Chooser dismissed upon button press?</string>
+    <string name="sharesheet_close_button">Close</string>
+
     <!-- Strings for CaptureContentForNotes test -->
     <string name="ccfn_tests">Capture Content For Notes Tests</string>
     <string name="ccfn_tests_info">
@@ -7800,5 +7842,6 @@ You should be prompted to select credentials; choose the ones you just installed
         <item>CtsUwbMultiDeviceUwbManagerTests</item>
         <item>CtsWifiAwareTests</item>
         <item>CtsWifiSoftApTestCases</item>
+        <item>CtsWifiDirectTests</item>
     </string-array>
 </resources>

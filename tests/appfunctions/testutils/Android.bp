@@ -21,6 +21,7 @@ java_library {
     srcs: [
         "src/**/*.java",
         "src/**/*.kt",
+        "src/**/*.aidl",
     ],
     libs: [
         "mockito",

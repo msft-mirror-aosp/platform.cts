@@ -21,12 +21,14 @@ import static android.content.Intent.FLAG_ACTIVITY_NO_USER_ACTION;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityOptions;
+import android.app.IApplicationThread;
 import android.app.UiAutomation;
 import android.content.Context;
 import android.content.Intent;
@@ -35,12 +37,17 @@ import android.os.Process;
 import android.os.RemoteException;
 import android.os.UserHandle;
 import android.platform.test.annotations.AsbSecurityTest;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 import android.view.SurfaceControl;
 import android.window.IRemoteTransitionFinishedCallback;
+import android.window.ITransitionPlayer;
 import android.window.RemoteTransition;
 import android.window.RemoteTransitionStub;
+import android.window.StartingWindowRemovalInfo;
 import android.window.TransitionInfo;
+import android.window.TransitionRequestInfo;
+import android.window.WindowOrganizer;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
@@ -57,10 +64,18 @@ import java.util.concurrent.Callable;
 @RunWith(AndroidJUnit4.class)
 public class ActivityManagerTest extends StsExtraBusinessLogicTestCase {
 
-    private boolean canSupportMultiuser() {
-        String output = ShellUtils.runShellCommand("pm get-max-users");
-        if (output.contains("Maximum supported users:")) {
-            return Integer.parseInt(output.split(": ", 2)[1].trim()) > 1;
+    private boolean canSupportSecondaryUsers() {
+        if (!android.multiuser.Flags.consistentMaxUsers()) {
+            String output = ShellUtils.runShellCommand("pm get-max-users");
+            if (output.contains("Maximum supported users:")) {
+                return Integer.parseInt(output.split(": ", 2)[1].trim()) > 1;
+            }
+            return false;
+        }
+        String output = ShellUtils.runShellCommand(
+                "pm get-max-users --user-type android.os.usertype.full.SECONDARY");
+        if (output.contains("Maximum supported users")) {
+            return Integer.parseInt(output.split(": ", 2)[1].trim()) > 0;
         }
         return false;
     }
@@ -69,7 +84,7 @@ public class ActivityManagerTest extends StsExtraBusinessLogicTestCase {
     @Test
     public void testActivityManager_registerUidChangeObserver_onlyNoInteractAcrossPermission()
             throws Exception {
-        if (!canSupportMultiuser()) {
+        if (!canSupportSecondaryUsers()) {
             return;
         }
         String out = "";
@@ -100,7 +115,7 @@ public class ActivityManagerTest extends StsExtraBusinessLogicTestCase {
     @Test
     public void testActivityManager_registerUidChangeObserver_allPermission()
             throws Exception {
-        if (!canSupportMultiuser()) {
+        if (!canSupportSecondaryUsers()) {
             return;
         }
         String out = "";
@@ -246,6 +261,66 @@ public class ActivityManagerTest extends StsExtraBusinessLogicTestCase {
         assertTrue(securityException);
     }
 
+    @AsbSecurityTest(cveBugId = 438742644)
+    @Test
+    public void testActivityManager_stripsAppThreadFromRemoteTransition() throws Exception {
+        Context targetContext = getInstrumentation().getTargetContext();
+        final Intent baseIntent = new Intent(targetContext, WaitEnterAnimActivity.class);
+        baseIntent.setFlags(FLAG_ACTIVITY_NO_USER_ACTION | FLAG_ACTIVITY_NEW_TASK);
+        RemoteTransition someRemote = new RemoteTransition(new RemoteTransitionStub() {
+            @Override
+            public void startAnimation(IBinder token, TransitionInfo info,
+                    SurfaceControl.Transaction t,
+                    IRemoteTransitionFinishedCallback finishCallback) throws RemoteException {
+                t.apply();
+                finishCallback.onTransitionFinished(null /* wct */, null /* sct */);
+            }
+        }, targetContext.getIApplicationThread(), "testRemote");
+        ActivityOptions opts = ActivityOptions.makeRemoteTransition(someRemote);
+        final WaitEnterAnimActivity baseActivity;
+
+        final UiAutomation uiAutomation = androidx.test.platform.app.InstrumentationRegistry
+                .getInstrumentation().getUiAutomation();
+        uiAutomation.adoptShellPermissionIdentity("android.permission.MANAGE_ACTIVITY_TASKS",
+                "android.permission.CONTROL_REMOTE_APP_TRANSITION_ANIMATIONS");
+        final WindowOrganizer windowOrganizer = new WindowOrganizer();
+        final IApplicationThread[] foundThread = new IApplicationThread[]{null};
+        final boolean[] requested = new boolean[]{false};
+        try {
+            ITransitionPlayer transitionPlayer = new ITransitionPlayer.Stub() {
+                @Override public void onTransitionReady(IBinder transitionToken,
+                        TransitionInfo info, SurfaceControl.Transaction t,
+                        SurfaceControl.Transaction finishT) {
+                    t.apply();
+                    finishT.apply();
+                    windowOrganizer.finishTransition(transitionToken, null /* wct */);
+                }
+                @Override public void requestStartTransition(IBinder transitionToken,
+                        TransitionRequestInfo request) {
+                    RemoteTransition remoteTransition = request.getRemoteTransition();
+                    if (remoteTransition != null) {
+                        foundThread[0] = remoteTransition.getAppThread();
+                        requested[0] = true;
+                    }
+                    windowOrganizer.startTransition(transitionToken, null /* wct */);
+                }
+                @Override public void removeStartingWindow(StartingWindowRemovalInfo removalInfo) {
+                }
+            };
+            windowOrganizer.registerTransitionPlayer(transitionPlayer);
+            try {
+                baseActivity = (WaitEnterAnimActivity)
+                        getInstrumentation().startActivitySync(baseIntent, opts.toBundle());
+                assertTrue(waitUntil(() -> (baseActivity.mAnimComplete && requested[0])));
+            } finally {
+                windowOrganizer.unregisterTransitionPlayer(transitionPlayer);
+            }
+            assertNull(foundThread[0]);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
     @AsbSecurityTest(cveBugId = 289549315)
     @Test
     public void testActivityManager_backupAgentCreated_rejectIfCallerUidNotEqualsPackageUid()
@@ -270,9 +345,162 @@ public class ActivityManagerTest extends StsExtraBusinessLogicTestCase {
         }
         if (unexpectedException != null) {
             Log.w("ActivityManagerTest", "Unexpected exception", unexpectedException);
-            fail("ActivityManagerNative.backupAgentCreated() API should have thrown "
-                    + "SecurityException when invoked from process with uid not matching target "
-                    + "package uid.");
+            fail(
+                    "ActivityManagerService.backupAgentCreated() API should have thrown"
+                            + " SecurityException when invoked from process with uid not matching"
+                            + " target package uid.");
+        }
+
+        assertNotNull(
+                "Expected SecurityException when caller's uid doesn't match package uid",
+                securityException);
+        assertEquals(
+                "android does not belong to uid " + Process.myUid(),
+                securityException.getMessage());
+    }
+
+    @AsbSecurityTest(cveBugId = 308138385)
+    @RequiresFlagsEnabled(com.android.server.am.Flags.FLAG_SERVICE_CHECK_CALLING_PKG)
+    @Test
+    public void testActivityManager_startService_rejectIfCallerUidNotEqualsPackageUid()
+            throws Exception {
+        SecurityException securityException = null;
+        Exception unexpectedException = null;
+        try {
+            final Object iam = ActivityManager.class.getDeclaredMethod("getService").invoke(null);
+            Class.forName("android.app.IActivityManager")
+                    .getDeclaredMethod(
+                            "startService",
+                            Class.forName("android.app.IApplicationThread"),
+                            Intent.class,
+                            String.class,
+                            boolean.class,
+                            String.class,
+                            String.class,
+                            int.class)
+                    .invoke(
+                            iam,
+                            /* caller= */ null,
+                            /* service= */ null,
+                            /* resolvedType= */ null,
+                            /* requireForeground= */ false,
+                            /* callingPackage= */ "android",
+                            /* callingFeatureId= */ null,
+                            /* userId= */ 0);
+        } catch (SecurityException e) {
+            securityException = e;
+        } catch (InvocationTargetException e) {
+            if (e.getCause() instanceof SecurityException) {
+                securityException = (SecurityException) e.getCause();
+            } else {
+                unexpectedException = e;
+            }
+        } catch (Exception e) {
+            unexpectedException = e;
+        }
+        if (unexpectedException != null) {
+            Log.w("ActivityManagerTest", "Unexpected exception", unexpectedException);
+            fail(
+                    "ActivityManagerService.startService() API should have thrown SecurityException"
+                        + " when invoked from process with uid not matching target package uid.");
+        }
+
+        assertNotNull(
+                "Expected SecurityException when caller's uid doesn't match package uid",
+                securityException);
+        assertEquals(
+                "android does not belong to uid " + Process.myUid(),
+                securityException.getMessage());
+    }
+
+    @AsbSecurityTest(cveBugId = 308138385)
+    @RequiresFlagsEnabled(com.android.server.am.Flags.FLAG_SERVICE_CHECK_CALLING_PKG)
+    @Test
+    public void testActivityManager_bindService_rejectIfCallerUidNotEqualsPackageUid()
+            throws Exception {
+        SecurityException securityException = null;
+        Exception unexpectedException = null;
+        try {
+            final Object iam = ActivityManager.class.getDeclaredMethod("getService").invoke(null);
+            Class.forName("android.app.IActivityManager")
+                    .getDeclaredMethod(
+                            "bindService",
+                            Class.forName("android.app.IApplicationThread"),
+                            IBinder.class,
+                            Intent.class,
+                            String.class,
+                            Class.forName("android.app.IServiceConnection"),
+                            long.class,
+                            String.class,
+                            int.class)
+                    .invoke(
+                            iam,
+                            /* caller= */ null,
+                            /* token= */ null,
+                            /* service= */ null,
+                            /* resolvedType= */ null,
+                            /* connection= */ null,
+                            /* flags= */ 0,
+                            /* callingPackage= */ "android",
+                            /* userId= */ 0);
+        } catch (SecurityException e) {
+            securityException = e;
+        } catch (InvocationTargetException e) {
+            if (e.getCause() instanceof SecurityException) {
+                securityException = (SecurityException) e.getCause();
+            } else {
+                unexpectedException = e;
+            }
+        } catch (Exception e) {
+            unexpectedException = e;
+        }
+        if (unexpectedException != null) {
+            Log.w("ActivityManagerTest", "Unexpected exception", unexpectedException);
+            fail(
+                    "ActivityManagerService.bindService() API should have thrown SecurityException"
+                        + " when invoked from process with uid not matching target package uid.");
+        }
+
+        assertNotNull(
+                "Expected SecurityException when caller's uid doesn't match package uid",
+                securityException);
+        assertEquals(
+                "android does not belong to uid " + Process.myUid(),
+                securityException.getMessage());
+    }
+
+    @AsbSecurityTest(cveBugId = 308138385)
+    @RequiresFlagsEnabled(com.android.server.am.Flags.FLAG_SERVICE_CHECK_CALLING_PKG)
+    @Test
+    public void testActivityManager_peekService_rejectIfCallerUidNotEqualsPackageUid()
+            throws Exception {
+        SecurityException securityException = null;
+        Exception unexpectedException = null;
+        try {
+            final Object iam = ActivityManager.class.getDeclaredMethod("getService").invoke(null);
+            Class.forName("android.app.IActivityManager")
+                    .getDeclaredMethod("peekService", Intent.class, String.class, String.class)
+                    .invoke(
+                            iam,
+                            /* service= */ null,
+                            /* resolvedType= */ null,
+                            /* callingPackage= */ "android");
+        } catch (SecurityException e) {
+            securityException = e;
+        } catch (InvocationTargetException e) {
+            if (e.getCause() instanceof SecurityException) {
+                securityException = (SecurityException) e.getCause();
+            } else {
+                unexpectedException = e;
+            }
+        } catch (Exception e) {
+            unexpectedException = e;
+        }
+        if (unexpectedException != null) {
+            Log.w("ActivityManagerTest", "Unexpected exception", unexpectedException);
+            fail(
+                    "ActivityManagerService.peekService() API should have thrown SecurityException"
+                        + " when invoked from process with uid not matching target package uid.");
         }
 
         assertNotNull("Expected SecurityException when caller's uid doesn't match package uid",

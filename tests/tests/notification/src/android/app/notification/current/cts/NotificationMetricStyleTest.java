@@ -16,6 +16,11 @@
 
 package android.app.notification.current.cts;
 
+import static android.app.Notification.SEMANTIC_STYLE_CAUTION;
+import static android.app.Notification.SEMANTIC_STYLE_INFO;
+import static android.app.Notification.SEMANTIC_STYLE_SAFE;
+import static android.app.Notification.SEMANTIC_STYLE_UNSPECIFIED;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
@@ -26,11 +31,12 @@ import android.app.Notification.Metric;
 import android.app.Notification.Metric.FixedDate;
 import android.app.Notification.Metric.FixedFloat;
 import android.app.Notification.Metric.FixedInt;
-import android.app.Notification.Metric.FixedString;
+import android.app.Notification.Metric.FixedText;
 import android.app.Notification.Metric.FixedTime;
 import android.app.Notification.Metric.TimeDifference;
 import android.app.Notification.MetricStyle;
 import android.content.Context;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -59,8 +65,25 @@ public class NotificationMetricStyleTest {
     public final CheckFlagsRule checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
-    public void builderBuild_setsMetricStyle() {
+    @RequiresFlagsDisabled(Flags.FLAG_API_NOTIFICATION_SEMANTIC_STYLE)
+    public void builderBuild_legacy_setsMetricStyle() {
         Metric metric = new Metric(new FixedInt(1979), "Steps");
+        Notification n =
+                new Notification.Builder(mContext)
+                        .setSmallIcon(R.drawable.ic_android)
+                        .setStyle(new MetricStyle().addMetric(metric))
+                        .build();
+
+        Notification.Builder recovered = Notification.Builder.recoverBuilder(mContext, n);
+
+        assertThat(recovered.getStyle()).isInstanceOf(MetricStyle.class);
+        assertThat(((MetricStyle) recovered.getStyle()).getMetrics()).containsExactly(metric);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_NOTIFICATION_SEMANTIC_STYLE)
+    public void builderBuild_setsMetricStyle() {
+        Metric metric = new Metric(new FixedInt(1979), "Steps", SEMANTIC_STYLE_CAUTION);
         Notification n =
                 new Notification.Builder(mContext)
                         .setSmallIcon(R.drawable.ic_android)
@@ -86,13 +109,13 @@ public class NotificationMetricStyleTest {
     @Test
     public void addMetric_adds() {
         MetricStyle style = new MetricStyle();
-        style.addMetric(new Metric(new FixedString("Blah"), "Meh"));
+        style.addMetric(new Metric(new FixedText("Blah"), "Meh"));
         style.addMetric(new Metric(new FixedInt(42), "Steps"));
         style.addMetric(new Metric(new FixedDate(LocalDate.of(2017, 4, 1)), "X"));
 
         assertThat(style.getMetrics())
                 .containsExactly(
-                        new Metric(new FixedString("Blah"), "Meh"),
+                        new Metric(new FixedText("Blah"), "Meh"),
                         new Metric(new FixedInt(42), "Steps"),
                         new Metric(new FixedDate(LocalDate.of(2017, 4, 1)), "X"))
                 .inOrder();
@@ -107,8 +130,8 @@ public class NotificationMetricStyleTest {
     @Test
     public void setMetrics_replaces() {
         MetricStyle style = new MetricStyle();
-        style.addMetric(new Metric(new FixedString("Will be discarded"), "A"));
-        style.addMetric(new Metric(new FixedString("And this too"), "B"));
+        style.addMetric(new Metric(new FixedText("Will be discarded"), "A"));
+        style.addMetric(new Metric(new FixedText("And this too"), "B"));
 
         style.setMetrics(List.of(new Metric(new FixedInt(10), "X")));
 
@@ -134,7 +157,7 @@ public class NotificationMetricStyleTest {
                                                 Duration.ofSeconds(30),
                                                 TimeDifference.FORMAT_ADAPTIVE),
                                         "Timer"))
-                        .addMetric(new Metric(new FixedString("Gibbous"), "Moon"))
+                        .addMetric(new Metric(new FixedText("Gibbous"), "Moon"))
                         .addMetric(new Metric(new FixedTime(LocalTime.of(19, 30)), "Event"));
 
         MetricStyle style2 =
@@ -146,7 +169,7 @@ public class NotificationMetricStyleTest {
                                                         Duration.ofSeconds(30),
                                                         TimeDifference.FORMAT_ADAPTIVE),
                                                 "Timer"),
-                                        new Metric(new FixedString("Gibbous"), "Moon"),
+                                        new Metric(new FixedText("Gibbous"), "Moon"),
                                         new Metric(new FixedTime(LocalTime.of(19, 30)), "Event")));
 
         assertThat(style1).isEqualTo(style2);
@@ -163,7 +186,7 @@ public class NotificationMetricStyleTest {
                                                 Duration.ofSeconds(30),
                                                 TimeDifference.FORMAT_ADAPTIVE),
                                         "Timer"))
-                        .addMetric(new Metric(new FixedString("Gibbous"), "Moon"));
+                        .addMetric(new Metric(new FixedText("Gibbous"), "Moon"));
 
         MetricStyle style2 =
                 new MetricStyle()
@@ -174,7 +197,7 @@ public class NotificationMetricStyleTest {
                                                         Duration.ofSeconds(30),
                                                         TimeDifference.FORMAT_ADAPTIVE),
                                                 "A *different* timer"),
-                                        new Metric(new FixedString("Gibbous"), "Moon")));
+                                        new Metric(new FixedText("Gibbous"), "Moon")));
 
         assertThat(style1).isNotEqualTo(style2);
         assertThat(style1.hashCode()).isNotEqualTo(style2.hashCode());
@@ -182,14 +205,25 @@ public class NotificationMetricStyleTest {
 
     @Test
     public void newMetric_constructs() {
-        Metric metric = new Metric(new FixedString("str"), "Port");
+        Metric metric = new Metric(new FixedText("str"), "Port");
 
-        assertThat(metric.getValue()).isEqualTo(new FixedString("str"));
+        assertThat(metric.getValue()).isEqualTo(new FixedText("str"));
         assertThat(metric.getLabel()).isEqualTo("Port");
     }
 
     @Test
-    public void equalsAndHash_sameMetric_isEqual() {
+    @RequiresFlagsEnabled(Flags.FLAG_API_NOTIFICATION_SEMANTIC_STYLE)
+    public void newMetric_withSemanticStyle_constructs() {
+        Metric metric = new Metric(new FixedText("str"), "Port", SEMANTIC_STYLE_INFO);
+
+        assertThat(metric.getValue()).isEqualTo(new FixedText("str"));
+        assertThat(metric.getLabel()).isEqualTo("Port");
+        assertThat(metric.getSemanticStyle()).isEqualTo(SEMANTIC_STYLE_INFO);
+    }
+
+    @Test
+    @RequiresFlagsDisabled(Flags.FLAG_API_NOTIFICATION_SEMANTIC_STYLE)
+    public void equalsAndHash_sameMetricLegacy_isEqual() {
         Metric metric1 = new Metric(new FixedFloat(23.5f, "°C", 0, 1), "Temp");
         Metric metric2 = new Metric(new FixedFloat(23.5f, "°C", 0, 1), "Temp");
 
@@ -198,9 +232,29 @@ public class NotificationMetricStyleTest {
     }
 
     @Test
-    public void equalsAndHash_differentMetric_isDifferent() {
+    @RequiresFlagsEnabled(Flags.FLAG_API_NOTIFICATION_SEMANTIC_STYLE)
+    public void equalsAndHash_sameMetric_isEqual() {
+        Metric metric1 = new Metric(new FixedFloat(23.5f, "°C", 0, 1), "Temp", SEMANTIC_STYLE_SAFE);
+        Metric metric2 = new Metric(new FixedFloat(23.5f, "°C", 0, 1), "Temp", SEMANTIC_STYLE_SAFE);
+
+        assertThat(metric1).isEqualTo(metric2);
+        assertThat(metric1.hashCode()).isEqualTo(metric2.hashCode());
+    }
+
+    @Test
+    public void equalsAndHash_differentMetricValue_isDifferent() {
         Metric metric1 = new Metric(new FixedInt(23, "m"), "Distance");
         Metric metric2 = new Metric(new FixedInt(24, "m"), "Distance");
+
+        assertThat(metric1).isNotEqualTo(metric2);
+        assertThat(metric1.hashCode()).isNotEqualTo(metric2.hashCode());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_NOTIFICATION_SEMANTIC_STYLE)
+    public void equalsAndHash_differentSemanticStyle_isDifferent() {
+        Metric metric1 = new Metric(new FixedInt(23, "m"), "Distance", SEMANTIC_STYLE_UNSPECIFIED);
+        Metric metric2 = new Metric(new FixedInt(23, "m"), "Distance", SEMANTIC_STYLE_CAUTION);
 
         assertThat(metric1).isNotEqualTo(metric2);
         assertThat(metric1.hashCode()).isNotEqualTo(metric2.hashCode());
@@ -257,55 +311,55 @@ public class NotificationMetricStyleTest {
     public void newTimeDifference_forStopwatch_constructs() {
         TimeDifference timeDifference =
                 TimeDifference.forStopwatch(
-                        Instant.ofEpochMilli(200), TimeDifference.FORMAT_AUTOMATIC);
+                        Instant.ofEpochMilli(200), TimeDifference.FORMAT_CHRONOMETER);
 
         assertThat(timeDifference.getZeroTime()).isEqualTo(Instant.ofEpochMilli(200));
         assertThat(timeDifference.getZeroElapsedRealtime()).isNull();
         assertThat(timeDifference.getPausedDuration()).isNull();
         assertThat(timeDifference.isStopwatch()).isTrue();
         assertThat(timeDifference.isTimer()).isFalse();
-        assertThat(timeDifference.getFormat()).isEqualTo(TimeDifference.FORMAT_AUTOMATIC);
+        assertThat(timeDifference.getFormat()).isEqualTo(TimeDifference.FORMAT_CHRONOMETER);
     }
 
     @Test
     public void newTimeDifference_forElapsedRealtimeStopwatch_constructs() {
         TimeDifference timeDifference =
-                TimeDifference.forStopwatch(30_000, TimeDifference.FORMAT_AUTOMATIC);
+                TimeDifference.forStopwatch(30_000, TimeDifference.FORMAT_CHRONOMETER);
 
         assertThat(timeDifference.getZeroTime()).isNull();
         assertThat(timeDifference.getZeroElapsedRealtime()).isEqualTo(30_000);
         assertThat(timeDifference.getPausedDuration()).isNull();
         assertThat(timeDifference.isStopwatch()).isTrue();
         assertThat(timeDifference.isTimer()).isFalse();
-        assertThat(timeDifference.getFormat()).isEqualTo(TimeDifference.FORMAT_AUTOMATIC);
+        assertThat(timeDifference.getFormat()).isEqualTo(TimeDifference.FORMAT_CHRONOMETER);
     }
 
     @Test
     public void newTimeDifference_forPausedTimer_constructs() {
         TimeDifference timeDifference =
                 TimeDifference.forPausedTimer(
-                        Duration.ofSeconds(90), TimeDifference.FORMAT_CHRONOMETER);
+                        Duration.ofSeconds(90), TimeDifference.FORMAT_ADAPTIVE);
 
         assertThat(timeDifference.getZeroTime()).isNull();
         assertThat(timeDifference.getZeroElapsedRealtime()).isNull();
         assertThat(timeDifference.getPausedDuration()).isEqualTo(Duration.ofSeconds(90));
         assertThat(timeDifference.isTimer()).isTrue();
         assertThat(timeDifference.isStopwatch()).isFalse();
-        assertThat(timeDifference.getFormat()).isEqualTo(TimeDifference.FORMAT_CHRONOMETER);
+        assertThat(timeDifference.getFormat()).isEqualTo(TimeDifference.FORMAT_ADAPTIVE);
     }
 
     @Test
     public void newTimeDifference_forPausedStopwatch_constructs() {
         TimeDifference timeDifference =
                 TimeDifference.forPausedStopwatch(
-                        Duration.ofMinutes(2), TimeDifference.FORMAT_CHRONOMETER);
+                        Duration.ofMinutes(2), TimeDifference.FORMAT_ADAPTIVE);
 
         assertThat(timeDifference.getZeroTime()).isNull();
         assertThat(timeDifference.getZeroElapsedRealtime()).isNull();
         assertThat(timeDifference.getPausedDuration()).isEqualTo(Duration.ofMinutes(2));
         assertThat(timeDifference.isStopwatch()).isTrue();
         assertThat(timeDifference.isTimer()).isFalse();
-        assertThat(timeDifference.getFormat()).isEqualTo(TimeDifference.FORMAT_CHRONOMETER);
+        assertThat(timeDifference.getFormat()).isEqualTo(TimeDifference.FORMAT_ADAPTIVE);
     }
 
     @Test
@@ -414,18 +468,18 @@ public class NotificationMetricStyleTest {
     }
 
     @Test
-    public void newFixedString_constructs() {
-        FixedString fixedString = new FixedString("120/80", "mmHg");
-        assertThat(fixedString.getValue()).isEqualTo("120/80");
-        assertThat(fixedString.getUnit()).isEqualTo("mmHg");
+    public void newFixedText_constructs() {
+        FixedText fixedText = new FixedText("120/80", "mmHg");
+        assertThat(fixedText.getValue()).isEqualTo("120/80");
+        assertThat(fixedText.getUnit()).isEqualTo("mmHg");
 
-        FixedString defaults = new FixedString("Hello!");
+        FixedText defaults = new FixedText("Hello!");
         assertThat(defaults.getValue()).isEqualTo("Hello!");
         assertThat(defaults.getUnit()).isNull();
     }
 
     @Test
-    public void newFixedString_nullString_throws() {
-        assertThrows(NullPointerException.class, () -> new FixedString(null));
+    public void newFixedText_nullString_throws() {
+        assertThrows(NullPointerException.class, () -> new FixedText(null));
     }
 }

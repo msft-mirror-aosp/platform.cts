@@ -47,8 +47,10 @@ import android.util.ArraySet;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Range;
 import com.google.common.collect.Sets;
 
+import java.time.Year;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -194,6 +196,9 @@ public class VehiclePropertyVerifiers {
                             VehicleGear.GEAR_NINTH)
                     .build();
 
+    private static final int REASONABLE_FUTURE_MODEL_YEAR_OFFSET = 5;
+    private static final int REASONABLE_PAST_MODEL_YEAR_OFFSET = -10;
+
     /** Gets the verifier builder for {@link VehiclePropertyIds#IGNITION_STATE}. */
     public static VehiclePropertyVerifier.Builder<Integer> getIgnitionStateVerifierBuilder() {
         return VehiclePropertyVerifier.<Integer>newDefaultBuilder(VehiclePropertyIds.IGNITION_STATE)
@@ -205,6 +210,62 @@ public class VehiclePropertyVerifiers {
                                 VehicleIgnitionState.ACC,
                                 VehicleIgnitionState.ON,
                                 VehicleIgnitionState.START));
+    }
+
+    /** Gets the verifier builder for {@link VehiclePropertyIds#INFO_MAKE}. */
+    public static VehiclePropertyVerifier.Builder<String> getInfoMakeVerifierBuilder() {
+        return VehiclePropertyVerifier.<String>newDefaultBuilder(VehiclePropertyIds.INFO_MAKE)
+                .setCarPropertyValueVerifier(
+                        (verifierContext,
+                                carPropertyConfig,
+                                propertyId,
+                                areaId,
+                                timestampNanos,
+                                make) ->
+                                assertWithMessage("INFO_MAKE must not be empty")
+                                        .that(make)
+                                        .isNotEmpty());
+    }
+
+    /** Gets the verifier builder for {@link VehiclePropertyIds#INFO_MODEL}. */
+    public static VehiclePropertyVerifier.Builder<String> getInfoModelVerifierBuilder() {
+        return VehiclePropertyVerifier.<String>newDefaultBuilder(VehiclePropertyIds.INFO_MODEL)
+                .setCarPropertyValueVerifier(
+                        (verifierContext,
+                                carPropertyConfig,
+                                propertyId,
+                                areaId,
+                                timestampNanos,
+                                model) ->
+                                assertWithMessage("INFO_MODEL must not be empty")
+                                        .that(model)
+                                        .isNotEmpty());
+    }
+
+    /** Gets the verifier builder for {@link VehiclePropertyIds#INFO_MODEL_YEAR}. */
+    public static VehiclePropertyVerifier.Builder<Integer> getInfoModelYearVerifierBuilder() {
+        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
+                        VehiclePropertyIds.INFO_MODEL_YEAR)
+                .setCarPropertyValueVerifier(
+                        (verifierContext,
+                                carPropertyConfig,
+                                propertyId,
+                                areaId,
+                                timestampNanos,
+                                modelYear) -> {
+                            int currentYear = Year.now().getValue();
+                            int minYear = currentYear + REASONABLE_PAST_MODEL_YEAR_OFFSET;
+                            int maxYear = currentYear + REASONABLE_FUTURE_MODEL_YEAR_OFFSET;
+
+                            assertWithMessage(
+                                            String.format(
+                                                    "INFO_MODEL_YEAR must be within a reasonable"
+                                                        + " range. Current year: %d, model year:"
+                                                        + " %d, valid range: [%d, %d]",
+                                                    currentYear, modelYear, minYear, maxYear))
+                                    .that(modelYear)
+                                    .isIn(Range.closed(minYear, maxYear));
+                        });
     }
 
     /** Gets the verifier builder for {@link VehiclePropertyIds#PARKING_BRAKE_ON}. */
@@ -788,7 +849,25 @@ public class VehiclePropertyVerifiers {
                                                             hvacFanDirectionAvailableCarPropertyValue
                                                                     .getValue()));
                                 })
-                        .setAllPossibleUnwritableValues(CAR_HVAC_FAN_DIRECTION_UNWRITABLE_STATES);
+                        .setSupportedValuesGenerator(
+                                (verifierContext, carPropertyConfig, areaId) -> {
+                                    ImmutableList.Builder<Integer> possibleValues =
+                                            ImmutableList.builder();
+                                    int[] availableHvacFanDirections =
+                                            verifierContext
+                                                    .getCarPropertyManager()
+                                                    .getIntArrayProperty(
+                                                            VehiclePropertyIds
+                                                                    .HVAC_FAN_DIRECTION_AVAILABLE,
+                                                            areaId);
+                                    for (int direction : availableHvacFanDirections) {
+                                        if (!CAR_HVAC_FAN_DIRECTION_UNWRITABLE_STATES.contains(
+                                                direction)) {
+                                            possibleValues.add(direction);
+                                        }
+                                    }
+                                    return possibleValues.build();
+                                });
 
         if (VehiclePropertyVerifier.isAtLeastU()) {
             builder.setAllPossibleUnwritableValues(CAR_HVAC_FAN_DIRECTION_UNWRITABLE_STATES);
@@ -939,6 +1018,37 @@ public class VehiclePropertyVerifiers {
                                     minTempInCelsius,
                                     maxTempInCelsius,
                                     incrementInCelsius);
+                        })
+                .setSupportedValuesGenerator(
+                        (verifierContext, carPropertyConfig, areaId) -> {
+                            ImmutableList.Builder<Float> possibleValues = ImmutableList.builder();
+                            List<Integer> configArray = carPropertyConfig.getConfigArray();
+                            if (!configArray.isEmpty()) {
+                                // For HVAC_TEMPERATURE_SET, the configArray specifies the supported
+                                // temperature
+                                // values for the property. configArray[0] is the lower bound of the
+                                // supported
+                                // temperatures in Celsius. configArray[1] is the upper bound of the
+                                // supported
+                                // temperatures in Celsius. configArray[2] is the supported
+                                // temperature increment
+                                // between the two bounds. All configArray values are Celsius*10
+                                // since the
+                                // configArray is List<Integer> but HVAC_TEMPERATURE_SET is a Float
+                                // type property.
+                                for (int possibleHvacTempSetValue = configArray.get(0);
+                                        possibleHvacTempSetValue <= configArray.get(1);
+                                        possibleHvacTempSetValue += configArray.get(2)) {
+                                    possibleValues.add((float) possibleHvacTempSetValue / 10.0f);
+                                }
+                            } else {
+                                // If the configArray is not specified, then use min/max values.
+                                Float minValueFloat = (Float) carPropertyConfig.getMinValue(areaId);
+                                Float maxValueFloat = (Float) carPropertyConfig.getMaxValue(areaId);
+                                possibleValues.add(minValueFloat);
+                                possibleValues.add(maxValueFloat);
+                            }
+                            return possibleValues.build();
                         });
     }
 
@@ -1060,14 +1170,17 @@ public class VehiclePropertyVerifiers {
     private static ImmutableSet<Integer> generateAllPossibleHvacFanDirections() {
         ImmutableSet.Builder<Integer> allPossibleFanDirectionsBuilder = ImmutableSet.builder();
         for (int i = 1; i <= SINGLE_HVAC_FAN_DIRECTIONS.size(); i++) {
-            allPossibleFanDirectionsBuilder.addAll(Sets.combinations(SINGLE_HVAC_FAN_DIRECTIONS,
-                    i).stream().map(hvacFanDirectionCombo -> {
-                        Integer possibleHvacFanDirection = 0;
-                        for (Integer hvacFanDirection : hvacFanDirectionCombo) {
-                            possibleHvacFanDirection |= hvacFanDirection;
-                        }
-                        return possibleHvacFanDirection;
-                    }).collect(Collectors.toList()));
+            allPossibleFanDirectionsBuilder.addAll(
+                    Sets.combinations(SINGLE_HVAC_FAN_DIRECTIONS, i).stream()
+                            .map(
+                                    hvacFanDirectionCombo -> {
+                                        Integer possibleHvacFanDirection = 0;
+                                        for (Integer hvacFanDirection : hvacFanDirectionCombo) {
+                                            possibleHvacFanDirection |= hvacFanDirection;
+                                        }
+                                        return possibleHvacFanDirection;
+                                    })
+                            .collect(Collectors.toList()));
         }
         return allPossibleFanDirectionsBuilder.build();
     }
@@ -1226,6 +1339,13 @@ public class VehiclePropertyVerifiers {
                 .setAllPossibleEnumValues(TURN_SIGNAL_STATES);
     }
 
+    /** Gets the verifier builder for {@link VehiclePropertyIds#PERF_VEHICLE_SPEED}. */
+    public static VehiclePropertyVerifier.Builder<Float> getPerfVehicleSpeedVerifierBuilder() {
+        return VehiclePropertyVerifier.<Float>newDefaultBuilder(
+                        VehiclePropertyIds.PERF_VEHICLE_SPEED)
+                .requireProperty();
+    }
+
     /**
      * Gets the verifier builder for {@link
      * VehiclePropertyIds#VEHICLE_DRIVING_AUTOMATION_TARGET_LEVEL}.
@@ -1262,7 +1382,12 @@ public class VehiclePropertyVerifiers {
                                                 "RANGE_REMAINING Float value must be greater than"
                                                         + " or equal 0")
                                         .that(rangeRemaining)
-                                        .isAtLeast(0));
+                                        .isAtLeast(0))
+                .setSupportedValuesGenerator(
+                        (verifierContext, carPropertyConfig, areaId) -> {
+                            // Test when no range is remaining
+                            return ImmutableList.of(0f);
+                        });
     }
 
     /** Gets the verifier builder for {@link VehiclePropertyIds#EV_BATTERY_LEVEL}. */
@@ -1277,31 +1402,31 @@ public class VehiclePropertyVerifiers {
                                 evBatteryLevel) -> {
                             assertWithMessage(
                                             "EV_BATTERY_LEVEL Float value must be greater than or"
-                                                    + " equal 0")
+                                                    + " equal to 0")
                                     .that(evBatteryLevel)
                                     .isAtLeast(0);
 
                             if (verifierContext
                                             .getCarPropertyManager()
                                             .getCarPropertyConfig(
-                                                    VehiclePropertyIds.INFO_EV_BATTERY_CAPACITY)
+                                                    VehiclePropertyIds.EV_CURRENT_BATTERY_CAPACITY)
                                     == null) {
                                 return;
                             }
 
-                            CarPropertyValue<?> infoEvBatteryCapacityValue =
+                            CarPropertyValue<?> evCurrentBatteryCapacityValue =
                                     verifierContext
                                             .getCarPropertyManager()
                                             .getProperty(
-                                                    VehiclePropertyIds.INFO_EV_BATTERY_CAPACITY,
-                                                    VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL);
+                                                    VehiclePropertyIds.EV_CURRENT_BATTERY_CAPACITY,
+                                                    /* areaId= */ 0);
 
                             assertWithMessage(
                                             "EV_BATTERY_LEVEL Float value must not exceed "
-                                                    + "INFO_EV_BATTERY_CAPACITY Float "
+                                                    + "EV_CURRENT_BATTERY_CAPACITY Float "
                                                     + "value")
                                     .that(evBatteryLevel)
-                                    .isAtMost((Float) infoEvBatteryCapacityValue.getValue());
+                                    .isAtMost((Float) evCurrentBatteryCapacityValue.getValue());
                         });
     }
 

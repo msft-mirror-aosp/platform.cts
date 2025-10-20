@@ -16,9 +16,11 @@
 
 package android.mediapc.cts;
 
-import static android.mediapc.cts.CodecTestBase.codecFilter;
-import static android.mediapc.cts.CodecTestBase.codecPrefix;
-import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
+import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible;
+import static android.mediapc.cts.CodecEncoderPerformanceClassTestBase.getVideoEncoderCfgParams;
+import static android.mediav2.common.cts.CodecTestBase.codecFilter;
+import static android.mediav2.common.cts.CodecTestBase.codecPrefix;
+import static android.mediav2.common.cts.CodecTestBase.mediaTypePrefix;
 
 import android.media.MediaFormat;
 import android.mediapc.cts.common.CodecMetrics;
@@ -29,6 +31,8 @@ import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Requirements.ConcurrentVideoEncoderSessionsRequirement;
 import android.mediapc.cts.common.Requirements.VideoEncoderInstancesRequirement;
 import android.mediapc.cts.common.Utils;
+import android.mediav2.common.cts.CodecTestBase;
+import android.mediav2.common.cts.EncoderConfigParams;
 import android.util.Pair;
 
 import androidx.test.filters.LargeTest;
@@ -168,32 +172,38 @@ public class MultiEncoderPairPerfTest extends MultiCodecPerfTestBase {
             List<Encode> testList = new ArrayList<>();
             if (height > 1080) {
                 for (int i = 0; i < firstPairInstances1080p; i++) {
-                    testList.add(new Encode(mFirstPair.first, mFirstPair.second, mIsAsync, 1080,
-                            1920, 30, 10000000));
+                    testList.add(new Encode(mFirstPair.first, mFirstPair.second, mIsAsync,
+                            new EncoderConfigParams[] {getVideoEncoderCfgParams(mFirstPair.first,
+                                    10000000, 1920, 1080, 30, COLOR_FormatYUV420Flexible)}));
                 }
                 for (int i = 0; i < secondPairInstances1080p; i++) {
-                    testList.add(new Encode(mSecondPair.first, mSecondPair.second, mIsAsync, 1080,
-                            1920, 30, 10000000));
+                    testList.add(new Encode(mSecondPair.first, mSecondPair.second, mIsAsync,
+                            new EncoderConfigParams[] {getVideoEncoderCfgParams(mSecondPair.first,
+                                    10000000, 1920, 1080, 30, COLOR_FormatYUV420Flexible)}));
                 }
                 firstPairInstances -= firstPairInstances1080p;
                 secondPairInstances -= secondPairInstances1080p;
             }
             for (int i = 0; i < firstPairInstances; i++) {
                 if (height > 1080 && firstPairAV1) {
-                    testList.add(new Encode(mFirstPair.first, mFirstPair.second, mIsAsync, 1080,
-                            1920, 30, 10000000));
+                    testList.add(new Encode(mFirstPair.first, mFirstPair.second, mIsAsync,
+                            new EncoderConfigParams[] {getVideoEncoderCfgParams(mFirstPair.first,
+                                    10000000, 1920, 1080, 30, COLOR_FormatYUV420Flexible)}));
                 } else {
-                    testList.add(new Encode(mFirstPair.first, mFirstPair.second, mIsAsync, height,
-                            width, 30, bitrate));
+                    testList.add(new Encode(mFirstPair.first, mFirstPair.second, mIsAsync,
+                            new EncoderConfigParams[] {getVideoEncoderCfgParams(mFirstPair.first,
+                                    bitrate, width, height, 30, COLOR_FormatYUV420Flexible)}));
                 }
             }
             for (int i = 0; i < secondPairInstances; i++) {
                 if (height > 1080 && secondPairAV1) {
-                    testList.add(new Encode(mSecondPair.first, mSecondPair.second, mIsAsync, 1080,
-                            1920, 30, 10000000));
+                    testList.add(new Encode(mSecondPair.first, mSecondPair.second, mIsAsync,
+                            new EncoderConfigParams[] {getVideoEncoderCfgParams(mSecondPair.first,
+                                    10000000, 1920, 1080, 30, COLOR_FormatYUV420Flexible)}));
                 } else {
-                    testList.add(new Encode(mSecondPair.first, mSecondPair.second, mIsAsync, height,
-                            width, 30, bitrate));
+                    testList.add(new Encode(mSecondPair.first, mSecondPair.second, mIsAsync,
+                            new EncoderConfigParams[] {getVideoEncoderCfgParams(mSecondPair.first,
+                                   bitrate, width, height, 30, COLOR_FormatYUV420Flexible)}));
                 }
             }
             CodecMetrics result = invokeWithThread(maxInstances, testList);

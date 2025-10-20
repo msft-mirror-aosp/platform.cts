@@ -221,6 +221,10 @@ public final class InputMethodStartInputLifecycleTest extends EndToEndImeTestBas
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
 
+            // Compatibility layer may cause multiple onStartInput events when TestActivity is
+            // created. Clear out the stream events to make sure only new events are detected.
+            stream.skipAll();
+
             // Get app window token
             final IBinder appWindowToken = TestUtils.getOnMainSync(
                     () -> editText.getApplicationWindowToken());
@@ -239,7 +243,7 @@ public final class InputMethodStartInputLifecycleTest extends EndToEndImeTestBas
             // Not expect the input connection will be started or finished even gaining non-IME
             // focusable window focus.
             notExpectEvent(stream, editorMatcher("onStartInput", marker), NOT_EXPECT_TIMEOUT);
-            notExpectEvent(stream, editorMatcher("onFinishInput", marker), NOT_EXPECT_TIMEOUT);
+            notExpectEvent(stream, eventMatcher("onFinishInput"), NOT_EXPECT_TIMEOUT);
 
             // Verify the input connection of the EditText is still active and can accept text.
             final InputMethodManager imm = editText.getContext().getSystemService(

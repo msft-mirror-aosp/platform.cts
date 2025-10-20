@@ -30,6 +30,7 @@ import android.telecom.cts.apps.AvailableEndpointsTransaction;
 import android.telecom.cts.apps.CallExceptionTransaction;
 import android.telecom.cts.apps.PhoneAccountTransaction;
 import android.telecom.cts.apps.BooleanTransaction;
+import android.telecom.cts.apps.IntegerTransaction;
 import android.telecom.cts.apps.IRemoteOperationConsumer;
 
 // Note: This interface is overridden by the following applications:
@@ -56,7 +57,7 @@ interface IAppControl {
     CallEndpointTransaction getCurrentCallEndpoint(String id);
     AvailableEndpointsTransaction getAvailableCallEndpoints(String id);
     NoDataTransaction addCall(in CallAttributes callAttributes);
-    NoDataTransaction addFailedCall(in CallAttributes callAttributes);
+    NoDataTransaction addFailedCall(in CallAttributes callAttributes, in Bundle extras);
     NoDataTransaction addFailedCallWithCreateConnectionVerify(in CallAttributes callAttributes);
     NoDataTransaction addCallWithConsumer(in CallAttributes callAttributes, in IRemoteOperationConsumer consumer);
     NoDataTransaction verifyCallWithConsumer(in CallAttributes callAttributes, in IRemoteOperationConsumer consumer);
@@ -69,4 +70,5 @@ interface IAppControl {
     NoDataTransaction removeNotificationForCall(String callId);
     BooleanTransaction isNotificationPostedForCall(String callId);
     BooleanTransaction isForegroundServiceDelegationActive( in PhoneAccountHandle handle);
+    IntegerTransaction getAudioProcessingUseCase(String callId);
 }

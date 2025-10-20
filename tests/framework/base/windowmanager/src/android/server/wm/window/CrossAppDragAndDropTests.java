@@ -17,6 +17,7 @@
 package android.server.wm.window;
 
 import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
+import static android.provider.Settings.Secure.INCLUDE_DEFAULT_DISPLAY_IN_TOPOLOGY;
 import static android.server.wm.CliIntentExtra.extraString;
 import static android.server.wm.UiDeviceUtils.dragPointer;
 import static android.server.wm.dndsourceapp.Components.DRAG_SOURCE;
@@ -24,22 +25,25 @@ import static android.server.wm.dndsourceapp.Components.DRAG_SOURCE_DROP_TARGET;
 import static android.server.wm.dndtargetapp.Components.DROP_TARGET;
 import static android.server.wm.dndtargetappsdk23.Components.DROP_TARGET_SDK23;
 import static android.view.Display.DEFAULT_DISPLAY;
+import static android.view.Surface.ROTATION_0;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
+import android.content.pm.PackageManager;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.provider.Settings;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.DeprecatedTargetSdkUtils;
 import android.server.wm.TestLogService;
@@ -55,9 +59,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import platform.test.desktop.DesktopMouseTestRule;
+import platform.test.desktop.LogicalDisplayPointPx;
+import platform.test.desktop.SimulatedConnectedDisplayTestRule;
+
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -169,12 +179,114 @@ public class CrossAppDragAndDropTests extends ActivityManagerTestBase {
                 }
             };
 
+    private static final ActivityLaunchModeContext CROSS_DISPLAY_LAUNCH_MODE_CONTEXT =
+            new ActivityLaunchModeContext() {
+                private int mEnableDefaultDisplayInTopologyState;
+
+                @Override
+                void tearDown() {
+                    super.tearDown();
+                    setEnableDefaultDisplayInTopology(mEnableDefaultDisplayInTopologyState);
+                }
+
+                @Override
+                void assumeDeviceSupportsLaunchMode() {
+                    assumeTrue(Flags.enableConnectedDisplaysDnd());
+                    assumeTrue(
+                            com.android.settings.flags.Flags
+                                    .enableDefaultDisplayInTopologySwitchBugfix());
+                    assumeFalse(
+                            mTestCase
+                                    .mContext
+                                    .getPackageManager()
+                                    .hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+                }
+
+                @Override
+                void launchActivities(
+                        ComponentName sourceComponentName,
+                        String sourceMode,
+                        ComponentName targetComponentName,
+                        String targetMode) {
+                    setDeviceRotationTo0();
+                    mEnableDefaultDisplayInTopologyState = isDefaultDisplayInTopologyEnabled();
+                    setEnableDefaultDisplayInTopology(/* enable= */ 1);
+
+                    List<Integer> displayIds =
+                            mTestCase.mConnectedDisplayTestRule.setupTestDisplays(1);
+                    mTestCase.runWithShellPermission(() -> mTestCase.mMouseTestRule.setupMouse());
+                    // Launch primary activity.
+                    mTestCase
+                            .getLaunchActivityBuilder()
+                            .setTargetActivity(sourceComponentName)
+                            .setUseInstrumentation()
+                            .setWaitForLaunched(true)
+                            .setIntentExtra(
+                                    bundle -> {
+                                        bundle.putString(EXTRA_MODE, sourceMode);
+                                        bundle.putString(EXTRA_LOGTAG, mTestCase.mSourceLogTag);
+                                    })
+                            .setDisplayId(DEFAULT_DISPLAY)
+                            .execute();
+
+                    // Launch secondary activity.
+                    mTestCase
+                            .getLaunchActivityBuilder()
+                            .setTargetActivity(targetComponentName)
+                            .setUseInstrumentation()
+                            .setWaitForLaunched(true)
+                            .setIntentExtra(
+                                    bundle -> {
+                                        bundle.putString(EXTRA_MODE, targetMode);
+                                        bundle.putString(EXTRA_LOGTAG, mTestCase.mTargetLogTag);
+                                    })
+                            .setDisplayId(displayIds.get(0))
+                            .execute();
+                }
+
+                @Override
+                public String toString() {
+                    return "CrossDisplay";
+                }
+
+                // TODO(b/449871044): Temporary workaround due to events from mouse with associated
+                //   displayId are not processed correctly when default display and external display
+                //   has a different rotation
+                private void setDeviceRotationTo0() {
+                    if (mTestCase.getDeviceRotation(DEFAULT_DISPLAY) == ROTATION_0) {
+                        return;
+                    }
+                    mTestCase.mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
+                    // Portrait / Landscape orientation is not important, as long as it's at
+                    // ROTATION_0. Note that RotationSession is managed by ActivityManagerTestBase
+                    // and will be cleaned up in tearDown()
+                    mTestCase
+                            .createManagedRotationSession()
+                            .set(ROTATION_0, /* waitForRotation= */ true);
+                    mTestCase.mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
+                }
+
+                private int isDefaultDisplayInTopologyEnabled() {
+                    return Settings.Secure.getInt(
+                            mTestCase.mContext.getContentResolver(),
+                            INCLUDE_DEFAULT_DISPLAY_IN_TOPOLOGY,
+                            0);
+                }
+
+                private void setEnableDefaultDisplayInTopology(int enable) {
+                    Settings.Secure.putInt(
+                            mTestCase.mContext.getContentResolver(),
+                            INCLUDE_DEFAULT_DISPLAY_IN_TOPOLOGY,
+                            enable);
+                }
+            };
 
     @Parameterized.Parameters(name = "{0}")
     public static Object[] activityLaunchModes() {
         return new Object[] {
-                FREEFORM_LAUNCH_MODE_CONTEXT,
-                SPLIT_SCREEN_LAUNCH_MODE_CONTEXT
+            FREEFORM_LAUNCH_MODE_CONTEXT,
+            SPLIT_SCREEN_LAUNCH_MODE_CONTEXT,
+            CROSS_DISPLAY_LAUNCH_MODE_CONTEXT
         };
     }
 
@@ -187,6 +299,15 @@ public class CrossAppDragAndDropTests extends ActivityManagerTestBase {
     private String mSessionId;
     private String mSourceLogTag;
     private String mTargetLogTag;
+
+    private final SimulatedConnectedDisplayTestRule mConnectedDisplayTestRule =
+            new SimulatedConnectedDisplayTestRule();
+    private final DesktopMouseTestRule mMouseTestRule =
+            new DesktopMouseTestRule(/* deferSetup= */ true);
+
+    @Rule
+    public RuleChain mRuleChain =
+            RuleChain.outerRule(mConnectedDisplayTestRule).around(mMouseTestRule);
 
     @Before
     @Override
@@ -205,6 +326,7 @@ public class CrossAppDragAndDropTests extends ActivityManagerTestBase {
 
     @After
     public void tearDown() {
+        mActivityLaunchModeContext.tearDown();
         cleanupState();
     }
 
@@ -268,8 +390,18 @@ public class CrossAppDragAndDropTests extends ActivityManagerTestBase {
         moveActivitiesToSplitScreen(sourceComponentName, targetComponentName);
     }
 
-    private void injectInput(Point from, Point to, int steps) throws Exception {
-        dragPointer(from, to, steps);
+    private void injectInput(LogicalDisplayPointPx from, LogicalDisplayPointPx to, int steps) {
+        if (from.getDisplayId() == to.getDisplayId()) {
+            dragPointer(from.getPoint(), to.getPoint(), steps);
+        } else {
+            runWithShellPermission(
+                    () -> {
+                        mMouseTestRule.move(from);
+                        mMouseTestRule.startDrag();
+                        mMouseTestRule.move(to);
+                        mMouseTestRule.stopDrag();
+                    });
+        }
     }
 
     private Point getDisplaySize() throws Exception {
@@ -278,11 +410,12 @@ public class CrossAppDragAndDropTests extends ActivityManagerTestBase {
         return displaySize;
     }
 
-    private Point getWindowCenter(ComponentName name) throws Exception {
+    private LogicalDisplayPointPx getWindowCenter(ComponentName name) throws Exception {
         final Task sideTask = mWmState.getTaskByActivity(name);
         Rect bounds = sideTask.getBounds();
         if (bounds != null) {
-            return new Point(bounds.centerX(), bounds.centerY());
+            return new LogicalDisplayPointPx(
+                    sideTask.mDisplayId, bounds.centerX(), bounds.centerY());
         }
         return null;
     }
@@ -314,9 +447,9 @@ public class CrossAppDragAndDropTests extends ActivityManagerTestBase {
             DeprecatedTargetSdkUtils.waitAndDismissDeprecatedTargetSdkDialog(mWmState);
         }
 
-        Point p1 = getWindowCenter(sourceComponentName);
+        LogicalDisplayPointPx p1 = getWindowCenter(sourceComponentName);
         assertNotNull(p1);
-        Point p2 = getWindowCenter(targetComponentName);
+        LogicalDisplayPointPx p2 = getWindowCenter(targetComponentName);
         assertNotNull(p2);
 
         TestLogService.registerClient(mSourceLogTag, RESULT_KEY_START_DRAG);
@@ -389,7 +522,6 @@ public class CrossAppDragAndDropTests extends ActivityManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DELEGATE_UNHANDLED_DRAGS)
     public void testDisallowGlobalSameAppWithDifferentUids() throws Exception {
         // Verify that dragging to another window from a different app doesn't work with
         // FLAG_DRAG_GLOBAL_SAME_APP
@@ -397,7 +529,6 @@ public class CrossAppDragAndDropTests extends ActivityManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DELEGATE_UNHANDLED_DRAGS)
     public void testGlobalSameAppWithSameUids() throws Exception {
         // Verify that dragging to another window from the same app works with
         // FLAG_DRAG_GLOBAL_SAME_APP
@@ -515,6 +646,8 @@ public class CrossAppDragAndDropTests extends ActivityManagerTestBase {
 
     private abstract static class ActivityLaunchModeContext {
         CrossAppDragAndDropTests mTestCase;
+
+        void tearDown() {}
 
         abstract void assumeDeviceSupportsLaunchMode() throws Exception;
 

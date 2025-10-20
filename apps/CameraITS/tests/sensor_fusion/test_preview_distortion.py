@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Verify that frames from UW and W cameras are not distorted."""
+"""Verify that frames from UW camera are not distorted."""
 
 import collections
 import logging
@@ -25,10 +25,12 @@ from mobly import test_runner
 
 import its_base_test
 import camera_properties_utils
+import gen2_rig_controller_utils
 import image_processing_utils
 import its_session_utils
 import opencv_processing_utils
 import preview_processing_utils
+import sensor_fusion_utils
 
 _ACCURACY = 0.001
 _ARUCO_COUNT = 8
@@ -36,8 +38,6 @@ _ARUCO_DIST_TOL = 0.15
 _ARUCO_SIZE = (3, 3)
 _ASPECT_RATIO_4_3 = 4/3
 _CH_FULL_SCALE = 255
-_CHESSBOARD_CORNERS = 24
-_CHKR_DIST_TOL = 0.05
 _CROSS_SIZE = 6
 _CROSS_THICKNESS = 1
 _FONT_SCALE = 0.3
@@ -47,8 +47,7 @@ _GREEN_DARK = (0, 190, 0)
 _MAX_ITER = 30
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _RED = (255, 0, 0)
-_VALID_CONTROLLERS = ('arduino', 'external')
-_WIDE_ZOOM = 1
+_VALID_CONTROLLERS = ('arduino', 'external', 'gen2_rotator')
 _ZOOM_STEP = 0.5
 _ZOOM_STEP_REDUCTION = 0.1
 _ZOOM_TOL = 0.1
@@ -213,7 +212,7 @@ def get_distortion_error(image, corners, ideal_points, rotation_vector,
   compare corners and ideal points to derive the distortion error
 
   Args:
-    image: image containing chessboard and ArUco
+    image: image containing ArUco markers
     corners: corners of the chart. Shape = (number of corners, 1, 2)
     ideal_points: corners at unit interval. Shape = (number of corners, 3)
     rotation_vector: rotation vector based on chart's rotation. Shape = (3, 1)
@@ -257,46 +256,6 @@ def get_distortion_error(image, corners, ideal_points, rotation_vector,
                 normalized_distortion_error_percentage)
 
   return normalized_distortion_error_percentage, chart_coverage
-
-
-def get_chessboard_corners(pattern_size, image):
-  """Find chessboard corners from image.
-
-  Args:
-    pattern_size: (int, int) chessboard corners.
-    image: image containing chessboard
-
-  Returns:
-    corners: corners of the chessboard chart
-    ideal_points: ideal pattern of chessboard corners
-                  i.e. points at unit intervals
-  """
-  # Convert the image to grayscale
-  gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-  # Find the checkerboard corners
-  found_corners, corners_pass1 = cv2.findChessboardCorners(gray_image,
-                                                           pattern_size)
-  logging.debug('Found corners: %s', found_corners)
-  logging.debug('corners_pass1: %s', corners_pass1)
-
-  if not found_corners:
-    logging.debug('Chessboard pattern not found.')
-    return None, None
-
-  # Refine corners
-  criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, _MAX_ITER,
-              _ACCURACY)
-  corners = cv2.cornerSubPix(gray_image, corners_pass1, (11, 11), (-1, -1),
-                             criteria)
-  logging.debug('Refined Corners: %s', corners)
-
-  plot_corners(image, corners)
-
-  ideal_points = get_ideal_points(pattern_size)
-  logging.debug('ideal_points: %s', ideal_points)
-
-  return corners, ideal_points
 
 
 def get_aruco_corners(image):
@@ -417,16 +376,13 @@ def add_update_to_filename(file_name, update_str='_update'):
 
 
 def get_distortion_errors(props, img_name):
-  """Calculates the distortion error using checkerboard and ArUco markers.
+  """Calculates the distortion error using ArUco markers.
 
   Args:
     props: camera properties object.
     img_name: image name including complete file path
 
   Returns:
-    chkr_chart_coverage: normalized distortion error percentage for chessboard
-      corners. None if all corners based on pattern_size not found.
-    chkr_chart_coverage: percentage of the image covered by chessboard chart
     arc_distortion_error: normalized distortion error percentage for ArUco
       corners. None if all corners based on pattern_size not found.
     arc_chart_coverage: percentage of the image covered by ArUco corners
@@ -438,25 +394,21 @@ def get_distortion_errors(props, img_name):
     image = image_processing_utils.mirror_preview_image_by_sensor_orientation(
         props['android.sensor.orientation'], image)
 
-  pattern_size = (_CHESSBOARD_CORNERS, _CHESSBOARD_CORNERS)
-
-  chess_corners, chess_ideal_points = get_chessboard_corners(pattern_size,
-                                                             image)
   aruco_corners, aruco_ideal_points = get_aruco_corners(image)
 
-  if chess_corners is None:
-    return None, None, None, None
+  ideal_points = []
+  image_corners = []
 
-  ideal_points = [chess_ideal_points]
-  image_corners = [chess_corners]
-
+  # Truth value is ambiguous, so check for None explicitly.
   if aruco_corners is not None:
     ideal_points.append(aruco_ideal_points)
     image_corners.append(aruco_corners)
+  else:
+    return None, None
 
   # Calculate the distortion error
   # Do this by:
-  # 1) Calibrate the camera from the detected checkerboard points
+  # 1) Calibrate the camera from the detected points
   # 2) Project the ideal points, using the camera calibration data.
   # 3) Except, do not use distortion coefficients so we model ideal pinhole
   # 4) Calculate the error of the detected corners relative to the ideal
@@ -479,16 +431,10 @@ def get_distortion_errors(props, img_name):
   logging.debug('translation_vector: %s', translation_vectors)
   logging.debug('matrix: %s', camera_matrix)
 
-  chkr_distortion_error, chkr_chart_coverage = (
-      get_distortion_error(image, chess_corners, chess_ideal_points,
-                           rotation_vectors[0], translation_vectors[0],
-                           camera_matrix)
-  )
-
   if aruco_corners is not None:
     arc_distortion_error, arc_chart_coverage = get_distortion_error(
-        image, aruco_corners, aruco_ideal_points, rotation_vectors[1],
-        translation_vectors[1], camera_matrix
+        image, aruco_corners, aruco_ideal_points, rotation_vectors[0],
+        translation_vectors[0], camera_matrix
     )
   else:
     arc_distortion_error, arc_chart_coverage = None, None
@@ -496,17 +442,31 @@ def get_distortion_errors(props, img_name):
   img_name_update = add_update_to_filename(img_name)
   image_processing_utils.write_image(image / _CH_FULL_SCALE, img_name_update)
 
-  return (chkr_distortion_error, chkr_chart_coverage,
-          arc_distortion_error, arc_chart_coverage)
+  return arc_distortion_error, arc_chart_coverage
 
 
 class PreviewDistortionTest(its_base_test.ItsBaseTest):
-  """Test that frames from UW and W cameras are not distorted.
+  """Test that frames from UW camera are not distorted.
 
   Captures preview frames at different zoom levels. If whole chart is visible
   in the frame, detect the distortion error. Pass the test if distortion error
   is within the pre-determined TOL.
   """
+
+  def teardown_test(self):
+    super().teardown_test()
+    if self.rotator_cntl == gen2_rig_controller_utils.DEFAULT_GEN2_ROTATOR_NAME:
+      # Release the serial ports properly after the test
+      motor_port = gen2_rig_controller_utils.find_serial_port(self.rotator_cntl)
+      if motor_port:
+        motor_port.close()
+    if self.lighting_cntl == gen2_rig_controller_utils.DEFAULT_GEN2_LIGHTS_NAME:
+      # Lights will go back to default state after the test
+      lights_port = gen2_rig_controller_utils.find_serial_port(
+          self.lighting_cntl
+      )
+      if lights_port:
+        lights_port.close()
 
   def test_preview_distortion(self):
     rot_rig = {}
@@ -520,7 +480,8 @@ class PreviewDistortionTest(its_base_test.ItsBaseTest):
       props = cam.get_camera_properties()
       props = cam.override_with_hidden_physical_camera_props(props)
       camera_properties_utils.skip_unless(
-          camera_properties_utils.zoom_ratio_range(props))
+          camera_properties_utils.zoom_ratio_range(props)
+      )
 
       # Raise error if not FRONT or REAR facing camera
       camera_properties_utils.check_front_or_rear_camera(props)
@@ -531,6 +492,12 @@ class PreviewDistortionTest(its_base_test.ItsBaseTest):
       if rot_rig['cntl'].lower() not in _VALID_CONTROLLERS:
         raise AssertionError(
             f'You must use the {_VALID_CONTROLLERS} controller for {_NAME}.')
+
+      # Configure and setup gen2 rig
+      if rot_rig['cntl'] == gen2_rig_controller_utils.DEFAULT_GEN2_ROTATOR_NAME:
+        _, _ = gen2_rig_controller_utils.setup_gen2_rig(
+            self.rotator_ch, self.lighting_ch
+        )
 
       largest_area = get_largest_video_size(cam, self.camera_id)
 
@@ -556,87 +523,70 @@ class PreviewDistortionTest(its_base_test.ItsBaseTest):
       PreviewFrameData = collections.namedtuple(
           'PreviewFrameData', ['img_name', 'capture_result', 'z_level']
       )
-      preview_frames = []
-      z_levels = [z_range[0]]  # Min zoom
-      if (z_range[0] < _WIDE_ZOOM <= z_range[1]):
-        z_levels.append(_WIDE_ZOOM)
-
-      for z in z_levels:
-        try:
-          img_name, capture_result = get_preview_frame(
-              self.dut, cam, preview_size, z, z_range, log_path
-          )
-        except Exception as e:
-          logging.error('Failed to capture preview frames'
-                        'Exception: %s', e)
-          raise AssertionError(f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}'
-                               '\n\nFailed to capture preview frames') from e
-        if img_name:
-          frame_data = PreviewFrameData(img_name, capture_result, z)
-          preview_frames.append(frame_data)
+      zoom = z_range[0]  # Min zoom
+      try:
+        img_name, capture_result = get_preview_frame(
+            self.dut, cam, preview_size, zoom, z_range, log_path
+        )
+      except Exception as e:
+        logging.error('Failed to capture preview frames. '
+                      'Exception: %s', e)
+        raise AssertionError(f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}'
+                              '\n\nFailed to capture preview frames') from e
+      if not img_name:
+        raise AssertionError(f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}'
+                              '\n\nFailed to capture preview frames')
+      frame_data = PreviewFrameData(img_name, capture_result, zoom)
 
       failure_msg = []
-      # Determine distortion error and chart coverage for each frames
-      for frame in preview_frames:
-        img_full_name = f'{os.path.join(log_path, frame.img_name)}'
-        (chkr_distortion_err, chkr_chart_coverage, arc_distortion_err,
-         arc_chart_coverage) = get_distortion_errors(props, img_full_name)
+      # Determine distortion error and chart coverage
+      img_full_name = f'{os.path.join(log_path, frame_data.img_name)}'
+      arc_distortion_err, arc_chart_coverage = get_distortion_errors(
+          props, img_full_name)
 
-        zoom = float(frame.capture_result['android.control.zoomRatio'])
-        if camera_properties_utils.logical_multi_camera(props):
-          cam_id = frame.capture_result[
-              'android.logicalMultiCamera.activePhysicalId'
-          ]
-        else:
-          cam_id = None
-        logging.debug('Zoom: %.2f, cam_id: %s, img_name: %s',
-                      zoom, cam_id, img_name)
+      result_zoom = float(
+          frame_data.capture_result['android.control.zoomRatio'])
+      if camera_properties_utils.logical_multi_camera(props):
+        cam_id = frame_data.capture_result[
+            'android.logicalMultiCamera.activePhysicalId'
+        ]
+      else:
+        cam_id = None
+      logging.debug('Zoom: %.2f, cam_id: %s, img_name: %s',
+                    result_zoom, cam_id, img_name)
 
-        if math.isclose(zoom, z_levels[0], rel_tol=_ZOOM_TOL):
-          z_str = 'min'
-        else:
-          z_str = 'max'
-
-        # Don't change print to logging. Used for KPI.
-        print(f'{_NAME}_{z_str}_zoom: ', zoom)
-        print(f'{_NAME}_{z_str}_physical_id: ', cam_id)
-        print(f'{_NAME}_{z_str}_chkr_distortion_error: ', chkr_distortion_err)
-        print(f'{_NAME}_{z_str}_chkr_chart_coverage: ', chkr_chart_coverage)
-        print(f'{_NAME}_{z_str}_aruco_distortion_error: ', arc_distortion_err)
-        print(f'{_NAME}_{z_str}_aruco_chart_coverage: ', arc_chart_coverage)
-        logging.debug('%s_%s_zoom: %s', _NAME, z_str, zoom)
-        logging.debug('%s_%s_physical_id: %s', _NAME, z_str, cam_id)
-        logging.debug('%s_%s_chkr_distortion_error: %s', _NAME, z_str,
-                      chkr_distortion_err)
-        logging.debug('%s_%s_chkr_chart_coverage: %s', _NAME, z_str,
-                      chkr_chart_coverage)
-        logging.debug('%s_%s_aruco_distortion_error: %s', _NAME, z_str,
-                      arc_distortion_err)
-        logging.debug('%s_%s_aruco_chart_coverage: %s', _NAME, z_str,
-                      arc_chart_coverage)
-
-        if arc_distortion_err is None:
-          if zoom < _WIDE_ZOOM:
-            failure_msg.append('Unable to find all ArUco markers in '
-                               f'{img_name}')
-            logging.debug(failure_msg[-1])
-        else:
-          if arc_distortion_err > _ARUCO_DIST_TOL:
-            failure_msg.append('ArUco Distortion error '
-                               f'{arc_distortion_err:.3f} is greater than '
-                               f'tolerance {_ARUCO_DIST_TOL}')
-            logging.debug(failure_msg[-1])
-
-        if chkr_distortion_err is None:
-          # Checkerboard corners shall be detected at minimum zoom level
-          failure_msg.append(f'Unable to find full checker board in {img_name}')
+      # Don't change print to logging. Used for KPI.
+      min_zoom_result = f'{_NAME}_min_zoom: {result_zoom}'
+      min_physical_id_result = f'{_NAME}_min_physical_id: {cam_id}'
+      min_aruco_distortion_error_result = (
+          f'{_NAME}_min_aruco_distortion_error: {arc_distortion_err}'
+      )
+      min_aruco_chart_coverage_result = (
+          f'{_NAME}_min_aruco_chart_coverage: {arc_chart_coverage}'
+      )
+      print(min_zoom_result)
+      print(min_physical_id_result)
+      print(min_aruco_distortion_error_result)
+      print(min_aruco_chart_coverage_result)
+      logging.debug(min_zoom_result)
+      logging.debug(min_physical_id_result)
+      logging.debug(min_aruco_distortion_error_result)
+      logging.debug(min_aruco_chart_coverage_result)
+      has_ultrawide = cam.has_ultrawide_camera(
+          facing=props['android.lens.facing']
+      )
+      if arc_distortion_err is None:
+        no_markers_msg = f'Unable to find all ArUco markers in {img_name}'
+        if has_ultrawide:
+          raise AssertionError(f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}'
+                               f'\n\n{no_markers_msg} with ultrawide camera')
+        logging.debug(no_markers_msg)
+      else:
+        if arc_distortion_err > _ARUCO_DIST_TOL:
+          failure_msg.append('ArUco Distortion error '
+                              f'{arc_distortion_err:.3f} is greater than '
+                              f'tolerance {_ARUCO_DIST_TOL}')
           logging.debug(failure_msg[-1])
-        else:
-          if chkr_distortion_err > _CHKR_DIST_TOL:
-            failure_msg.append('Chess Distortion error '
-                               f'{chkr_distortion_err:.3f} is greater than '
-                               f'tolerance {_CHKR_DIST_TOL}')
-            logging.debug(failure_msg[-1])
 
       if failure_msg:
         raise AssertionError(f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}'

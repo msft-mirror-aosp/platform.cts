@@ -29,6 +29,7 @@ import android.media.MediaCodecInfo.VideoCapabilities;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.os.Build;
+import android.os.SystemProperties;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresDevice;
 import android.test.AndroidTestCase;
@@ -57,9 +58,6 @@ import java.util.Set;
 public class MediaCodecListTest extends AndroidTestCase {
 
     private static final String TAG = "MediaCodecListTest";
-    private static final String MEDIA_CODEC_XML_FILE = "/etc/media_codecs.xml";
-    private static final String VENDOR_MEDIA_CODEC_XML_FILE = "/vendor/etc/media_codecs.xml";
-    private static final String ODM_MEDIA_CODEC_XML_FILE = "/odm/etc/media_codecs.xml";
     private final MediaCodecList mRegularCodecs =
             new MediaCodecList(MediaCodecList.REGULAR_CODECS);
     private final MediaCodecList mAllCodecs =
@@ -116,12 +114,28 @@ public class MediaCodecListTest extends AndroidTestCase {
         return PropertyUtil.isVendorApiLevelNewerThan(29);
     }
 
-    public static void testMediaCodecXmlFileExist() {
-        File file = new File(MEDIA_CODEC_XML_FILE);
-        File vendorFile = new File(VENDOR_MEDIA_CODEC_XML_FILE);
-        File odmFile = new File(ODM_MEDIA_CODEC_XML_FILE);
-        assertTrue("media_codecs.xml does not exist in /odm/etc, /vendor/etc or /etc.",
-                file.exists() || vendorFile.exists() || odmFile.exists());
+    private boolean hasFile(String fileName, String[] dirs) {
+        for (String dir : dirs) {
+            if (new File(dir + fileName).exists()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void testMediaCodecXmlFileExist() {
+        String variantCodecs = SystemProperties.get("ro.media.xml_variant.codecs", "");
+        String[] treblizedDirs = {"/product/etc/", "/odm/etc/", "/vendor/etc/", "/system/etc/"};
+        String treblizedFileName = "media_codecs" + variantCodecs + ".xml";
+        assertTrue(String.format("file : %s not found in any of these dirs : %s", treblizedFileName,
+                           Arrays.toString(treblizedDirs)),
+                hasFile(treblizedFileName, treblizedDirs));
+
+        String[] swCodecsDirs = {"/apex/com.android.media.swcodec/etc/"};
+        String swCodecFileName = "media_codecs.xml";
+        assertTrue(String.format("file : %s not found in any of these dirs : %s", swCodecFileName,
+                           Arrays.toString(swCodecsDirs)),
+                hasFile(swCodecFileName, swCodecsDirs));
     }
 
     private MediaCodecInfo[] getLegacyInfos() {

@@ -16,7 +16,7 @@
 
 package com.android.bedstead.enterprise.annotations;
 
-import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.MIDDLE;
+import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.DO_PO_PRIORITY;
 import static com.android.bedstead.nene.packages.CommonPackages.FEATURE_DEVICE_ADMIN;
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
@@ -82,8 +82,6 @@ public @interface EnsureHasDeviceOwner {
          */
         SINGLE_USER;
     }
-
-    int DO_PO_PRIORITY = MIDDLE;
 
     String DEFAULT_KEY = "deviceOwner";
 

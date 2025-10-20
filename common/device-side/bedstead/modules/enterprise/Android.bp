@@ -1,13 +1,6 @@
 package {
+    default_team: "trendy_team_enterprise",
     default_applicable_licenses: ["Android-Apache-2.0"],
-}
-
-filegroup {
-    name: "bedstead-enterprise-common-srcs",
-    srcs: [
-        "src/main/kotlin/com/android/bedstead/enterprise/annotations/**/*.kt",
-        "src/main/kotlin/com/android/bedstead/enterprise/annotations/**/*.java",
-    ],
 }
 
 android_library {
@@ -25,18 +18,6 @@ android_library {
         "RemoteAccountAuthenticator",
     ],
     plugins: ["auto_annotation_plugin"],
-}
-
-// this is just a legacy name of old Bedstead where everything was in one module,
-// use bedstead-enterprise or bedstead instead
-android_library {
-    name: "Harrier",
-    manifest: "src/main/AndroidManifest.xml",
-    sdk_version: "system_current",
-    min_sdk_version: "29",
-    static_libs: [
-        "bedstead-enterprise",
-    ],
 }
 
 android_test {

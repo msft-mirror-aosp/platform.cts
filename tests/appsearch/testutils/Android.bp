@@ -20,14 +20,13 @@ java_library {
     name: "CtsAppSearchTestUtils",
     srcs: ["src/**/*.java"],
     static_libs: [
+        "appsearch_flags_java_lib",
+        "compatibility-device-util-axt",
         "flag-junit",
         "icing-java-proto-lite",
     ],
     libs: [
         "androidx.test.ext.junit",
-        "appsearch_flags_java_lib",
-        "compatibility-device-util-axt",
-        "error_prone_annotations",
         "framework-annotations-lib",
         "framework-appsearch.impl",
         "guava",

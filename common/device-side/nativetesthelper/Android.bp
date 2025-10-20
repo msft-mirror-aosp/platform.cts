@@ -18,8 +18,12 @@ package {
 
 java_library {
     name: "nativetesthelper",
-
+    host_supported: true,
     srcs: ["src/**/*.java"],
-    static_libs: ["compatibility-common-util-devicesidelib"],
-    sdk_version: "current",
+    static_libs: [
+        "compatibility-common-util-lib",
+        "error_prone_annotations",
+        "guava",
+        "junit",
+    ],
 }

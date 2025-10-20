@@ -41,7 +41,7 @@ jboolean android_os_cts_TaggedPointer_hasTaggedPointer(JNIEnv* env, jobject thiz
     int level = prctl(PR_GET_TAGGED_ADDR_CTRL, 0, 0, 0, 0);
     bool running_with_mte =  level >= 0 && (level & PR_TAGGED_ADDR_ENABLE) &&
          (level & PR_MTE_TCF_MASK) != PR_MTE_TCF_NONE;
-    if (running_with_hwasan() || running_with_mte) {
+    if (android::base::running_with_hwasan() || running_with_mte) {
         return true;  // HWASan and MTE require tagged pointers.
     }
     uint32_t data;

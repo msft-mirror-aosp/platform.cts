@@ -20,6 +20,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -44,7 +45,7 @@ import org.junit.runner.RunWith;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -56,13 +57,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 @RunWith(AndroidJUnit4.class)
 public class TracingControllerTest {
 
-    public static class TracingReceiver extends OutputStream {
+    static class TracingReceiver extends OutputStream {
         private int mChunkCount;
-        private boolean mComplete;
-        private ByteArrayOutputStream outputStream;
 
-        public TracingReceiver() {
-            outputStream = new ByteArrayOutputStream();
+        private final CompletableFuture<Boolean> mCompleteFuture = new CompletableFuture<>();
+        private final ByteArrayOutputStream mOutputStream;
+
+        TracingReceiver() {
+            mOutputStream = new ByteArrayOutputStream();
         }
 
         @Override
@@ -70,7 +72,7 @@ public class TracingControllerTest {
             validateThread();
             mChunkCount++;
             try {
-                outputStream.write(chunk);
+                mOutputStream.write(chunk);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -79,7 +81,7 @@ public class TracingControllerTest {
         @Override
         public void close() {
             validateThread();
-            mComplete = true;
+            mCompleteFuture.complete(true);
         }
 
         @Override
@@ -102,19 +104,17 @@ public class TracingControllerTest {
                     Thread.currentThread().getName().startsWith(EXECUTOR_THREAD_PREFIX));
         }
 
-        int getNbChunks() { return mChunkCount; }
-        boolean getComplete() { return mComplete; }
-
-        Callable<Boolean> getCompleteCallable() {
-            return new Callable<Boolean>() {
-                @Override
-                public Boolean call() {
-                    return getComplete();
-                }
-            };
+        int getNbChunks() {
+            return mChunkCount;
         }
 
-        ByteArrayOutputStream getOutputStream() { return outputStream; }
+        void waitForCompletion() {
+            WebkitUtils.waitForFuture(mCompleteFuture);
+        }
+
+        ByteArrayOutputStream getOutputStream() {
+            return mOutputStream;
+        }
     }
 
     private static final int POLLING_TIMEOUT = 60 * 1000;
@@ -124,19 +124,21 @@ public class TracingControllerTest {
     private ExecutorService mSingleThreadExecutor;
 
     @Rule
-    public ActivityScenarioRule mActivityScenarioRule =
-            new ActivityScenarioRule(WebViewCtsActivity.class);
+    public ActivityScenarioRule<WebViewCtsActivity> mActivityScenarioRule =
+            new ActivityScenarioRule<>(WebViewCtsActivity.class);
 
     @Before
     public void setUp() throws Exception {
         Assume.assumeTrue("WebView is not available", NullWebViewUtils.isWebViewAvailable());
-        mActivityScenarioRule.getScenario().onActivity(activity -> {
-            WebViewCtsActivity webViewCtsActivity = (WebViewCtsActivity) activity;
-            WebView webview = webViewCtsActivity.getWebView();
-            if (webview != null) {
-                mOnUiThread = new WebViewOnUiThread(webview);
-            }
-        });
+        mActivityScenarioRule
+                .getScenario()
+                .onActivity(
+                        activity -> {
+                            WebView webview = activity.getWebView();
+                            if (webview != null) {
+                                mOnUiThread = new WebViewOnUiThread(webview);
+                            }
+                        });
         mSingleThreadExecutor = Executors.newSingleThreadExecutor(getCustomThreadFactory());
     }
 
@@ -160,13 +162,10 @@ public class TracingControllerTest {
 
     private void ensureTracingStopped() throws Exception {
         TracingController.getInstance().stop(null, mSingleThreadExecutor);
-        Callable<Boolean> tracingStopped = new Callable<Boolean>() {
-            @Override
-            public Boolean call() {
-                return !TracingController.getInstance().isTracing();
-            }
-        };
-        PollingCheck.check("Tracing did not stop", POLLING_TIMEOUT, tracingStopped);
+        PollingCheck.check(
+                "Tracing did not stop",
+                POLLING_TIMEOUT,
+                () -> !TracingController.getInstance().isTracing());
     }
 
     private ThreadFactory getCustomThreadFactory() {
@@ -187,10 +186,9 @@ public class TracingControllerTest {
     public void testTracingControllerCallbacksOnUI() throws Throwable {
         final TracingReceiver tracingReceiver = new TracingReceiver();
 
-        WebkitUtils.onMainThreadSync(() -> {
-            runTracingTestWithCallbacks(tracingReceiver, mSingleThreadExecutor);
-        });
-        PollingCheck.check("Tracing did not complete", POLLING_TIMEOUT, tracingReceiver.getCompleteCallable());
+        WebkitUtils.onMainThreadSync(
+                () -> runTracingTestWithCallbacks(tracingReceiver, mSingleThreadExecutor));
+        tracingReceiver.waitForCompletion();
         assertThat(tracingReceiver.getNbChunks(), greaterThan(0));
         assertThat(tracingReceiver.getOutputStream().size(), greaterThan(0));
         // currently the output is json (as of April 2018), but this could change in the future
@@ -204,7 +202,7 @@ public class TracingControllerTest {
     public void testTracingControllerCallbacks() throws Throwable {
         final TracingReceiver tracingReceiver = new TracingReceiver();
         runTracingTestWithCallbacks(tracingReceiver, mSingleThreadExecutor);
-        PollingCheck.check("Tracing did not complete", POLLING_TIMEOUT, tracingReceiver.getCompleteCallable());
+        tracingReceiver.waitForCompletion();
         assertThat(tracingReceiver.getNbChunks(), greaterThan(0));
         assertThat(tracingReceiver.getOutputStream().size(), greaterThan(0));
     }
@@ -225,14 +223,12 @@ public class TracingControllerTest {
 
         tracingController.start(config);
         assertTrue(tracingController.isTracing());
-        try {
-            tracingController.start(config);
-        } catch (IllegalStateException e) {
-            // as expected
-            return;
-        }
+        assertThrows(
+                "Tracing start should throw an exception when attempting to start while already"
+                    + " tracing",
+                IllegalStateException.class,
+                () -> tracingController.start(config));
         assertTrue(tracingController.stop(null, mSingleThreadExecutor));
-        fail("Tracing start should throw an exception when attempting to start while already tracing");
     }
 
     // Test that tracing cannot be invoked with excluded categories.
@@ -242,15 +238,11 @@ public class TracingControllerTest {
         TracingConfig config = new TracingConfig.Builder()
                 .addCategories("android_webview","-blink")
                 .build();
-        try {
-            tracingController.start(config);
-        } catch (IllegalArgumentException e) {
-            // as expected;
-            assertFalse("TracingController should not be tracing", tracingController.isTracing());
-            return;
-        }
-
-        fail("Tracing start should throw an exception due to invalid category pattern");
+        assertThrows(
+                "Tracing start should throw an exception due to invalid category pattern",
+                IllegalArgumentException.class,
+                () -> tracingController.start(config));
+        assertFalse("TracingController should not be tracing", tracingController.isTracing());
     }
 
     // Test that tracing cannot be invoked with categories containing commas.
@@ -260,29 +252,22 @@ public class TracingControllerTest {
         TracingConfig config = new TracingConfig.Builder()
                 .addCategories("android_webview, blink")
                 .build();
-        try {
-            tracingController.start(config);
-        } catch (IllegalArgumentException e) {
-            // as expected;
-            assertFalse("TracingController should not be tracing", tracingController.isTracing());
-            return;
-        }
-
-        fail("Tracing start should throw an exception due to invalid category pattern");
+        assertThrows(
+                "Tracing start should throw an exception due to invalid category pattern",
+                IllegalArgumentException.class,
+                () -> tracingController.start(config));
+        assertFalse("TracingController should not be tracing", tracingController.isTracing());
     }
 
     // Test that tracing cannot start with a configuration that is null.
     @Test
     public void testTracingWithNullConfig() {
         TracingController tracingController = TracingController.getInstance();
-        try {
-            tracingController.start(null);
-        } catch (IllegalArgumentException e) {
-            // as expected
-            assertFalse("TracingController should not be tracing", tracingController.isTracing());
-            return;
-        }
-        fail("Tracing start should throw exception if TracingConfig is null");
+        assertThrows(
+                "Tracing start should throw an exception due to invalid category pattern",
+                IllegalArgumentException.class,
+                () -> tracingController.start(null));
+        assertFalse("TracingController should not be tracing", tracingController.isTracing());
     }
 
     // Generic helper function for running tracing.

@@ -51,6 +51,7 @@ private val MEANINGLESS_API_CALLER_CLASS_PREFIXES = listOf(
     "androidx/test/",
     "androidx/tracing/Trace",
     "com/android/tradefed",
+    "org/junit/rules/TestWatcher",
 )
 
 // Potential Android API classes.
@@ -148,7 +149,7 @@ class AndroidApiInjectionSettings(private val configuration: Configuration) : Ho
         configuration.getInjectRules().forEach({
             rule ->
             if (classNodes.sourceJarFile.matches(rule.pattern)) {
-                return apiClass.mayAndroidApiClass(rule.apiPrefixes) &&
+                return apiClass.mayAndroidApiClass(rule.apiPrefixes + API_CLASS_PREFIXES) &&
                         callerClass.mayAndroidApiCallerClass(rule.callerPrefixes)
             }
         })

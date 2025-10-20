@@ -164,10 +164,10 @@ public class AppControlWrapper {
      * This method requests the app that is bound to add a new call with the given callAttributes
      * that is expected to fail.
      */
-    public void addFailedCall(CallAttributes callAttributes) throws Exception {
+    public void addFailedCall(CallAttributes callAttributes, Bundle extras) throws Exception {
         Log.i(TAG, "addFailedCall");
         try {
-            NoDataTransaction transactionResult = mBinder.addFailedCall(callAttributes);
+            NoDataTransaction transactionResult = mBinder.addFailedCall(callAttributes, extras);
             maybeFailTest(transactionResult);
         } catch (RemoteException re) {
             handleRemoteException(re, "addCall");
@@ -321,6 +321,18 @@ public class AppControlWrapper {
         } catch (RemoteException e) {
             handleRemoteException(e, "setConnectionProperties");
         }
+    }
+
+    public int getAudioProcessingUseCase(String callId) throws RemoteException {
+        Log.i(TAG, "getAudioProcessingUseCase: callId=" + callId);
+        try {
+            IntegerTransaction transactionResult = mBinder.getAudioProcessingUseCase(callId);
+            maybeFailTest(transactionResult);
+            return transactionResult.getIntegerResult();
+        } catch (RemoteException e) {
+            handleRemoteException(e, "getAudioProcessingUseCase");
+        }
+        return -1;
     }
 
     /**

@@ -30,15 +30,10 @@ import zoom_capture_utils
 
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 10
-_TEST_FORMATS = ['yuv']  # list so can be appended for newer Android versions
 _TEST_REQUIRED_MPC = 33
 _SAVE_IMAGE_DELAY = 5  # empirically determined
-_SINGLE_CAMERA_NUMBER_OF_CAMERAS_TO_TEST = 1
-_ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST = 2  # UW and W
 # Wider zoom ratio range will be tested by test_zoom_tele
-_WIDE_ZOOM_RATIO_MAX = 2.2
-_WIDE_ZOOM_THIRD_CAMERA_CHECK_ZOOM_RATIO = 2.0
-_ZOOM_RATIO_REQUEST_RESULT_DIFF_RTOL = 0.1
+_WIDE_ZOOM_RATIO_MAX = 4.0
 _CTS_VERIFIER_PACKAGE_NAME = 'com.android.cts.verifier'
 _JETPACK_CAMERA_APP_PACKAGE_NAME = 'com.google.jetpackcamera'
 
@@ -98,15 +93,9 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
       debug = self.debug_mode
       camera_facing = props['android.lens.facing']
       z_min, z_max = float(z_range[0]), float(z_range[1])
+      z_max = min(z_max, _WIDE_ZOOM_RATIO_MAX)
       camera_properties_utils.skip_unless(
           z_max >= z_min * zoom_capture_utils.ZOOM_MIN_THRESH)
-      tele_camera_found = cam.has_tele_camera(
-          facing=camera_facing)
-      # Truncate zoom range if test_zoom_tele will be run
-      if tele_camera_found:
-        logging.debug('Tele camera found, truncating zoom range max to %.2f',
-                      _WIDE_ZOOM_RATIO_MAX)
-        z_max = min(z_max, _WIDE_ZOOM_RATIO_MAX)
       z_list = np.arange(z_min, z_max, (z_max - z_min) / (_NUM_STEPS - 1))
       z_list = np.append(z_list, z_max)
       logging.debug('Testing zoom range: %s', str(z_list))
@@ -151,27 +140,30 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
       images = []
       physical_ids = set()
       size = None
-      captures = cam.do_jca_captures_across_zoom_ratios(
+      watch_dump_path = os.path.join(
+          self.log_path, ui_interaction_utils.DEFAULT_CAMERA_WATCH_DUMP_FILE)
+      watch_process = ui_interaction_utils.start_cameraservice_watch(
+          self.dut.serial, watch_dump_path, self.ui_app)
+      # Force evaluation of the generator expression so all captures finish
+      captures = list(cam.do_jca_captures_across_zoom_ratios(
           self.dut,
           self.log_path,
           flash_mode_desc=ui_interaction_utils.FLASH_MODE_OFF_CONTENT_DESC,
           lens_facing=camera_facing,
           zoom_ratios=z_list,
           save_image_delay=_SAVE_IMAGE_DELAY
+      ))
+      ui_interaction_utils.stop_cameraservice_watch(watch_process)
+      result_zoom_ratios = ui_interaction_utils.get_jca_zoom_ratios(
+          watch_dump_path, number_of_captures=len(z_list)
       )
-      for zoom_ratio, capture in zip(z_list, captures):
+      logging.debug(
+          'requested zoom ratios: %s, result zoom ratios: %s',
+          z_list, result_zoom_ratios
+      )
+      for zoom_ratio, capture in zip(result_zoom_ratios, captures):
         physical_ids.add(capture.physical_id)
         logging.debug('Physical IDs: %s', physical_ids)
-        # Ignore captures at higher zooms where smooth zoom can affect results.
-        if (tele_camera_found and
-            len(physical_ids) >= _ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST and
-            zoom_ratio > _WIDE_ZOOM_THIRD_CAMERA_CHECK_ZOOM_RATIO):
-          logging.debug('Found enough zoom data, given that tele camera found: '
-                        '%d physical IDs at zoom ratio %.2f, ignoring '
-                        'remaining captures.',
-                        len(physical_ids),
-                        zoom_ratio)
-          break
         bgr_img = cv2.imread(capture.capture_path)
         # Use first image size for all captures
         if not size:
@@ -213,19 +205,9 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
       # Mark ArUco marker center and image center
       opencv_processing_utils.mark_zoom_images(
           images, test_data, img_name_stem)
-
-      number_of_cameras_to_test = (
-          _ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST
-          if ultrawide_camera_found
-          else _SINGLE_CAMERA_NUMBER_OF_CAMERAS_TO_TEST
-      )
-      # Make reporting active physical IDs optional
-      if all(d.physical_id is None for d in test_data):
-        number_of_cameras_to_test = 0
       test_success, msg = zoom_capture_utils.verify_zoom_data(
           test_data, size,
-          offset_plot_name_stem=img_name_stem,
-          number_of_cameras_to_test=number_of_cameras_to_test)
+          offset_plot_name_stem=img_name_stem)
 
     if not test_success:
       raise AssertionError(msg)

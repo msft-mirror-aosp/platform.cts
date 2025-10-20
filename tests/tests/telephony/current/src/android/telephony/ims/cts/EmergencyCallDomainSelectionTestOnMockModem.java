@@ -66,6 +66,9 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.PersistableBundle;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telecom.Call;
 import android.telecom.PhoneAccount;
 import android.telecom.TelecomManager;
@@ -99,11 +102,13 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
+import com.android.internal.telephony.flags.Flags;
 
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -151,6 +156,10 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
     private static boolean sSupportDomainSelection = false;;
 
     private static boolean sVoLteEnabled = false;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     static {
         initializeLatches();
@@ -1106,6 +1115,60 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
 
         TestImsCallSessionImpl callSession = sServiceConnector.getCarrierService().getMmTelFeature()
                 .getImsCallsession();
+        isCallActive(call, callSession);
+
+        call.disconnect();
+        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        isCallDisconnected(call, callSession);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        waitForUnboundService();
+
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                telephonyManager, (tm) -> tm.unregisterTelephonyCallback(testCb));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_IGNORE_INCALL_MMI_FOR_EMERGENCY)
+    public void testOutGoingEmergencyCall_InCallMmiCode() throws Exception {
+        // Setup pre-condition
+        PersistableBundle bundle = getDefaultPersistableBundle();
+        overrideCarrierConfig(bundle);
+
+        MockEmergencyRegResult regResult = getEmergencyRegResult(EUTRAN, REGISTRATION_STATE_HOME,
+                NetworkRegistrationInfo.DOMAIN_CS | NetworkRegistrationInfo.DOMAIN_PS,
+                true, true, 0, 0, "", "");
+        sMockModemManager.setEmergencyRegResult(sTestSlot, regResult);
+
+        TestTelephonyCallbackForCallStateChange testCb =
+                new TestTelephonyCallbackForCallStateChange();
+
+        TelephonyManager telephonyManager = (TelephonyManager) getContext()
+                .getSystemService(Context.TELEPHONY_SERVICE);
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                telephonyManager, (tm) -> tm.registerTelephonyCallback(Runnable::run, testCb));
+
+        bindImsService();
+        mServiceCallBack = new ServiceCallBack();
+        InCallServiceStateValidator.setCallbacks(mServiceCallBack);
+
+        // Place outgoing emergency call
+        placeOutgoingCall(TEST_EMERGENCY_NUMBER);
+        TimeUnit.MILLISECONDS.sleep(WAIT_REQUEST_TIMEOUT_MS);
+
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        Call call = getCall(mCurrentCallId);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+
+        assertTrue(testCb.waitForOutgoingEmergencyCall(TEST_EMERGENCY_NUMBER));
+        assertTrue(testCb.waitForCallActive());
+
+        TestImsCallSessionImpl callSession = sServiceConnector.getCarrierService().getMmTelFeature()
+                .getImsCallsession();
+        isCallActive(call, callSession);
+
+        // Send InCall MMI code and ensure it does not affect the ACTIVE emergency call.
+        placeOutgoingCall(TEST_HANGUP_IN_CALL_MMI_CODE);
+        TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
         isCallActive(call, callSession);
 
         call.disconnect();

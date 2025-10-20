@@ -14,7 +14,6 @@
 """Utility functions to form an ItsSession and perform various camera actions.
 """
 
-
 import collections
 import fnmatch
 import glob
@@ -22,6 +21,7 @@ import json
 import logging
 import math
 import os
+import re
 import socket
 import subprocess
 import sys
@@ -29,14 +29,13 @@ import time
 import types
 import unicodedata
 
-from mobly.controllers.android_device_lib import adb
-import numpy
-
 import camera_properties_utils
 import capture_request_utils
 import error_util
 import image_processing_utils
 import its_device_utils
+from mobly.controllers.android_device_lib import adb
+import numpy
 import opencv_processing_utils
 import ui_interaction_utils
 
@@ -45,6 +44,7 @@ ANDROID14_API_LEVEL = 34
 ANDROID15_API_LEVEL = 35
 ANDROID16_API_LEVEL = 36
 ANDROID17_API_LEVEL = 37
+FIRST_SEPARATE_VENDOR_API_LEVEL = 202404
 CAMERA_TYPE_TELE = 'telephoto'
 CAMERA_TYPE_ULTRAWIDE = 'ultrawide'
 CAMERA_TYPE_WIDE = 'wide'
@@ -54,6 +54,7 @@ IMAGE_FORMAT_YUV_420_888 = 35
 JCA_VIDEO_PATH_TAG = 'JCA_VIDEO_CAPTURE_PATH'
 JCA_CAPTURE_PATHS_TAG = 'JCA_CAPTURE_PATHS'
 JCA_CAPTURE_STATUS_TAG = 'JCA_CAPTURE_STATUS'
+JCA_CAPTURE_URIS_TAG = 'JCA_CAPTURE_URIS'
 LOAD_SCENE_DELAY_SEC = 3
 PREVIEW_MAX_TESTED_AREA = 1920 * 1440
 PREVIEW_MIN_TESTED_AREA = 320 * 240
@@ -81,11 +82,13 @@ TABLET_ALLOWLIST = (
     'gta9p',  # Samsung Galaxy Tab A9+ 5G
     'gts10fewifi',  # Samsung Galaxy Tab S10 FE
     'gts10fe',  # Samsung Galaxy Tab S10 FE 5G
+    'gts10p',   # Samsung Galaxy Tab S10+
     'dpd2221',  # Vivo Pad2
     'nabu',  # Xiaomi Pad 5
     'nabu_tw',  # Xiaomi Pad 5
     'xun',  # Xiaomi Redmi Pad SE
     'yunluo',  # Xiaomi Redmi Pad
+    'tb520fu',  # Lenovo Yoga Tab plus
 )
 TABLET_DEFAULT_BRIGHTNESS = 192  # 8-bit tablet 75% brightness
 TABLET_LEGACY_BRIGHTNESS = 96
@@ -105,7 +108,10 @@ TABLET_NOT_ALLOWED_ERROR_MSG = ('Tablet model or tablet Android version is '
 TAP_COORDINATES = (500, 500)  # Location to tap tablet screen via adb
 USE_CASE_CROPPED_RAW = 6
 VIDEO_SCENES = ('scene_video',)
+JPG_SCENES = ('scene_wide_gamut',)
 NOT_YET_MANDATED_MESSAGE = 'Not yet mandated test'
+MARGINAL_PASSING_MESSAGE = '***Marginally passing test***'
+MARGINAL_PASS_FACTOR = 0.90
 RESULT_OK_STATUS = '-1'
 
 _FLASH_MODE_OFF = 0
@@ -132,6 +138,7 @@ _VALIDATE_LIGHTING_MACRO_FOV_THRESH = 110
 _VALIDATE_LIGHTING_THRESH = 0.05  # Determined empirically from scene[1:6] tests
 _VALIDATE_LIGHTING_THRESH_DARK = 0.3  # Determined empirically for night test
 _CMD_NAME_STR = 'cmdName'
+_CONTENT_URI_STR = 'contentUri'
 _OBJ_VALUE_STR = 'objValue'
 _STR_VALUE_STR = 'strValue'
 _TAG_STR = 'tag'
@@ -621,6 +628,7 @@ class ItsSession(object):
 
     logging.debug('Opening camera: %s', self._camera_id)
     cmd = {_CMD_NAME_STR: 'open', _CAMERA_ID_STR: self._camera_id}
+    cmd['cmd_sent'] = str(self.__dict__)
     if self._override_to_portrait is not None:
       cmd['overrideToPortrait'] = self._override_to_portrait
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
@@ -630,6 +638,7 @@ class ItsSession(object):
 
   def close_camera(self):
     cmd = {_CMD_NAME_STR: 'close'}
+    cmd['cmd_sent'] = str(self.__dict__)
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
     data, _ = self.__read_response_from_socket()
     if data[_TAG_STR] != 'cameraClosed':
@@ -1785,9 +1794,9 @@ class ItsSession(object):
     """Handle JCA capture result paths from the socket.
 
     Returns:
-      A capture result path or a list of capture results paths.
+      A capture result path or a list of capture results paths and URIs.
     """
-    capture_paths, capture_status = None, None
+    capture_paths, capture_uris, capture_status = None, None, None
     while not capture_paths or not capture_status:
       data, _ = self.__read_response_from_socket()
       if data[_TAG_STR] == JCA_CAPTURE_STATUS_TAG:
@@ -1797,6 +1806,7 @@ class ItsSession(object):
           raise error_util.CameraItsError(
               f'Invalid response {data[_TAG_STR]} for JCA capture')
         capture_paths = data[_OBJ_VALUE_STR][JCA_CAPTURE_PATHS_TAG]
+        capture_uris = data[_OBJ_VALUE_STR][JCA_CAPTURE_URIS_TAG]
       elif data[_TAG_STR] == JCA_VIDEO_PATH_TAG:
         if capture_paths is not None:
           raise error_util.CameraItsError(
@@ -1809,7 +1819,8 @@ class ItsSession(object):
       logging.error('Capture failed! Expected status %d, received %d',
                     RESULT_OK_STATUS, capture_status)
     logging.debug('capture paths: %s', capture_paths)
-    return capture_paths
+    logging.debug('capture uris: %s', capture_uris)
+    return capture_paths, capture_uris
 
   def get_and_pull_jca_capture(self, dut, log_path):
     """Retrieve a capture path from the socket and pulls capture to host.
@@ -1822,12 +1833,23 @@ class ItsSession(object):
     Raises:
       CameraItsError: If unexpected data is retrieved from the socket.
     """
-    capture_paths = self._get_jca_capture_paths()
-    for capture_path in capture_paths:
+    current_user = its_device_utils.get_current_user(dut.serial)
+    is_hsum = current_user != its_device_utils.SYSTEM_USER
+    capture_paths, capture_uris = self._get_jca_capture_paths()
+    for capture_path, capture_uri in zip(capture_paths, capture_uris):
       _, capture_name = os.path.split(capture_path)
-      its_device_utils.run(
-          f'adb -s {dut.serial} pull {capture_path} {log_path}')
-      yield os.path.join(log_path, capture_name)
+      capture_path_on_host = os.path.join(log_path, capture_name)
+      if not is_hsum:
+        its_device_utils.run(
+            f'adb -s {dut.serial} pull {capture_path} {log_path}')
+        yield capture_path_on_host
+      else:
+        dut.adb.shell(
+            f'content read --uri {capture_uri} '
+            f'--user {current_user} > {capture_path_on_host}',
+            shell=True,
+        )
+        yield capture_path_on_host
 
   def get_and_pull_jca_video_capture(self, dut, log_path):
     """Retrieve a capture path from the socket and pulls capture to host.
@@ -1840,7 +1862,7 @@ class ItsSession(object):
     Raises:
       CameraItsError: If unexpected data is retrieved from the socket.
     """
-    capture_path = self._get_jca_capture_paths()
+    capture_path, _ = self._get_jca_capture_paths()
     _, capture_name = os.path.split(capture_path)
     its_device_utils.run(f'adb -s {dut.serial} pull {capture_path} {log_path}')
     return os.path.join(log_path, capture_name)
@@ -2395,7 +2417,8 @@ class ItsSession(object):
             out_surfaces=None,
             repeat_request=None,
             first_surface_for_3a=False,
-            flash_mode=_FLASH_MODE_OFF):
+            flash_mode=_FLASH_MODE_OFF,
+            allow_af_not_focus_locked=False):
     """Perform a 3A operation on the device.
 
     Triggers some or all of AE, AWB, and AF, and returns once they have
@@ -2427,6 +2450,8 @@ class ItsSession(object):
         0: OFF
         1: SINGLE
         2: TORCH
+      allow_af_not_focus_locked: include CONTROL_AF_STATE_NOT_FOCUSED_LOCKED as
+        AF converge state.
 
       Region format in args:
          Arguments are lists of weighted regions; each weighted region is a
@@ -2488,6 +2513,7 @@ class ItsSession(object):
         raise AssertionError(f'Zoom ratio {zoom_ratio} out of range')
     cmd['reuseSession'] = reuse_session
     cmd['firstSurfaceFor3A'] = first_surface_for_3a
+    cmd['allowAFNotFocusLocked'] = allow_af_not_focus_locked
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
 
     # Wait for each specified 3A to converge.
@@ -2550,13 +2576,14 @@ class ItsSession(object):
     logging.debug('Calculated FoV: %s', fov)
     return fov
 
-  def get_file_name_to_load(self, chart_distance, camera_fov, scene):
+  def get_file_name_to_load(self, chart_distance, camera_fov, scene, file_extension='.png'):
     """Get the image to load on the tablet depending on fov and chart_distance.
 
     Args:
      chart_distance: float; distance in cm from camera of displayed chart
      camera_fov: float; camera field of view.
      scene: String; Scene to be used in the test.
+     file_extension: String: file extension format for the file
 
     Returns:
      file_name: file name to display on the tablet.
@@ -2565,9 +2592,10 @@ class ItsSession(object):
     chart_scaling = opencv_processing_utils.calc_chart_scaling(
         chart_distance, camera_fov)
     if chart_scaling:
-      file_name = f'{scene}_{chart_scaling}x_scaled.png'
+      file_name = f'{scene}_{chart_scaling}x_scaled'
     else:
-      file_name = f'{scene}.png'
+      file_name = f'{scene}'
+    file_name = file_name + file_extension
     logging.debug('Scene to load: %s', file_name)
     return file_name
 
@@ -3017,7 +3045,7 @@ def do_capture_with_latency(cam, req, sync_latency, fmt=None):
 
 
 def load_scene(cam, props, scene, tablet, chart_distance, lighting_check=True,
-               log_path=None, chart_scaling=None):
+               log_path=None, chart_scaling=None, allow_af_not_focus_locked=False):
   """Load the scene for the camera based on the FOV.
 
   Args:
@@ -3030,11 +3058,14 @@ def load_scene(cam, props, scene, tablet, chart_distance, lighting_check=True,
     log_path: [Optional] path to store artifacts
     chart_scaling: [Optional] chart scaling factor to be used
         for displaying scene image on the tablet
+    allow_af_not_focus_locked: include CONTROL_AF_STATE_NOT_FOCUSED_LOCKED as
+        AF converge state.
   """
   if not tablet:
     logging.info('Manual run: no tablet to load scene on.')
     return
   file_name = ''
+  file_extension = '.jpg' if scene in JPG_SCENES else '.png'
   scene_name = scene
   if 'scene' not in f'{scene}':
     scene_name = f'scene{scene}'
@@ -3043,9 +3074,9 @@ def load_scene(cam, props, scene, tablet, chart_distance, lighting_check=True,
     logging.debug('Using chart_scaling specified in config file')
     scene_path = os.path.join(os.environ['CAMERA_ITS_TOP'], 'tests', scene_name)
     if math.isclose(chart_scaling, 1.0):
-      file_name = f'{scene}.png'
+      file_name = f'{scene}' + file_extension
     else:
-      file_name = f'{scene}_{chart_scaling}x_scaled.png'
+      file_name = f'{scene}_{chart_scaling}x_scaled' + file_extension
     if 'scene' not in file_name:
       file_name = f'scene{file_name}'
     if scene in VIDEO_SCENES:
@@ -3061,7 +3092,7 @@ def load_scene(cam, props, scene, tablet, chart_distance, lighting_check=True,
           'Please check the available scaling factor in scene directory.')
   else:
     # Calculate camera_fov, which determines the image/video to load on tablet.
-    file_name = cam.get_file_name_to_load(chart_distance, camera_fov, scene)
+    file_name = cam.get_file_name_to_load(chart_distance, camera_fov, scene, file_extension)
     if 'scene' not in file_name:
       file_name = f'scene{file_name}'
 
@@ -3093,7 +3124,7 @@ def load_scene(cam, props, scene, tablet, chart_distance, lighting_check=True,
           opencv_processing_utils.CHART_DISTANCE_22CM, rel_tol=0.1) and
       float(camera_fov) > opencv_processing_utils.FOV_THRESH_UW)
   if (rfov_camera_in_rfov_box or wfov_camera_in_wfov_box) and lighting_check:
-    cam.do_3a()
+    cam.do_3a(allow_af_not_focus_locked=allow_af_not_focus_locked)
     cap = cam.do_capture(
         capture_request_utils.auto_capture_request(), cam.CAP_YUV)
     y_plane, _, _ = image_processing_utils.convert_capture_to_planes(cap)
@@ -3111,7 +3142,7 @@ def copy_scenes_to_tablet(scene, tablet_id):
   scene_path = os.path.join(os.environ['CAMERA_ITS_TOP'], 'tests', scene)
   scene_dir = os.listdir(scene_path)
   for file_name in scene_dir:
-    if file_name.endswith('.png') or file_name.endswith('.mp4'):
+    if file_name.endswith('.png') or file_name.endswith('.jpg') or file_name.endswith('.mp4'):
       src_scene_file = os.path.join(scene_path, file_name)
       cmd = f'adb -s {tablet_id} push {src_scene_file} {_DST_SCENE_DIR}'
       subprocess.Popen(cmd.split())
@@ -3218,6 +3249,15 @@ def get_vendor_api_level(device_id):
   cmd = f'adb -s {device_id} shell getprop ro.vendor.api_level'
   try:
     vendor_api_level = int(subprocess.check_output(cmd.split()).rstrip())
+    if re.match(r'^\d{4}\d{2}$', str(vendor_api_level)):
+      logging.debug('Vendor API level is in modern YYYYMM format. %s',
+                    str(vendor_api_level))
+      # TODO(ruchamk): Remove this once the vendor API level is queried from
+      # AVendorSupport_getVendorApiLevelOf
+      if vendor_api_level >= FIRST_SEPARATE_VENDOR_API_LEVEL:
+        # Subtract 2024 from the vendor API level to get the Android version
+        # and add 35 to the Android version to get the vendor API level.
+        vendor_api_level = ANDROID15_API_LEVEL + vendor_api_level//100 - 2024
     logging.debug('First vendor API level: %d', vendor_api_level)
   except (subprocess.CalledProcessError, ValueError):
     logging.error('No vendor_api_level. Setting to build version.')
@@ -3282,19 +3322,34 @@ def raise_not_yet_mandated_error(message, api_level, mandated_api_level):
     raise AssertionError(f'{NOT_YET_MANDATED_MESSAGE}\n\n{message}')
 
 
-def pull_file_from_dut(dut, dut_path, log_folder):
+def pull_file_from_dut(dut, recording_obj, log_folder):
   """Pulls and returns file from dut and return file name.
 
   Args:
     dut: device under test
-    dut_path: pull file from this path
+    recording_obj: recording object sent by ItsService over socket.
     log_folder: store pulled file to this folder
 
   Returns:
     filename of file pulled from dut
   """
-  dut.adb.pull([dut_path, log_folder])
-  file_name = (dut_path.split('/')[-1])
+  dut_path = recording_obj['recordedOutputPath']
+  file_name = dut_path.split('/')[-1]
+  file_path_on_host = os.path.join(log_folder, file_name)
+  try:
+    dut.adb.pull([dut_path, log_folder])
+  except adb.AdbError as e:
+    # handle HSUM issues by reading the file directly from the content provider
+    if (
+        _CONTENT_URI_STR not in recording_obj or
+        not recording_obj[_CONTENT_URI_STR]):
+      raise AssertionError('No contentUri found in recording object') from e
+    current_user_id = its_device_utils.get_current_user(dut.serial)
+    dut.adb.shell(
+        f'content read --uri {recording_obj[_CONTENT_URI_STR]} '
+        f'--user {current_user_id} > {file_path_on_host}',
+        shell=True,
+    )
   logging.debug('%s pulled from dut', file_name)
   return file_name
 

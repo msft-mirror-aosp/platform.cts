@@ -26,6 +26,7 @@ import android.companion.cts.common.MAC_ADDRESS_C
 import android.companion.cts.common.assertAssociations
 import android.companion.cts.common.assertEmpty
 import android.companion.cts.common.getAssociationForPackage
+import android.companion.cts.common.sleepFor
 import android.net.MacAddress
 import android.platform.test.annotations.AppModeFull
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -34,6 +35,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.test.fail
+import kotlin.time.Duration.Companion.seconds
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -119,21 +121,25 @@ class DisassociateTest : CoreTestBase() {
             )
         }
         associate(MAC_ADDRESS_A, DEVICE_PROFILE_WATCH)
+        sleepFor(1.seconds)
         associate(MAC_ADDRESS_B, DEVICE_PROFILE_WATCH)
+        sleepFor(1.seconds)
         assertTrue(
             nm.isNotificationListenerAccessGranted(
                 TestNotificationListener.componentName
             )
         )
 
-        cdm.disassociate(cdm.getMyAssociationLinkedTo(MAC_ADDRESS_A).id)
+        disassociate(MAC_ADDRESS_A)
+        sleepFor(1.seconds)
         assertTrue(
             nm.isNotificationListenerAccessGranted(
                 TestNotificationListener.componentName
             )
         )
 
-        cdm.disassociate(cdm.getMyAssociationLinkedTo(MAC_ADDRESS_B).id)
+        disassociate(MAC_ADDRESS_B)
+        sleepFor(1.seconds)
         assertFalse(
             nm.isNotificationListenerAccessGranted(
                 TestNotificationListener.componentName

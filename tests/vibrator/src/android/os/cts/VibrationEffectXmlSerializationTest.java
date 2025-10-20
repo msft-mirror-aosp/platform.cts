@@ -23,12 +23,9 @@ import static android.os.VibrationEffect.Composition.PRIMITIVE_LOW_TICK;
 import static android.os.VibrationEffect.Composition.PRIMITIVE_SPIN;
 import static android.os.VibrationEffect.Composition.PRIMITIVE_TICK;
 import static android.os.VibrationEffect.EFFECT_CLICK;
-import static android.os.VibrationEffect.VibrationParameter.targetAmplitude;
-import static android.os.VibrationEffect.VibrationParameter.targetFrequency;
 import static android.os.vibrator.Flags.FLAG_NORMALIZED_PWLE_EFFECTS;
 import static android.os.vibrator.Flags.FLAG_PRIMITIVE_COMPOSITION_ABSOLUTE_DELAY;
 import static android.os.vibrator.Flags.FLAG_VENDOR_VIBRATION_EFFECTS;
-import static android.os.vibrator.Flags.FLAG_VIBRATION_XML_APIS;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -62,7 +59,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.Base64;
 
@@ -79,7 +75,6 @@ import javax.xml.parsers.ParserConfigurationException;
         "android.os.vibrator.persistence.VibrationXmlParser#parse",
         "android.os.vibrator.persistence.VibrationXmlSerializer#serialize"
 })
-@RequiresFlagsEnabled(FLAG_VIBRATION_XML_APIS)
 public class VibrationEffectXmlSerializationTest {
 
     @Rule
@@ -1489,44 +1484,6 @@ public class VibrationEffectXmlSerializationTest {
         assertThrows(VibrationXmlSerializer.SerializationFailedException.class,
                 () -> VibrationXmlSerializer.serialize(
                         VibrationEffect.get(VibrationEffect.EFFECT_TEXTURE_TICK),
-                        writer));
-        assertThat(writer.toString()).isEmpty();
-
-        // Step with non-default frequency.
-        assertThrows(VibrationXmlSerializer.SerializationFailedException.class,
-                () -> VibrationXmlSerializer.serialize(
-                        VibrationEffect.startWaveform(targetFrequency(150f))
-                                .addSustain(Duration.ofMillis(100))
-                                .build(),
-                        writer));
-        assertThat(writer.toString()).isEmpty();
-
-        // Step with non-integer amplitude.
-        assertThrows(VibrationXmlSerializer.SerializationFailedException.class,
-                () -> VibrationXmlSerializer.serialize(
-                        VibrationEffect.startWaveform(targetAmplitude(0.00123f))
-                                .addSustain(Duration.ofMillis(100))
-                                .build(),
-                        writer));
-        assertThat(writer.toString()).isEmpty();
-
-        // Waveform with ramp segments
-        assertThrows(VibrationXmlSerializer.SerializationFailedException.class,
-                () -> VibrationXmlSerializer.serialize(
-                        VibrationEffect.startWaveform()
-                                .addSustain(Duration.ofMillis(100))
-                                .addTransition(Duration.ofMillis(50), targetAmplitude(1))
-                                .build(),
-                        writer));
-        assertThat(writer.toString()).isEmpty();
-
-        // Composition with non-primitive segments
-        assertThrows(VibrationXmlSerializer.SerializationFailedException.class,
-                () -> VibrationXmlSerializer.serialize(
-                        VibrationEffect.startComposition()
-                                .addPrimitive(PRIMITIVE_CLICK)
-                                .addEffect(VibrationEffect.createPredefined(EFFECT_CLICK))
-                                .compose(),
                         writer));
         assertThat(writer.toString()).isEmpty();
     }

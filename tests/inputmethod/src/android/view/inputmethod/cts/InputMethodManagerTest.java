@@ -49,11 +49,13 @@ import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.SecurityTest;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.WindowManagerStateHelper;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.Flags;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -88,7 +90,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @MediumTest
@@ -101,12 +102,19 @@ public final class InputMethodManagerTest {
     private static final String HIDDEN_FROM_PICKER_IME_ID =
             "com.android.cts.hiddenfrompickerime/.HiddenFromPickerIme";
     private static final String HIDDEN_FROM_PICKER_IME_LABEL = "Hidden From Picker IME";
+    /**
+     * Title of the IME Switcher Menu window, to be kept in sync with the value defined in the
+     * {@code InputMethodMenuController}.
+     */
+    private static final String IME_SWITCHER_MENU_WINDOW_TITLE = "IME Switcher Menu";
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     // TODO(b/371520375): Remove after UiAutomator scroll waits for animation to finish.
     private static final long SCROLL_TIMEOUT_MS = 500;
 
     /** Percentage to scroll by, to reach the top of a scrollable item. */
     private static final float SCROLL_TOP_PERCENT = 100;
+
+    private final DeviceFlagsValueProvider mFlagsValueProvider = new DeviceFlagsValueProvider();
 
     private final WindowManagerStateHelper mWmStateHelper = new WindowManagerStateHelper();
 
@@ -291,6 +299,10 @@ public final class InputMethodManagerTest {
     public void testInputMethodPickerShownItems() {
         assumeFalse(mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_AUTOMOTIVE));
+        if (!mFlagsValueProvider.getBoolean(Flags.FLAG_COMPUTE_IME_PARENT_NULL_IME_WINDOW)) {
+            assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                    PackageManager.FEATURE_WATCH));
+        }
         assumeTrue(mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_INPUT_METHODS));
         enableImes(MOCK_IME_ID, HIDDEN_FROM_PICKER_IME_ID);
@@ -347,6 +359,10 @@ public final class InputMethodManagerTest {
     public void testInputMethodPickerSwitchIme() throws Exception {
         assumeFalse(mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_AUTOMOTIVE));
+        if (!mFlagsValueProvider.getBoolean(Flags.FLAG_COMPUTE_IME_PARENT_NULL_IME_WINDOW)) {
+            assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                    PackageManager.FEATURE_WATCH));
+        }
         assumeTrue(mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_INPUT_METHODS));
         // Initialize MockIME (without setting it as current IME) before selecting it from the menu.
@@ -453,14 +469,25 @@ public final class InputMethodManagerTest {
 
         // Test InputMethodManager#showInputMethodPicker() works as expected.
         mImManager.showInputMethodPicker();
+        final boolean computeImeParentNullIme =
+                mFlagsValueProvider.getBoolean(Flags.FLAG_COMPUTE_IME_PARENT_NULL_IME_WINDOW);
         mWmStateHelper.waitAndAssert(
                 WindowManagerStateHelper.focusedActivity(testActivity.getComponentName())
-                        .and(Predicate.not(WindowManagerStateHelper::activityWindowFocused))
+                        .and(state -> !computeImeParentNullIme
+                                || !WindowManagerStateHelper.activityWindowFocused(state))
                         .and(state -> state.getMatchingWindows(
                                         ws -> ws.isSurfaceShown()
+                                                && ws.isVisible()
+                                                && (computeImeParentNullIme || ws.getName().equals(
+                                                        IME_SWITCHER_MENU_WINDOW_TITLE))
                                                 && ws.getType() == TYPE_INPUT_METHOD_DIALOG)
                                 .findAny().isPresent()),
                 "Input Method Dialog window should be focused on top of test activity");
+        final int displayId = testActivity.getDisplayId();
+        assertTrue("Failed to wait for app transition to idle on display " + displayId,
+                mWmStateHelper.waitForAppTransitionIdleOnDisplay(displayId));
+        mInstrumentation.getUiAutomation().syncInputTransactions();
+        mInstrumentation.waitForIdleSync();
         assertWithMessage("Input Method Switcher Menu should be shown")
                 .that(isInputMethodPickerShown(mImManager))
                 .isTrue();

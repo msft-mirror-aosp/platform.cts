@@ -22,6 +22,7 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.LargeTest;
+import android.platform.test.flag.junit.host.DeviceFlags;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.tradefed.device.DeviceNotAvailableException;
@@ -29,7 +30,6 @@ import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
 import com.android.tradefed.util.RunUtil;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -37,14 +37,11 @@ import org.junit.runner.RunWith;
 @RunWith(DeviceJUnit4ClassRunner.class)
 public final class UserManagerHostTest extends BaseMultiUserTest {
 
-    @Rule
-    public final SupportsMultiUserRule mSupportsMultiUserRule = new SupportsMultiUserRule(this);
-
     @Test
     @ApiTest(apis = {"android.os.UserManager#getPreviousForegroundUser"})
     public void getPreviousForegroundUser_correctAfterReboot() throws Exception {
         assumeNotInteractiveHsum();
-        assumeNewUsersCanBeAdded(2);
+        assumeSecondaryUsersCanBeAdded(2);
 
         final int userId1 = getDevice().createUser("test_user_1");
         assertSwitchToUser(userId1);
@@ -68,7 +65,7 @@ public final class UserManagerHostTest extends BaseMultiUserTest {
     @ApiTest(apis = {"android.os.UserManager#getPreviousForegroundUser"})
     public void getPreviousForegroundUser_interactiveHsum_correctAfterReboot() throws Exception {
         assumeInteractiveHsum();
-        assumeNewUsersCanBeAdded(2);
+        assumeSecondaryUsersCanBeAdded(2);
         assertSwitchToUser(USER_SYSTEM);
 
         int userId1 = getDevice().createUser("test_user_1");
@@ -139,15 +136,21 @@ public final class UserManagerHostTest extends BaseMultiUserTest {
         }
     }
 
-    private void assumeNewUsersCanBeAdded(int noOfUsers) throws DeviceNotAvailableException {
-        assumeTrue("Cannot allow adding " + noOfUsers + " new users.",
-                noOfUsers <= remainingUsersAllowedToBeCreated());
-    }
-
-    private int remainingUsersAllowedToBeCreated() throws DeviceNotAvailableException {
-        int nonGuestUsersCount =  (int) getDevice().getUserInfos().values().stream()
-                .filter(userInfo -> !userInfo.isGuest())
-                .count();
-        return getDevice().getMaxNumberOfUsersSupported() - nonGuestUsersCount;
+    private void assumeSecondaryUsersCanBeAdded(int noOfUsers) throws DeviceNotAvailableException {
+        assumeSupportsSecondaryUser();
+        if (!Boolean.valueOf(DeviceFlags.createDeviceFlags(getDevice())
+                .getFlagValue("android.multiuser.consistent_max_users"))) {
+            int nonGuestUsersCount =  (int) getDevice().getUserInfos().values().stream()
+                    .filter(userInfo -> !userInfo.isGuest())
+                    .count();
+            int remainingUsersAllowedToBeCreated
+                    = getDevice().getMaxNumberOfUsersSupported() - nonGuestUsersCount;
+            assumeTrue("Cannot allow adding " + noOfUsers + " new users.",
+                    noOfUsers <= remainingUsersAllowedToBeCreated);
+        }
+        assumeTrue(
+                "Cannot allow adding " + noOfUsers + " new users.",
+                getDevice().getRemainingCreatableUserCount("android.os.usertype.full.SECONDARY")
+                        >= noOfUsers);
     }
 }

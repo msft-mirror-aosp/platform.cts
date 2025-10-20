@@ -17,6 +17,7 @@
 package com.android.cts.releaseparser;
 
 import com.android.cts.releaseparser.ReleaseProto.*;
+
 import com.google.protobuf.TextFormat;
 
 import java.io.BufferedReader;
@@ -251,7 +252,8 @@ public class AndroidManifestParser extends FileParser {
     }
 
     private static final String USAGE_MESSAGE =
-            "Usage: java -jar releaseparser.jar com.android.cts.releaseparser.ApkParser [-options] <path> [args...]\n"
+            "Usage: java -jar releaseparser.jar com.android.cts.releaseparser.ApkParser [-options]"
+                    + " <path> [args...]\n"
                     + "           to prase an APK for API\n"
                     + "Options:\n"
                     + "\t-i PATH\t APK path \n";
@@ -290,6 +292,7 @@ public class AndroidManifestParser extends FileParser {
         File apkFile = new File(apkFileName);
         AndroidManifestParser manifestParser = new AndroidManifestParser(apkFile);
         System.out.println();
-        System.out.println(TextFormat.printToString(manifestParser.getAppInfo()));
+        TextFormat.printer().print(manifestParser.getAppInfo(), System.out);
+        System.out.println();
     }
 }

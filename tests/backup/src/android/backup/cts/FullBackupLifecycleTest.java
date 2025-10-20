@@ -18,6 +18,8 @@ package android.backup.cts;
 
 import static com.android.compatibility.common.util.BackupUtils.LOCAL_TRANSPORT_TOKEN;
 
+import static org.junit.Assert.assertEquals;
+
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -26,6 +28,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.server.backup.Flags;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -46,6 +49,12 @@ public class FullBackupLifecycleTest extends BaseBackupCtsTest {
     @Before
     public void setUp() throws Exception {
         super.setUp();
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        clearLocalTransportParameters();
+        super.tearDown();
     }
 
     @Test
@@ -128,5 +137,70 @@ public class FullBackupLifecycleTest extends BaseBackupCtsTest {
                 "onRestoreFile with FullRestoreDataInput",
                 "onRestoreFinished",
                 "onDestroy");
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CROSS_PLATFORM_TRANSFER)
+    @Test
+    public void testCrossPlatformTransfer_transportFlagAndContentVersionSet() throws Exception {
+        if (!isBackupSupported()) {
+            return;
+        }
+        enableLocalTransportCrossPlatformTransfer();
+
+        String backupSeparator = markLogcat();
+
+        // Make sure there's something to backup
+        createTestFileOfSize(BACKUP_APP_NAME, LOCAL_TRANSPORT_CONFORMING_FILE_SIZE);
+
+        // Request backup and wait for it to complete
+        getBackupUtils().backupNowSync(BACKUP_APP_NAME);
+
+        waitForLogcat(
+                TIMEOUT_SECONDS,
+                backupSeparator,
+                "onCreate",
+                "Cross platform backup requested",
+                "onDestroy");
+
+        String restoreSeparator = markLogcat();
+
+        // Now request restore and wait for it to complete
+        getBackupUtils().restoreSync(LOCAL_TRANSPORT_TOKEN, BACKUP_APP_NAME);
+
+        waitForLogcat(
+                TIMEOUT_SECONDS,
+                restoreSeparator,
+                "onCreate",
+                "Cross platform restore requested, content version is 1.0",
+                "onRestoreFile with app version code ",
+                "onRestoreFile with FullRestoreDataInput",
+                "onRestoreFinished",
+                "onDestroy");
+    }
+
+    private void enableLocalTransportCrossPlatformTransfer() throws Exception {
+        int userId = getBackupUtils().getCurrentUserId();
+        getBackupUtils()
+                .executeShellCommandSync(
+                        "settings --user "
+                                + userId
+                                + " put secure backup_local_transport_parameters"
+                                + " is_cross_platform_transfer_ios=true");
+        String output =
+                getBackupUtils()
+                        .executeShellCommandAndReturnOutput(
+                                "settings get --user "
+                                        + userId
+                                        + " secure backup_local_transport_parameters");
+        assertEquals("is_cross_platform_transfer_ios=true\n", output);
+    }
+
+    private void clearLocalTransportParameters() throws Exception {
+        int userId = getBackupUtils().getCurrentUserId();
+        getBackupUtils()
+                .executeShellCommandSync(
+                        "settings delete --user "
+                                + userId
+                                + " secure backup_local_transport_parameters");
     }
 }

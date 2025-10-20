@@ -17,18 +17,23 @@ package com.android.cts.devicepolicy;
 
 import static com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.FEATURE_MANAGED_USERS;
 
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertWithMessage;
+
+import static org.junit.Assume.assumeTrue;
 
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresAdditionalFeatures;
+import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil.CLog;
+
+import com.google.common.base.Preconditions;
 
 import org.junit.Test;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public final class UserRestrictionsTest extends BaseDevicePolicyTest {
+public final class UserRestrictionsTest extends BaseDeviceOwnerTest {
     private static final String DEVICE_ADMIN_PKG = "com.android.cts.deviceandprofileowner";
     private static final String DEVICE_ADMIN_APK = "CtsDeviceAndProfileOwnerApp.apk";
     private static final String ADMIN_RECEIVER_TEST_CLASS
@@ -53,17 +58,15 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
     public void setUp() throws Exception {
         super.setUp();
 
-        // TODO(b/435528858): get from DevicePolicyUsersPreparer
-        mInitialUser = getMainUser();
-
-        mRemoveOwnerInTearDown = false;
+        mInitialUser = DevicePolicyUsersPreparer.getInitialCurrentUserId();
     }
 
     @Override
     public void tearDown() throws Exception {
         if (mRemoveOwnerInTearDown) {
             String componentName = DEVICE_ADMIN_PKG + "/" + ADMIN_RECEIVER_TEST_CLASS;
-            assertTrue("Failed to clear owner", removeAdmin(componentName, mDeviceOwnerUserId));
+            assertWithMessage("removeAdmin(%s, %s)", componentName, mDeviceOwnerUserId)
+                    .that(removeAdmin(componentName, mDeviceOwnerUserId)).isTrue();
             if (isHeadlessSystemUserMode()) {
                 boolean removed = removeAdmin(componentName, mInitialUser);
                 if (!removed) {
@@ -89,26 +92,38 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
     public void testUserRestrictions_deviceOwnerOnly() throws Exception {
         setDo();
 
-        try {
+        safeRun(() -> {
             runTests("userrestrictions.DeviceOwnerUserRestrictionsTest",
                     "testDefaultRestrictions", mDeviceOwnerUserId);
             runTests("userrestrictions.DeviceOwnerUserRestrictionsTest",
                     "testSetAllRestrictions", mDeviceOwnerUserId);
             runTests("userrestrictions.DeviceOwnerUserRestrictionsTest",
                     "testBroadcast", mDeviceOwnerUserId);
-        } finally {
+        }, () ->
             // Clear all restrictions restrictions on user 0.
             runTests("userrestrictions.DeviceOwnerUserRestrictionsTest",
-                    "testClearAllRestrictions", mDeviceOwnerUserId);
-        }
+                    "testClearAllRestrictions", mDeviceOwnerUserId)
+        );
+    }
+
+    private void assumeInitialUserIsTheMainUser() throws DeviceNotAvailableException {
+        // TODO(b/441123807): temporary hac^H^H^Hworkaround as no_usb_file_transfer currently cannot
+        // be set on "secondary" users, even though the feature itself is now available to them
+        Integer mainUserId = getDevice().getMainUserId();
+        assumeTrue("temporarily disabled on mainless-user device", mainUserId != null);
+        Preconditions.checkState(
+                mainUserId == mInitialUser,
+                "initial user (%s) is not the main user (%s)",
+                mInitialUser,
+                mainUserId);
     }
 
     @Test
     public void testUserRestrictions_primaryProfileOwnerOnly() throws Exception {
-        assumeHasMainUser();
+        assumeInitialUserIsTheMainUser();
         setPoAsUser(mInitialUser);
 
-        try {
+        safeRun(() -> {
             runTests(
                     "userrestrictions.PrimaryProfileOwnerUserRestrictionsTest",
                     "testDefaultRestrictions",
@@ -121,35 +136,35 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
                     "userrestrictions.PrimaryProfileOwnerUserRestrictionsTest",
                     "testBroadcast",
                     mInitialUser);
-        } finally {
+        }, () ->
             // Clear all restrictions restrictions on the initial user.
             runTests(
                     "userrestrictions.PrimaryProfileOwnerUserRestrictionsTest",
                     "testClearAllRestrictions",
-                    mInitialUser);
-        }
+                    mInitialUser)
+        );
     }
 
     // Checks restrictions for managed user (NOT managed profile).
     @Test
     public void testUserRestrictions_secondaryProfileOwnerOnly() throws Exception {
-        assumeSupportsMultiUser();
+        assumeSupportsSecondaryUsers();
 
         final int secondaryUserId = createUser();
         setPoAsUser(secondaryUserId);
 
-        try {
+        safeRun(() -> {
             runTests("userrestrictions.SecondaryProfileOwnerUserRestrictionsTest",
                     "testDefaultRestrictions", secondaryUserId);
             runTests("userrestrictions.SecondaryProfileOwnerUserRestrictionsTest",
                     "testSetAllRestrictions", secondaryUserId);
             runTests("userrestrictions.SecondaryProfileOwnerUserRestrictionsTest",
                     "testBroadcast", secondaryUserId);
-        } finally {
+        }, () ->
             // Clear all restrictions restrictions on secondary user.
             runTests("userrestrictions.SecondaryProfileOwnerUserRestrictionsTest",
-                    "testClearAllRestrictions", secondaryUserId);
-        }
+                    "testClearAllRestrictions", secondaryUserId)
+        );
     }
 
     // Checks restrictions for managed profile.
@@ -164,18 +179,18 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
         startUser(profileUserId);
         setPoAsUser(profileUserId);
 
-        try {
+        safeRun(() -> {
             runTests("userrestrictions.ManagedProfileOwnerUserRestrictionsTest",
                     "testDefaultRestrictions", profileUserId);
             runTests("userrestrictions.ManagedProfileOwnerUserRestrictionsTest",
                     "testSetAllRestrictions", profileUserId);
             runTests("userrestrictions.ManagedProfileOwnerUserRestrictionsTest",
                     "testBroadcast", profileUserId);
-        } finally {
+        }, () ->
             // Clear all restrictions restrictions on profile.
             runTests("userrestrictions.ManagedProfileOwnerUserRestrictionsTest",
-                    "testClearAllRestrictions", profileUserId);
-        }
+                    "testClearAllRestrictions", profileUserId)
+        );
     }
 
     /**
@@ -183,7 +198,7 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
      */
     @Test
     public void testUserRestrictions_layering() throws Exception {
-        assumeSupportsMultiUser();
+        assumeSupportsSecondaryUsers();
         setDo();
 
         final int secondaryUserId = createUserAndWaitStart();
@@ -193,7 +208,7 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
             setPoAsUser(secondaryUserId);
         }
 
-        try {
+        safeRun(() -> {
             // Ensure that UserManager differentiates its own restrictions from DO restrictions.
             runTests("userrestrictions.DeviceOwnerUserRestrictionsTest",
                     "testHasBaseUserRestrictions", mDeviceOwnerUserId);
@@ -221,14 +236,15 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
             // Now only PO restrictions should be set on the secondary user.
             runTests("userrestrictions.SecondaryProfileOwnerUserRestrictionsTest",
                     "testLocalRestrictionsOnly", secondaryUserId);
-        } finally {
+        }, () ->
             // Clear all restrictions restrictions on user 0.
             runTests("userrestrictions.DeviceOwnerUserRestrictionsTest",
-                    "testClearAllRestrictions", mDeviceOwnerUserId);
+                    "testClearAllRestrictions", mDeviceOwnerUserId),
+           () ->
             // Clear all restrictions restrictions on secondary user.
             runTests("userrestrictions.SecondaryProfileOwnerUserRestrictionsTest",
-                    "testClearAllRestrictions", secondaryUserId);
-        }
+                    "testClearAllRestrictions", secondaryUserId)
+        );
     }
 
     /**
@@ -236,8 +252,8 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
      */
     @Test
     public void testUserRestrictions_layering_profileOwnerNoLeaking() throws Exception {
-        assumeSupportsMultiUser();
-        assumeHasMainUser();
+        assumeSupportsSecondaryUsers();
+        assumeInitialUserIsTheMainUser();
 
         // Set PO on the initial user.
         setPoAsUser(mInitialUser);
@@ -246,7 +262,7 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
         final int secondaryUserId = createUserAndWaitStart();
         setPoAsUser(secondaryUserId);
 
-        try {
+        safeRun(() -> {
             // Let main-user PO set all restrictions.
             runTests(
                     "userrestrictions.PrimaryProfileOwnerUserRestrictionsTest",
@@ -256,16 +272,17 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
             // Secondary users shouldn't see any of them. Leaky user restrictions are excluded.
             runTests("userrestrictions.SecondaryProfileOwnerUserRestrictionsTest",
                     "testDefaultAndLeakyRestrictions", secondaryUserId);
-        } finally {
+        }, () ->
             // Clear all restrictions restrictions on the initial user.
             runTests(
                     "userrestrictions.PrimaryProfileOwnerUserRestrictionsTest",
                     "testClearAllRestrictions",
-                    mInitialUser);
+                    mInitialUser),
+           () ->
             // Clear all restrictions restrictions on secondary user.
             runTests("userrestrictions.SecondaryProfileOwnerUserRestrictionsTest",
-                    "testClearAllRestrictions", secondaryUserId);
-        }
+                    "testClearAllRestrictions", secondaryUserId)
+        );
     }
 
     /**
@@ -274,7 +291,7 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
      */
     @Test
     public void testUserRestrictions_profileGlobalRestrictionsAsDo() throws Exception {
-        assumeSupportsMultiUser();
+        assumeSupportsSecondaryUsers();
         setDo();
         final int secondaryUserId;
         if (!isHeadlessSystemUserMode()) {
@@ -321,9 +338,10 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
     private void setPoAsUser(int userId) throws Exception {
         installAppAsUser(DEVICE_ADMIN_APK, /* grantPermssions= */true,
                 /* dontKillApp= */ true, userId);
-        assertTrue("Failed to set profile owner",
-                setProfileOwner(DEVICE_ADMIN_PKG + "/" + ADMIN_RECEIVER_TEST_CLASS,
-                        userId, /* expectFailure */ false));
+        String componentName = DEVICE_ADMIN_PKG + "/" + ADMIN_RECEIVER_TEST_CLASS;
+        assertWithMessage("Set profile owner %s on user %s", componentName, userId)
+                .that(setProfileOwner(componentName, userId, /* expectFailure= */ false))
+                .isTrue();
         // If PO is not in primary user, it will be removed with the user.
         if (userId == mDeviceOwnerUserId) {
             mRemoveOwnerInTearDown = true;
@@ -334,9 +352,10 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
     private void setDo() throws Exception {
         installDeviceOwnerApp(DEVICE_ADMIN_APK);
 
-        assertTrue("Failed to set device owner",
-                setDeviceOwner(DEVICE_ADMIN_PKG + "/" + ADMIN_RECEIVER_TEST_CLASS,
-                        mDeviceOwnerUserId, /*expectFailure*/ false));
+        String componentName = DEVICE_ADMIN_PKG + "/" + ADMIN_RECEIVER_TEST_CLASS;
+        assertWithMessage("set device owner %s on user %s", componentName, mDeviceOwnerUserId)
+                .that(setDeviceOwner(DEVICE_ADMIN_PKG + "/" + ADMIN_RECEIVER_TEST_CLASS,
+                        mDeviceOwnerUserId, /* expectFailure= */ false)).isTrue();
         mRemoveOwnerInTearDown = true;
     }
 

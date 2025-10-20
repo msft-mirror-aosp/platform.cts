@@ -33,6 +33,9 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import org.junit.Assert;
 import org.junit.AssumptionViolatedException;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
@@ -89,6 +92,113 @@ public final class TestUtils {
         } catch (PackageManager.NameNotFoundException e) {
             Assert.fail(e.getMessage());
         }
+    }
+
+    /**
+     * Checks if timestamps in the list are strictly increasing
+     *
+     * @param ptsList input timestamp list
+     * @param lastPts timestamp for index -1
+     * @param msg optional param. can be null. Useful to capture diagnostic information if lists are
+     *         not identical
+     */
+    public static boolean isPtsStrictlyIncreasing(List<Long> ptsList, long lastPts,
+            StringBuilder msg) {
+        boolean res = true;
+        for (int i = 0; i < ptsList.size(); i++) {
+            if (lastPts < ptsList.get(i)) {
+                lastPts = ptsList.get(i);
+            } else {
+                if (msg != null) {
+                    msg.append("Timestamp values are not strictly increasing. \n");
+                    msg.append("Frame indices around which timestamp values decreased :- \n");
+                    for (int j = Math.max(0, i - 3); j < Math.min(ptsList.size(), i + 3); j++) {
+                        if (j == 0) {
+                            msg.append(String.format(Locale.getDefault(),
+                                    "pts of frame idx -1 is %d \n", lastPts));
+                        }
+                        msg.append(String.format(Locale.getDefault(),
+                                "pts of frame idx %d is %d \n", j, ptsList.get(j)));
+                    }
+                }
+                res = false;
+                break;
+            }
+        }
+        return res;
+    }
+
+    /**
+     * Checks if input and output timestamp lists are identical. Returns true if the lists are
+     * identical and false otherwise. If the lists are not identical, reasons behind mismatch are
+     * stored in optional msg param for diagnostic purposes. This function is useful for verifying
+     * the results of media codec components.
+     *
+     * @param refList reference timestamp list
+     * @param testList test timestamp list
+     * @param msg optional param. can be null. Useful to capture diagnostic information if lists are
+     *         not identical
+     */
+    private static boolean arePtsListsIdentical(
+            List<Long> refList, List<Long> testList, StringBuilder msg) {
+        boolean res = true;
+        if (refList.size() != testList.size()) {
+            msg.append("Reference and test timestamps list sizes are not identical \n");
+            msg.append(String.format(
+                    Locale.getDefault(), "reference pts list size is %d \n", refList.size()));
+            msg.append(String.format(
+                    Locale.getDefault(), "test pts list size is %d \n", testList.size()));
+            res = false;
+        }
+        for (int i = 0; i < Math.min(refList.size(), testList.size()); i++) {
+            if (!Objects.equals(refList.get(i), testList.get(i))) {
+                msg.append(String.format(Locale.getDefault(),
+                        "Frame idx %d, ref pts %dus, test pts %dus \n", i, refList.get(i),
+                        testList.get(i)));
+                res = false;
+            }
+        }
+        if (refList.size() < testList.size()) {
+            for (int i = refList.size(); i < testList.size(); i++) {
+                msg.append(String.format(Locale.getDefault(),
+                        "Frame idx %d, ref pts EMPTY, test pts %dus \n", i, testList.get(i)));
+            }
+        } else if (refList.size() > testList.size()) {
+            for (int i = testList.size(); i < refList.size(); i++) {
+                msg.append(String.format(Locale.getDefault(),
+                        "Frame idx %d, ref pts %dus, test pts EMPTY \n", i, refList.get(i)));
+            }
+        }
+        if (!res) {
+            msg.append("Are frames for which timestamps differ between reference and test. \n");
+        }
+        return res;
+    }
+
+    /**
+     * Checks if input and output timestamp lists are identical. The input timestamp list is
+     * unconditionally sorted and the output timestamp list is sorted if requested. The function
+     * returns true if the lists are identical after sorting and false otherwise. If the lists are
+     * not identical, reasons behind mismatch are stored in optional msg param for diagnostic
+     * purposes. This function is useful for verifying the results of video codec components with
+     * bframes enabled.
+     *
+     * @param inpPtsList input timestamp list
+     * @param outPtsList output timestamp list
+     * @param requireSorting sort output timestamp list before comparison
+     * @param msg optional param. can be null. Useful to capture diagnostic information if lists are
+     *         not identical
+     */
+    public static boolean arePtsListsIdentical(List<Long> inpPtsList, List<Long> outPtsList,
+            boolean requireSorting, StringBuilder msg) {
+        ArrayList<Long> inpPtsListOrdered = new ArrayList<>(inpPtsList);
+        Collections.sort(inpPtsListOrdered);
+        if (requireSorting) {
+            ArrayList<Long> outPtsListOrdered = new ArrayList<>(outPtsList);
+            Collections.sort(outPtsListOrdered);
+            return arePtsListsIdentical(inpPtsListOrdered, outPtsListOrdered, msg);
+        }
+        return arePtsListsIdentical(inpPtsListOrdered, outPtsList, msg);
     }
 
     /**

@@ -122,7 +122,7 @@ public class AttestKeyTest {
                             .build());
             fail("Expected exception.");
         } catch (InvalidAlgorithmParameterException e) {
-            assertThat(e.getMessage(), is("Invalid attestKey, does not have PURPOSE_ATTEST_KEY"));
+            assertThat(e.getMessage(), is("Invalid attestKey: does not have PURPOSE_ATTEST_KEY"));
         }
     }
 

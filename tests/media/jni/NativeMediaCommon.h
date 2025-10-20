@@ -48,6 +48,7 @@ extern const char* AMEDIA_MIMETYPE_AUDIO_FLAC;
 extern const char* AMEDIA_MIMETYPE_AUDIO_VORBIS;
 extern const char* AMEDIA_MIMETYPE_AUDIO_OPUS;
 extern const char* AMEDIA_MIMETYPE_AUDIO_RAW;
+extern const char* AMEDIA_MIMETYPE_AUDIO_IAMF;
 
 extern const float kRmsErrorTolerance;
 

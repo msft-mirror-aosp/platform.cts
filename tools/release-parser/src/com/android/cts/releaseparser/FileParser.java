@@ -18,13 +18,13 @@ package com.android.cts.releaseparser;
 
 import com.android.compatibility.common.util.ReadElf;
 import com.android.cts.releaseparser.ReleaseProto.*;
+
 import com.google.protobuf.TextFormat;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
@@ -187,12 +187,13 @@ public class FileParser {
     public static void writeTextFormatMessage(String outputFileName, Entry fileEntry)
             throws IOException {
         if (outputFileName != null) {
-            FileOutputStream txtOutput = new FileOutputStream(outputFileName);
-            txtOutput.write(TextFormat.printToString(fileEntry).getBytes(Charset.forName("UTF-8")));
+            FileWriter txtOutput = new FileWriter(outputFileName);
+            TextFormat.printer().print(fileEntry, txtOutput);
             txtOutput.flush();
             txtOutput.close();
         } else {
-            System.out.println(TextFormat.printToString(fileEntry));
+            TextFormat.printer().print(fileEntry, System.out);
+            System.out.println();
         }
     }
 

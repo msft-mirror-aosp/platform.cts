@@ -9,11 +9,11 @@ import sys
 
 import api_flags_utils
 import cdm_base_test
+import test_utils
 
 from android.platform.test.annotations import ApiTest, CddTest
 from mobly import asserts
 from mobly import test_runner
-from test_utils import wait
 from time import sleep
 
 @CddTest(requirements = ["3.16/C-1-1", "3.16/C-1-2"])
@@ -27,7 +27,7 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         """Test that CDM can create association with another BT device"""
 
         # Skip if device is a watch
-        asserts.skip_if(self.primary.cdm.isWatch(), 'Cannot create association as a watch.')
+        test_utils.assume_not_watch(self.primary)
 
         # Create association
         self.secondary.cdm.btBecomeDiscoverable(cdm_base_test.BT_DISCOVERABLE_TIME)
@@ -48,22 +48,14 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         """Test that CDM can perform permissions sync from one device to another via BT"""
 
         # Skip if either device is a watch
-        asserts.skip_if(self.primary.cdm.isWatch(), 'Cannot create association as a watch.')
-        asserts.skip_if(self.secondary.cdm.isWatch(), 'Cannot create association as a watch.')
+        test_utils.assume_not_watch(self.primary)
+        test_utils.assume_not_watch(self.secondary)
 
-        # Assume both devices are on same build type (debug vs user)
-        primary_debuggable = self.primary.build_info['debuggable'] == '1'
-        secondary_debuggable = self.secondary.build_info['debuggable'] == '1'
-        asserts.skip_if(primary_debuggable != secondary_debuggable, 'Both devices must be on the same type of build')
+        # Assert both devices are on same build type (debug vs user)
+        test_utils.assert_build_types_match(self.primary, self.secondary)
 
-        # If on user build, assume AVF compliance for peer profiles
-        if not primary_debuggable:
-            primary_attestation = self.primary.cdm.generateAttestation()
-            secondary_attestation = self.secondary.cdm.generateAttestation()
-            primary_verified = self.secondary.cdm.verifyAttestation(primary_attestation)
-            secondary_verified = self.primary.cdm.verifyAttestation(secondary_attestation)
-            asserts.skip_if(not primary_verified, 'Secondary device failed to verify primary device')
-            asserts.skip_if(not secondary_verified, 'Primary device failed to verify secondary device')
+        # If on user build, assert AVF compliance for peer profiles
+        test_utils.assert_attestation_verified(self.primary, self.secondary)
 
         # Create associations
         self.secondary.cdm.btBecomeDiscoverable(cdm_base_test.BT_DISCOVERABLE_TIME)
@@ -87,10 +79,10 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         """This tests that CDM can remove bluetooth bond from an associated device."""
 
         # Skip if device is a watch
-        asserts.skip_if(self.primary.cdm.isWatch(), 'Cannot create association as a watch.')
+        test_utils.assume_not_watch(self.primary)
 
         # Skip if removeBond API flag is disabled
-        api_flags_utils.assume_enabled(self.primary, 'unpair_associated_device')
+        api_flags_utils.assume_enabled(self.primary, 'android.companion', 'unpair_associated_device')
 
         # Associate and assert successful pairing
         self.secondary.cdm.btBecomeDiscoverable(cdm_base_test.BT_DISCOVERABLE_TIME)
@@ -112,7 +104,7 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         """Test that association persists after a device reboot"""
 
         # Skip if device is a watch
-        asserts.skip_if(self.primary.cdm.isWatch(), 'Cannot create association as a watch.')
+        test_utils.assume_not_watch(self.primary)
 
         # Create association
         self.secondary.cdm.btBecomeDiscoverable(cdm_base_test.BT_DISCOVERABLE_TIME)
@@ -138,11 +130,11 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         """
 
         # Skip if either device is a watch
-        asserts.skip_if(self.primary.cdm.isWatch(), 'Cannot create association as a watch.')
-        asserts.skip_if(self.secondary.cdm.isWatch(), 'Cannot create association as a watch.')
+        test_utils.assume_not_watch(self.primary)
+        test_utils.assume_not_watch(self.secondary)
 
         # Skip if device presence API flag is disabled
-        api_flags_utils.assume_enabled(self.primary, 'device_presence')
+        api_flags_utils.assume_enabled(self.primary, 'android.companion', 'device_presence')
 
         # Associate and start observing
         self.secondary.cdm.btBecomeDiscoverable(cdm_base_test.BT_DISCOVERABLE_TIME)
@@ -151,16 +143,127 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
 
         # Assert classic bluetooth pairing is detected
         self.bt_pair_devices()
-        connected = wait(lambda: self.primary.cdm.isAssociationBtConnected(secondary_id))
+        connected = test_utils.wait(lambda: self.primary.cdm.isAssociationBtConnected(secondary_id))
         asserts.assert_true(connected, 'Device appearance was not observed.')
 
         # Assert bluetooth unpair is detected
         self.bt_unpair_devices()
-        gone = wait(lambda: not self.primary.cdm.isAssociationBtConnected(secondary_id))
+        gone = test_utils.wait(lambda: not self.primary.cdm.isAssociationBtConnected(secondary_id))
         asserts.assert_true(gone, 'Device disappearance was not observed.')
 
         # Stop observing device presence
         self.primary.cdm.stopObservingDevicePresence(secondary_id)
+
+
+    @ApiTest(apis=[
+            'android.companion.CompanionDeviceManager#setLocalMetadata(int, java.lang.String, java.lang.String)',
+            'android.companion.CompanionDeviceManager#attachSystemDataTransport(int, java.io.InputStream, java.io.OutputStream)',
+            'android.companion.CompanionDeviceManager#detachSystemDataTransport(int)',
+    ])
+    def test_setLocalMetadata_broadcastsToAssociatedDevices(self):
+        """
+        This tests that CDM can set local metadata and broadcast it to
+        associated devices.
+        """
+
+        # Skip if either device is a watch
+        test_utils.assume_not_watch(self.primary)
+        test_utils.assume_not_watch(self.secondary)
+
+        # Skip if data sync API flag is disabled
+        api_flags_utils.assume_enabled(self.primary, 'android.companion', 'enable_data_sync')
+        api_flags_utils.assume_enabled(self.secondary, 'android.companion', 'enable_data_sync')
+
+        # Assert both devices are on same build type (debug vs user)
+        test_utils.assert_build_types_match(self.primary, self.secondary)
+
+        # If on user build, assert AVF compliance for peer profiles
+        test_utils.assert_attestation_verified(self.primary, self.secondary)
+
+        # Create associations
+        self.secondary.cdm.btBecomeDiscoverable(cdm_base_test.BT_DISCOVERABLE_TIME)
+        secondary_id = self.primary.cdm.associate(self.secondary.address)
+
+        self.primary.cdm.btBecomeDiscoverable(cdm_base_test.BT_DISCOVERABLE_TIME)
+        primary_id = self.secondary.cdm.associate(self.primary.address)
+
+        # Set local metadata _before_ transports are attached
+        user_id = self.primary.adb.current_user_id
+        shell_command = f'cmd companiondevice set-local-metadata {0} A lorem ipsum'.format(user_id)
+        self.primary.adb.shell(shell_command)
+
+        # Attach transports
+        self.bt_pair_devices()
+        self.secondary.cdm.attachServerSocket(primary_id)
+        self.primary.cdm.attachClientSocket(secondary_id)
+
+        # Assert that current metadata is broadcasted.
+        sleep(cdm_base_test.OPERATION_DELAY_TIME)
+        association = self.secondary.cdm.getAssociationInfo(primary_id)
+        asserts.assert_is_not_none(association, 'Missing association info.')
+        metadata = association.get('metadata').get('A')
+        asserts.assert_is_not_none(metadata, 'Did not receive metadata.')
+        asserts.assert_equal('ipsum', metadata.get('lorem'), 'Received incorrect metadata.')
+
+        # Set local metadata _after_ transports are attached
+        shell_command = f'cmd companiondevice set-local-metadata {0} B version 1'.format(user_id)
+        self.primary.adb.shell(shell_command)
+
+        # Assert that updated metadata is broadcasted
+        sleep(cdm_base_test.OPERATION_DELAY_TIME)
+        association = self.secondary.cdm.getAssociationInfo(primary_id)
+        asserts.assert_is_not_none(association, 'Missing association info.')
+        metadata = association.get('metadata').get('B')
+        asserts.assert_is_not_none(metadata, 'Did not receive metadata.')
+        asserts.assert_equal(1, metadata.get('version'), 'Received incorrect metadata.')
+
+
+    @ApiTest(apis=[
+            'android.companion.CompanionDeviceManager#requestHandoff(int, int, java.util.concurrent.Executor, android.companion.CompanionDeviceManager.HandoffRequestCallback)',
+            'android.companion.CompanionDeviceManager#registerRemoteTaskListener(java.util.concurrent.Executor, android.companion.CompanionDeviceManager.RemoteTaskListener)',
+            'android.companion.CompanionDeviceManager#unregisterRemoteTaskListener(android.companion.CompanionDeviceManager.RemoteTaskListener)',
+    ])
+    def test_handoff(self):
+        """Test that handoff can exchange data between devices"""
+
+        # Assert both devices are on same build type (debug vs user)
+        test_utils.assert_build_types_match(self.primary, self.secondary)
+
+        # If on user build, assert AVF compliance for peer profiles
+        test_utils.assert_attestation_verified(self.primary, self.secondary)
+
+        # Skip if task continuity flag is disabled
+        api_flags_utils.assume_enabled(self.primary, 'desktop_better_together', 'enable_task_continuity')
+        api_flags_utils.assume_enabled(self.secondary, 'desktop_better_together', 'enable_task_continuity')
+
+        # Create associations
+        self.secondary.cdm.btBecomeDiscoverable(cdm_base_test.BT_DISCOVERABLE_TIME)
+        secondary_id = self.primary.cdm.associate(self.secondary.address)
+
+        self.primary.cdm.btBecomeDiscoverable(cdm_base_test.BT_DISCOVERABLE_TIME)
+        primary_id = self.secondary.cdm.associate(self.primary.address)
+
+        # Enable handoff and attach transports
+        self.bt_pair_devices()
+        self.primary.cdm.enableHandoffForAssociation(secondary_id)
+        self.secondary.cdm.enableHandoffForAssociation(primary_id)
+        self.secondary.cdm.attachServerSocket(primary_id)
+        self.primary.cdm.attachClientSocket(secondary_id)
+
+        # Launch handoff activity on secondary device with attached "data" to hand off between devices
+        handoff_extras_data = 1
+        task_id = self.secondary.cdm.launchHandoffActivity(handoff_extras_data)
+        # Expect task information to be sent to primary device
+        didSynchronizeTask = self.primary.cdm.wasRemoteTaskReceived(task_id)
+        asserts.assert_true(didSynchronizeTask, 'Task not synchronized.')
+
+        # Request handoff and expect success
+        status = self.primary.cdm.requestTaskHandoffAndGetStatus(secondary_id, task_id)
+        asserts.assert_equal(0, status, 'Expected success.')
+
+        # Get data from handoff activity on secondary device to be accurate
+        launched_handoff_activity_data = self.primary.cdm.waitForHandoff()
+        asserts.assert_equal(handoff_extras_data, launched_handoff_activity_data, 'Invalid data received.')
 
 
 if __name__ == '__main__':

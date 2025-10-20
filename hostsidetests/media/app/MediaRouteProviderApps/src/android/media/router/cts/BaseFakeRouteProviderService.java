@@ -33,7 +33,7 @@ import java.util.Set;
 public abstract class BaseFakeRouteProviderService extends MediaRoute2ProviderService {
 
     /** Route information of routes provided by this instance. */
-    private final List<MediaRoute2Info> mAllRoutes;
+    protected final List<MediaRoute2Info> mAllRoutes;
 
     private final List<MediaRoute2Info> mPassiveScanRoutes;
 

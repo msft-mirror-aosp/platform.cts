@@ -126,7 +126,7 @@ public class MediaRouter2TestUtils {
      * Returns a set containing the {@link MediaRoute2Info#getOriginalId() original ids} of the
      * given routes.
      */
-    private static Set<String> getOriginalIds(List<MediaRoute2Info> routes) {
+    public static Set<String> getOriginalIds(List<MediaRoute2Info> routes) {
         return routes.stream().map(MediaRoute2Info::getOriginalId).collect(Collectors.toSet());
     }
 }

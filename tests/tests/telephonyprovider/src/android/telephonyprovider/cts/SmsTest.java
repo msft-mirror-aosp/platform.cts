@@ -45,9 +45,11 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.annotation.SuppressLint;
+import android.app.ActivityManager;
 import android.app.PendingIntent;
 import android.app.role.RoleManager;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
@@ -55,7 +57,9 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Process;
+import android.os.RemoteCallback;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -67,21 +71,28 @@ import android.util.Log;
 
 import androidx.test.filters.SmallTest;
 
+import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.annotations.AfterClass;
+import com.android.bedstead.harrier.annotations.BeforeClass;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CarrierPrivilegeUtils;
 import com.android.compatibility.common.util.SystemUtil;
 
-import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @SmallTest
+@RunWith(BedsteadJUnit4.class)
 public class SmsTest {
     private static final String TAG = "SmsTest";
     private static final String TEST_SMS_BODY = "TEST_SMS_BODY";
@@ -95,6 +106,9 @@ public class SmsTest {
     private RoleManager mRoleManager;
     private SmsTestHelper mSmsTestHelper;
     private BroadcastReceiver mSmsRetrieverReceiver;
+    private static final String APP_THAT_RETURNS_RETRIEVER_HASH =
+            "android.telephony.cts.smsretriever";
+    private ActivityManager mActivityManager;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -132,6 +146,7 @@ public class SmsTest {
                 // Ignored, as it's never called in this test
             }
         };
+        mActivityManager = mContext.getSystemService(ActivityManager.class);
     }
 
     /**
@@ -615,6 +630,7 @@ public class SmsTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    @EnsureHasNoDeviceOwner
     public void testOtpSms_defaultSmsAppCanRead() {
         final String message = getSmsRetrieverOtpMessage();
         Uri inserted = mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(TEST_ADDRESS,
@@ -624,6 +640,7 @@ public class SmsTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    @EnsureHasNoDeviceOwner
     public void testOtpSms_roleHoldingAppCanRead() throws Exception {
         final String message = getSmsRetrieverOtpMessage();
         List<String> smsOtpReadingRoles =
@@ -651,6 +668,7 @@ public class SmsTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    @EnsureHasNoDeviceOwner
     public void testOtpSms_defaultSmsAppCantUpdate() {
         Uri inserted = mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(TEST_ADDRESS,
                 getSmsRetrieverOtpMessage(), System.currentTimeMillis());
@@ -667,11 +685,16 @@ public class SmsTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    @EnsureHasNoDeviceOwner
     public void testOtpSms_standardAppCantRead() {
         final String message = getSmsRetrieverOtpMessage();
         Uri inserted =
                 mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(
-                        TEST_ADDRESS, message, System.currentTimeMillis(), TEST_THREAD_ID_1);
+                        TEST_ADDRESS,
+                        message,
+                        System.currentTimeMillis(),
+                        OTP_TYPE_CONTAINS_OTP,
+                        TEST_THREAD_ID_1);
         try {
             stopBeingDefaultSmsApp();
             // Message should be inaccessible when querying directly, or by conversation ID
@@ -685,6 +708,22 @@ public class SmsTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    @EnsureHasNoDeviceOwner
+    public void testOtpSms_retrieverHashOwningAppCanRead() {
+        final String message = TEST_OTP_SMS_BODY + " " + getSelfSmsRetrieverHash();
+        Uri inserted = mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(TEST_ADDRESS,
+                message, System.currentTimeMillis());
+        try {
+            stopBeingDefaultSmsApp();
+            assertSmsPresence(inserted, message, true);
+        } finally {
+            ensureDefaultSmsApp();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    @EnsureHasNoDeviceOwner
     public void testOtpSms_standardAppCanReadAfterOtpHidingTimeExpires() {
         final String message = getSmsRetrieverOtpMessage();
         long expiredOtpHidingTime =
@@ -701,6 +740,7 @@ public class SmsTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    @EnsureHasNoDeviceOwner
     public void testOtpSms_appWithReadSensitiveNotificationsCanRead() {
         final String message = getSmsRetrieverOtpMessage();
         Uri inserted = mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(TEST_ADDRESS,
@@ -717,6 +757,7 @@ public class SmsTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    @EnsureHasNoDeviceOwner
     public void testOtpSms_appWithCdmAssociationCanRead() {
         final String message = getSmsRetrieverOtpMessage();
         Uri inserted =
@@ -734,7 +775,13 @@ public class SmsTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    @EnsureHasNoDeviceOwner
     public void testOtpSms_appWithCarrierPrivilegeCanRead() throws Exception {
+        assumeTrue(
+                "Skipping test: No valid default subscription ID found.",
+                SubscriptionManager.isValidSubscriptionId(
+                        SubscriptionManager.getDefaultSubscriptionId()));
+
         final String message = getSmsRetrieverOtpMessage();
         assumeTrue(
                 mContext.getPackageManager()
@@ -756,6 +803,7 @@ public class SmsTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    @EnsureHasNoDeviceOwner
     public void testOtpSms_updatesFromOtpPending() {
         Uri inserted = mSmsTestHelper.insertTestSms(TEST_ADDRESS, getSmsRetrieverOtpMessage());
         SystemUtil.eventually(() -> assertSmsOtpColumn(inserted, OTP_TYPE_CONTAINS_OTP));
@@ -763,12 +811,25 @@ public class SmsTest {
 
     @Test
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    @EnsureHasDeviceOwner
+    public void testOtpSms_standardAppCanRead_ifOwnedDevice() {
+        final String message = getSmsRetrieverOtpMessage();
+        Uri inserted =
+                mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(
+                        TEST_ADDRESS, message, System.currentTimeMillis(), OTP_TYPE_NONE, -1);
+        assertSmsPresence(inserted, message, true);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    @EnsureHasNoDeviceOwner
     public void testOtpSms_otpFalsePositive() {
         Uri inserted = mSmsTestHelper.insertTestSms(TEST_ADDRESS, TEST_NOT_OTP_SMS_BODY);
         SystemUtil.eventually(() -> assertSmsOtpColumn(inserted, OTP_TYPE_NONE));
     }
 
-    private String getSmsRetrieverHash() {
+    // Gets the retriever hash belong to itself
+    private String getSelfSmsRetrieverHash() {
         Context context = getInstrumentation().getContext();
         Intent intent = new Intent("android.telephony.cts.action.SMS_RETRIEVED")
                 .setPackage(context.getPackageName());
@@ -776,6 +837,31 @@ public class SmsTest {
                 PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_MUTABLE_UNAUDITED);
         return SmsManager.getDefault().createAppSpecificSmsTokenWithPackageInfo(
                 "testprefix1,testprefix2", pIntent);
+    }
+
+    // Gets the retriever hash belong to a test app: APP_THAT_RETURNS_RETRIEVER_HASH
+    private String getSmsRetrieverHash() {
+        SystemUtil.runWithShellPermissionIdentity(() ->
+                mActivityManager.forceStopPackage(APP_THAT_RETURNS_RETRIEVER_HASH)
+        );
+        CompletableFuture<Bundle> callbackResult = new CompletableFuture<>();
+        mContext.startActivity(new Intent()
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .setComponent(new ComponentName(
+                        APP_THAT_RETURNS_RETRIEVER_HASH,
+                        APP_THAT_RETURNS_RETRIEVER_HASH + ".MainActivity"))
+                .putExtra("callback", new RemoteCallback(callbackResult::complete)));
+        Bundle bundle;
+        try {
+            bundle = callbackResult.get(200, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        String token = bundle.getString("token");
+        Assert.assertNotNull(bundle.getString("class"));
+        Assert.assertTrue(bundle.getString("class").startsWith(APP_THAT_RETURNS_RETRIEVER_HASH));
+        assertNotNull(token);
+        return token;
     }
 
     private String getSmsRetrieverOtpMessage() {

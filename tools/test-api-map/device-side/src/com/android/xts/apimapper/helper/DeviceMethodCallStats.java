@@ -18,11 +18,8 @@ package com.android.xts.apimapper.helper;
 
 import android.util.Log;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A class to record and dump Android API method calls.
@@ -33,7 +30,7 @@ public final class DeviceMethodCallStats {
 
     // A map to record the data of called class -> called method -> called method description
     // -> called times.
-    private final Map<String, Map<String, Map<String, Integer>>> mStats = new TreeMap<>();
+    private final Map<String, Map<String, Map<String, Integer>>> mStats = new ConcurrentHashMap<>();
 
     /** Clear all records. */
     public void clear() {
@@ -42,10 +39,9 @@ public final class DeviceMethodCallStats {
 
     /** Record the given method call. */
     public void onMethodCalled(String className, String methodName, String methodDesc) {
-        var classStats = mStats.computeIfAbsent(className, k -> new TreeMap<>());
-        var methodStats = classStats.computeIfAbsent(methodName, k -> new TreeMap<>());
-        int count = methodStats.getOrDefault(methodDesc, 0);
-        methodStats.put(methodDesc, count + 1);
+        var classStats = mStats.computeIfAbsent(className, k -> new ConcurrentHashMap<>());
+        var methodStats = classStats.computeIfAbsent(methodName, k -> new ConcurrentHashMap<>());
+        methodStats.compute(methodDesc, (key, value) -> (value == null) ? 1 : value + 1);
     }
 
     /**
@@ -59,18 +55,11 @@ public final class DeviceMethodCallStats {
                 prefix,
                 testClassName,
                 removeMethodParameters(testMethodName));
-        List<String> classes = new ArrayList<>(mStats.keySet());
-        Collections.sort(classes);
-
-        for (String className : classes) {
+        for (String className : mStats.keySet()) {
             Map<String, Map<String, Integer>> methodStats = mStats.get(className);
-            List<String> methodNames = new ArrayList<>(methodStats.keySet());
-
-            for (String methodName : methodNames) {
+            for (String methodName : methodStats.keySet()) {
                 Map<String, Integer> methodDescStats = methodStats.get(methodName);
-                List<String> methodDescs = new ArrayList<>(methodDescStats.keySet());
-
-                for (String methodDesc : methodDescs) {
+                for (String methodDesc : methodDescStats.keySet()) {
                     String logMessage = String.format(
                             "%s:%s:%s:%s:%s",
                             logPrefix,
@@ -78,7 +67,6 @@ public final class DeviceMethodCallStats {
                             methodName,
                             methodDesc,
                             methodDescStats.get(methodDesc)
-
                     );
                     Log.i(tag, logMessage);
                 }

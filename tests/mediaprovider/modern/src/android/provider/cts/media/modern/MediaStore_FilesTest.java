@@ -577,6 +577,56 @@ public class MediaStore_FilesTest {
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SPECIAL_FORMAT_COLUMN)
+    public void testSpecialFormatMediaColumn_enabled() throws Exception {
+        final Uri uri = MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL);
+        final File file =
+                new File(
+                        MediaProviderTestUtils.stageDownloadDir(mVolumeName),
+                        "test" + System.nanoTime() + ".jpg");
+
+        MediaProviderTestUtils.stageFile(R.raw.test_motion_photo, file);
+        Uri imageUri = MediaStore.scanFile(mResolver, file);
+
+        String[] projection = new String[] {FileColumns.MIME_TYPE, FileColumns._SPECIAL_FORMAT};
+        String selection = FileColumns.DATA + " LIKE ?";
+        String[] selectionArgs = new String[] {file.getAbsolutePath()};
+
+        try (Cursor c = mResolver.query(uri, projection, selection, selectionArgs, null)) {
+            assertTrue(c.moveToFirst());
+            assertEquals("image/jpeg", c.getString(0));
+            assertEquals(FileColumns._SPECIAL_FORMAT_MOTION_PHOTO, c.getLong(1));
+        } finally {
+            mResolver.delete(imageUri, null);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SPECIAL_FORMAT_COLUMN)
+    public void testSpecialFormatMediaColumn_defaultValueNone() throws Exception {
+        final Uri uri = MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL);
+        final File file =
+                new File(
+                        MediaProviderTestUtils.stageDownloadDir(mVolumeName),
+                        "test" + System.nanoTime() + ".mp3");
+
+        MediaProviderTestUtils.stageFile(R.raw.iso88591_11, file);
+        Uri imageUri = MediaStore.scanFile(mResolver, file);
+
+        String[] projection = new String[] {FileColumns.MIME_TYPE, FileColumns._SPECIAL_FORMAT};
+        String selection = FileColumns.DATA + " LIKE ?";
+        String[] selectionArgs = new String[] {file.getAbsolutePath()};
+
+        try (Cursor c = mResolver.query(uri, projection, selection, selectionArgs, null)) {
+            assertTrue(c.moveToFirst());
+            assertEquals("audio/mpeg", c.getString(0));
+            assertEquals(FileColumns._SPECIAL_FORMAT_NONE, c.getLong(1));
+        } finally {
+            mResolver.delete(imageUri, null);
+        }
+    }
+
     private long queryLong(Uri uri, String columnName) {
         try (Cursor c = mResolver.query(uri, new String[] { columnName }, null, null, null)) {
             assertTrue(c.moveToFirst());

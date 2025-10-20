@@ -40,6 +40,7 @@ import android.util.Log;
 import android.util.Pair;
 
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.DeviceReportLog;
@@ -51,6 +52,7 @@ import com.android.compatibility.common.util.Stat;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -149,6 +151,10 @@ public class VideoEncoderDecoderTest {
     private int mHeight;
     private String mEncoderName;
     private int mMaxBFrames;
+
+    @Rule
+    public ActivityTestRule<CodecTestActivity> mActivityRule =
+            new ActivityTestRule<>(CodecTestActivity.class);
 
     private class TestConfig {
         public boolean mTestPixels = true;
@@ -560,7 +566,8 @@ public class VideoEncoderDecoderTest {
         String streamName = "video_encoder_decoder_quality";
         DeviceReportLog log = new DeviceReportLog(REPORT_LOG_NAME, streamName);
         log.addValue("encoder_name", encoderName, ResultType.NEUTRAL, ResultUnit.NONE);
-        log.addValues("decoder_names", Arrays.asList(decoderNames), ResultType.NEUTRAL, ResultUnit.NONE);
+        log.addValues(
+                "decoder_names", Arrays.asList(decoderNames), ResultType.NEUTRAL, ResultUnit.NONE);
         log.addValue("mime_type", mimeType, ResultType.NEUTRAL, ResultUnit.NONE);
         log.addValue("width", mVideoWidth, ResultType.NEUTRAL, ResultUnit.NONE);
         log.addValue("height", mVideoHeight, ResultType.NEUTRAL, ResultUnit.NONE);

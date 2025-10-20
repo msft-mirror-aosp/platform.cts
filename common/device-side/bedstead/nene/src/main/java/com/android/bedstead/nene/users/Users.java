@@ -24,11 +24,23 @@ import static android.cts.testapisreflection.TestApisReflectionKt.getVisibleBack
 import static android.cts.testapisreflection.TestApisReflectionKt.getVisibleBackgroundUsersSupported;
 import static android.cts.testapisreflection.TestApisReflectionKt.setStopUserOnSwitch;
 import static android.os.Build.VERSION.SDK_INT;
+import static android.os.Build.VERSION_CODES.BAKLAVA;
 import static android.os.Build.VERSION_CODES.S;
 import static android.os.Build.VERSION_CODES.S_V2;
 import static android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 import static android.os.Build.VERSION_CODES.VANILLA_ICE_CREAM;
 import static android.os.Process.myUserHandle;
+import static android.os.UserManager.REMOVE_RESULT_ALREADY_BEING_REMOVED;
+import static android.os.UserManager.REMOVE_RESULT_DEFERRED;
+import static android.os.UserManager.REMOVE_RESULT_ERROR_DEVICE_OWNER;
+import static android.os.UserManager.REMOVE_RESULT_ERROR_LAST_ADMIN_USER;
+import static android.os.UserManager.REMOVE_RESULT_ERROR_MAIN_USER_PERMANENT_ADMIN;
+import static android.os.UserManager.REMOVE_RESULT_ERROR_SYSTEM_USER;
+import static android.os.UserManager.REMOVE_RESULT_ERROR_UNKNOWN;
+import static android.os.UserManager.REMOVE_RESULT_ERROR_USER_NOT_FOUND;
+import static android.os.UserManager.REMOVE_RESULT_ERROR_USER_RESTRICTION;
+import static android.os.UserManager.REMOVE_RESULT_REMOVED;
+import static android.os.UserManager.REMOVE_RESULT_USER_IS_REMOVABLE;
 
 import static com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME;
 import static com.android.bedstead.nene.users.UserType.SECONDARY_USER_TYPE_NAME;
@@ -562,11 +574,11 @@ public final class Users {
     public boolean isHeadlessSystemUserMode() {
         if (Versions.meetsMinimumSdkVersionRequirement(S)) {
             boolean value = UserManager.isHeadlessSystemUserMode();
-            Log.d(LOG_TAG, "isHeadlessSystemUserMode: " + value);
+            Log.v(LOG_TAG, "isHeadlessSystemUserMode: " + value);
             return value;
         }
 
-        Log.d(LOG_TAG, "isHeadlessSystemUserMode pre-S: false");
+        Log.v(LOG_TAG, "isHeadlessSystemUserMode pre-S: false");
         return false;
     }
 
@@ -651,13 +663,8 @@ public final class Users {
             throws NeneException {
         try {
             TestApis.users().all().stream()
-                    .filter(u -> (
-                            u != TestApis.users().instrumented() &&
-                                    u != TestApis.users().system() &&
-                                    u != TestApis.users().current() &&
-                                    !isNonRemovableMainUser(u) &&
-                                    !shouldKeepUser.test(u))
-                    ).forEach(UserReference::remove);
+                    .filter(u -> (isRemovable(u) && !shouldKeepUser.test(u)))
+                    .forEach(UserReference::remove);
         } catch (NeneException e) {
             // Happens when we can't remove a user
             throw new NeneException(
@@ -670,11 +677,53 @@ public final class Users {
         }
     }
 
-    private boolean isNonRemovableMainUser(UserReference u) {
+    private static boolean isRemovable(UserReference user) {
+        if (user.equals(TestApis.users().instrumented())) {
+            return false;
+        }
+        if (!android.multiuser.Flags.userRemovalMinorApis2026()) {
+            return !user.equals(TestApis.users().system())
+                    && !user.equals(TestApis.users().current())
+                    && !isNonRemovableMainUser(user);
+        }
+        int removability;
+        try (PermissionContext p = TestApis.permissions().withPermission(QUERY_USERS)) {
+            removability = sUserManager.getUserRemovability(user.id());
+        }
+        if (removability == UserManager.REMOVE_RESULT_USER_IS_REMOVABLE) {
+            return true;
+        }
+        Log.d(
+                LOG_TAG,
+                "isRemovable("
+                        + user
+                        + "): nope, because "
+                        + userRemovabilityToString(removability));
+        return false;
+    }
+
+    private static boolean isNonRemovableMainUser(UserReference u) {
         return u.isMain() &&
                 TestApis.context().instrumentedContext().getResources().getBoolean(
                         Resources.getSystem().getIdentifier("config_isMainUserPermanentAdmin",
                                 "bool", "android"));
+    }
+
+    private static String userRemovabilityToString(int removability) {
+        return switch (removability) {
+            case REMOVE_RESULT_ALREADY_BEING_REMOVED -> "ALREADY_BEING_REMOVED";
+            case REMOVE_RESULT_DEFERRED -> "DEFERRED";
+            case REMOVE_RESULT_ERROR_DEVICE_OWNER -> "DEVICE_OWNER";
+            case REMOVE_RESULT_ERROR_LAST_ADMIN_USER -> "LAST_ADMIN_USER";
+            case REMOVE_RESULT_ERROR_MAIN_USER_PERMANENT_ADMIN -> "MAIN_USER_PERMANENT_ADMIN";
+            case REMOVE_RESULT_ERROR_SYSTEM_USER -> "SYSTEM_USER";
+            case REMOVE_RESULT_ERROR_UNKNOWN -> "UNKNOWN";
+            case REMOVE_RESULT_ERROR_USER_NOT_FOUND -> "USER_NOT_FOUND";
+            case REMOVE_RESULT_ERROR_USER_RESTRICTION -> "USER_RESTRICTION";
+            case REMOVE_RESULT_REMOVED -> "REMOVED";
+            case REMOVE_RESULT_USER_IS_REMOVABLE -> "USER_IS_REMOVABLE";
+            default -> "INVALID-" + removability;
+        };
     }
 
     /**
@@ -705,15 +754,23 @@ public final class Users {
     }
 
     /**
-     * Gets the maximum number of users supported by the device
+     * Gets the number of additional users of the given type that can be added to the device
      */
-    public int getMaxNumberOfUsersSupported() {
+    public int getRemainingCreatableUserCount(UserType userType) {
+         if (Versions.meetsMinimumSdkVersionRequirement(BAKLAVA)) {
+            try (PermissionContext p = TestApis.permissions().withPermission(CREATE_USERS)) {
+                return sUserManager.getRemainingCreatableUserCount(userType.name());
+            }
+        }
+
+        // Legacy approach, when there was an overall max user limit (which was only an estimate).
         try {
-            return ShellCommand.builder("pm get-max-users")
-                    .validate((output) -> output.startsWith("Maximum supported users:"))
+            int maxUsers = ShellCommand.builder("pm get-max-users")
+                    .validate((output) -> output.startsWith("Maximum supported"))
                     .executeAndParseOutput((output) ->
                             Integer.parseInt(output.split(": ", 2)[1].trim())
                     );
+            return maxUsers - TestApis.users().all().size();
         } catch (AdbException e) {
             throw new IllegalStateException("Invalid command output", e);
         }

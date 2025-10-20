@@ -27,8 +27,12 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeThat;
 import static org.junit.Assume.assumeTrue;
 
+import android.content.pm.Flags;
 import android.cts.install.lib.host.InstallUtilsHost;
 import android.platform.test.annotations.LargeTest;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
 import com.android.apex.ApexInfo;
 import com.android.apex.XmlParser;
@@ -37,7 +41,6 @@ import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
-
 
 import org.junit.After;
 import org.junit.Before;
@@ -67,8 +70,12 @@ public class StagedInstallTest extends BaseHostJUnit4Test {
 
     private String mDefaultLauncher = null;
 
-    @Rule
+    @Rule(order = 1)
     public final FailedTestLogHook mFailedTestLogHook = new FailedTestLogHook(this);
+
+    @Rule(order = 2)
+    public final CheckFlagsRule mCheckFlagsRule =
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
 
     /**
      * Runs the given phase of a test by calling into the device.
@@ -652,7 +659,7 @@ public class StagedInstallTest extends BaseHostJUnit4Test {
                 () -> new AssertionError("Can't find " + SHIM_APEX_PACKAGE_NAME)
         );
 
-        assertThat(shimApex.sourceDir).startsWith("/data/apex/active");
+        assertThat(shimApex.isFactory).isFalse();
         assertThat(getDevice().pullFile(shimApex.sourceDir)).isNotNull();
     }
 
@@ -819,6 +826,18 @@ public class StagedInstallTest extends BaseHostJUnit4Test {
         runPhase("testGetInactiveApexFactoryPackagesAfterApexInstall_containsNoDuplicates");
     }
 
+    @Test
+    @LargeTest
+    @RequiresFlagsEnabled(Flags.FLAG_ALLOW_UPDATED_VERSION_BETTER_THAN_APK_IN_APEX)
+    public void testStagedInstallApex_updatedApkVersionBetterThanApkInApex() throws Exception {
+        assumeSystemUser();
+
+        setDefaultLauncher(BROADCAST_RECEIVER_COMPONENT);
+        runPhase("testStagedInstallApex_updatedApkVersionBetterThanApkInApex_commit");
+        getDevice().reboot();
+        runPhase("testStagedInstallApex_updatedApkVersionBetterThanApkInApex_verifyPostReboot");
+    }
+
     private List<ApexInfo> readApexInfoList() throws Exception {
         File file = getDevice().pullFile("/apex/apex-info-list.xml");
         try (FileInputStream stream = new FileInputStream(file)) {
@@ -897,7 +916,10 @@ public class StagedInstallTest extends BaseHostJUnit4Test {
 
         private String getStagedSessions() {
             try {
-                return mInstance.getDevice().executeShellV2Command("pm get-stagedsessions").getStdout();
+                return mInstance
+                        .getDevice()
+                        .executeShellV2Command("pm get-stagedsessions")
+                        .getStdout();
             } catch (DeviceNotAvailableException e) {
                 Log.e(TAG, e);
                 return "Failed to get staged sessions";

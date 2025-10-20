@@ -33,7 +33,8 @@ import java.util.concurrent.ExecutionException;
 
 /** Utility class providing constants and helper methods for AppsIndexer tests. */
 public final class AppsIndexerTestUtils {
-    private static final String INDEXER_PACKAGE_NAME = "android";
+    private static final String INDEXER_PACKAGE_NAME =
+            AppSearchTestEnvironmentFactory.getEnvironmentInstance().getIndexerPackageName();
     private static final String TEST_APP_ROOT_FOLDER =
             AppSearchTestEnvironmentFactory.getEnvironmentInstance().getTestAppRootFolder();
     private static final String NAMESPACE_MOBILE_APPLICATION = "apps";
@@ -96,6 +97,7 @@ public final class AppsIndexerTestUtils {
     }
 
     /** Retries an assertion with a delay between attempts. */
+    @SuppressTikTokLint.Sleep
     public static void retryAssert(ThrowRunnable runnable) throws Throwable {
         Throwable lastError = null;
 

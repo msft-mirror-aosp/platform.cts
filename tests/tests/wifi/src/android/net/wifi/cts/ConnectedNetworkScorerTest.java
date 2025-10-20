@@ -50,6 +50,7 @@ import android.content.Context;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.DhcpOption;
+import android.net.wifi.SupplicantState;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiConnectedSessionInfo;
 import android.net.wifi.WifiManager;
@@ -172,8 +173,7 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
         ShellIdentityUtils.invokeWithShellPermissions(
                 () -> sWifiManager.removeAppState(myUid(), sContext.getPackageName()));
         boolean isConnected =
-                sWifiManager.getConnectionInfo().getNetworkId()
-                        != WifiConfiguration.INVALID_NETWORK_ID;
+                sWifiManager.getConnectionInfo().getSupplicantState() == SupplicantState.COMPLETED;
         int numTry = 0;
         while (!isConnected) {
             if (numTry >= CONNECT_RETRY) {
@@ -183,12 +183,11 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
             ShellIdentityUtils.invokeWithShellPermissions(() -> sWifiManager.reconnect());
             PollingCheck.waitFor(
                     WIFI_CONNECT_TIMEOUT_MILLIS,
-                    () ->
-                            sWifiManager.getConnectionInfo().getNetworkId()
-                                    != WifiConfiguration.INVALID_NETWORK_ID);
+                    () -> sWifiManager.getConnectionInfo().getSupplicantState()
+                            == SupplicantState.COMPLETED);
             isConnected =
-                    sWifiManager.getConnectionInfo().getNetworkId()
-                            != WifiConfiguration.INVALID_NETWORK_ID;
+                    sWifiManager.getConnectionInfo().getSupplicantState()
+                            == SupplicantState.COMPLETED;
             numTry++;
         }
     }
@@ -710,7 +709,7 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
             PollingCheck.check(
                     "Wifi not disconnected",
                     TIMEOUT,
-                    () -> sWifiManager.getConnectionInfo().getNetworkId() == -1);
+                    () -> sWifiManager.getConnectionInfo().getSupplicantState() == SupplicantState.DISCONNECTED);
 
             // Wait for stop to be invoked and ensure that the session id matches.
             assertThat(countDownLatchScorer.await(TIMEOUT, TimeUnit.MILLISECONDS)).isTrue();
@@ -777,7 +776,8 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
             PollingCheck.check(
                     "Wifi not connected",
                     WIFI_CONNECT_TIMEOUT_MILLIS * 2,
-                    () -> sWifiManager.getConnectionInfo().getNetworkId() != -1);
+                    () -> sWifiManager.getConnectionInfo().getSupplicantState()
+                            == SupplicantState.COMPLETED);
 
             // Followed by a new onStart() after the connection.
             // Note: There is a 5 second delay between stop/start when restartWifiSubsystem() is
@@ -835,7 +835,8 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
             PollingCheck.check(
                     "Wifi not disconnected",
                     20000,
-                    () -> sWifiManager.getConnectionInfo().getNetworkId() == -1);
+                    () -> sWifiManager.getConnectionInfo().getSupplicantState()
+                    == SupplicantState.DISCONNECTED);
             assertThat(testNetwork).isNotNull();
 
             // Register the external scorer.

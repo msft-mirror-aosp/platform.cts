@@ -1117,7 +1117,7 @@ def find_aruco_markers(
 
 
 def get_patch_from_aruco_markers(
-    input_img, aruco_marker_corners, aruco_marker_ids):
+    input_img, aruco_marker_corners, aruco_marker_ids, use_outer_corner=False):
   """Returns the rectangle patch from the aruco marker corners.
 
   Note: Refer to image used in scene7 for ArUco markers location.
@@ -1129,6 +1129,8 @@ def get_patch_from_aruco_markers(
       opencv_processing_utils.find_aruco_markers
     aruco_marker_ids: array of ids of aruco markers detected by
       opencv_processing_utils.find_aruco_markers
+    use_outer_corner: optional bool to use the outer corner of the rectangle
+      patch
   Returns:
     Numpy float image array of the rectangle patch
   """
@@ -1136,13 +1138,14 @@ def get_patch_from_aruco_markers(
   for corner, marker_id in zip(aruco_marker_corners, aruco_marker_ids):
     corner = corner.reshape(4, 2)  # opencv returns 3D array
     index = marker_id[0]
-    # Roll the array 4x to align with the coordinates of the corner adjacent
-    # to the corner of the rectangle
-    # Marker id: 0 => index 2 coordinates
-    # Marker id: 1 => index 3 coordinates
-    # Marker id: 2 => index 0 coordinates
-    # Marker id: 3 => index 1 coordinates
-    corner = numpy.roll(corner, 4)
+    if not use_outer_corner:
+      # Roll the array 4x to align with the coordinates of the corner adjacent
+      # to the corner of the rectangle
+      # Marker id: 0 => index 2 coordinates
+      # Marker id: 1 => index 3 coordinates
+      # Marker id: 2 => index 0 coordinates
+      # Marker id: 3 => index 1 coordinates
+      corner = numpy.roll(corner, 4)
 
     outer_rect_coordinates[index] = tuple(corner[index])
 
@@ -1228,6 +1231,95 @@ def get_chart_boundary_from_aruco_markers(
   logging.debug('ArUco marker top_left: %s', top_left)
   logging.debug('ArUco marker bottom_right: %s', bottom_right)
   return top_left, top_right, bottom_right, bottom_left
+
+
+def get_outer_boundary_from_aruco_markers(aruco_marker_corners):
+  """Calculates the bounding box encompassing all detected ArUco markers.
+
+  Args:
+    aruco_marker_corners: array of aruco marker corner coordinates detected by
+    opencv_processing_utils.find_aruco_markers.
+
+  Returns:
+    coordinates of the outer boundary of the aruco markers.
+    - tl: tuple; Top-Left aruco marker corner coordinates in pixel.
+    - tr: tuple; Top-Right aruco marker corner coordinates in pixel.
+    - br: tuple; Bottom-Right aruco marker corner coordinates in pixel.
+    - bl: tuple; Bottom-Left aruco marker corner coordinates in pixel.
+
+  Raises:
+    ValueError: If aruco_marker_corners is empty or contains no points.
+  """
+  if not aruco_marker_corners:
+    raise ValueError(
+        'No ArUco markers detected (aruco_marker_corners is empty).')
+
+  all_points = []
+  for marker_corners in aruco_marker_corners:
+    if marker_corners is not None and marker_corners.size > 0:
+      # Reshape opencv 3D array to 4x2
+      all_points.extend(marker_corners.reshape(4, 2))
+
+  if not all_points:
+    raise ValueError('No corner points found within the detected markers.')
+
+  all_points = numpy.array(all_points)
+
+  # Find the min and max x and y coordinates across all points
+  min_x = numpy.min(all_points[:, 0])
+  max_x = numpy.max(all_points[:, 0])
+  min_y = numpy.min(all_points[:, 1])
+  max_y = numpy.max(all_points[:, 1])
+
+  # Define the four corners of the outer axis-aligned bounding box
+  tl = (min_x, min_y)
+  tr = (max_x, min_y)
+  br = (max_x, max_y)
+  bl = (min_x, max_y)
+
+  return tl, tr, br, bl
+
+
+def get_chart_boundary_scene3(cap, num_aruco_markers, name_with_log_path):
+  """Return chart patch based on ArUco marker location in the first frame.
+
+  Args:
+    cap: Capture image
+    num_aruco_markers: Number of ArUco markers expected in the scene.
+    name_with_log_path: Path to save the chart image
+
+  Returns:
+    patch_x: Normalized x coordinate of the chart patch
+    patch_y: Normalized y coordinate of the chart patch
+    patch_w: Normalized width of the chart patch
+    patch_h: Normalized height of the chart patch
+  """
+  img = image_processing_utils.convert_capture_to_rgb_image(cap)
+  image_processing_utils.write_image(
+      img, f'{name_with_log_path}_capture_for_aruco_detection.jpg')
+  img_bgr = cv2.cvtColor(image_processing_utils.convert_image_to_uint8(img),
+                         cv2.COLOR_RGB2BGR)
+  corners, _, _ = find_aruco_markers(
+      img_bgr, f'{name_with_log_path}_aruco.jpg',
+      num_aruco_markers, save_images=False)
+  tl, tr, br, bl = (get_outer_boundary_from_aruco_markers(corners))
+  img_h, img_w = img_bgr.shape[:2]
+
+  # Find min/max pixel coordinates
+  all_x = [tl[0], tr[0], br[0], bl[0]]
+  all_y = [tl[1], tr[1], br[1], bl[1]]
+  min_x = min(all_x)
+  max_x = max(all_x)
+  min_y = min(all_y)
+  max_y = max(all_y)
+
+  # Normalize coordinates
+  patch_x = min_x / img_w
+  patch_y = min_y / img_h
+  patch_w = (max_x - min_x) / img_w
+  patch_h = (max_y - min_y) / img_h
+
+  return patch_x, patch_y, patch_w, patch_h
 
 
 def get_aruco_center(corners):
@@ -1323,41 +1415,19 @@ def mark_zoom_images_to_video(out, image_paths, test_data):
 
 
 def define_metering_rectangle_values(
-    props, top_left, top_right, bottom_right, bottom_left, w, h):
+    top_left, bottom_right, w, h):
   """Find normalized values of coordinates and return 4 metering rects.
 
   Args:
-    props: dict; camera properties object.
     top_left: coordinates; defined by aruco markers for targeted image.
-    top_right: coordinates; defined by aruco markers for targeted image.
     bottom_right: coordinates; defined by aruco markers for targeted image.
-    bottom_left: coordinates; defined by aruco markers for targeted image.
     w: int; active array width in pixels.
     h: int; active array height in pixels.
   Returns:
     meter_rects: 4 metering rectangles made of (x, y, width, height, weight).
       x, y are the top left coordinate of the metering rectangle.
   """
-  # If testing front camera, mirror coordinates either left/right or up/down
-  # Preview are flipped on device's natural orientation
-  # For sensor orientation 90 or 270, it is up or down
-  # For sensor orientation 0 or 180, it is left or right
-  if (props['android.lens.facing'] ==
-      camera_properties_utils.LENS_FACING['FRONT']):
-    if props['android.sensor.orientation'] in (90, 270):
-      tl_coordinates = (bottom_left[0], h - bottom_left[1])
-      br_coordinates = (top_right[0], h - top_right[1])
-      logging.debug('Found sensor orientation %d, flipping up down',
-                    props['android.sensor.orientation'])
-    else:
-      tl_coordinates = (w - top_right[0], top_right[1])
-      br_coordinates = (w - bottom_left[0], bottom_left[1])
-      logging.debug('Found sensor orientation %d, flipping left right',
-                    props['android.sensor.orientation'])
-    logging.debug('Mirrored top-left coordinates: %s', tl_coordinates)
-    logging.debug('Mirrored bottom-right coordinates: %s', br_coordinates)
-  else:
-    tl_coordinates, br_coordinates = top_left, bottom_right
+  tl_coordinates, br_coordinates = top_left, bottom_right
 
   # Normalize coordinates' values to construct metering rectangles
   meter_rects = [None] * NUM_AE_AWB_REGIONS
@@ -1455,9 +1525,8 @@ def define_regions(img, img_path, chart_path, props, width, height):
     regions: 4 regions of the img
   """
   # Extract chart coordinates from aruco markers
-  # TODO: b/330382627 - get chart boundary from 4 aruco markers instead of 2
   aruco_corners, aruco_ids, _ = find_aruco_markers(img, img_path)
-  tl, tr, br, bl = get_chart_boundary_from_aruco_markers(
+  tl, _, br, _ = get_chart_boundary_from_aruco_markers(
       aruco_corners, aruco_ids, img, chart_path)
 
   # Convert image coordinates to sensor coordinates for metering rectangles
@@ -1466,17 +1535,13 @@ def define_regions(img, img_path, chart_path, props, width, height):
   logging.debug('Active array size: %s', aa)
   sc_tl = image_processing_utils.convert_image_coords_to_sensor_coords(
       aa_width, aa_height, tl, width, height)
-  sc_tr = image_processing_utils.convert_image_coords_to_sensor_coords(
-      aa_width, aa_height, tr, width, height)
   sc_br = image_processing_utils.convert_image_coords_to_sensor_coords(
       aa_width, aa_height, br, width, height)
-  sc_bl = image_processing_utils.convert_image_coords_to_sensor_coords(
-      aa_width, aa_height, bl, width, height)
 
   # Define regions through ArUco markers' positions
   region_blue, region_light, region_dark, region_yellow = (
       define_metering_rectangle_values(
-          props, sc_tl, sc_tr, sc_br, sc_bl, aa_width, aa_height))
+          sc_tl, sc_br, aa_width, aa_height))
 
   # Create a dictionary of regions for testing
   regions = {
@@ -1486,3 +1551,46 @@ def define_regions(img, img_path, chart_path, props, width, height):
       'regionYellow': region_yellow,
   }
   return regions
+
+
+def detect_180_degree_rotation_with_aruco_markers(
+    corners, ids, left_id, right_id):
+  """Checks if the scene is rotated 180 deg using known aruco marker locations.
+
+  Args:
+    corners: list of detected corners.
+    ids: list of int ids for each ArUco markers in the input_img.
+    left_id: id of the left marker.
+    right_id: id of the right marker.
+
+  Returns:
+    True if the scene is rotated, False otherwise.
+  """
+  # Check if ids, corners is None or an empty tuple
+  if ids is None or ids.size == 0:
+    raise ValueError('No ArUco markers detected.')
+  if corners is None or not corners:
+    raise ValueError('No ArUco marker corners detected.')
+
+  aruco_marker_ids_flat = ids.flatten()
+  try:
+    left_idx = numpy.where(aruco_marker_ids_flat == left_id)[0][0]
+    right_idx = numpy.where(aruco_marker_ids_flat == right_id)[0][0]
+  except IndexError as e:
+    raise ValueError('Marker ID not found in ids array') from e
+
+  aruco_marker_left = corners[left_idx][0][0]
+  aruco_marker_right = corners[right_idx][0][0]
+  is_rotated = aruco_marker_right[0] < aruco_marker_left[0]
+
+  if is_rotated:
+    logging.debug(
+        'Scene is rotated. Left Aruco marker location: %s, Right Aruco marker '
+        'location: %s, Expected right value < left value on the X-axis of top '
+        'left corner locations.', aruco_marker_left[0], aruco_marker_right[0])
+  else:
+    logging.debug(
+        'Scene is not rotated. X-axis of location of Left marker: %s, '
+        'Right marker: %s', aruco_marker_left[0], aruco_marker_right[0])
+
+  return is_rotated

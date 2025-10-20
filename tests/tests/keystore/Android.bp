@@ -65,8 +65,7 @@ android_test {
     ],
     static_libs: [
         "DeviceAdminApp",
-        "Harrier",
-        "Nene",
+        "bedstead",
         "android-key-attestation",
         "android.security.flags-aconfig-java",
         "androidx.test.rules",

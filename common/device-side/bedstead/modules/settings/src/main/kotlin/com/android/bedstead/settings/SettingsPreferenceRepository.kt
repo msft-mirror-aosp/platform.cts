@@ -15,7 +15,6 @@
  */
 package com.android.bedstead.settings
 
-import android.annotation.SuppressLint
 import android.service.settings.preferences.GetValueResult
 import android.service.settings.preferences.SetValueResult
 import android.service.settings.preferences.SettingsPreferenceMetadata
@@ -23,7 +22,8 @@ import android.service.settings.preferences.SettingsPreferenceValue
 import android.util.Log
 
 /**
- * Additional layer for handling settings preferences, containing state and [BlockingSettingsPreferenceServiceClient].
+ * Additional layer for handling settings preferences, containing state and
+ * [BlockingSettingsPreferenceServiceClient].
  */
 class SettingsPreferenceRepository(
     private val packageName: String,
@@ -39,19 +39,20 @@ class SettingsPreferenceRepository(
 
     private fun cachePreferenceStateIfNew(metadata: SettingsPreferenceMetadata) {
         if (changedPreferences[metadata.nameWithKeys()] == null) {
+            val value = blockingClient.getValueResult(metadata).value ?: return
             changedPreferences[metadata.nameWithKeys()] = ChangedPreferenceState(
                 metadata = metadata,
-                originalPreferenceValue = blockingClient.getValueResult(metadata).value,
-                currentPreferenceValue = null
+                originalPreferenceValue = value,
+                currentPreferenceValue = value
             )
         }
     }
 
-    internal fun filterPreferenceStateThroughAllChangedPreferences(
+    internal fun findChangedPreferenceState(
         screenKey: String,
         preferenceKey: String
-    ): ChangedPreferenceState {
-        return changedPreferences.values.single { preference ->
+    ): ChangedPreferenceState? {
+        return changedPreferences.values.singleOrNull { preference ->
             preference.metadata.screenKey == screenKey && preference.metadata.key == preferenceKey
         }
     }
@@ -81,26 +82,34 @@ class SettingsPreferenceRepository(
             grantRequiredPermissions = grantRequiredPermissions
         ).also { setResult ->
             if (setResult.resultCode == SetValueResult.RESULT_OK) {
-                changedPreferences[metadata.nameWithKeys()]?.copy(currentPreferenceValue = settingsPreferenceValue)?.let { newState ->
+                changedPreferences[metadata.nameWithKeys()]?.copy(
+                    currentPreferenceValue = settingsPreferenceValue
+                )?.let { newState ->
                     changedPreferences[metadata.nameWithKeys()] = newState
                 }
             }
         }
     }
 
-    @SuppressLint("LongLogTag")
     internal fun restorePreferencesToOldValuesAndClear() {
-        changedPreferences.values.forEach { preference ->
-            blockingClient.setValueResult(
-                metadata = preference.metadata,
-                settingsPreferenceValue = preference.originalPreferenceValue!!
-            ).also { result ->
-                if (result.resultCode != SetValueResult.RESULT_OK) {
-                    Log.e(TAG, "Restoring preference $preference to old state unsuccessful. " +
-                            "Result code: ${result.resultCode}")
+        changedPreferences.values
+            .filter { it.currentPreferenceValue != it.originalPreferenceValue }
+            .forEach { preference ->
+                blockingClient.setValueResult(
+                    metadata = preference.metadata,
+                    settingsPreferenceValue = preference.originalPreferenceValue
+                ).also { result ->
+                    if (result.resultCode != SetValueResult.RESULT_OK) {
+                        Log.e(
+                            TAG,
+                            "Restoring preference $preference to old state was unsuccessful. " +
+                                    "Result code: ${result.resultCode}"
+                        )
+                    } else {
+                        Log.d(TAG, "Restoring preference $preference to old state was successful.")
+                    }
                 }
             }
-        }
         changedPreferences.clear()
     }
 
@@ -109,6 +118,6 @@ class SettingsPreferenceRepository(
     }
 
     companion object {
-        private const val TAG = "SettingsPreferenceRepository"
+        private const val TAG = "SettingsPreferenceRepo"
     }
 }

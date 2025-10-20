@@ -46,7 +46,7 @@ import java.util.Locale;
  * Wrapper class for trying and testing mediacodec decoder components in large buffer block model
  * mode
  */
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName = "VanillaIceCream")
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
 public class CodecDecoderBlockModelMultiAccessUnitTestBase extends CodecDecoderBlockModelTestBase {
     private static final String LOG_TAG =

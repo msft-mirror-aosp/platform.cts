@@ -29,6 +29,7 @@ android_test {
     srcs: ["src/**/*.java"],
     static_libs: [
         "android.hardware.flags-aconfig-java",
+        "servicestests-utils",
         "androidx.test.core",
         "androidx.test.rules",
         "compatibility-device-util-axt",
@@ -37,6 +38,7 @@ android_test {
         "CtsSurfaceValidatorLib",
         "android.companion.virtualdevice.flags-aconfig-java",
         "display_flags_lib",
+        "surfaceflinger_flags_java_lib",
         "junit-params",
         "desktop-test-lib",
     ],

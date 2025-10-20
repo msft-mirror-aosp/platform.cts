@@ -49,6 +49,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
@@ -115,7 +116,9 @@ public class CarActivityManagerTest {
 
     @After
     public void tearDown() {
-        mBlankActivity.finishAndRemoveTask();
+        if (mBlankActivity != null) {
+            mBlankActivity.finishAndRemoveTask();
+        }
 
         mUiAutomation.dropShellPermissionIdentity();
     }
@@ -222,8 +225,9 @@ public class CarActivityManagerTest {
             // launch the activity
             Intent startIntent = Intent.makeMainActivity(mTestActivity)
                     .addFlags(FLAG_ACTIVITY_NEW_TASK);
-            TestActivity activity = (TestActivity) mInstrumentation.startActivitySync(
-                    startIntent, /* option */ null);
+            TestActivity activity =
+                    (TestActivity)
+                            mInstrumentation.startActivitySync(startIntent, /* option= */ null);
 
             // assert the activity is launched into the default display
             assertThat(activity.getDisplay().getDisplayId()).isEqualTo(mTestAppDisplayId);
@@ -246,10 +250,9 @@ public class CarActivityManagerTest {
     @Test
     public void testGetVisibleTasks() throws Exception {
         // launch the activity
-        Intent startIntent = Intent.makeMainActivity(mTestActivity)
-                .addFlags(FLAG_ACTIVITY_NEW_TASK);
-        TestActivity activity = (TestActivity) mInstrumentation.startActivitySync(
-                startIntent, /* option */ null);
+        Intent startIntent =
+                Intent.makeMainActivity(mTestActivity).addFlags(FLAG_ACTIVITY_NEW_TASK);
+        mInstrumentation.startActivitySync(startIntent, /* option= */ null);
 
         List<RunningTaskInfo> tasks = mCarActivityManager.getVisibleTasks();
         List<RunningTaskInfo> filteredTasks = tasks.stream()
@@ -285,14 +288,21 @@ public class CarActivityManagerTest {
     }
 
     @Test
-    @ApiTest(apis = {"android.car.app.CarActivityManager#getCarTaskViewController(Activity,"
-            + "Executor,CarTaskViewControllerCallback)"})
+    @ApiTest(
+            apis = {
+                "android.car.app.CarActivityManager#getCarTaskViewController(Activity,"
+                        + "Executor,CarTaskViewControllerCallback)"
+            })
     public void getCarTaskViewController() throws Exception {
+        assumeFalse(
+                "CarTaskViews are not supported with auto task stack windowing. "
+                        + "Please use car-wm-shell APIs instead.",
+                isAutoTaskStackWindowingEnabled());
         assumeTrue(mCarActivityManager.isCarSystemUIProxyRegistered());
-        Intent startIntent = Intent.makeMainActivity(mTestActivity)
-                .addFlags(FLAG_ACTIVITY_NEW_TASK);
-        TestActivity activity = (TestActivity) mInstrumentation.startActivitySync(
-                startIntent, /* option */ null);
+        Intent startIntent =
+                Intent.makeMainActivity(mTestActivity).addFlags(FLAG_ACTIVITY_NEW_TASK);
+        TestActivity activity =
+                (TestActivity) mInstrumentation.startActivitySync(startIntent, /* option= */ null);
         TestCarTaskViewControllerCallback callback = new TestCarTaskViewControllerCallback();
 
         mTargetContext.getMainExecutor().execute(() ->
@@ -346,8 +356,7 @@ public class CarActivityManagerTest {
         }
     }
 
-    public static final class BlankActivity extends Activity {
-    }
+    public static final class BlankActivity extends Activity {}
 
     /**
      * Checks whether the device has automotive split-screen multitasking feature enabled
@@ -356,5 +365,10 @@ public class CarActivityManagerTest {
         return mContext.getPackageManager()
                 .hasSystemFeature(/* PackageManager.FEATURE_CAR_SPLITSCREEN_MULTITASKING */
                         "android.software.car.splitscreen_multitasking");
+    }
+
+    private boolean isAutoTaskStackWindowingEnabled() {
+        String dumpsysOutput = SystemUtil.runShellCommandOrThrow("dumpsys car_service");
+        return dumpsysOutput.contains("IsAutoTaskStackUsed: true");
     }
 }

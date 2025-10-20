@@ -40,10 +40,10 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Insets;
 import android.graphics.Rect;
-import android.provider.Settings;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.provider.Settings;
 import android.server.wm.ActivityManagerTestBase.DisableImmersiveModeConfirmationRule;
 import android.server.wm.IgnoreOrientationRequestSession;
 import android.server.wm.WindowManagerStateHelper;
@@ -449,7 +449,6 @@ public class AttachedSurfaceControlTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
     public void testGetHostToken() throws Throwable {
         try (ActivityScenario<TestActivity> scenario = launch(TestActivity.class)) {
             final ScvhSurfaceView[] scvhSurfaceView = new ScvhSurfaceView[1];

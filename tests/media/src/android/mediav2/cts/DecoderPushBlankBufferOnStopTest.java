@@ -116,7 +116,7 @@ public class DecoderPushBlankBufferOnStopTest extends CodecDecoderTestBase {
      */
     @ApiTest(apis = {"android.media.MediaFormat#KEY_PUSH_BLANK_BUFFERS_ON_STOP"})
     @SmallTest
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
     public void testSimpleDecodeToSurface() throws IOException, InterruptedException {
         MediaFormat format = setUpSource(mTestFile);

@@ -39,7 +39,7 @@ public class IRadioImsImpl extends IRadioIms.Stub {
     private IRadioImsResponse mRadioImsResponse;
     private IRadioImsIndication mRadioImsIndication;
     private final MockModemConfigInterface mMockModemConfigInterface;
-    private final int mSubId;
+    private final int mLogicalSlotIndex;
     private final String mTag;
 
     private final MockImsService mImsState = new MockImsService();
@@ -53,7 +53,7 @@ public class IRadioImsImpl extends IRadioIms.Stub {
 
         this.mService = service;
         mMockModemConfigInterface = configInterface;
-        mSubId = instanceId;
+        mLogicalSlotIndex = instanceId;
     }
 
     // Implementation of IRadioIms functions

@@ -25,6 +25,8 @@ import its_session_utils
 import opencv_processing_utils
 
 
+_CHART_FILE = os.path.join(
+    opencv_processing_utils.TEST_IMG_DIR, '4_arucos_with_squares.png')
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _OPT_VAL_THRESHOLD = 0.5
 _ENABLED = 'enabled'
@@ -112,7 +114,8 @@ class LandscapeToPortraitTest(its_base_test.ItsBaseTest):
       # overwritten
       image_path = _create_image_folder(self.log_path, _ENABLED)
       chart = opencv_processing_utils.Chart(
-          cam, props, image_path, distance=self.chart_distance, rotation=90)
+          cam, props, image_path, chart_file=_CHART_FILE,
+          distance=self.chart_distance, rotation=90)
 
       _verify_opt_val(chart)
 
@@ -141,7 +144,8 @@ class LandscapeToPortraitTest(its_base_test.ItsBaseTest):
       # overwritten
       image_path = _create_image_folder(self.log_path, _DISABLED)
       chart = opencv_processing_utils.Chart(
-          cam, props, image_path, distance=self.chart_distance)
+          cam, props, image_path, chart_file=_CHART_FILE,
+          distance=self.chart_distance)
 
       _verify_opt_val(chart)
 

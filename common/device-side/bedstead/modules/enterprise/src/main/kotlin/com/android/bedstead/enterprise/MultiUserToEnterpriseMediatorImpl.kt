@@ -15,6 +15,8 @@
  */
 package com.android.bedstead.enterprise
 
+import com.android.bedstead.enterprise.annotations.ensureHasWorkProfile
+import com.android.bedstead.enterprise.annotations.requireRunOnWorkProfile
 import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.multiuser.MultiUserToEnterpriseMediator
 import com.android.bedstead.nene.users.UserReference
@@ -45,5 +47,13 @@ class MultiUserToEnterpriseMediatorImpl(
 
     override fun ensureHasNoDeviceOwner() {
         deviceOwnerComponent.ensureHasNoDeviceOwner()
+    }
+
+    override fun getEnsureHasWorkProfileAnnotation(): Annotation {
+        return ensureHasWorkProfile()
+    }
+
+    override fun getRequireRunOnWorkProfileAnnotation(): Annotation {
+        return requireRunOnWorkProfile()
     }
 }

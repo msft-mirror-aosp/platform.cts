@@ -33,8 +33,7 @@ _FPS = 30
 _MP4V = 'mp4v'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 50
-_NUMBER_OF_CAMERAS_TO_TEST = 0
-_WIDE_ZOOM_RATIO_MAX = 2.5
+_WIDE_ZOOM_RATIO_MAX = 3.0
 
 
 def _get_test_tols(cam, props, chart_distance, debug):
@@ -211,7 +210,7 @@ class PreviewZoomTestTELE(its_base_test.ItsBaseTest):
       plot_name_stem = f'{os.path.join(log_path, _NAME)}'
       test_success, msg = zoom_capture_utils.verify_preview_zoom_results(
           test_data, size, z_max, z_min, z_step_size, plot_name_stem,
-          number_of_cameras_to_test=_NUMBER_OF_CAMERAS_TO_TEST)
+          is_tele=True)
       if not test_success:
         first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
         if first_api_level >= its_session_utils.ANDROID16_API_LEVEL:

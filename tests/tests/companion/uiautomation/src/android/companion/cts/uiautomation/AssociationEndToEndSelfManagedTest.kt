@@ -4,7 +4,9 @@ import android.app.Activity
 import android.companion.AssociationInfo
 import android.companion.AssociationRequest.DEVICE_PROFILE_APP_STREAMING
 import android.companion.AssociationRequest.DEVICE_PROFILE_AUTOMOTIVE_PROJECTION
+import android.companion.AssociationRequest.DEVICE_PROFILE_FITNESS_TRACKER
 import android.companion.AssociationRequest.DEVICE_PROFILE_GLASSES
+import android.companion.AssociationRequest.DEVICE_PROFILE_MEDICAL
 import android.companion.AssociationRequest.DEVICE_PROFILE_NEARBY_DEVICE_STREAMING
 import android.companion.AssociationRequest.DEVICE_PROFILE_VIRTUAL_DEVICE
 import android.companion.AssociationRequest.DEVICE_PROFILE_WATCH
@@ -46,7 +48,9 @@ class AssociationEndToEndSelfManagedTest(
         // Watch and glasses profiles are not supported for self-managed association flow.
         assumeFalse(profile == null)
         assumeFalse(profile == DEVICE_PROFILE_WATCH)
+        assumeFalse(profile == DEVICE_PROFILE_FITNESS_TRACKER)
         assumeFalse(profile == DEVICE_PROFILE_GLASSES)
+        assumeFalse(profile == DEVICE_PROFILE_MEDICAL)
         // Do not need to test the automotive_projection profile since it does not have
         // the UI.
         assumeFalse(profile == DEVICE_PROFILE_AUTOMOTIVE_PROJECTION)

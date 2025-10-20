@@ -82,7 +82,7 @@ public class DecoderRenderTest extends MediaTestBase {
      */
     @Test
     @ApiTest(apis = {"android.media.MediaCodec.OnFrameRenderedListener#onFrameRendered"})
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void onFrameRendered_indicatesAllFramesRendered_toDisplay_vp9() throws Exception {
         onFrameRendered_indicatesAllFramesRendered(
                 "bbb_s1_640x360_webm_vp9_0p21_1600kbps_30fps_vorbis_stereo_128kbps_48000hz.webm",
@@ -97,7 +97,7 @@ public class DecoderRenderTest extends MediaTestBase {
      */
     @Test
     @ApiTest(apis = {"android.media.MediaCodec.OnFrameRenderedListener#onFrameRendered"})
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void onFrameRendered_indicatesAllFramesRendered_toTexture_vp9() throws Exception {
         OutputSurface outputSurface = new OutputSurface(480, 360);
         onFrameRendered_indicatesAllFramesRendered(
@@ -132,7 +132,7 @@ public class DecoderRenderTest extends MediaTestBase {
         MediaFormat videoFormat = videoExtractor.getTrackFormat(videoTrackIndex);
         MediaCodec videoCodec = createCodecFor(videoFormat);
         assumeFalse("No video codec found for " + fileName, videoCodec == null);
-        videoCodec.configure(videoFormat, getActivity().getSurfaceHolder().getSurface(), null, 0);
+        videoCodec.configure(videoFormat, surface, null, 0);
 
         VideoDecoderCallback videoDecoderCallback = new VideoDecoderCallback(videoExtractor);
         videoCodec.setCallback(videoDecoderCallback);
@@ -233,7 +233,7 @@ public class DecoderRenderTest extends MediaTestBase {
      */
     @Test
     @ApiTest(apis = {"android.media.MediaCodec.OnFrameRenderedListener#onFrameRendered"})
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void onFrameRendered_whenInvalidRenderTime_indicatesAllFramesRendered_vp9()
             throws Exception {
         onFrameRendered_whenInvalidRenderTime_indicatesAllFramesRendered(

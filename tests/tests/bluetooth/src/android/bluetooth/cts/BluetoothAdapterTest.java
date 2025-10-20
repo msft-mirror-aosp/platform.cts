@@ -694,10 +694,18 @@ public class BluetoothAdapterTest {
                 NullPointerException.class,
                 () -> mAdapter.setPreferredAudioProfiles(null, preferences));
 
+        Permissions.enforceEachPermissions(
+                () -> mAdapter.getPreferredAudioProfiles(device),
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
+        Permissions.enforceEachPermissions(
+                () -> mAdapter.setPreferredAudioProfiles(device, preferences),
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
         // Check what happens when the device is not bonded
-        assertThat(mAdapter.getPreferredAudioProfiles(device).isEmpty()).isTrue();
-        assertThat(mAdapter.setPreferredAudioProfiles(device, preferences))
-                .isEqualTo(BluetoothStatusCodes.ERROR_DEVICE_NOT_BONDED);
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
+            assertThat(mAdapter.getPreferredAudioProfiles(device).isEmpty()).isTrue();
+            assertThat(mAdapter.setPreferredAudioProfiles(device, preferences))
+                    .isEqualTo(BluetoothStatusCodes.ERROR_DEVICE_NOT_BONDED);
+        }
     }
 
     @Test
@@ -832,5 +840,21 @@ public class BluetoothAdapterTest {
             BroadcastReceiver receiver, Duration timeout, Matcher<Intent>... matchers) {
         verify(receiver, timeout(timeout.toMillis()))
                 .onReceive(any(), MockitoHamcrest.argThat(AllOf.allOf(matchers)));
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_GATT_OFFLOAD_API)
+    @Test
+    public void getSupportedGattOffloadCapabilities() {
+        assumeTrue(mHasBluetooth);
+
+        assertThrows(SecurityException.class, () -> mAdapter.getSupportedGattOffloadCapabilities());
+
+        try (var p = Permissions.withPermissions(BLUETOOTH_PRIVILEGED)) {
+            assertThat(mAdapter.getSupportedGattOffloadCapabilities()).isNotNull();
+            assertThat(mAdapter.getSupportedGattOffloadCapabilities().isClientOffloadSupported())
+                    .isAnyOf(true, false);
+            assertThat(mAdapter.getSupportedGattOffloadCapabilities().isServerOffloadSupported())
+                    .isAnyOf(true, false);
+        }
     }
 }

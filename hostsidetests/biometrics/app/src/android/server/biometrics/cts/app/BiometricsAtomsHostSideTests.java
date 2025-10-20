@@ -16,26 +16,39 @@
 
 package android.server.biometrics.cts.app;
 
+import static android.Manifest.permission.MANAGE_SECURE_LOCK_DEVICE;
 import static android.Manifest.permission.TEST_BIOMETRIC;
 import static android.hardware.biometrics.SensorProperties.STRENGTH_CONVENIENCE;
+import static android.hardware.biometrics.SensorProperties.STRENGTH_STRONG;
 import static android.server.biometrics.cts.FingerprintHostsideConstants.FACE_AUTH_ACQUIRED_MESSAGES;
 import static android.server.biometrics.cts.FingerprintHostsideConstants.FACE_ENROLL_ACQUIRED_MESSAGES;
 import static android.server.biometrics.cts.FingerprintHostsideConstants.FINGERPRINT_AUTH_ACQUIRED_MESSAGES;
 import static android.server.biometrics.cts.FingerprintHostsideConstants.FINGERPRINT_ENROLL_ACQUIRED_MESSAGES;
+import static android.server.wm.ShellCommandHelper.executeShellCommand;
+
+import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Instrumentation;
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.hardware.biometrics.BiometricManager;
 import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.biometrics.BiometricTestSession;
 import android.hardware.biometrics.SensorProperties;
 import android.os.CancellationSignal;
+import android.security.authenticationpolicy.AuthenticationPolicyManager;
+import android.security.authenticationpolicy.DisableSecureLockDeviceParams;
+import android.security.authenticationpolicy.EnableSecureLockDeviceParams;
 import android.server.biometrics.util.SensorStates;
 import android.server.biometrics.util.Utils;
+import android.server.wm.LockScreenSession;
 import android.server.wm.UiDeviceUtils;
+import android.server.wm.WindowManagerStateHelper;
 import android.support.test.uiautomator.By;
 import android.support.test.uiautomator.BySelector;
 import android.support.test.uiautomator.UiDevice;
@@ -47,6 +60,7 @@ import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.server.biometrics.nano.SensorStateProto;
 
 import org.junit.After;
@@ -65,24 +79,33 @@ public class BiometricsAtomsHostSideTests {
     private static final String TAG = "BiometricsAtomsHostSideTests";
 
     private static final long WAIT_MS = 2000;
+    private static final long TIMEOUT = 5_000;
     private static final String VIEW_BIOMETRIC_PROMPT_ID = "biometric_scrollview";
-    private static final String  VIEW_BIOMETRIC_PROMPT_CONFIRM_ID = "button_confirm";
+    private static final String VIEW_BIOMETRIC_PROMPT_CONFIRM_ID = "button_confirm";
+    private static final String SECURE_LOCK_DEVICE_BIOMETRIC_AUTH_ID =
+            "secure_lock_device_biometric_auth_content";
 
     private Instrumentation mInstrumentation;
     private UiDevice mDevice;
     private int mUserId;
+    private AuthenticationPolicyManager mAuthenticationPolicyManager;
     private BiometricManager mBiometricManager;
     private List<SensorProperties> mSensorProperties;
     private String mUiPackage;
+    private Context mContext;
 
     @Before
     public void setup() {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
-        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(TEST_BIOMETRIC);
+        mInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(TEST_BIOMETRIC, MANAGE_SECURE_LOCK_DEVICE);
         mDevice = UiDevice.getInstance(mInstrumentation);
 
-        mUserId = mInstrumentation.getContext().getUserId();
-        mBiometricManager = mInstrumentation.getContext().getSystemService(BiometricManager.class);
+        mContext = mInstrumentation.getContext();
+        mUserId = mContext.getUserId();
+        mAuthenticationPolicyManager = mContext.getSystemService(AuthenticationPolicyManager.class);
+        mBiometricManager = mContext.getSystemService(BiometricManager.class);
         // ignore the legacy HIDL interface for all tests
         mSensorProperties = filterSensorProperties(mBiometricManager.getSensorProperties());
         mUiPackage = mBiometricManager.getUiPackage();
@@ -117,6 +140,21 @@ public class BiometricsAtomsHostSideTests {
             @NonNull List<SensorProperties> properties) {
         return properties.stream()
                 .filter(p -> p.getSensorStrength() != STRENGTH_CONVENIENCE)
+                .collect(Collectors.toList());
+    }
+
+    private static List<SensorProperties> filterStrongFingerprintSensorProperties(
+            @NonNull List<SensorProperties> properties) {
+        return properties.stream()
+                .filter(p -> p.getSensorStrength() == STRENGTH_STRONG)
+                .filter(
+                        p -> {
+                            try {
+                                return isFingerprint(p.getSensorId());
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        })
                 .collect(Collectors.toList());
     }
 
@@ -226,6 +264,138 @@ public class BiometricsAtomsHostSideTests {
             }
         }
         mInstrumentation.waitForIdleSync();
+    }
+
+    @Test
+    public void testSecureLockDeviceStateChanged() throws Exception {
+        assumeFalse(
+                "Do not test on automotive",
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+        assumeFalse(
+                "Do not test on TV",
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK));
+        assumeFalse(
+                "Do not test on watch",
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH));
+
+        final List<SensorProperties> strongFingerprintSensorProperties =
+                filterStrongFingerprintSensorProperties(mSensorProperties);
+        assumeTrue(
+                "Device must have at least one strong fingerprint sensor",
+                !strongFingerprintSensorProperties.isEmpty());
+
+        final SensorProperties prop = strongFingerprintSensorProperties.getFirst();
+        int sensorId = prop.getSensorId();
+
+        try (BiometricTestSession session = mBiometricManager.createTestSession(sensorId);
+                LockScreenSession lockScreenSession =
+                        new LockScreenSession(mInstrumentation, new WindowManagerStateHelper())) {
+            lockScreenSession.setLockCredential();
+
+            // Enroll a strong biometric, which is required to enable the feature.
+            session.startEnroll(mUserId);
+            Utils.waitForBusySensor(sensorId);
+            session.finishEnroll(mUserId);
+            Utils.waitForIdleService();
+
+            assumeTrue(
+                    "Device must support secure lock device",
+                    mAuthenticationPolicyManager.getSecureLockDeviceAvailability()
+                            == AuthenticationPolicyManager.SUCCESS);
+
+            // Set test mode to true to prevent ADB/USB ports disabled
+            mAuthenticationPolicyManager.setSecureLockDeviceTestStatus(true);
+
+            // Test SecureLockDeviceStateChanged.SecureLockDeviceEventType.ENABLED
+            // Enable secure lock device
+            mAuthenticationPolicyManager.enableSecureLockDevice(
+                    new EnableSecureLockDeviceParams("Enabling for atom test"));
+            assertThat(mAuthenticationPolicyManager.isSecureLockDeviceEnabled()).isTrue();
+
+            // Test SecureLockDeviceStateChanged.SecureLockDeviceEventType.DISABLED_MANUALLY
+            // Disable manually
+            mAuthenticationPolicyManager.disableSecureLockDevice(
+                    new DisableSecureLockDeviceParams("Disabling manually for atom test"));
+            assertThat(mAuthenticationPolicyManager.isSecureLockDeviceEnabled()).isFalse();
+
+            // Test SecureLockDeviceStateChanged.SecureLockDeviceEventType.ENABLED
+            // Re-enable secure lock device
+            mAuthenticationPolicyManager.enableSecureLockDevice(
+                    new EnableSecureLockDeviceParams("Re-enabling for 2FA test"));
+            assertThat(mAuthenticationPolicyManager.isSecureLockDeviceEnabled()).isTrue();
+
+            // Set test mode to false to require two-factor authentication to disable
+            mAuthenticationPolicyManager.setSecureLockDeviceTestStatus(false);
+
+            // Test SecureLockDeviceStateChanged.SecureLockDeviceEventType.
+            // DISABLED_TWO_FACTOR_AUTHENTICATION
+            // Successful primary authentication for first step of two-factor authentication:
+            // 1) Wake device
+            lockScreenSession.wakeUpDevice();
+            // 2) Show the bouncer before entering the credential.
+            executeShellCommand("wm dismiss-keyguard");
+            // 3) Enter the device credential
+            lockScreenSession.enterAndConfirmLockCredential();
+
+            PollingCheck.waitFor(
+                    TIMEOUT,
+                    () -> {
+                        try {
+                            String dumpsysOutput =
+                                    runShellCommand(mInstrumentation, "dumpsys lock_settings");
+                            // After primary auth, the flags should be exactly
+                            // STRONG_BIOMETRIC_AUTH_REQUIRED_FOR_SECURE_LOCK_DEVICE (0x1000).
+                            String expectedLine = "userId=" + mUserId + ", primaryAuthFlags=1000";
+                            return dumpsysOutput.contains(expectedLine);
+                        } catch (Exception e) {
+                            Log.e(TAG, "Failed to check strong auth flags via dumpsys", e);
+                            return false;
+                        }
+                    },
+                    "strong auth flags were not updated after primary auth during "
+                            + "secure lock device");
+
+            // Re-introduce permissions reset by the previous lock session call
+            mInstrumentation
+                    .getUiAutomation()
+                    .adoptShellPermissionIdentity(TEST_BIOMETRIC, MANAGE_SECURE_LOCK_DEVICE);
+
+            // Wait for second-factor biometric auth
+            mDevice.wait(
+                    Until.hasObject(getBySelector(SECURE_LOCK_DEVICE_BIOMETRIC_AUTH_ID)), WAIT_MS);
+            Utils.waitForBusySensor(sensorId);
+
+            // Successful biometric authentication to complete two-factor authentication
+            session.acceptAuthentication(mUserId);
+
+            // Wait for keyguard to report transition to GONE - only then does
+            // SecureLockDeviceInteractor run onGoneTransitionFinished to disable secure lock
+            // device.
+            lockScreenSession.waitForKeyguardGone();
+
+            if (mAuthenticationPolicyManager.isSecureLockDeviceEnabled()) {
+                // Disabling after biometric auth if onGoneTransitionFinished does not finish in
+                // time during test
+                mAuthenticationPolicyManager.disableSecureLockDevice(
+                        new DisableSecureLockDeviceParams("Disabling after biometric auth"));
+            }
+            // Poll to wait for the asynchronous state change to complete.
+            PollingCheck.waitFor(
+                    TIMEOUT,
+                    () -> !mAuthenticationPolicyManager.isSecureLockDeviceEnabled(),
+                    "Secure lock device was not disabled after successful two factor "
+                            + "credential and strong biometric authentication");
+        } finally {
+            // Re-introduce permissions in case of errors
+            mInstrumentation
+                    .getUiAutomation()
+                    .adoptShellPermissionIdentity(TEST_BIOMETRIC, MANAGE_SECURE_LOCK_DEVICE);
+            if (mAuthenticationPolicyManager.isSecureLockDeviceEnabled()) {
+                mAuthenticationPolicyManager.disableSecureLockDevice(
+                        new DisableSecureLockDeviceParams("Disabling for test cleanup"));
+            }
+            mAuthenticationPolicyManager.setSecureLockDeviceTestStatus(false);
+        }
     }
 
     private BySelector getBySelector(String id) {

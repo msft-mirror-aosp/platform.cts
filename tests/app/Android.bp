@@ -45,6 +45,7 @@ android_test {
         "android.app.flags-aconfig-java",
         "ravenwood-junit",
         "bedstead",
+        "telecom_flags_core_java_lib",
     ],
     srcs: [
         "src/**/*.java",

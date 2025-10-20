@@ -49,6 +49,10 @@ java_test_helper_library {
         "src/**/util/*.java",
         "src/**/util/*.kt",
     ],
+
+    static_libs: [
+        "android.app.flags-aconfig-java",
+    ],
 }
 
 test_module_config {

@@ -35,8 +35,8 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature;
 import com.android.bedstead.harrier.annotations.RequireFeature;
-import com.android.bedstead.harrier.policies.LockscreenPolicyWithUnifiedChallenge;
-import com.android.bedstead.harrier.policies.ScreenCaptureDisabled;
+import com.android.bedstead.enterprise.policies.LockscreenPolicyWithUnifiedChallenge;
+import com.android.bedstead.enterprise.policies.ScreenCaptureDisabled;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
 

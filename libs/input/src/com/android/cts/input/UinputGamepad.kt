@@ -17,12 +17,35 @@
 package com.android.cts.input
 
 import android.app.Instrumentation
+import android.view.InputDevice.SOURCE_GAMEPAD
 import android.view.InputDevice.SOURCE_KEYBOARD
+import com.android.cts.input.EvdevInputEventCodes.Companion.EV_KEY
+import com.android.cts.input.EvdevInputEventCodes.Companion.EV_KEY_PRESS
+import com.android.cts.input.EvdevInputEventCodes.Companion.EV_KEY_RELEASE
+import com.android.cts.input.EvdevInputEventCodes.Companion.EV_SYN
+import com.android.cts.input.EvdevInputEventCodes.Companion.SYN_REPORT
 
 private fun createGamepadRegisterCommand(): UinputRegisterCommand {
     val configurationItems = listOf(
         ConfigurationItem("UI_SET_EVBIT", listOf("EV_KEY")),
-        ConfigurationItem("UI_SET_KEYBIT", listOf("BTN_GAMEPAD"))
+        ConfigurationItem(
+            "UI_SET_KEYBIT",
+            listOf(
+                "BTN_SOUTH",
+                "BTN_EAST",
+                "BTN_NORTH",
+                "BTN_WEST",
+                "BTN_TL",
+                "BTN_TR",
+                "BTN_TL2",
+                "BTN_TR2",
+                "BTN_SELECT",
+                "BTN_START",
+                "BTN_MODE",
+                "BTN_THUMBL",
+                "BTN_THUMBR",
+            )
+        )
     )
 
     return UinputRegisterCommand(
@@ -42,7 +65,26 @@ private fun createGamepadRegisterCommand(): UinputRegisterCommand {
  */
 class UinputGamepad(instrumentation: Instrumentation) : UinputDevice(
     instrumentation,
-    SOURCE_KEYBOARD,
+    SOURCE_KEYBOARD or SOURCE_GAMEPAD,
     createGamepadRegisterCommand(),
     null // display
-)
+) {
+    // store the keys that are currently down
+    private val keysDown = mutableSetOf<Int>()
+
+    fun injectKeyDown(scanCode: Int) {
+        if (!keysDown.add(scanCode)) {
+            throw IllegalArgumentException("Key $scanCode is already down")
+        }
+        injectEvents(EV_KEY, scanCode, EV_KEY_PRESS)
+        injectEvents(EV_SYN, SYN_REPORT, 0)
+    }
+
+    fun injectKeyUp(scanCode: Int) {
+        if (!keysDown.remove(scanCode)) {
+            throw IllegalArgumentException("Key $scanCode is not down")
+        }
+        injectEvents(EV_KEY, scanCode, EV_KEY_RELEASE)
+        injectEvents(EV_SYN, SYN_REPORT, 0)
+    }
+}

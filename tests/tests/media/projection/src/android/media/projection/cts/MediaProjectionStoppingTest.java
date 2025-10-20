@@ -21,6 +21,7 @@ import static com.android.compatibility.common.util.SystemUtil.runWithShellPermi
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
@@ -28,7 +29,11 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.media.cts.MediaProjectionRule;
 import android.media.projection.MediaProjection;
+import android.os.HandlerThread;
 import android.os.UserHandle;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.LockScreenSession;
 import android.server.wm.WindowManagerStateHelper;
 
@@ -36,24 +41,35 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
+import com.android.media.projection.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import platform.test.desktop.SimulatedConnectedDisplayTestRule;
+
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Test {@link MediaProjection} stopping behavior.
  *
- * Run with:
- * atest CtsMediaProjectionTestCases:MediaProjectionStoppingTest
+ * <p>Run with: atest CtsMediaProjectionTestCases:MediaProjectionStoppingTest
  */
 @FrameworkSpecificTest
 public class MediaProjectionStoppingTest {
     @Rule public MediaProjectionRule mMediaProjectionRule = new MediaProjectionRule();
+
+    @Rule
+    public SimulatedConnectedDisplayTestRule mConnectedDisplayTestRule =
+            new SimulatedConnectedDisplayTestRule(0);
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Context mContext;
     private int mTimeoutMs;
@@ -135,6 +151,84 @@ public class MediaProjectionStoppingTest {
         } finally {
             mLockScreenSession.wakeUpDevice();
             mLockScreenSession.unlockDevice();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_STOP_ON_DISPLAY_REMOVAL)
+    public void mediaProjectionOnConnectedDisplay_connectedDisplayRemoved_sessionStops()
+            throws Exception {
+        assumeFalse(
+                InstrumentationRegistry.getInstrumentation()
+                        .getTargetContext()
+                        .getPackageManager()
+                        .isInstantApp());
+        List<Integer> displays = mConnectedDisplayTestRule.setupTestDisplays(1);
+
+        HandlerThread handlerThread = new HandlerThread("VirtualDisplayHandlerForTest");
+        try {
+            handlerThread.start();
+            mMediaProjectionRule.startMediaProjection(displays.getFirst());
+            mMediaProjectionRule.createVirtualDisplay();
+
+            CountDownLatch latch = new CountDownLatch(1);
+            mMediaProjectionRule.registerCallback(
+                    new MediaProjection.Callback() {
+                        @Override
+                        public void onStop() {
+                            latch.countDown();
+                        }
+                    });
+
+            mConnectedDisplayTestRule.cleanupTestDisplays();
+
+            assertWithMessage("MediaProjection should have been stopped when display was removed")
+                    .that(latch.await(mTimeoutMs, TimeUnit.MILLISECONDS))
+                    .isTrue();
+        } finally {
+            mLockScreenSession.wakeUpDevice();
+            mLockScreenSession.unlockDevice();
+            handlerThread.quit();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_STOP_ON_DISPLAY_REMOVAL)
+    public void mediaProjectionOnDefaultDisplay_connectedDisplayRemoved_sessionContinues()
+            throws Exception {
+        assumeFalse(
+                InstrumentationRegistry.getInstrumentation()
+                        .getTargetContext()
+                        .getPackageManager()
+                        .isInstantApp());
+        mConnectedDisplayTestRule.setupTestDisplays(1);
+
+        HandlerThread handlerThread = new HandlerThread("VirtualDisplayHandlerForTest");
+        try {
+            handlerThread.start();
+
+            mMediaProjectionRule.startMediaProjection();
+            mMediaProjectionRule.createVirtualDisplay();
+
+            AtomicBoolean isStopped = new AtomicBoolean(false);
+            mMediaProjectionRule.registerCallback(
+                    new MediaProjection.Callback() {
+                        @Override
+                        public void onStop() {
+                            isStopped.set(true);
+                        }
+                    });
+
+            mConnectedDisplayTestRule.cleanupTestDisplays();
+
+            assertWithMessage(
+                            "MediaProjection should have not been stopped when display was removed")
+                    .that(isStopped.get())
+                    .isFalse();
+        } finally {
+            mLockScreenSession.wakeUpDevice();
+            mLockScreenSession.unlockDevice();
+            handlerThread.quit();
         }
     }
 }

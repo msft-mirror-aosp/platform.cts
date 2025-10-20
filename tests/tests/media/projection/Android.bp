@@ -31,6 +31,7 @@ java_defaults {
         "ctstestrunner-axt",
         "cts-mediaprojection-common",
         "cts-wm-util",
+        "desktop-test-lib",
         "frameworks-base-testutils",
         "flag-junit",
         "junit",

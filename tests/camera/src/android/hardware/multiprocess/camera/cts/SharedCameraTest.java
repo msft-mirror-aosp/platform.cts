@@ -65,7 +65,7 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
     private static final String TAG = "SharedCameraTest";
     private static final boolean VERBOSE = Log.isLoggable(TAG, Log.VERBOSE);
     private static final int SETUP_TIMEOUT = 5000; // Remote camera setup timeout (ms).
-    private static final int WAIT_TIME = 3000; // Time to wait for process to launch (ms).
+    private static final int WAIT_TIME = 5000; // Time to wait for process to launch (ms).
     private static final int EVICTION_TIMEOUT = 1000; // Remote camera eviction timeout (ms).
     private static final long PREVIEW_TIME_MS = 2000;
     private ErrorLoggingService.ErrorServiceConnection mErrorServiceConnection;

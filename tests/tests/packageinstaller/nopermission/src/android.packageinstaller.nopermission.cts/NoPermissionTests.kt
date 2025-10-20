@@ -265,6 +265,7 @@ class NoPermissionTests {
         }
     }
 
+    @Before
     @After
     fun uninstallTestPackage() {
         uiDevice.executeShellCommand("pm uninstall $TEST_APK_PACKAGE_NAME")

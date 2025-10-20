@@ -422,11 +422,13 @@ public class WatchUidRunner {
         public final int cmd;
         @Nullable public final String procState;
         @Nullable public final Integer capability;
+        @Nullable public final WatchUidPredicate orPredicate;
 
         private WatchUidPredicate(Builder builder) {
             cmd = builder.mCmd;
             procState = builder.mProcState;
             capability = builder.mCapability;
+            orPredicate = builder.mOrPredicate;
         }
 
         /** Returns true if the tokenized watch-uid line matches the expected values. */
@@ -456,6 +458,9 @@ public class WatchUidRunner {
                     }
                 }
             }
+            if (orPredicate != null && orPredicate.test(line)) {
+                return true;
+            }
             return false;
         }
 
@@ -463,6 +468,7 @@ public class WatchUidRunner {
             private final int mCmd;
             private String mProcState = null;
             private Integer mCapability = null;
+            private WatchUidPredicate mOrPredicate = null;
 
             public Builder(int cmd) {
                 mCmd = cmd;
@@ -477,6 +483,12 @@ public class WatchUidRunner {
             /** Set the optional expected state process capability to test against. */
             public Builder setExpectedCapability(@Nullable Integer capability) {
                 mCapability = capability;
+                return this;
+            }
+
+            /** Set the alternative expected predicate to test against. */
+            public Builder orPredicate(@Nullable WatchUidPredicate predicate) {
+                mOrPredicate = predicate;
                 return this;
             }
 

@@ -24,7 +24,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
@@ -40,11 +39,13 @@ import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.RunUtil;
 
 import com.google.common.io.ByteStreams;
+import com.google.common.truth.Expect;
 
 import org.junit.After;
 import org.junit.AssumptionViolatedException;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.function.ThrowingRunnable;
 import org.junit.runner.RunWith;
 
 import java.io.File;
@@ -160,28 +161,16 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     /** Packages installed as part of the tests */
     private Set<String> mFixedPackages;
 
-    /**
-     * @deprecated TODO(b/435528858): should be moved to subclasses that need it
-     */
-    @Deprecated protected int mDeviceOwnerUserId;
-
-    /**
-     * @deprecated TODO(b/435528858): should use proper method from {@code
-     *     DevicePolicyUsersPreparer}.
-     */
-    @Deprecated private int mMainUserId;
-
     private int mInitialUserId;
 
     /** Is test running on a watch */
     protected boolean mIsWatch;
 
     /** Whether multi-user is supported. */
-    private boolean mSupportsMultiUser;
+    private boolean mSupportsSecondaryUsers;
 
-    // TODO(b/435528858): move to DevicePolicyUsersPreparer
     /** Users we shouldn't delete in the tests */
-    private final Set<Integer> mPreExistingUsers = new LinkedHashSet<>();
+    private final Set<Integer> mNonTestUserIds = new LinkedHashSet<>();
 
     protected boolean mHasAttestation;
 
@@ -195,6 +184,8 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     public final DeviceResponsivenessCheckerRule mDeviceResponsivenessCheckerRule =
             new DeviceResponsivenessCheckerRule(this);
 
+    @Rule public final Expect expect = Expect.create();
+
     @Rule
     public final DeviceAdminFeaturesCheckerRule mFeaturesCheckerRule =
             new DeviceAdminFeaturesCheckerRule(this);
@@ -203,7 +194,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     public void setUp() throws Exception {
         assertNotNull(getBuild());  // ensure build has been set before test is run.
 
-        mSupportsMultiUser = getMaxNumberOfUsersSupported() > 1;
+        mSupportsSecondaryUsers = getMaxNumberOfSecondaryUsersSupported() > 0;
         mFixedPackages = getDevice().getInstalledPackageNames();
         mBuildHelper = new CompatibilityBuildHelper(getBuild());
         mIsWatch = hasDeviceFeature(FEATURE_WATCH);
@@ -213,11 +204,8 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
             mHasAttestation = Integer.parseInt(propertyValue) >= 26;
         }
 
-        mMainUserId = getMainUser();
-        mDeviceOwnerUserId = mMainUserId;
-
         if (hasDeviceFeature(FEATURE_SECURE_LOCK_SCREEN)) {
-            ensureMainUserHasNoPassword();
+            ensureInitialUserHasNoPassword();
         }
 
         // disable the package verifier to avoid the dialog when installing an app
@@ -228,19 +216,19 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         // Gets the value of the initial user running these tests - it will be switched to (in
         // a few lines) and won't be removed
         mInitialUserId = DevicePolicyUsersPreparer.getInitialCurrentUserId();
-        mPreExistingUsers.add(USER_SYSTEM);
-        mPreExistingUsers.add(mMainUserId);
-        mPreExistingUsers.add(mInitialUserId);
+
+        mNonTestUserIds.add(USER_SYSTEM);
+        mNonTestUserIds.add(mInitialUserId);
 
         CLog.d(
-                "%s.setUp(): mInitialUserId=%d, currentUserId=%d, mMainUserId=%d, "
-                        + "mDeviceOwnerUserId=%s, mFixedUsers=%s",
+                "%s.setUp(): mInitialUserId=%d, currentUser=%d, mainUserId=%s, "
+                        + "mNonTestUserIds=%s, preExistingUserIds=%s",
                 getClass().getSimpleName(),
                 mInitialUserId,
                 getDevice().getCurrentUser(),
-                mMainUserId,
-                mDeviceOwnerUserId,
-                mPreExistingUsers);
+                getDevice().getMainUserId(),
+                mNonTestUserIds,
+                DevicePolicyUsersPreparer.getPreExistingUserIds());
 
         getDevice().executeShellCommand(" mkdir " + TEST_UPDATE_LOCATION);
 
@@ -256,9 +244,9 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         executeShellCommand("input keyevent KEYCODE_HOME");
     }
 
-    private void ensureMainUserHasNoPassword() throws DeviceNotAvailableException {
-        if (!verifyUserCredentialIsCorrect(null, mMainUserId)) {
-            changeUserCredential(null, TEST_PASSWORD, mMainUserId);
+    private void ensureInitialUserHasNoPassword() throws DeviceNotAvailableException {
+        if (!verifyUserCredentialIsCorrect(null, mInitialUserId)) {
+            changeUserCredential(null, TEST_PASSWORD, mInitialUserId);
         }
     }
 
@@ -339,21 +327,6 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         assertEquals("Success\n", installResult);
     }
 
-    protected void installDeviceOwnerApp(String apk) throws Exception {
-        installAppAsUser(apk, mDeviceOwnerUserId);
-    }
-
-    protected void removeDeviceOwnerAdmin(String componentName) throws DeviceNotAvailableException {
-        // Don't fail as it could hide the real failure from the test method
-        if (!removeAdmin(componentName, mDeviceOwnerUserId)) {
-            CLog.e("Failed to remove device owner %s on user %d", componentName,
-                    mDeviceOwnerUserId);
-        }
-        if (isHeadlessSystemUserMode() && !removeAdmin(componentName, mMainUserId)) {
-            CLog.e("Failed to remove profile owner %s on user %d", componentName, mMainUserId);
-        }
-    }
-
     protected void forceStopPackageForUser(String packageName, int userId) throws Exception {
         // TODO Move this logic to ITestDevice
         executeShellCommand("am force-stop --user " + userId + " " + packageName);
@@ -411,8 +384,8 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         getDevice().switchUser(userId);
     }
 
-    protected int getMaxNumberOfUsersSupported() throws DeviceNotAvailableException {
-        return getDevice().getMaxNumberOfUsersSupported();
+    protected int getMaxNumberOfSecondaryUsersSupported() throws DeviceNotAvailableException {
+        return getDevice().getMaxNumberOfUsersSupported("android.os.usertype.full.SECONDARY");
     }
 
     protected int getMaxNumberOfRunningUsersSupported() throws DeviceNotAvailableException {
@@ -495,6 +468,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     }
 
     protected void removeUser(int userId) throws Exception  {
+        CLog.d("removeUser(%d)", userId);
         if (listUsers().contains(userId) && userId != USER_SYSTEM) {
             // Don't log output, as tests sometimes set no debug user restriction, which
             // causes this to fail, we should still continue and remove the user.
@@ -532,7 +506,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     }
 
     private void removeTestAddedUser(int userId) throws Exception  {
-        if (mPreExistingUsers.contains(userId)) {
+        if (mNonTestUserIds.contains(userId)) {
             CLog.d("removeTestAddedUser(%d): ignoring as user existed before test");
             return;
         }
@@ -544,7 +518,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
      */
     protected List<Integer> getUsersCreatedByTests() throws Exception {
         List<Integer> result = listUsers();
-        result.removeAll(mPreExistingUsers);
+        result.removeAll(mNonTestUserIds);
         return result;
     }
 
@@ -627,21 +601,24 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         return false;
     }
 
-    /** Checks whether it is possible to create the desired number of users. */
-    protected boolean canCreateAdditionalUsers(int numberOfUsers)
+    /** Checks whether it is possible to create the desired number of secondary users. */
+    protected boolean canCreateAdditionalSecondaryUsers(int numberOfUsers)
             throws DeviceNotAvailableException {
-        return listUsers().size() + numberOfUsers <= getMaxNumberOfUsersSupported();
+        return getDevice().getRemainingCreatableUserCount("android.os.usertype.full.SECONDARY")
+                >= numberOfUsers;
     }
 
     /**
      * Throws a {@link org.junit.AssumptionViolatedException} if it's not possible to create the
-     * desired number of users.
+     * desired number of secondary users.
      */
-    protected void assumeCanCreateAdditionalUsers(int numberOfUsers)
+    protected void assumeCanCreateAdditionalSecondaryUsers(int numberOfUsers)
             throws DeviceNotAvailableException {
-        assumeTrue("Tests needs at least " + numberOfUsers + " extra users, but device supports "
-                + "at most " + getMaxNumberOfUsersSupported(),
-                canCreateAdditionalUsers(numberOfUsers));
+        assumeTrue(
+                "Tests needs at least " + numberOfUsers
+                        + " extra users, but device supports at most "
+                        + getMaxNumberOfSecondaryUsersSupported(),
+                canCreateAdditionalSecondaryUsers(numberOfUsers));
     }
 
     /** Checks whether it is possible to start the desired number of users. */
@@ -720,23 +697,14 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     }
 
     protected final void assumeCanCreateOneManagedUser() throws DeviceNotAvailableException {
-        assumeSupportsMultiUser();
-        assumeCanCreateAdditionalUsers(1);
+        assumeSupportsSecondaryUsers();
+        assumeCanCreateAdditionalSecondaryUsers(1);
     }
 
-    protected final void assumeSupportsMultiUser() throws DeviceNotAvailableException {
+    protected final void assumeSupportsSecondaryUsers() throws DeviceNotAvailableException {
         // setup isn't always called before this method
-        mSupportsMultiUser = getMaxNumberOfUsersSupported() > 1;
-        assumeTrue("device doesn't support multiple users", mSupportsMultiUser);
-    }
-
-    /**
-     * @deprecated TODO(b/435528858): tests should not depend on main user
-     */
-    @Deprecated
-    protected final void assumeHasMainUser() throws DeviceNotAvailableException {
-        Integer user = getDevice().getMainUserId();
-        assumeTrue("device doesn't have a main user", user != null);
+        mSupportsSecondaryUsers = getMaxNumberOfSecondaryUsersSupported() > 0;
+        assumeTrue("device doesn't support secondary users", mSupportsSecondaryUsers);
     }
 
     protected final void assumeHasWifiFeature() throws DeviceNotAvailableException {
@@ -796,36 +764,6 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         return commandOutput;
     }
 
-    /**
-     * @deprecated TODO(b/435528858): should use proper method from upcoming TargetPreparer
-     */
-    @Deprecated
-    protected final int getMainUser() throws DeviceNotAvailableException {
-        if (isAutomotive()) {
-            // In Automotive, the main user is not defined.
-            // Use the current user instead of the main user.
-            return getDevice().getCurrentUser();
-        }
-        Integer user = getDevice().getMainUserId();
-        if (user == null) {
-            user = getDevice().getPrimaryUserId();
-            if (user == null) {
-                user = 0;
-            }
-        }
-        return user;
-    }
-
-    /**
-     * @deprecated TODO(b/435528858): callers should use {@code
-     *     DevicePolicyUsersPreparer#getInitialCurrentUserId()} or {@link
-     *     ITestDevice#getCurrentUser()}.
-     */
-    @Deprecated
-    protected final int getCurrentUser() throws DeviceNotAvailableException {
-        return getDevice().getCurrentUser();
-    }
-
     protected int getUserSerialNumber(int userId) throws DeviceNotAvailableException{
         // TODO: Move this logic to ITestDevice.
         // dumpsys user output contains lines like "UserInfo{0:Owner:13} serialNo=0 isPrimary=true"
@@ -842,15 +780,17 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
 
     protected boolean setProfileOwner(String componentName, int userId, boolean expectFailure)
             throws DeviceNotAvailableException {
+        CLog.d("setProfileOwner(componentName=%s, userId=%d, expectFailure=%b)", componentName,
+                userId, expectFailure);
         String command = "dpm set-profile-owner --user " + userId + " '" + componentName + "'";
         String commandOutput = getDevice().executeShellCommand(command);
         boolean success = commandOutput.startsWith("Success:");
         // If we succeeded always log, if we are expecting failure don't log failures
         // as call stacks for passing tests confuse the logs.
         if (success || !expectFailure) {
-            CLog.e("Output for command " + command + ": " + commandOutput);
+            CLog.e("Output for command %s: %s", command, commandOutput);
         } else {
-            CLog.e("Command Failed " + command);
+            CLog.e("Command Failed: %s", command);
         }
         return success;
     }
@@ -888,11 +828,13 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         }
     }
 
-    protected boolean setDeviceOwner(String componentName, int userId, boolean expectFailure)
+    protected final boolean setDeviceOwner(String componentName, int userId, boolean expectFailure)
             throws DeviceNotAvailableException {
-        if (isHeadlessSystemUserMode()) {
-            assumeNotNull("Devices in headles system user mode require a main user to set a device "
-                    + "owner.", getDevice().getMainUserId());
+        CLog.d("setDeviceOwner(componentName=%s, userId=%d, expectFailure=%b", componentName,
+                userId, expectFailure);
+        // TODO(b/35372278): temporary workaround until flag is ramped up
+        if (isAutomotive() && !DevicePolicyUsersPreparer.isDeviceOwnerSupportedOnAnyFullUsers()) {
+            throw new AssumptionViolatedException("Cannot set device owner on automotive build");
         }
         String command = "dpm set-device-owner --user " + userId + " '" + componentName + "'";
         String commandOutput = getDevice().executeShellCommand(command);
@@ -900,14 +842,14 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         // If we succeeded always log, if we are expecting failure don't log failures
         // as call stacks for passing tests confuse the logs.
         if (success || !expectFailure) {
-            CLog.d("Output for command " + command + ": " + commandOutput);
+            CLog.d("Output for command %s: %s", command, commandOutput);
         } else {
-            CLog.d("Command Failed " + command);
+            CLog.d("Command Failed %s", command);
         }
         return success;
     }
 
-    protected void setDeviceOwnerOrFail(String componentName, int userId)
+    protected final void setDeviceOwnerOrFail(String componentName, int userId)
             throws Exception {
         assertTrue(setDeviceOwner(componentName, userId, /* expectFailure =*/ false));
     }
@@ -933,7 +875,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
             throws DeviceNotAvailableException {
         String command = "dpm remove-active-admin --user " + userId + " '" + componentName + "'";
         String commandOutput = getDevice().executeShellCommand(command);
-        CLog.d("Output for command " + command + ": " + commandOutput);
+        CLog.d("Output for command %s: %s", command, commandOutput);
         return commandOutput.startsWith("Success:");
     }
 
@@ -1225,6 +1167,55 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     protected void revokePermission(String pkg, String permission, int userId) throws Exception {
         CLog.i("Revoking permission %s to package (%s) on user %d", pkg, permission, userId);
         executeShellCommand("pm revoke --user %d %s %s", userId, pkg, permission);
+    }
+
+    /**
+     * Helper method to "safely" run a test and cleanup tasks, so that exceptions thrown by the
+     * cleanup tasks don't hide exceptions thrown by the test itself.
+     *
+     */
+    protected void safeRun(ThrowingRunnable test, ThrowingRunnable... cleanUpTasks)
+            throws Exception {
+        Throwable testFailure = null;
+        List<Throwable> cleanupFailures = new ArrayList<>(cleanUpTasks.length);
+        try {
+            test.run();
+        } catch (Throwable t) {
+            testFailure = t;
+        }
+
+        for (var cleanUpTask : cleanUpTasks) {
+            try {
+                cleanUpTask.run();
+            } catch (Throwable t) {
+                cleanupFailures.add(t);
+            }
+        }
+
+        if (cleanupFailures.isEmpty() && testFailure == null) {
+            // Saul Goodman!
+            return;
+        }
+
+        if (cleanupFailures.isEmpty() && testFailure != null) {
+            // Throw testFailure directly, so failure message is preserved (without using expect)
+            if (testFailure instanceof Error) {
+                throw (Error) testFailure;
+            }
+            if (testFailure instanceof Exception) {
+                throw (Exception) testFailure;
+            }
+            // Shouldn't happen, but it doesn't hurt to check...
+            throw new AssertionError("Test failure of unexpected type", testFailure);
+        }
+
+        expect.withMessage("Test failed: %s", testFailure).fail();
+        for (int i = 0; i < cleanupFailures.size(); i++) {
+            var cleanupFailure = cleanupFailures.get(i);
+            // Unfortunately expect doesn't have a method that lets it fail with an exception, so we
+            // need to check that it's not null
+            expect.withMessage("Cleanup task#%s failed", i).that(cleanupFailure).isNull();
+        }
     }
 
     /**

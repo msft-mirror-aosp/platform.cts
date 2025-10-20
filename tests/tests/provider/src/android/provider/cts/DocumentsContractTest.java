@@ -42,6 +42,7 @@ import static android.provider.DocumentsContract.trashDocument;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -70,6 +71,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 import android.os.UserHandle;
@@ -77,12 +79,16 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DocumentsContract;
+import android.provider.DocumentsContract.Document;
 import android.provider.DocumentsContract.Path;
 import android.provider.DocumentsProvider;
 import android.provider.Flags;
 
 import androidx.test.InstrumentationRegistry;
+import androidx.test.filters.SdkSuppress;
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -513,6 +519,7 @@ public class DocumentsContractTest {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DOCUMENTS_TRASH_API)
     public void testTrashDocument() throws Exception {
         doReturn(DOC_RESULT).when(mProvider).trashDocument(DOC_RED);
@@ -521,6 +528,7 @@ public class DocumentsContractTest {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DOCUMENTS_TRASH_API)
     public void testQueryTrashDocuments() throws Exception {
         final Cursor res = new MatrixCursor(new String[0]);
@@ -532,11 +540,80 @@ public class DocumentsContractTest {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DOCUMENTS_TRASH_API)
     public void testRestoreDocumentFromTrash() throws Exception {
         doReturn(DOC_RESULT).when(mProvider).restoreDocumentFromTrash(DOC_RED, DOC_GREEN);
 
         assertEquals(URI_RESULT, restoreDocumentFromTrash(mResolver, URI_RED, URI_GREEN));
+    }
+
+    @Test
+    @SdkSuppress(minSdkVersion = 37)
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SYNC_STATE)
+    @ApiTest(
+            apis = {
+                "android.provider.DocumentsContract.Document#COLUMN_CONTENT_SYNC_STATE_FLAGS",
+            })
+    public void testQueryDocument_contentSyncState() throws Exception {
+        final String[] projection = new String[] {Document.COLUMN_CONTENT_SYNC_STATE_FLAGS};
+
+        MatrixCursor res = new MatrixCursor(projection);
+        res.newRow()
+                .add(
+                        Document.COLUMN_CONTENT_SYNC_STATE_FLAGS,
+                        Document.SYNC_STATE_FLAG_AVAILABLE_LOCALLY
+                                | Document.SYNC_STATE_FLAG_LOCAL_CHANGES
+                                | Document.SYNC_STATE_FLAG_UPLOAD_PROGRESS);
+
+        // Mock queryDocument to return the res when this projection is used.
+        doReturn(res).when(mProvider).queryDocument(DOC_RED, projection);
+
+        // Query for the sync state column.
+        Cursor cursor = mResolver.query(URI_RED, projection, null, null);
+        assertNotNull(cursor);
+
+        assertTrue(cursor.moveToNext());
+
+        // Check the correct value is returned.
+        int index = cursor.getColumnIndex(Document.COLUMN_CONTENT_SYNC_STATE_FLAGS);
+        assertTrue(index >= 0);
+        assertEquals(
+                Document.SYNC_STATE_FLAG_AVAILABLE_LOCALLY
+                        | Document.SYNC_STATE_FLAG_LOCAL_CHANGES
+                        | Document.SYNC_STATE_FLAG_UPLOAD_PROGRESS,
+                cursor.getInt(index));
+    }
+
+    @Test
+    @SdkSuppress(minSdkVersion = 37)
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SYNC_STATE)
+    @ApiTest(
+            apis = {
+                "android.provider.DocumentsContract.Document#COLUMN_CONTENT_SYNC_STATE_FLAGS",
+            })
+    public void testQueryDocument_contentSyncState_ProviderOmitsColumn() throws Exception {
+        final String[] projection =
+                new String[] {
+                    Document.COLUMN_DOCUMENT_ID, Document.COLUMN_CONTENT_SYNC_STATE_FLAGS
+                };
+
+        // Do not return COLUMN_CONTENT_SYNC_STATE_FLAGS.
+        MatrixCursor res = new MatrixCursor(projection);
+        res.newRow().add(Document.COLUMN_DOCUMENT_ID, DOC_RED);
+
+        // Mock queryDocument to return the res when this projection is used.
+        doReturn(res).when(mProvider).queryDocument(DOC_RED, projection);
+
+        // Query for the sync state column.
+        Cursor cursor = mResolver.query(URI_RED, projection, null, null);
+        assertNotNull(cursor);
+
+        assertTrue(cursor.moveToNext());
+
+        // Check that null is returned.
+        int index = cursor.getColumnIndex(Document.COLUMN_CONTENT_SYNC_STATE_FLAGS);
+        assertTrue(cursor.isNull(index));
     }
 
     private static void writeImage(int width, int height, int color, OutputStream out) {

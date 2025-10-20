@@ -178,6 +178,9 @@
     },
     {
       "name": "CtsPackageInstallSessionTestCases"
+    },
+    {
+      "name": "CtsPackageInstallerCUJDeveloperVerificationTestCases"
     }
   ],
   "presubmit": [
@@ -401,6 +404,9 @@
     },
     {
       "name": "CtsUpdateOwnershipEnforcementTestCases"
+    },
+    {
+      "name": "CtsPackageInstallerCUJDeveloperVerificationTestCases"
     }
   ],
   "desktop-presubmit": [

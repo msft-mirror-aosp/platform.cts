@@ -30,7 +30,7 @@ android_test_helper_app {
         "androidx.test.uiautomator_uiautomator",
     ],
     platform_apis: true,
-    min_sdk_version: "21",
+    min_sdk_version: "23",
     // tag this module as a cts test artifact
     test_suites: [
         "arcts",

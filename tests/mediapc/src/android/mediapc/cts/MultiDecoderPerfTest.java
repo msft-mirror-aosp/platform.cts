@@ -16,9 +16,9 @@
 
 package android.mediapc.cts;
 
-import static android.mediapc.cts.CodecTestBase.codecFilter;
-import static android.mediapc.cts.CodecTestBase.codecPrefix;
-import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
+import static android.mediav2.common.cts.CodecTestBase.codecFilter;
+import static android.mediav2.common.cts.CodecTestBase.codecPrefix;
+import static android.mediav2.common.cts.CodecTestBase.mediaTypePrefix;
 
 import android.media.MediaFormat;
 import android.mediapc.cts.common.CodecMetrics;
@@ -30,6 +30,7 @@ import android.mediapc.cts.common.Requirements.ConcurrentVideoDecoderSessionsReq
 import android.mediapc.cts.common.Requirements.SecureVideoDecoderSessionsRequirement;
 import android.mediapc.cts.common.Requirements.VideoDecoderInstancesRequirement;
 import android.mediapc.cts.common.Utils;
+import android.mediav2.common.cts.CodecTestBase;
 import android.util.Pair;
 
 import androidx.test.filters.LargeTest;

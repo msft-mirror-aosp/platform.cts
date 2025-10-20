@@ -31,7 +31,6 @@ import android.view.ViewGroup
 import android.view.WindowInsets
 import android.view.WindowManager
 import android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
-import android.view.WindowManager.LayoutParams.FLAG_SPLIT_TOUCH
 import android.view.WindowManager.LayoutParams.TYPE_APPLICATION
 import com.android.cts.input.BlockingQueueEventVerifier
 import java.time.Duration
@@ -61,10 +60,7 @@ class TwoWindowsActivity : Activity() {
         lateinit var rightView: View
         val addWindowsTask = FutureTask<Unit> {
             val wm = getSystemService(WindowManager::class.java)
-            var wmlp = WindowManager.LayoutParams(
-                TYPE_APPLICATION,
-                FLAG_NOT_TOUCH_MODAL or FLAG_SPLIT_TOUCH
-            )
+            var wmlp = WindowManager.LayoutParams(TYPE_APPLICATION, FLAG_NOT_TOUCH_MODAL)
 
             val windowMetrics = windowManager.currentWindowMetrics
             val insets = windowMetrics.windowInsets.getInsetsIgnoringVisibility(

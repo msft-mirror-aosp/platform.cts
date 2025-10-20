@@ -21,8 +21,6 @@ import static android.Manifest.permission.ACCESS_HIDDEN_PROFILES_FULL;
 import static android.multiuser.Flags.FLAG_ADD_LAUNCHER_USER_CONFIG;
 import static android.multiuser.Flags.FLAG_ENABLE_HIDING_PROFILES;
 import static android.multiuser.Flags.FLAG_ENABLE_PERMISSION_TO_ACCESS_HIDDEN_PROFILES;
-import static android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES;
-import static android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE;
 import static android.os.Flags.FLAG_GET_PRIVATE_SPACE_SETTINGS;
 
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
@@ -109,10 +107,8 @@ public class LauncherAppsForHiddenProfilesTest {
 
     @Test
     @RequiresFlagsEnabled({
-        FLAG_ALLOW_PRIVATE_PROFILE,
         FLAG_ENABLE_PERMISSION_TO_ACCESS_HIDDEN_PROFILES,
         FLAG_ENABLE_HIDING_PROFILES,
-        FLAG_ENABLE_PRIVATE_SPACE_FEATURES,
         FLAG_GET_PRIVATE_SPACE_SETTINGS
     })
     public void testGeneralApis_notDefaultLauncherWithNormalPerm_hiddenProfileInfoStripped() {
@@ -125,10 +121,8 @@ public class LauncherAppsForHiddenProfilesTest {
 
     @Test
     @RequiresFlagsEnabled({
-        FLAG_ALLOW_PRIVATE_PROFILE,
         FLAG_ENABLE_PERMISSION_TO_ACCESS_HIDDEN_PROFILES,
         FLAG_ENABLE_HIDING_PROFILES,
-        FLAG_ENABLE_PRIVATE_SPACE_FEATURES,
         FLAG_GET_PRIVATE_SPACE_SETTINGS
     })
     public void testGeneralApis_defaultLauncherNoPerms_hiddenProfileInfoStripped() {
@@ -144,10 +138,8 @@ public class LauncherAppsForHiddenProfilesTest {
 
     @Test
     @RequiresFlagsEnabled({
-        FLAG_ALLOW_PRIVATE_PROFILE,
         FLAG_ENABLE_PERMISSION_TO_ACCESS_HIDDEN_PROFILES,
         FLAG_ENABLE_HIDING_PROFILES,
-        FLAG_ENABLE_PRIVATE_SPACE_FEATURES,
         FLAG_GET_PRIVATE_SPACE_SETTINGS,
         FLAG_ADD_LAUNCHER_USER_CONFIG
     })
@@ -161,10 +153,8 @@ public class LauncherAppsForHiddenProfilesTest {
 
     @Test
     @RequiresFlagsEnabled({
-        FLAG_ALLOW_PRIVATE_PROFILE,
         FLAG_ENABLE_PERMISSION_TO_ACCESS_HIDDEN_PROFILES,
         FLAG_ENABLE_HIDING_PROFILES,
-        FLAG_ENABLE_PRIVATE_SPACE_FEATURES,
         FLAG_GET_PRIVATE_SPACE_SETTINGS,
         FLAG_ADD_LAUNCHER_USER_CONFIG
     })
@@ -181,9 +171,7 @@ public class LauncherAppsForHiddenProfilesTest {
 
     @Test
     @RequiresFlagsEnabled({
-        FLAG_ALLOW_PRIVATE_PROFILE,
-        FLAG_ENABLE_HIDING_PROFILES,
-        FLAG_ENABLE_PRIVATE_SPACE_FEATURES
+        FLAG_ENABLE_HIDING_PROFILES
     })
     public void testGetProfiles_calledFromProfile_returnsOnlyCurrentProfile() {
         try (UserReference privateProfile = createProfileAndSetupTestState()) {
@@ -199,10 +187,8 @@ public class LauncherAppsForHiddenProfilesTest {
 
     @Test
     @RequiresFlagsEnabled({
-        FLAG_ALLOW_PRIVATE_PROFILE,
         FLAG_ENABLE_PERMISSION_TO_ACCESS_HIDDEN_PROFILES,
-        FLAG_ENABLE_HIDING_PROFILES,
-        FLAG_ENABLE_PRIVATE_SPACE_FEATURES
+        FLAG_ENABLE_HIDING_PROFILES
     })
     public void testAppChangesCallbacks_defaultLauncherWithNormalPerm_callbacksReceived() {
         try (UserReference privateProfile = createProfile();
@@ -218,10 +204,8 @@ public class LauncherAppsForHiddenProfilesTest {
 
     @Test
     @RequiresFlagsEnabled({
-        FLAG_ALLOW_PRIVATE_PROFILE,
         FLAG_ENABLE_PERMISSION_TO_ACCESS_HIDDEN_PROFILES,
-        FLAG_ENABLE_HIDING_PROFILES,
-        FLAG_ENABLE_PRIVATE_SPACE_FEATURES
+        FLAG_ENABLE_HIDING_PROFILES
     })
     public void testAppChangesCallbacks_notDefaultLauncherWithNormalPerm_callbacksNotReceived() {
         try (UserReference privateProfile = createProfile();

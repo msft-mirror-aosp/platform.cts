@@ -64,6 +64,7 @@ def _assert_correct_advanced_ev_compensation(
   """
   failed_test = False
   e_msg = []
+  marginal_pass_msg = []
   for i, luma in enumerate(lumas):
     luma_delta_atol = luma_delta_atols[i]
     logging.debug('EV step: %3d, luma: %.3f, model: %.3f, ATOL: %.2f',
@@ -72,6 +73,16 @@ def _assert_correct_advanced_ev_compensation(
       failed_test = True
       e_msg.append(f'measured: {lumas[i]}, model: {expected_lumas[i]}, '
                    f'ATOL: {luma_delta_atol}. ')
+    else:
+      marginal_pass_tol = luma_delta_atol * its_session_utils.MARGINAL_PASS_FACTOR
+      if not math.isclose(luma, expected_lumas[i], abs_tol=marginal_pass_tol):
+        marginal_pass_msg.append(f'measured: {lumas[i]}, '
+                                 f'model: {expected_lumas[i]}, '
+                                 f'ATOL: {marginal_pass_tol}.')
+
+  if marginal_pass_msg:
+    logging.warning('%s\n %s', its_session_utils.MARGINAL_PASSING_MESSAGE,
+                          marginal_pass_msg)
   if failed_test:
     test_name_w_path = os.path.join(log_path, f'{_NAME}_advanced')
     for i, img in enumerate(imgs):

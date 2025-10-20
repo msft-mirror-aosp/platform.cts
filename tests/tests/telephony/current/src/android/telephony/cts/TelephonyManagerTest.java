@@ -84,7 +84,6 @@ import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
 import android.telephony.AccessNetworkConstants;
-import android.telephony.Annotation.RadioPowerState;
 import android.telephony.AvailableNetworkInfo;
 import android.telephony.CallAttributes;
 import android.telephony.CallForwardingInfo;
@@ -137,6 +136,8 @@ import android.util.Pair;
 
 import androidx.test.InstrumentationRegistry;
 
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.compatibility.common.util.AmUtils;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CarrierPrivilegeUtils;
@@ -184,6 +185,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.IntSupplier;
 import java.util.regex.Matcher;
@@ -206,9 +208,6 @@ public class TelephonyManagerTest {
     private LocationHelper mLocationHelper;
     private boolean mOnCellInfoChanged = false;
     private boolean mOnSignalStrengthsChanged = false;
-    private boolean mServiceStateChangedCalled = false;
-    private boolean mRadioRebootTriggered = false;
-    private boolean mHasRadioPowerOff = false;
     private ServiceState mServiceState;
     private final Object mLock = new Object();
 
@@ -709,6 +708,31 @@ public class TelephonyManagerTest {
     /** Checks whether the telephony feature is supported. */
     private boolean hasFeature(String feature) {
         return mPackageManager.hasSystemFeature(feature);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            com.android.server.telecom.flags.Flags.FLAG_MOVE_GET_TTY_MODE_TO_TELEPHONY_MANAGER)
+    public void testGetCurrentTtyMode() {
+        assumeTrue("Test requires Telephony feature",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+
+        try {
+            int currentTtyMode = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                    mTelephonyManager, tm -> tm.getCurrentTtyMode(),
+                    permission.READ_PRIVILEGED_PHONE_STATE);
+
+            // We are primarily testing that the API can be called without crashing
+            // and returns a valid value so the TTY mode can be any of the valid modes:
+            assertTrue("Returned TTY mode is invalid: " + currentTtyMode,
+                    currentTtyMode == TelephonyManager.TTY_MODE_OFF ||
+                            currentTtyMode == TelephonyManager.TTY_MODE_FULL ||
+                            currentTtyMode == TelephonyManager.TTY_MODE_HCO ||
+                            currentTtyMode == TelephonyManager.TTY_MODE_VCO);
+
+        } catch (Exception e) {
+            fail("Calling getCurrentTtyMode failed with exception: " + e.getMessage());
+        }
     }
 
     @Test
@@ -2160,105 +2184,97 @@ public class TelephonyManagerTest {
                 (tm) -> tm.setCarrierDataEnabled(true));
     }
 
+    void waitUntilTrue(BooleanSupplier test, Object lock, long waitMillis, String failureMessage) {
+        synchronized (lock) {
+            if (test.getAsBoolean()) return;
+            long timeout = System.currentTimeMillis() + waitMillis;
+            for (; waitMillis > 0; waitMillis = timeout - System.currentTimeMillis()) {
+                try {
+                    lock.wait(waitMillis);
+                    if (test.getAsBoolean()) return;
+                } catch (InterruptedException ie) {
+                    // ignored
+                }
+            }
+            assertTrue(failureMessage, test.getAsBoolean());
+        }
+    }
+
+    static class RadioCallback extends TelephonyCallback
+            implements TelephonyCallback.RadioPowerStateListener,
+                    TelephonyCallback.ServiceStateListener {
+
+        public final Object powerStateLock = new Object();
+        public int powerState;
+
+        public final Object serviceStateLock = new Object();
+        public ServiceState serviceState;
+
+        @Override
+        public void onRadioPowerStateChanged(int state) {
+            synchronized (powerStateLock) {
+                powerState = state;
+                powerStateLock.notifyAll();
+            }
+        }
+
+        @Override
+        public void onServiceStateChanged(ServiceState state) {
+            synchronized (serviceStateLock) {
+                serviceState = state;
+                serviceStateLock.notifyAll();
+            }
+        }
+    }
+
     /**
-     * Verifies that {@link TelephonyManager#rebootModem()} does not throw any exception
-     * and final radio state is radio power on.
+     * Verifies that {@link TelephonyManager#rebootModem()} does not throw any exception and final
+     * radio state is radio power on.
      */
     @Test
-    public void testRebootRadio() throws Throwable {
+    public void testRebootModem() throws Throwable {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-        if (mModemHalVersion < RADIO_HAL_VERSION_2_3) {
-            Log.d(TAG,
-                    "Skipping test since rebootModem is not supported/enforced until IRadio 2.3.");
-            return;
-        }
+        assumeTrue(
+                "Skipping test since rebootModem is not supported/enforced until IRadio 2.3.",
+                mModemHalVersion >= RADIO_HAL_VERSION_2_3);
 
-        TestThread t = new TestThread(() -> {
-            Looper.prepare();
+        RadioCallback rc = new RadioCallback();
 
-            mListener = new PhoneStateListener() {
-                @Override
-                public void onRadioPowerStateChanged(@RadioPowerState int state) {
-                    synchronized (mLock) {
-                        if (state == TelephonyManager.RADIO_POWER_ON && mHasRadioPowerOff) {
-                            mRadioRebootTriggered = true;
-                            mLock.notify();
-                        } else if (state == TelephonyManager.RADIO_POWER_OFF) {
-                            // reboot must go to power off
-                            mHasRadioPowerOff = true;
-                        }
-                    }
-                }
-            };
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                    (tm) -> tm.listen(mListener,
-                            PhoneStateListener.LISTEN_RADIO_POWER_STATE_CHANGED));
-            Looper.loop();
-        });
-
-        assertWithMessage("Unexpected power state")
-                .that(mTelephonyManager.getRadioPowerState())
-                .isEqualTo(TelephonyManager.RADIO_POWER_ON);
-        assertWithMessage("Reboot was triggered").that(mRadioRebootTriggered).isFalse();
-        assertWithMessage("Radio power is off").that(mHasRadioPowerOff).isFalse();
-        t.start();
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                mTelephonyManager, (tm) -> tm.registerTelephonyCallback(Runnable::run, rc));
         try {
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                    TelephonyManager::rebootModem);
-        } catch (Exception ex) {
-            //skip this test if not supported or unsuccessful (success=false)
-            return;
+            waitUntilTrue(
+                    () -> rc.powerState == TelephonyManager.RADIO_POWER_ON,
+                    rc.powerStateLock,
+                    10000,
+                    "Never received power on");
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mTelephonyManager, (tm) -> tm.rebootModem());
+            waitUntilTrue(
+                    () ->
+                            rc.powerState == TelephonyManager.RADIO_POWER_UNAVAILABLE
+                                    || rc.powerState == TelephonyManager.RADIO_POWER_OFF,
+                    rc.powerStateLock,
+                    10000,
+                    "Reboot never started");
+            waitUntilTrue(
+                    () -> rc.powerState == TelephonyManager.RADIO_POWER_ON,
+                    rc.powerStateLock,
+                    20000,
+                    "Never received power on after reboot");
+            waitUntilTrue(
+                    () ->
+                            rc.serviceState != null
+                                    && (rc.serviceState.getState() == ServiceState.STATE_IN_SERVICE
+                                            || rc.serviceState.getDataRegState()
+                                                    == ServiceState.STATE_IN_SERVICE),
+                    rc.serviceStateLock,
+                    60000,
+                    "Service state not in service");
+        } finally {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mTelephonyManager, (tm) -> tm.unregisterTelephonyCallback(rc));
         }
-
-        synchronized (mLock) {
-            // reboot takes longer time
-            if (!mRadioRebootTriggered) {
-                mLock.wait(20000);
-            }
-        }
-        assertWithMessage("Radio power is off")
-                .that(mTelephonyManager.getRadioPowerState())
-                .isEqualTo(TelephonyManager.RADIO_POWER_ON);
-        assertWithMessage("Reboot was not triggered").that(mRadioRebootTriggered).isTrue();
-
-        if (mListener != null) {
-            // unregister the listener
-            mTelephonyManager.listen(mListener, PhoneStateListener.LISTEN_NONE);
-        }
-
-        // note, other telephony states might not resumes properly at this point. e.g, service state
-        // might still in the transition from OOS to In service. Thus we need to wait for in
-        // service state before running next tests.
-        t = new TestThread(() -> {
-            Looper.prepare();
-
-            mListener = new PhoneStateListener() {
-                @Override
-                public void onServiceStateChanged(ServiceState serviceState) {
-                    synchronized (mLock) {
-                        if (serviceState.getState() == ServiceState.STATE_IN_SERVICE) {
-                            mServiceStateChangedCalled = true;
-                            mLock.notify();
-                        }
-                    }
-                }
-            };
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                    (tm) -> tm.listen(mListener, PhoneStateListener.LISTEN_SERVICE_STATE));
-            Looper.loop();
-        });
-
-        synchronized (mLock) {
-            t.start();
-            if (!mServiceStateChangedCalled) {
-                mLock.wait(60000);
-            }
-        }
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                .adoptShellPermissionIdentity(android.Manifest.permission.READ_PHONE_STATE);
-        assertWithMessage("service state not in service")
-                .that(mTelephonyManager.getServiceState().getState())
-                .isEqualTo(ServiceState.STATE_IN_SERVICE);
     }
 
     /**
@@ -6494,64 +6510,113 @@ public class TelephonyManagerTest {
     }
 
     /**
-     * Verifies that {@link TelephonyManager#requestUiccIari()} does not cause SecurityException
-     * when granted with READ_PRIVILEGED_PHONE_STATE permission.
+     * Verifies that {@link TelephonyManager#requestUiccIari} does not cause SecurityException when
+     * granted with READ_PRIVILEGED_PHONE_STATE permission.
      */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_IMS_REGISTRATION_EVENT_DOWNLOAD)
     public void requestIari_WithReadPrivilegedPermission() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         // make sure not to face any permission problem while calling the API
-        OutcomeReceiver<Set<String>, Exception> callback =
-                new OutcomeReceiver<>() {
-                    @Override
-                    public void onResult(Set<String> iari) {}
+        CompletableFuture<Pair<Set<String>, Exception>> pendingResult = new CompletableFuture<>();
+        OutcomeReceiver<Set<String>, Exception> callback = createOutcomeReceiver(pendingResult);
+        Pair<Set<String>, Exception> result;
+        try (PermissionContext p =
+                TestApis.permissions()
+                        .withPermission(Manifest.permission.READ_PRIVILEGED_PHONE_STATE)) {
+            mTelephonyManager.requestUiccIari(getContext().getMainExecutor(), callback);
+            result = getResultOrFail("requestUiccIari", pendingResult);
+        }
 
-                    @Override
-                    public void onError(@NonNull Exception ex) {
-                        if (ex instanceof SecurityException) {
-                            fail();
-                        } else if (ex instanceof IllegalStateException) {
-                            assumeNoException("Skipping test in case SIM do not support ISIM", ex);
-                        } else {
-                            Log.i(TAG, "Skipping test", ex);
-                        }
-                    }
-                };
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                mTelephonyManager,
-                tm -> tm.requestUiccIari(getContext().getMainExecutor(), callback),
-                Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+        Set<String> iari = result.first;
+        Exception ex = result.second;
+
+        if (ex != null) {
+            if (ex instanceof SecurityException) {
+                fail("requestUiccIari should not throw SecurityException with permission");
+            } else if (ex instanceof IllegalStateException) {
+                assumeNoException("Skipping test because ISIM is not supported", ex);
+            } else {
+                // Other exceptions might be valid device states, so we log and pass.
+                Log.i(TAG, "requestUiccIari returned exception, passing without verification", ex);
+            }
+            return;
+        }
+
+        assertNotNull("On success, the IARI set should not be null", iari);
     }
 
     /**
-     * Verifies that {@link TelephonyManager#requestUiccIari()} cause SecurityException when called
+     * Verifies that {@link TelephonyManager#requestUiccIari} cause SecurityException when called
      * without any permissions granted.
      */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_IMS_REGISTRATION_EVENT_DOWNLOAD)
     public void requestIari_NoPermissionGranted() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        CompletableFuture<Pair<Set<String>, Exception>> pendingResult = new CompletableFuture<>();
+        OutcomeReceiver<Set<String>, Exception> callback = createOutcomeReceiver(pendingResult);
 
-        OutcomeReceiver<Set<String>, Exception> callback =
-                new OutcomeReceiver<>() {
-                    @Override
-                    public void onResult(Set<String> iari) {
-                        fail(); // if no SecurityException then it fails()
-                    }
-
-                    @Override
-                    public void onError(@NonNull Exception ex) {
-                        if (ex instanceof SecurityException) {
-                            // SecurityException is expected
-                        } else if (ex instanceof IllegalStateException) {
-                            assumeNoException("Skipping test in case SIM do not support ISIM", ex);
-                        } else {
-                            Log.i(TAG, "Skipping test", ex);
-                        }
-                    }
-                };
         mTelephonyManager.requestUiccIari(getContext().getMainExecutor(), callback);
+        Pair<Set<String>, Exception> result = getResultOrFail("requestUiccIari", pendingResult);
+
+        Exception ex = result.second;
+
+        if (ex instanceof SecurityException) {
+            // This is the expected outcome.
+            return;
+        }
+
+        if (ex instanceof IllegalStateException) {
+            assumeNoException("Skipping test because ISIM is not supported", ex);
+        }
+
+        // If we get here, we either received a success response (ex == null)
+        // or an unexpected exception. Both are test failures.
+        fail("Expected SecurityException, but got " + (ex != null ? ex : "a success response"));
+    }
+
+    /**
+     * Creates an OutcomeReceiver that completes a CompletableFuture.
+     *
+     * @param pendingResult The CompletableFuture to complete.
+     * @return A pair where the left hand side is non-null if there was a successful result or the
+     *     right hand side is non-null if there was a RuntimeException thrown.
+     * @param <U> The successful result type
+     * @param <V> The RuntimeException thrown when there was a failure.
+     */
+    private <U, V extends Exception> OutcomeReceiver<U, V> createOutcomeReceiver(
+            CompletableFuture<Pair<U, V>> pendingResult) {
+        return new OutcomeReceiver<>() {
+            @Override
+            public void onResult(U result) {
+                pendingResult.complete(Pair.create(result, null));
+            }
+
+            @Override
+            public void onError(@NonNull V ex) {
+                pendingResult.complete(Pair.create(null, ex));
+            }
+        };
+    }
+
+    /**
+     * Waits {@link #TIMEOUT} time for a result from the given CompletableFuture and calls fail() if
+     * the timeout is hit.
+     *
+     * @param apiName API name used in the failure message if the timeout or error is hit.
+     * @param pendingResult Pending CompletableFuture.
+     * @return The successful result of the pending operation.
+     * @param <T> The Type of the result
+     */
+    private <T> T getResultOrFail(String apiName, CompletableFuture<T> pendingResult) {
+        try {
+            return pendingResult.get(TIMEOUT, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            fail("Failed getting result of " + apiName + ", ex=" + e);
+        }
+        // We should never hit this part, but java wants a return statement, so throwing an IAE.
+        throw new IllegalStateException("getResultOrFail: unexpected path hit");
     }
 
     @Test

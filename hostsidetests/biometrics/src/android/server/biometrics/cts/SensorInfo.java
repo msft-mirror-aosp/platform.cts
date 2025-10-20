@@ -50,6 +50,11 @@ public class SensorInfo {
         public boolean isConvenience() {
             return mStrength == 0x0FFF; // BiometricManager.Authenticators.BIOMETRIC_CONVENIENCE;
         }
+
+        /** If the sensor is configured as strong. */
+        public boolean isStrong() {
+            return mStrength == 0x000F; // BiometricManager.Authenticators.BIOMETRIC_STRONG;
+        }
     }
 
     /** Parse from the given descriptor. */
@@ -75,6 +80,16 @@ public class SensorInfo {
     public boolean hasWeakOrGreaterFingerprintSensor() {
         for (Info info : mSensors.values()) {
             if (info.mModality == SensorStateProto.Modality.FINGERPRINT && !info.isConvenience()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** If there is a fingerprint sensor with strong strength. */
+    public boolean hasStrongFingerprintSensor() {
+        for (Info info : mSensors.values()) {
+            if (info.mModality == SensorStateProto.Modality.FINGERPRINT && info.isStrong()) {
                 return true;
             }
         }

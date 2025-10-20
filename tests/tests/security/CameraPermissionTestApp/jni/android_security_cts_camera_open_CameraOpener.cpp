@@ -117,14 +117,6 @@ public:
             return rc;
         }
 
-        rc = ACameraDevice_isSessionConfigurationSupported(mCameraDevice.get(),
-                                                           mOutputContainer.get());
-        if (rc != ACAMERA_OK) {
-            ALOGE("isSessionConfigurationSupported returned %d, device %p outputContainer %p", rc,
-                  mCameraDevice.get(), mOutputContainer.get());
-            return rc;
-        }
-
         ACameraCaptureSession* captureSession = nullptr;
         rc = ACameraDevice_createCaptureSessionWithSessionParameters(mCameraDevice.get(),
                                                                      mOutputContainer.get(),

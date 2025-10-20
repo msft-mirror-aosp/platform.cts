@@ -20,8 +20,11 @@ import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProviderInfo;
 import android.content.Context;
 
+import com.android.compatibility.common.util.PollingCheck;
+
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class contains tests for cross profile widget providers that are run on the managed profile.
@@ -50,7 +53,10 @@ public class CrossProfileWidgetTest extends BaseManagedProfileTest {
         assertEquals(1, providers.size());
         assertTrue(providers.contains(WIDGET_PROVIDER_PKG));
         // check that widget can be found inside the profile
-        assertTrue(containsWidgetProviderPkg(mAppWidgetManager.getInstalledProviders()));
+        PollingCheck.waitFor(
+                TimeUnit.SECONDS.toMillis(20),
+                () -> containsWidgetProviderPkg(mAppWidgetManager.getInstalledProviders()),
+                "Cross-profile widget provider not found");
     }
 
     public void testCrossProfileWidgetProviderSet() {
@@ -118,7 +124,10 @@ public class CrossProfileWidgetTest extends BaseManagedProfileTest {
                 mDevicePolicyManager.getCrossProfileWidgetProviders(ADMIN_RECEIVER_COMPONENT);
         assertTrue(providers.isEmpty());
         // Check that widget can still be found inside the profile
-        assertTrue(containsWidgetProviderPkg(mAppWidgetManager.getInstalledProviders()));
+        PollingCheck.waitFor(
+                TimeUnit.SECONDS.toMillis(20),
+                () -> containsWidgetProviderPkg(mAppWidgetManager.getInstalledProviders()),
+                "Cross-profile widget provider not found");
     }
 
     public void testClearCrossProfileWidgetProviders() {

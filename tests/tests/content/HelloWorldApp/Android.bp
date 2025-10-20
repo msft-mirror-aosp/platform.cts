@@ -585,3 +585,14 @@ android_test {
     ],
     v4_signature: true,
 }
+
+android_test {
+    name: "HelloWorldPcc",
+    defaults: ["hello_world_defaults"],
+    srcs: ["src5/**/*.java"],
+    manifest: "AndroidManifestPcc.xml",
+    test_suites: [
+        "general-tests",
+    ],
+    v4_signature: true,
+}

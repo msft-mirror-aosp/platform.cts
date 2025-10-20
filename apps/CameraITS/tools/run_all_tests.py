@@ -81,7 +81,7 @@ _PROPERTIES_TO_MATCH = (
 _TABLET_SCENES = (
     'scene0', 'scene1_1', 'scene1_2', 'scene1_3', 'scene2_a', 'scene2_b',
     'scene2_c', 'scene2_d', 'scene2_e', 'scene2_f', 'scene2_g', 'scene3',
-    'scene4', 'scene6', 'scene7', 'scene8', 'scene9',
+    'scene4', 'scene6', 'scene7', 'scene8', 'scene9', 'scene_wide_gamut',
     os.path.join('scene_extensions', 'scene_hdr'),
     os.path.join('scene_extensions', 'scene_low_light'),
     os.path.join('scene_tele', 'scene6_tele'),
@@ -102,6 +102,9 @@ _SENSOR_FUSION_RIG_SCENES = (
 
 # Scenes that have to be run manually regardless of configuration
 _MANUAL_SCENES = ('scene5',)
+
+# Scenes that uses wide gamut images
+_SCENES_WIDE_GAMUT = ('scene_wide_gamut',)
 
 # Scene extensions
 _EXTENSIONS_SCENES = (
@@ -194,7 +197,10 @@ _SCENE_REQ = types.MappingProxyType({
                 'dead leaf patch, dynamic range chart used to analyze metrics '
                 'such as brightness, sharpness, color accuracy.',
     'scene_gen2_chart': 'Same as scene_ip, '
-                        'but does not include image parity tests.'
+                        'but does not include image parity tests.',
+    'scene_wide_gamut': 'The picture with 4 different colors, slanted edge and'
+                        '4 ArUco markers. '
+                        'See tests/scene_wide_gamut/scene_wide_gamut.jpg'
 })
 
 # Made mutable to allow for test augmentation based on first API level
@@ -255,7 +261,9 @@ _EXTENSION_NAMES = (
     'hdr',
     'low_light',
 )
-
+_RESULTSTORE_UPLOAD_KEYWORDS = [
+    'zoom', 'feature_combination', 'test_default_jca_ip', 'test_jca_jpegr_ip'
+]
 _DST_SCENE_DIR = '/sdcard/Download/'
 _DST_ROOT_DIR = '/sdcard/'
 _SUB_CAMERA_LEVELS = 2
@@ -617,6 +625,8 @@ def get_config_file_contents_for_scenes(config_file_contents, scenes):
   )
   requested_tablet_scenes = (
       set(scenes).intersection(set(_TABLET_SCENES)) or
+      set(scenes).intersection(set(['scene_extensions'])) or
+      set(scenes).intersection(set(['scene_tele'])) or
       scenes == ['<scene-name>'] or not scenes
   )
   testbed_index = None
@@ -668,6 +678,24 @@ def get_config_file_contents_for_scenes(config_file_contents, scenes):
   return {
       'TestBeds': [config_file_contents['TestBeds'][testbed_index]]
   }
+
+
+def _upload_results_to_resultstore(artifacts_path):
+  """Upload results to ResultStore.
+
+  Args:
+    artifacts_path: Path to the artifacts directory.
+  """
+  try:
+    subprocess.run(
+        f'results_uploader {artifacts_path}', check=True, shell=True,
+    )
+    logging.info('Uploaded results at %s to ResultStore.', artifacts_path)
+  except subprocess.CalledProcessError as e:
+    logging.error('Failed to upload results to ResultStore: %s', e)
+  except FileNotFoundError as e:
+    logging.error('Failed to upload results to ResultStore. '
+                  'Please check if results_uploader is in PATH. %s', e)
 
 
 def main():
@@ -894,6 +922,8 @@ def main():
         possible_scenes = _SCENE_GEN2_CHART
       elif 'gen2_scenes' in scenes:
         possible_scenes = _GEN2_RIG_SCENES
+      elif 'scene_wide_gamut' in scenes:
+        possible_scenes = _SCENES_WIDE_GAMUT
       else:
         possible_scenes = _TABLET_SCENES if auto_scene_switch else _ALL_SCENES
     if ('<scene-name>' in scenes or 'checkerboard' in scenes or
@@ -1012,8 +1042,11 @@ def main():
       num_pass = 0
       num_skip = 0
       num_not_mandated_fail = 0
+      num_marginal_passing = 0
       num_fail = 0
       for test in scene_test_list:
+        is_uploadable_test = any(
+            keyword in test for keyword in _RESULTSTORE_UPLOAD_KEYWORDS)
         # Handle repeated test
         if 'tests/' in test:
           cmd = [
@@ -1030,6 +1063,8 @@ def main():
               f'{new_yml_file_name}'
           ]
         return_string = ''
+        requested_upload = test_params_content.get(
+            'resultstore_upload') == 'True'
         for num_try in range(NUM_TRIES):
           # Saves to mobly test summary file
           # print only messages for manual lighting control testing
@@ -1039,6 +1074,9 @@ def main():
           with output.stdout, open(
               os.path.join(topdir, MOBLY_TEST_SUMMARY_TXT_FILE), 'wb'
           ) as file:
+            if not output.stdout:
+              logging.info('No output from test')
+              continue
             for line in iter(output.stdout.readline, b''):
               out = line.decode('utf-8').strip()
               if '<ENTER>' in out: print(out)
@@ -1051,6 +1089,7 @@ def main():
             test_code = output.returncode
             test_skipped = False
             test_not_yet_mandated = False
+            test_marginal_passing = False
             test_mpc_req = ''
             perf_test_metrics = ''
             hdr_mpc_req = ''
@@ -1083,6 +1122,9 @@ def main():
             for one_line in lines:
               if 'root_output_path:' in one_line:
                 root_output_path = one_line.split(':')[1].strip()
+                if requested_upload and is_uploadable_test and root_output_path:
+                  logging.info('Uploading results to ResultStore for %s', test)
+                  _upload_results_to_resultstore(root_output_path)
             # Find feature combination query proto
             for one_line in lines:
               # regular expression pattern must match in ItsTestActivity.java.
@@ -1116,7 +1158,14 @@ def main():
               test_not_yet_mandated = True
               break
 
-            if test_code == 0 and not test_skipped:
+            if its_session_utils.MARGINAL_PASSING_MESSAGE in content:
+              return_string = 'PASS*'
+              num_marginal_passing += 1
+              test_marginal_passing = True
+              break
+
+            if (test_code == 0 and not test_skipped and
+                not test_marginal_passing):
               return_string = 'PASS '
               num_pass += 1
               break
@@ -1169,6 +1218,10 @@ def main():
       if num_not_mandated_fail > 0:
         logging.info('(*) %s not_yet_mandated tests failed',
                      num_not_mandated_fail)
+
+      if num_marginal_passing > 0:
+        logging.info('(*) Number of tests marginally passing: %s ',
+                     num_marginal_passing)
 
       tot_pass += num_pass
       logging.info('scene tests: %s, Total tests passed: %s', tot_tests,

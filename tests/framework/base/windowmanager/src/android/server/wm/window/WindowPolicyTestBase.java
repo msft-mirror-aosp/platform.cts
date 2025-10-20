@@ -47,6 +47,13 @@ public class WindowPolicyTestBase extends WindowManagerTestBase {
         return activity;
     }
 
+    static <T extends TestActivity> TestActivity startActivityInFullscreenSync(
+            Class<T> activityClass) {
+        final TestActivity activity = startActivityInWindowingModeFullScreen(activityClass);
+        activity.waitForLayout();
+        return activity;
+    }
+
     static void runOnMainSync(Runnable runnable) {
         getInstrumentation().runOnMainSync(runnable);
     }

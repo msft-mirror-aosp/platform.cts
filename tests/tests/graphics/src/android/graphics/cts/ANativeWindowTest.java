@@ -31,6 +31,7 @@ import static android.opengl.EGL14.EGL_WIDTH;
 import static android.system.OsConstants.EINVAL;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -43,12 +44,18 @@ import android.opengl.EGLDisplay;
 import android.opengl.EGLSurface;
 import android.opengl.GLES20;
 import android.os.Parcel;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.view.Surface;
 
 import androidx.test.filters.SmallTest;
 
+import com.android.graphics.libgui.flags.Flags;
+
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.BlockJUnit4ClassRunner;
@@ -56,6 +63,8 @@ import org.junit.runners.BlockJUnit4ClassRunner;
 @SmallTest
 @RunWith(BlockJUnit4ClassRunner.class)
 public class ANativeWindowTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     static {
         System.loadLibrary("ctsgraphics_jni");
@@ -338,11 +347,82 @@ public class ANativeWindowTest {
         nTryAllocateBuffers(null);
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_BQ_PRODUCER_BACKPRESSURE_CONTROL)
+    @Test
+    public void testProducerThrottlingDefaultIsTrue() {
+        int[] texId = new int[1];
+        GLES20.glGenTextures(1, texId, 0);
+
+        SurfaceTexture consumer = new SurfaceTexture(texId[0]);
+        consumer.setDefaultBufferSize(16, 16);
+        Surface surface = new Surface(consumer);
+
+        assertTrue(surface.isProducerThrottlingEnabled());
+        assertEquals(1, nIsProducerThrottlingEnabled(surface));
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_BQ_PRODUCER_BACKPRESSURE_CONTROL)
+    @Test
+    public void testProducerThrottlingCanBeToggled() {
+        int[] texId = new int[1];
+        GLES20.glGenTextures(1, texId, 0);
+
+        SurfaceTexture consumer = new SurfaceTexture(texId[0]);
+        consumer.setDefaultBufferSize(16, 16);
+        Surface surface = new Surface(consumer);
+
+        surface.setProducerThrottlingEnabled(false);
+        assertFalse(surface.isProducerThrottlingEnabled());
+        surface.setProducerThrottlingEnabled(true);
+        assertTrue(surface.isProducerThrottlingEnabled());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_BQ_PRODUCER_BACKPRESSURE_CONTROL)
+    @Test
+    public void testProducerThrottlingCanBeToggledNdk() {
+        int[] texId = new int[1];
+        GLES20.glGenTextures(1, texId, 0);
+
+        SurfaceTexture consumer = new SurfaceTexture(texId[0]);
+        consumer.setDefaultBufferSize(16, 16);
+        Surface surface = new Surface(consumer);
+
+        assertEquals(0, nSetProducerThrottlingEnabled(surface, false));
+        assertEquals(0, nIsProducerThrottlingEnabled(surface));
+        assertEquals(0, nSetProducerThrottlingEnabled(surface, true));
+        assertEquals(1, nIsProducerThrottlingEnabled(surface));
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_BQ_PRODUCER_BACKPRESSURE_CONTROL)
+    @Test
+    public void testProducerThrottlingNdkSdkCompatibility() {
+        int[] texId = new int[1];
+        GLES20.glGenTextures(1, texId, 0);
+
+        SurfaceTexture consumer = new SurfaceTexture(texId[0]);
+        consumer.setDefaultBufferSize(16, 16);
+        Surface surface = new Surface(consumer);
+
+        // set to false from SDK
+        surface.setProducerThrottlingEnabled(false);
+        // read from NDK
+        assertEquals(0, nIsProducerThrottlingEnabled(surface));
+        // set to true from NDK
+        assertEquals(0, nSetProducerThrottlingEnabled(surface, true));
+        // read from SDK
+        assertTrue(surface.isProducerThrottlingEnabled());
+    }
+
     private static native void nPushBufferWithTransform(Surface surface, int transform);
     private static native int nSetBuffersDataSpace(Surface surface, int dataSpace);
     private static native int nGetBuffersDataSpace(Surface surface);
     private static native int nGetBuffersDefaultDataSpace(Surface surface);
     private static native void nTryAllocateBuffers(Surface surface);
+
+    private static native int nSetProducerThrottlingEnabled(Surface surface, boolean enabled);
+
+    private static native int nIsProducerThrottlingEnabled(Surface surface);
+
     private static native Surface nReadFromParcel(Parcel parcel);
     private static native void nWriteToParcel(Surface surface, Parcel parcel);
 }

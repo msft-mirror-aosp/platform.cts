@@ -46,7 +46,7 @@ import com.android.bedstead.harrier.annotations.parameterized.IncludeLandscapeOr
 import com.android.bedstead.harrier.annotations.parameterized.IncludeLightMode;
 import com.android.bedstead.harrier.annotations.parameterized.IncludePortraitOrientation;
 import com.android.bedstead.harrier.exceptions.RestartTestException;
-import com.android.bedstead.harrier.policies.LockTask;
+import com.android.bedstead.enterprise.policies.LockTask;
 import com.android.queryable.annotations.IntegerQuery;
 import com.android.queryable.annotations.Query;
 

@@ -19,6 +19,7 @@ package android.webkit.cts;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 
 import android.content.Context;
@@ -64,10 +65,7 @@ public class WebViewDataDirTest {
         @Override
         public void run(Context ctx) {
             WebView.disableWebView();
-            try {
-                new WebView(ctx);
-                fail("didn't throw IllegalStateException");
-            } catch (IllegalStateException e) {}
+            assertThrows(IllegalStateException.class, () -> new WebView(ctx));
         }
     }
 
@@ -81,28 +79,23 @@ public class WebViewDataDirTest {
     @Test
     public void testUseThenDisable() throws Throwable {
         assertNotNull(mActivity.getWebView());
-        try {
-            WebView.disableWebView();
-            fail("didn't throw IllegalStateException");
-        } catch (IllegalStateException e) {}
+        assertThrows(IllegalStateException.class, WebView::disableWebView);
     }
 
     @Test
     public void testUseThenChangeDir() throws Throwable {
         assertNotNull(mActivity.getWebView());
-        try {
-            WebView.setDataDirectorySuffix(ALTERNATE_DIR_NAME);
-            fail("didn't throw IllegalStateException");
-        } catch (IllegalStateException e) {}
+        assertThrows(
+                IllegalStateException.class,
+                () -> WebView.setDataDirectorySuffix(ALTERNATE_DIR_NAME));
     }
 
     static class TestInvalidDirImpl extends TestProcessClient.TestRunnable {
         @Override
         public void run(Context ctx) {
-            try {
-                WebView.setDataDirectorySuffix("no/path/separators");
-                fail("didn't throw IllegalArgumentException");
-            } catch (IllegalArgumentException e) {}
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> WebView.setDataDirectorySuffix("no/path/separators"));
         }
     }
 
@@ -116,10 +109,7 @@ public class WebViewDataDirTest {
     static class TestDefaultDirDisallowed extends TestProcessClient.TestRunnable {
         @Override
         public void run(Context ctx) {
-            try {
-                new WebView(ctx);
-                fail("didn't throw RuntimeException");
-            } catch (RuntimeException e) {}
+            assertThrows(RuntimeException.class, () -> new WebView(ctx));
         }
     }
 

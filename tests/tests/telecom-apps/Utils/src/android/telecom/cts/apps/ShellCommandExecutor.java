@@ -59,6 +59,8 @@ public class ShellCommandExecutor {
     private static final String COMMAND_SET_TEST_EMERGENCY_PHONE_ACCOUNT_PACKAGE_NAME_FILTER =
             "telecom set-test-emergency-phone-account-package-filter ";
     private static final String COMMAND_REGISTER_SIM = "telecom register-sim-phone-account ";
+    public static final String COMMAND_SET_LOCAL_VOICEMAIL_PACKAGE =
+            "telecom set-local-voicemail-service ";
 
     /**
      * Executes the given shell command and returns the output in a string. Note that even

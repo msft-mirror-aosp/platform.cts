@@ -16,9 +16,11 @@
 
 package android.mediapc.cts;
 
-import static android.mediapc.cts.CodecTestBase.codecFilter;
-import static android.mediapc.cts.CodecTestBase.codecPrefix;
-import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
+import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible;
+import static android.mediapc.cts.CodecEncoderPerformanceClassTestBase.getVideoEncoderCfgParams;
+import static android.mediav2.common.cts.CodecTestBase.codecFilter;
+import static android.mediav2.common.cts.CodecTestBase.codecPrefix;
+import static android.mediav2.common.cts.CodecTestBase.mediaTypePrefix;
 
 import android.media.MediaFormat;
 import android.mediapc.cts.common.CodecMetrics;
@@ -29,6 +31,8 @@ import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Requirements.ConcurrentVideoEncoderSessionsRequirement;
 import android.mediapc.cts.common.Requirements.VideoEncoderInstancesRequirement;
 import android.mediapc.cts.common.Utils;
+import android.mediav2.common.cts.CodecTestBase;
+import android.mediav2.common.cts.EncoderConfigParams;
 import android.util.Pair;
 
 import androidx.test.filters.LargeTest;
@@ -147,23 +151,25 @@ public class MultiEncoderPerfTest extends MultiCodecPerfTestBase {
                 int instances1080p = maxInstances - instances4k;
                 for (int i = 0; i < instances4k; i++) {
                     if (hasAV1) {
-                        testList.add(new Encode(mMediaType, mEncoderName, mIsAsync, 1080, 1920, 30,
-                                10000000));
+                        testList.add(new Encode(mMediaType, mEncoderName, mIsAsync,
+                                new EncoderConfigParams[] {getVideoEncoderCfgParams(mMediaType,
+                                        10000000, 1920, 1080, 30, COLOR_FormatYUV420Flexible)}));
                     } else {
-                        testList.add(new Encode(mMediaType, mEncoderName, mIsAsync, height, width,
-                                30, bitrate));
+                        testList.add(new Encode(mMediaType, mEncoderName, mIsAsync,
+                                new EncoderConfigParams[] {getVideoEncoderCfgParams(mMediaType,
+                                        bitrate, width, height, 30, COLOR_FormatYUV420Flexible)}));
                     }
                 }
                 for (int i = 0; i < instances1080p; i++) {
-                    testList.add(
-                            new Encode(mMediaType, mEncoderName, mIsAsync, 1080, 1920, 30,
-                                    10000000));
+                    testList.add(new Encode(mMediaType, mEncoderName, mIsAsync,
+                            new EncoderConfigParams[] {getVideoEncoderCfgParams(mMediaType,
+                                    10000000, 1920, 1080, 30, COLOR_FormatYUV420Flexible)}));
                 }
             } else {
                 for (int i = 0; i < maxInstances; i++) {
-                    testList.add(
-                            new Encode(mMediaType, mEncoderName, mIsAsync, height, width, 30,
-                                    bitrate));
+                    testList.add(new Encode(mMediaType, mEncoderName, mIsAsync,
+                            new EncoderConfigParams[] {getVideoEncoderCfgParams(mMediaType, bitrate,
+                                    width, height, 30, COLOR_FormatYUV420Flexible)}));
                 }
             }
             CodecMetrics result = invokeWithThread(maxInstances, testList);

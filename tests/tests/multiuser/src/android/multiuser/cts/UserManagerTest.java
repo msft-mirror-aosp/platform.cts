@@ -69,6 +69,7 @@ import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.annotations.SystemUserOnly;
+import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
@@ -86,7 +87,7 @@ import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireNotTv;
 import com.android.bedstead.harrier.annotations.RequireResourcesIntegerValue;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
-import com.android.bedstead.multiuser.annotations.EnsureCanAddUser;
+import com.android.bedstead.multiuser.annotations.EnsureCanAddSecondaryUser;
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser;
 import com.android.bedstead.multiuser.annotations.EnsureHasPrivateProfile;
@@ -129,10 +130,10 @@ public final class UserManagerTest {
     @ClassRule
     public static final DeviceState sDeviceState = new DeviceState();
 
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Rule
-    public TestRule chain = RuleChain
-            .outerRule(DeviceFlagsValueProvider.createCheckFlagsRule())
-            .around(sDeviceState);
+    public final TestRule mRuleChain = RuleChain.outerRule(mCheckFlagsRule).around(sDeviceState);
 
     private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
     private UserManager mUserManager;
@@ -662,8 +663,6 @@ public final class UserManagerTest {
             "android.os.UserManager#isProfile",
             "android.os.UserManager#isUserOfType",
             "android.os.UserManager#getUserBadge"})
-    @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
-            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testPrivateProfile() throws Exception {
         UserHandle userHandle = null;
 
@@ -789,10 +788,7 @@ public final class UserManagerTest {
         if (android.multiuser.Flags.supportCommunalProfile()) {
             assertThat(umOfSys.isCommunalProfile()).isFalse();
         }
-        if (android.os.Flags.allowPrivateProfile()
-                && android.multiuser.Flags.enablePrivateSpaceFeatures()) {
-            assertThat(umOfSys.isPrivateProfile()).isFalse();
-        }
+        assertThat(umOfSys.isPrivateProfile()).isFalse();
     }
 
     @Test
@@ -846,7 +842,7 @@ public final class UserManagerTest {
     @Test
     @EnsureHasPermission(CREATE_USERS)
     @EnsureHasNoAdditionalUser
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     @EnsureHasNoAccounts
     public void testSomeUserHasAccount() {
         // TODO: (b/233197356): Replace with bedstead annotation.
@@ -865,7 +861,7 @@ public final class UserManagerTest {
     @Test
     @EnsureHasPermission(CREATE_USERS)
     @EnsureHasNoAdditionalUser
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     @EnsureHasNoAccounts
     public void testSomeUserHasAccount_shouldIgnoreToBeRemovedUsers() {
         // TODO: (b/233197356): Replace with bedstead annotation.
@@ -892,7 +888,7 @@ public final class UserManagerTest {
             "android.os.UserManager#isUserOfType"})
     @EnsureHasPermission(CREATE_USERS)
     @EnsureHasNoAdditionalUser
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     @EnsureHasNoAccounts
     public void testCreateUser_withNewUserRequest_shouldCreateUserWithCorrectProperties()
             throws PackageManager.NameNotFoundException {
@@ -929,7 +925,7 @@ public final class UserManagerTest {
     @Test
     @EnsureHasPermission(CREATE_USERS)
     @EnsureHasNoAdditionalUser
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     @EnsureHasNoAccounts
     public void testCreateUser_withNewUserRequest_shouldNotAllowDuplicateUserAccounts() {
         // TODO: (b/233197356): Replace with bedstead annotation.
@@ -1227,8 +1223,6 @@ public final class UserManagerTest {
     @EnsureHasPrivateProfile
     @EnsureHasPermission({MODIFY_QUIET_MODE})
     @AppModeFull
-    @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
-            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testRequestQuietModeOnPrivateProfile_shouldSendProfileUnavailableBroadcast() {
         final UserHandle profileHandle = privateProfile(sDeviceState).userHandle();
         presetQuietModeStatus(false, profileHandle);
@@ -1242,8 +1236,6 @@ public final class UserManagerTest {
     @EnsureHasPrivateProfile
     @EnsureHasPermission({MODIFY_QUIET_MODE})
     @AppModeFull
-    @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
-            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testRequestQuietModeOnPrivateProfile_disableQuietMode_needUserCredentials() {
         UserReference privateProfile = privateProfile(sDeviceState);
         final UserHandle profileHandle = privateProfile.userHandle();
@@ -1256,8 +1248,6 @@ public final class UserManagerTest {
     @Test
     @EnsureHasWorkProfile
     @EnsureHasPermission({MODIFY_QUIET_MODE})
-    @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
-            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testRequestQuietModeOnManaged_shouldSendProfileUnavailableBroadcast() {
         final UserHandle profileHandle = workProfile(sDeviceState).userHandle();
         presetQuietModeStatus(false, profileHandle);
@@ -1271,8 +1261,6 @@ public final class UserManagerTest {
     @Test
     @EnsureHasWorkProfile
     @EnsureHasPermission({MODIFY_QUIET_MODE})
-    @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
-            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testRequestQuietModeOnManaged_shouldSendProfileAvailableBroadcast() {
         final UserHandle profileHandle = workProfile(sDeviceState).userHandle();
         presetQuietModeStatus(true, profileHandle);
@@ -1314,8 +1302,6 @@ public final class UserManagerTest {
     @RequireRunOnPrivateProfile
     @ApiTest(apis = {"android.os.UserManager#getProfileLabel"})
     @EnsureHasPermission({CREATE_USERS, INTERACT_ACROSS_USERS})
-    @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
-            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testPrivateProfileLabel_shouldNotBeNull() {
         final UserManager umOfProfile = sContext.getSystemService(UserManager.class);
         assert umOfProfile != null;

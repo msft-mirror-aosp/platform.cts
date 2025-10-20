@@ -15,6 +15,46 @@
 -->
 <configuration description="Run high ROI CTS-ON-GSI camera tests.">
     <include name="cts-on-gsi"/>
-    <!-- CtsSampleHostTestCases -->
-    <option name="compatibility:include-filter" value="CtsSampleHostTestCases android.sample.cts.SampleHostDeviceInfo#testCollectDeviceInfo"/>
+    <!-- CtsCameraTestCases -->
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testCameraDeviceCaptureBurst[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testCameraDevicePreviewTemplate[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testCameraDeviceRecordingTemplate[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testCameraDeviceStillTemplate[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testCameraDeviceVideoSnapShotTemplate[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testSurfaceSizeChange[0]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testSurfaceSizeChange[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraExtensionCharacteristicsTest#testExtensionAvailability"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraExtensionSessionTest#testNightModeIndicatorSupportedWithNightModeCameraExtension[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testAeModeAndLock[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testAntiBandingModes[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testBlackLevelLock[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testDynamicBlackWhiteLevel[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testEdgeModeControlFastFps[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testEdgeModeControl[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testExtendedSceneModes[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testFlashTurnOff[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureResultTest#testCameraCaptureResultAllKeys[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.DngCreatorTest#testDngRenderingByBitmapFactor[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testHeicUltraHdr[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testLongProcessingRepeatingFlexibleYuv[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.LogicalCameraDeviceTest#testBasicPhysicalRequests[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.LogicalCameraDeviceTest#testBasicPhysicalStreaming[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.LogicalCameraDeviceTest#testLogicalCameraZoomSwitch[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.PerformanceTest#testMultipleCapture"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.PerformanceTest#testReprocessingCaptureStall"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.PropertyTest#getRotationOverrideInternal_landscapeToPortraitDisabled_returnsOverrideNone"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ReprocessCaptureTest#testBurstReprocessingWithPreview[0]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ReprocessCaptureTest#testBurstReprocessingWithPreview[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ReprocessCaptureTest#testMixedBurstReprocessingWithPreview[0]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ReprocessCaptureTest#testMixedBurstReprocessingWithPreview[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.RobustnessTest#testAeAndAfCausality[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.RobustnessTest#testMandatoryPreviewStabilizationOutputCombinations[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.StillCaptureTest#testAeRegions[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.StillCaptureTest#testHeicUltraHdrCapture[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ZoomCaptureTest#test10bitLogicalZoomCapture[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ZoomCaptureTest#testHEIC_ULTRAHDRZoomCapture[0]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ZoomCaptureTest#testHEIC_ULTRAHDRZoomCapture[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ZoomCaptureTest#testJpegRZoomCapture[0]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ZoomCaptureTest#testJpegRZoomCapture[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testJpegExif"/>
 </configuration>

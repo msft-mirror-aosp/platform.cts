@@ -36,6 +36,7 @@ import com.android.tradefed.util.RunUtil;
 import com.google.errorprone.annotations.FormatMethod;
 import com.google.errorprone.annotations.FormatString;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -189,41 +190,107 @@ public final class Utils {
      */
     public static int[] prepareMultipleUsers(ITestDevice device, int maxUsers)
             throws DeviceNotAvailableException {
+        return prepareMultipleUsers(device, maxUsers, false);
+    }
+
+    /**
+     * Prepare and return multiple full users relevant for testing.
+     */
+    public static int[] prepareMultipleFullUsers(ITestDevice device, int maxUsers)
+            throws DeviceNotAvailableException {
+        return prepareMultipleUsers(device, maxUsers, true);
+    }
+
+    /**
+     * Prepare and return multiple users relevant for testing. If {@code onlyFullUsers} is true,
+     * only full users will be prepared.
+     */
+    public static int[] prepareMultipleUsers(ITestDevice device, int maxUsers,
+            boolean onlyFullUsers) throws DeviceNotAvailableException {
+
+        if (maxUsers < 0) {
+            throw new IllegalArgumentException("Invalid negative values passed to maxUsers");
+        }
+
         final int[] userIds = getAllUsers(device);
         int currentUserId = device.getCurrentUser();
-        for (int i = 1; i < userIds.length; i++) {
-            if (i < maxUsers) {
-                device.startUser(userIds[i], true);
-            } else if (userIds[i] != currentUserId) {
-                device.stopUser(userIds[i], true, true);
+
+        final int[] preparedUserIds = new int[userIds.length];
+        int preparedUsersCount = 0;
+
+        for (int userId : userIds) {
+            if (onlyFullUsers && !isFullUser(device, userId)) {
+                continue;
+            }
+
+            if (preparedUsersCount < maxUsers) {
+                device.startUser(userId, true);
+                preparedUserIds[preparedUsersCount++] = userId;
+            } else if (userId != currentUserId) {
+                device.stopUser(userId, true, true);
             }
         }
-        if (userIds.length > maxUsers) {
-            return Arrays.copyOf(userIds, maxUsers);
+
+        if (preparedUsersCount < preparedUserIds.length) {
+            return Arrays.copyOf(preparedUserIds, preparedUsersCount);
         } else {
-            return userIds;
+            return preparedUserIds;
         }
     }
 
-    /** Gets all the users! */
+    /**
+     * Gets all the users, with the current user first.
+     *
+     * <p>Note: to preserve backward compatibility, if the list of users is empty or doesn't
+     * contains the current user, the first user will the {@link #USER_SYSTEM system user}.
+     */
     public static int[] getAllUsers(ITestDevice device) throws DeviceNotAvailableException {
-        Integer primary = device.getPrimaryUserId();
-        if (device.isHeadlessSystemUserMode()
-                && primary == USER_SYSTEM
-                && !device.canSwitchToHeadlessSystemUser()) {
-            primary = device.getMainUserId();
+        int currentUserId = device.getCurrentUser();
+        ArrayList<Integer> allUsers = device.listUsers();
+        if (allUsers == null || allUsers.isEmpty()) {
+            // Shouldn't happen, but we want to keep previous behavior
+            CLog.w("listUsers() is empty / null; returning {USER_SYSTEM}");
+            return new int[] {USER_SYSTEM};
         }
-        if (primary == null) {
-            primary = USER_SYSTEM;
+        if (!allUsers.contains(currentUserId)) {
+            // Shouldn't happen, but we want to keep previous behavior
+            if (!allUsers.contains(USER_SYSTEM)) {
+                CLog.w(
+                        "all users (%s) doesn't contain neither current user (%d) nor USER_SYSTEM; "
+                                + "will return the latter as first user",
+                        allUsers, currentUserId);
+                allUsers.add(USER_SYSTEM);
+            } else {
+                CLog.w(
+                        "all users (%s) doesn't contain current user (%d); returning USER_SYSTEM as"
+                                + " first user",
+                        allUsers, currentUserId);
+            }
+            currentUserId = USER_SYSTEM;
         }
-        int[] users = new int[] {primary};
-        for (Integer user : device.listUsers()) {
-            if ((user != USER_SYSTEM) && !Objects.equals(user, primary)) {
+        int[] users = new int[] {currentUserId};
+        for (Integer user : allUsers) {
+            if ((user != currentUserId) && !Objects.equals(user, currentUserId)) {
                 users = Arrays.copyOf(users, users.length + 1);
                 users[users.length - 1] = user;
             }
         }
         return users;
+    }
+
+    /**
+     * Gets the id of the first user that is not the {@link USER_SYSTEM system user}.
+     *
+     * @throws IllegalArgumentException if {@code userIds} doesn't have such user.
+     */
+    public static int getFirstNonSystemUserId(int... userIds) {
+        Objects.requireNonNull(userIds, "userIds cannot be null");
+        for (int userId : userIds) {
+            if (userId != USER_SYSTEM) {
+                return userId;
+            }
+        }
+        throw new IllegalArgumentException("Not found. Users: " + Arrays.toString(userIds));
     }
 
     public static void waitForBootCompleted(ITestDevice device) throws Exception {
@@ -273,5 +340,10 @@ public final class Utils {
             output = output.trim();
         }
         return "1".equals(output);
+    }
+
+    private static boolean isFullUser(ITestDevice device, int userId)
+            throws DeviceNotAvailableException {
+        return !(device.isHeadlessSystemUserMode() && userId == USER_SYSTEM);
     }
 }

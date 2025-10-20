@@ -50,6 +50,7 @@ import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.CommandSession.ActivityCallback;
 import android.server.wm.Condition;
+import android.server.wm.CountSpec;
 import android.server.wm.RotationSession;
 import android.server.wm.TestJournalProvider.TestJournalContainer;
 import android.server.wm.app.Components;
@@ -203,9 +204,10 @@ public class ConfigChangeTests extends ActivityManagerTestBase {
             final ActivityCallback expectedCallback = canHandleConfigChange
                     ? ActivityCallback.ON_CONFIGURATION_CHANGED
                     : ActivityCallback.ON_CREATE;
-            Condition.waitFor(new ActivityLifecycleCounts(activityName)
-                    .countWithRetry("activity rotated with 90 degree delta",
-                            countSpec(expectedCallback, CountSpec.GREATER_THAN, 0)));
+            final CountSpec hasCallbacks = expectedCallback.hasCountGreaterThan(0);
+            Condition.waitFor(
+                    new ActivityLifecycleCounts(activityName)
+                            .countWithRetry("activity rotated with 90 degree delta", hasCallbacks));
         }
     }
 
@@ -261,12 +263,13 @@ public class ConfigChangeTests extends ActivityManagerTestBase {
             rotationSession.set(rotation);
             mWmState.computeState(activityName);
             // The configuration could be changed more than expected due to TaskBar recreation.
-            new ActivityLifecycleCounts(activityName).assertCountWithRetry(
-                    "relaunch or config changed",
-                    countSpec(ActivityCallback.ON_DESTROY, CountSpec.EQUALS, numRelaunch),
-                    countSpec(ActivityCallback.ON_CREATE, CountSpec.EQUALS, numRelaunch),
-                    countSpec(ActivityCallback.ON_CONFIGURATION_CHANGED,
-                            CountSpec.GREATER_THAN_OR_EQUALS, numConfigChange));
+            new ActivityLifecycleCounts(activityName)
+                    .assertCountWithRetry(
+                            "relaunch or config changed",
+                            ActivityCallback.ON_DESTROY.hasCountEquals(numRelaunch),
+                            ActivityCallback.ON_CREATE.hasCountEquals(numRelaunch),
+                            ActivityCallback.ON_CONFIGURATION_CHANGED.hasCountGreaterThanOrEquals(
+                                    numConfigChange));
         }
     }
 
@@ -292,13 +295,14 @@ public class ConfigChangeTests extends ActivityManagerTestBase {
         // The number of config changes could be greater than expected as there may have
         // other configuration change events triggered after font scale changed, such as
         // NavigationBar recreated.
-        new ActivityLifecycleCounts(activityName).assertCountWithRetry(
-                "relaunch or config changed",
-                countSpec(ActivityCallback.ON_DESTROY, CountSpec.EQUALS, relaunch ? 1 : 0),
-                countSpec(ActivityCallback.ON_CREATE, CountSpec.EQUALS, relaunch ? 1 : 0),
-                countSpec(ActivityCallback.ON_RESUME, CountSpec.EQUALS, relaunch ? 1 : 0),
-                countSpec(ActivityCallback.ON_CONFIGURATION_CHANGED,
-                        CountSpec.GREATER_THAN_OR_EQUALS, relaunch ? 0 : 1));
+        new ActivityLifecycleCounts(activityName)
+                .assertCountWithRetry(
+                        "relaunch or config changed",
+                        ActivityCallback.ON_DESTROY.hasCountEquals(relaunch ? 1 : 0),
+                        ActivityCallback.ON_CREATE.hasCountEquals(relaunch ? 1 : 0),
+                        ActivityCallback.ON_RESUME.hasCountEquals(relaunch ? 1 : 0),
+                        ActivityCallback.ON_CONFIGURATION_CHANGED.hasCountGreaterThanOrEquals(
+                                relaunch ? 0 : 1));
 
         // Verify that the display metrics are updated, and therefore the text size is also
         // updated accordingly.

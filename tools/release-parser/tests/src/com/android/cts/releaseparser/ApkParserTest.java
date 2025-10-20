@@ -16,7 +16,10 @@
 
 package com.android.cts.releaseparser;
 
+import static org.junit.Assert.*;
+
 import com.android.cts.releaseparser.ReleaseProto.*;
+
 import com.google.protobuf.TextFormat;
 
 import org.junit.Test;
@@ -24,8 +27,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import java.io.File;
-
-import static org.junit.Assert.*;
 
 /** Unit tests for {@link ApkParser} */
 @RunWith(JUnit4.class)
@@ -89,7 +90,7 @@ public class ApkParserTest {
         assertTrue(
                 String.format(
                         "ApkParser does not return the same Entry of %s as %s.\n%s",
-                        fileName, txtProtobufFileName, TextFormat.printToString(fileEntry)),
+                        fileName, txtProtobufFileName, fileEntry.toString()),
                 fileEntry.equals(expectedfileEntryBuilder.build()));
     }
 }

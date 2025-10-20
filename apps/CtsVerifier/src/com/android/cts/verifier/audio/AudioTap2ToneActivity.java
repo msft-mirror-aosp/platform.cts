@@ -120,8 +120,8 @@ public class AudioTap2ToneActivity
     // Stats for latency
     private double mMaxRequiredLatency;
 
-    // REQUIRED CDD  [5.6/H-1-1]
-    private static final int MAX_TAP_2_TONE_LATENCY_BASIC = 300;  // ms
+    // Requirement for handheld in CDD section 5.6
+    private static final int MAX_TAP_2_TONE_LATENCY_BASIC = 250;  // ms
     // Requirement for "R" and "S"
     private static final int MAX_TAP_2_TONE_LATENCY_RS = 100;  // ms
     // Requirement for "T" (or later)

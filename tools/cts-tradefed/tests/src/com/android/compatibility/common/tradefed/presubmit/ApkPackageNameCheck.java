@@ -79,6 +79,7 @@ public class ApkPackageNameCheck {
         EXCEPTION_LIST.add("android.media.recorder.cts");
         EXCEPTION_LIST.add("android.media.router.cts");
         EXCEPTION_LIST.add("android.media.session.cts");
+        EXCEPTION_LIST.add("android.video.cts");
         EXCEPTION_LIST.add("android.view.textclassifier.cts");
         EXCEPTION_LIST.add("android.appsecurity.cts");
     }

@@ -21,10 +21,6 @@ import static android.view.Display.DEFAULT_DISPLAY;
 import static android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT;
 import static android.window.OnBackInvokedDispatcher.PRIORITY_SYSTEM_NAVIGATION_OBSERVER;
 
-import static com.android.window.flags.Flags.FLAG_PREDICTIVE_BACK_PRIORITY_SYSTEM_NAVIGATION_OBSERVER;
-import static com.android.window.flags.Flags.FLAG_PREDICTIVE_BACK_SYSTEM_OVERRIDE_CALLBACK;
-import static com.android.window.flags.Flags.FLAG_PREDICTIVE_BACK_TIMESTAMP_API;
-
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.fail;
 
@@ -32,10 +28,6 @@ import static org.junit.Assert.assertTrue;
 
 import android.app.Instrumentation;
 import android.content.ComponentName;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.TouchHelper;
 import android.view.KeyEvent;
@@ -49,7 +41,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -62,9 +53,6 @@ import java.util.function.Supplier;
  * Integration test for back navigation
  */
 public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Instrumentation mInstrumentation;
     private UiDevice mUiDevice;
@@ -132,41 +120,6 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsDisabled(FLAG_PREDICTIVE_BACK_TIMESTAMP_API)
-    public void invokesCallback_invoked_preTimestampApi() throws InterruptedException {
-        registerBackCallback(mActivity, mAnimationCallback, PRIORITY_DEFAULT);
-        int midHeight = mUiDevice.getDisplayHeight() / 2;
-        int midWidth = mUiDevice.getDisplayWidth() / 2;
-
-        mSwipeHelper.beginSwipe(0, midHeight);
-        // Back start event shouldn't be sent until the edge swipe threshold is crossed.
-        assertNotInvoked(mTracker.mStartLatch);
-
-        mSwipeHelper.continueSwipe(midWidth, midHeight);
-        assertInvoked(mTracker.mStartLatch);
-        assertEquals(BackEvent.EDGE_LEFT, mTracker.mOnBackStartedEvent.getSwipeEdge());
-        assertInvoked(mTracker.mProgressLatch, progressFailMessageSupplier());
-        assertNotInvoked(mTracker.mInvokeLatch);
-        assertNotInvoked(mTracker.mCancelLatch);
-        List<BackEvent> events = mTracker.mProgressEvents;
-        assertTrue(events.size() > 0);
-        for (int i = 0; i < events.size() - 1; i++) {
-            // Check that progress events report increasing progress values.
-            // TODO(b/258817762): Verify more once the progress clamping behavior is implemented.
-            BackEvent event = events.get(i);
-            assertTrue(event.getProgress() <= events.get(i + 1).getProgress());
-            assertTrue(event.getTouchX() <= events.get(i + 1).getTouchX());
-            assertEquals(midHeight, midHeight, event.getTouchY());
-            assertEquals(BackEvent.EDGE_LEFT, event.getSwipeEdge());
-        }
-
-        mSwipeHelper.finishSwipe();
-        assertInvoked(mTracker.mInvokeLatch);
-        assertNotInvoked(mTracker.mCancelLatch);
-    }
-
-    @Test
-    @RequiresFlagsEnabled(FLAG_PREDICTIVE_BACK_TIMESTAMP_API)
     public void invokesCallback_invoked() throws InterruptedException {
         registerBackCallback(mActivity, mAnimationCallback, PRIORITY_DEFAULT);
         int midHeight = mUiDevice.getDisplayHeight() / 2;
@@ -177,6 +130,7 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         assertNotInvoked(mTracker.mStartLatch);
 
         mSwipeHelper.continueSwipe(midWidth, midHeight);
+        assertTrue(mActivity.mOnUserInteractionCalled);
         assertInvoked(mTracker.mStartLatch);
         assertInvoked(mTracker.mProgressLatch, progressFailMessageSupplier());
         assertNotInvoked(mTracker.mInvokeLatch);
@@ -209,6 +163,7 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         mSwipeHelper.beginSwipe(0, midHeight);
         mSwipeHelper.continueSwipe(midWidth, midHeight);
         assertInvoked(mTracker.mProgressLatch, progressFailMessageSupplier());
+        assertTrue(mActivity.mOnUserInteractionCalled);
 
         mTracker.reset();
         mTracker.mIsCancelRequested = true;
@@ -265,7 +220,6 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_PREDICTIVE_BACK_PRIORITY_SYSTEM_NAVIGATION_OBSERVER)
     public void invokesObserverCallback_invoked() throws InterruptedException {
         registerBackCallback(mActivity, mAnimationCallback, PRIORITY_SYSTEM_NAVIGATION_OBSERVER);
         int midHeight = mUiDevice.getDisplayHeight() / 2;
@@ -287,7 +241,6 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_PREDICTIVE_BACK_PRIORITY_SYSTEM_NAVIGATION_OBSERVER)
     public void invokesObserverCallbackInButtonsNav_invoked() throws InterruptedException {
         registerBackCallback(mActivity, mAnimationCallback, PRIORITY_SYSTEM_NAVIGATION_OBSERVER);
         long downTime = TouchHelper.injectKeyActionDown(KeyEvent.KEYCODE_BACK,
@@ -313,10 +266,7 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_PREDICTIVE_BACK_PRIORITY_SYSTEM_NAVIGATION_OBSERVER,
-            FLAG_PREDICTIVE_BACK_SYSTEM_OVERRIDE_CALLBACK})
-    public void invokesSystemOverrideObserverCallback_invoked()
-            throws InterruptedException {
+    public void invokesSystemOverrideObserverCallback_invoked() throws InterruptedException {
         registerBackCallback(mActivity, mAnimationCallback, PRIORITY_SYSTEM_NAVIGATION_OBSERVER);
         // The override system callback can trigger navigation observer.
         registerBackCallback(mActivity, SystemOnBackInvokedCallbacks
@@ -424,21 +374,6 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsDisabled(FLAG_PREDICTIVE_BACK_TIMESTAMP_API)
-    public void constructsEvent_preTimestampApi() {
-        final float x = 200;
-        final float y = 300;
-        final float progress = 0.5f;
-        final int swipeEdge = BackEvent.EDGE_RIGHT;
-        BackEvent event = new BackEvent(x, y, progress, swipeEdge);
-        assertEquals(x, event.getTouchX());
-        assertEquals(y, event.getTouchY());
-        assertEquals(progress, event.getProgress());
-        assertEquals(swipeEdge, event.getSwipeEdge());
-    }
-
-    @Test
-    @RequiresFlagsEnabled(FLAG_PREDICTIVE_BACK_TIMESTAMP_API)
     public void constructsEvent() {
         final float x = 200;
         final float y = 300;

@@ -19,11 +19,13 @@ package android.companion.cts.core
 import android.annotation.UserIdInt
 import android.companion.AssociationInfo
 import android.companion.AssociationRequest.DEVICE_PROFILE_WATCH
+import android.companion.AssociationRequest.PERMISSION_GROUP_NEARBY
 import android.companion.CompanionDeviceManager
 import android.companion.cts.common.AppHelper
 import android.companion.cts.common.MAC_ADDRESS_A
 import android.companion.cts.common.MAC_ADDRESS_B
 import android.companion.cts.common.waitFor
+import android.content.pm.PackageManager
 import android.net.MacAddress
 import android.platform.test.annotations.AppModeFull
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -57,6 +59,31 @@ class BackupAndRestoreTest : CoreTestBase() {
 
         // Assert a non-null payload is generated
         assertNotNull(payload)
+    }
+
+    @Test
+    fun test_applyRestoredPayload_restoresLocalMetadata() {
+        // Set local metadata and back up
+        targetApp.clearLocalMetadata()
+        targetApp.setLocalMetadata("feat1", "key", "value")
+        targetApp.setLocalMetadata("feat2", "key", "value")
+        assertEquals("value", targetApp.getLocalMetadata("feat1", "key"))
+        assertEquals("value", targetApp.getLocalMetadata("feat2", "key"))
+        val payload = getBackupPayload(userId)
+
+        // Delete local metadata and set new metadata
+        targetApp.clearLocalMetadata()
+        targetApp.setLocalMetadata("feat2", "key", "value-new")
+        targetApp.setLocalMetadata("feat3", "key", "value")
+        assertEquals("", targetApp.getLocalMetadata("feat1", "key"))
+        assertEquals("value-new", targetApp.getLocalMetadata("feat2", "key"))
+        assertEquals("value", targetApp.getLocalMetadata("feat3", "key"))
+
+        // Assert that local metadata is restored without loss of existing metadata
+        applyRestoredPayload(payload, userId)
+        assertEquals("value", targetApp.getLocalMetadata("feat1", "key"))
+        assertEquals("value-new", targetApp.getLocalMetadata("feat2", "key"))
+        assertEquals("value", targetApp.getLocalMetadata("feat3", "key"))
     }
 
     @Test
@@ -196,6 +223,47 @@ class BackupAndRestoreTest : CoreTestBase() {
         // Correct version number but bad payload
         applyRestoredPayload("AAAAAKo=", userId)
     }
+
+    @Test
+    fun test_applyRestoredPayload_nonProfile_grantsExtraPermissions() = with (testApp) {
+        associate(MAC_ADDRESS_A, "null", PERMISSION_GROUP_NEARBY)
+
+        val payload = getBackupPayload(userId)
+        assertNotNull(payload)
+
+        disassociateAll()
+        applyRestoredPayload(payload, userId)
+        assertAssociationsAddedFor(testApp, MAC_ADDRESS_A)
+
+        nearbyPerms.forEach { p ->
+            assertEquals(
+                PackageManager.PERMISSION_GRANTED,
+                pm.checkPermission(p, packageName)
+            )
+        }
+    }
+
+    @Test
+    fun test_applyRestoredPayload_nonProfile_grantsExtraPermissionsToFuturePackage() =
+        with (testApp) {
+            associate(MAC_ADDRESS_A, "null", PERMISSION_GROUP_NEARBY)
+            val payload = getBackupPayload(userId)
+            assertNotNull(payload)
+
+            testApp.uninstall()
+            assertAssociationsRemovedFor(testApp)
+            applyRestoredPayload(payload, userId)
+
+            testApp.install()
+            assertAssociationsAddedFor(testApp, MAC_ADDRESS_A)
+
+            nearbyPerms.forEach { p ->
+                assertEquals(
+                    PackageManager.PERMISSION_GRANTED,
+                    pm.checkPermission(p, packageName)
+                )
+            }
+        }
 
     private fun getBackupPayload(userId: Int) =
             runShellCommand("cmd companiondevice get-backup-payload $userId")

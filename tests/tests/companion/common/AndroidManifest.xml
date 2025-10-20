@@ -72,6 +72,18 @@
                 android:label="Companion Activity"
                 android:launchMode="singleInstance"
                 android:excludeFromRecents="true"/>
+
+        <activity
+                android:name=".HandoffActivity"
+                android:exported="true"
+                android:label="Handoff Activity"
+                android:launchMode="singleInstance" >
+                <intent-filter>
+                    <action android:name="android.intent.action.MAIN" />
+                    <category android:name="android.intent.category.LAUNCHER" />
+                </intent-filter>
+        </activity>
+
     </application>
 
 </manifest>

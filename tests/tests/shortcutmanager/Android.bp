@@ -29,6 +29,7 @@ android_test {
     ],
     static_libs: [
         "permission-test-util-lib",
+        "cts-wm-util",
     ],
     srcs: ["src/**/*.java"],
     test_suites: [

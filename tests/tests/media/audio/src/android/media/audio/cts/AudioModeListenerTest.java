@@ -18,6 +18,7 @@ package android.media.audio.cts;
 
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
+import android.os.Build;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
@@ -31,7 +32,7 @@ import java.util.concurrent.Executors;
 
 
 
-@SdkSuppress(minSdkVersion = 31, codeName = "S")
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
 public class AudioModeListenerTest extends CtsAndroidTestCase {
     private final static String TAG = "AudioModeListenerTest";
 

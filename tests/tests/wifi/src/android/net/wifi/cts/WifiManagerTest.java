@@ -89,6 +89,7 @@ import android.net.wifi.WifiManager.SubsystemRestartTrackingCallback;
 import android.net.wifi.WifiManager.WifiLock;
 import android.net.wifi.WifiNetworkConnectionStatistics;
 import android.net.wifi.WifiNetworkSelectionConfig;
+import android.net.wifi.WifiNetworkSpecifier;
 import android.net.wifi.WifiNetworkSuggestion;
 import android.net.wifi.WifiScanner;
 import android.net.wifi.WifiSsid;
@@ -2253,6 +2254,8 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         Thread.sleep(TEST_WAIT_DURATION_MS);
         boolean wifiEnabled = sWifiManager.isWifiEnabled();
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        TestLocalOnlyHotspotCallback callback = null;
+        boolean isLohsDisabled = true;
         try {
             uiAutomation.adoptShellPermissionIdentity();
             verifyLohsRegisterSoftApCallback(executor, lohsSoftApCallback);
@@ -2272,7 +2275,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 Log.e(TAG, "Country Code is not available - Skip 5GHz and 6GHz test");
             }
             for (int i = 0; i < testBandsAndChannels.size(); i++) {
-                TestLocalOnlyHotspotCallback callback = new TestLocalOnlyHotspotCallback(mLock);
+                callback = new TestLocalOnlyHotspotCallback(mLock);
                 int testBand = testBandsAndChannels.keyAt(i);
                 if (lohsSoftApCallback
                                 .getCurrentSoftApCapability()
@@ -2308,6 +2311,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                             customConfigBuilder.build(), executor, callback);
                     uiAutomation.adoptShellPermissionIdentity();
                 }
+                isLohsDisabled = false;
                 // now wait for callback
                 Thread.sleep(DURATION_SOFTAP_START_MS);
 
@@ -2334,9 +2338,12 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                     assertTrue(lohsSoftApCallback.getCurrentSoftApInfo().getFrequency() > 0);
                 }
                 stopLocalOnlyHotspot(callback, wifiEnabled);
+                isLohsDisabled = true;
             }
         } finally {
-            // clean up
+            if (!isLohsDisabled && callback != null) {
+                stopLocalOnlyHotspot(callback, wifiEnabled);
+            }
             sWifiManager.unregisterSoftApCallback(lohsSoftApCallback);
             uiAutomation.dropShellPermissionIdentity();
         }
@@ -2691,7 +2698,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
 
     /**
      * Verify that the {@link android.Manifest.permission#WIFI_SET_DEVICE_MOBILITY_STATE} permission
-     * is held by at most one application.
+     * is held by at most one application except for shell and carrier wifi app.
      */
     @Test
     public void testWifiSetDeviceMobilityStatePermission() {
@@ -2704,6 +2711,9 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         List<String> uniquePackageNames = holding
                 .stream()
                 .map(pi -> pi.packageName)
+                .filter(packageName -> !packageName.equals("com.android.shell"))
+                .filter(packageName ->
+                        !packageName.equals("com.google.android.apps.carrier.carrierwifi"))
                 .distinct()
                 .collect(Collectors.toList());
 
@@ -6144,6 +6154,53 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI_PASSPOINT));
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_LOCAL_ONLY_DISCONNECT_REASON)
+    @ApiTest(
+            apis = {
+                "android.net.wifi.WifiManager#addLocalOnlyDisconnectionStatusListener",
+                "android.net.wifi.WifiManager#removeLocalOnlyDisconnectionStatusListener"
+            })
+    @Test
+    public void testAddRemoveLocalOnlyDisconnectionStatusListener() throws Exception {
+        if (!WifiFeature.isWifiSupported(sContext)) {
+            return;
+        }
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        TestLocalOnlyDisconnectionStatusListener listener =
+                new TestLocalOnlyDisconnectionStatusListener(countDownLatch);
+        assertThrows(
+                SecurityException.class,
+                () -> sWifiManager.addLocalOnlyDisconnectionStatusListener(mExecutor, listener));
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            sWifiManager.addLocalOnlyDisconnectionStatusListener(mExecutor, listener);
+            // TODO (b/440270888)
+            // This is just testing basic add/remove since implementation is still in progress.
+            // update to verify actual implementation after finishing it.
+            sWifiManager.removeLocalOnlyDisconnectionStatusListener(listener);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    private static class TestLocalOnlyDisconnectionStatusListener
+            implements WifiManager.LocalOnlyDisconnectionStatusListener {
+        private final CountDownLatch mBlocker;
+
+        TestLocalOnlyDisconnectionStatusListener(CountDownLatch countDownLatch) {
+            mBlocker = countDownLatch;
+        }
+
+        @Override
+        public void onDisconnectionStatus(
+                @androidx.annotation.NonNull WifiNetworkSpecifier networkSpecifier,
+                boolean isTriggeredByUser,
+                int reason) {
+            mBlocker.countDown();
+        }
+    }
+
     /**
      * Validate add and remove SuggestionUserApprovalStatusListener. And verify the listener's
      * stickiness.
@@ -7869,7 +7926,6 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
     /**
      * Tests {@link WifiManager#getAvailableAdvancedProtectionFeatures()}.
      */
-    @RequiresFlagsEnabled(android.security.Flags.FLAG_AAPM_API)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA,
             codeName = "Baklava")
     @Test
@@ -7880,10 +7936,6 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             List<AdvancedProtectionFeature> features =
                     sWifiManager.getAvailableAdvancedProtectionFeatures();
             assertNotNull(features);
-            if (Flags.wepDisabledInApm()) {
-                // Should have the WEP disabled feature at least.
-                assertFalse(features.isEmpty());
-            }
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }

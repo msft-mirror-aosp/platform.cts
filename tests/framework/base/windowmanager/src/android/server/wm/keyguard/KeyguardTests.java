@@ -29,6 +29,7 @@ import static android.server.wm.app.Components.INHERIT_SHOW_WHEN_LOCKED_REMOVE_A
 import static android.server.wm.app.Components.KEYGUARD_LOCK_ACTIVITY;
 import static android.server.wm.app.Components.LAUNCHING_ACTIVITY;
 import static android.server.wm.app.Components.NO_INHERIT_SHOW_WHEN_LOCKED_ATTR_ACTIVITY;
+import static android.server.wm.app.Components.RESIZEABLE_ACTIVITY;
 import static android.server.wm.app.Components.SHOW_WHEN_LOCKED_ACTIVITY;
 import static android.server.wm.app.Components.SHOW_WHEN_LOCKED_ATTR_ACTIVITY;
 import static android.server.wm.app.Components.SHOW_WHEN_LOCKED_ATTR_ROTATION_ACTIVITY;
@@ -55,7 +56,6 @@ import static org.mockito.Mockito.verify;
 
 import android.Manifest;
 import android.app.KeyguardManager.KeyguardLockedStateListener;
-import android.app.WallpaperManager;
 import android.content.ComponentName;
 import android.content.res.Configuration;
 import android.platform.test.annotations.Presubmit;
@@ -70,8 +70,6 @@ import android.server.wm.RotationSession;
 import android.server.wm.UiDeviceUtils;
 import android.server.wm.WindowManagerState;
 import android.server.wm.app.Components;
-
-import com.android.systemui.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -89,11 +87,6 @@ public class KeyguardTests extends KeyguardTestBase {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule();
-
-    boolean isLockscreenLiveWpEnabled() {
-        WallpaperManager mWallpaperManager = mContext.getSystemService(WallpaperManager.class);
-        return mWallpaperManager != null && mWallpaperManager.isLockscreenLiveWallpaperEnabled();
-    }
 
     @Before
     @Override
@@ -294,12 +287,7 @@ public class KeyguardTests extends KeyguardTestBase {
         lockScreenSession.gotoKeyguard(SHOW_WHEN_LOCKED_TRANSLUCENT_ACTIVITY);
         launchActivity(SHOW_WHEN_LOCKED_TRANSLUCENT_ACTIVITY);
         waitAndAssertResumedActivity(SHOW_WHEN_LOCKED_TRANSLUCENT_ACTIVITY);
-        if (isLockscreenLiveWpEnabled()) {
-            // When the flag is not enabled, the behavior of this test is not well-defined.
-            // This check would pass with a shared wallpaper, but not with a separate lock screen
-            // wallpaper.
-            mWmState.waitAndAssertWindowShown(TYPE_WALLPAPER, true);
-        }
+        mWmState.waitAndAssertWindowShown(TYPE_WALLPAPER, true);
         mWmState.assertKeyguardShowingAndOccluded();
     }
 
@@ -327,12 +315,7 @@ public class KeyguardTests extends KeyguardTestBase {
         lockScreenSession.gotoKeyguard(SHOW_WHEN_LOCKED_DIALOG_ACTIVITY);
         launchActivity(SHOW_WHEN_LOCKED_DIALOG_ACTIVITY);
         waitAndAssertResumedActivity(SHOW_WHEN_LOCKED_DIALOG_ACTIVITY);
-        if (isLockscreenLiveWpEnabled()) {
-            // When the flag is not enabled, the behavior of this test is not well-defined.
-            // This check would pass with a shared wallpaper, but not with a separate lock screen
-            // wallpaper.
-            mWmState.waitAndAssertWindowShown(TYPE_WALLPAPER, true);
-        }
+        mWmState.waitAndAssertWindowShown(TYPE_WALLPAPER, true);
         mWmState.assertKeyguardShowingAndOccluded();
     }
 
@@ -856,11 +839,11 @@ public class KeyguardTests extends KeyguardTestBase {
         try (LockScreenSession lockScreenSession =
                     new LockScreenSession(mInstrumentation, mWmState)) {
             separateTestJournal();
-            launchActivity(TEST_ACTIVITY);
-            waitAndAssertResumedActivity(TEST_ACTIVITY);
+            launchActivity(RESIZEABLE_ACTIVITY);
+            waitAndAssertResumedActivity(RESIZEABLE_ACTIVITY);
             lockScreenSession.sleepDevice();
             mWmState.waitForAllStoppedActivities();
-            assertSingleLaunchAndStop(TEST_ACTIVITY);
+            assertSingleLaunchAndStop(RESIZEABLE_ACTIVITY);
         }
 
     }

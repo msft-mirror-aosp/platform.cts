@@ -15,6 +15,7 @@
 
 import logging
 import os.path
+import time
 
 from mobly import test_runner
 import camera_properties_utils
@@ -41,6 +42,9 @@ _CAPTURE_REQUEST = {
         _CONTROL_VIDEO_STABILIZATION_MODE_OFF,
 }
 _CAPTURE_RESULT_KEY_NIGHT_MODE_INDICATOR = 'android.extension.nightModeIndicator'
+_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC = 5  # Seconds
+_NIGHT_MODE_INDICATOR_OFF = 1
+_NIGHT_MODE_INDICATOR_ON = 2
 
 
 def _start_preview(cam, file_stem, camera_id, target_preview_size,
@@ -71,6 +75,7 @@ def _start_preview(cam, file_stem, camera_id, target_preview_size,
     raise AssertionError('No Night Mode Indicator value in metadata')
   result = metadata[_CAPTURE_RESULT_KEY_NIGHT_MODE_INDICATOR]
   logging.debug('Night Mode Indicator value: %s', result)
+  return result
 
 
 class NightModeIndicatorTest(its_base_test.ItsBaseTest):
@@ -86,8 +91,17 @@ class NightModeIndicatorTest(its_base_test.ItsBaseTest):
   turned back on, the indicator should change to the "OFF" state.
   """
 
+  def setup_class(self):
+    super().setup_class()
+    # establish connection with lighting controller
+    self.use_gen2 = (self.lighting_cntl ==
+                gen2_rig_controller_utils.DEFAULT_GEN2_LIGHTS_NAME)
+    self.lighting_control_port = lighting_control_utils.lighting_control(
+        self.lighting_cntl, self.lighting_ch, self.use_gen2)
+
   def teardown_test(self):
-    if self.use_gen2: self.lighting_control_port.close()
+    if self.lighting_control_port:
+      self.lighting_control_port.close()
 
   def test_night_mode_indicator(self):
     with its_session_utils.ItsSession(
@@ -103,13 +117,6 @@ class NightModeIndicatorTest(its_base_test.ItsBaseTest):
           first_api_level >= its_session_utils.ANDROID16_API_LEVEL and
           cam.is_night_mode_indicator_supported(self.camera_id)
       )
-
-      # establish connection with lighting controller
-      use_gen2 = (self.lighting_cntl ==
-                  gen2_rig_controller_utils.DEFAULT_GEN2_LIGHTS_NAME)
-      lighting_control_port = lighting_control_utils.lighting_control(
-          self.lighting_cntl, self.lighting_ch, use_gen2
-          )
 
       for session_type in _CAMERA_SESSION_TYPES:
         logging.debug('scenario: %s', session_type)
@@ -134,24 +141,25 @@ class NightModeIndicatorTest(its_base_test.ItsBaseTest):
 
         # turn lights ON
         lighting_control_utils.set_lighting_state(
-            lighting_control_port, self.lighting_ch,
-            lighting_control_utils.LIGHT_ON, use_gen2
+            self.lighting_control_port, self.lighting_ch,
+            lighting_control_utils.LIGHT_ON, self.use_gen2
             )
+        time.sleep(_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC)
         result = _start_preview(
             cam, file_stem, self.camera_id, target_preview_size, session_type)
 
-        if (result != 'OFF'):
+        if (result != _NIGHT_MODE_INDICATOR_OFF):
           raise AssertionError('Lighting state ON did not result in Night Mode '
                                'Indicator state OFF.')
 
         # turn OFF lights
         lighting_control_utils.set_lighting_state(
-            lighting_control_port, self.lighting_ch,
-            lighting_control_utils.LIGHT_OFF, use_gen2)
-
+            self.lighting_control_port, self.lighting_ch,
+            lighting_control_utils.LIGHT_OFF, self.use_gen2)
+        time.sleep(_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC)
         result = _start_preview(
             cam, file_stem, self.camera_id, target_preview_size, session_type)
-        if (result != 'ON'):
+        if (result != _NIGHT_MODE_INDICATOR_ON):
           raise AssertionError('Lighting state OFF did not result in Night '
                                'Mode Indicator state ON.')
 

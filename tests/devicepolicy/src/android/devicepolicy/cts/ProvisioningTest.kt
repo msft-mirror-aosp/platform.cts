@@ -48,6 +48,7 @@ import com.android.bedstead.enterprise.workProfile
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
+import com.android.bedstead.harrier.UserType.SYSTEM_USER
 import com.android.bedstead.harrier.annotations.EnsureIsNotDemoDevice
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature
@@ -62,6 +63,7 @@ import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMo
 import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser
 import com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser
 import com.android.bedstead.multiuser.annotations.RequireRunOnSingleUser
+import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser
 import com.android.bedstead.multiuser.secondaryUser
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.appops.AppOpsMode
@@ -82,6 +84,7 @@ import com.google.common.truth.Truth
 import com.google.common.truth.Truth.assertThat
 import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.lang.AutoCloseable
 import java.util.*
 import java.util.stream.Collectors
 import org.junit.*
@@ -361,17 +364,15 @@ class ProvisioningTest {
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionFullyManagedDevice"])
     fun provisionFullyManagedDevice_setsDeviceOwner() {
-        val setupComplete = TestApis.users().system().setupComplete
-        TestApis.users().system().setupComplete = false
-        try {
-            val params = createDefaultManagedDeviceProvisioningParamsBuilder().build()
-            localDevicePolicyManager.provisionFullyManagedDevice(params)
-            assertThat(TestApis.devicePolicy().getDeviceOwner()!!.pkg().packageName())
-                .isEqualTo(context.packageName)
-        } finally {
-            val deviceOwner = TestApis.devicePolicy().getDeviceOwner()
-            deviceOwner?.remove()
-            TestApis.users().system().setupComplete = setupComplete
+        SetupCompleteResource(setupComplete = false, user = TestApis.users().system()).use {
+            DeviceOwnerResource().use {
+                val params = createDefaultManagedDeviceProvisioningParamsBuilder().build()
+
+                localDevicePolicyManager.provisionFullyManagedDevice(params)
+
+                assertThat(TestApis.devicePolicy().getDeviceOwner()!!.pkg().packageName())
+                    .isEqualTo(context.packageName)
+            }
         }
     }
 
@@ -382,18 +383,16 @@ class ProvisioningTest {
     @RequireHeadlessSystemUserMode(reason = "Testing headless-specific functionality")
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionFullyManagedDevice"])
     fun provisionFullyManagedDevice_headless_setsProfileOwnerOnInitialUser() {
-        val systemSetupComplete = TestApis.users().system().setupComplete
-        TestApis.users().system().setupComplete = false
-        try {
-            val params = createDefaultManagedDeviceProvisioningParamsBuilder().build()
-            localDevicePolicyManager.provisionFullyManagedDevice(params)
-            assertThat(TestApis.devicePolicy().getProfileOwner()).isNotNull()
-        } finally {
-            val deviceOwner = TestApis.devicePolicy().getDeviceOwner()
-            deviceOwner?.remove()
-            val profileOwner = TestApis.devicePolicy().getProfileOwner()
-            profileOwner?.remove()
-            TestApis.users().system().setupComplete = systemSetupComplete
+        SetupCompleteResource(setupComplete = false, user = TestApis.users().system()).use {
+            DeviceOwnerResource().use {
+                ProfileOwnerResource().use {
+                    val params = createDefaultManagedDeviceProvisioningParamsBuilder().build()
+
+                    localDevicePolicyManager.provisionFullyManagedDevice(params)
+
+                    assertThat(TestApis.devicePolicy().getProfileOwner()).isNotNull()
+                }
+            }
         }
     }
 
@@ -431,24 +430,20 @@ class ProvisioningTest {
     @RequireRunOnSingleUser
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionFullyManagedDevice"])
     fun provisionFullyManagedDevice_headlessSingleUser_setsDeviceOwner() {
-        val mainUserSetupComplete = TestApis.users().main()?.setupComplete ?: false
-        TestApis.users().main()?.setupComplete = false
-        SINGLE_USER_DO_DEVICE_ADMIN.install().use {
-            try {
-                val params = FullyManagedDeviceProvisioningParams.Builder(
-                        SINGLE_USER_DO_DEVICE_ADMIN_COMPONENT_NAME,
-                        DEVICE_OWNER_NAME
-                ).setLeaveAllSystemAppsEnabled(true).build()
+        SetupCompleteResource(setupComplete = false, user = TestApis.users().main()).use {
+            SINGLE_USER_DO_DEVICE_ADMIN.install().use {
+                DeviceOwnerResource().use {
+                    val params = FullyManagedDeviceProvisioningParams.Builder(
+                            SINGLE_USER_DO_DEVICE_ADMIN_COMPONENT_NAME,
+                            DEVICE_OWNER_NAME
+                    ).setLeaveAllSystemAppsEnabled(true).build()
 
-                localDevicePolicyManager.provisionFullyManagedDevice(params)
+                    localDevicePolicyManager.provisionFullyManagedDevice(params)
 
-                assertThat(TestApis.devicePolicy().getDeviceOwner()).isNotNull()
-                assertThat(TestApis.devicePolicy().getDeviceOwner()!!.componentName())
+                    assertThat(TestApis.devicePolicy().getDeviceOwner()).isNotNull()
+                    assertThat(TestApis.devicePolicy().getDeviceOwner()!!.componentName())
                         .isEqualTo(SINGLE_USER_DO_DEVICE_ADMIN_COMPONENT_NAME)
-            } finally {
-                val deviceOwner = TestApis.devicePolicy().getDeviceOwner()
-                deviceOwner?.remove()
-                TestApis.users().main()?.setupComplete = mainUserSetupComplete
+                }
             }
         }
     }
@@ -462,24 +457,20 @@ class ProvisioningTest {
     @RequireRunOnSingleUser
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionFullyManagedDevice"])
     fun provisionFullyManagedDevice_headlessSingleUser_setsDoInMainUser() {
-        val mainUserSetupComplete = TestApis.users().main()?.setupComplete ?: false
-        TestApis.users().main()?.setupComplete = false
-        SINGLE_USER_DO_DEVICE_ADMIN.install().use {
-            try {
-                val params = FullyManagedDeviceProvisioningParams.Builder(
-                        SINGLE_USER_DO_DEVICE_ADMIN_COMPONENT_NAME,
-                        DEVICE_OWNER_NAME
-                ).setLeaveAllSystemAppsEnabled(true).build()
+        SetupCompleteResource(setupComplete = false, user = TestApis.users().main()).use {
+            SINGLE_USER_DO_DEVICE_ADMIN.install().use {
+                DeviceOwnerResource().use {
+                    val params = FullyManagedDeviceProvisioningParams.Builder(
+                            SINGLE_USER_DO_DEVICE_ADMIN_COMPONENT_NAME,
+                            DEVICE_OWNER_NAME
+                    ).setLeaveAllSystemAppsEnabled(true).build()
 
-                localDevicePolicyManager.provisionFullyManagedDevice(params)
+                    localDevicePolicyManager.provisionFullyManagedDevice(params)
 
-                assertThat(TestApis.devicePolicy().getDeviceOwner()).isNotNull()
-                assertThat(TestApis.devicePolicy().getDeviceOwner()!!.user())
+                    assertThat(TestApis.devicePolicy().getDeviceOwner()).isNotNull()
+                    assertThat(TestApis.devicePolicy().getDeviceOwner()!!.user())
                         .isEqualTo(TestApis.users().main())
-            } finally {
-                val deviceOwner = TestApis.devicePolicy().getDeviceOwner()
-                deviceOwner?.remove()
-                TestApis.users().main()?.setupComplete = mainUserSetupComplete
+                }
             }
         }
     }
@@ -490,22 +481,20 @@ class ProvisioningTest {
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionFullyManagedDevice"])
     fun provisionFullyManagedDevice_disallowAddUserIsSet() {
-        val systemSetupComplete = TestApis.users().system().setupComplete
-        TestApis.users().system().setupComplete = false
-        try {
-            val params = createDefaultManagedDeviceProvisioningParamsBuilder().build()
-            localDevicePolicyManager.provisionFullyManagedDevice(params)
-            assertThat(
-                TestApis.devicePolicy().userRestrictions()
-                    .isSet(CommonUserRestrictions.DISALLOW_ADD_USER)
-            )
-                .isTrue()
-        } finally {
-            val deviceOwner = TestApis.devicePolicy().getDeviceOwner()
-            deviceOwner?.remove()
-            val profileOwner = TestApis.devicePolicy().getProfileOwner()
-            profileOwner?.remove()
-            TestApis.users().system().setupComplete = systemSetupComplete
+        SetupCompleteResource(setupComplete = false, user = TestApis.users().system()).use {
+            DeviceOwnerResource().use {
+                ProfileOwnerResource().use {
+                    val params = createDefaultManagedDeviceProvisioningParamsBuilder().build()
+
+                    localDevicePolicyManager.provisionFullyManagedDevice(params)
+
+                    assertThat(
+                        TestApis.devicePolicy().userRestrictions()
+                            .isSet(CommonUserRestrictions.DISALLOW_ADD_USER)
+                    )
+                        .isTrue()
+                }
+            }
         }
     }
 
@@ -515,21 +504,19 @@ class ProvisioningTest {
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionFullyManagedDevice"])
     fun provisionFullyManagedDevice_disallowAddManagedProfileIsSet() {
-        val systemSetupComplete = TestApis.users().system().setupComplete
-        TestApis.users().system().setupComplete = false
-        try {
-            val params = createDefaultManagedDeviceProvisioningParamsBuilder().build()
-            localDevicePolicyManager.provisionFullyManagedDevice(params)
-            assertThat(
-                TestApis.devicePolicy().userRestrictions()
-                    .isSet(CommonUserRestrictions.DISALLOW_ADD_MANAGED_PROFILE)
-            ).isTrue()
-        } finally {
-            val deviceOwner = TestApis.devicePolicy().getDeviceOwner()
-            deviceOwner?.remove()
-            val profileOwner = TestApis.devicePolicy().getProfileOwner()
-            profileOwner?.remove()
-            TestApis.users().system().setupComplete = systemSetupComplete
+        SetupCompleteResource(setupComplete = false, user = TestApis.users().system()).use {
+            DeviceOwnerResource().use {
+                ProfileOwnerResource().use {
+                    val params = createDefaultManagedDeviceProvisioningParamsBuilder().build()
+
+                    localDevicePolicyManager.provisionFullyManagedDevice(params)
+
+                    assertThat(
+                        TestApis.devicePolicy().userRestrictions()
+                            .isSet(CommonUserRestrictions.DISALLOW_ADD_MANAGED_PROFILE)
+                    ).isTrue()
+                }
+            }
         }
     }
 
@@ -539,16 +526,14 @@ class ProvisioningTest {
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionFullyManagedDevice"])
     fun provisionFullyManagedDevice_canControlSensorPermissionGrantsByDefault() {
-        val setupComplete = TestApis.users().system().setupComplete
-        TestApis.users().system().setupComplete = false
-        try {
-            val params = createDefaultManagedDeviceProvisioningParamsBuilder().build()
-            localDevicePolicyManager.provisionFullyManagedDevice(params)
-            assertThat(TestApis.devicePolicy().canAdminGrantSensorsPermissions()).isTrue()
-        } finally {
-            val deviceOwner = TestApis.devicePolicy().getDeviceOwner()
-            deviceOwner?.remove()
-            TestApis.users().system().setupComplete = setupComplete
+        SetupCompleteResource(setupComplete = false, user = TestApis.users().system()).use {
+            DeviceOwnerResource().use {
+                val params = createDefaultManagedDeviceProvisioningParamsBuilder().build()
+
+                localDevicePolicyManager.provisionFullyManagedDevice(params)
+
+                assertThat(TestApis.devicePolicy().canAdminGrantSensorsPermissions()).isTrue()
+            }
         }
     }
 
@@ -559,18 +544,16 @@ class ProvisioningTest {
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionFullyManagedDevice"])
     fun provisionFullyManagedDevice_canOptOutOfControllingSensorPermissionGrants() {
-        val setupComplete = TestApis.users().system().setupComplete
-        TestApis.users().system().setupComplete = false
-        try {
-            val params = createDefaultManagedDeviceProvisioningParamsBuilder()
-                .setCanDeviceOwnerGrantSensorsPermissions(false)
-                .build()
-            localDevicePolicyManager.provisionFullyManagedDevice(params)
-            assertThat(TestApis.devicePolicy().canAdminGrantSensorsPermissions()).isFalse()
-        } finally {
-            val deviceOwner = TestApis.devicePolicy().getDeviceOwner()
-            deviceOwner?.remove()
-            TestApis.users().system().setupComplete = setupComplete
+        SetupCompleteResource(setupComplete = false, user = TestApis.users().system()).use {
+            DeviceOwnerResource().use {
+                val params = createDefaultManagedDeviceProvisioningParamsBuilder()
+                    .setCanDeviceOwnerGrantSensorsPermissions(false)
+                    .build()
+
+                localDevicePolicyManager.provisionFullyManagedDevice(params)
+
+                assertThat(TestApis.devicePolicy().canAdminGrantSensorsPermissions()).isFalse()
+            }
         }
     }
 
@@ -580,20 +563,18 @@ class ProvisioningTest {
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionFullyManagedDevice"])
     fun provisionFullyManagedDevice_leavesAllSystemAppsEnabledWhenRequested() {
-        val setupComplete = TestApis.users().system().setupComplete
-        TestApis.users().system().setupComplete = false
-        try {
-            val systemAppsBeforeProvisioning = TestApis.packages().systemApps()
-            val params = createDefaultManagedDeviceProvisioningParamsBuilder()
-                .setLeaveAllSystemAppsEnabled(true)
-                .build()
-            localDevicePolicyManager.provisionFullyManagedDevice(params)
-            val systemAppsAfterProvisioning = TestApis.packages().systemApps()
-            assertThat(systemAppsAfterProvisioning).isEqualTo(systemAppsBeforeProvisioning)
-        } finally {
-            val deviceOwner = TestApis.devicePolicy().getDeviceOwner()
-            deviceOwner?.remove()
-            TestApis.users().system().setupComplete = setupComplete
+        SetupCompleteResource(setupComplete = false, user = TestApis.users().system()).use {
+            DeviceOwnerResource().use {
+                val systemAppsBeforeProvisioning = TestApis.packages().systemApps()
+                val params = createDefaultManagedDeviceProvisioningParamsBuilder()
+                    .setLeaveAllSystemAppsEnabled(true)
+                    .build()
+
+                localDevicePolicyManager.provisionFullyManagedDevice(params)
+
+                val systemAppsAfterProvisioning = TestApis.packages().systemApps()
+                assertThat(systemAppsAfterProvisioning).isEqualTo(systemAppsBeforeProvisioning)
+            }
         }
     }
 
@@ -605,21 +586,22 @@ class ProvisioningTest {
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionFullyManagedDevice"])
     fun provisionFullyManagedDevice_setsDeviceAsDemoDeviceWhenRequested() {
-        val setupComplete = TestApis.users().system().setupComplete
-        TestApis.users().system().setupComplete = false
-        try {
-            val params = createDefaultManagedDeviceProvisioningParamsBuilder()
-                .setDemoDevice(true)
-                .build()
-            localDevicePolicyManager.provisionFullyManagedDevice(params)
-            assertThat(
-                TestApis.settings().global().getInt(Settings.Global.DEVICE_DEMO_MODE, 0)
-            ).isEqualTo(1)
-        } finally {
-            val deviceOwner = TestApis.devicePolicy().getDeviceOwner()
-            deviceOwner?.remove()
-            TestApis.users().system().setupComplete = setupComplete
-            TestApis.settings().global().putInt(Settings.Global.DEVICE_DEMO_MODE, 0)
+        SetupCompleteResource(setupComplete = false, user = TestApis.users().system()).use {
+            DeviceOwnerResource().use {
+                try {
+                    val params = createDefaultManagedDeviceProvisioningParamsBuilder()
+                        .setDemoDevice(true)
+                        .build()
+
+                    localDevicePolicyManager.provisionFullyManagedDevice(params)
+
+                    assertThat(
+                        TestApis.settings().global().getInt(Settings.Global.DEVICE_DEMO_MODE, 0)
+                    ).isEqualTo(1)
+                } finally {
+                    TestApis.settings().global().putInt(Settings.Global.DEVICE_DEMO_MODE, 0)
+                }
+            }
         }
     }
 
@@ -659,21 +641,22 @@ class ProvisioningTest {
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionFullyManagedDevice"])
     fun provisionFullyManagedDevice_setsProvisioningStateWhenDemoDeviceIsRequested() {
-        val setupComplete = TestApis.users().system().setupComplete
-        TestApis.users().system().setupComplete = false
-        try {
-            val params = createDefaultManagedDeviceProvisioningParamsBuilder()
-                .setDemoDevice(true)
-                .build()
-            localDevicePolicyManager.provisionFullyManagedDevice(params)
-            assertThat(
-                TestApis.devicePolicy().getUserProvisioningState(TestApis.users().system())
-            ).isEqualTo(DevicePolicyManager.STATE_USER_SETUP_FINALIZED)
-        } finally {
-            val deviceOwner = TestApis.devicePolicy().getDeviceOwner()
-            deviceOwner?.remove()
-            TestApis.users().system().setupComplete = setupComplete
-            TestApis.settings().global().putInt(Settings.Global.DEVICE_DEMO_MODE, 0)
+        SetupCompleteResource(setupComplete = false, user = TestApis.users().system()).use {
+            DeviceOwnerResource().use {
+                try {
+                    val params = createDefaultManagedDeviceProvisioningParamsBuilder()
+                        .setDemoDevice(true)
+                        .build()
+
+                    localDevicePolicyManager.provisionFullyManagedDevice(params)
+
+                    assertThat(
+                        TestApis.devicePolicy().getUserProvisioningState(TestApis.users().system())
+                    ).isEqualTo(DevicePolicyManager.STATE_USER_SETUP_FINALIZED)
+                } finally {
+                    TestApis.settings().global().putInt(Settings.Global.DEVICE_DEMO_MODE, 0)
+                }
+            }
         }
     }
 
@@ -706,18 +689,18 @@ class ProvisioningTest {
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionFullyManagedDevice"])
     fun provisionFullyManagedDevice_withProvisionDemoDevicePermissionForDemoDevice_doesNotThrowException() {
-        val setupComplete = TestApis.users().system().setupComplete
-        TestApis.users().system().setupComplete = false
-        try {
-            val params = createDefaultManagedDeviceProvisioningParamsBuilder()
-                .setDemoDevice(true)
-                .build()
-            localDevicePolicyManager.provisionFullyManagedDevice(params)
-        } finally {
-            val deviceOwner = TestApis.devicePolicy().getDeviceOwner()
-            deviceOwner?.remove()
-            TestApis.users().system().setupComplete = setupComplete
-            TestApis.settings().global().putInt(Settings.Global.DEVICE_DEMO_MODE, 0)
+        SetupCompleteResource(setupComplete = false, user = TestApis.users().system()).use {
+            DeviceOwnerResource().use {
+                try {
+                    val params = createDefaultManagedDeviceProvisioningParamsBuilder()
+                        .setDemoDevice(true)
+                        .build()
+
+                    localDevicePolicyManager.provisionFullyManagedDevice(params)
+                } finally {
+                    TestApis.settings().global().putInt(Settings.Global.DEVICE_DEMO_MODE, 0)
+                }
+            }
         }
     }
 
@@ -738,6 +721,69 @@ class ProvisioningTest {
             localDevicePolicyManager.provisionFullyManagedDevice(
                 params
             )
+        }
+    }
+
+    @Postsubmit(reason = "New test")
+    @EnsureHasNoDpc
+    @EnsureHasDevicePolicyManagerRoleHolder(onUser = SYSTEM_USER)
+    @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
+    @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING)
+    @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
+    @RequireRunOnSystemUser()
+    @Test
+    @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserDevice",
+        "android.app.admin.DevicePolicyManager#isDeviceManaged",
+        "android.app.admin.DevicePolicyManager#MultiUserDeviceProvisioningParams"])
+    fun provisionMultiUserManagementDevice_marksDeviceManaged() {
+        val dmrh = deviceState.dpmRoleHolder()
+        val dmrhComponent = ComponentName(
+                   dmrh.packageName(), dmrh.packageName() + ".DeviceAdminReceiver")
+        try {
+            withIncompleteSetupOnAllUsers {
+                val params = MultiUserDeviceProvisioningParams.Builder(dmrhComponent)
+                        // Needed to keep the android.devicepolicy.cts package.
+                        .setLeaveAllSystemAppsEnabled(true)
+                        .build()
+                localDevicePolicyManager.provisionMultiUserDevice(params)
+                assertThat(localDevicePolicyManager.isDeviceManaged()).isTrue()
+            }
+        } finally {
+            TestApis.devicePolicy().clearMultiUserDeviceManagement(dmrhComponent)
+        }
+    }
+
+    @Postsubmit(reason = "New test")
+    @EnsureHasNoDpc
+    @EnsureHasDevicePolicyManagerRoleHolder(onUser = SYSTEM_USER)
+    @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
+    @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING)
+    @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
+    @RequireRunOnSystemUser()
+    @Test
+    @ApiTest(
+        apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserDevice",
+            "android.app.admin.DevicePolicyManager#MultiUserDeviceProvisioningParams"]
+    )
+    fun provisionMultiUserManagementDevice_leavesAllSystemAppsEnabledWhenRequested() {
+        val dmrh = deviceState.dpmRoleHolder()
+        val dmrhComponent = ComponentName(
+            dmrh.packageName(), dmrh.packageName() + ".DeviceAdminReceiver"
+        )
+        try {
+            withIncompleteSetupOnAllUsers {
+                val params = MultiUserDeviceProvisioningParams.Builder(dmrhComponent)
+                    .setLeaveAllSystemAppsEnabled(true)
+                    .build()
+                val systemAppsBeforeProvisioning = TestApis.packages().systemApps()
+
+                localDevicePolicyManager.provisionMultiUserDevice(params)
+
+                val systemAppsAfterProvisioning = TestApis.packages().systemApps()
+                assertThat(systemAppsAfterProvisioning).isEqualTo(systemAppsBeforeProvisioning)
+            }
+        } finally {
+            TestApis.devicePolicy().clearMultiUserDeviceManagement(dmrhComponent)
         }
     }
 
@@ -942,9 +988,7 @@ class ProvisioningTest {
     @EnsureHasNoDpc
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPrecondition"])
     fun checkProvisioningPreCondition_actionDO_afterSetupComplete_returnsUserSetupComplete() {
-        val setupComplete = TestApis.users().system().setupComplete
-        TestApis.users().system().setupComplete = true
-        try {
+        SetupCompleteResource(setupComplete = true, user = TestApis.users().system()).use {
             assertThat(
                 localDevicePolicyManager.checkProvisioningPrecondition(
                     DevicePolicyManager.ACTION_PROVISION_MANAGED_DEVICE,
@@ -952,8 +996,6 @@ class ProvisioningTest {
                 )
             )
                 .isEqualTo(DevicePolicyManager.STATUS_USER_SETUP_COMPLETED)
-        } finally {
-            TestApis.users().system().setupComplete = setupComplete
         }
     }
 
@@ -963,9 +1005,7 @@ class ProvisioningTest {
     @EnsureHasNoDpc
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPrecondition"])
     fun checkProvisioningPreCondition_actionDO_returnsOk() {
-        val setupComplete = TestApis.users().system().setupComplete
-        TestApis.users().system().setupComplete = false
-        try {
+        SetupCompleteResource(setupComplete = false, user = TestApis.users().system()).use {
             assertThat(
                 localDevicePolicyManager.checkProvisioningPrecondition(
                     DevicePolicyManager.ACTION_PROVISION_MANAGED_DEVICE,
@@ -973,8 +1013,6 @@ class ProvisioningTest {
                 )
             )
                 .isEqualTo(DevicePolicyManager.STATUS_OK)
-        } finally {
-            TestApis.users().system().setupComplete = setupComplete
         }
     }
 
@@ -984,9 +1022,7 @@ class ProvisioningTest {
     @EnsureHasNoDpc
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPrecondition"])
     fun checkProvisioningPreCondition_actionDO_setupComplete_returnsUserSetupCompleted() {
-        val setupComplete = TestApis.users().current().setupComplete
-        TestApis.users().current().setupComplete = true
-        try {
+        SetupCompleteResource(setupComplete = true, user = TestApis.users().current()).use {
             assertThat(
                 localDevicePolicyManager.checkProvisioningPrecondition(
                     DevicePolicyManager.ACTION_PROVISION_MANAGED_DEVICE,
@@ -994,8 +1030,6 @@ class ProvisioningTest {
                 )
             )
                 .isEqualTo(DevicePolicyManager.STATUS_USER_SETUP_COMPLETED)
-        } finally {
-            TestApis.users().current().setupComplete = setupComplete
         }
     }
 
@@ -1006,9 +1040,7 @@ class ProvisioningTest {
     @RequireNotWatch(reason = "Watches will fail because they're already paired")
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPrecondition"])
     fun checkProvisioningPreCondition_actionDO_onManagedDevice_returnsHasDeviceOwner() {
-        val setupComplete = TestApis.users().current().setupComplete
-        TestApis.users().current().setupComplete = false
-        try {
+        SetupCompleteResource(setupComplete = false, user = TestApis.users().current()).use {
             assertThat(
                 localDevicePolicyManager.checkProvisioningPrecondition(
                     DevicePolicyManager.ACTION_PROVISION_MANAGED_DEVICE,
@@ -1016,8 +1048,6 @@ class ProvisioningTest {
                 )
             )
                 .isEqualTo(DevicePolicyManager.STATUS_HAS_DEVICE_OWNER)
-        } finally {
-            TestApis.users().current().setupComplete = setupComplete
         }
     }
 
@@ -1030,9 +1060,7 @@ class ProvisioningTest {
     @RequireFeature(CommonPackages.FEATURE_DEVICE_ADMIN)
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPrecondition"])
     fun checkProvisioningPreCondition_actionDO_onNonSystemUser_returnsNotSystemUser() {
-        val setupComplete = TestApis.users().current().setupComplete
-        TestApis.users().current().setupComplete = false
-        try {
+        SetupCompleteResource(setupComplete = false, user = TestApis.users().current()).use {
             assertThat(
                 localDevicePolicyManager.checkProvisioningPrecondition(
                     DevicePolicyManager.ACTION_PROVISION_MANAGED_DEVICE,
@@ -1040,10 +1068,105 @@ class ProvisioningTest {
                 )
             )
                 .isEqualTo(DevicePolicyManager.STATUS_NOT_SYSTEM_USER)
-        } finally {
-            TestApis.users().current().setupComplete = setupComplete
         }
     }
+
+    @Postsubmit(reason = "New test")
+    @EnsureHasNoDpc
+    @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
+    @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING)
+    @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
+    @RequireRunOnSystemUser()
+    @Test
+    @ApiTest(apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPreCondition",
+        "android.app.admin.DevicePolicyManager#ACTION_PROVISION_MULTI_USER_DEVICE"])
+    fun checkProvisioningPreCondition_multiUserDC_returnsOk() =
+        withIncompleteSetupOnAllUsers {
+            assertThat(
+                localDevicePolicyManager.checkProvisioningPrecondition(
+                    DevicePolicyManager.ACTION_PROVISION_MULTI_USER_DEVICE,
+                    DEVICE_ADMIN_COMPONENT_NAME.packageName
+                )
+            ).isEqualTo(DevicePolicyManager.STATUS_OK)
+        }
+
+    @Postsubmit(reason = "New test")
+    @EnsureHasNoDpc
+    @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
+    @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING)
+    @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
+    @RequireRunOnSecondaryUser
+    @Test
+    @ApiTest(apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPreCondition",
+        "android.app.admin.DevicePolicyManager#ACTION_PROVISION_MULTI_USER_DEVICE"])
+    fun checkProvisioningPreCondition_multiUserDC_secondaryUser_returnsNotSystemUser() =
+        withIncompleteSetupOnAllUsers {
+            assertThat(
+                localDevicePolicyManager.checkProvisioningPrecondition(
+                    DevicePolicyManager.ACTION_PROVISION_MULTI_USER_DEVICE,
+                    DEVICE_ADMIN_COMPONENT_NAME.packageName
+                )
+            ).isEqualTo(DevicePolicyManager.STATUS_NOT_SYSTEM_USER)
+        }
+
+    @Postsubmit(reason = "New test")
+    @EnsureHasNoDpc
+    @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
+    @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING)
+    @RequireNotHeadlessSystemUserMode(reason = "Device must not be in headless system user mode")
+    @RequireRunOnSystemUser()
+    @Test
+    @ApiTest(apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPreCondition",
+        "android.app.admin.DevicePolicyManager#ACTION_PROVISION_MULTI_USER_DEVICE"])
+    fun checkProvisioningPreCondition_multiUserDC_nonHsum_returnsHsumRequired() =
+        withIncompleteSetupOnAllUsers {
+            assertThat(
+                localDevicePolicyManager.checkProvisioningPrecondition(
+                    DevicePolicyManager.ACTION_PROVISION_MULTI_USER_DEVICE,
+                    DEVICE_ADMIN_COMPONENT_NAME.packageName
+                )
+            ).isEqualTo(DevicePolicyManager.STATUS_HEADLESS_SYSTEM_USER_MODE_REQUIRED)
+        }
+
+    @Postsubmit(reason = "New test")
+    @EnsureHasNoDpc
+    @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
+    @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING)
+    @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
+    @RequireRunOnSystemUser()
+    @Test
+    @ApiTest(apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPreCondition",
+        "android.app.admin.DevicePolicyManager#ACTION_PROVISION_MULTI_USER_DEVICE"])
+    fun checkProvisioningPreCondition_multiUserDC_systemUserSetup_returnsUserSetupCompleted() =
+        withIncompleteSetupOnAllUsers {
+            TestApis.users().system().setupComplete = true
+            assertThat(
+                localDevicePolicyManager.checkProvisioningPrecondition(
+                    DevicePolicyManager.ACTION_PROVISION_MULTI_USER_DEVICE,
+                    DEVICE_ADMIN_COMPONENT_NAME.packageName
+                )
+            ).isEqualTo(DevicePolicyManager.STATUS_USER_SETUP_COMPLETED)
+        }
+
+    @Postsubmit(reason = "New test")
+    @EnsureHasNoDpc
+    @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
+    @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING)
+    @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
+    @RequireRunOnSystemUser()
+    @Test
+    @ApiTest(apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPreCondition",
+        "android.app.admin.DevicePolicyManager#ACTION_PROVISION_MULTI_USER_DEVICE"])
+    fun checkProvisioningPreCondition_multiUserDC_initialUserSetup_returnsUserSetupCompleted() =
+        withIncompleteSetupOnAllUsers {
+            TestApis.users().initial().setupComplete = true
+            assertThat(
+                localDevicePolicyManager.checkProvisioningPrecondition(
+                    DevicePolicyManager.ACTION_PROVISION_MULTI_USER_DEVICE,
+                    DEVICE_ADMIN_COMPONENT_NAME.packageName
+                )
+            ).isEqualTo(DevicePolicyManager.STATUS_USER_SETUP_COMPLETED)
+        }
 
     // TODO(b/208843126): add more CTS coverage for setUserProvisioningState
     @Postsubmit(reason = "New test")
@@ -1563,6 +1686,16 @@ class ProvisioningTest {
             .setLeaveAllSystemAppsEnabled(true)
     }
 
+    private fun withIncompleteSetupOnAllUsers(block: () -> Unit) {
+        val setupCompleteMap = TestApis.users().all().associateWith { it.setupComplete }
+        try {
+            setupCompleteMap.keys.forEach { it.setupComplete = false }
+            block()
+        } finally {
+            setupCompleteMap.forEach { (user, setupComplete) -> user.setupComplete = setupComplete }
+        }
+    }
+
     companion object {
         @JvmField
         @ClassRule
@@ -1772,6 +1905,36 @@ class ProvisioningTest {
                 }
             } else {
                 Truth.assertWithMessage("Intent bundles are not equal").that(bundle2).isNull()
+            }
+        }
+
+        private class SetupCompleteResource(
+            private val setupComplete: Boolean,
+            private val user: UserReference? = TestApis.users().instrumented(),
+        ) : AutoCloseable {
+
+            private val originalSetupComplete: Boolean = user?.setupComplete ?: false
+
+            init {
+                user?.setupComplete = setupComplete
+            }
+
+            override fun close() {
+                user?.setupComplete = originalSetupComplete
+            }
+        }
+
+        private class DeviceOwnerResource : AutoCloseable {
+            override fun close() {
+                val deviceOwner = TestApis.devicePolicy().getDeviceOwner()
+                deviceOwner?.remove()
+            }
+        }
+
+        private class ProfileOwnerResource : AutoCloseable {
+            override fun close() {
+                val profileOwner = TestApis.devicePolicy().getProfileOwner()
+                profileOwner?.remove()
             }
         }
     }

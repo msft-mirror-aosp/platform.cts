@@ -15,8 +15,7 @@
  */
 package com.android.bedstead.multiuser
 
-import com.android.bedstead.enterprise.annotations.ensureHasWorkProfile
-import com.android.bedstead.enterprise.annotations.requireRunOnWorkProfile
+import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.DynamicParameterizedAnnotation
 import com.android.bedstead.harrier.ParameterizedTestGenerator
 import com.android.bedstead.harrier.UserType
@@ -43,7 +42,13 @@ import com.android.bedstead.nene.types.OptionalBoolean
  * [ParameterizedTestGenerator] for MultiUser
  */
 @Suppress("unused")
-class MultiUserParameterizedTestGenerator : ParameterizedTestGenerator {
+class MultiUserParameterizedTestGenerator(
+    locator: BedsteadServiceLocator
+) : ParameterizedTestGenerator {
+
+    private val enterpriseMediator: MultiUserToEnterpriseMediator by lazy {
+        locator.get("com.android.bedstead.enterprise.MultiUserToEnterpriseMediatorImpl")
+    }
 
     override fun generateReplacementAnnotations(
         annotation: Annotation
@@ -113,7 +118,7 @@ class MultiUserParameterizedTestGenerator : ParameterizedTestGenerator {
             )
 
             UserType.SECONDARY_USER -> EnsureHasSecondaryUser()
-            UserType.WORK_PROFILE -> ensureHasWorkProfile()
+            UserType.WORK_PROFILE -> enterpriseMediator.getEnsureHasWorkProfileAnnotation()
             UserType.TV_PROFILE -> EnsureHasTvProfile()
             UserType.CLONE_PROFILE -> EnsureHasCloneProfile()
             UserType.PRIVATE_PROFILE -> EnsureHasPrivateProfile()
@@ -131,7 +136,7 @@ class MultiUserParameterizedTestGenerator : ParameterizedTestGenerator {
             UserType.ADDITIONAL_USER -> RequireRunOnAdditionalUser()
             UserType.PRIMARY_USER -> RequireRunOnPrimaryUser(switchedToUser = OptionalBoolean.ANY)
             UserType.SECONDARY_USER -> RequireRunOnSecondaryUser()
-            UserType.WORK_PROFILE -> requireRunOnWorkProfile()
+            UserType.WORK_PROFILE -> enterpriseMediator.getRequireRunOnWorkProfileAnnotation()
             UserType.TV_PROFILE -> RequireRunOnTvProfile()
             UserType.CLONE_PROFILE -> RequireRunOnCloneProfile()
             UserType.PRIVATE_PROFILE -> RequireRunOnPrivateProfile()

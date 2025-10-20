@@ -34,7 +34,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 
 import com.android.compatibility.common.util.NullWebViewUtils;
-import com.android.compatibility.common.util.PollingCheck;
 
 import org.junit.After;
 import org.junit.Assume;
@@ -42,6 +41,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 @AppModeFull
 @MediumTest
@@ -53,7 +56,7 @@ public class WebHistoryItemTest extends SharedWebViewTest {
     private Context mContext;
 
     class WaitForIconClient extends WaitForProgressClient {
-        private boolean mReceivedIcon;
+        private final BlockingQueue<Bitmap> mOnReceivedIconQueue = new LinkedBlockingQueue<>();
 
         public WaitForIconClient(WebViewOnUiThread onUiThread) {
             super(onUiThread);
@@ -61,15 +64,17 @@ public class WebHistoryItemTest extends SharedWebViewTest {
 
         @Override
         public synchronized void onReceivedIcon(WebView webview, Bitmap icon) {
-            mReceivedIcon = true;
+            mOnReceivedIconQueue.add(icon);
         }
 
-        public synchronized boolean receivedIcon() { return mReceivedIcon; }
+        public Bitmap waitForOnReceivedIcon() {
+            return WebkitUtils.waitForNextQueueElement(mOnReceivedIconQueue);
+        }
     };
 
     @Rule
-    public ActivityScenarioRule mActivityScenarioRule =
-            new ActivityScenarioRule(WebViewCtsActivity.class);
+    public ActivityScenarioRule<WebViewCtsActivity> mActivityScenarioRule =
+            new ActivityScenarioRule<>(WebViewCtsActivity.class);
 
     @Before
     public void setUp() throws Exception {
@@ -116,7 +121,7 @@ public class WebHistoryItemTest extends SharedWebViewTest {
     }
 
     @Test
-    public void testWebHistoryItem() throws Throwable {
+    public void testWebHistoryItem() {
         final WaitForIconClient waitForIconClient = new WaitForIconClient(mOnUiThread);
         mOnUiThread.setWebChromeClient(waitForIconClient);
         WebkitUtils.onMainThreadSync(() -> {
@@ -131,12 +136,9 @@ public class WebHistoryItemTest extends SharedWebViewTest {
 
         String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
         mOnUiThread.loadUrlAndWaitForCompletion(url);
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return waitForIconClient.receivedIcon();
-            }
-        }.run();
+
+        Bitmap receivedIcon = waitForIconClient.waitForOnReceivedIcon();
+        assertNotNull("Did not receive favicon", receivedIcon);
 
         list = mOnUiThread.copyBackForwardList();
         assertEquals(1, list.getSize());

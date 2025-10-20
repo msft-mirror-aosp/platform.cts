@@ -147,6 +147,11 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
         if ((mCall1.getParent() == conf) || (conf.getChildren().contains(mCall1))) {
             fail("Call 1 should not be still conferenced");
         }
+        // 🤫 It turns out this API, which was added in the original version of Telecom, has NEVER
+        // been called by the Telecom framework. The separate operation relies upon the API
+        // Conference#onSeparate(connection).
+        mConnection1.onSeparate();
+
         assertFalse(mConferenceObject.getConnections().contains(mConnection1));
     }
 
@@ -195,6 +200,20 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
         assertConnectionCallDisplayName(mConferenceObject.getConnections().get(1),
                 TestUtils.SWAP_CALLER_NAME);
 
+    }
+
+    public void testConferenceMergeFail() {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        final Call conf = mInCallService.getLastConferenceCall();
+        assertCallState(conf, Call.STATE_ACTIVE);
+        mConferenceObject.notifyConferenceMergeFailed();
+        mOnConnectionEventCounter.waitForCount(1, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        String event = (String) (mOnConnectionEventCounter.getArgs(0)[1]);
+        Bundle extras = (Bundle) (mOnConnectionEventCounter.getArgs(0)[2]);
+        assertEquals(Connection.EVENT_CALL_MERGE_FAILED, event);
+        assertNull(extras);
     }
 
     /**

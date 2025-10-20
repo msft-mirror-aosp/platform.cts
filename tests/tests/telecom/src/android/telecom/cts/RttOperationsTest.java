@@ -25,6 +25,7 @@ import java.io.IOException;
 
 public class RttOperationsTest extends BaseTelecomTestWithMockServices {
     private static final int RTT_SEND_TIMEOUT_MILLIS = 1000;
+    private static final int WAIT_FOR_RTT_MODE_TIMEOUT_MILLIS = 2000;
     private static final String[] TEST_STRINGS = {
             "A",
             "AB",
@@ -217,6 +218,57 @@ public class RttOperationsTest extends BaseTelecomTestWithMockServices {
                 connection.getConnectionProperties() & ~Connection.PROPERTY_IS_RTT);
         TestUtils.waitOnAllHandlers(getInstrumentation());
         verifyRttDisabled(call);
+    }
+
+    /**
+     * Verifies that {@link Call.RttCall#setRttMode(int)} and {@link Call.RttCall#getRttAudioMode()}
+     * APIs function correctly for an ongoing RTT call.
+     *
+     * <p>Steps: 1. Place an outgoing call with an RTT request. 2. Retrieve the associated {@link
+     * Call} and {@link Call.RttCall} from the InCallService. 3. Verify that setting the RTT mode to
+     * RTT_MODE_FULL is successful. 4. Verify that setting the RTT mode to RTT_MODE_HCO is
+     * successful. 5. Verify that setting the RTT mode to RTT_MODE_VCO is successful.
+     */
+    public void testSetAndGetRttAudioMode() {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        // -- place outgoing call and verify the call was created successfully
+        placeRttCall(false /* isIncoming */);
+        verifyConnectionForOutgoingCall();
+        // -- use the InCallService to get the call object
+        final MockInCallService inCallService = mInCallCallbacks.getService();
+        final Call call = inCallService.getLastCall();
+        TestUtils.waitOnAllHandlers(getInstrumentation());
+        // -- verify the call is in RTT mode and grab the Rtt instance
+        assertTrue("Call should have RTT active.", call.isRttActive());
+        final Call.RttCall rttCall = call.getRttCall();
+        assertNotNull("RttCall object should not be null.", rttCall);
+        // -- assert MODE_FULL
+        rttCall.setRttMode(Call.RttCall.RTT_MODE_FULL);
+        assertRttMode(rttCall, Call.RttCall.RTT_MODE_FULL);
+        // -- assert MODE_HCO
+        rttCall.setRttMode(Call.RttCall.RTT_MODE_HCO);
+        assertRttMode(rttCall, Call.RttCall.RTT_MODE_HCO);
+        // -- assert MODE_VCO
+        rttCall.setRttMode(Call.RttCall.RTT_MODE_VCO);
+        assertRttMode(rttCall, Call.RttCall.RTT_MODE_VCO);
+    }
+
+    private void assertRttMode(Call.RttCall rttCall, int mode) {
+        waitForCondition(
+                new Condition() {
+                    @Override
+                    public Object expected() {
+                        return mode;
+                    }
+
+                    @Override
+                    public Object actual() {
+                        return rttCall.getRttAudioMode();
+                    }
+                },
+                WAIT_FOR_RTT_MODE_TIMEOUT_MILLIS);
     }
 
     private void verifyRttDisabled(Call call) {

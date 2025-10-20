@@ -96,6 +96,7 @@ class LockedBurstTest(its_base_test.ItsBaseTest):
         g_means.append(means[1])
         b_means.append(means[2])
 
+      marginal_pass_msg = []
       # Assert center patch brightness & similarity
       for i, means in enumerate([r_means, g_means, b_means]):
         plane = _COLORS[i]
@@ -112,6 +113,14 @@ class LockedBurstTest(its_base_test.ItsBaseTest):
         if spread >= threshold:
           raise AssertionError(f'{plane} center patch spread: {spread:.5f}, '
                                f'THRESH: {threshold:.2f}')
+        else:
+          if spread > (threshold * its_session_utils.MARGINAL_PASS_FACTOR):
+            marginal_pass_msg.append(
+                f'Marginally passing {_COLORS[plane]} spread check.'
+                f'Spread: {spread:.4f}, THRESH: {threshold:.2f}')
+      if marginal_pass_msg:
+        logging.warning('%s\n %s', its_session_utils.MARGINAL_PASSING_MESSAGE,
+                          marginal_pass_msg)
 
 if __name__ == '__main__':
   test_runner.main()

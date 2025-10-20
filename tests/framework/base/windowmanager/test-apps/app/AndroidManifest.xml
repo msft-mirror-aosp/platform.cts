@@ -36,7 +36,7 @@
     </queries>
 
     <application
-        android:name="android.server.wm.app.TestApplication"
+        android:name="android.server.wm.app.CrashUnresponsiveAppTestApplication"
         android:debuggable="true">
         <activity android:name=".TestActivity"
              android:resizeableActivity="true"
@@ -185,9 +185,9 @@
              android:resizeableActivity="true"
              android:taskAffinity="nobody.but.FreeformActivity"
              android:exported="true"/>
-        <activity android:name=".MoveTaskToBoundsActivity"
+        <activity android:name=".TaskMoveTestActivity"
              android:resizeableActivity="true"
-             android:taskAffinity="nobody.but.MoveTaskToBoundsActivity"
+             android:taskAffinity="nobody.but.TaskMoveTestActivity"
              android:exported="true">
           <intent-filter>
                 <action android:name="android.intent.action.VIEW" />

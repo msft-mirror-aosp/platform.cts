@@ -18,6 +18,9 @@ package android.app.notification.current.cts;
 
 import static android.app.Notification.FLAG_BUBBLE;
 import static android.app.Notification.FLAG_PROMOTED_ONGOING;
+import static android.app.Notification.SEMANTIC_STYLE_CAUTION;
+import static android.app.Notification.SEMANTIC_STYLE_INFO;
+import static android.app.Notification.SEMANTIC_STYLE_SAFE;
 import static android.graphics.drawable.Icon.TYPE_ADAPTIVE_BITMAP;
 import static android.graphics.drawable.Icon.TYPE_RESOURCE;
 
@@ -177,9 +180,7 @@ public class NotificationTest {
                 .setGroupAlertBehavior(Notification.GROUP_ALERT_CHILDREN)
                 .setBubbleMetadata(bubble)
                 .setAllowSystemGeneratedContextualActions(ALLOW_SYS_GEN_CONTEXTUAL_ACTIONS);
-        if (Flags.apiRichOngoing()) {
-            builder.setShortCriticalText(SHORT_CRITICAL_TEXT);
-        }
+        builder.setShortCriticalText(SHORT_CRITICAL_TEXT);
         if (Flags.nmSummarization()) {
             builder.setHasSummarizedContent(true);
         }
@@ -242,9 +243,7 @@ public class NotificationTest {
         assertEquals(mNotification.getTimeoutAfter(), result.getTimeoutAfter());
         assertEquals(mNotification.getChannelId(), result.getChannelId());
         assertEquals(mNotification.getSettingsText(), result.getSettingsText());
-        if (Flags.apiRichOngoing()) {
-            assertEquals(mNotification.getShortCriticalText(), result.getShortCriticalText());
-        }
+        assertEquals(mNotification.getShortCriticalText(), result.getShortCriticalText());
         assertEquals(mNotification.getGroupAlertBehavior(), result.getGroupAlertBehavior());
         assertNotNull(result.getBubbleMetadata());
         assertEquals(mNotification.getAllowSystemGeneratedContextualActions(),
@@ -624,13 +623,13 @@ public class NotificationTest {
     }
 
     @Test
-    public void testAction_builder_hasDefault() {
+    public void testActionBuilder_semanticAction_hasDefault() {
         Notification.Action action = makeNotificationAction(null);
         assertEquals(Notification.Action.SEMANTIC_ACTION_NONE, action.getSemanticAction());
     }
 
     @Test
-    public void testAction_builder_setSemanticAction() {
+    public void testActionBuilder_setSemanticAction() {
         Notification.Action action = makeNotificationAction(
                 builder -> builder.setSemanticAction(Notification.Action.SEMANTIC_ACTION_REPLY));
         assertEquals(Notification.Action.SEMANTIC_ACTION_REPLY, action.getSemanticAction());
@@ -667,7 +666,7 @@ public class NotificationTest {
     }
 
     @Test
-    public void testAction_parcel() {
+    public void testAction_semanticAction_parcel() {
         Notification.Action action = writeAndReadParcelable(
                 makeNotificationAction(builder -> {
                     builder.setSemanticAction(Notification.Action.SEMANTIC_ACTION_ARCHIVE);
@@ -679,12 +678,80 @@ public class NotificationTest {
     }
 
     @Test
-    public void testAction_clone() {
+    public void testAction_semanticAction_clone() {
         Notification.Action action = makeNotificationAction(
                 builder -> builder.setSemanticAction(Notification.Action.SEMANTIC_ACTION_DELETE));
-        assertEquals(
-                Notification.Action.SEMANTIC_ACTION_DELETE,
-                action.clone().getSemanticAction());
+
+        Notification.Action clone = action.clone();
+
+        assertEquals(Notification.Action.SEMANTIC_ACTION_DELETE, clone.getSemanticAction());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_NOTIFICATION_ACTION_CUSTOM)
+    public void testActionBuilder_emphasisAndStyle_hasDefault() {
+        Notification.Action action = makeNotificationAction(null);
+
+        assertThat(action.getEmphasisHint()).isEqualTo(Notification.Action.EMPHASIS_AUTO);
+        assertThat(action.getStyleHint()).isEqualTo(Notification.Action.STYLE_AUTO);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_NOTIFICATION_ACTION_CUSTOM)
+    public void testActionBuilder_setEmphasisAndStyle() {
+        Notification.Action action =
+                makeNotificationAction(
+                        builder ->
+                                builder.setEmphasisHint(Notification.Action.EMPHASIS_PRIMARY)
+                                        .setStyleHint(Notification.Action.STYLE_ICON_AND_TEXT));
+
+        assertThat(action.getEmphasisHint()).isEqualTo(Notification.Action.EMPHASIS_PRIMARY);
+        assertThat(action.getStyleHint()).isEqualTo(Notification.Action.STYLE_ICON_AND_TEXT);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_NOTIFICATION_ACTION_CUSTOM)
+    public void testAction_emphasisAndStyle_parcel() {
+        Notification.Action action =
+                makeNotificationAction(
+                        builder ->
+                                builder.setEmphasisHint(Notification.Action.EMPHASIS_SECONDARY)
+                                        .setStyleHint(Notification.Action.STYLE_ICON_ONLY));
+
+        Notification.Action unparceled = writeAndReadParcelable(action);
+
+        assertThat(unparceled.getEmphasisHint()).isEqualTo(Notification.Action.EMPHASIS_SECONDARY);
+        assertThat(unparceled.getStyleHint()).isEqualTo(Notification.Action.STYLE_ICON_ONLY);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_NOTIFICATION_ACTION_CUSTOM)
+    public void testAction_emphasisAndStyle_clone() {
+        Notification.Action action =
+                makeNotificationAction(
+                        builder ->
+                                builder.setEmphasisHint(Notification.Action.EMPHASIS_PRIMARY)
+                                        .setStyleHint(Notification.Action.STYLE_ICON_AND_TEXT));
+
+        Notification.Action cloned = action.clone();
+
+        assertThat(cloned.getEmphasisHint()).isEqualTo(Notification.Action.EMPHASIS_PRIMARY);
+        assertThat(cloned.getStyleHint()).isEqualTo(Notification.Action.STYLE_ICON_AND_TEXT);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_NOTIFICATION_ACTION_CUSTOM)
+    public void testActionBuilder_emphasisAndStyle_rebuild() {
+        Notification.Action action =
+                makeNotificationAction(
+                        builder ->
+                                builder.setEmphasisHint(Notification.Action.EMPHASIS_PRIMARY)
+                                        .setStyleHint(Notification.Action.STYLE_ICON_AND_TEXT));
+
+        Notification.Action rebuilt = new Notification.Action.Builder(action).build();
+
+        assertThat(rebuilt.getEmphasisHint()).isEqualTo(Notification.Action.EMPHASIS_PRIMARY);
+        assertThat(rebuilt.getStyleHint()).isEqualTo(Notification.Action.STYLE_ICON_AND_TEXT);
     }
 
     @Test
@@ -1029,7 +1096,6 @@ public class NotificationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
     public void testGetShortCriticalText_noneSet() {
         Notification n = new Notification.Builder(mContext, CHANNEL.getId()).build();
 
@@ -1037,7 +1103,6 @@ public class NotificationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
     public void testGetShortCriticalText_isSet() {
         Notification n = new Notification.Builder(mContext, CHANNEL.getId())
                 .setShortCriticalText(SHORT_CRITICAL_TEXT)
@@ -1157,7 +1222,6 @@ public class NotificationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
     public void testProgressStyle_recoverAllAttributesFromParcel() {
         final Notification.ProgressStyle expectedProgressStyle = new Notification.ProgressStyle();
         final Icon progressTrackerIcon = Icon.createWithContentUri(
@@ -1184,6 +1248,14 @@ public class NotificationTest {
                         .setColor(Color.RED))
                 .addProgressPoint(new Notification.ProgressStyle.Point(25))
                 .setProgressIndeterminate(true);
+        if (Flags.apiNotificationSemanticStyle()) {
+            // Move to the builder chain above when inlining.
+            expectedProgressStyle
+                    .getProgressSegments()
+                    .get(1)
+                    .setSemanticStyle(SEMANTIC_STYLE_CAUTION);
+            expectedProgressStyle.getProgressPoints().get(0).setSemanticStyle(SEMANTIC_STYLE_INFO);
+        }
 
         mNotification = new Notification.Builder(mContext, CHANNEL.getId())
                 .setSmallIcon(1)
@@ -1204,7 +1276,6 @@ public class NotificationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
     public void testProgressStyle_recoverAllAttributesFromNotification() {
         final Notification.ProgressStyle expectedProgressStyle = new Notification.ProgressStyle();
         final Icon progressTrackerIcon = Icon.createWithContentUri(
@@ -1231,6 +1302,14 @@ public class NotificationTest {
                         .setColor(Color.RED))
                 .addProgressPoint(new Notification.ProgressStyle.Point(25))
                 .setProgressIndeterminate(true);
+        if (Flags.apiNotificationSemanticStyle()) {
+            // Move to the builder chain above when inlining.
+            expectedProgressStyle
+                    .getProgressSegments()
+                    .get(1)
+                    .setSemanticStyle(SEMANTIC_STYLE_CAUTION);
+            expectedProgressStyle.getProgressPoints().get(0).setSemanticStyle(SEMANTIC_STYLE_SAFE);
+        }
 
         mNotification = new Notification.Builder(mContext, CHANNEL.getId())
                 .setSmallIcon(1)
@@ -1246,7 +1325,6 @@ public class NotificationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
     public void testProgressStyle_ignoresInvalidSegments() {
         final Notification.ProgressStyle expectedProgressStyle = new Notification.ProgressStyle();
         expectedProgressStyle
@@ -1365,7 +1443,8 @@ public class NotificationTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
-    public void progressStyle_point() {
+    @RequiresFlagsDisabled(Flags.FLAG_API_NOTIFICATION_SEMANTIC_STYLE)
+    public void progressStyle_point_legacy() {
         final int id = 1;
         final int position = 10;
         final int color = Color.RED;
@@ -1379,8 +1458,29 @@ public class NotificationTest {
     }
 
     @Test
+    @RequiresFlagsEnabled({Flags.FLAG_API_RICH_ONGOING, Flags.FLAG_API_NOTIFICATION_SEMANTIC_STYLE})
+    public void progressStyle_point() {
+        final int id = 1;
+        final int position = 10;
+        final int color = Color.RED;
+        final int semanticStyle = SEMANTIC_STYLE_INFO;
+
+        final Notification.ProgressStyle.Point point =
+                new Notification.ProgressStyle.Point(position)
+                        .setId(id)
+                        .setColor(color)
+                        .setSemanticStyle(semanticStyle);
+
+        assertEquals(id, point.getId());
+        assertEquals(position, point.getPosition());
+        assertEquals(color, point.getColor());
+        assertEquals(semanticStyle, point.getSemanticStyle());
+    }
+
+    @Test
     @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
-    public void progressStyle_segment() {
+    @RequiresFlagsDisabled(Flags.FLAG_API_NOTIFICATION_SEMANTIC_STYLE)
+    public void progressStyle_segment_legacy() {
         final int id = 1;
         final int length = 100;
         final int color = Color.RED;
@@ -1391,6 +1491,26 @@ public class NotificationTest {
         assertEquals(id, segment.getId());
         assertEquals(length, segment.getLength());
         assertEquals(color, segment.getColor());
+    }
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_API_RICH_ONGOING, Flags.FLAG_API_NOTIFICATION_SEMANTIC_STYLE})
+    public void progressStyle_segment() {
+        final int id = 1;
+        final int length = 100;
+        final int color = Color.RED;
+        final int semanticStyle = SEMANTIC_STYLE_INFO;
+
+        final Notification.ProgressStyle.Segment segment =
+                new Notification.ProgressStyle.Segment(length)
+                        .setId(id)
+                        .setColor(color)
+                        .setSemanticStyle(semanticStyle);
+
+        assertEquals(id, segment.getId());
+        assertEquals(length, segment.getLength());
+        assertEquals(color, segment.getColor());
+        assertEquals(semanticStyle, segment.getSemanticStyle());
     }
 
     private void assertProgressStylesAreEqual(Notification.ProgressStyle expected,

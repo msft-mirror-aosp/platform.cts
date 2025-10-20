@@ -16,11 +16,11 @@
 
 package android.mediapc.cts;
 
-import static android.mediapc.cts.CodecTestBase.codecFilter;
-import static android.mediapc.cts.CodecTestBase.codecPrefix;
-import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
-import static android.mediapc.cts.CodecTestBase.selectCodecs;
-import static android.mediapc.cts.CodecTestBase.selectHardwareCodecs;
+import static android.mediav2.common.cts.CodecTestBase.codecFilter;
+import static android.mediav2.common.cts.CodecTestBase.codecPrefix;
+import static android.mediav2.common.cts.CodecTestBase.mediaTypePrefix;
+import static android.mediav2.common.cts.CodecTestBase.selectCodecs;
+import static android.mediav2.common.cts.CodecTestBase.selectHardwareCodecs;
 
 import static org.junit.Assert.assertTrue;
 
@@ -167,7 +167,7 @@ public class FrameDropTestBase {
                     Precondition.create(
                             "The device doesn't support running at least four 1920x1080 avc"
                                     + " instances concurrently",
-                            Utils.MEETS_AVC_CODEC_PRECONDITIONS));
+                            Utils.meetsAvcCodecPreconditions()));
 
     @Rule(order = 2)
     public ActivityTestRule<TestActivity> mActivityRule =

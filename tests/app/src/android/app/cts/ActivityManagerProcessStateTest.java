@@ -1516,6 +1516,7 @@ public final class ActivityManagerProcessStateTest {
 
             // Return to home.
             mTargetContext.startActivity(homeIntent);
+            mInstrumentation.getUiAutomation().syncInputTransactions();
             uid1Watcher.waitFor(WatchUidRunner.CMD_CACHED, null);
             uid1Watcher.expect(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_HEAVY_WEIGHT);
 
@@ -1539,7 +1540,7 @@ public final class ActivityManagerProcessStateTest {
             cmd = "am make-uid-idle --user " + mTestRunningUserId
                     + " " + CANT_SAVE_STATE_1_PACKAGE_NAME;
             result = SystemUtil.runShellCommand(mInstrumentation, cmd);
-            uid1Watcher.expect(WatchUidRunner.CMD_IDLE, null);
+            uid1Watcher.waitFor(WatchUidRunner.CMD_IDLE, null);
 
             // We are interested in only the uid changes happening after returning to home.
             // Clear the history so we won't match staled results.
@@ -1560,6 +1561,7 @@ public final class ActivityManagerProcessStateTest {
 
             // Return to home.
             mTargetContext.startActivity(homeIntent);
+            mInstrumentation.getUiAutomation().syncInputTransactions();
             uid2Watcher.waitFor(WatchUidRunner.CMD_CACHED, null);
             uid2Watcher.expect(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_HEAVY_WEIGHT);
 

@@ -26,6 +26,7 @@ java_library {
     static_libs: [
         "androidx.test.rules",
         "com.android.net.thread.platform.flags-aconfig-java",
+        "flag-junit",
     ],
     libs: [
         "net-tests-utils",

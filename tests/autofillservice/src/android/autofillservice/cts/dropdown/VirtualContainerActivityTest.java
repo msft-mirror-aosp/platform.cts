@@ -54,6 +54,7 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
 import android.service.autofill.SaveInfo;
 import android.text.InputType;
+import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.view.autofill.AutofillManager;
@@ -82,6 +83,7 @@ public class VirtualContainerActivityTest
     private final boolean mCompatMode;
     private UiDevice mUiDevice;
     private int mBottomInset;
+    private int mActivityBottomCoordinate;
     private AutofillActivityTestRule<VirtualContainerActivity> mActivityRule;
     protected VirtualContainerActivity mActivity;
 
@@ -121,19 +123,10 @@ public class VirtualContainerActivityTest
                                     new AutofillOptions(
                                             /*logginLevel=AutofillManager.NO_LOGGING*/
                                             0, mCompatMode));
-                            WindowInsets insets =
-                                    mActivity
-                                            .getWindow()
-                                            .getDecorView()
-                                            .getRootView()
-                                            .getRootWindowInsets();
-                            if (insets != null) {
-                                mBottomInset =
-                                        insets.getInsets(
-                                                        WindowInsets.Type.systemBars()
-                                                                | WindowInsets.Type.displayCutout())
-                                                .bottom;
-                            }
+                            View rootView = mActivity.getWindow().getDecorView().getRootView();
+                            mBottomInset = getBottomInsetHeight(rootView);
+                            mActivityBottomCoordinate = getActivityBottomCoordinate(rootView);
+
                             postActivityLaunched();
                         }
                     };
@@ -315,6 +308,24 @@ public class VirtualContainerActivityTest
         for (int i = 0; i < viewNode.getChildCount(); ++i) {
             assertBoundsSet(viewNode.getChildAt(i));
         }
+    }
+
+    private int getBottomInsetHeight(View rootView) {
+        WindowInsets insets = rootView.getRootWindowInsets();
+        return insets == null
+                ? 0
+                : insets.getInsets(
+                                WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout())
+                        .bottom;
+    }
+
+    private int getActivityBottomCoordinate(View rootView) {
+        // Calculate bottom coordinate of activity
+        int[] location = new int[2];
+        rootView.getLocationOnScreen(location);
+        int appTopY = location[1];
+        int appHeight = rootView.getHeight();
+        return appTopY + appHeight;
     }
 
     @Test
@@ -864,7 +875,8 @@ public class VirtualContainerActivityTest
         if (autofillViewBoundsMatches) {
             // On scaled or smaller vertical screens with large system bars, if the picker bounds
             // reach the bottom of the screen it may not align with the field bounds
-            if ((mUiDevice.getDisplayHeight() - mBottomInset) != pickerBounds.bottom) {
+            if ((mActivityBottomCoordinate - mBottomInset) != pickerBounds.bottom) {
+
                 assertWithMessage(
                                 "vertical coordinates don't match; picker=%s, field=%s",
                                 pickerBounds, fieldBounds)

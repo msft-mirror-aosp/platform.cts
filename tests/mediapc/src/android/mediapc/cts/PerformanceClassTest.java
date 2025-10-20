@@ -23,8 +23,6 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertTrue;
 
-import android.content.Context;
-import android.content.pm.PackageManager;
 import android.hardware.display.DisplayManager;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
@@ -48,11 +46,12 @@ import android.mediapc.cts.common.Requirements.SecureHardwareDecodersRequirement
 import android.mediapc.cts.common.Utils;
 import android.os.Build;
 import android.util.Log;
+import android.view.Display;
 
 import androidx.test.filters.SmallTest;
-import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.MediaUtils;
 
 import org.junit.Assume;
 import org.junit.Rule;
@@ -82,18 +81,6 @@ public class PerformanceClassTest {
         mMediaTypeSecureSupport.add(MediaFormat.MIMETYPE_VIDEO_HEVC);
         mMediaTypeSecureSupport.add(MediaFormat.MIMETYPE_VIDEO_VP9);
         mMediaTypeSecureSupport.add(MediaFormat.MIMETYPE_VIDEO_AV1);
-    }
-
-
-    private boolean isHandheld() {
-        // handheld nature is not exposed to package manager, for now
-        // we check for touchscreen and NOT watch and NOT tv
-        PackageManager pm =
-            InstrumentationRegistry.getInstrumentation().getContext().getPackageManager();
-        return pm.hasSystemFeature(pm.FEATURE_TOUCHSCREEN)
-                && !pm.hasSystemFeature(pm.FEATURE_WATCH)
-                && !pm.hasSystemFeature(pm.FEATURE_TELEVISION)
-                && !pm.hasSystemFeature(pm.FEATURE_AUTOMOTIVE);
     }
 
     @SmallTest
@@ -163,7 +150,8 @@ public class PerformanceClassTest {
         Assume.assumeTrue("not a device of a valid media performance class", Utils.isPerfClass());
 
         if (Utils.isPerfClass()) {
-            assertTrue("performance class is only defined for Handheld devices", isHandheld());
+            assertTrue("performance class is only defined for Handheld devices",
+                    MediaUtils.isHandheld());
         }
     }
 
@@ -176,13 +164,9 @@ public class PerformanceClassTest {
                 "2.2.7.3/7.1.1.3/H-2-1",
             })
     public void testMinimumResolutionAndDensity() {
-        Context context = InstrumentationRegistry.getInstrumentation().getContext();
-        DisplayManager displayManager = context.getSystemService(DisplayManager.class);
-        int density = Utils.getDisplayDpi(context);
-        var size = Utils.getLargestDisplaySize(displayManager);
-
-        int longPix = Utils.getLongPixels(size);
-        int shortPix = Utils.getShortPixels(size);
+        int density = Utils.getDisplayDpi();
+        int longPix = Utils.getMaxDisplayDim();
+        int shortPix = Utils.getMinDisplayDim();
 
         Log.i(TAG, String.format("dpi=%d size=%dx%dpix", density, longPix, shortPix));
 
@@ -209,8 +193,7 @@ public class PerformanceClassTest {
                 "2.2.7.3/7.6.1/H-2-1",
             })
     public void testMinimumMemory() {
-        long totalMemoryMb =
-                Utils.getTotalMemoryMb(InstrumentationRegistry.getInstrumentation().getContext());
+        long totalMemoryMb = Utils.getTotalMemoryMb();
 
         Log.i(TAG, String.format("Total device memory = %,d MB", totalMemoryMb));
 
@@ -228,8 +211,10 @@ public class PerformanceClassTest {
         PerformanceClassEvaluator pce = pcRule.getPerformanceClassEvaluator();
         HDRDisplayRequirement req = Requirements.addR7_1_1_3__H_3_1().to(pce);
 
-        req.setIsHdr(Utils.IS_HDR);
-        req.setDisplayLuminanceNits(Utils.HDR_DISPLAY_AVERAGE_LUMINANCE);
+        DisplayManager dm = Utils.getContext().getSystemService(DisplayManager.class);
+        Display dd = dm.getDisplay(Display.DEFAULT_DISPLAY);
+        req.setIsHdr(dd.isHdr());
+        req.setDisplayLuminanceNits(dd.getHdrCapabilities().getDesiredMaxAverageLuminance());
     }
 
     @Test

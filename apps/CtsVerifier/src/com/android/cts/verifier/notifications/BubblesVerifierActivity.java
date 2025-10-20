@@ -44,6 +44,7 @@ import android.app.Person;
 import android.app.RemoteInput;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ShortcutInfo;
 import android.content.pm.ShortcutManager;
 import android.graphics.Color;
@@ -98,6 +99,7 @@ public class BubblesVerifierActivity extends PassFailButtons.Activity {
 
     private Handler mHandler = new Handler();
     private Runnable mRunnable;
+    private boolean mDefaultBubbleSetting;
 
     private abstract class BubblesTestStep {
 
@@ -202,8 +204,16 @@ public class BubblesVerifierActivity extends PassFailButtons.Activity {
             if (getPackageManager().hasSystemFeature(FEATURE_INPUT_METHODS)) {
                 mTests.add(new ImeInsetsExpandedView());
             }
-            mTests.add(new MinHeightExpandedView());
-            mTests.add(new MaxHeightExpandedView());
+
+            WindowMetrics maximumWindowMetrics = getWindowManager().getMaximumWindowMetrics();
+            float maxWidth =
+                    maximumWindowMetrics.getBounds().width() / maximumWindowMetrics.getDensity();
+            // These tests only apply to non bubble bar configurations, bubble bar is active on
+            // displays larger than 600dp
+            if (maxWidth < 600) {
+                mTests.add(new MinHeightExpandedView());
+                mTests.add(new MaxHeightExpandedView());
+            }
         }
 
         setPassFailButtonClickListeners();
@@ -221,6 +231,7 @@ public class BubblesVerifierActivity extends PassFailButtons.Activity {
         runNextTestOrShowSummary();
 
         restoreStateFromBundle(savedState);
+        restoreDefaultBubbleSetting();
     }
 
     @Override
@@ -245,6 +256,11 @@ public class BubblesVerifierActivity extends PassFailButtons.Activity {
                 mTestStepPassed.setEnabled(savedState.getBoolean("mTestStepPassed", false));
             }
         }
+    }
+
+    private void restoreDefaultBubbleSetting() {
+        SharedPreferences sharedPreferences = getPreferences(Context.MODE_PRIVATE);
+        mDefaultBubbleSetting = sharedPreferences.getBoolean("defaultBubbleSettings", false);
     }
 
     private void runNextTestOrShowSummary() {
@@ -351,8 +367,25 @@ public class BubblesVerifierActivity extends PassFailButtons.Activity {
 
         @Override
         public boolean verify() {
-            return mNotificationManager.getBubblePreference() == BUBBLE_PREFERENCE_NONE
-                    && mNotificationManager.areBubblesEnabled();
+            final boolean defaultSetting =
+                    mNotificationManager.getBubblePreference() == BUBBLE_PREFERENCE_NONE
+                            && mNotificationManager.areBubblesEnabled();
+            if (defaultSetting) {
+                mDefaultBubbleSetting = defaultSetting;
+                storeDefaultSettingsResult(defaultSetting);
+            }
+            return mDefaultBubbleSetting;
+        }
+
+        /**
+         * Due to bubble settings getting changed when a bubble is created, we have to store the
+         * initial result in case a user has to go back through the cts verifier flow for bubbles.
+         */
+        private void storeDefaultSettingsResult(boolean defaultSetting) {
+            SharedPreferences sharedPreferences = getPreferences(Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putBoolean("defaultBubbleSettings", defaultSetting);
+            editor.apply();
         }
     }
 

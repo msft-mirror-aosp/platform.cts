@@ -22,6 +22,7 @@ import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.EXPAND_SPLIT
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.HINGE_SPLIT_ATTRS;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.createSplitPairRuleBuilder;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.startActivityAndVerifySplitAttributes;
+import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertResumed;
 
 import static com.android.compatibility.common.util.PollingCheck.waitFor;
 
@@ -57,6 +58,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -431,35 +433,54 @@ public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
         // defaultSplitAttributes.
         Activity activityA = startFullScreenActivityNewTask(TestActivityWithId.class,
                 ACTIVITY_A_ID);
-        startActivityAndVerifySplitAttributes(
-                activityA,
-                TestActivityWithId.class,
-                splitPairRule,
-                ACTIVITY_B_ID,
-                mSplitInfoConsumer,
-                mActivityStackCallback);
+        final Activity activityB =
+                startActivityAndVerifySplitAttributes(
+                        activityA,
+                        TestActivityWithId.class,
+                        splitPairRule,
+                        ACTIVITY_B_ID,
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
 
         verifier.waitAndAssertFunctionApplied("The calculator function must be called due to"
                 + " split pair launch.");
 
         final DisplayContent display = MultiDisplayTestHelper
                 .createLandscapeLargeScreenSimulatedDisplay(createManagedVirtualDisplaySession());
-        // Launch Activity A to secondary display.
-        launchActivityOnDisplay(activityA.getComponentName(), display.mId);
-        waitForOrFail("Activity A must be resumed.", () ->
-                getResumedActivityById(ACTIVITY_A_ID) != null);
-        activityA = getResumedActivityById(ACTIVITY_A_ID);
 
+        // Filter out empty SplitInfo and ActivityStack to make test more robust.
+        mSplitInfoConsumer.setDropValuePredicate(List::isEmpty);
+        // Filter out ActivityStacks that not in split.
+        mActivityStackCallback.setDropValuePredicate(stacks -> stacks.size() <= 1);
+
+        // Finish A and B in case Activity launches to the main display unexpectedly.
+        activityA.finish();
+        activityB.finish();
+
+        mWmState.waitFor(
+                wmState -> getRootTask(activityA.getTaskId()) == null,
+                "Task of Activity A and B must be removed.");
+
+        // Launch Activity C and D split to secondary display and verify that the split pair matches
+        // defaultSplitAttributes.
+        final Activity activityC =
+                startFullScreenActivityNewTask(TestActivityWithId.class, "activityC", display.mId);
+        waitAndAssertResumed(activityC);
         startActivityAndVerifySplitAttributes(
-                activityA,
+                activityC,
                 TestActivityWithId.class,
                 splitPairRule,
-                "activityC",
+                "activityD",
                 mSplitInfoConsumer,
                 mActivityStackCallback);
 
-        verifier.waitAndAssertFunctionApplied("The calculator function must be called due to"
-                + " split pair launch on secondary display.");
+        verifier.waitAndAssertFunctionApplied(
+                "The calculator function must be called due to"
+                        + " split pair launch on secondary display.");
+
+        // Reset the callbacks
+        mSplitInfoConsumer.setDropValuePredicate(null);
+        mActivityStackCallback.setDropValuePredicate(null);
     }
 
     private static class InvocationVerifier

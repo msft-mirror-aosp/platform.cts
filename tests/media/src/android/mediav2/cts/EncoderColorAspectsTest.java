@@ -30,7 +30,11 @@ import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
+import android.hardware.DataSpace;
+import android.media.Image;
+import android.media.ImageWriter;
 import android.media.MediaCodec;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
@@ -39,9 +43,7 @@ import android.mediav2.common.cts.CodecDecoderTestBase;
 import android.mediav2.common.cts.CodecEncoderTestBase;
 import android.mediav2.common.cts.CodecTestBase;
 import android.mediav2.common.cts.EncoderConfigParams;
-import android.mediav2.common.cts.InputSurface;
 import android.mediav2.common.cts.OutputManager;
-import android.opengl.GLES20;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Surface;
@@ -88,7 +90,7 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
     private static final ArrayList<String> IGNORE_COLOR_BOX_LIST = new ArrayList<>();
 
     private Surface mInpSurface;
-    private InputSurface mEGLWindowInpSurface;
+    private ImageWriter mImgWriter;
 
     private int mLatency;
     private boolean mReviseLatency;
@@ -212,21 +214,11 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
 
             prepareArgsList(exhaustiveArgsList, mediaTypesHighBitDepth, ranges,
                     standardsHighBitDepth, transfersHighBitDepth, COLOR_FormatYUVP010, -1);
-            prepareArgsList(exhaustiveArgsList, mediaTypesHighBitDepth, ranges,
-                    standardsHighBitDepth, transfersHighBitDepth, COLOR_FormatSurface, 10);
+            // TODO: Enable this once WriterSurfaceImage opens for PixelFormat.RGBA_1010102
+            /*prepareArgsList(exhaustiveArgsList, mediaTypesHighBitDepth, ranges,
+                    standardsHighBitDepth, transfersHighBitDepth, COLOR_FormatSurface, 10);*/
         }
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, false);
-    }
-
-    private long computePresentationTime(int frameIndex) {
-        return frameIndex * 1000000L / mActiveEncCfg.mFrameRate;
-    }
-
-    private void generateSurfaceFrame() {
-        GLES20.glViewport(0, 0, mActiveEncCfg.mWidth, mActiveEncCfg.mHeight);
-        GLES20.glEnable(GLES20.GL_SCISSOR_TEST);
-        GLES20.glClearColor(128.0f, 128.0f, 128.0f, 1.0f);
-        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
     }
 
     private void tryEncoderOutput() throws InterruptedException {
@@ -260,6 +252,36 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
         }
     }
 
+    private void enqueueInput() throws InterruptedException {
+        if (mIsLoopBack && mInputBufferReadOffset >= mInputData.length) {
+            mInputBufferReadOffset = 0;
+        }
+        if (mInputBufferReadOffset >= mInputData.length) {
+            queueEOS();
+        } else {
+            long pts = mInputOffsetPts;
+            pts += mInputCount * 1000000L / mActiveEncCfg.mFrameRate;
+            int size = getVideoFrameSize(mActiveEncCfg.mWidth, mActiveEncCfg.mHeight,
+                    mActiveRawRes.mColorFormat);
+            int frmSize = getVideoFrameSize(mActiveRawRes.mWidth, mActiveRawRes.mHeight,
+                    mActiveRawRes.mColorFormat);
+            if (mInputBufferReadOffset + frmSize > mInputData.length) {
+                fail("received partial frame to encode \n" + mTestConfig + mTestEnv);
+            } else {
+                Image img = mImgWriter.dequeueInputImage();
+                assertNotNull("mImgWriter.dequeueInputImage() expected to return non-null \n"
+                        + mTestConfig + mTestEnv, img);
+                fillImage(img);
+                img.setTimestamp(pts * 1000);
+                mImgWriter.queueInputImage(img);
+                mInputBufferReadOffset += frmSize;
+                mNumBytesSubmitted += size;
+            }
+            mOutputBuff.saveInPTS(pts);
+            mInputCount++;
+        }
+    }
+
     protected void doWork(int frameLimit) throws IOException, InterruptedException {
         if (mActiveEncCfg.mColorFormat != COLOR_FormatSurface) {
             super.doWork(frameLimit);
@@ -269,14 +291,7 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
                 if (mInputCount - mOutputCount > mLatency) {
                     tryEncoderOutput();
                 }
-                mEGLWindowInpSurface.makeCurrent();
-                generateSurfaceFrame();
-                long pts = computePresentationTime(mInputCount);
-                mEGLWindowInpSurface.setPresentationTime(pts * 1000);
-                if (ENABLE_LOGS) Log.d(LOG_TAG, "inputSurface swapBuffers");
-                mEGLWindowInpSurface.swapBuffers();
-                mOutputBuff.saveInPTS(pts);
-                mInputCount++;
+                enqueueInput();
             }
         }
     }
@@ -302,8 +317,11 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
     @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
     public void testColorAspects() throws IOException, InterruptedException {
         Assume.assumeTrue("Test introduced with Android 11", IS_AT_LEAST_R);
+        /* TODO(b/181126614, b/268175825) */
+        Assume.assumeTrue("test skipped due to b/181126614, b/268175825", !MediaUtils.isPc());
 
         mActiveEncCfg = mEncCfgParams[0];
+
         if (mActiveEncCfg.mInputBitDepth > 8) {
             // Check if encoder is capable of supporting HDR profiles.
             // Previous check doesn't verify this as profile isn't set in the format
@@ -312,16 +330,11 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
 
             // Encoder surface mode tests are to be enabled only if an encoder supports
             // COLOR_Format32bitABGR2101010
-            if (mActiveEncCfg.mColorFormat == COLOR_FormatSurface) {
-                Assume.assumeTrue(mCodecName + " doesn't support RGBA1010102",
-                        hasSupportForColorFormat(mCodecName, mMediaType,
-                                                 COLOR_Format32bitABGR2101010));
-            } else {
-                Assume.assumeTrue(mCodecName + " doesn't support " + colorFormatToString(
-                                mActiveEncCfg.mColorFormat, mActiveEncCfg.mInputBitDepth),
-                        hasSupportForColorFormat(mCodecName, mMediaType,
-                                                 mActiveEncCfg.mColorFormat));
-            }
+            int colorFormat = mActiveEncCfg.mColorFormat == COLOR_FormatSurface ?
+                    COLOR_Format32bitABGR2101010 : mActiveEncCfg.mColorFormat;
+            Assume.assumeTrue(mCodecName + " doesn't support " + colorFormatToString(colorFormat,
+                            mActiveEncCfg.mInputBitDepth),
+                    hasSupportForColorFormat(mCodecName, mMediaType, colorFormat));
         }
 
         ArrayList<MediaFormat> formats = new ArrayList<>();
@@ -336,18 +349,11 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
                 Assume.assumeTrue("Color conversion related tests are not valid on cuttlefish "
                         + "releases through android T", IS_AT_LEAST_U);
             }
-        } else {
-            mActiveRawRes = EncoderInput.getRawResource(mActiveEncCfg);
-            assertNotNull("no raw resource found for testing config : " + mActiveEncCfg
-                    + mTestConfig + mTestEnv, mActiveRawRes);
-            setUpSource(mActiveRawRes.mFileName);
         }
-
-        /* TODO(b/181126614, b/268175825) */
-        if (MediaUtils.isPc()) {
-            Log.d(LOG_TAG, "test skipped due to b/181126614, b/268175825");
-            return;
-        }
+        mActiveRawRes = EncoderInput.getRawResource(mActiveEncCfg);
+        assertNotNull("no raw resource found for testing config : " + mActiveEncCfg
+                + mTestConfig + mTestEnv, mActiveRawRes);
+        setUpSource(mActiveRawRes.mFileName);
 
         {
             mSaveToMem = true;
@@ -359,24 +365,29 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
             configureCodec(mActiveEncCfg.getFormat(), isAsync, true, true);
 
             if (mActiveEncCfg.mColorFormat == COLOR_FormatSurface) {
-                mInpSurface = mCodec.createInputSurface();
-                assertTrue("Surface is not valid \n" + mTestConfig + mTestEnv,
-                        mInpSurface.isValid());
-                mEGLWindowInpSurface =
-                        new InputSurface(mInpSurface, false, mActiveEncCfg.mInputBitDepth == 10);
                 if (mCodec.getInputFormat().containsKey(MediaFormat.KEY_LATENCY)) {
                     mReviseLatency = true;
                     mLatency = mCodec.getInputFormat().getInteger(MediaFormat.KEY_LATENCY);
                 }
+                mInpSurface = mCodec.createInputSurface();
+                assertTrue("Surface is not valid \n" + mTestConfig + mTestEnv,
+                        mInpSurface.isValid());
+                // HardwareBuffer and PixelFormat formats have same enum values. We can use them
+                // as-is in setHardwareBufferFormat() without additional mapping.
+                mImgWriter = new ImageWriter.Builder(mInpSurface)
+                        .setMaxImages(mLatency + 2)
+                        .setHardwareBufferFormat(mActiveRawRes.mColorFormat)
+                        .setWidthAndHeight(mActiveEncCfg.mWidth, mActiveEncCfg.mHeight)
+                        .setDataSpace(DataSpace.DATASPACE_UNKNOWN).build();
             }
             mCodec.start();
             doWork(4);
             queueEOS();
             waitForAllOutputs();
 
-            if (mEGLWindowInpSurface != null) {
-                mEGLWindowInpSurface.release();
-                mEGLWindowInpSurface = null;
+            if (mImgWriter != null) {
+                mImgWriter.close();
+                mImgWriter = null;
             }
             if (mInpSurface != null) {
                 mInpSurface.release();

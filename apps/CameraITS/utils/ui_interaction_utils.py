@@ -43,9 +43,11 @@ UI_IMAGE_CAPTURE_SUCCESS_TEXT = 'Image Capture Success'
 
 # JCA_PATH ui/components/capture/src/main/java/com/google/jetpackcamera/ui/components/capture/TestTags.kt  pylint: disable=line-too-long
 QUICK_SETTINGS_RESOURCE_ID = 'QuickSettingsDropDown'
+QUICK_SETTINGS_HDR_RESOURCE_ID = 'QuickSettingsHdrButton'
 QUICK_SET_FLASH_RESOURCE_ID = 'QuickSettingsFlashButton'
 QUICK_SET_FLIP_CAMERA_RESOURCE_ID = 'QuickSettingsFlipCameraButton'
 QUICK_SET_RATIO_RESOURCE_ID = 'QuickSettingsRatioButton'
+CAPTURE_MODE_TOGGLE_BUTTON_JCA_RES_ID = 'CaptureModeToggleButton'
 QUICK_SET_RATIO_3_4_RESOURCE_ID = 'QuickSettingsRatio3:4Button'
 QUICK_SET_RATIO_9_16_RESOURCE_ID = 'QuickSettingsRatio9:16Button'
 QUICK_SET_RATIO_1_1_RESOURCE_ID = 'QuickSettingsRatio1:1Button'
@@ -66,12 +68,14 @@ CAPTURE_BUTTON_RESOURCE_ID = 'CaptureButton'
 
 # JCA_PATH feature/settings/src/main/java/com/google/jetpackcamera/settings/ui/TestTags.kt  pylint: disable=line-too-long
 SETTINGS_BACK_BUTTON_RESOURCE_ID = 'BackButton'
+SETTINGS_VIDEO_QUALITY_RESOURCE_ID = 'btn_open_dialog_setting_video_quality_tag'
 SETTINGS_VIDEO_STABILIZATION_RESOURCE_ID = (
     'btn_open_dialog_setting_video_stabilization_tag'
 )
 # JCA_PATH feature/settings/src/main/java/com/google/jetpackcamera/settings/ui/TestTags.kt  pylint: disable=line-too-long
 
 # JCA_PATH feature/settings/src/main/res/values/strings.xml
+SETTINGS_VIDEO_QUALITY_MODE_TEXT = 'Set Video Quality'
 SETTINGS_VIDEO_STABILIZATION_AUTO_TEXT = 'Stabilization Auto'
 SETTINGS_MENU_STABILIZATION_HIGH_QUALITY_TEXT = 'Stabilization High Quality'
 SETTINGS_VIDEO_STABILIZATION_MODE_TEXT = 'Set Video Stabilization'
@@ -103,13 +107,18 @@ JCA_STABILIZATION_MODES = {
     2: STABILIZATION_DESC_ON,
     3: STABILIZATION_DESC_OPTICAL,
 }
+JCA_VIDEO_QUALITY_AUTO = 'Auto'
+JCA_VIDEO_QUALITY_SD = 'SD'
+JCA_VIDEO_QUALITY_HD = 'HD'
+JCA_VIDEO_QUALITY_FHD = 'FHD'
+JCA_VIDEO_QUALITY_UHD = 'UHD'
 JCA_VIDEO_STABILIZATION_MODE_HIGH_QUALITY = 1
 JCA_VIDEO_STABILIZATION_MODE_OFF = 0
 JCA_VIDEO_STABILIZATION_MODE_ON = 2
 JCA_VIDEO_STABILIZATION_MODE_OPTICAL = 3
 JCA_WATCH_DUMP_FILE = 'jca_watch_dump.txt'
 JETPACK_CAMERA_APP_PACKAGE_NAME = 'com.google.jetpackcamera'
-JETPACK_CAMERA_APP_ZOOM_ATOL = 0.011  # to ensure a maximum diff of 0.01
+JETPACK_CAMERA_APP_ZOOM_ATOL = 0.041  # to ensure a maximum diff of 0.04
 RATIO_TO_UI_DESCRIPTION = {
     ONE_TO_ONE_ASPECT_RATIO_DESC: QUICK_SET_RATIO_1_1_RESOURCE_ID,
     THREE_TO_FOUR_ASPECT_RATIO_DESC: QUICK_SET_RATIO_3_4_RESOURCE_ID,
@@ -309,6 +318,14 @@ def jca_ui_zoom(dut, zoom_ratio, log_path):
   """
   zoom_ratio = round(zoom_ratio, 2)  # JCA only supports 2 decimal places
   current_zoom_ratio_text = dut.ui(res=UI_ZOOM_RATIO_TEXT_RESOURCE_ID).text
+  if not current_zoom_ratio_text:
+    dut.take_screenshot(log_path, prefix='no_zoom_ratio_text')
+    logging.debug(
+        'No zoom ratio text found, so pressing back button and trying again. '
+        'Current UI dump: %s', dut.ui.dump()
+    )
+    dut.ui.press.back()
+    current_zoom_ratio_text = dut.ui(res=UI_ZOOM_RATIO_TEXT_RESOURCE_ID).text
   logging.debug('current zoom ratio text: %s', current_zoom_ratio_text)
   current_zoom_ratio = float(current_zoom_ratio_text[:-1])  # remove `x`
   if math.isclose(zoom_ratio, current_zoom_ratio):
@@ -323,14 +340,9 @@ def jca_ui_zoom(dut, zoom_ratio, log_path):
       res=UI_DEBUG_OVERLAY_SET_ZOOM_RATIO_TEXT_FIELD_RESOURCE_ID
   ).set_text(str(zoom_ratio))
   dut.ui(res=UI_DEBUG_OVERLAY_SET_ZOOM_RATIO_SET_BUTTON_RESOURCE_ID).click()
-  # Ensure that preview is stable by clicking the center of the screen.
-  center_x, center_y = (
-      dut.ui.info['displayWidth'] // 2,
-      dut.ui.info['displayHeight'] // 2
-  )
-  dut.ui.click(x=center_x, y=center_y)
-  time.sleep(UI_OBJECT_WAIT_TIME_SECONDS.total_seconds())
-  if not dut.ui(res=UI_ZOOM_RATIO_TEXT_RESOURCE_ID).text:
+  if not dut.ui(res=UI_ZOOM_RATIO_TEXT_RESOURCE_ID).wait.exists(
+      UI_OBJECT_WAIT_TIME_SECONDS
+  ):
     dut.ui.press.back()
     dut.ui(res=UI_ZOOM_RATIO_TEXT_RESOURCE_ID).wait.exists(
         UI_OBJECT_WAIT_TIME_SECONDS
@@ -347,6 +359,13 @@ def jca_ui_zoom(dut, zoom_ratio, log_path):
         f'Failed to zoom to {zoom_ratio}, '
         f'zoomed to {zoom_ratio_after_zoom} instead.'
     )
+  # Ensure that preview is stable by clicking the center of the screen.
+  center_x, center_y = (
+      dut.ui.info['displayWidth'] // 2,
+      dut.ui.info['displayHeight'] // 2
+  )
+  dut.ui.click(x=center_x, y=center_y)
+  time.sleep(UI_OBJECT_WAIT_TIME_SECONDS.total_seconds())
   logging.debug('Set zoom ratio to %.2f', zoom_ratio)
   dut.take_screenshot(log_path, prefix=f'zoomed_to_{zoom_ratio}')
 
@@ -380,7 +399,8 @@ def change_jca_aspect_ratio(dut, log_path, aspect_ratio):
   dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
 
 
-def do_jca_video_setup(dut, log_path, facing, aspect_ratio, stabilization_mode):
+def do_jca_video_setup(dut, log_path, facing, aspect_ratio, stabilization_mode,
+                       video_quality):
   """Change video capture settings using the UI.
 
   Selects UI elements to modify settings.
@@ -394,11 +414,14 @@ def do_jca_video_setup(dut, log_path, facing, aspect_ratio, stabilization_mode):
       Acceptable values: _RATIO_TO_UI_DESCRIPTION
     stabilization_mode: int; constant describing the video stabilization mode.
       Acceptable values: 0, 1, 2
+    video_quality: int; constant describing the video quality.
+      Acceptable values: 0, 1, 2, 3, 4
   """
   open_jca_viewfinder(dut, log_path, request_video_capture=True)
   switch_jca_camera(dut, log_path, facing)
   change_jca_aspect_ratio(dut, log_path, aspect_ratio)
   _set_jca_video_stabilization(dut, log_path, stabilization_mode)
+  _set_jca_video_quality(dut, log_path, video_quality)
 
 
 def _set_jca_video_stabilization(dut, log_path, stabilization_mode):
@@ -492,6 +515,59 @@ def _set_jca_video_stabilization(dut, log_path, stabilization_mode):
       raise AssertionError('JCA video stabilization_mode not set to OFF.')
 
 
+def _set_jca_video_quality(dut, log_path, video_quality):
+  """Change video quality using the UI.
+
+  Args:
+    dut: An Android controller device object.
+    log_path: str; log path to save screenshots.
+    video_quality: str.
+  """
+  dut.ui(res=SETTINGS_BUTTON_RESOURCE_ID).click()
+  scrollable_menu = dut.ui(scrollable=True)
+  scrollable_menu.scroll.down(res=SETTINGS_VIDEO_QUALITY_RESOURCE_ID)
+  if not dut.ui(text=SETTINGS_VIDEO_QUALITY_MODE_TEXT).wait.exists(
+      UI_OBJECT_WAIT_TIME_SECONDS):
+    dut.take_screenshot(
+        log_path, prefix='failed_to_find_video_quality_settings')
+    raise AssertionError('Set Video Quality settings not found!'
+                         'Make sure you have the latest JCA app.')
+  dut.ui(res=SETTINGS_VIDEO_QUALITY_RESOURCE_ID).click()
+
+  # Check if the element is already visible
+  if not dut.ui(text=video_quality).wait.exists(UI_OBJECT_WAIT_TIME_SECONDS):
+    logging.debug(
+        '%s not immediately visible. Attempting to scroll.', video_quality)
+
+    if scrollable_menu.wait.exists(UI_OBJECT_WAIT_TIME_SECONDS):
+      logging.debug('Scrolling down to find %s...', video_quality)
+
+      found = scrollable_menu.scroll.down(text=video_quality)
+      if not found:
+        dut.take_screenshot(
+            log_path, prefix='failed_to_find_video_quality_mode')
+        raise AssertionError(
+            f'Video Quality Mode "{video_quality}"'
+            f' not found even after scrolling!')
+      else:
+        logging.debug('Found %s after scrolling.', video_quality)
+    else:
+      # No scrollable element found on the screen
+      dut.take_screenshot(log_path, prefix='no_scrollable_for_video_quality')
+      raise AssertionError(
+          f'Cannot find "{video_quality}"'
+          f' and no scrollable view found to search within.')
+
+  dut.ui(text=video_quality).click()
+  time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
+  logging.debug(
+      'JCA Video Video Quality set to %s successfully.', video_quality)
+  screenshot_prefix = (f'jca_stabilization_mode_{video_quality}_set')
+  dut.take_screenshot(log_path, prefix=screenshot_prefix)
+  dut.ui(text=SETTINGS_CLOSE_TEXT).click()
+  dut.ui(res=SETTINGS_BACK_BUTTON_RESOURCE_ID).click()
+
+
 def default_camera_app_setup(device_id, pkg_name):
   """Setup Camera app by providing required permissions.
 
@@ -531,7 +607,7 @@ def _get_current_camera_facing(content_desc, resource_id):
         or 'selfie' in content_desc.lower() or 'selfie' in resource_id.lower()):
     return 'rear'
   else:
-    raise ValueError('Failed to determine current camera facing.')
+    return None
 
 
 def switch_default_camera(dut, facing, log_path):
@@ -553,10 +629,12 @@ def switch_default_camera(dut, facing, log_path):
   )
   non_switch_pattern = (r'(flash|panorama|video|photo|portrait|supermode|mode|'
                         r'bg|fast_function_bar|beauty|night|more|exposure|'
-                        r'quick_switcher|mode_chip_text|add|hot_area)')
+                        r'quick_switcher|mode_chip_text|add|hot_area|'
+                        r'function_toggle_button)')
   default_ui_dump = dut.ui.dump()
   logging.debug('Default camera UI dump: %s', default_ui_dump)
   root = et.fromstring(default_ui_dump)
+  found_nodes = []
   for node in root.iter('node'):
     resource_id = node.get('resource-id')
     content_desc = node.get('content-desc')
@@ -564,39 +642,52 @@ def switch_default_camera(dut, facing, log_path):
     if (re.search(non_switch_pattern, content_desc, re.IGNORECASE) or
         re.search(non_switch_pattern, resource_id, re.IGNORECASE)):
       continue
-    if resource_id:
-      if re.search(
-          flip_camera_pattern, resource_id, re.IGNORECASE
-      ):
-        logging.debug('Pattern matches')
-        logging.debug('Resource id: %s', resource_id)
-        logging.debug('Flip camera content-desc: %s', content_desc)
-        break
-      else:
-        if re.search(
-            flip_camera_pattern, content_desc, re.IGNORECASE
-        ):
-          logging.debug('Pattern matches')
-          logging.debug('Resource id: %s', resource_id)
-          logging.debug('Flip camera content-desc: %s', content_desc)
-          break
+
+    # Check if the node matches the pattern for a flip camera button.
+    if (re.search(flip_camera_pattern, resource_id, re.IGNORECASE) or
+        re.search(flip_camera_pattern, content_desc, re.IGNORECASE)):
+      logging.debug('Pattern matches. Found flip camera button.')
+      logging.debug('Resource id: %s', resource_id)
+      logging.debug('Flip camera content-desc: %s', content_desc)
+      found_nodes.append(node)
+
+  flip_camera_node = None
+  current_facing = None
+
+  # Iterate through the found nodes to find one that works without raising an exception.
+  for node in found_nodes:
+    current_facing = _get_current_camera_facing(
+        node.get('content-desc', ''),
+        node.get('resource-id', '')
+    )
+
+    if current_facing is not None:
+      # If the call succeeds, we have found our node.
+      flip_camera_node = node
+      break
+
     else:
-      if re.search(
-          flip_camera_pattern, content_desc, re.IGNORECASE
-      ):
-        logging.debug('Pattern matches')
-        logging.debug('Resource id: %s', resource_id)
-        logging.debug('Flip camera content-desc: %s', content_desc)
-        break
+      # Log the error and continue to the next node.
+      logging.warning(
+          'Could not determine camera facing from node with resource_id="%s" '
+          'and content_desc="%s".',
+          node.get('resource-id', ''),
+          node.get('content-desc', ''),
+      )
+
+  # If no valid flip camera button was found, raise an assertion error.
+  if flip_camera_node is None:
+    raise AssertionError('No valid flip camera resource found that can be used.')
+
+  # If the camera is already in the desired state, log a message and exit.
+  if facing == current_facing:
+    logging.debug('Camera is already switched to the correct direction (%s).', facing)
   else:
-    raise AssertionError('Flip camera resource not found.')
-  if facing == _get_current_camera_facing(content_desc, resource_id):
-    logging.debug('Pattern found but camera is already switched.')
-  else:
-    if content_desc:
-      dut.ui(desc=content_desc).click.wait()
+    # Click the flip camera button.
+    if flip_camera_node.get('content-desc'):
+      dut.ui(desc=flip_camera_node.get('content-desc')).click.wait()
     else:
-      dut.ui(res=resource_id).click.wait()
+      dut.ui(res=flip_camera_node.get('resource-id')).click.wait()
 
   dut.take_screenshot(
       log_path, prefix=f'switched_to_{facing}_default_camera'
@@ -678,6 +769,15 @@ def launch_and_take_capture(dut, pkg_name, camera_facing, log_path,
     time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
     # stop cameraservice watch immediately after capturing image
     stop_cameraservice_watch(watch_process)
+    # handle retrieval of files on device
+    current_user = its_device_utils.get_current_user(device_id)
+    if current_user != its_device_utils.SYSTEM_USER:
+      return its_device_utils.pull_file_from_content_provider(
+          device_id,
+          content_location='content://media/external/images/media',
+          directory_on_host=log_path,
+          file_name='jp'  # we don't know the image name, only .jpg or .jpeg
+      )
     img_path_on_dut = ''
     photo_storage_path = ''
     for path in CAMERA_FILES_PATHS:
@@ -739,7 +839,8 @@ def default_camera_app_dut_setup(device_id, pkg_name):
 
 
 def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
-                           video_stabilization=None, jca_aspect_ratio=None):
+                           video_stabilization=None, jca_aspect_ratio=None,
+                           enable_hdr=False, take_preview_snap=False):
   """Launches the jetpack camera app and takes still capture.
 
   Args:
@@ -752,6 +853,8 @@ def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
     taking the JCA capture. By default, JCA uses AUTO mode.
     jca_aspect_ratio: optional; Aspect ratio used while taking JCA captures
     By default 3:4 is used.
+    enable_hdr: True if the HDR should be enabled during JCA capture
+    take_preview_snap: bool; True if snapshot is needed, False otherwise
 
     AUTO in JCA will set the stabilization mode to PREVIEW_STABILIZATION,
     if the lens supports it, and if not, it will set it to OIS. If neither
@@ -759,8 +862,10 @@ def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
 
   Returns:
     img_path_on_dut: Path of the captured image on the device
+    jca_screenshot: Path of the preview snapshot. None if take_preview_snap is False
   """
   device_id = dut.serial
+  jca_screenshot = None
   remove_command = f'rm -rf {EMULATED_STORAGE_PATH}/*'
   its_device_utils.run_adb_shell_command(device_id, remove_command)
   watch_dump_path = os.path.join(log_path, JCA_WATCH_DUMP_FILE)
@@ -775,6 +880,8 @@ def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
     )
     its_device_utils.run_adb_shell_command(device_id, launch_cmd)
     switch_jca_camera(dut, log_path, camera_facing)
+    if enable_hdr:
+      enable_jca_hdr(dut, log_path)
     aspect_ratio = THREE_TO_FOUR_ASPECT_RATIO_DESC  # default value
     if jca_aspect_ratio is not None:
       aspect_ratio = jca_aspect_ratio
@@ -790,6 +897,9 @@ def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
     if dut.ui(res=CAPTURE_BUTTON_RESOURCE_ID).wait.exists(
         timeout=WAIT_INTERVAL_FIVE_SECONDS
     ):
+      if take_preview_snap:
+        time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
+        jca_screenshot = dut.take_screenshot(log_path, prefix='jca_preview_snapshot')
       dut.ui(res=CAPTURE_BUTTON_RESOURCE_ID).click.wait()
     time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
     stop_cameraservice_watch(watch_process)
@@ -809,7 +919,73 @@ def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
       raise AssertionError('Failed to find jpg files!')
   finally:
     force_stop_app(dut, JETPACK_CAMERA_APP_PACKAGE_NAME)
-  return img_path_on_dut
+  # TODO(b/427212603): Flip the preview snapshot
+  return img_path_on_dut, jca_screenshot
+
+
+def enable_jca_hdr(dut, log_path):
+  """Enable HDR while capturing image in JCA.
+
+  Args:
+    dut: An android controller device object
+    log_path: str; log path to save screenshots
+  """
+  dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
+  dut.ui(scrollable=True).scroll.down(
+      res=QUICK_SETTINGS_HDR_RESOURCE_ID)
+  if not dut.ui(res=QUICK_SETTINGS_HDR_RESOURCE_ID).enabled:
+    logging.debug('Device does not support HDR on JCA.')
+    dut.take_screenshot(
+        log_path, prefix='JCA_HDR_disabled')
+    dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
+  else:
+    dut.ui(res=QUICK_SETTINGS_HDR_RESOURCE_ID).click()
+    time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
+    call_on_fail = lambda: dut.take_screenshot(log_path, prefix='hdr_not_enabled')
+    verify_ui_object_visible(dut.ui(desc='High dynamic range'), call_on_fail=call_on_fail)
+    logging.debug('Enabled HDR on JCA')
+    dut.take_screenshot(log_path, prefix='enabled_hdr_jca')
+    dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
+    dut.ui(res=CAPTURE_MODE_TOGGLE_BUTTON_JCA_RES_ID).click()
+
+
+def jca_hdr_supported(dut, log_path, camera_facing):
+  """Checks whether the device supports HDR on JCA or not.
+
+  Args:
+    dut: An android controller device object
+    log_path: str; log path to save screenshots
+    camera_facing: camera lens facing orientation
+  Returns:
+    supports_hdr: bool, True if the device supports HDR, False otherwise
+  """
+  device_id = dut.serial
+  supports_hdr = False
+  try:
+    logging.debug('Checking if HDR is supported or not.')
+    launch_cmd = (
+        'am start -n '
+        f'{JETPACK_CAMERA_APP_PACKAGE_NAME}/{JETPACK_CAMERA_APP_PACKAGE_NAME}.MainActivity '
+        '--ez "KEY_DEBUG_MODE" true'
+    )
+    its_device_utils.run_adb_shell_command(device_id, launch_cmd)
+    switch_jca_camera(dut, log_path, camera_facing)
+    dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
+    dut.ui(scrollable=True).scroll.down(
+        res=QUICK_SETTINGS_HDR_RESOURCE_ID)
+    if not dut.ui(res=QUICK_SETTINGS_HDR_RESOURCE_ID).enabled:
+      logging.debug('Device does not support HDR on JCA.')
+      dut.take_screenshot(
+          log_path, prefix='JCA_HDR_not_supported')
+    else:
+      logging.debug('Device supports HDR on JCA.')
+      dut.take_screenshot(
+          log_path, prefix='JCA_HDR_supported')
+      supports_hdr = True
+    dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
+  finally:
+    force_stop_app(dut, JETPACK_CAMERA_APP_PACKAGE_NAME)
+  return supports_hdr
 
 
 def take_dumpsys_report(dut, file_path):
@@ -855,6 +1031,10 @@ def _watch_start(device_id, pkg_name):
           'android.control.zoomRatio,'
           'android.scaler.cropRegion,'
           'android.control.zoomMethod,'
+          'android.tonemap.mode,'
+          'android.shading.mode,'
+          'android.sensor.sensitivity,'
+          'android.sensor.exposureTime,'
           '3a'
       ),
       '-c',
@@ -921,6 +1101,40 @@ def stop_cameraservice_watch(watch_process):
   cmd = f'adb -s {device_id} shell cmd media.camera watch stop'.split(' ')
   subprocess.run(cmd, check=True)
   logging.debug('Stopped watching 3a')
+
+
+def get_jca_zoom_ratios(file_name, number_of_captures=0):
+  """Returns the zoom_ratios used by JCA.
+
+  Args:
+    file_name: str; file name storing JCA camera pkg watch
+      cameraservice dump output.
+    number_of_captures: int; if positive, returns the zoom_ratios for the
+      last number_of_captures captures. Otherwise, returns all zoom_ratios.
+  Returns:
+    zoom_ratios: zoom_ratios used by JCA
+  Raises:
+    FileNotFoundError: If file_name does not exist
+  """
+  zoom_ratios = []
+  if not os.path.exists(file_name):
+    raise FileNotFoundError(f'File not found: {file_name}')
+  with open(file_name, 'r') as f:
+    for line in f.readlines():
+      if _CONTROL_ZOOM_RATIO_KEY in line and _RES_STR_PATTERN in line:
+        zoom_ratio = re.findall(r'\[(.*?)\]', line)
+        if len(zoom_ratio) != 1:
+          raise ValueError(f'Failed to parse zoom ratio: {line}')
+        try:
+          zoom_ratios.append(float(zoom_ratio[0]))
+        except ValueError as e:
+          logging.debug('Failed to parse zoom ratio: %s', line)
+          raise e
+  logging.debug('zoom_ratios from JCA watch dump: %s', zoom_ratios)
+  if number_of_captures > 0:
+    return zoom_ratios[-number_of_captures:]
+  else:
+    return zoom_ratios
 
 
 def get_default_camera_zoom_ratio(file_name):

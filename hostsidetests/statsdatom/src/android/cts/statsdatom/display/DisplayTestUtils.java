@@ -16,30 +16,13 @@
 
 package android.cts.statsdatom.display;
 
-import com.android.tradefed.device.ITestDevice;
+
+import java.util.concurrent.TimeUnit;
 
 public class DisplayTestUtils {
 
-    /** Returns the current brightness level of the given device. */
-    public static int getCurrentBrightnessLevel(ITestDevice device) throws Exception {
-        return Integer.parseInt(
-                device.executeShellCommand("settings get system screen_brightness").trim());
-    }
-
-    /** Sets the brightness level of the given device. */
-    public static void setScreenBrightnessLevel(ITestDevice device, int newBrightness)
-            throws Exception {
-        device.executeShellCommand("settings put system screen_brightness " + newBrightness);
-    }
-
-    /** Returns the current brightness mode of the given device. */
-    public static int getCurrentBrightnessMode(ITestDevice device) throws Exception {
-        return Integer.parseInt(
-                device.executeShellCommand("settings get system screen_brightness_mode").trim());
-    }
-
-    /** Sets the brightness mode of the given device. */
-    public static void setAutoBrightnessMode(ITestDevice device, int mode) throws Exception {
-        device.executeShellCommand("settings put system screen_brightness_mode " + mode);
-    }
+    public static final String DISPLAY_TEST_PKG = "android.display.cts";
+    public static final String DISPLAY_TEST_APK = "CtsDisplayTestCases.apk";
+    public static final String TEST_CLASS_DISPLAY_EVENT = "android.display.cts.DisplayEventTest";
+    public static final long TIMEOUT_MS = TimeUnit.SECONDS.toMillis(10);
 }

@@ -18,17 +18,12 @@ package com.android.bedstead.harrier;
 
 import androidx.annotation.Nullable;
 
-import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest;
-import com.android.bedstead.enterprise.annotations.MostRestrictiveCoexistenceTest;
 import com.android.bedstead.harrier.annotations.AnnotationCostRunPrecedence;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
-import com.android.bedstead.harrier.annotations.EnumTestParameter;
-import com.android.bedstead.harrier.annotations.HiddenApiTest;
-import com.android.bedstead.harrier.annotations.IntTestParameter;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
-import com.android.bedstead.harrier.annotations.StringTestParameter;
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestGenerator;
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestWithArgumentGenerator;
+import com.android.bedstead.harrier.annotations.meta.BedsteadTest;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 import com.android.bedstead.harrier.annotations.meta.RepeatingAnnotation;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeNone;
@@ -39,7 +34,6 @@ import com.android.bedstead.multiuser.annotations.RequireRunOnPrimaryUser;
 import com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.types.OptionalBoolean;
-import com.android.bedstead.performanceanalyzer.annotations.PerformanceTest;
 
 import com.google.auto.value.AutoAnnotation;
 import com.google.common.collect.ImmutableMap;
@@ -355,11 +349,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     private static List<FrameworkMethod> getBasicTests(TestClass testClass) {
         return testClass.getAnnotatedMethods().stream().filter(
                 method -> method.getAnnotation(Test.class) != null
-                        || method.getAnnotation(MostRestrictiveCoexistenceTest.class) != null
-                        || method.getAnnotation(MostImportantCoexistenceTest.class) != null
-                        || method.getAnnotation(HiddenApiTest.class) != null
-                        || method.getAnnotation(PerformanceTest.class) != null
-                        || isMethodAnnotatedIndirectly(method, UsesParameterizedTestGenerator.class)
+                        || isMethodAnnotatedIndirectly(method, BedsteadTest.class)
         ).collect(Collectors.toList());
     }
 
@@ -508,61 +498,25 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
             boolean hasParameterised = false;
 
             for (Annotation annotation : annotations) {
+                var generatorAnnotation = annotation.annotationType()
+                        .getAnnotation(UsesParameterizedTestWithArgumentGenerator.class);
+                if (generatorAnnotation != null) {
 
-                if (annotation instanceof StringTestParameter) {
                     if (hasParameterised) {
                         throw new IllegalStateException(
-                                "Each parameter can only have a single parameterised annotation");
-                    }
-                    hasParameterised = true;
-
-                    StringTestParameter stringTestParameter = (StringTestParameter) annotation;
-
-                    expandedMethods = expandedMethods.flatMap(
-                            i -> applyStringTestParameter(i, stringTestParameter));
-                } else if (annotation instanceof IntTestParameter) {
-                    if (hasParameterised) {
-                        throw new IllegalStateException(
-                                "Each parameter can only have a single parameterised annotation");
-                    }
-                    hasParameterised = true;
-
-                    IntTestParameter intTestParameter = (IntTestParameter) annotation;
-
-                    expandedMethods = expandedMethods.flatMap(
-                            i -> applyIntTestParameter(i, intTestParameter));
-                } else if (annotation instanceof EnumTestParameter) {
-                    if (hasParameterised) {
-                        throw new IllegalStateException(
-                                "Each parameter can only have a single parameterised annotation");
-                    }
-                    hasParameterised = true;
-
-                    EnumTestParameter enumTestParameter = (EnumTestParameter) annotation;
-
-                    expandedMethods = expandedMethods.flatMap(
-                            i -> applyEnumTestParameter(i, enumTestParameter));
-                } else {
-                    var generatorAnnotation = annotation.annotationType()
-                            .getAnnotation(UsesParameterizedTestWithArgumentGenerator.class);
-                    if (generatorAnnotation != null) {
-
-                        if (hasParameterised) {
-                            throw new IllegalStateException(
-                                    "Each parameter can only have a single parameterised annotation"
-                            );
-                        }
-                        hasParameterised = true;
-
-                        ParameterizedTestWithArgumentGenerator generator =
-                                mLocator.get(generatorAnnotation.value());
-
-                        var list = new ArrayList<FrameworkMethod>();
-                        expandedMethods.forEach(item ->
-                                list.addAll(generator.handleFrameworkMethod(item, annotation))
+                                "Each parameter can only have a single parameterised annotation"
                         );
-                        expandedMethods = list.stream();
                     }
+                    hasParameterised = true;
+
+                    ParameterizedTestWithArgumentGenerator generator =
+                            mLocator.get(generatorAnnotation.value());
+
+                    var list = new ArrayList<FrameworkMethod>();
+                    expandedMethods.forEach(item ->
+                            list.addAll(generator.handleFrameworkMethod(item, annotation))
+                    );
+                    expandedMethods = list.stream();
                 }
             }
 
@@ -573,27 +527,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         }
 
         return expandedMethods;
-    }
-
-    private static Stream<FrameworkMethod> applyStringTestParameter(FrameworkMethod frameworkMethod,
-            StringTestParameter stringTestParameter) {
-        return Stream.of(stringTestParameter.value()).map(
-                (i) -> new FrameworkMethodWithParameter(frameworkMethod, i)
-        );
-    }
-
-    private static Stream<FrameworkMethod> applyIntTestParameter(FrameworkMethod frameworkMethod,
-            IntTestParameter intTestParameter) {
-        return Arrays.stream(intTestParameter.value()).mapToObj(
-                (i) -> new FrameworkMethodWithParameter(frameworkMethod, i)
-        );
-    }
-
-    private static Stream<FrameworkMethod> applyEnumTestParameter(FrameworkMethod frameworkMethod,
-            EnumTestParameter enumTestParameter) {
-        return Arrays.stream(enumTestParameter.value().getEnumConstants()).map(
-                (i) -> new FrameworkMethodWithParameter(frameworkMethod, i)
-        );
     }
 
     /**

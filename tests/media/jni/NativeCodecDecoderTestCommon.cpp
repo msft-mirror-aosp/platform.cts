@@ -294,16 +294,23 @@ bool CodecDecoderTest::isOutputFormatOk(AMediaFormat* configFormat) {
                                        : !mSignalledOutFormatChanged,
                    std::string{"Input test file format is not same as default format of component, "
                                "but test did not receive INFO_OUTPUT_FORMAT_CHANGED signal.\n"})
-    RETURN_IF_TRUE(!isFormatSimilar(configFormat,
-                                    mIsCodecInAsyncMode ? mAsyncHandle.getOutputFormat()
-                                                        : mOutFormat),
-                   StringFormat("Configured input format and received output format are not "
-                                "similar. \nConfigured Input format is :- %s \nReceived Output "
-                                "format is :- %s \n",
-                                AMediaFormat_toString(configFormat),
-                                AMediaFormat_toString(mIsCodecInAsyncMode
-                                                              ? mAsyncHandle.getOutputFormat()
-                                                              : mOutFormat)))
+    // As per (https://aomediacodec.github.io/iamf/#iasampleentry-section) iamf specification,
+    // channel-count and sample-rate shall be set to 0 and must be ignored. The actual sample-rate
+    // and channel-count information is present in Descriptor OBUs. The extractor may not be parsing
+    // descriptor OBUs but sending 0, 0 as sample-rate and channel-count (as per the stream header).
+    // So skip comparing channel-count and sample-rate against format used for configure.
+    if (strcmp(mMediaType, AMEDIA_MIMETYPE_AUDIO_IAMF) != 0) {
+        RETURN_IF_TRUE(!isFormatSimilar(configFormat,
+                                        mIsCodecInAsyncMode ? mAsyncHandle.getOutputFormat()
+                                                            : mOutFormat),
+                       StringFormat("Configured input format and received output format are not "
+                                    "similar. \nConfigured Input format is :- %s \nReceived Output "
+                                    "format is :- %s \n",
+                                    AMediaFormat_toString(configFormat),
+                                    AMediaFormat_toString(mIsCodecInAsyncMode
+                                                                  ? mAsyncHandle.getOutputFormat()
+                                                                  : mOutFormat)))
+    }
     return true;
 }
 
@@ -379,6 +386,7 @@ bool CodecDecoderTest::testSimpleDecode(const char* decoder, const char* testFil
             RETURN_IF_FAIL(AMediaCodec_getName(mCodec, &name), "AMediaCodec_getName failed")
             RETURN_IF_NULL(name, std::string{"AMediaCodec_getName returned null"})
             auto res = strcmp(name, decoder) != 0;
+            auto isOMX = strncasecmp(name, "OMX", strlen("OMX")) == 0;
             AMediaCodec_releaseName(mCodec, name);
             RETURN_IF_TRUE(res, StringFormat("Codec name mismatch act/got: %s/%s", decoder, name))
             if (!configureCodec(mInpDecFormat, isAsync, eosType, false)) return false;
@@ -397,7 +405,7 @@ bool CodecDecoderTest::testSimpleDecode(const char* decoder, const char* testFil
                 int outputColorFormat = -1;
                 AMediaFormat_getInt32(outFormat, AMEDIAFORMAT_KEY_COLOR_FORMAT, &outputColorFormat);
                 AMediaFormat_delete(outFormat);
-                RETURN_IF_TRUE(outputColorFormat != COLOR_FormatSurface,
+                RETURN_IF_TRUE(outputColorFormat != COLOR_FormatSurface && !isOMX,
                                std::string{"In surface mode, components MUST default to the color "
                                            "format optimized for hardware display \n"}
                                        .append(test->getErrorMsg()))

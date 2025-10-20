@@ -330,6 +330,8 @@ public class PackageManagerTest {
     private static final String TEST_HW_NO_APP_STORAGE =
             SAMPLE_APK_BASE + "HelloWorldNoAppStorage.apk";
 
+    private static final String HELLO_WORLD_PCC = SAMPLE_APK_BASE + "HelloWorldPcc.apk";
+
     private static final int MAX_SAFE_LABEL_LENGTH = 1000;
 
     // For intent resolution tests
@@ -1067,7 +1069,7 @@ public class PackageManagerTest {
         assertEquals(3, result.length);
         assertEquals("shared:android.uid.system", result[0]);
         assertEquals(null, result[1]);
-        assertEquals("shared:com.android.cts.ctsshim", result[2]);
+        assertThat(result[2]).contains("com.android.cts.ctsshim");
     }
 
     @Test
@@ -1914,6 +1916,25 @@ public class PackageManagerTest {
     @Test
     public void testInstall_withMaxSharedUserId_success() {
         assertThat(installPackage(MAX_SHARED_USER_ID_APK)).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.privatecompute.flags.Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT)
+    public void testGetPackagesForPccUid() throws Exception {
+        installPackage(HELLO_WORLD_PCC);
+        try {
+            final ApplicationInfo appInfo =
+                    mPackageManager.getApplicationInfo(
+                            HELLO_WORLD_PACKAGE_NAME, PackageManager.ApplicationInfoFlags.of(0));
+            final int pccUid = appInfo.pccUid;
+
+            final String[] packageNames = mPackageManager.getPackagesForUid(pccUid);
+            assertNotNull(packageNames);
+            assertEquals(1, packageNames.length);
+            assertEquals(HELLO_WORLD_PACKAGE_NAME, packageNames[0]);
+        } finally {
+            uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
+        }
     }
 
     @Test

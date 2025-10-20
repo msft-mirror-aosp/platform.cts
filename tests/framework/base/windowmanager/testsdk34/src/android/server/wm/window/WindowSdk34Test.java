@@ -24,7 +24,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 import android.app.Activity;
+import android.app.ActivityOptions;
 import android.app.Instrumentation;
+import android.app.WindowConfiguration;
 import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.graphics.Insets;
@@ -38,15 +40,17 @@ import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowManager;
 
+import androidx.lifecycle.Lifecycle;
+import androidx.test.core.app.ActivityScenario;
 import androidx.test.filters.MediumTest;
-import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.concurrent.atomic.AtomicReference;
 
 @Presubmit
 @MediumTest
@@ -56,36 +60,33 @@ public class WindowSdk34Test {
     private Instrumentation mInstrumentation;
     private TestActivity mActivity;
     private Window mWindow;
+    private ActivityScenario<TestActivity> mScenario;
 
     /** Used by {@link #setMayAffectDisplayRotation()}. */
     private WindowManagerStateHelper mWmState;
     private int mOriginalRotation = -1;
 
-    @Rule
-    public ActivityTestRule<TestActivity> mActivityRule =
-            new ActivityTestRule<>(TestActivity.class);
-
     @Before
     public void setup() {
         mInstrumentation = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation();
-        mActivity = mActivityRule.getActivity();
-        mWindow = mActivity.getWindow();
     }
 
     @After
     public void tearDown() {
+        mScenario.close();
         if (mOriginalRotation >= 0) {
-            // The test might launch an activity that changes display rotation. Finish the
-            // activity explicitly and wait for the original rotation to avoid the rotation
-            // affects the next test.
-            mActivityRule.finishActivity();
+            // The test might launch an activity that changes display rotation. Wait for the
+            // original rotation to avoid the rotation affects the next test.
             mWmState.waitForRotation(mOriginalRotation);
         }
     }
 
     @Test
     public void testSetFitsContentForInsets_false() throws Throwable {
-        mActivityRule.runOnUiThread(() -> mWindow.setDecorFitsSystemWindows(false));
+        // The test case verifies the edge-to-edge display functionality which is only valid in
+        // fullscreen.
+        launch(true /* forceFullscreen */);
+        mScenario.onActivity(a -> mWindow.setDecorFitsSystemWindows(false));
         mInstrumentation.waitForIdleSync();
         assertEquals(mActivity.getContentView().getRootWindowInsets().getSystemWindowInsets(),
                 mActivity.getLastInsets().getSystemWindowInsets());
@@ -93,10 +94,15 @@ public class WindowSdk34Test {
 
     @Test
     public void testSetFitsContentForInsets_defaultLegacy_sysuiFlags() throws Throwable {
-        mActivityRule.runOnUiThread(() -> {
-            mWindow.getDecorView().setSystemUiVisibility(SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
-            mWindow.getDecorView().setSystemUiVisibility(SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
-        });
+        // The test case verifies the edge-to-edge display functionality which is only valid in
+        // fullscreen.
+        launch(true /* forceFullscreen */);
+        mScenario.onActivity(
+                a -> {
+                    mWindow.getDecorView().setSystemUiVisibility(SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+                    mWindow.getDecorView()
+                            .setSystemUiVisibility(SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+                });
         mInstrumentation.waitForIdleSync();
         assertEquals(mActivity.getContentView().getRootWindowInsets().getSystemWindowInsets(),
                 mActivity.getLastInsets().getSystemWindowInsets());
@@ -104,16 +110,21 @@ public class WindowSdk34Test {
 
     @Test
     public void testSetFitsContentForInsets_displayCutoutInsets_areApplied() throws Throwable {
+        // The test case verifies the edge-to-edge display functionality which is only valid in
+        // fullscreen.
+        launch(true /* forceFullscreen */);
         try (IgnoreOrientationRequestSession session =
                      new IgnoreOrientationRequestSession(false /* enable */)) {
             setMayAffectDisplayRotation();
-            mActivityRule.runOnUiThread(() -> {
-                mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                mWindow.setDecorFitsSystemWindows(true);
-                WindowManager.LayoutParams attrs = mWindow.getAttributes();
-                attrs.layoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
-                mWindow.setAttributes(attrs);
-            });
+            mScenario.onActivity(
+                    a -> {
+                        mActivity.setRequestedOrientation(
+                                ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                        mWindow.setDecorFitsSystemWindows(true);
+                        WindowManager.LayoutParams attrs = mWindow.getAttributes();
+                        attrs.layoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
+                        mWindow.setAttributes(attrs);
+                    });
             mInstrumentation.waitForIdleSync();
             assertEquals(mActivity.getContentView().getRootWindowInsets().getSystemWindowInsets(),
                     mActivity.getAppliedInsets());
@@ -132,6 +143,9 @@ public class WindowSdk34Test {
 
     @Test
     public void testSetFitsContentForInsets_defaultLegacy_none() throws Throwable {
+        // The test case verifies the edge-to-edge display functionality which is only valid in
+        // fullscreen.
+        launch(true /* forceFullscreen */);
         mInstrumentation.waitForIdleSync();
 
         // We don't expect that we even got called.
@@ -140,9 +154,13 @@ public class WindowSdk34Test {
 
     @Test
     public void testSetFitsContentForInsets_true() throws Throwable {
-        mActivityRule.runOnUiThread(() -> {
-            mWindow.setDecorFitsSystemWindows(true);
-        });
+        // The test case verifies the edge-to-edge display functionality which is only valid in
+        // fullscreen.
+        launch(true /* forceFullscreen */);
+        mScenario.onActivity(
+                a -> {
+                    mWindow.setDecorFitsSystemWindows(true);
+                });
         mInstrumentation.waitForIdleSync();
 
         // We don't expect that we even got called.
@@ -151,38 +169,48 @@ public class WindowSdk34Test {
 
     @Test
     public void testSystemBarColors_fromResource() throws Throwable {
-        mActivityRule.runOnUiThread(() -> {
-            // Force mWindow to read system bar colors from resource.
-            mWindow.getDecorView();
+        launch(false /* forceFullscreen */);
+        mScenario.onActivity(
+                a -> {
+                    // Force mWindow to read system bar colors from resource.
+                    mWindow.getDecorView();
 
-            assertEquals(
-                    mActivity.getColor(R.color.status_bar_color),
-                    mWindow.getStatusBarColor());
-            assertEquals(
-                    mActivity.getColor(R.color.navigation_bar_color),
-                    mWindow.getNavigationBarColor());
-            assertEquals(
-                    mActivity.getColor(R.color.navigation_bar_divider_color),
-                    mWindow.getNavigationBarDividerColor());
-        });
+                    assertEquals(
+                            mActivity.getColor(R.color.status_bar_color),
+                            mWindow.getStatusBarColor());
+                    assertEquals(
+                            mActivity.getColor(R.color.navigation_bar_color),
+                            mWindow.getNavigationBarColor());
+                    assertEquals(
+                            mActivity.getColor(R.color.navigation_bar_divider_color),
+                            mWindow.getNavigationBarDividerColor());
+                });
     }
 
     @Test
     public void testSystemBarColors_fromMethod() throws Throwable {
-        mActivityRule.runOnUiThread(() -> {
-            mWindow.setStatusBarColor(Color.RED);
-            mWindow.setNavigationBarColor(Color.GREEN);
-            mWindow.setNavigationBarDividerColor(Color.BLUE);
-            assertEquals(
-                    Color.RED,
-                    mWindow.getStatusBarColor());
-            assertEquals(
-                    Color.GREEN,
-                    mWindow.getNavigationBarColor());
-            assertEquals(
-                    Color.BLUE,
-                    mWindow.getNavigationBarDividerColor());
-        });
+        launch(false /* forceFullscreen */);
+        mScenario.onActivity(
+                a -> {
+                    mWindow.setStatusBarColor(Color.RED);
+                    mWindow.setNavigationBarColor(Color.GREEN);
+                    mWindow.setNavigationBarDividerColor(Color.BLUE);
+                    assertEquals(Color.RED, mWindow.getStatusBarColor());
+                    assertEquals(Color.GREEN, mWindow.getNavigationBarColor());
+                    assertEquals(Color.BLUE, mWindow.getNavigationBarDividerColor());
+                });
+    }
+
+    private void launch(boolean forceFullscreen) {
+        final ActivityOptions options = ActivityOptions.makeBasic();
+        if (forceFullscreen) {
+            options.setLaunchWindowingMode(WindowConfiguration.WINDOWING_MODE_FULLSCREEN);
+        }
+        mScenario = ActivityScenario.launch(TestActivity.class, options.toBundle());
+        final AtomicReference<TestActivity> activity = new AtomicReference<>();
+        mScenario.moveToState(Lifecycle.State.RESUMED).onActivity(activity::set);
+        mActivity = activity.get();
+        mWindow = mActivity.getWindow();
     }
 
     public static class TestActivity extends Activity {

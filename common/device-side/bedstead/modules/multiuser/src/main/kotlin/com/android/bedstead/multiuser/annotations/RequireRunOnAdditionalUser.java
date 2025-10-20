@@ -22,6 +22,7 @@ import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
+import com.android.bedstead.harrier.annotations.meta.RequireRunOnAnnotation;
 import com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4;
 import com.android.bedstead.nene.types.OptionalBoolean;
 
@@ -52,6 +53,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @RequiresBedsteadJUnit4
+@RequireRunOnAnnotation
 @UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
 // Note that additional annotations added here will not be applied by default due to special
 // logic (for HSUM) inside BedsteadJUnit4#ANNOTATION_REPLACEMENTS

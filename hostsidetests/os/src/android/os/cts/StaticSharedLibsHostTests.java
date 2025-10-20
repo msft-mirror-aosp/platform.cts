@@ -122,6 +122,11 @@ public class StaticSharedLibsHostTests extends BaseHostJUnit4Test implements IBu
     private static final String SETTING_UNUSED_STATIC_SHARED_LIB_MIN_CACHE_PERIOD =
             "unused_static_shared_lib_min_cache_period";
 
+    private static final String APP_PACKAGE_NAME_MATCHES_LIBRARY_PACKAGE_NAME_APK =
+            "CtsStaticSharedLibMatchesPackageNameApp.apk";
+    private static final String APP_PACKAGE_NAME_MATCHES_LIBRARY_NAME_APK =
+            "CtsStaticSharedLibMatchesLibraryNameApp.apk";
+
     private static final long DEFAULT_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(30);
 
     private CompatibilityBuildHelper mBuildHelper;
@@ -142,6 +147,7 @@ public class StaticSharedLibsHostTests extends BaseHostJUnit4Test implements IBu
         getDevice().uninstallPackage(STATIC_LIB_PROVIDER2_PKG);
         getDevice().uninstallPackage(STATIC_LIB_PROVIDER1_PKG);
         getDevice().uninstallPackage(STATIC_LIB_PROVIDER_RECURSIVE_PKG);
+        getDevice().uninstallPackage(STATIC_LIB_PROVIDER_RECURSIVE_NAME);
     }
 
     @Override
@@ -181,6 +187,37 @@ public class StaticSharedLibsHostTests extends BaseHostJUnit4Test implements IBu
             getDevice().uninstallPackage(STATIC_LIB_PROVIDER2_PKG);
             getDevice().uninstallPackage(STATIC_LIB_PROVIDER_RECURSIVE_PKG);
         }
+    }
+
+    @AppModeFull
+    @Test
+    public void testCannotInstallAppWherePackageNameMatchesLibraryPackage() throws Exception {
+        // Install static library
+        assertNull(install(STATIC_LIB_PROVIDER_RECURSIVE_APK));
+
+        // Install a package, where its package name matches the package name of
+        // the static library, should throw the INSTALL_FAILED_DUPLICATE_PACKAGE exception.
+        assertThat(install(APP_PACKAGE_NAME_MATCHES_LIBRARY_PACKAGE_NAME_APK))
+                .contains("INSTALL_FAILED_DUPLICATE_PACKAGE");
+
+        // Uninstall the library
+        assertNull(getDevice().uninstallPackage(STATIC_LIB_PROVIDER_RECURSIVE_PKG));
+    }
+
+    @AppModeFull
+    @Test
+    public void testCanInstallAppWherePackageNameMatchesLibraryName() throws Exception {
+        // Install static library
+        assertNull(install(STATIC_LIB_PROVIDER_RECURSIVE_APK));
+
+        // Install app where its package name matches the static library name, should succeed
+        assertNull(install(APP_PACKAGE_NAME_MATCHES_LIBRARY_NAME_APK));
+
+        // Uninstall app
+        assertNull(getDevice().uninstallPackage(STATIC_LIB_PROVIDER_RECURSIVE_NAME));
+
+        // Uninstall the library
+        assertNull(getDevice().uninstallPackage(STATIC_LIB_PROVIDER_RECURSIVE_PKG));
     }
 
     @AppModeInstant
@@ -739,20 +776,16 @@ public class StaticSharedLibsHostTests extends BaseHostJUnit4Test implements IBu
     @Test
     public void testPruneUnusedStaticSharedLibrariesWithMultiUser_reboot_fullMode()
             throws Exception {
-        final int maxUserCount = getDevice().getMaxNumberOfUsersSupported();
-        assumeTrue("The device does not support multi-user", maxUserCount > 1);
+        assumeTrue(
+                "The device does not support multi-user",
+                getDevice().getMaxNumberOfUsersSupported("android.os.usertype.full.SECONDARY") > 0);
 
-        boolean shouldCreateSecondUser = true;
-        // Check whether the current user count on the device is not less than the max user count or
-        // not. If yes, don't create the other user.
-        final int currentUserCount = getDevice().listUsers().size();
-        if (currentUserCount >= maxUserCount) {
-            String message = String.format("Current user count %s is not less than the max user"
-                    + " count %s, don't create the other user.", currentUserCount, maxUserCount);
-            LogUtil.CLog.logAndDisplay(Log.LogLevel.INFO, message);
-            shouldCreateSecondUser = false;
+        boolean shouldCreateSecondUser =
+                getDevice().getRemainingCreatableUserCount("android.os.usertype.full.SECONDARY")
+                        > 0;
+        if (!shouldCreateSecondUser) {
+            LogUtil.CLog.logAndDisplay(Log.LogLevel.INFO, "Cannot create more secondary users");
         }
-
 
         doTestPruneUnusedStaticSharedLibrariesWithMultiUser_reboot(shouldCreateSecondUser);
     }
@@ -762,24 +795,15 @@ public class StaticSharedLibsHostTests extends BaseHostJUnit4Test implements IBu
     @Test
     public void testPruneUnusedStaticSharedLibrariesWithMultiUser_reboot_instantMode()
             throws Exception {
-        // This really should be a assumeTrue(getDevice().getMaxNumberOfUsersSupported() > 1), but
-        // JUnit3 doesn't support assumptions framework.
-        // TODO: change to assumeTrue after migrating tests to JUnit4.
-        final int maxUserCount = getDevice().getMaxNumberOfUsersSupported();
-        if (!(maxUserCount > 1)) {
-            LogUtil.CLog.logAndDisplay(Log.LogLevel.INFO, "The device does not support multi-user");
-            return;
-        }
+        assumeTrue(
+                "The device does not support multi-user",
+                getDevice().getMaxNumberOfUsersSupported("android.os.usertype.full.SECONDARY") > 0);
 
-        boolean shouldCreateSecondUser = true;
-        // Check whether the current user count on the device is not less than the max user count or
-        // not. If yes, don't create the other user.
-        final int currentUserCount = getDevice().listUsers().size();
-        if (currentUserCount >= maxUserCount) {
-            String message = String.format("Current user count %s is not less than the max user"
-                    + " count %s, don't create the other user.", currentUserCount, maxUserCount);
-            LogUtil.CLog.logAndDisplay(Log.LogLevel.INFO, message);
-            shouldCreateSecondUser = false;
+        boolean shouldCreateSecondUser =
+                getDevice().getRemainingCreatableUserCount("android.os.usertype.full.SECONDARY")
+                        > 0;
+        if (!shouldCreateSecondUser) {
+            LogUtil.CLog.logAndDisplay(Log.LogLevel.INFO, "Cannot create more secondary users");
         }
 
         mInstantMode = true;

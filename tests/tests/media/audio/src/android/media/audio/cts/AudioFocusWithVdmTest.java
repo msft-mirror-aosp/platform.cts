@@ -29,6 +29,8 @@ import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.util.concurrent.Uninterruptibles.tryAcquireUninterruptibly;
 
+import static org.junit.Assume.assumeNotNull;
+
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
 import android.content.Context;
@@ -98,11 +100,13 @@ public class AudioFocusWithVdmTest {
     /**
      * The test below tests the following scenario:
      *
-     * 1. There's media playback going on on non-VDM context.
-     * 2. Audio focus is requested within VDM context, where the virtual device associated
-     *    with the context has default device policy for audio.
+     * <p>1. There's media playback going on on non-VDM context.
      *
-     * It is expected that the first player will loose audio focus.
+     * <p>2. Audio focus is requested within VDM context, where the virtual device associated with
+     * the context has default device policy for audio.
+     *
+     * <p>It is expected that the first player will loose audio focus if the multi audio focus is
+     * not enabled.
      */
     @Test
     public void testAudioFocusRequestOnVdmContextWithDefaultDevicePolicy() {
@@ -119,9 +123,17 @@ public class AudioFocusWithVdmTest {
 
         int vdmFocusRequestResult = vdmDevicePlayback.requestFocus();
         assertThat(vdmFocusRequestResult).isEqualTo(AUDIOFOCUS_REQUEST_GRANTED);
-        // Since the mVirtualDeviceManager is configured with default device polic
-        assertThat(defaultDevicePlayback.getLastFocusChange().isPresent()).isTrue();
-        assertThat(defaultDevicePlayback.getLastFocusChange().get()).isEqualTo(AUDIOFOCUS_LOSS);
+
+        // Since the mVirtualDeviceManager is configured with default device policy
+        // expect focus lost if multi focus is not enabled
+        AudioManager audioManager = defaultContext.getSystemService(AudioManager.class);
+        assumeNotNull(audioManager);
+        boolean expectedFocusLost = !audioManager.isMultiAudioFocusEnabled();
+
+        if (expectedFocusLost) {
+            assertThat(defaultDevicePlayback.getLastFocusChange().isPresent()).isTrue();
+            assertThat(defaultDevicePlayback.getLastFocusChange().get()).isEqualTo(AUDIOFOCUS_LOSS);
+        }
         assertThat(vdmDevicePlayback.getLastFocusChange().isEmpty()).isTrue();
     }
 

@@ -59,9 +59,10 @@ class BurstCaptureTest(its_base_test.ItsBaseTest):
       # Load chart for scene
       its_session_utils.load_scene(
           cam, props, self.scene, self.tablet, self.chart_distance,
-          chart_scaling=self.chart_scaling)
+          chart_scaling=self.chart_scaling, allow_af_not_focus_locked=True)
 
       req = capture_request_utils.auto_capture_request()
+      req['android.control.enableZsl'] = False
       if camera_properties_utils.noise_reduction_mode(props, _NR_MODE_FAST):
         req['android.noiseReduction.mode'] = _NR_MODE_FAST
       camera_properties_utils.log_minimum_focus_distance(props)
@@ -78,7 +79,7 @@ class BurstCaptureTest(its_base_test.ItsBaseTest):
                        'physicalCamera': self.hidden_physical_id}
       else:
         out_surface = {'width': size[0], 'height': size[1], 'format': _YUV}
-      cam.do_3a(out_surfaces=out_surface)
+      cam.do_3a(out_surfaces=out_surface, allow_af_not_focus_locked=True)
       caps = cam.do_capture([req] * _NUM_TEST_FRAMES, out_surface,
                             reuse_session=True)
       img = image_processing_utils.convert_capture_to_rgb_image(

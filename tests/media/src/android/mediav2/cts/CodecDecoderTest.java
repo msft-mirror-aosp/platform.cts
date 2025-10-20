@@ -20,13 +20,16 @@ import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420F
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420PackedPlanar;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar;
+import static android.media.audio.Flags.iamfDefinitionsApi;
 import static android.media.codec.Flags.apvSupport;
 import static android.media.tv.flags.Flags.FLAG_APPLY_PICTURE_PROFILES;
 import static android.media.tv.flags.Flags.FLAG_MEDIA_QUALITY_FW;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
+import static android.mediav2.cts.DolbyVisionDecoderParamPreparer.getDvTestParams;
 
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableIamf;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -223,12 +226,12 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
                         4122701060L, CODEC_ALL},
                 {MediaFormat.MIMETYPE_VIDEO_AV1, "bbb_340x280_768kbps_30fps_av1.mp4", null, -1.0f,
                         400672933L, CODEC_ALL},
-                {MediaFormat.MIMETYPE_AUDIO_AC3, "audio/ac3_510_48kHz_256.mp4", null, -1.0f, -1L,
-                        CODEC_OPTIONAL},
-                {MediaFormat.MIMETYPE_AUDIO_AC4, "audio/ac4_510_48kHz_256.mp4", null, -1.0f, -1L,
-                        CODEC_OPTIONAL},
-                {MediaFormat.MIMETYPE_AUDIO_EAC3, "audio/eac3_510_48kHz_256.mp4", null, -1.0f, -1L,
-                        CODEC_OPTIONAL},
+                {MediaFormat.MIMETYPE_AUDIO_AC3, "audio/ac3_510_48kHz_256.mp4", null, -1.0f,
+                        -1L, CODEC_OPTIONAL},
+                {MediaFormat.MIMETYPE_AUDIO_AC4, "audio/ac4_510_48kHz_256.mp4", null, -1.0f,
+                        -1L, CODEC_OPTIONAL},
+                {MediaFormat.MIMETYPE_AUDIO_EAC3, "audio/eac3_510_48kHz_256.mp4", null, -1.0f,
+                        -1L, CODEC_OPTIONAL},
         }));
         // Framework P010 support added with android T.
         // These codecs are not required to support P010, but if they advertise support,
@@ -258,6 +261,11 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
                             null, -1.0f, -1L, CODEC_OPTIONAL},
             }));
         }
+        if (IS_AT_LEAST_B && iamfDefinitionsApi() && extractorMp4EnableIamf()) {
+            exhaustiveArgsList.add(new Object[] {MediaFormat.MIMETYPE_AUDIO_IAMF,
+                    "audio/7_1_4_Opus_no_video.mp4", null, -1.0f, -1L, CODEC_OPTIONAL});
+        }
+        exhaustiveArgsList.addAll(getDvTestParams(CodecDecoderTest.class));
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, true);
     }
 
@@ -795,7 +803,7 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
      * Test setting PictureProfile instance as a parameter using MediaCodec.setParameter().
      */
     /*
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     @RequiresFlagsEnabled({FLAG_APPLY_PICTURE_PROFILES, FLAG_MEDIA_QUALITY_FW})
     @ApiTest(apis = {"android.media.MediaFormat#KEY_PICTURE_PROFILE_INSTANCE"})
     @Test

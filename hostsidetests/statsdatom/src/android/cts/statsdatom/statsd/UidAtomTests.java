@@ -589,6 +589,11 @@ public class UidAtomTests extends DeviceTestCase implements IBuildReceiver {
 
     //Note: this test does not have uid, but must run on the device
     public void testScreenBrightness() throws Exception {
+        if (getDevice().listDisplayIds().size() > 1) {
+            LogUtil.CLog.d("Skipping testScreenBrightness: unsuitable for multi-display devices.");
+            return;
+        }
+
         DeviceUtils.turnScreenOn(getDevice());
 
         int initialBrightness = getScreenBrightness();

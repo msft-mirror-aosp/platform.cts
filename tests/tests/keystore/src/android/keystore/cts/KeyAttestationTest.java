@@ -115,7 +115,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
-import java.security.interfaces.ECPublicKey;
+import java.security.interfaces.ECKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.ECGenParameterSpec;
 import java.security.spec.ECParameterSpec;
@@ -1109,27 +1109,45 @@ public class KeyAttestationTest {
 
         for (boolean devicePropertiesAttestation : devicePropertiesAttestationValues) {
             for (byte[] challenge : challenges) {
-                testCurve25519Attestations("ed25519", challenge, PURPOSE_SIGN | PURPOSE_VERIFY,
+                testCurve25519Attestations(
+                        /* curve25519Algorithm= */ "ed25519",
+                        challenge,
+                        PURPOSE_SIGN | PURPOSE_VERIFY,
                         devicePropertiesAttestation);
-                testCurve25519Attestations("x25519", challenge, PURPOSE_AGREE_KEY,
+                testCurve25519Attestations(
+                        /* curve25519Algorithm= */ "x25519",
+                        challenge,
+                        PURPOSE_AGREE_KEY,
                         devicePropertiesAttestation);
             }
         }
     }
 
     @SuppressWarnings("deprecation")
-    private void testCurve25519Attestations(String curve, byte[] challenge,
-            @KeyProperties.PurposeEnum int purpose, boolean devicePropertiesAttestation)
+    private void testCurve25519Attestations(
+            String curve25519Algorithm,
+            byte[] challenge,
+            @KeyProperties.PurposeEnum int purpose,
+            boolean devicePropertiesAttestation)
             throws Exception {
-        Log.i(TAG, curve + " curve key attestation with: "
-                + " / challenge " + Arrays.toString(challenge)
-                + " / purposes " + purpose
-                + " / devicePropertiesAttestation " + devicePropertiesAttestation);
+        Log.i(
+                TAG,
+                curve25519Algorithm
+                        + " key attestation with: / challenge "
+                        + Arrays.toString(challenge)
+                        + " / purposes "
+                        + purpose
+                        + " / devicePropertiesAttestation "
+                        + devicePropertiesAttestation);
         String keystoreAlias = "test_key";
         Date startTime = new Date();
+        // Although "x25519" and "ed25519" (case in-sensitive) are not defined as standard names for
+        // EC parameter generation in the Java Secutity Standard Algorithm Names, the
+        // AndroidKeyStoreProvider's KeyPairGenerator SPI handles both of these algorithms names,
+        // which is why instantiating an ECGenParameterSpec like this works.
         KeyGenParameterSpec.Builder builder =
                 new KeyGenParameterSpec.Builder(keystoreAlias, purpose)
-                        .setAlgorithmParameterSpec(new ECGenParameterSpec(curve))
+                        .setAlgorithmParameterSpec(new ECGenParameterSpec(curve25519Algorithm))
                         .setDigests(KeyProperties.DIGEST_NONE)
                         .setAttestationChallenge(challenge)
                         .setDevicePropertiesAttestationIncluded(devicePropertiesAttestation);
@@ -1140,12 +1158,16 @@ public class KeyAttestationTest {
             if (devicePropertiesAttestation && isIgnorableIdAttestationFailure(e)) {
                 return;
             }
-            throw new Exception("Failed on curve " + curve + " challenge ["
-                    + new String(challenge) + "], purposes "
-                    + buildPurposeSet(purpose) + " and devicePropertiesAttestation "
-                    + devicePropertiesAttestation,
+            throw new Exception(
+                    "Failed for "
+                            + curve25519Algorithm
+                            + " challenge ["
+                            + new String(challenge)
+                            + "], purposes "
+                            + buildPurposeSet(purpose)
+                            + " and devicePropertiesAttestation "
+                            + devicePropertiesAttestation,
                     e);
-
         }
 
         KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
@@ -1158,7 +1180,15 @@ public class KeyAttestationTest {
             X509Certificate attestationCert = (X509Certificate) certificates[0];
             Attestation attestation = Attestation.loadFromCertificate(attestationCert);
 
-            checkEcKeyDetails(attestationCert, attestation, "CURVE_25519", 256);
+            // These are the algorithm names returned by Conscrypt.
+            String expectedPublicKeyAlgorithm =
+                    curve25519Algorithm.equals("x25519") ? "XDH" : "EdDSA";
+            checkEcKeyDetails(
+                    attestationCert,
+                    attestation,
+                    /* ecCurve= */ "CURVE_25519",
+                    /* keySize= */ 256,
+                    expectedPublicKeyAlgorithm);
             checkKeyUsage(attestationCert, purpose, /* isStrongBox= */ false);
             checkKeyIndependentAttestationInfo(challenge, purpose,
                     ImmutableSet.of(KM_DIGEST_NONE), startTime, false,
@@ -1337,7 +1367,12 @@ public class KeyAttestationTest {
             X509Certificate attestationCert = (X509Certificate) certificates[0];
             Attestation attestation = Attestation.loadFromCertificate(attestationCert);
 
-            checkEcKeyDetails(attestationCert, attestation, ecCurve, keySize);
+            checkEcKeyDetails(
+                    attestationCert,
+                    attestation,
+                    ecCurve,
+                    keySize,
+                    /* expectedPublicKeyAlgorithm= */ KEY_ALGORITHM_EC);
             checkKeyUsage(attestationCert, purposes, isStrongBox);
             checkKeyIndependentAttestationInfo(challenge, purposes, startTime,
                     includeValidityDates, devicePropertiesAttestation, attestation);
@@ -1707,10 +1742,18 @@ public class KeyAttestationTest {
 
     @SuppressWarnings("unchecked")
     private void checkAttestationSecurityLevelDependentParams(Attestation attestation) {
-        assertThat("Attestation version must be one of: {1, 2, 3, 4, 100, 200, 300, 400}",
+        assertThat(
+                "Attestation version must be one of: {1, 2, 3, 4, 100, 200, 300, 400, 500}",
                 attestation.getAttestationVersion(),
-                either(is(1)).or(is(2)).or(is(3)).or(is(4))
-                        .or(is(100)).or(is(200)).or(is(300)).or(is(400)));
+                either(is(1))
+                        .or(is(2))
+                        .or(is(3))
+                        .or(is(4))
+                        .or(is(100))
+                        .or(is(200))
+                        .or(is(300))
+                        .or(is(400))
+                        .or(is(500)));
 
         AuthorizationList teeEnforced = attestation.getTeeEnforced();
         AuthorizationList softwareEnforced = attestation.getSoftwareEnforced();
@@ -1723,9 +1766,18 @@ public class KeyAttestationTest {
                 assertThat("TEE attestation can only come from TEE keymaster",
                         attestation.getKeymasterSecurityLevel(),
                         is(KM_SECURITY_LEVEL_TRUSTED_ENVIRONMENT));
-                assertThat("KeyMaster version is not valid.", attestation.getKeymasterVersion(),
-                        either(is(2)).or(is(3)).or(is(4)).or(is(41))
-                                .or(is(100)).or(is(200)).or(is(300)).or(is(400)));
+                assertThat(
+                        "KeyMaster version is not valid.",
+                        attestation.getKeymasterVersion(),
+                        either(is(2))
+                                .or(is(3))
+                                .or(is(4))
+                                .or(is(41))
+                                .or(is(100))
+                                .or(is(200))
+                                .or(is(300))
+                                .or(is(400))
+                                .or(is(500)));
 
                 checkRootOfTrust(attestation, false /* requireLocked */);
                 checkModuleHash(attestation);
@@ -1740,9 +1792,18 @@ public class KeyAttestationTest {
                 assertThat("StrongBox attestation can only come from StrongBox keymaster",
                         attestation.getKeymasterSecurityLevel(),
                         is(KM_SECURITY_LEVEL_STRONG_BOX));
-                assertThat("KeyMaster version is not valid.", attestation.getKeymasterVersion(),
-                        either(is(2)).or(is(3)).or(is(4)).or(is(41))
-                                .or(is(100)).or(is(200)).or(is(300)).or(is(400)));
+                assertThat(
+                        "KeyMaster version is not valid.",
+                        attestation.getKeymasterVersion(),
+                        either(is(2))
+                                .or(is(3))
+                                .or(is(4))
+                                .or(is(41))
+                                .or(is(100))
+                                .or(is(200))
+                                .or(is(300))
+                                .or(is(400))
+                                .or(is(500)));
 
                 checkRootOfTrust(attestation, false /* requireLocked */);
                 checkModuleHash(attestation);
@@ -2075,8 +2136,12 @@ public class KeyAttestationTest {
                 paddingModes, either(is(expectedPaddingModes)).or(is(km1PossiblePaddingModes)));
     }
 
-    private void checkEcKeyDetails(X509Certificate attestationCert, Attestation attestation,
-            String ecCurve, int keySize) {
+    private void checkEcKeyDetails(
+            X509Certificate attestationCert,
+            Attestation attestation,
+            String ecCurve,
+            int keySize,
+            String expectedPublicKeyAlgorithm) {
         AuthorizationList keyDetailsList;
         AuthorizationList nonKeyDetailsList;
         if (attestation.getKeymasterSecurityLevel() == KM_SECURITY_LEVEL_TRUSTED_ENVIRONMENT
@@ -2091,22 +2156,16 @@ public class KeyAttestationTest {
         assertEquals(keySize, sECKeySizes.get(ecCurve).intValue());
         assertNull(nonKeyDetailsList.getKeySize());
         assertEquals(KM_ALGORITHM_EC, keyDetailsList.getAlgorithm().intValue());
-        // Curve25519 Public key returns OID string for getAlgorithm
-        if (!ecCurve.equals("CURVE_25519")) {
-            assertEquals(KEY_ALGORITHM_EC, attestationCert.getPublicKey().getAlgorithm());
-        } else {
-            assertThat(attestationCert.getPublicKey().getAlgorithm(),
-                    /*Signing key algorithm "1.3.101.112" & Agreement Key algorithm "XDH"*/
-                    either(is("1.3.101.112")).or(is("XDH")));
-        }
+        assertEquals(expectedPublicKeyAlgorithm, attestationCert.getPublicKey().getAlgorithm());
         assertNull(nonKeyDetailsList.getAlgorithm());
         assertEquals(ecCurve, keyDetailsList.ecCurveAsString());
-        // Curve25519 Public key(X509PublicKey) cannot be cast to ECPublicKey and hence could not
-        // determine EC key parameters such as FieldFp, a, b, gx, gy, order and cofactor
+        // We can't check the ECParameterSpec for X25519 and Ed25519 public keys since Conscrypt's
+        // OpenSSLX25519PublicKey and OpenSslEdDsaPublicKey, respectively, don't implement the
+        // ECKey interface (which provides the "ECKey.getParams()" method).
         if (!ecCurve.equals("CURVE_25519")) {
             TestUtils.assertECParameterSpecEqualsIgnoreSeedIfNotPresent(
                     getECParameterSpecFor(ecCurve),
-                    ((ECPublicKey) attestationCert.getPublicKey()).getParams());
+                    ((ECKey) attestationCert.getPublicKey()).getParams());
         }
         assertNull(nonKeyDetailsList.getEcCurve());
         assertNull(keyDetailsList.getRsaPublicExponent());

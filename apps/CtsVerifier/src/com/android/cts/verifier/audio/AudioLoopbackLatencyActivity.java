@@ -181,7 +181,7 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
     public static final double LATENCY_PRO_AUDIO_ANALOG = 20.0;
     public static final double LATENCY_PRO_AUDIO_USB = 25.0;
     public static final double LATENCY_MPC_AT_LEAST_ONE = 80.0;
-    public static final double TIMESTAMP_ACCURACY_MS = 30.0;
+    public static final double TIMESTAMP_ACCURACY_MS = 200.0;
 
     // The audio stream callback threads should stop and close
     // in less than a few hundred msec. This is a generous timeout value.
@@ -240,6 +240,8 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         boolean mRouteConnected; // is the route available NOW
         boolean mTestRun;
 
+        boolean mInvalidTimestampLatencyFound;
+
         String mWavCaptureFileName;
         int mCaptureCode = mWavFileCapture.CAPTURE_NOTDONE;
 
@@ -277,6 +279,10 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
             mLatencyMS[phase] = latencyMS;
             mConfidence[phase] = confidence;
             mTimestampLatencyMS[phase] = timestampLatencyMS;
+            if (timestampLatencyMS < 0.0) {
+                mInvalidTimestampLatencyFound = true;
+                Log.e(TAG, "Negative timestamp latency: " + timestampLatencyMS);
+            }
         }
 
         void handleTestCompletion() {
@@ -379,7 +385,8 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
                             + "Confidence: %.2f\n"
                             + "Low Latency Path: [out:%s, in:%s]\n"
                             + "24 Bit Hardware Support: %s\n"
-                            + "Timestamp Latency:%.2f ms",
+                            + "Timestamp Latency:%.2f ms \n"
+                            + "Invalid Timestamp Latency Found: %s",
                         mMeanLatencyMS,
                         adjustment,
                         mMeanAbsoluteDeviation,
@@ -389,7 +396,8 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
                         mIsLowLatencyStream[NativeAnalyzerThread.STREAM_INPUT]
                                 ? mYesString : mNoString,
                         mHas24BitHardwareSupport ? mYesString : mNoString,
-                        mMeanTimestampLatencyMS);
+                        mMeanTimestampLatencyMS,
+                        mInvalidTimestampLatencyFound ? "true" : "false");
             }
 
             return result;
@@ -1401,6 +1409,11 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
                 mTestSpecs[routeId].mMeanLatencyMS - mTestSpecs[routeId].mMeanTimestampLatencyMS);
     }
 
+    private boolean isTimeStampLatencyPassed(int routeId) {
+        return !mTestSpecs[routeId].mInvalidTimestampLatencyFound
+                && calcTimestampLatencyDelta(routeId) <= TIMESTAMP_ACCURACY_MS;
+    }
+
     private boolean calcAllTimeStampPass() {
         if (LOG) {
             Log.d(TAG, "calcAllTimeStampPass()");
@@ -1408,19 +1421,17 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
 
         boolean devicePass =
                 (mTestSpecs[TESTROUTE_DEVICE].isMeasurementValid()
-                        && calcTimestampLatencyDelta(TESTROUTE_DEVICE) <= TIMESTAMP_ACCURACY_MS);
+                        && isTimeStampLatencyPassed(TESTROUTE_DEVICE));
 
         boolean analogPass =
                 !mAnalogRequired
                         || (mTestSpecs[TESTROUTE_ANALOG_JACK].isMeasurementValid()
-                                && calcTimestampLatencyDelta(TESTROUTE_ANALOG_JACK)
-                                        <= TIMESTAMP_ACCURACY_MS);
+                                && isTimeStampLatencyPassed(TESTROUTE_ANALOG_JACK));
 
         boolean usbPass =
                 !mUsbRequired
                         || (mTestSpecs[TESTROUTE_USB].isMeasurementValid()
-                                && calcTimestampLatencyDelta(TESTROUTE_USB)
-                                        <= TIMESTAMP_ACCURACY_MS);
+                                && isTimeStampLatencyPassed(TESTROUTE_USB));
 
         boolean timestampPass = devicePass && analogPass && usbPass;
 

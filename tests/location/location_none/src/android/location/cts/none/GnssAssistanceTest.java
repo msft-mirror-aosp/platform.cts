@@ -16,8 +16,8 @@
 
 package android.location.cts.none;
 
-import static android.location.flags.Flags.FLAG_FIX_GLONASS_ALMANAC_FREQUENCY_CHANNEL_RANGE;
 import static android.location.flags.Flags.FLAG_GNSS_ASSISTANCE_INTERFACE;
+import static android.location.flags.Flags.FLAG_SUPPORT_IONEX_ASSISTANCE;
 import static android.location.flags.Flags.FLAG_SUPPORT_TOA_IN_GNSS_SATELLITE_ALMANAC;
 
 import static org.junit.Assert.assertEquals;
@@ -56,6 +56,11 @@ import android.location.GpsSatelliteEphemeris;
 import android.location.GpsSatelliteEphemeris.GpsL2Params;
 import android.location.GpsSatelliteEphemeris.GpsSatelliteClockModel;
 import android.location.GpsSatelliteEphemeris.GpsSatelliteHealth;
+import android.location.IonexAssistance;
+import android.location.IonexAssistance.Axes;
+import android.location.IonexAssistance.Axis;
+import android.location.IonexAssistance.Header;
+import android.location.IonexAssistance.TecMapSnapshot;
 import android.location.IonosphericCorrection;
 import android.location.KeplerianOrbitModel;
 import android.location.KeplerianOrbitModel.SecondOrderHarmonicPerturbation;
@@ -108,7 +113,6 @@ public class GnssAssistanceTest {
         parcel.recycle();
     }
 
-    @RequiresFlagsEnabled(FLAG_FIX_GLONASS_ALMANAC_FREQUENCY_CHANNEL_RANGE)
     @Test
     public void testGlonassAlmanacFreqChannelRange() {
         GlonassSatelliteAlmanac.Builder glonassSatelliteAlmanacBuilder =
@@ -171,6 +175,82 @@ public class GnssAssistanceTest {
         assertEqualsWithDelta(-0.8778, newSatelliteAlmanac.getM0());
         assertEqualsWithDelta(1.52e-5, newSatelliteAlmanac.getAf0());
         assertEqualsWithDelta(0.0, newSatelliteAlmanac.getAf1());
+    }
+
+    @RequiresFlagsEnabled(FLAG_SUPPORT_IONEX_ASSISTANCE)
+    @Test
+    public void testIonexAssistance() {
+        IonexAssistance ionexAssistance = getTestIonexAssistance();
+        GnssAssistance gnssAssistance =
+                new GnssAssistance.Builder().setIonexAssistance(ionexAssistance).build();
+
+        Parcel parcel = Parcel.obtain();
+        gnssAssistance.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+        GnssAssistance newGnssAssistance = GnssAssistance.CREATOR.createFromParcel(parcel);
+        IonexAssistance newIonexAssistance = newGnssAssistance.getIonexAssistance();
+        parcel.recycle();
+
+        // Assert Header data
+        Header header = ionexAssistance.getHeader();
+        Header newHeader = newIonexAssistance.getHeader();
+        assertEquals(header.getMappingFunction(), newHeader.getMappingFunction());
+        assertEqualsWithDelta(header.getBaseRadiusKm(), newHeader.getBaseRadiusKm());
+        assertEqualsWithDelta(header.getHeightKm(), newHeader.getHeightKm());
+
+        // Assert Axes data
+        Axes axes = header.getAxesInfo();
+        Axes newAxes = newHeader.getAxesInfo();
+        assertEqualsWithDelta(
+                axes.getLatitudeAxis().getStartDeg(), newAxes.getLatitudeAxis().getStartDeg());
+        assertEqualsWithDelta(
+                axes.getLatitudeAxis().getDeltaDeg(), newAxes.getLatitudeAxis().getDeltaDeg());
+        assertEquals(
+                axes.getLatitudeAxis().getNumPoints(), newAxes.getLatitudeAxis().getNumPoints());
+        assertEqualsWithDelta(
+                axes.getLongitudeAxis().getStartDeg(), newAxes.getLongitudeAxis().getStartDeg());
+        assertEqualsWithDelta(
+                axes.getLongitudeAxis().getDeltaDeg(), newAxes.getLongitudeAxis().getDeltaDeg());
+        assertEquals(
+                axes.getLongitudeAxis().getNumPoints(), newAxes.getLongitudeAxis().getNumPoints());
+
+        // Assert Snapshot
+        TecMapSnapshot snapshot = ionexAssistance.getTecMapSnapshot();
+        TecMapSnapshot newSnapshot = newIonexAssistance.getTecMapSnapshot();
+        assertEquals(snapshot.getEpochTimeSeconds(), newSnapshot.getEpochTimeSeconds());
+        for (int i = 0; i < snapshot.getTecMap().size(); i++) {
+            assertEqualsWithDelta(snapshot.getTecMap().get(i), newSnapshot.getTecMap().get(i));
+            assertEqualsWithDelta(snapshot.getRmsMap().get(i), newSnapshot.getRmsMap().get(i));
+        }
+    }
+
+    private IonexAssistance getTestIonexAssistance() {
+        final Axis latitudeAxis = new Axis(87.5, -2.5, 71);
+        final Axis longitudeAxis = new Axis(-180, 5.0, 73);
+        final Header header =
+                new Header.Builder()
+                        .setMappingFunction(Header.MAPPING_FUNCTION_COSZ)
+                        .setBaseRadiusKm(6371.0f)
+                        .setHeightKm(450.0f)
+                        .setAxesInfo(new Axes(latitudeAxis, longitudeAxis))
+                        .build();
+
+        final int mapSize = latitudeAxis.getNumPoints() * longitudeAxis.getNumPoints();
+        final List<Float> tecMapData = new ArrayList<>(mapSize);
+        final List<Float> rmsMapData = new ArrayList<>(mapSize);
+        for (int i = 0; i < mapSize; i++) {
+            tecMapData.add(i * 0.1f);
+            rmsMapData.add(i * 0.01f);
+        }
+
+        final TecMapSnapshot snapshot =
+                new TecMapSnapshot.Builder()
+                        .setEpochTimeSeconds(1672531200L)
+                        .setTecMap(tecMapData)
+                        .setRmsMap(rmsMapData)
+                        .build();
+
+        return new IonexAssistance.Builder().setHeader(header).setTecMapSnapshot(snapshot).build();
     }
 
     private void assertEqualsWithDelta(final double expected, final double actual) {
@@ -456,8 +536,8 @@ public class GnssAssistanceTest {
         assertEquals(1, satelliteEphemerisList.size());
         GalileoSatelliteEphemeris satelliteEphemeris = satelliteEphemerisList.get(0);
         assertEquals(1, satelliteEphemeris.getSvid());
-        SatelliteEphemerisTime satelliteEphemerisTime
-            = satelliteEphemeris.getSatelliteEphemerisTime();
+        SatelliteEphemerisTime satelliteEphemerisTime =
+                satelliteEphemeris.getSatelliteEphemerisTime();
         assertEquals(125, satelliteEphemerisTime.getIode());
         assertEquals(2290, satelliteEphemerisTime.getWeekNumber());
         assertEquals(45900, satelliteEphemerisTime.getToeSeconds());

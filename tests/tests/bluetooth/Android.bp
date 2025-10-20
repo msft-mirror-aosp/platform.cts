@@ -25,15 +25,20 @@ android_test {
         "androidx.test.rules",
         "bluetooth_exported_flags_java_lib",
         "bluetooth-test-util-lib",
-        "compatibility-device-util-axt",
+        "compatibility-device-util-axt-minus-dexmaker",
         "ctstestrunner-axt",
         "flag-junit",
+        "mockito-target-inline",
         "PlatformProperties",
     ],
     libs: [
         "android.test.base.stubs.system",
         "android.test.runner.stubs.system",
         "framework-bluetooth.stubs.module_lib",
+    ],
+    compile_multilib: "both",
+    jni_libs: [
+        "libdexmakerjvmtiagent",
     ],
     srcs: [
         "src/**/*.java",

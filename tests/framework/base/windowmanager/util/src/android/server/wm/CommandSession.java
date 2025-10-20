@@ -1119,6 +1119,46 @@ public final class CommandSession {
                 return new ActivityCallback[size];
             }
         };
+
+        /** Creates a {@link CountSpec} to assert callback's count equals. */
+        public CountSpec<ActivityCallback> hasCountEquals(int count) {
+            return CountSpec.hasCountEquals(this, count);
+        }
+
+        /** Creates a {@link CountSpec} to assert count equals with message. */
+        public CountSpec<ActivityCallback> hasCountEquals(int count, String message) {
+            return CountSpec.hasCountEquals(this, count, message);
+        }
+
+        /** Creates a {@link CountSpec} to assert count is greater than. */
+        public CountSpec<ActivityCallback> hasCountGreaterThan(int count) {
+            return CountSpec.hasCountGreaterThan(this, count);
+        }
+
+        /** Creates a {@link CountSpec} to assert count is greater than with message. */
+        public CountSpec<ActivityCallback> hasCountGreaterThan(int count, String message) {
+            return CountSpec.hasCountGreaterThan(this, count, message);
+        }
+
+        /** Creates a {@link CountSpec} to assert count is less than. */
+        public CountSpec<ActivityCallback> hasCountLessThan(int count) {
+            return CountSpec.hasCountLessThan(this, count);
+        }
+
+        /** Creates a {@link CountSpec} to assert count is less than with message. */
+        public CountSpec<ActivityCallback> hasCountLessThan(int count, String message) {
+            return CountSpec.hasCountLessThan(this, count, message);
+        }
+
+        /** Creates a {@link CountSpec} to assert count is greater than or equals. */
+        public CountSpec<ActivityCallback> hasCountGreaterThanOrEquals(int count) {
+            return CountSpec.hasCountGreaterThanOrEquals(this, count);
+        }
+
+        /** Creates a {@link CountSpec} to assert count is greater than or equals with message. */
+        public CountSpec<ActivityCallback> hasCountGreaterThanOrEquals(int count, String message) {
+            return CountSpec.hasCountGreaterThanOrEquals(this, count, message);
+        }
     }
 
     public static class ConfigInfo implements Parcelable {

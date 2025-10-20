@@ -16,6 +16,8 @@
 
 package com.android.cts.devicepolicy;
 
+import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
+
 import org.junit.Test;
 
 import java.util.Collections;
@@ -34,7 +36,7 @@ public final class LauncherAppsMultiUserTest extends BaseLauncherAppsTest {
     protected void assumeTestEnabled() throws Exception {
         // We need multi user to be supported in order to create a secondary user
         // and api level 21 to support LauncherApps
-        assumeSupportsMultiUser();
+        assumeSupportsSecondaryUsers();
         assumeApiLevel(21);
     }
 
@@ -42,8 +44,7 @@ public final class LauncherAppsMultiUserTest extends BaseLauncherAppsTest {
     public void setUp() throws Exception {
         super.setUp();
 
-        // TODO(b/435528858): get from DevicePolicyUsersPreparer
-        mInitialUser = getMainUser();
+        mInitialUser = DevicePolicyUsersPreparer.getInitialCurrentUserId();
 
         removeTestUsers();
         uninstallTestApps();

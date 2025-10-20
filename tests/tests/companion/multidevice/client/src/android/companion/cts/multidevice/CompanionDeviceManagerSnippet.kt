@@ -23,7 +23,9 @@ import android.companion.AssociationRequest
 import android.companion.BluetoothDeviceFilter
 import android.companion.CompanionDeviceManager
 import android.companion.ObservingDevicePresenceRequest
+import android.companion.datatransfer.continuity.TaskContinuityManager
 import android.companion.cts.common.CompanionActivity
+import android.companion.cts.common.HandoffActivity
 import android.companion.cts.common.PrimaryCompanionService
 import android.companion.cts.multidevice.CallbackUtils.SystemDataTransferCallback
 import android.companion.cts.uicommon.CompanionDeviceManagerUi
@@ -47,6 +49,10 @@ class CompanionDeviceManagerSnippet : Snippet {
     private val context: Context = instrumentation.targetContext
     private val companionDeviceManager = context.getSystemService(Context.COMPANION_DEVICE_SERVICE)
             as CompanionDeviceManager
+
+    private val taskContinuityManager: TaskContinuityManager by lazy {
+        context.getSystemService(Context.TASK_CONTINUITY_SERVICE) as TaskContinuityManager
+    }
 
     private val btManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
     private val btConnector = BluetoothConnector(btManager.adapter, companionDeviceManager)
@@ -132,6 +138,17 @@ class CompanionDeviceManagerSnippet : Snippet {
     }
 
     /**
+     * Returns the association info for the given association ID.
+     */
+    @Rpc(description = "Get association info.")
+    @Throws(Exception::class)
+    fun getAssociationInfo(associationId: Int): AssociationInfo {
+        return companionDeviceManager.myAssociations
+                .first { it.id == associationId }
+    }
+
+
+    /**
      * Disassociate an association with given ID.
      */
     @Rpc(description = "Disassociate device.")
@@ -207,6 +224,47 @@ class CompanionDeviceManagerSnippet : Snippet {
     @Rpc(description = "Check if device is a watch.")
     fun isWatch(): Boolean {
         return context.packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)
+    }
+
+    /**
+     * Launch a test activity capable of Handoff, and return the hosted task ID of the launched
+     * activity.
+     */
+    @Rpc(description = "Launch a handoff activity with data.")
+    fun launchHandoffActivity(handoffData: Int): Int {
+        return HandoffActivity.launchHandoffActivity(context, handoffData)
+    }
+
+    /**
+     * Wait for the handoff activity to appear, and return the data it reports.
+     */
+    @Rpc(description = "Get the data from the handoff activity.")
+    fun waitForHandoff(): Int? {
+        return HandoffActivity.waitForHandoff()
+    }
+
+    @Rpc(description = "Enable handoff for an association.")
+    fun enableHandoffForAssociation(associationId: Int) {
+        companionDeviceManager.enableSystemDataSyncForTypes(
+            associationId,
+            CompanionDeviceManager.FLAG_TASK_CONTINUITY)
+    }
+
+    @Rpc(description = "Request task handoff and return the status of the request.")
+    fun requestTaskHandoffAndGetStatus(associationId: Int, remoteTaskId: Int): Int? {
+        val callback = CallbackUtils.HandoffRequestCallback()
+        taskContinuityManager.requestHandoff(associationId, remoteTaskId, executor, callback)
+        return callback.waitForCompletion()?.resultCode
+    }
+
+    @Rpc(description = "Confirm if a task has been received by registering a listener and reading the first update.")
+    fun wasRemoteTaskReceived(taskId: Int): Boolean {
+        val remoteTaskCallback = CallbackUtils.RemoteTaskCallback()
+        taskContinuityManager.registerRemoteTaskListener(executor, remoteTaskCallback)
+        val latestRemoteTasks
+            = remoteTaskCallback.waitForCompletion() ?: error("Remote task listener timed out.")
+
+        return latestRemoteTasks.any { it.id == taskId }
     }
 
     companion object {

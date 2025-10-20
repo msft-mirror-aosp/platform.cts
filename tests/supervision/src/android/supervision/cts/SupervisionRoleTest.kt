@@ -21,7 +21,7 @@ import android.Manifest.permission.QUERY_USERS
 import android.app.supervision.flags.Flags
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
-import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
+import com.android.bedstead.multiuser.annotations.EnsureCanAddSecondaryUser
 import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser
 import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport
 import com.android.bedstead.nene.TestApis
@@ -54,7 +54,7 @@ class SupervisionRoleTest : BaseSupervisionTest() {
 
     @Test
     @EnsureHasPermission(MANAGE_ROLE_HOLDERS, QUERY_USERS)
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     @EnsureHasNoAdditionalUser
     @RequireMultiUserSupport
     @RequireRootInstrumentation(reason = "Use of MANAGE_ROLE_HOLDERS")
@@ -71,7 +71,7 @@ class SupervisionRoleTest : BaseSupervisionTest() {
 
     @Test
     @EnsureHasPermission(MANAGE_ROLE_HOLDERS, QUERY_USERS)
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     @EnsureHasNoAdditionalUser
     @RequireMultiUserSupport
     @RequireRootInstrumentation(reason = "Use of MANAGE_ROLE_HOLDERS")

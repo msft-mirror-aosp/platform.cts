@@ -63,7 +63,7 @@ import java.util.Locale;
  * transcoders
  */
 @RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
 @RunWith(Parameterized.class)
 public class VideoTranscoderAvailabilityTest extends CodecEncoderSurfaceTestBase {
     @Rule

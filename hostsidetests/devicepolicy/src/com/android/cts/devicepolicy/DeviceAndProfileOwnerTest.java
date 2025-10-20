@@ -29,6 +29,7 @@ import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.TemporarilyIgnoreOnHeadlessSystemUserMode;
 import com.android.cts.devicepolicy.annotations.LockSettingsTest;
+import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.util.RunUtil;
@@ -54,7 +55,7 @@ import java.util.stream.Collectors;
  * NOTE: Not all tests are executed in the subclasses. Sometimes, if a test is not applicable to
  * a subclass, they override it with an empty method.
  */
-public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
+public abstract class DeviceAndProfileOwnerTest extends BaseDeviceOwnerTest {
 
     public static final String DEVICE_ADMIN_PKG = "com.android.cts.deviceandprofileowner";
     public static final String DEVICE_ADMIN_APK = "CtsDeviceAndProfileOwnerApp.apk";
@@ -161,22 +162,17 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
     // profile owner it is the user id of the created profile.
     protected int mUserId;
 
-    /**
-     * @deprecated TODO(b/435528858): most likely should use {@code
-     *     DevicePolicyUsersPreparer#getInitialCurrentUserId()}.
-     */
-    @Deprecated protected int mMainUserId;
+    protected int mInitialUserId;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
             HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
 
-    // TODO(b/435528858): remove once mMainUSerId is gone
     @Override
     public void setUp() throws Exception {
         super.setUp();
 
-        mMainUserId = getMainUser();
+        mInitialUserId = DevicePolicyUsersPreparer.getInitialCurrentUserId();
     }
 
     @Override
@@ -421,7 +417,7 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
         assumeFalse(isAutomotive());
         try {
             // Install and enable assistant, notice that profile can't have assistant.
-            installAppAsUser(ASSIST_APP_APK, mMainUserId);
+            installAppAsUser(ASSIST_APP_APK, mInitialUserId);
             waitForBroadcastIdle();
             setVoiceInteractionService(ASSIST_INTERACTION_SERVICE);
             setScreenCaptureDisabled_assist(mUserId, true /* disabled */);
@@ -806,8 +802,9 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
         executeDeviceTestMethod(className, /* testName= */ null, userId);
     }
 
-    protected void executeDeviceTestMethod(String className, String testName) throws Exception {
-        executeDeviceTestMethod(className, testName, /* params= */ new HashMap<>());
+    protected final void executeDeviceTestMethod(String className, String testName)
+            throws Exception {
+        executeDeviceTestMethod(className, testName, mUserId);
     }
 
     protected void executeDeviceTestMethod(String className, String testName, int userId)
@@ -891,22 +888,25 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
                 : "testScreenCapturePossible_assist";
 
         // Check whether the VoiceInteractionService can retrieve the screenshot.
-        installAppAsUser(DEVICE_ADMIN_APK, mMainUserId);
+        installAppAsUser(DEVICE_ADMIN_APK, mInitialUserId);
 
-        if (userId == mMainUserId) {
+        if (userId == mInitialUserId) {
             // If testing for user-0, also make sure the existing screen can't be captured.
             runDeviceTestsAsUser(
                     DEVICE_ADMIN_PKG,
                     ".AssistScreenCaptureDisabledTest",
                     testMethodName,
-                    mMainUserId);
+                    mInitialUserId);
         }
 
         // Make sure the foreground activity is from the target user.
         startSimpleActivityAsUser(userId);
 
         runDeviceTestsAsUser(
-                DEVICE_ADMIN_PKG, ".AssistScreenCaptureDisabledTest", testMethodName, mMainUserId);
+                DEVICE_ADMIN_PKG,
+                ".AssistScreenCaptureDisabledTest",
+                testMethodName,
+                mInitialUserId);
     }
 
     /**
@@ -953,9 +953,10 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
 
     protected void setVoiceInteractionService(String componentName)
             throws DeviceNotAvailableException {
-        getDevice().setSetting(mMainUserId, "secure", "voice_interaction_service", componentName);
-        getDevice().setSetting(mMainUserId, "secure", "assist_structure_enabled", "1");
-        getDevice().setSetting(mMainUserId, "secure", "assist_screenshot_enabled", "1");
+        getDevice()
+                .setSetting(mInitialUserId, "secure", "voice_interaction_service", componentName);
+        getDevice().setSetting(mInitialUserId, "secure", "assist_structure_enabled", "1");
+        getDevice().setSetting(mInitialUserId, "secure", "assist_screenshot_enabled", "1");
     }
 
     protected void clearVoiceInteractionService() throws DeviceNotAvailableException {

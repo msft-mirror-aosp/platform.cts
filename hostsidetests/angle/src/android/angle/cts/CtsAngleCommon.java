@@ -15,8 +15,10 @@
  */
 package android.angle.cts;
 
+import com.android.ddmlib.Log.LogLevel;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.device.PackageInfo;
+import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.result.TestDescription;
 
 import java.util.HashMap;
@@ -250,6 +252,9 @@ class CtsAngleCommon {
      */
     static int getDumpsysGpuAngleInUse(ITestDevice device, String packageName) throws Exception {
         String dumpSysGpu = device.executeShellCommand("dumpsys gpu");
+
+        CLog.logAndDisplay(LogLevel.INFO, "dumpsys gpu: " + dumpSysGpu);
+
         String[] lines = dumpSysGpu.split("\n");
 
         boolean foundPackage = false;

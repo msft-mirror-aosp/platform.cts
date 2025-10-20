@@ -27,6 +27,7 @@ android_library {
         "androidx.test.core",
         "androidx.test.rules",
         "kotlin-test",
+        "am_flags_lib",
     ],
     aidl: {
         local_include_dirs: ["src"],
@@ -38,7 +39,7 @@ android_library {
     ],
     resource_dirs: ["src/android/app/res"],
     platform_apis: true,
-    min_sdk_version: "21",
+    min_sdk_version: "23",
     lint: {
         baseline_filename: "lint-baseline.xml",
     },

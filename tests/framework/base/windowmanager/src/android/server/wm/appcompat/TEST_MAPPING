@@ -3,5 +3,10 @@
     {
       "name": "CtsWindowManagerDeviceAppCompat"
     }
+  ],
+  "desktop-presubmit": [
+    {
+      "name": "CtsWindowManagerDeviceAppCompat"
+    }
   ]
 }

@@ -377,6 +377,14 @@ public class WebViewOnUiThread extends WebViewSyncLoader {
         });
     }
 
+    /** Gets the original URL. */
+    public String getOriginalUrl() {
+        return WebkitUtils.onMainThreadSync(
+                () -> {
+                    return mWebView.getOriginalUrl();
+                });
+    }
+
     public int getProgress() {
         return WebkitUtils.onMainThreadSync(() -> {
             return mWebView.getProgress();
@@ -506,6 +514,23 @@ public class WebViewOnUiThread extends WebViewSyncLoader {
         return WebkitUtils.onMainThreadSync(() -> {
             return mWebView.getCertificate();
         });
+    }
+
+    /** Sets HTTP auth username and password. */
+    public void setHttpAuthUsernamePassword(
+            String host, String realm, String username, String password) {
+        WebkitUtils.onMainThreadSync(
+                () -> {
+                    mWebView.setHttpAuthUsernamePassword(host, realm, username, password);
+                });
+    }
+
+    /** Gets HTTP auth username and password. */
+    public String[] getHttpAuthUsernamePassword(String host, String realm) {
+        return WebkitUtils.onMainThreadSync(
+                () -> {
+                    return mWebView.getHttpAuthUsernamePassword(host, realm);
+                });
     }
 
     public WebView createWebView() {

@@ -81,13 +81,29 @@ public final class CrossProfileSharingTest {
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
 
-    private static final TestApp sTestApp = testApps(sDeviceState).query()
-            .whereActivities().contains(
-                    activity().where().intentFilters().contains(
-                            intentFilter().where().actions().contains("com.android.testapp.SOME_ACTION"),
-                            intentFilter().where().actions().contains("android.intent.action.PICK"),
-                            intentFilter().where().actions().contains("android.intent.action.SEND_MULTIPLE")
-                    )).get();
+    private static final TestApp sTestApp =
+            testApps(sDeviceState)
+                    .query()
+                    .whereActivities()
+                    .contains(
+                            activity()
+                                    .where()
+                                    .intentFilters()
+                                    .contains(
+                                            intentFilter()
+                                                    .where()
+                                                    .actions()
+                                                    .contains("com.android.testapp.SOME_ACTION"),
+                                            intentFilter()
+                                                    .where()
+                                                    .actions()
+                                                    .contains("android.intent.action.PICK"),
+                                            intentFilter()
+                                                    .where()
+                                                    .actions()
+                                                    .contains(
+                                                            "android.intent.action.SEND_MULTIPLE")))
+                    .get();
 
     // Known action that is handled in the opposite profile, used to query forwarder activity.
     private static final String CROSS_PROFILE_ACTION = "com.android.testapp.SOME_ACTION";
@@ -136,8 +152,7 @@ public final class CrossProfileSharingTest {
         // Enforce the restriction and wait for it to be applied.
         setSharingIntoProfileEnabled(false);
         // Test app handles android.intent.action.PICK just in case no other app does.
-        try (TestAppInstance testAppParent =
-                     sTestApp.install(sDeviceState.primaryUser())) {
+        try (TestAppInstance testAppParent = sTestApp.install(workProfile(sDeviceState).parent())) {
             // Verify that the intents don't resolve into cross-profile forwarder.
             assertCrossProfileIntentsResolvability(OPENING_INTENTS,
                     toPersonalForwarderInfo, /* expectForwardable */ false);
@@ -163,8 +178,7 @@ public final class CrossProfileSharingTest {
         setSharingIntoProfileEnabled(true);
 
         // Test app handles android.intent.action.PICK just in case no other app does.
-        try (TestAppInstance testAppParent =
-                     sTestApp.install(sDeviceState.primaryUser())) {
+        try (TestAppInstance testAppParent = sTestApp.install(workProfile(sDeviceState).parent())) {
             // Verify that the intents resolve into cross-profile forwarder.
             assertCrossProfileIntentsResolvability(
                     OPENING_INTENTS, workToPersonalForwarder, /* expectForwardable */ true);
@@ -304,7 +318,7 @@ public final class CrossProfileSharingTest {
     }
 
     private ResolveInfo getWorkToPersonalForwarder() {
-        return getResolveInfo(sDeviceState.primaryUser(), FLAG_PARENT_CAN_ACCESS_MANAGED);
+        return getResolveInfo(workProfile(sDeviceState).parent(), FLAG_PARENT_CAN_ACCESS_MANAGED);
     }
 
     /**

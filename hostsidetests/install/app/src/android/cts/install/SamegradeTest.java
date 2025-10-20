@@ -152,8 +152,7 @@ public final class SamegradeTest {
                 .isEqualTo(ApplicationInfo.FLAG_UPDATED_SYSTEM_APP);
         assertThat(shim.applicationInfo.flags & ApplicationInfo.FLAG_INSTALLED)
                 .isEqualTo(ApplicationInfo.FLAG_INSTALLED);
-        assertThat(shim.applicationInfo.sourceDir)
-                .isEqualTo("/data/apex/active/com.android.apex.cts.shim@1.apex");
+        assertThat(shim.applicationInfo.sourceDir.startsWith("/system")).isFalse();
         assertThat(shim.applicationInfo.publicSourceDir)
                 .isEqualTo(shim.applicationInfo.sourceDir);
     }

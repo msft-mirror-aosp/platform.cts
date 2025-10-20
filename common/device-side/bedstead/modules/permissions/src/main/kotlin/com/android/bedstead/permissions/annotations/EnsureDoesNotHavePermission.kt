@@ -18,7 +18,6 @@ package com.android.bedstead.permissions.annotations
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
 import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
-import com.google.auto.value.AutoAnnotation
 
 /**
  * Ensure that the given permission is denied before running the test.
@@ -56,8 +55,3 @@ annotation class EnsureDoesNotHavePermission(
      */
     val priority: Int = AnnotationPriorityRunPrecedence.MIDDLE
 )
-
-@AutoAnnotation
-fun ensureDoesNotHavePermission(value: Array<String>): EnsureDoesNotHavePermission {
-    return AutoAnnotation_EnsureDoesNotHavePermissionKt_ensureDoesNotHavePermission(value)
-}

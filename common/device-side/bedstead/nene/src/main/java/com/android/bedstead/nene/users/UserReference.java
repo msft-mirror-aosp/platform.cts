@@ -1131,6 +1131,11 @@ public final class UserReference implements AutoCloseable {
             }
         }
 
+        // For older builds, we must rely on the following backwards-compatible mechanism.
+        if (TestApis.users().getRemainingCreatableUserCount(userType) <= 0) {
+            return false;
+        }
+
         // For S and older versions, we need to keep the previous behavior by returning true here
         // so that the check can pass.
         Log.d(LOG_TAG, "canCreateProfile pre-T: true");

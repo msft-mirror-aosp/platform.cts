@@ -176,6 +176,8 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       # Set up gen2 rig controllers
       if self.rotator_cntl == 'None' or self.lighting_cntl == 'None':
         logging.debug('Gen2 rig is not available.')
+        self.motor_port = None
+        self.motor_channel = None
       else:
         self._setup_gen2rig()
 
@@ -201,8 +203,9 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
         self.dut.ui(text='OK').click.wait()
 
       # Ensure that the device is orthogonal and then close camera
-      gen2_rig_controller_utils.rotate_to_orthogonal_position(
-          cam, self.log_path, self.motor_port, self.motor_channel)
+      if self.motor_port is not None:
+        gen2_rig_controller_utils.rotate_to_orthogonal_position(
+            cam, self.log_path, self.motor_port, self.motor_channel)
       cam.close_camera()
 
       # Take capture with default camera app
@@ -216,6 +219,11 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       ui_interaction_utils.pull_img_files(
           device_id, device_img_path, self.log_path
       )
+
+      # Check if the image captured is HDR or not
+      gainmap_present = cam.check_gain_map_present(device_img_path)
+      logging.debug('gainmap_present: %s', gainmap_present)
+
       default_img_name = pathlib.Path(device_img_path).name
       default_path = os.path.join(self.log_path, default_img_name)
       logging.debug('Default capture img name: %s', default_img_name)
@@ -274,13 +282,14 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
             ui_interaction_utils.JCA_VIDEO_STABILIZATION_MODE_ON
         )
       # Take JCA capture with UI
-      jca_capture_path = ui_interaction_utils.launch_jca_and_capture(
+      jca_capture_path, _ = ui_interaction_utils.launch_jca_and_capture(
           self.dut,
           self.log_path,
           camera_facing=props['android.lens.facing'],
           zoom_ratio=jca_zoom_ratio,
           video_stabilization=video_stabilization,
-          jca_aspect_ratio=jca_ar
+          jca_aspect_ratio=jca_ar,
+          enable_hdr=gainmap_present
       )
       ui_interaction_utils.pull_img_files(
           device_id, jca_capture_path, self.log_path
@@ -361,16 +370,46 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       mean_brightness_diff = ip_metrics_utils.do_brightness_check(
           default_dynamic_range_patch_cells, jca_dynamic_range_patch_cells
       )
+
       # logging for data collection
       print(f'{_NAME}_mean_brightness_diff: {mean_brightness_diff}')
       logging.debug('mean_brightness_diff: %f', mean_brightness_diff)
       if abs(mean_brightness_diff) > _BRIGHTNESS_DIFF_THRESHOLD:
         e_msg.append('Device fails the brightness difference criteria.')
 
+      marginal_brightness_pass = False
+      marginal_pass_msg = []
+      if (abs(mean_brightness_diff) > (
+          _BRIGHTNESS_DIFF_THRESHOLD * its_session_utils.MARGINAL_PASS_FACTOR)
+          and
+          abs(mean_brightness_diff) <= (_BRIGHTNESS_DIFF_THRESHOLD)):
+        marginal_brightness_pass = True
+        marginal_pass_msg.append('Marginally passing brightness check.')
+
       # Get white balance diff between default and jca captures
       mean_white_balance_diff = ip_metrics_utils.do_white_balance_check(
-          default_dynamic_range_patch_cells, jca_dynamic_range_patch_cells
+          default_dynamic_range_patch_cells, jca_dynamic_range_patch_cells,
+          'default', 'jca'
       )
+
+      marginal_while_balance_pass = False
+      if (abs(mean_white_balance_diff) > (
+          _AWB_DIFF_THRESHOLD * its_session_utils.MARGINAL_PASS_FACTOR)
+          and
+          abs(mean_white_balance_diff) <= (_AWB_DIFF_THRESHOLD)):
+        marginal_while_balance_pass = True
+        marginal_pass_msg.append('Marginally passing white balance diff check.')
+
+      # Get cropped color cells
+      default_cropped_color_cells = ce.get_cropped_color_cells(
+          default_capture_path, self.log_path, 'default')
+
+      jca_cropped_color_cells = ce.get_cropped_color_cells(
+          jca_capture_path, self.log_path, 'jca')
+
+      ip_metrics_utils.get_color_rendering_variation(
+          default_cropped_color_cells, jca_cropped_color_cells, gainmap_present)
+
       # logging for data collection
       print(f'{_NAME}_mean_white_balance_diff: {mean_white_balance_diff}')
       logging.debug('mean_white_balance_diff: %f', mean_white_balance_diff)
@@ -379,9 +418,15 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       if not fov_match:
         e_msg.append('Device fails the FOV match check.')
       if e_msg:
-        raise AssertionError(
-            f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}\n\n{e_msg}')
-
+        if first_api_level <= its_session_utils.ANDROID17_API_LEVEL:
+          raise AssertionError(
+              f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}\n\n{e_msg}')
+        else:
+          raise AssertionError(e_msg)  # Checks mandated starting Android 17
+      else:  # Check for marginal pass
+        if (marginal_brightness_pass or marginal_while_balance_pass):
+          logging.warning('%s\n %s', its_session_utils.MARGINAL_PASSING_MESSAGE,
+                          marginal_pass_msg)
 
 if __name__ == '__main__':
   test_runner.main()

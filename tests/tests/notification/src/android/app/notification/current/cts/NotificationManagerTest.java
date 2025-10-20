@@ -23,6 +23,7 @@ import static android.app.Activity.RESULT_OK;
 import static android.app.AppOpsManager.MODE_ALLOWED;
 import static android.app.AppOpsManager.MODE_DEFAULT;
 import static android.app.AppOpsManager.MODE_ERRORED;
+import static android.app.Notification.EXTRA_PREFER_SMALL_ICON;
 import static android.app.Notification.FLAG_FOREGROUND_SERVICE;
 import static android.app.Notification.FLAG_NO_CLEAR;
 import static android.app.Notification.FLAG_USER_INITIATED_JOB;
@@ -63,7 +64,6 @@ import android.app.stubs.R;
 import android.app.stubs.shared.FutureServiceConnection;
 import android.app.stubs.shared.NotificationHelper.SEARCH_TYPE;
 import android.app.stubs.shared.TestNotificationListener;
-import android.companion.Flags;
 import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -345,14 +345,9 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
         StatusBarNotification[] sbns = mNotificationManager.getActiveNotifications();
         for (StatusBarNotification sbn : sbns) {
-            final boolean expectAutogrouped;
-            if (android.service.notification.Flags.notificationForceGrouping()) {
-                expectAutogrouped = isAutogroupSummary(sbn.getNotification())
-                        || autoGroupedIds.contains(sbn.getId());
-            } else {
-                expectAutogrouped = isGroupSummary(sbn.getNotification())
-                        || autoGroupedIds.contains(sbn.getId());
-            }
+            final boolean expectAutogrouped = isAutogroupSummary(sbn.getNotification())
+                    || autoGroupedIds.contains(sbn.getId());
+
             if (expectAutogrouped) {
                 assertTrue(sbn.getKey() + " is unexpectedly not autogrouped",
                         sbn.getOverrideGroupKey() != null);
@@ -1765,13 +1760,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(com.android.server.notification.Flags.FLAG_AUTOGROUP_SUMMARY_ICON_UPDATE)
-    public void testAutogrouping_autogroupStaysUntilAllNotificationsCanceled() throws Exception {
-        testAutogrouping_autogroupStaysUntilAllNotificationsCanceled_common(1);
-    }
-
-    @Test
-    @RequiresFlagsEnabled(com.android.server.notification.Flags.FLAG_AUTOGROUP_SUMMARY_ICON_UPDATE)
     public void testAutogrouping_autogroupStaysUntilAllNotificationsCanceled_summaryUpdated()
             throws Exception {
         assumeFalse("NotificationListeners do not support visible background users",
@@ -1829,14 +1817,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(com.android.server.notification.Flags.FLAG_AUTOGROUP_SUMMARY_ICON_UPDATE)
-    public void testAutogrouping_autogroupStaysUntilAllNotificationsAddedToGroup()
-            throws Exception {
-        testAutogrouping_autogroupStaysUntilAllNotificationsAddedToGroup_common(1);
-    }
-
-    @Test
-    @RequiresFlagsEnabled(com.android.server.notification.Flags.FLAG_AUTOGROUP_SUMMARY_ICON_UPDATE)
     public void testAutogrouping_autogroupStaysUntilAllNotificationsAddedToGroup_summaryUpdated()
             throws Exception {
         assumeFalse("NotificationListeners do not support visible background users",
@@ -1847,8 +1827,12 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     private void testAutogrouping_forceGrouping_common(boolean summaryOnly) throws Exception {
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
-        CountDownLatch postingLatch = mListener.setPostedCountDown(5);
-        CountDownLatch rerankLatch = mListener.setRankingUpdateCountDown(5);
+        final int numNotificationsInAutogroup = 5;
+        // Expect 2x number of posted callback because NMS will notify listeners
+        // when notifications were forced grouped through onNotificationPosted
+        final int numExpectedPostedCount = 2 * numNotificationsInAutogroup;
+        CountDownLatch postingLatch = mListener.setPostedCountDown(numExpectedPostedCount);
+        CountDownLatch rerankLatch;
 
         String testGroup = "testGroup";
         sendNotification(910, testGroup, summaryOnly, R.drawable.black, false, null);
@@ -1864,8 +1848,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
         // Wait until all the notifications, including the autogroup, are posted and grouped.
         postingLatch.await(TIMEOUT_FORCE_REGROUP_MS, TimeUnit.MILLISECONDS);
-        rerankLatch.await(TIMEOUT_FORCE_REGROUP_MS, TimeUnit.MILLISECONDS);
-        assertNotificationCount(5);
+        assertNotificationCount(numNotificationsInAutogroup);
         assertAllPostedNotificationsAutogrouped();
 
         // Cancel all autogrouped notifications
@@ -1880,13 +1863,12 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             assertAllPostedNotificationsAutogrouped();
         }
         // Autogroup summary should be canceled
-        postingLatch.await(400, TimeUnit.MILLISECONDS);
-        rerankLatch.await(400, TimeUnit.MILLISECONDS);
+        removedLatch = mListener.setRemovedCountDown(1);
+        removedLatch.await(400, TimeUnit.MILLISECONDS);
         assertNotificationCount(0);
     }
 
     @Test
-    @RequiresFlagsEnabled(android.service.notification.Flags.FLAG_NOTIFICATION_FORCE_GROUPING)
     public void testAutogrouping_groupWithoutSummary() throws Exception {
         assumeFalse("NotificationListeners do not support visible background users",
                 mUserHelper.isVisibleBackgroundUser());
@@ -1895,7 +1877,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.service.notification.Flags.FLAG_NOTIFICATION_FORCE_GROUPING)
     public void testAutogrouping_summaryWithoutChildren() throws Exception {
         assumeFalse("NotificationListeners do not support visible background users",
                 mUserHelper.isVisibleBackgroundUser());
@@ -1904,7 +1885,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({android.service.notification.Flags.FLAG_NOTIFICATION_FORCE_GROUPING,
+    @RequiresFlagsEnabled({
             com.android.server.notification.Flags.FLAG_NOTIFICATION_FORCE_GROUP_SINGLETONS})
     public void testAutogrouping_sparseGroups() throws Exception {
         assumeFalse("NotificationListeners do not support visible background users",
@@ -1965,7 +1946,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({android.service.notification.Flags.FLAG_NOTIFICATION_FORCE_GROUPING,
+    @RequiresFlagsEnabled({
             com.android.server.notification.Flags.FLAG_NOTIFICATION_FORCE_GROUP_SINGLETONS})
     public void testAutogrouping_sparseGroups_appCancelsRemovedSummary() throws Exception {
         assumeFalse("NotificationListeners do not support visible background users",
@@ -2063,14 +2044,12 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             assertOnlySomeNotificationsAutogrouped(postedIds);
         }
 
-        if (android.service.notification.Flags.notificationForceGrouping()) {
-            // post new group summary => avoid forced regrouping
-            int newGroupSummaryId = 999;
-            sendNotification(newGroupSummaryId, newGroup, true, R.drawable.yellow, false, null);
-            postingLatch.await(400, TimeUnit.MILLISECONDS);
-            rerankLatch.await(400, TimeUnit.MILLISECONDS);
-            assertNotificationCount(6);
-        }
+        // post new group summary => avoid forced regrouping
+        int newGroupSummaryId = 999;
+        sendNotification(newGroupSummaryId, newGroup, true, R.drawable.yellow, false, null);
+        postingLatch.await(400, TimeUnit.MILLISECONDS);
+        rerankLatch.await(400, TimeUnit.MILLISECONDS);
+        assertNotificationCount(6);
 
         // send a new non-grouped notification. since the autogroup summary still exists,
         // the notification should be added to it
@@ -2085,14 +2064,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(com.android.server.notification.Flags.FLAG_AUTOGROUP_SUMMARY_ICON_UPDATE)
-    public void testNewNotificationsAddedToAutogroup_ifOriginalNotificationsCanceled()
-            throws Exception {
-        testNewNotificationsAddedToAutogroup_ifOriginalNotificationsCanceled_common(1);
-    }
-
-    @Test
-    @RequiresFlagsEnabled(com.android.server.notification.Flags.FLAG_AUTOGROUP_SUMMARY_ICON_UPDATE)
     public void testNewNotificationsAddedToAutogroup_ifOriginalNotificationsCanceled_summaryUpdated()
             throws Exception {
         assumeFalse("NotificationListeners do not support visible background users",
@@ -3365,20 +3336,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
                             "Non-user-set changes should not override user-set",
                             mNotificationManager.getEnabledNotificationListeners(),
                             hasItem(componentName));
-
-                    if (Flags.enableMedicalProfile()) {
-                        mNotificationManager.setNotificationPolicyAccessGranted(
-                                STUB_PACKAGE_NAME, true);
-                        assertTrue(
-                                mNotificationManager.isNotificationPolicyAccessGrantedForPackage(
-                                        STUB_PACKAGE_NAME));
-
-                        mNotificationManager.setNotificationPolicyAccessGranted(
-                                STUB_PACKAGE_NAME, false);
-                        assertFalse(
-                                mNotificationManager.isNotificationPolicyAccessGrantedForPackage(
-                                        STUB_PACKAGE_NAME));
-                    }
                 });
     }
 
@@ -3423,6 +3380,49 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
         assertEquals(NotificationListenerService.REASON_CHANNEL_REMOVED,
                 getCancellationReason(key));
+    }
+
+    @Test
+    public void testPreferSmallIcon_noPermission() throws Exception {
+        int id = 99;
+        Bundle extras = new Bundle();
+        extras.putBoolean(EXTRA_PREFER_SMALL_ICON, true);
+        final Notification notification =
+                new Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+                        .setSmallIcon(R.drawable.black)
+                        .setExtras(extras)
+                        .build();
+        mNotificationManager.notify(id, notification);
+
+        StatusBarNotification sbn =
+                mNotificationHelper.findPostedNotification(null, id, SEARCH_TYPE.APP);
+        assertNotNull(sbn);
+
+        assertFalse(sbn.getNotification().extras.containsKey(Notification.EXTRA_PREFER_SMALL_ICON));
+    }
+
+    @Test
+    public void testPreferSmallIcon_hasPermission() throws Exception {
+        int id = 99;
+        Bundle extras = new Bundle();
+        extras.putBoolean(EXTRA_PREFER_SMALL_ICON, true);
+        final Notification notification =
+                new Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+                        .setSmallIcon(R.drawable.black)
+                        .setExtras(extras)
+                        .build();
+
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    mNotificationManager.notify(id, notification);
+                },
+                Manifest.permission.PACKAGE_VERIFICATION_AGENT);
+
+        StatusBarNotification sbn =
+                mNotificationHelper.findPostedNotification(null, id, SEARCH_TYPE.APP);
+        assertNotNull(sbn);
+
+        assertTrue(sbn.getNotification().extras.getBoolean(Notification.EXTRA_PREFER_SMALL_ICON));
     }
 
     @Test
@@ -3948,7 +3948,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     @RequiresFlagsEnabled({
-        android.app.Flags.FLAG_API_RICH_ONGOING,
         android.app.Flags.FLAG_UI_RICH_ONGOING,
         android.app.Flags.FLAG_API_RICH_ONGOING_PERMISSION
     })
@@ -3958,7 +3957,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     @RequiresFlagsEnabled({
-        android.app.Flags.FLAG_API_RICH_ONGOING,
         android.app.Flags.FLAG_UI_RICH_ONGOING
     })
     @RequiresFlagsDisabled({android.app.Flags.FLAG_API_RICH_ONGOING_PERMISSION})

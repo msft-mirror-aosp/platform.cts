@@ -22,6 +22,7 @@ import static org.mockito.Mockito.*;
 
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
+import android.hardware.HardwareBuffer;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCaptureSession.CaptureCallback;
 import android.hardware.camera2.CameraDevice;
@@ -822,8 +823,13 @@ public class SurfaceViewPreviewTest extends Camera2SurfaceViewTestCase {
 
         Size maxPreviewSz = mOrderedPreviewSizes.get(0);
         SimpleImageReaderListener imageListener = new SimpleImageReaderListener();
-        ImageReader previewReader = makeImageReader(maxPreviewSz, ImageFormat.PRIVATE,
-                MAX_READER_IMAGES, imageListener, mHandler);
+        ImageReader.Builder builder = (new ImageReader.Builder(
+                maxPreviewSz.getWidth(), maxPreviewSz.getHeight())).
+                setImageFormat(ImageFormat.PRIVATE).
+                setMaxImages(MAX_READER_IMAGES).
+                setUsage(HardwareBuffer.USAGE_VIDEO_ENCODE);
+        ImageReader previewReader = builder.build();
+        previewReader.setOnImageAvailableListener(imageListener, mHandler);
         Surface previewSurface = previewReader.getSurface();
         List<OutputConfiguration> outputConfigs = new ArrayList<OutputConfiguration>();
         OutputConfiguration previewConfig =
@@ -887,8 +893,13 @@ public class SurfaceViewPreviewTest extends Camera2SurfaceViewTestCase {
                 mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
         ImageDropperListener imageListener = new ImageDropperListener();
 
-        ImageReader previewReader = makeImageReader(maxPreviewSz, ImageFormat.PRIVATE,
-                MAX_READER_IMAGES, imageListener, mHandler);
+        ImageReader.Builder builder = (new ImageReader.Builder(
+                maxPreviewSz.getWidth(), maxPreviewSz.getHeight())).
+                setImageFormat(ImageFormat.PRIVATE).
+                setMaxImages(MAX_READER_IMAGES).
+                setUsage(HardwareBuffer.USAGE_VIDEO_ENCODE);
+        ImageReader previewReader = builder.build();
+        previewReader.setOnImageAvailableListener(imageListener, mHandler);
         Surface previewSurface = previewReader.getSurface();
         createImageReader(maxYuvSize, ImageFormat.YUV_420_888, MAX_READER_IMAGES, imageListener);
         List<OutputConfiguration> outputConfigs = new ArrayList<OutputConfiguration>();

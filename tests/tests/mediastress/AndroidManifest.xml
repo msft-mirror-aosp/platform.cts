@@ -41,6 +41,8 @@
         </activity>
         <activity android:name="android.mediastress.cts.NativeMediaActivity"
              android:label="NativeMedia"/>
+        <property android:name="android.window.PROPERTY_CAMERA_COMPAT_ALLOW_SIMULATE_REQUESTED_ORIENTATION"
+            android:value="false" />
     </application>
 
     <uses-sdk android:minSdkVersion="29"

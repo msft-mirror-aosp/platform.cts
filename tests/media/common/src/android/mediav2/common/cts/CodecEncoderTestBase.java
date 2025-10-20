@@ -28,6 +28,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.graphics.ImageFormat;
+import android.graphics.PixelFormat;
 import android.media.AudioFormat;
 import android.media.Image;
 import android.media.MediaCodec;
@@ -67,7 +68,7 @@ public class CodecEncoderTestBase extends CodecTestBase {
     protected byte[] mInputData;
     protected int mInputBufferReadOffset;
     protected int mNumBytesSubmitted;
-    protected long mInputOffsetPts;
+    protected long mInputOffsetPts; // in microseconds.
     protected int mAudioEnqueueLimit; // max number of raw pcm bytes to send in an enqueue call.
 
     protected ArrayList<MediaCodec.BufferInfo> mInfoList = new ArrayList<>();
@@ -267,7 +268,7 @@ public class CodecEncoderTestBase extends CodecTestBase {
     }
 
     @After
-    public void tearDown() {
+    public void tearDownCodecEncoderTestBase() {
         if (mMuxer != null) {
             mMuxer.release();
             mMuxer = null;
@@ -297,8 +298,16 @@ public class CodecEncoderTestBase extends CodecTestBase {
     protected void fillImage(Image image) {
         int format = image.getFormat();
         assertTrue("unexpected image format \n" + mTestConfig + mTestEnv,
-                format == ImageFormat.YUV_420_888 || format == ImageFormat.YCBCR_P010);
-        int bytesPerSample = (ImageFormat.getBitsPerPixel(format) * 2) / (8 * 3);  // YUV420
+                format == ImageFormat.YUV_420_888 || format == ImageFormat.YCBCR_P010
+                        || format == PixelFormat.RGBA_1010102 || format == PixelFormat.RGBA_8888);
+        int bytesPerSample;  // bytes per sample per plane
+        if (format == PixelFormat.RGBA_1010102 || format == PixelFormat.RGBA_8888) {
+            PixelFormat info = new PixelFormat();
+            PixelFormat.getPixelFormatInfo(format, info);
+            bytesPerSample = info.bytesPerPixel;
+        } else {
+            bytesPerSample = (ImageFormat.getBitsPerPixel(format) * 2) / (8 * 3);  // YUV420
+        }
         assertEquals("Invalid bytes per sample \n" + mTestConfig + mTestEnv, bytesPerSample,
                 mActiveRawRes.mBytesPerSample);
 
@@ -391,6 +400,18 @@ public class CodecEncoderTestBase extends CodecTestBase {
         }
     }
 
+    protected int getVideoFrameSize(int width, int height, int format) {
+        if (format == ImageFormat.YUV_420_888) {
+            return width * height * 3 / 2;
+        } else if (format == ImageFormat.YCBCR_P010) {
+            return width * height * 3;
+        } else if (format == PixelFormat.RGBA_8888 || format == PixelFormat.RGBA_1010102) {
+            return width * height * 4;
+        }
+        fail("color format : " + format + " not recognized \n" + mTestConfig + mTestEnv);
+        return 0;
+    }
+
     protected void enqueueInput(int bufferIndex) {
         if (mIsLoopBack && mInputBufferReadOffset >= mInputData.length) {
             mInputBufferReadOffset = 0;
@@ -426,10 +447,10 @@ public class CodecEncoderTestBase extends CodecTestBase {
                 mInputBufferReadOffset += size;
             } else {
                 pts += mInputCount * 1000000L / mActiveEncCfg.mFrameRate;
-                size = mActiveRawRes.mBytesPerSample * mActiveEncCfg.mWidth * mActiveEncCfg.mHeight
-                        * 3 / 2;
-                int frmSize = mActiveRawRes.mBytesPerSample * mActiveRawRes.mWidth
-                        * mActiveRawRes.mHeight * 3 / 2;
+                size = getVideoFrameSize(mActiveEncCfg.mWidth, mActiveEncCfg.mHeight,
+                        mActiveRawRes.mColorFormat);
+                int frmSize = getVideoFrameSize(mActiveRawRes.mWidth, mActiveRawRes.mHeight,
+                        mActiveRawRes.mColorFormat);
                 if (mInputBufferReadOffset + frmSize > mInputData.length) {
                     fail("received partial frame to encode \n" + mTestConfig + mTestEnv);
                 } else {
@@ -467,8 +488,8 @@ public class CodecEncoderTestBase extends CodecTestBase {
             mSawOutputEOS = true;
         }
         if (info.size > 0) {
-            ByteBuffer buf = mCodec.getOutputBuffer(bufferIndex);
             if (mSaveToMem) {
+                ByteBuffer buf = mCodec.getOutputBuffer(bufferIndex);
                 MediaCodec.BufferInfo copy = new MediaCodec.BufferInfo();
                 copy.set(mOutputBuff.getOutStreamSize(), info.size, info.presentationTimeUs,
                         info.flags);
@@ -487,7 +508,8 @@ public class CodecEncoderTestBase extends CodecTestBase {
                     mMuxer.start();
                 }
                 if ((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
-                    mMuxer.writeSampleData(mTrackID, buf, info);
+                    ByteBuffer buffer = mCodec.getOutputBuffer(bufferIndex);
+                    mMuxer.writeSampleData(mTrackID, buffer, info);
                 }
             }
         }

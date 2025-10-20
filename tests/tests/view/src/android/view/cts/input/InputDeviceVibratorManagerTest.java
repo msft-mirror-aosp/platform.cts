@@ -108,7 +108,9 @@ public class InputDeviceVibratorManagerTest {
 
     @After
     public void tearDown() {
-        mUinputDevice.close();
+        if (mUinputDevice != null) {
+            mUinputDevice.close();
+        }
     }
 
     /*

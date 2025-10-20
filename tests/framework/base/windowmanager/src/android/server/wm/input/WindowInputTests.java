@@ -299,13 +299,16 @@ public class WindowInputTests {
                     };
             assertTrue(waitForWindowInfo(hasUpdatedBounds, WINDOW_WAIT_TIMEOUT,
                     mView::getWindowToken, displayId));
+
+            // Wait for stable window geometry before trying to tap on the view.
+            CtsWindowInfoUtils.waitForStableWindowGeometry(WINDOW_WAIT_TIMEOUT);
             final int previousCount = mClickCount;
 
             mTouchScreen.tapOnViewCenter(mView);
 
             mInstrumentation.waitForIdleSync();
             PollingCheck.waitFor(TOUCH_EVENT_PROPAGATION_TIMEOUT,
-                    () -> previousCount + 1 == mClickCount);
+                    () -> previousCount + 1 == mClickCount, "Timed out waiting for click " + i);
         }
         assertEquals("Wrong number of clicks", totalClicks, mClickCount);
     }

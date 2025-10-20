@@ -216,7 +216,7 @@ public class ImeSettings {
     }
 
     public boolean isOnBackCallbackEnabled() {
-        return mBundle.getBoolean(ON_BACK_CALLBACK_ENABLED, false);
+        return mBundle.getBoolean(ON_BACK_CALLBACK_ENABLED, true);
     }
 
     public void close() {

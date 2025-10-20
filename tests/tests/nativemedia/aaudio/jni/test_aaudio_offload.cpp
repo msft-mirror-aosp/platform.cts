@@ -94,6 +94,10 @@ void AAudioOffloadTest::SetUp() {
 }
 
 void AAudioOffloadTest::TearDown() {
+    if (mStream != nullptr) {
+        // For offload, pause the stream to avoid draining data when closing.
+        AAudioStream_requestPause(mStream);
+    }
     AAudioStream_close(mStream);
     AAudioCtsBase::TearDown();
 }

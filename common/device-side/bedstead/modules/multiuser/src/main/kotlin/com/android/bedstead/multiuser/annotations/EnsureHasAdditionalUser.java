@@ -16,7 +16,7 @@
 
 package com.android.bedstead.multiuser.annotations;
 
-import static com.android.bedstead.enterprise.annotations.EnsureHasWorkProfileKt.ENSURE_HAS_WORK_PROFILE_PRIORITY;
+import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.ENSURE_HAS_WORK_PROFILE_PRIORITY;
 import static com.android.bedstead.nene.types.OptionalBoolean.ANY;
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;

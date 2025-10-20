@@ -67,7 +67,7 @@ import java.util.List;
  * expects the component to relay this information correctly in the output format of each buffer
  * to the client.
  */
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName = "VanillaIceCream")
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @RequiresFlagsEnabled(FLAG_DYNAMIC_COLOR_ASPECTS)
 @RunWith(Parameterized.class)
 @AppModeFull(reason = "Instant apps cannot access the SD card")
@@ -330,8 +330,7 @@ public class DecoderDynamicColorAspectTest extends CodecDecoderTestBase {
     /**
      * Check description of class {@link DecoderDynamicColorAspectTest}
      */
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-            codeName = "VanillaIceCream")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
     @ApiTest(apis = {"android.media.MediaFormat#KEY_COLOR_RANGE",
             "android.media.MediaFormat#KEY_COLOR_STANDARD",
             "android.media.MediaFormat#KEY_COLOR_TRANSFER",

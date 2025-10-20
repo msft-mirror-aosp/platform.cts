@@ -31,7 +31,7 @@ android_test {
         "androidx.test.rules",
         "compatibility-device-util-axt",
         "testng",
-        "Harrier",
+        "bedstead",
     ],
     sdk_version: "test_current",
 }

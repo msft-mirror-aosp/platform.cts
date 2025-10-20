@@ -28,7 +28,6 @@ android_test {
         "ctstestrunner-axt",
         "compatibility-device-util-axt",
         "tests-tests-networksecurityconfig-lib",
-        "android.security.flags-aconfig-java",
         "networksecurity-aconfig-flags-lib",
     ],
     libs: [

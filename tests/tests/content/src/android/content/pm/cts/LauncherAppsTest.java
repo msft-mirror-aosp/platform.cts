@@ -17,7 +17,6 @@
 package android.content.pm.cts;
 
 import static android.content.pm.Flags.FLAG_ARCHIVING;
-import static android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE;
 
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.getDefaultLauncher;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.setDefaultLauncher;
@@ -418,8 +417,6 @@ public class LauncherAppsTest {
 
     @Test
     @AppModeFull(reason = "Need special permission")
-    @RequiresFlagsEnabled({FLAG_ALLOW_PRIVATE_PROFILE,
-            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testLauncherUserInfo() {
         LauncherUserInfo info =
                 mLauncherApps.getLauncherUserInfo(UserHandle.of(UserHandle.myUserId()));
@@ -428,9 +425,7 @@ public class LauncherAppsTest {
 
     @Test
     @AppModeFull(reason = "Need special permission")
-    @RequiresFlagsEnabled({FLAG_ALLOW_PRIVATE_PROFILE,
-            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES,
-            android.multiuser.Flags.FLAG_ADD_LAUNCHER_USER_CONFIG})
+    @RequiresFlagsEnabled(android.multiuser.Flags.FLAG_ADD_LAUNCHER_USER_CONFIG)
     public void testLauncherUserInfo_addLauncherUserConfig() {
         LauncherUserInfo info =
                 mLauncherApps.getLauncherUserInfo(UserHandle.of(UserHandle.myUserId()));
@@ -440,8 +435,6 @@ public class LauncherAppsTest {
 
     @Test
     @AppModeFull(reason = "Need special permission")
-    @RequiresFlagsEnabled({FLAG_ALLOW_PRIVATE_PROFILE,
-            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testGetMarketIntent() {
         IntentSender intentSender =
                 mLauncherApps.getAppMarketActivityIntent(
@@ -457,8 +450,6 @@ public class LauncherAppsTest {
 
     @Test
     @AppModeFull(reason = "Need special permission")
-    @RequiresFlagsEnabled({FLAG_ALLOW_PRIVATE_PROFILE,
-            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testGetPreInstalledSystemPackages() {
         List<String> packages =
                 mLauncherApps.getPreInstalledSystemPackages(UserHandle.of(UserHandle.myUserId()));

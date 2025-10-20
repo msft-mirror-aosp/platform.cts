@@ -88,6 +88,9 @@ class ItsBaseTest(base_test.BaseTestClass):
     self.parallel_execution = (
         self.user_params.get('parallel_execution') == 'True'
     )
+    self.resultstore_upload = (
+        self.user_params.get('resultstore_upload') == 'True'
+    )
     camera_id_combo = self.parse_hidden_camera_id()
     self.camera_id = camera_id_combo[0]
     if len(camera_id_combo) == 2:

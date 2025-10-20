@@ -50,6 +50,7 @@ import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
 
 public class LockScreenSession implements AutoCloseable {
+
     enum LockState {
         LOCK_DISABLED,
         LOCK_ENABLED
@@ -155,6 +156,11 @@ public class LockScreenSession implements AutoCloseable {
                 () -> mInstrumentation.sendStringSync(LOCK_CREDENTIAL));
         pressEnterButton();
         return this;
+    }
+
+    /** Waits for keyguard to report transition to the gone state. */
+    public void waitForKeyguardGone() {
+        mWmState.waitForKeyguardGone();
     }
 
     private static void removeLockCredential() {

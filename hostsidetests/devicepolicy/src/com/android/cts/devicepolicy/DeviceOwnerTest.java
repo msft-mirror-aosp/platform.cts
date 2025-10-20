@@ -19,7 +19,6 @@ package com.android.cts.devicepolicy;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
 import android.platform.test.annotations.AsbSecurityTest;
@@ -47,6 +46,14 @@ import java.util.regex.Pattern;
  * Set of tests for Device Owner use cases.
  */
 public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
+
+    private static final String DEVICE_OWNER_PKG = "com.android.cts.deviceowner";
+    private static final String DEVICE_OWNER_APK = "CtsDeviceOwnerApp.apk";
+
+    private static final String ADMIN_RECEIVER_TEST_CLASS = DEVICE_OWNER_PKG
+            + ".BasicAdminReceiver";
+    private static final String DEVICE_OWNER_COMPONENT = DEVICE_OWNER_PKG + "/"
+            + ADMIN_RECEIVER_TEST_CLASS;
 
     private static final String MANAGED_PROFILE_PKG = "com.android.cts.managedprofile";
     private static final String MANAGED_PROFILE_APK = "CtsManagedProfileApp.apk";
@@ -90,6 +97,24 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     private static final String GLOBAL_SETTING_USB_MASS_STORAGE_ENABLED =
             "usb_mass_storage_enabled";
 
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+
+        installAndSetDeviceOwner(DEVICE_OWNER_APK, DEVICE_OWNER_PKG, ADMIN_RECEIVER_TEST_CLASS);
+
+        // Enable the notification listener
+        executeShellCommand("cmd notification allow_listener com.android.cts."
+                + "deviceowner/com.android.cts.deviceowner.NotificationListener");
+    }
+
+    @Override
+    public void tearDown() throws Exception {
+        removeAndUninstallDeviceOwnerIfSet();
+
+        super.tearDown();
+    }
+
     @Test
     public void testProxyStaticProxyTest() throws Exception {
         executeDeviceOwnerTest("proxy.StaticProxyTest");
@@ -107,18 +132,14 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     public void testCreateAndManageUser_MaxUsers() throws Exception {
         assumeCanCreateOneManagedUser();
 
-        int maxUsers = getDevice().getMaxNumberOfUsersSupported();
+        int maxUsers =
+                getDevice().getMaxNumberOfUsersSupported("android.os.usertype.full.SECONDARY");
 
-        // System user is already there, so we can create up to maxUsers - 1.
-        int existingUsers = 1;
+        // On headless system user mode, there should already be a secondary user present
+        int existingUsers = isHeadlessSystemUserMode() ? 1 : 0;
 
-        // On headless user mode, current user is also there
-        if (isHeadlessSystemUserMode()) {
-            existingUsers++;
-        }
-
-        CLog.d("testCreateAndManageUser_MaxUsers(): maxUxers=%d, existingUsers=%d", maxUsers,
-                existingUsers);
+        CLog.d("testCreateAndManageUser_MaxUsers(): maxUsers=%d, existingUsers=%d",
+                maxUsers, existingUsers);
 
         for (int i = 0; i < maxUsers - existingUsers; i++) {
             executeCreateAndManageUserTest("testCreateAndManageUser");
@@ -194,25 +215,26 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     public void testCreateAndManageUser_StartInBackground_MaxRunningUsers() throws Exception {
         assumeCanStartNewUser();
 
-        int maxUsers = getDevice().getMaxNumberOfUsersSupported();
+        int maxSecondaryUsers =
+                getDevice().getMaxNumberOfUsersSupported("android.os.usertype.full.SECONDARY");
         int maxRunningUsers = getDevice().getMaxNumberOfRunningUsersSupported();
 
-        // Primary user is already running, so we can create and start up to minimum of above - 1.
-        int usersToCreateAndStart = Math.min(maxUsers, maxRunningUsers) - 1;
+        // System user is already running, so subtract 1 from maxRunningUsers
+        int usersToCreateAndStart = Math.min(maxSecondaryUsers, maxRunningUsers - 1);
 
-        // On headless user mode, system user is also running
+        // On headless user mode, an extra secondary user is also created and running
         if (isHeadlessSystemUserMode()) {
             usersToCreateAndStart--;
         }
 
-        CLog.d("testCreateAndManageUser_StartInBackground_MaxRunningUsers(): maxUxers=%d, "
-                + "maxRunningUsers=%d, usersToCreateAndStart=%d", maxUsers, maxRunningUsers,
-                usersToCreateAndStart);
+        CLog.d("testCreateAndManageUser_StartInBackground_MaxRunningUsers(): maxSecondaryUsers=%d, "
+                + "maxRunningUsers=%d, usersToCreateAndStart=%d", maxSecondaryUsers,
+                maxRunningUsers, usersToCreateAndStart);
         for (int i = 0; i < usersToCreateAndStart; i++) {
             executeCreateAndManageUserTest("testCreateAndManageUser_StartInBackground");
         }
 
-        if (maxUsers > maxRunningUsers) {
+        if (maxSecondaryUsers >= maxRunningUsers) {
             // The next startUserInBackground should return USER_OPERATION_ERROR_MAX_RUNNING_USERS.
             executeCreateAndManageUserTest(
                     "testCreateAndManageUser_StartInBackground_MaxRunningUsers");
@@ -380,8 +402,9 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
             + "user mode")
     public void testSetAffiliationId_IllegalArgumentException() throws Exception {
-        executeDeviceTestMethod(".AffiliationTest", "testSetAffiliationId_null");
-        executeDeviceTestMethod(".AffiliationTest", "testSetAffiliationId_containsEmptyString");
+        executeDeviceOwnerTestMethod(".AffiliationTest", "testSetAffiliationId_null");
+        executeDeviceOwnerTestMethod(".AffiliationTest",
+                "testSetAffiliationId_containsEmptyString");
     }
 
     @FlakyTest(bugId = 127101449)
@@ -442,22 +465,21 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     // Execute HardwarePropertiesManagerTest as a device owner.
     @Test
     public void testHardwarePropertiesManagerAsDeviceOwner() throws Exception {
-
-        executeDeviceTestMethod(".HardwarePropertiesManagerTest", "testHardwarePropertiesManager");
+        executeDeviceOwnerTestMethod(".HardwarePropertiesManagerTest",
+                "testHardwarePropertiesManager");
     }
 
     // Execute VrTemperatureTest as a device owner.
     @Test
     public void testVrTemperaturesAsDeviceOwner() throws Exception {
-
-        executeDeviceTestMethod(".VrTemperatureTest", "testVrTemperatures");
+        executeDeviceOwnerTestMethod(".VrTemperatureTest", "testVrTemperatures");
     }
 
     @Test
     public void testIsManagedDeviceProvisioningAllowed() throws Exception {
         // This case runs when DO is provisioned
         // mHasFeature == true and provisioned, can't provision DO again.
-        executeDeviceTestMethod(".PreDeviceOwnerTest", "testIsProvisioningAllowedFalse");
+        executeDeviceOwnerTestMethod(".PreDeviceOwnerTest", "testIsProvisioningAllowedFalse");
     }
 
     @FlakyTest(bugId = 137096267)
@@ -474,18 +496,16 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
         } else {
             // This test will be skipped for headless system user mode since headless system user
             // does not have IME.
-            executeDeviceTestMethod(".AdminActionBookkeepingTest",
+            executeDeviceOwnerTestMethod(".AdminActionBookkeepingTest",
                     "testGetPolicyInstalledCaCerts");
         }
 
-        executeDeviceTestMethod(".AdminActionBookkeepingTest",
-                "testRetrieveSecurityLogs");
-        executeDeviceTestMethod(".AdminActionBookkeepingTest",
+        executeDeviceOwnerTestMethod(".AdminActionBookkeepingTest", "testRetrieveSecurityLogs");
+        executeDeviceOwnerTestMethod(".AdminActionBookkeepingTest",
                 "testGetLastNetworkLogRetrievalTime");
-        executeDeviceTestMethod(".AdminActionBookkeepingTest",
+        executeDeviceOwnerTestMethod(".AdminActionBookkeepingTest",
                 "testDeviceOwnerOrganizationName");
-        executeDeviceTestMethod(".AdminActionBookkeepingTest",
-                "testIsDeviceManaged");
+        executeDeviceOwnerTestMethod(".AdminActionBookkeepingTest", "testIsDeviceManaged");
     }
 
     @Test
@@ -510,6 +530,10 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
         assertTrue(isProvisioningAllowedForNormalUsers || isTv());
     }
 
+    /**
+     * This test checks if a DO has set DISALLOW_FACTORY_RESET on the device, then a legacy device
+     * admin can no longer call wipeData() to factory reset device.
+     */
     @Test
     public void testDisallowFactoryReset() throws Exception {
         if (isHeadlessSystemUserMode()) {
@@ -518,9 +542,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
         }
 
         int adminVersion = 24;
-        // NOTE: the restriction must be set on primary user as it will launch SetPolicyActivity,
-        // but the admin must be installed on USER_SYSTEM, otherwise wipeData() on headless system
-        // user mode would wipe the current user (instead of factory resetting the device)
+        // TODO: this test should have been skipped on HSUM if the DO is set on affiliated mode, as
+        // the legacy device admin app wouldn't be installed on system user in that case
         changeUserRestrictionOrFail("no_factory_reset", true, mDeviceOwnerUserId, DEVICE_OWNER_PKG);
         int adminUserId = mDeviceOwnerUserId;
 
@@ -559,13 +582,16 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
 
             // Install the package in primary user
             runDeviceTestsAsUser(
-                    DEVICE_OWNER_PKG, ".PackageInstallTest", "testPackageInstall", mDeviceOwnerUserId);
+                    DEVICE_OWNER_PKG, ".PackageInstallTest", "testPackageInstall",
+                    mDeviceOwnerUserId);
             runDeviceTestsAsUser(
-                    DEVICE_OWNER_PKG, ".PackageInstallTest", "testKeepPackageCache", mDeviceOwnerUserId);
+                    DEVICE_OWNER_PKG, ".PackageInstallTest", "testKeepPackageCache",
+                    mDeviceOwnerUserId);
 
             // Remove the package in primary user
             runDeviceTestsAsUser(
-                    DEVICE_OWNER_PKG, ".PackageInstallTest", "testPackageUninstall", mDeviceOwnerUserId);
+                    DEVICE_OWNER_PKG, ".PackageInstallTest", "testPackageUninstall",
+                    mDeviceOwnerUserId);
 
             // Should be able to enable the cached package in primary user
             runDeviceTestsAsUser(
@@ -585,7 +611,7 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
             + "user mode")
     public void testPackageInstallCache_multiUser() throws Exception {
-        assumeCanCreateAdditionalUsers(1);
+        assumeCanCreateAdditionalSecondaryUsers(1);
 
         final int userId = createAffiliatedSecondaryUser();
         CompatibilityBuildHelper buildHelper = new CompatibilityBuildHelper(getBuild());
@@ -596,7 +622,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
 
             // Install the package in primary user
             runDeviceTestsAsUser(
-                    DEVICE_OWNER_PKG, ".PackageInstallTest", "testPackageInstall", mDeviceOwnerUserId);
+                    DEVICE_OWNER_PKG, ".PackageInstallTest", "testPackageInstall",
+                    mDeviceOwnerUserId);
 
             // Should be able to enable the package in secondary user
             runDeviceTestsAsUser(DEVICE_OWNER_PKG, ".PackageInstallTest",
@@ -604,7 +631,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
 
             // Remove the package in both user
             runDeviceTestsAsUser(
-                    DEVICE_OWNER_PKG, ".PackageInstallTest", "testPackageUninstall", mDeviceOwnerUserId);
+                    DEVICE_OWNER_PKG, ".PackageInstallTest", "testPackageUninstall",
+                    mDeviceOwnerUserId);
             runDeviceTestsAsUser(DEVICE_OWNER_PKG, ".PackageInstallTest",
                     "testPackageUninstall", userId);
 
@@ -621,11 +649,13 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
 
             // Keep the package in cache
             runDeviceTestsAsUser(
-                    DEVICE_OWNER_PKG, ".PackageInstallTest", "testKeepPackageCache", mDeviceOwnerUserId);
+                    DEVICE_OWNER_PKG, ".PackageInstallTest", "testKeepPackageCache",
+                    mDeviceOwnerUserId);
 
             // Remove the package in both user
             runDeviceTestsAsUser(
-                    DEVICE_OWNER_PKG, ".PackageInstallTest", "testPackageUninstall", mDeviceOwnerUserId);
+                    DEVICE_OWNER_PKG, ".PackageInstallTest", "testPackageUninstall",
+                    mDeviceOwnerUserId);
             runDeviceTestsAsUser(DEVICE_OWNER_PKG, ".PackageInstallTest",
                     "testPackageUninstall", userId);
 
@@ -669,7 +699,7 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
             installAppAsUser(SIMPLE_APP_APK, mDeviceOwnerUserId);
             startProtectedPackage(mDeviceOwnerUserId);
             // Set the package under test as a protected package.
-            executeDeviceTestMethod(".UserControlDisabledPackagesTest",
+            executeDeviceOwnerTestMethod(".UserControlDisabledPackagesTest",
                     "testSetUserControlDisabledPackages");
 
             // Reboot and verify protected packages are persisted
@@ -700,7 +730,7 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
             installAppAsUser(SIMPLE_APP_APK, mDeviceOwnerUserId);
             startProtectedPackage(mDeviceOwnerUserId);
             // Set the package under test as a protected package.
-            executeDeviceTestMethod(".UserControlDisabledPackagesTest",
+            executeDeviceOwnerTestMethod(".UserControlDisabledPackagesTest",
                     "testSetUserControlDisabledPackages");
 
             // Reboot and verify protected packages are persisted
@@ -728,7 +758,7 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     @Ignore("b/230738884")
     public void testSetUserControlDisabledPackages_multiUser_reboot_verifyPackageNotStopped()
             throws Exception {
-        assumeCanCreateAdditionalUsers(1);
+        assumeCanCreateAdditionalSecondaryUsers(1);
         final int userId = createUser();
 
         String stopBgUsersOnSwitchValue = getStopBgUsersOnSwitchProperty();
@@ -787,7 +817,7 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     @Ignore("b/204508654")
     public void testSetUserControlDisabledPackages_multiUser_reboot_verifyPackageNotFgsStopped()
             throws Exception {
-        assumeCanCreateAdditionalUsers(1);
+        assumeCanCreateAdditionalSecondaryUsers(1);
         final int userId = createUser();
 
         String stopBgUsersOnSwitchValue = getStopBgUsersOnSwitchProperty();
@@ -850,8 +880,7 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     private void startProtectedPackage(int userId) throws Exception {
         // Launch the app once before starting the test.
         startActivityAsUser(userId, SIMPLE_APP_PKG, SIMPLE_APP_ACTIVITY);
-        executeDeviceTestMethod(".UserControlDisabledPackagesTest",
-                "testLaunchActivity");
+        executeDeviceOwnerTestMethod(".UserControlDisabledPackagesTest", "testLaunchActivity");
     }
 
     /**
@@ -864,10 +893,10 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
             throws Exception {
         forceStopPackageForUser(SIMPLE_APP_PKG, userId);
         if (canUserStopPackage) {
-            executeDeviceTestMethod(".UserControlDisabledPackagesTest",
+            executeDeviceOwnerTestMethod(".UserControlDisabledPackagesTest",
                     "testForceStopWithUserControlEnabled");
         } else {
-            executeDeviceTestMethod(".UserControlDisabledPackagesTest",
+            executeDeviceOwnerTestMethod(".UserControlDisabledPackagesTest",
                     "testForceStopWithUserControlDisabled");
         }
     }
@@ -896,19 +925,20 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
 
     @Test
     public void testDevicePolicySafetyCheckerIntegration_allOperations() throws Exception {
-        executeDeviceTestMethod(".DevicePolicySafetyCheckerIntegrationTest", "testAllOperations");
+        executeDeviceOwnerTestMethod(".DevicePolicySafetyCheckerIntegrationTest",
+                "testAllOperations");
     }
 
     @Test
     public void testDevicePolicySafetyCheckerIntegration_unsafeStateException() throws Exception {
-        executeDeviceTestMethod(".DevicePolicySafetyCheckerIntegrationTest",
+        executeDeviceOwnerTestMethod(".DevicePolicySafetyCheckerIntegrationTest",
                 "testUnsafeStateException");
     }
 
     @Test
     public void testDevicePolicySafetyCheckerIntegration_onOperationSafetyStateChanged()
             throws Exception {
-        executeDeviceTestMethod(".DevicePolicySafetyCheckerIntegrationTest",
+        executeDeviceOwnerTestMethod(".DevicePolicySafetyCheckerIntegrationTest",
                 "testOnOperationSafetyStateChanged");
     }
 
@@ -916,11 +946,9 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
             + "user mode")
     public void testListForegroundAffiliatedUsers_notDeviceOwner() throws Exception {
-        if (!removeAdmin(DEVICE_OWNER_COMPONENT, mDeviceOwnerUserId)) {
-            fail("Failed to remove device owner for user " + mDeviceOwnerUserId);
-        }
+        removeDeviceOwner();
 
-        executeDeviceTestMethod(".PreDeviceOwnerTest",
+        executeDeviceOwnerTestMethod(".PreDeviceOwnerTest",
                 "testListForegroundAffiliatedUsers_notDeviceOwner");
     }
 
@@ -928,7 +956,7 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
             + "user mode")
     public void testListForegroundAffiliatedUsers_onlyForegroundUser() throws Exception {
-        executeDeviceTestMethod(".ListForegroundAffiliatedUsersTest",
+        executeDeviceOwnerTestMethod(".ListForegroundAffiliatedUsersTest",
                 "testListForegroundAffiliatedUsers_onlyForegroundUser");
     }
 
@@ -957,10 +985,10 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
             + "user mode")
     public void testListForegroundAffiliatedUsers_extraUser() throws Exception {
-        assumeCanCreateAdditionalUsers(1);
+        assumeCanCreateAdditionalSecondaryUsers(1);
         createAffiliatedSecondaryUser();
 
-        executeDeviceTestMethod(".ListForegroundAffiliatedUsersTest",
+        executeDeviceOwnerTestMethod(".ListForegroundAffiliatedUsersTest",
                 "testListForegroundAffiliatedUsers_onlyForegroundUser");
     }
 
@@ -968,7 +996,7 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
             + "user mode")
     public void testListForegroundAffiliatedUsers_notAffiliated() throws Exception {
-        assumeCanCreateAdditionalUsers(1);
+        assumeCanCreateAdditionalSecondaryUsers(1);
         int userId = createUser();
         switchUser(userId);
 
@@ -979,7 +1007,7 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
             + "user mode")
     public void testListForegroundAffiliatedUsers_affiliated() throws Exception {
-        assumeCanCreateAdditionalUsers(1);
+        assumeCanCreateAdditionalSecondaryUsers(1);
         int userId = createAffiliatedSecondaryUser();
         switchUser(userId);
 
@@ -1005,31 +1033,32 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
 
             installAppAsUser(LOCK_TASK_APP_APK, mDeviceOwnerUserId);
             // Just start kiosk mode
-            executeDeviceTestMethod(".LockTaskHostDrivenTest", "testStartLockTask");
+            executeDeviceOwnerTestMethod(".LockTaskHostDrivenTest", "testStartLockTask");
 
             // Reboot while in kiosk mode and then unlock the device
             rebootAndWaitUntilReady();
 
             // Wait for the lock task activity to start and enter lock task mode following reboot.
-            executeDeviceTestMethod(".LockTaskHostDrivenTest", "testLockTaskIsActive");
+            executeDeviceOwnerTestMethod(".LockTaskHostDrivenTest", "testLockTaskIsActive");
 
             // Verify that the lock task isn't interrupted by HOME button.
             executeShellCommand("input keyevent KEYCODE_HOME");
-            executeDeviceTestMethod(".LockTaskHostDrivenTest", "testLockTaskIsActive");
+            executeDeviceOwnerTestMethod(".LockTaskHostDrivenTest", "testLockTaskIsActive");
 
             // Verify that the lock task isn't interrupted by MENU/recents button.
             executeShellCommand("input keyevent KEYCODE_MENU");
-            executeDeviceTestMethod(".LockTaskHostDrivenTest", "testLockTaskIsActive");
+            executeDeviceOwnerTestMethod(".LockTaskHostDrivenTest", "testLockTaskIsActive");
 
             // Verify that the lock task isn't interrupted by BACK button.
             executeShellCommand("input keyevent KEYCODE_BACK");
-            executeDeviceTestMethod(".LockTaskHostDrivenTest", "testLockTaskIsActive");
+            executeDeviceOwnerTestMethod(".LockTaskHostDrivenTest", "testLockTaskIsActive");
 
             // Verify that the lock task isn't interrupted by an attempt to launch settings.
             executeShellCommand("am start -a android.settings.SETTINGS");
-            executeDeviceTestMethod(".LockTaskHostDrivenTest", "testLockTaskIsActive");
+            executeDeviceOwnerTestMethod(".LockTaskHostDrivenTest", "testLockTaskIsActive");
         } finally {
-            executeDeviceTestMethod(".LockTaskHostDrivenTest", "testCleanupLockTask_noAsserts");
+            executeDeviceOwnerTestMethod(".LockTaskHostDrivenTest",
+                    "testCleanupLockTask_noAsserts");
             getDevice().uninstallPackage(LOCK_TASK_APP_PKG);
             executeShellCommand("input keyevent KEYCODE_HOME");
         }

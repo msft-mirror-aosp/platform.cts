@@ -94,6 +94,42 @@ public class ZoomCaptureTest extends Camera2AndroidTestCase {
 
     @Test
     @AppModeFull(reason = "Instant apps can't access Test API")
+    public void testJpegRZoomCapture() throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            try {
+                if (!mAllStaticInfo.get(id).isJpegRSupported()) {
+                    Log.i(TAG, "Camera " + id + " does not support Jpeg/R, skipping");
+                    continue;
+                }
+                Log.v(TAG, "Testing JPEG_R zoom capture for Camera " + id);
+                openDevice(id);
+                bufferFormatZoomTestByCamera(ImageFormat.JPEG_R);
+            } finally {
+                closeDevice(id);
+            }
+        }
+    }
+
+    @Test
+    @AppModeFull(reason = "Instant apps can't access Test API")
+    public void testHEIC_ULTRAHDRZoomCapture() throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            try {
+                if (!mAllStaticInfo.get(id).isHeicUltraHdrSupported()) {
+                    Log.i(TAG, "Camera " + id + " does not support HEIC_ULTRAHDR, skipping");
+                    continue;
+                }
+                Log.v(TAG, "Testing HEIC_ULTRAHDR zoom capture for Camera " + id);
+                openDevice(id);
+                bufferFormatZoomTestByCamera(ImageFormat.HEIC_ULTRAHDR);
+            } finally {
+                closeDevice(id);
+            }
+        }
+    }
+
+    @Test
+    @AppModeFull(reason = "Instant apps can't access Test API")
     public void testRawZoomCapture() throws Exception {
         for (String id : getCameraIdsUnderTest()) {
             try {

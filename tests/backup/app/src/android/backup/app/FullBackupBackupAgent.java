@@ -65,13 +65,28 @@ public class FullBackupBackupAgent extends BackupAgent {
     @Override
     public void onRestoreFile(@NonNull FullRestoreDataInput data) throws IOException {
         super.onRestoreFile(data);
+        if ((data.getTransportFlags() & FLAG_CROSS_PLATFORM_DATA_TRANSFER_IOS) != 0) {
+            Log.d(
+                    MainActivity.TAG,
+                    "Cross platform restore requested, content version is "
+                            + data.getContentVersion());
+        }
+        if (data.getAppVersionCode() > 0) {
+            Log.d(
+                    MainActivity.TAG,
+                    "onRestoreFile with app version code " + data.getAppVersionCode());
+        }
         Log.d(MainActivity.TAG, "onRestoreFile with FullRestoreDataInput");
     }
 
     @Override
     public void onFullBackup(FullBackupDataOutput data) throws IOException {
         super.onFullBackup(data);
-        Log.d(MainActivity.TAG, "Full backup requested, quota is " + data.getQuota());
+        if ((data.getTransportFlags() & FLAG_CROSS_PLATFORM_DATA_TRANSFER_IOS) != 0) {
+            Log.d(MainActivity.TAG, "Cross platform backup requested");
+        } else {
+            Log.d(MainActivity.TAG, "Full backup requested, quota is " + data.getQuota());
+        }
     }
 
     @Override

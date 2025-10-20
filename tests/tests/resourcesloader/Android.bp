@@ -25,7 +25,6 @@ android_test {
     platform_apis: true,
     test_suites: [
         "cts",
-        "vts",
         "general-tests",
     ],
     srcs: [

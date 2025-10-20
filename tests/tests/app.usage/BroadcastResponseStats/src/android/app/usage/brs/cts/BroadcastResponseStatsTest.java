@@ -2176,6 +2176,18 @@ public class BroadcastResponseStatsTest {
         }
     }
 
+    private void setAssistRoleFallbackEnabled(boolean fallbackEnabled, int userId) {
+        final Context userContext = sContext.createContextAsUser(UserHandle.of(userId), 0);
+        final RoleManager roleManager = userContext.getSystemService(RoleManager.class);
+        roleManager.setRoleFallbackEnabled(ROLE_ASSISTANT, fallbackEnabled);
+    }
+
+    private boolean isAssistRoleFallbackEnabled(int userId) {
+        final Context userContext = sContext.createContextAsUser(UserHandle.of(userId), 0);
+        final RoleManager roleManager = userContext.getSystemService(RoleManager.class);
+        return roleManager.isRoleFallbackEnabled(ROLE_ASSISTANT);
+    }
+
     protected void addAssistRoleHolder(String pkgName, int userId) {
         SystemUtil.runWithShellPermissionIdentity(() -> {
             if (isAssistantRoleHolder(pkgName, userId)) {
@@ -2212,29 +2224,44 @@ public class BroadcastResponseStatsTest {
     }
 
     protected void removeAssistRoleHolder(String pkgName, int userId) {
-        SystemUtil.runWithShellPermissionIdentity(() -> {
-            if (!isAssistantRoleHolder(pkgName, userId)) {
-                Log.d(TAG, pkgName + " doesn't hold the assist role on u" + userId);
-                return;
-            }
-            final CountDownLatch latch = new CountDownLatch(1);
-            final OnRoleHoldersChangedListener listener = (roleName, user) -> {
-                Log.d(TAG, "Received role changed callback for role=" + roleName
-                        + " in u" + user.getIdentifier());
-                if (latch.getCount() > 0
-                        && ROLE_ASSISTANT.equals(roleName) && user.getIdentifier() == userId
-                        && !isAssistantRoleHolder(pkgName, userId)) {
-                    latch.countDown();
-                }
-            };
-            mRoleManager.addOnRoleHoldersChangedListenerAsUser(sContext.getMainExecutor(),
-                    listener, UserHandle.of(userId));
-            removeRoleHolderAsUser(ROLE_ASSISTANT, pkgName, userId);
-            if (!latch.await(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
-                fail("Timed out waiting for role holder to be removed");
-            }
-            mRoleManager.removeOnRoleHoldersChangedListenerAsUser(listener, UserHandle.of(userId));
-        });
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    if (!isAssistantRoleHolder(pkgName, userId)) {
+                        Log.d(TAG, pkgName + " doesn't hold the assist role on u" + userId);
+                        return;
+                    }
+
+                    final CountDownLatch latch = new CountDownLatch(1);
+                    final OnRoleHoldersChangedListener listener =
+                            (roleName, user) -> {
+                                Log.d(
+                                        TAG,
+                                        "Received role changed callback for role="
+                                                + roleName
+                                                + " in u"
+                                                + user.getIdentifier());
+                                if (latch.getCount() > 0
+                                        && ROLE_ASSISTANT.equals(roleName)
+                                        && user.getIdentifier() == userId
+                                        && !isAssistantRoleHolder(pkgName, userId)) {
+                                    latch.countDown();
+                                }
+                            };
+                    final boolean initialFallbackEnabled = isAssistRoleFallbackEnabled(userId);
+                    try {
+                        setAssistRoleFallbackEnabled(false /* fallbackEnabled */, userId);
+                        mRoleManager.addOnRoleHoldersChangedListenerAsUser(
+                                sContext.getMainExecutor(), listener, UserHandle.of(userId));
+                        removeRoleHolderAsUser(ROLE_ASSISTANT, pkgName, userId);
+                        if (!latch.await(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+                            fail("Timed out waiting for role holder to be removed");
+                        }
+                    } finally {
+                        mRoleManager.removeOnRoleHoldersChangedListenerAsUser(
+                                listener, UserHandle.of(userId));
+                        setAssistRoleFallbackEnabled(initialFallbackEnabled, userId);
+                    }
+                });
     }
 
     private void removeRoleHolderAsUser(String roleName, String pkgName, int userId)

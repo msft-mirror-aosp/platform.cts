@@ -19,9 +19,13 @@
 
     <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
 
-    <!-- Must be debuggable for compat shell commands to work on user builds -->
     <application android:debuggable="true">
         <uses-library android:name="android.test.runner" />
+        <service android:name=".SatelliteOptimizedService" android:exported="false">
+            <meta-data
+                android:name="android.telephony.PROPERTY_SATELLITE_DATA_OPTIMIZED"
+                android:value="android.telephony2.cts" />
+        </service>
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

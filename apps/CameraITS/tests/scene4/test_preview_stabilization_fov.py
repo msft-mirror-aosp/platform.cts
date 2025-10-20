@@ -43,6 +43,7 @@ _MIN_CENTER_THRESHOLD_PERCENT = 0.03
 _MIN_AREA = 176 * 144  # assume QCIF to be min preview size
 _KEY_FRAME_INDEX = -1  # last key frame
 _STABILIZED_SCALER_CROP_RTOL = 0.2  # 20% relative tolerance
+_IMAGE_METADATA_FOV_RTOL = 0.03 # 3% relative tolerance
 
 
 def _collect_data(cam, preview_size, stabilize):
@@ -189,13 +190,13 @@ class PreviewStabilizationFoVTest(its_base_test.ItsBaseTest):
         stab_rec_obj = _collect_data(cam, preview_size, True)
 
         # Grab the unstabilized video from DUT
-        self.dut.adb.pull([ustab_rec_obj['recordedOutputPath'], log_path])
-        ustab_file_name = (ustab_rec_obj['recordedOutputPath'].split('/')[-1])
+        ustab_file_name = its_session_utils.pull_file_from_dut(
+            self.dut, ustab_rec_obj, log_path)
         logging.debug('ustab_file_name: %s', ustab_file_name)
 
         # Grab the stabilized video from DUT
-        self.dut.adb.pull([stab_rec_obj['recordedOutputPath'], log_path])
-        stab_file_name = (stab_rec_obj['recordedOutputPath'].split('/')[-1])
+        stab_file_name = its_session_utils.pull_file_from_dut(
+            self.dut, stab_rec_obj, log_path)
         logging.debug('stab_file_name: %s', stab_file_name)
 
         # Get all frames from the videos
@@ -298,27 +299,38 @@ class PreviewStabilizationFoVTest(its_base_test.ItsBaseTest):
                              f'expected max stabilized radius: '
                              f'{max_stab_radius}. ')
 
-        # Calculate ratio of stabilized image's scaler crop region over
-        # active array size and compare it against the ratio of stabilized
-        # circle's radius over unstabilized circle for > Android 15
+        # For Android 15+, check that the radius change (FoV reduction) is no
+        # more than 20%.
         if first_api_level >= its_session_utils.ANDROID15_API_LEVEL:
           if stab_radius > ustab_radius:
-            stab_scaler_crop = (stab_rec_obj['captureMetadata']
-                                [_KEY_FRAME_INDEX]['android.scaler.cropRegion'])
-            scaler_crop_ratio = image_fov_utils.calc_scaler_crop_region_ratio(
-                stab_scaler_crop, props)
             radius_ratio = ustab_radius / stab_radius
-            if math.isclose(scaler_crop_ratio, radius_ratio,
+            if math.isclose(1.0, radius_ratio,
                             rel_tol=_STABILIZED_SCALER_CROP_RTOL):
-              logging.debug('Crop region/active array: %f', scaler_crop_ratio)
               logging.debug('Stabilized/unstabilized circle: %f', radius_ratio)
-              continue
             else:
               failure_string += (f'Too much FoV reduction: '
-                                 f'Crop region: {stab_scaler_crop}, '
-                                 f'Crop region ratio: {scaler_crop_ratio:.2%}, '
                                  f'Circle ratio: {radius_ratio:.2%}, '
                                  f'RTOL: {_STABILIZED_SCALER_CROP_RTOL:.2%}')
+
+            # For Android 17+, make sure that the scalerCropRegion change is
+            # within 3% of the radius change.
+            if first_api_level >= its_session_utils.ANDROID17_API_LEVEL:
+              ustab_scaler_crop = (ustab_rec_obj['captureMetadata']
+                                  [_KEY_FRAME_INDEX]['android.scaler.cropRegion'])
+              stab_scaler_crop = (stab_rec_obj['captureMetadata']
+                                  [_KEY_FRAME_INDEX]['android.scaler.cropRegion'])
+              scaler_crop_ratio = ((stab_scaler_crop['right'] - stab_scaler_crop['left'])/
+                                   (ustab_scaler_crop['right'] - ustab_scaler_crop['left']))
+              if math.isclose(scaler_crop_ratio, radius_ratio,
+                              rel_tol=_IMAGE_METADATA_FOV_RTOL):
+                logging.debug('Stabilized/unstabilized crop_region ratio: %f', scaler_crop_ratio)
+              else:
+                failure_string += (f'Crop region change ratio different from FoV reduction: '
+                                   f'Crop region with no stabilization: {ustab_scaler_crop}, '
+                                   f'Crop region with stabilization: {stab_scaler_crop}, '
+                                   f'Crop region ratio: {scaler_crop_ratio:.2%}, '
+                                   f'Circle ratio: {radius_ratio:.2%}, '
+                                   f'RTOL: {_IMAGE_METADATA_FOV_RTOL:.2%}')
 
         if failure_string:
           failure_string = f'{preview_size} fails FoV test. ' + failure_string

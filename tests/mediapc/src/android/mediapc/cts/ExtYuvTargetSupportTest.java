@@ -22,6 +22,7 @@ import android.mediapc.cts.common.Preconditions;
 import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Requirements.ExtYuvTargetRequirement;
 import android.mediapc.cts.common.Utils;
+import android.mediav2.common.cts.CodecTestBase;
 import android.opengl.EGL14;
 import android.opengl.EGLConfig;
 import android.opengl.EGLContext;

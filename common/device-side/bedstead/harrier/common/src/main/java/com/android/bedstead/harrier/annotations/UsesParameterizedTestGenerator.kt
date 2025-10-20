@@ -16,15 +16,13 @@
 package com.android.bedstead.harrier.annotations
 
 import com.android.bedstead.harrier.ParameterizedTestGenerator
-import com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4
 
 /**
  * Annotation to apply to an annotation outside of BedsteadJUnit4 to indicate it should be processed
  * with a particular [ParameterizedTestGenerator].
  */
-@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
+@Target(AnnotationTarget.ANNOTATION_CLASS)
 @Retention(AnnotationRetention.RUNTIME)
-@RequiresBedsteadJUnit4
 annotation class UsesParameterizedTestGenerator(
 
     /**

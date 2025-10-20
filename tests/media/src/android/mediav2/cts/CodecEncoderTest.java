@@ -18,6 +18,7 @@ package android.mediav2.cts;
 
 import static android.media.codec.Flags.apvSupport;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
+import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ANY;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
 
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
@@ -304,8 +305,12 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
         MediaFormat format = mActiveEncCfg.getFormat();
         ArrayList<MediaFormat> formatList = new ArrayList<>();
         formatList.add(format);
-        SupportClass supportRequirements =
-                mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_APV) ? CODEC_OPTIONAL : CODEC_ALL;
+        SupportClass supportRequirements = CODEC_ALL;
+        if (mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_APV)) {
+            supportRequirements = CODEC_OPTIONAL;
+        } else if (mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_AV1)) {
+            supportRequirements = CODEC_ANY;
+        }
         checkFormatSupport(mCodecName, mMediaType, true, formatList, null, supportRequirements);
         mActiveRawRes = EncoderInput.getRawResource(mActiveEncCfg);
         assertNotNull("no raw resource found for testing config : " + mActiveEncCfg + mTestConfig
@@ -469,8 +474,12 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
         ArrayList<MediaFormat> formatList = new ArrayList<>();
         formatList.add(mEncCfgParams[0].getFormat());
         formatList.add(mEncCfgParams[1].getFormat());
-        SupportClass supportRequirements =
-                mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_APV) ? CODEC_OPTIONAL : CODEC_ALL;
+        SupportClass supportRequirements = CODEC_ALL;
+        if (mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_APV)) {
+            supportRequirements = CODEC_OPTIONAL;
+        } else if (mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_AV1)) {
+            supportRequirements = CODEC_ANY;
+        }
         checkFormatSupport(mCodecName, mMediaType, true, formatList, null, supportRequirements);
         boolean[] boolStates = {true, false};
         {

@@ -24,6 +24,7 @@ import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.AppModeFull;
 
+import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.invoker.TestInformation;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
@@ -73,7 +74,7 @@ public class AppCloningMediaProviderHostTest extends BaseHostTestCase{
         sDevice = testInfo.getDevice();
         assertThat(sDevice).isNotNull();
 
-        assumeTrue("Device doesn't support multiple users", supportsMultipleUsers(sDevice));
+        assumeTrue("Device doesn't support clone users", supportsCloneUsers(sDevice));
         assumeFalse("Device is in headless system user mode",
                 isHeadlessSystemUserMode(sDevice));
         assumeTrue(isAtLeastS(sDevice));
@@ -106,9 +107,19 @@ public class AppCloningMediaProviderHostTest extends BaseHostTestCase{
     @AfterClassWithInfo
     public static void afterClass(TestInformation testInfo) throws Exception {
         ITestDevice device = testInfo.getDevice();
-        if (!supportsMultipleUsers(device) || isHeadlessSystemUserMode(device)
-                || !isAtLeastS(device) || usesSdcardFs(device)) return;
+        if (!supportsCloneUsers(device)
+                || isHeadlessSystemUserMode(device)
+                || !isAtLeastS(device)
+                || usesSdcardFs(device)) return;
         testInfo.getDevice().executeShellCommand("pm remove-user " + sCloneUserId);
+    }
+
+    private static boolean supportsCloneUsers(ITestDevice device)
+            throws DeviceNotAvailableException {
+        if (device.getApiLevel() < 36) {
+            return device.getMaxNumberOfUsersSupported() > 1;
+        }
+        return device.getMaxNumberOfUsersSupported("android.os.usertype.profile.CLONE") > 0;
     }
 
     @Test

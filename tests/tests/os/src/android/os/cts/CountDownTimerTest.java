@@ -16,64 +16,86 @@
 
 package android.os.cts;
 
-import java.util.ArrayList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-import android.Manifest;
-import android.content.Context;
-import android.content.Intent;
 import android.os.CountDownTimer;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.test.InstrumentationTestCase;
 
-import com.android.compatibility.common.util.SystemUtil;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class CountDownTimerTest extends InstrumentationTestCase {
-    private Context mContext;
-    private CountDownTimerTestStub mActivity;
+public class CountDownTimerTest {
+    private static final long OFFSET = 200;
+    private static final long MILLISINFUTURE = 4500;
+    private static final long INTERVAL = 1000;
+
     private long mStartTime;
-    private final long OFFSET = 200;
+    private TestCountdownTimer mTimer;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        mContext = getInstrumentation().getTargetContext();
-        Intent intent = new Intent(mContext, CountDownTimerTestStub.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        mActivity = SystemUtil.runWithShellPermissionIdentity(
-                () -> (CountDownTimerTestStub) getInstrumentation().startActivitySync(intent),
-                Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+    static class TestCountdownTimer extends CountDownTimer {
+
+        final CountDownLatch mLatch = new CountDownLatch(1);
+        final ArrayList<Long> mTickTimes = new ArrayList<>();
+
+        TestCountdownTimer() {
+            super(MILLISINFUTURE, INTERVAL);
+        }
+
+        @Override
+        public void onTick(long millisUntilFinished) {
+            mTickTimes.add(System.currentTimeMillis());
+        }
+
+        @Override
+        public void onFinish() {
+            mLatch.countDown();
+        }
+    }
+
+    @Before
+    public void setUp() throws Exception {
+        InstrumentationRegistry.getInstrumentation()
+                .runOnMainSync(() -> mTimer = new TestCountdownTimer());
         mStartTime = System.currentTimeMillis();
-        mActivity.countDownTimer.start();
+        mTimer.start();
     }
 
+    @Test
     public void testCountDownTimer() {
-        int count = (int) (mActivity.MILLISINFUTURE / mActivity.INTERVAL);
-        final long TIMEOUT_MSEC = mActivity.MILLISINFUTURE + mActivity.INTERVAL + OFFSET * count;
-        waitForAction(TIMEOUT_MSEC);
-        assertTrue(mActivity.onFinished);
-        assertEqualsTickTime(mActivity.tickTimes, OFFSET);
+        int count = (int) (MILLISINFUTURE / INTERVAL);
+        final long TIMEOUT_MSEC = MILLISINFUTURE + INTERVAL + OFFSET * count;
+        assertTrue(waitForAction(TIMEOUT_MSEC));
+        assertEqualsTickTime(mTimer.mTickTimes, OFFSET);
     }
 
+    @Test
     public void testCountDownTimerCancel() {
-        final long DELAY_MSEC = mActivity.INTERVAL + OFFSET;
-        assertTrue(DELAY_MSEC < mActivity.MILLISINFUTURE);
-        waitForAction(DELAY_MSEC);
-        assertFalse(mActivity.onFinished);
-        mActivity.countDownTimer.cancel();
-        final long TIMEOUT_MSEC = mActivity.MILLISINFUTURE + mActivity.INTERVAL;
-        waitForAction(TIMEOUT_MSEC);
-        assertFalse(mActivity.onFinished);
+        final long DELAY_MSEC = INTERVAL + OFFSET;
+        assertTrue(DELAY_MSEC < MILLISINFUTURE);
+        assertFalse(waitForAction(DELAY_MSEC));
+        mTimer.cancel();
+        final long TIMEOUT_MSEC = MILLISINFUTURE + INTERVAL;
+        assertFalse(waitForAction(TIMEOUT_MSEC));
         // it will call onTick after start countDownTimer, so count plus 1;
-        int count = Long.valueOf(DELAY_MSEC / mActivity.INTERVAL).intValue() + 1;
-        assertEquals(count, mActivity.tickTimes.size());
-        assertEqualsTickTime(mActivity.tickTimes, OFFSET);
+        int count = Long.valueOf(DELAY_MSEC / INTERVAL).intValue() + 1;
+        assertEquals(count, mTimer.mTickTimes.size());
+        assertEqualsTickTime(mTimer.mTickTimes, OFFSET);
     }
 
     private void assertEqualsTickTime(ArrayList<Long> tickTimes, long offset) {
         for (int i = 0; i < tickTimes.size(); i++) {
             long tickTime = tickTimes.get(i);
-            long expecTickTime = mStartTime + i * mActivity.INTERVAL;
+            long expecTickTime = mStartTime + i * INTERVAL;
             assertTrue(Math.abs(expecTickTime - tickTime) < offset);
         }
     }
@@ -83,20 +105,12 @@ public class CountDownTimerTest extends InstrumentationTestCase {
      *
      * @param time The time to wait.
      */
-    private void waitForAction(long time) {
+    private boolean waitForAction(long time) {
         try {
-            Thread.sleep(time);
+            return mTimer.mLatch.await(time, TimeUnit.MILLISECONDS);
         } catch (final InterruptedException e) {
-            fail("error occurs when wait for an action: " + e.toString());
+            fail("error occurs when wait for an action: " + e);
+            return false;
         }
     }
-
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
-        if (mActivity != null) {
-            mActivity.finish();
-        }
-    }
-
 }

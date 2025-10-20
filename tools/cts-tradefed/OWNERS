@@ -1,7 +1,6 @@
-#  Android EngProd Approvers
+#  Test Harness Team Approvers
 guangzhu@google.com
-normancheung@google.com
-jdesprez@google.com
+dshi@google.com
 
 # File Specific Approvers
 per-file Backup* = file:platform/frameworks/base:/services/backup/OWNERS

@@ -447,15 +447,17 @@ public class MockImeSession implements AutoCloseable {
     }
 
     /**
-     * Checks whether there are any pending IME visibility requests.
+     * Waits until there are no more pending IME visibility requests up to the given timeout. This
+     * will throw a {@link java.util.concurrent.TimeoutException} if the wait times out.
      *
-     * @see InputMethodManager#hasPendingImeVisibilityRequests()
+     * @param timeoutMs the timeout in milliseconds.
      *
-     * @return {@code true} iff there are pending IME visibility requests.
+     * @see InputMethodManager#waitUntilNoPendingRequests
+     *
      */
-    public boolean hasPendingImeVisibilityRequests() {
+    public void waitUntilNoPendingRequests(long timeoutMs) {
         final var imm = mContext.getSystemService(InputMethodManager.class);
-        return runWithShellPermissionIdentity(imm::hasPendingImeVisibilityRequests);
+        runWithShellPermissionIdentity(() -> imm.waitUntilNoPendingRequests(timeoutMs));
     }
 
     /**
@@ -1810,6 +1812,18 @@ public class MockImeSession implements AutoCloseable {
         final Bundle params = new Bundle();
         params.putBoolean("isEnabled", isEnabled);
         return callCommandInternal("setEnableOnBackInvokedCallback", params);
+    }
+
+    @NonNull
+    public ImeCommand registerCustomImeBackCallback() {
+        final Bundle params = new Bundle();
+        return callCommandInternal("registerCustomImeBackCallback", params);
+    }
+
+    @NonNull
+    public ImeCommand unregisterCustomImeBackCallback() {
+        final Bundle params = new Bundle();
+        return callCommandInternal("unregisterCustomImeBackCallback", params);
     }
 
     @NonNull

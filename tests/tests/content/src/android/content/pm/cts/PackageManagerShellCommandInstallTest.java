@@ -100,7 +100,7 @@ import androidx.test.filters.LargeTest;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.AfterClass;
 import com.android.bedstead.harrier.annotations.BeforeClass;
-import com.android.bedstead.multiuser.annotations.EnsureCanAddUser;
+import com.android.bedstead.multiuser.annotations.EnsureCanAddSecondaryUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.compatibility.common.util.SystemUtil;
@@ -1482,7 +1482,7 @@ public class PackageManagerShellCommandInstallTest {
     }
 
     @Test
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
     public void testAppWithMissingDependency_dependencyInstallerRoleHolderMissing()
             throws Exception {
@@ -1669,7 +1669,7 @@ public class PackageManagerShellCommandInstallTest {
     }
 
     @Test
-    @EnsureCanAddUser
+    @EnsureCanAddSecondaryUser
     @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
     public void testDependencyInstallerService_multiUser() throws Exception {
         onBeforeSdkTests();

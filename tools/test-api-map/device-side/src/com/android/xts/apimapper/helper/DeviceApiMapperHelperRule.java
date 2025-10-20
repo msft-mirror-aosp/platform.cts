@@ -23,17 +23,14 @@ import android.util.Log;
 import com.google.errorprone.annotations.FormatMethod;
 import com.google.errorprone.annotations.FormatString;
 
-import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * A device-side junit rule used by the code generated via the apimapper tool.
- */
-public final class DeviceApiMapperHelperRule implements TestRule {
+/** A device-side junit rule used by the code generated via the apimapper tool. */
+public final class DeviceApiMapperHelperRule extends TestWatcher {
 
     public static final String CALL_STATS_PREFIX = "#callstats:";
     public static final String CALL_LOG_PREFIX = "#call:";
@@ -72,14 +69,12 @@ public final class DeviceApiMapperHelperRule implements TestRule {
 
     /** Log the test information before test starts. */
     public void onBeforeTest(String className, String methodName) {
-        log("Device Test started: %s#%s", className, methodName);
         startCollectingApis();
     }
 
     /** Log the test information after test ends. */
     public void onAfterTest(String className, String methodName) {
         finishCollectingApis(className, methodName);
-        log("Device Test finished: %s#%s", className, methodName);
     }
 
     /** Print out the method call information to the logcat. */
@@ -111,22 +106,17 @@ public final class DeviceApiMapperHelperRule implements TestRule {
     }
 
     @Override
-    public Statement apply(Statement base, Description desc) {
-        return new Statement() {
-            @Override
-            public void evaluate() throws Throwable {
-                if (!desc.isSuite()) {
-                    onBeforeTest(desc.getTestClass().getName(), desc.getMethodName());
-                }
-                try {
-                    base.evaluate();
-                } finally {
-                    if (!desc.isSuite()) {
-                        onAfterTest(desc.getTestClass().getName(), desc.getMethodName());
-                    }
-                }
-            }
-        };
+    protected void starting(Description description) {
+        if (description.isTest()) {
+            onBeforeTest(description.getTestClass().getName(), description.getMethodName());
+        }
+    }
+
+    @Override
+    protected void finished(Description description) {
+        if (description.isTest()) {
+            onAfterTest(description.getTestClass().getName(), description.getMethodName());
+        }
     }
 
     @FormatMethod

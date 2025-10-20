@@ -507,7 +507,7 @@ def preview_over_zoom_range(dut, cam, preview_size, z_min, z_max, z_step_size,
       _PREVIEW_DURATION, padded_frames=True)
 
   preview_file_name = its_session_utils.pull_file_from_dut(
-      dut, preview_rec_obj['recordedOutputPath'], log_path)
+      dut, preview_rec_obj, log_path)
 
   logging.debug('recorded video size : %s',
                 str(preview_rec_obj['videoSize']))

@@ -39,6 +39,8 @@ import android.content.Context;
 
 import androidx.test.core.app.ApplicationProvider;
 
+import com.android.compatibility.common.util.UserAwareLogger;
+
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
@@ -87,7 +89,7 @@ public final class GlobalSearchSessionShimImpl implements GlobalSearchSessionShi
 
     private GlobalSearchSessionShimImpl(
             @NonNull GlobalSearchSession session, @NonNull ExecutorService executor) {
-        mLogger = new UserAwareLogger(TAG);
+        mLogger = UserAwareLogger.newBuilder(TAG).build();
         mGlobalSearchSession = Objects.requireNonNull(session);
         mExecutor = Objects.requireNonNull(executor);
     }
@@ -102,9 +104,9 @@ public final class GlobalSearchSessionShimImpl implements GlobalSearchSessionShi
                 packageName, databaseName, FriendlyNeighborhoodStringerMan.toString(request));
         SettableFuture<AppSearchBatchResult<String, GenericDocument>> future =
                 SettableFuture.create();
-        mGlobalSearchSession.getByDocumentId(
-                packageName, databaseName, request, mExecutor,
-                new BatchResultCallbackAdapter<>("getByDocumentIdAsync()", future));
+        mGlobalSearchSession.getByDocumentId(packageName, databaseName, request, mExecutor,
+                new BatchResultCallbackAdapter<>(
+                        "GlobalSearchSessionShimImpl.getByDocumentIdAsync()", future));
         return future;
     }
 
@@ -188,10 +190,7 @@ public final class GlobalSearchSessionShimImpl implements GlobalSearchSessionShi
 
     private <T> ListenableFuture<T> transformResult(
             @NonNull AppSearchResult<T> result) throws AppSearchException {
-        if (!result.isSuccess()) {
-            throw new AppSearchException(result.getResultCode(), result.getErrorMessage());
-        }
-        return Futures.immediateFuture(result.getResultValue());
+        return AppSearchFrameworkTestUtils.transformResult(mLogger, result);
     }
 }
 

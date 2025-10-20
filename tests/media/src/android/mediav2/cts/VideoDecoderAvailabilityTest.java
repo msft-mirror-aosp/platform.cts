@@ -19,9 +19,9 @@ package android.mediav2.cts;
 import static android.media.codec.Flags.FLAG_CODEC_AVAILABILITY;
 import static android.media.codec.Flags.codecAvailability;
 import static android.media.codec.Flags.codecAvailabilitySupport;
-import static android.mediav2.cts.AdaptivePlaybackTest.APBTestInputData;
+import static android.mediav2.common.cts.CodecDecoderTestBase.APBTestInputData;
+import static android.mediav2.common.cts.CodecDecoderTestBase.prepareInputList;
 import static android.mediav2.cts.AdaptivePlaybackTest.getSupportedFiles;
-import static android.mediav2.cts.AdaptivePlaybackTest.prepareInputList;
 import static android.mediav2.cts.CodecResourceUtils.CodecState;
 import static android.mediav2.cts.CodecResourceUtils.LHS_RESOURCE_GE;
 import static android.mediav2.cts.CodecResourceUtils.RHS_RESOURCE_GE;
@@ -29,6 +29,7 @@ import static android.mediav2.cts.CodecResourceUtils.compareResources;
 import static android.mediav2.cts.CodecResourceUtils.computeConsumption;
 import static android.mediav2.cts.CodecResourceUtils.getCurrentGlobalCodecResources;
 import static android.mediav2.cts.CodecResourceUtils.validateGetCodecResources;
+import static android.mediav2.cts.DolbyVisionDecoderParamPreparer.getDvTestParams;
 
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
@@ -41,8 +42,6 @@ import android.mediav2.common.cts.CodecDynamicTestActivity;
 import android.mediav2.common.cts.OutputManager;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.util.Pair;
 import android.util.Range;
@@ -81,8 +80,7 @@ import java.util.function.Function;
  * mediacodec callback events are registered in this object so that the client can take
  * appropriate action as desired.
  */
-@RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
 class CodecAsyncHandlerResource extends CodecAsyncHandler {
     private boolean mResourceChangeCbReceived;
     private int mResourceChangeCbCount;
@@ -119,12 +117,9 @@ class CodecAsyncHandlerResource extends CodecAsyncHandler {
  * This class comprises of tests that validate codec resource availability apis for video decoders
  */
 @RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
 @RunWith(Parameterized.class)
 public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
     private static final String LOG_TAG = VideoDecoderAvailabilityTest.class.getSimpleName();
     private static final String MEDIA_DIR = WorkDir.getMediaDirString();
     // Minimum threshold for resource consumption of a codec for a given performance point.
@@ -212,6 +207,7 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
                                 "bbb_640x360_512kbps_30fps_mpeg2_nob.mp4",
                                 "bbb_640x360_512kbps_30fps_mpeg2_2b.mp4"}},
                 }));
+        exhaustiveArgsList.addAll(getDvTestParams(VideoDecoderAvailabilityTest.class));
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, false,
                 ComponentClass.HARDWARE);
     }

@@ -24,6 +24,7 @@ import static android.mediav2.common.cts.CodecTestBase.PER_TEST_TIMEOUT_SMALL_TE
 import static android.mediav2.common.cts.CodecTestBase.codecFilter;
 import static android.mediav2.common.cts.CodecTestBase.codecPrefix;
 import static android.mediav2.common.cts.CodecTestBase.compileRequestedMediaTypeList;
+import static android.mediav2.common.cts.CodecTestBase.getCodecInfo;
 import static android.mediav2.common.cts.CodecTestBase.getMaxSupportedInstances;
 import static android.mediav2.common.cts.CodecTestBase.isFeatureRequired;
 import static android.mediav2.common.cts.CodecTestBase.isFeatureSupported;
@@ -37,6 +38,7 @@ import static android.mediav2.common.cts.DecodeStreamToYuv.getFormatInStream;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.media.cts.TestUtils;
+import android.os.Build;
 import android.util.Range;
 import android.util.Size;
 
@@ -65,7 +67,7 @@ import java.util.stream.Stream;
  * check if the information advertised is ok. If the component is actually capable of supporting the
  * advertised information is beyond the scope of the test.
  */
-@SdkSuppress(minSdkVersion = 36)
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
 @SmallTest
 @RunWith(Parameterized.class)
 public class NativeAMediaCodecInfoTest {
@@ -176,15 +178,6 @@ public class NativeAMediaCodecInfoTest {
     public NativeAMediaCodecInfoTest(String codecName, String mediaType) {
         mCodecName = codecName;
         mMediaType = mediaType;
-    }
-
-    public static MediaCodecInfo getCodecInfo(String codecName) {
-        for (MediaCodecInfo info : MEDIA_CODEC_LIST_ALL.getCodecInfos()) {
-            if (info.getName().equals(codecName)) {
-                return info;
-            }
-        }
-        return null;
     }
 
     private static int getExpectedCodecType(String codecName) {

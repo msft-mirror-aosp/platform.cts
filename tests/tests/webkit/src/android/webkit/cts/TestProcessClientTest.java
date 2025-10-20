@@ -92,10 +92,8 @@ public class TestProcessClientTest {
     public void testThrowingNullPointerException() throws Throwable {
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
         try (TestProcessClient process = TestProcessClient.createProcessA(context)) {
-            process.run(TestNullPointerException.class);
-            Assert.fail("A NullPointerException is expected to be thrown");
-        } catch (NullPointerException e) {
-
+            Assert.assertThrows(
+                    NullPointerException.class, () -> process.run(TestNullPointerException.class));
         }
     }
 
@@ -115,9 +113,7 @@ public class TestProcessClientTest {
     public void testThrowingIOException() throws Throwable {
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
         try (TestProcessClient process = TestProcessClient.createProcessA(context)) {
-            process.run(TestIOException.class);
-            Assert.fail("An IOException is expected to be thrown");
-        } catch (IOException e) {
+            Assert.assertThrows(IOException.class, () -> process.run(TestIOException.class));
         }
     }
 

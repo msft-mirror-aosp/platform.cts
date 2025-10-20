@@ -87,6 +87,10 @@ public class ManagedConnection extends Connection {
         setCallToDisconnected(context, new DisconnectCause(DisconnectCause.LOCAL));
     }
 
+    public void setCallToDisconnected(Context context, int disconnectCause) {
+        setCallToDisconnected(context, new DisconnectCause(disconnectCause));
+    }
+
     public void setCallToDisconnected(Context context, DisconnectCause cause) {
         this.setDisconnected(cause);
         processDestroy();
@@ -102,7 +106,7 @@ public class ManagedConnection extends Connection {
 
     @Override
     public void onStateChanged(int callState) {
-
+        Log.i(TAG, "onStateChanged=" + callState);
     }
 
     @Override

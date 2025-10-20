@@ -22,6 +22,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.database.DataSetObserver;
 import android.os.Bundle;
 import android.util.Log;
@@ -29,6 +30,7 @@ import android.view.View;
 import android.widget.ListView;
 
 import com.android.cts.verifier.TestListAdapter.TestListItem;
+import com.google.common.collect.ImmutableList;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -70,7 +72,12 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
         new HostTestCategory("Wi-Fi Tests")
                 .addTest("CtsWifiAwareTests", "CtsWifiAwareTests")
                 .addTest("CtsWifiSoftApTestCases", "CtsWifiSoftApTestCases")
+                .addTest("CtsWifiDirectTests", "CtsWifiDirectTests")
     };
+
+    // List of test categories that will be excluded on Automotive.
+    private static final ImmutableList<String> EXCLUDED_CATEGORIES_ON_AUTOMOTIVE =
+            ImmutableList.of("NFC Tests", "UWB Tests");
 
     // The action to identify the broadcast Intent.
     private static final String ACTION_HOST_TEST_RESULT =
@@ -300,8 +307,13 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
         setPassFailButtonClickListeners();
         getPassButton().setEnabled(false);
 
+        boolean isAutomotive =
+                getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
         mTestListAdapter = new ArrayTestListAdapter(this);
         for (HostTestCategory testCategory : mHostTestCategories) {
+            if (isAutomotive && EXCLUDED_CATEGORIES_ON_AUTOMOTIVE.contains(testCategory.mTitle)) {
+                continue;
+            }
             mTestListAdapter.addAll(testCategory.generateTestListItems());
         }
         mTestListAdapter.registerDataSetObserver(

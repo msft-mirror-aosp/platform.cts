@@ -630,6 +630,64 @@ public class MediaStoreTest {
         }
     }
 
+    /**
+     * If a restored file shares the same path as an existing one, we'll construct the new filename
+     * by appending suffix (1), (2), etc. For ex: If a file is present in the trash i.e. train.jpeg
+     * and an existing file with the same name is already in the Downloads/Travel/ folder at
+     * /storage/emulated/0/Downloads/Travel/train.jpeg, a suffix will be added to the restored file.
+     * The new path will be /storage/emulated/0/Downloads/Travel/train (1).jpeg.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_TRASH_AND_RESTORE_BY_FILE_PATH_API)
+    public void testRestoreFileAlreadyExists_appendsSuffixToFileName() throws Exception {
+        assumeFalse(MediaStore.VOLUME_EXTERNAL.equals(mVolumeName));
+
+        final String testDirectoryName = "test_media_dir_" + System.nanoTime();
+        final File downloadDir = MediaProviderTestUtils.stageDownloadDir(mVolumeName);
+        final File baseTestDirectory = new File(downloadDir, testDirectoryName);
+        final File trashedDir =
+                new File(MediaProviderTestUtils.getVolumePath(mVolumeName), ".trash-storage");
+
+        try {
+            final String imageFileName = "image.jpeg";
+            final String newImageFileName = "image (1).jpeg";
+            final File testImageFile1 = new File(baseTestDirectory, imageFileName);
+            testImageFile1.mkdirs();
+            MediaProviderTestUtils.stageFile(R.raw.lg_g4_iso_800_jpg, testImageFile1);
+
+            // scan the file to ensure it's populated in the MediaStore
+            MediaProviderTestUtils.scanFile(testImageFile1);
+
+            String trashedPath =
+                    trashFileAndGetTrashedPath(APP_C_HAS_M_E_S, testImageFile1.getAbsolutePath());
+
+            // now create a file with the same in the same directory
+            final File testImageFile2 = new File(baseTestDirectory, imageFileName);
+            MediaProviderTestUtils.stageFile(R.raw.lg_g4_iso_800_jpg, testImageFile2);
+
+            // now restore the trashed file, as file with the same name already exists,
+            // number (1) will be append as a suffix
+            String restoredPath = callMarkFileAsRestored(APP_C_HAS_M_E_S, trashedPath);
+
+            // The restored file should now have a suffix added, e.g., "image (1).jpeg"
+            final File restoredFile = new File(baseTestDirectory, newImageFileName);
+
+            // Assert that the restored file exists and the original file also exists
+            assertThat(testImageFile2.exists()).isTrue();
+            assertThat(restoredFile.exists()).isTrue();
+            assertThat(restoredPath).isEqualTo(restoredFile.getAbsolutePath());
+        } finally {
+            // delete all test files
+            MediaProviderTestUtils.deleteContentsAndDir(baseTestDirectory);
+
+            // if present in .trash-storage
+            File trashedDownloadDir = new File(trashedDir, downloadDir.getName());
+            if (trashedDownloadDir.exists()) {
+                MediaProviderTestUtils.deleteContentsAndDir(trashedDownloadDir);
+            }
+        }
+    }
+
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_TRASH_AND_RESTORE_BY_FILE_PATH_API)
     public void testMarkFileAsTrashed_noPermission_throwsException() throws Exception {

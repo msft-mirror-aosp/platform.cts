@@ -19,6 +19,7 @@ package com.android.cts.devicepolicy;
 import static com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.FEATURE_MANAGED_USERS;
 
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresAdditionalFeatures;
+import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 
 import org.junit.Test;
 
@@ -37,7 +38,7 @@ public final class MixedManagedProfileOwnerTestApi30 extends DeviceAndProfileOwn
         super.setUp();
 
         removeTestUsers();
-        mParentUserId = getMainUser();
+        mParentUserId = DevicePolicyUsersPreparer.getProfileParentUserIds().getFirst();
         createManagedProfile();
     }
 

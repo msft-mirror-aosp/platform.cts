@@ -16,6 +16,7 @@
 
 package android.view.inputmethod.cts;
 
+import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.provider.Settings.Secure.STYLUS_HANDWRITING_DEFAULT_VALUE;
 import static android.provider.Settings.Secure.STYLUS_HANDWRITING_ENABLED;
 import static android.view.inputmethod.ConnectionlessHandwritingCallback.CONNECTIONLESS_HANDWRITING_ERROR_NO_TEXT_RECOGNIZED;
@@ -51,7 +52,9 @@ import static org.mockito.Mockito.mock;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.ActivityOptions;
 import android.app.Instrumentation;
+import android.app.WindowConfiguration;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -2732,16 +2735,19 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             final String secondaryMarker = getTestMarker(SECOND_EDIT_TEXT_TAG);
 
             // Launch an editor activity to be on the split primary task.
-            final TestActivity splitPrimaryActivity = TestActivity.startSync(activity -> {
-                final LinearLayout layout = new LinearLayout(activity);
-                layout.setOrientation(LinearLayout.VERTICAL);
-                final EditText editText = new EditText(activity);
-                layout.addView(editText);
-                editText.setHint("focused editText");
-                editText.setPrivateImeOptions(primaryMarker);
-                editText.requestFocus();
-                return layout;
-            });
+            final TestActivity splitPrimaryActivity = new TestActivity.Starter()
+                    .asNewTask()
+                    .withWindowingMode(WINDOWING_MODE_FULLSCREEN)
+                    .startSync(activity -> {
+                        final LinearLayout layout = new LinearLayout(activity);
+                        layout.setOrientation(LinearLayout.VERTICAL);
+                        final EditText editText = new EditText(activity);
+                        layout.addView(editText);
+                        editText.setHint("focused editText");
+                        editText.setPrivateImeOptions(primaryMarker);
+                        editText.requestFocus();
+                        return layout;
+                    }, TestActivity.class);
             expectEvent(stream, editorMatcher("onStartInput", primaryMarker), TIMEOUT);
             notExpectEvent(stream, editorMatcher("onStartInputView", primaryMarker),
                     NOT_EXPECT_TIMEOUT);
@@ -2805,16 +2811,19 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
             // Launch an editor activity to be on the split primary task.
             final AtomicReference<EditText> editTextPrimaryRef = new AtomicReference<>();
-            final TestActivity splitPrimaryActivity = TestActivity.startSync(activity -> {
-                final LinearLayout layout = new LinearLayout(activity);
-                layout.setOrientation(LinearLayout.VERTICAL);
-                final EditText editText = new EditText(activity);
-                layout.addView(editText);
-                editTextPrimaryRef.set(editText);
-                editText.setHint("focused editText");
-                editText.setPrivateImeOptions(primaryMarker);
-                return layout;
-            });
+            final TestActivity splitPrimaryActivity = new TestActivity.Starter()
+                    .asNewTask()
+                    .withWindowingMode(WINDOWING_MODE_FULLSCREEN)
+                    .startSync(activity -> {
+                        final LinearLayout layout = new LinearLayout(activity);
+                        layout.setOrientation(LinearLayout.VERTICAL);
+                        final EditText editText = new EditText(activity);
+                        layout.addView(editText);
+                        editTextPrimaryRef.set(editText);
+                        editText.setHint("focused editText");
+                        editText.setPrivateImeOptions(primaryMarker);
+                        return layout;
+                    }, TestActivity.class);
             notExpectEvent(stream,
                     editorMatcher("onStartInput", primaryMarker), NOT_EXPECT_TIMEOUT);
             notExpectEvent(stream,
@@ -3356,34 +3365,49 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
     private View launchTestActivityInExternalPackage(
             @NonNull final String editTextMarker, final boolean setAllowedDelegatorPackage) {
         final AtomicReference<View> delegateViewRef = new AtomicReference<>();
-        TestActivity.startSync(activity -> {
-            final LinearLayout layout = new LinearLayout(activity);
-            layout.setOrientation(LinearLayout.VERTICAL);
+        TestActivity.startSync(
+                activity -> {
+                    final LinearLayout layout = new LinearLayout(activity);
+                    layout.setOrientation(LinearLayout.VERTICAL);
 
-            final View delegatorView = new View(activity);
-            delegateViewRef.set(delegatorView);
-            delegatorView.setBackgroundColor(Color.GREEN);
+                    final View delegatorView = new View(activity);
+                    delegateViewRef.set(delegatorView);
+                    delegatorView.setBackgroundColor(Color.GREEN);
 
-            delegatorView.setHandwritingDelegatorCallback(()-> {
-                // launch activity in a different package.
-                Intent intent = new Intent(Intent.ACTION_MAIN);
-                intent.setComponent(new ComponentName(
-                        "android.view.inputmethod.ctstestapp",
-                        "android.view.inputmethod.ctstestapp.MainActivity"));
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                intent.putExtra(MockTestActivityUtil.EXTRA_KEY_PRIVATE_IME_OPTIONS, editTextMarker);
-                intent.putExtra(MockTestActivityUtil.EXTRA_HANDWRITING_DELEGATE, true);
-                activity.startActivity(intent);
-            });
-            if (setAllowedDelegatorPackage) {
-                delegatorView.setAllowedHandwritingDelegatePackage(
-                        "android.view.inputmethod.ctstestapp");
-            }
-            layout.addView(
-                    delegatorView,
-                    new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 40));
-            return layout;
-        });
+                    delegatorView.setHandwritingDelegatorCallback(
+                            () -> {
+                                // Launch activity in a different package.
+                                // The activity must be in fullscreen so that the launched window
+                                // bounds includes the stylus touched location to successfully
+                                // delegate the handwriting.
+                                Intent intent = new Intent(Intent.ACTION_MAIN);
+                                intent.setComponent(
+                                        new ComponentName(
+                                                "android.view.inputmethod.ctstestapp",
+                                                "android.view.inputmethod.ctstestapp"
+                                                        + ".MainActivity"));
+                                intent.addFlags(
+                                        Intent.FLAG_ACTIVITY_NEW_TASK
+                                                | Intent.FLAG_ACTIVITY_NEW_DOCUMENT);
+                                intent.putExtra(
+                                        MockTestActivityUtil.EXTRA_KEY_PRIVATE_IME_OPTIONS,
+                                        editTextMarker);
+                                intent.putExtra(
+                                        MockTestActivityUtil.EXTRA_HANDWRITING_DELEGATE, true);
+                                ActivityOptions options = ActivityOptions.makeBasic();
+                                options.setLaunchWindowingMode(
+                                        WindowConfiguration.WINDOWING_MODE_FULLSCREEN);
+                                activity.startActivity(intent, options.toBundle());
+                            });
+                    if (setAllowedDelegatorPackage) {
+                        delegatorView.setAllowedHandwritingDelegatePackage(
+                                "android.view.inputmethod.ctstestapp");
+                    }
+                    layout.addView(
+                            delegatorView,
+                            new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 40));
+                    return layout;
+                });
         return delegateViewRef.get();
     }
 

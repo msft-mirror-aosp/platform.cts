@@ -50,6 +50,7 @@ import org.junit.runner.RunWith;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
+import java.lang.Math;
 import java.math.BigInteger;
 import java.security.AlgorithmParameters;
 import java.security.Key;
@@ -102,6 +103,14 @@ public class AndroidKeyStoreTest {
     private static String getTestAlias2() { return new String("test2"); }
 
     private static String getTestAlias3() { return new String("test3"); }
+
+    private static int getMaxThreadCount() {
+        // Not including 1 operation reserved for passwords.
+        // https://source.android.com/docs/security/features/keystore/implementer-ref#begin
+        int apiSpecMaxConcurrentOps = 15;
+        int availableCPUs = Runtime.getRuntime().availableProcessors();
+        return Math.min(apiSpecMaxConcurrentOps, availableCPUs);
+    }
 
     // The maximum amount of time the "large number of keys" tests will spend on importing keys
     // into key store. This is used as a time box so that lower-power devices don't take too long
@@ -2637,7 +2646,7 @@ public class AndroidKeyStoreTest {
         TimeBox timeBox = new TimeBox(mMaxImportDuration);
         AtomicInteger keyCounter = new AtomicInteger(0);
         ArrayList<Thread> threads = new ArrayList<>();
-        for (int i = 0; i < Runtime.getRuntime().availableProcessors(); ++i) {
+        for (int i = 0; i < getMaxThreadCount(); ++i) {
             threads.add(new Thread(() -> {
                 // Import key lots of times, under different aliases. Do this until we either run
                 // out of time or we import the key numberOfKeys times.
@@ -2701,7 +2710,7 @@ public class AndroidKeyStoreTest {
         AtomicInteger keyCounter = new AtomicInteger(numberOfKeys);
         Log.i(TAG, "Deleting imported keys");
         ArrayList<Thread> threads = new ArrayList<>();
-        for (int i = 0; i < Runtime.getRuntime().availableProcessors(); ++i) {
+        for (int i = 0; i < getMaxThreadCount(); ++i) {
             Log.i(TAG, "Spinning up cleanup thread " + i);
             threads.add(new Thread(() -> {
                 for (int key = keyCounter.getAndDecrement(); key > 0;

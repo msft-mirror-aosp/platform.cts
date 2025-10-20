@@ -18,6 +18,7 @@ package android.appwidget.cts.appbal;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -36,10 +37,19 @@ public class BalActivity extends Activity {
 
     private void requestAppWidget() {
         try {
-            // pinResult tries to launch a service which launches a background activity.
-            PendingIntent pinResult = PendingIntent.getService(this, 0,
+            PendingIntent pinResult;
+            if (getIntent().getBooleanExtra("DIRECT_LAUNCH", false)) {
+                // pinResult launches an activity directly.
+                Intent intent = new Intent()
+                    .setComponent(new ComponentName("android.appwidget.cts",
+                        "android.appwidget.cts.activity.EmptyActivity"));
+                pinResult = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_MUTABLE);
+            } else {
+                // pinResult tries to launch a service which launches a background activity.
+                pinResult = PendingIntent.getService(this, 0,
                     new Intent(this, BalService.class),
                     PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_MUTABLE);
+            }
             AppWidgetManager appWidgetManager = this.getSystemService(AppWidgetManager.class);
             android.content.ComponentName firstWidgetProvider =
                     new android.content.ComponentName(this, BalAppWidgetProvider.class);

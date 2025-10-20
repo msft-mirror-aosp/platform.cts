@@ -16,7 +16,8 @@
 
 package android.media.audio.cts;
 
-import static android.media.Utils.VIBRATION_URI_PARAM;
+import static android.media.RingtoneVibrationUtils.SYNCHRONIZED_VIBRATION;
+import static android.media.RingtoneVibrationUtils.VIBRATION_URI_PARAM;
 import static android.media.cts.Utils.RINGTONE_TEST_URI;
 import static android.media.cts.Utils.getTestVibrationFile;
 
@@ -24,17 +25,23 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import android.media.RingtoneVibrationUtils;
 import android.media.Utils;
+import android.media.audio.Flags;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -47,6 +54,9 @@ import java.util.concurrent.TimeUnit;
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class UtilsTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Test
     public void testListenerList() throws Exception {
         // The ListenerList is a Test API only to enable a dedicated unit test
@@ -94,12 +104,27 @@ public class UtilsTest {
     }
 
     @Test
-    @ApiTest(apis = {"android.media.Utils#hasVibrationParameter"})
+    @ApiTest(
+            apis = {
+                "android.media.RingtoneVibrationUtils#hasVibrationParameter",
+                "android.media.RingtoneVibrationUtils#VIBRATION_URI_PARAM",
+                "android.media.RingtoneVibrationUtils#SYNCHRONIZED_VIBRATION"
+            })
+    @RequiresFlagsEnabled(Flags.FLAG_RINGTONE_VIBRATION_UTILS_API)
     public void testHasVibrationParameter() throws IOException {
         Uri ringtoneUri;
         ringtoneUri = RINGTONE_TEST_URI;
 
-        assertFalse(Utils.hasVibrationParameter(ringtoneUri));
+        assertFalse(RingtoneVibrationUtils.hasVibrationParameter(ringtoneUri));
+
+        // Append vibration uri parameter with synchronized vibration value.
+        final Uri ringtoneUriWithSynchronized =
+                RINGTONE_TEST_URI
+                        .buildUpon()
+                        .appendQueryParameter(VIBRATION_URI_PARAM, SYNCHRONIZED_VIBRATION)
+                        .build();
+
+        assertTrue(RingtoneVibrationUtils.hasVibrationParameter(ringtoneUriWithSynchronized));
 
         // Make sure we have vibration uri
         String vibrationUriString = getTestVibrationFile().toURI().toString();

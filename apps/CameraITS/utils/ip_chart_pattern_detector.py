@@ -63,6 +63,18 @@ class _TestChartConstants:
     # Each group refers to a row or column of adjacent patches in test chart.
     PATCHES_PER_GROUP = 5
 
+  # Since color checker cells don't have a consistent size and gap (slight
+  # differences between each two cells), we use an approximate middle point to
+  # find the cell positions more accurately by comparing the color of the middle
+  # point in all four directions. See _find_color_checker_cell(middle_point,
+  # test_chart_image) for more details.
+  class ColorCheckerCells:
+    ROW1_LEFTMOST_CELL_MIDDLE_POINT = (3560, 8512)
+    CELL_SIDE_LENGTH = 440  # can be 441 in some cells
+    GAP_OFFSET = 60  # can be in a range of 51-70
+    ROW_COUNT = 4
+    COLUMN_COUNT = 6
+
 
 @enum.unique
 class TestChartFeature(enum.Enum):
@@ -182,6 +194,39 @@ class DynamicRangePatch(_MonoColorPolygonalFeatureUnit):
   ):
     super().__init__(
         feature_type=TestChartFeature.DYNAMIC_RANGE_PATCHES,
+        corner_points=corner_points,
+        test_chart_color_bgr=test_chart_color_bgr,
+        image=image,
+    )
+
+  def __repr__(self):
+    return 'feature_type: %s, corner_points: %s, test_chart_color_bgr: %s' % (
+        str(self.feature_type),
+        str(self.corner_points),
+        str(self.test_chart_color_bgr),
+    )
+
+
+class ColorCheckerCell(_MonoColorPolygonalFeatureUnit):
+  """Information regarding a single square cell in the color checker test chart feature.
+
+  Attributes:
+    corner_points: Co-ordinates of the four corner points in a patch.
+    test_chart_color_bgr: BGR space color value of the equivalent patch in
+      reference test chart image.
+    image: Optional BGRA color space image in numpy matrix format.
+  """
+
+  def __init__(
+      self,
+      corner_points: list[
+          list[int, int], list[int, int], list[int, int], list[int, int]
+      ],
+      test_chart_color_bgr: np.ndarray,
+      image: np.ndarray = None,
+  ):
+    super().__init__(
+        feature_type=TestChartFeature.COLOR_CHECKER_CELLS,
         corner_points=corner_points,
         test_chart_color_bgr=test_chart_color_bgr,
         image=image,
@@ -686,6 +731,47 @@ def _get_test_chart_center_qr_code() -> CenterQrCode:
   )
 
 
+def _get_test_chart_color_checker_cells() -> list[ColorCheckerCell]:
+  """Gets the color cells patch positions in test chart.
+
+  The cells are listed in row-major order starting from the top-left one in the
+  test chart.
+
+  Returns:
+    A list of `ColorCheckerCell` where every cell is a list containing the
+    four corner positions in query image and the original color in test chart,
+    or None in case of any error.
+  """
+  cells = []
+  side_length = _TestChartConstants.ColorCheckerCells.CELL_SIDE_LENGTH
+  gap_offset = _TestChartConstants.ColorCheckerCells.GAP_OFFSET
+  total_gap_between_mid_points = side_length + gap_offset
+
+  # Error if the provided file does not exist.
+  test_chart_file_path = _TEST_CHART_FILE_PATH
+  if not os.path.exists(test_chart_file_path):
+    logging.debug('Missing file %s', test_chart_file_path)
+    return None
+
+  test_chart_image = cv2.imread(test_chart_file_path)
+
+  for row in range(_TestChartConstants.ColorCheckerCells.ROW_COUNT):
+    for col in range(_TestChartConstants.ColorCheckerCells.COLUMN_COUNT):
+      middle_point = (
+          _TestChartConstants.ColorCheckerCells.ROW1_LEFTMOST_CELL_MIDDLE_POINT[
+              0
+          ]
+          + col * total_gap_between_mid_points,
+          _TestChartConstants.ColorCheckerCells.ROW1_LEFTMOST_CELL_MIDDLE_POINT[
+              1
+          ]
+          + row * total_gap_between_mid_points,
+      )
+      cells.append(_find_color_checker_cell(middle_point, test_chart_image))
+
+  return cells
+
+
 def _extract_polygon_from_image(
     image: str | np.ndarray,
     corner_points: list[list[int, int]]
@@ -886,3 +972,103 @@ def find_dynamic_range_patches(
     transformed_dynamic_range_patches.append(transformed_patch)
 
   return transformed_dynamic_range_patches
+
+
+def _find_color_checker_cell(
+    middle_point: list[int, int],
+    test_chart_image: np.ndarray
+) -> ColorCheckerCell:
+  """Finds the `ColorCheckerCell` by calculating all corner points and color.
+
+  Args:
+    middle_point: The middle point of the cell.
+    test_chart_image: The image where the cell is located.
+
+  Returns:
+    A `ColorCheckerCell` instance containing the four corner positions in test
+    chart (clockwise order from top-left) and the original color in test chart.
+  """
+  left_x = right_x = middle_point[0]
+  top_y = bottom_y = middle_point[1]
+  cell_color = test_chart_image[(middle_point[1], middle_point[0])]
+
+  # Find left_x
+  while np.array_equal(
+      cell_color, test_chart_image[(middle_point[1], left_x - 1)]
+  ):
+    left_x -= 1
+
+  # Find right_x
+  while np.array_equal(
+      cell_color, test_chart_image[(middle_point[1], right_x + 1)]
+  ):
+    right_x += 1
+
+  # Find top_y
+  while np.array_equal(
+      cell_color, test_chart_image[(top_y - 1, middle_point[0])]
+  ):
+    top_y -= 1
+
+  # Find bottom_y
+  while np.array_equal(
+      cell_color, test_chart_image[(bottom_y + 1, middle_point[0])]
+  ):
+    bottom_y += 1
+
+  return ColorCheckerCell(
+      corner_points=[
+          (left_x, top_y),
+          (right_x, top_y),
+          (right_x, bottom_y),
+          (left_x, bottom_y),
+      ],
+      test_chart_color_bgr=cell_color,
+  )
+
+
+def find_color_checker_cells(
+    image: str | np.ndarray,
+    transform_matrix: np.ndarray = None,
+) -> list[ColorCheckerCell]:
+  """Finds the color checker cell positions and related info of given image.
+
+  The cells are listed in row-major order starting from the top-left one in the
+  test chart.
+
+  Args:
+    image: Must be a file path string or 3 channel BGR color image data in numpy
+      matrix format.
+    transform_matrix: Used to transform the points in test chart to query image,
+      `find_transform_matrix_mapping_from_test_chart` method will be used to
+      calculate it if None provided.
+
+  Returns:
+    A list of `ColorCheckerCell` where every cell is a list containing the
+    four corner positions in query image and the original color in test chart.
+  """
+  image, image_path = _process_input_image(image)
+
+  if transform_matrix is None:
+    transform_matrix = find_test_chart_transformation(image)
+    if transform_matrix is None:
+      if image_path is not None:
+        logging.debug('No pattern detected for %s', image_path)
+      else:
+        logging.debug('No pattern detected')
+      return None
+
+  transformed_color_checker_cells = []
+  for cell in _get_test_chart_color_checker_cells():
+    transformed_points = [
+        get_transformed_point(image, point, transform_matrix)
+        for point in cell.corner_points
+    ]
+    transformed_cell = ColorCheckerCell(
+        corner_points=transformed_points,
+        test_chart_color_bgr=cell.test_chart_color_bgr,
+        image=_extract_polygon_from_image(image, transformed_points)
+    )
+    transformed_color_checker_cells.append(transformed_cell)
+
+  return transformed_color_checker_cells

@@ -21,7 +21,6 @@ import static android.app.admin.TargetUser.GLOBAL_USER_ID;
 import static android.devicepolicy.cts.utils.PolicyEngineUtils.TRUE_MORE_RESTRICTIVE;
 
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
-import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 
@@ -43,7 +42,6 @@ import android.devicepolicy.cts.utils.PolicySetResultUtils;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.stats.devicepolicy.EventId;
 
 import androidx.test.InstrumentationRegistry;
 
@@ -52,14 +50,15 @@ import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.enterprise.policies.ScreenCaptureDisabled;
+import com.android.bedstead.enterprise.policies.ScreenCaptureDisabledDevice;
+import com.android.bedstead.enterprise.policies.ScreenCaptureDisabledUser;
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureScreenIsOn;
 import com.android.bedstead.harrier.annotations.EnsureUnlocked;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.policies.ScreenCaptureDisabled;
-import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
@@ -245,44 +244,6 @@ public final class ScreenCaptureDisabledTest {
         }
     }
 
-    @CanSetPolicyTest(policy = ScreenCaptureDisabled.class)
-    @Postsubmit(reason = "new test")
-    @ApiTest(apis = "android.app.admin.DevicePolicyManager#setScreenCaptureDisabled")
-    public void setScreenCaptureDisabled_true_metricsLogged() {
-        try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
-            dpc(sDeviceState).devicePolicyManager().setScreenCaptureDisabled(
-                    dpc(sDeviceState).componentName(), true);
-
-            assertThat(metrics.query()
-                    .whereType().isEqualTo(EventId.SET_SCREEN_CAPTURE_DISABLED_VALUE)
-                    .whereAdminPackageName().isEqualTo(
-                            dpc(sDeviceState).packageName())
-                    .whereBoolean().isTrue()).wasLogged();
-        } finally {
-            dpc(sDeviceState).devicePolicyManager().setScreenCaptureDisabled(
-                    dpc(sDeviceState).componentName(), false);
-        }
-    }
-
-    @CanSetPolicyTest(policy = ScreenCaptureDisabled.class)
-    @Postsubmit(reason = "new test")
-    @ApiTest(apis = "android.app.admin.DevicePolicyManager#setScreenCaptureDisabled")
-    public void setScreenCaptureDisabled_false_metricsLogged() {
-        try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
-            dpc(sDeviceState).devicePolicyManager().setScreenCaptureDisabled(
-                    dpc(sDeviceState).componentName(), false);
-
-            assertThat(metrics.query()
-                    .whereType().isEqualTo(EventId.SET_SCREEN_CAPTURE_DISABLED_VALUE)
-                    .whereAdminPackageName().isEqualTo(
-                            dpc(sDeviceState).packageName())
-                    .whereBoolean().isFalse()).wasLogged();
-        } finally {
-            dpc(sDeviceState).devicePolicyManager().setScreenCaptureDisabled(
-                    dpc(sDeviceState).componentName(), false);
-        }
-    }
-
     @Test
     @Postsubmit(reason = "new test")
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setScreenCaptureDisabled",
@@ -433,64 +394,18 @@ public final class ScreenCaptureDisabledTest {
         }
     }
 
-    @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setScreenCaptureDisabled"})
-    @Postsubmit(reason = "new test")
-    @CanSetPolicyTest(policy = ScreenCaptureDisabled.class)
-    public void setScreenCaptureDisabled_true_wasLogged() {
-        boolean originalScreenCaptureDisabledStatus = dpc(sDeviceState).devicePolicyManager()
-                .getScreenCaptureDisabled(dpc(sDeviceState).componentName());
-        try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
-            boolean isParentInstance = dpc(sDeviceState).isParentInstance();
-
-            dpc(sDeviceState).devicePolicyManager().setScreenCaptureDisabled(
-                    dpc(sDeviceState).componentName(), /* disabled= */ true);
-
-            assertThat(metrics.query()
-                    .whereType().isEqualTo(EventId.SET_SCREEN_CAPTURE_DISABLED_VALUE)
-                    .whereAdminPackageName().isEqualTo(dpc(sDeviceState).packageName())
-                    .whereBoolean().isEqualTo(true))
-                    .wasLogged();
-        } finally {
-            dpc(sDeviceState).devicePolicyManager().setScreenCaptureDisabled(
-                    dpc(sDeviceState).componentName(), originalScreenCaptureDisabledStatus
-            );
-        }
-    }
-
-    @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setScreenCaptureDisabled"})
-    @Postsubmit(reason = "new test")
-    @CanSetPolicyTest(policy = ScreenCaptureDisabled.class)
-    public void setScreenCaptureDisabled_false_wasLogged() {
-        boolean originalScreenCaptureDisabledStatus = dpc(sDeviceState).devicePolicyManager()
-                .getScreenCaptureDisabled(dpc(sDeviceState).componentName());
-        try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
-            boolean isParentInstance = dpc(sDeviceState).isParentInstance();
-
-            dpc(sDeviceState).devicePolicyManager().setScreenCaptureDisabled(
-                    dpc(sDeviceState).componentName(), /* disabled= */ false);
-
-            assertThat(metrics.query()
-                    .whereType().isEqualTo(EventId.SET_SCREEN_CAPTURE_DISABLED_VALUE)
-                    .whereAdminPackageName().isEqualTo(dpc(sDeviceState).packageName())
-                    .whereBoolean().isEqualTo(false))
-                    .wasLogged();
-        } finally {
-            dpc(sDeviceState).devicePolicyManager().setScreenCaptureDisabled(
-                    dpc(sDeviceState).componentName(), originalScreenCaptureDisabledStatus
-            );
-        }
-    }
-
-    /** Check that setting the policy to false works */
-    @PolicyAppliesTest(policy = ScreenCaptureDisabled.class)
+    /** Check that setting the policy at the device scope to true works */
+    @PolicyAppliesTest(policy = ScreenCaptureDisabledDevice.class)
     @Postsubmit(reason = "new test")
     @ApiTest(
             apis = {
                 "android.app.admin.DevicePolicyManager#setPolicy",
-                "android.app.admin.DevicePolicyManager#getScreenCaptureDisabled"
+                "android.app.admin.DevicePolicyManager#getScreenCaptureDisabled",
+                "android.app.admin.DevicePolicyManager#POLICY_SCOPE_DEVICE",
+                "android.app.admin.PolicyIdentifier#SCREEN_CAPTURE"
             })
     @RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING)
-    public void setPolicy_false_works() {
+    public void setPolicy_deviceScope_disallowed_works() {
         boolean isParentInstance = dpc(sDeviceState).isParentInstance();
         if (isParentInstance) {
             // TODO(b/434655549): Support the parent scope.
@@ -500,24 +415,55 @@ public final class ScreenCaptureDisabledTest {
 
         dpc(sDeviceState)
                 .devicePolicyManager()
-                .setBooleanPolicy(
-                        PolicyIdentifier.SCREEN_CAPTURE_DISABLED.getId(),
-                        DevicePolicyManager.POLICY_SCOPE_USER,
-                        Boolean.valueOf(false));
+                .setIntegerPolicy(
+                        PolicyIdentifier.SCREEN_CAPTURE.getId(),
+                        DevicePolicyManager.POLICY_SCOPE_DEVICE,
+                        PolicyIdentifier.SCREEN_CAPTURE_DISALLOWED);
+
+        assertThat(sLocalDevicePolicyManager.getScreenCaptureDisabled(/* admin= */ null)).isTrue();
+    }
+
+    /** Check that setting the policy at the device scope to false works */
+    @PolicyAppliesTest(policy = ScreenCaptureDisabledDevice.class)
+    @Postsubmit(reason = "new test")
+    @ApiTest(
+            apis = {
+                "android.app.admin.DevicePolicyManager#setPolicy",
+                "android.app.admin.DevicePolicyManager#getScreenCaptureDisabled",
+                "android.app.admin.DevicePolicyManager#POLICY_SCOPE_DEVICE",
+                "android.app.admin.PolicyIdentifier#SCREEN_CAPTURE"
+            })
+    @RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING)
+    public void setPolicy_deviceScope_allowed_works() {
+        boolean isParentInstance = dpc(sDeviceState).isParentInstance();
+        if (isParentInstance) {
+            // TODO(b/434655549): Support the parent scope.
+
+            return;
+        }
+
+        dpc(sDeviceState)
+                .devicePolicyManager()
+                .setIntegerPolicy(
+                        PolicyIdentifier.SCREEN_CAPTURE.getId(),
+                        DevicePolicyManager.POLICY_SCOPE_DEVICE,
+                        PolicyIdentifier.SCREEN_CAPTURE_ALLOWED);
 
         assertThat(sLocalDevicePolicyManager.getScreenCaptureDisabled(/* admin= */ null)).isFalse();
     }
 
-    /** Check that setting the policy to true works */
-    @PolicyAppliesTest(policy = ScreenCaptureDisabled.class)
+    /** Check that setting the policy at the device scope to null works */
+    @PolicyAppliesTest(policy = ScreenCaptureDisabledDevice.class)
     @Postsubmit(reason = "new test")
     @ApiTest(
             apis = {
                 "android.app.admin.DevicePolicyManager#setPolicy",
-                "android.app.admin.DevicePolicyManager#getScreenCaptureDisabled"
+                "android.app.admin.DevicePolicyManager#getScreenCaptureDisabled",
+                "android.app.admin.DevicePolicyManager#POLICY_SCOPE_DEVICE",
+                "android.app.admin.PolicyIdentifier#SCREEN_CAPTURE"
             })
     @RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING)
-    public void setPolicy_true_works() {
+    public void setPolicy_deviceScope_null_works() {
         boolean isParentInstance = dpc(sDeviceState).isParentInstance();
         if (isParentInstance) {
             // TODO(b/434655549): Support the parent scope.
@@ -527,12 +473,97 @@ public final class ScreenCaptureDisabledTest {
 
         dpc(sDeviceState)
                 .devicePolicyManager()
-                .setBooleanPolicy(
-                        PolicyIdentifier.SCREEN_CAPTURE_DISABLED.getId(),
+                .clearPolicy(
+                        PolicyIdentifier.SCREEN_CAPTURE.getId(),
+                        DevicePolicyManager.POLICY_SCOPE_DEVICE);
+
+        assertThat(sLocalDevicePolicyManager.getScreenCaptureDisabled(/* admin= */ null)).isFalse();
+    }
+
+    /** Check that setting the policy at the device scope to true works */
+    @PolicyAppliesTest(policy = ScreenCaptureDisabledUser.class)
+    @Postsubmit(reason = "new test")
+    @ApiTest(
+            apis = {
+                "android.app.admin.DevicePolicyManager#setPolicy",
+                "android.app.admin.DevicePolicyManager#getScreenCaptureDisabled",
+                "android.app.admin.DevicePolicyManager#POLICY_SCOPE_USER",
+                "android.app.admin.PolicyIdentifier#SCREEN_CAPTURE"
+            })
+    @RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING)
+    public void setPolicy_userScope_disallowed_works() {
+        boolean isParentInstance = dpc(sDeviceState).isParentInstance();
+        if (isParentInstance) {
+            // TODO(b/434655549): Support the parent scope.
+
+            return;
+        }
+
+        dpc(sDeviceState)
+                .devicePolicyManager()
+                .setIntegerPolicy(
+                        PolicyIdentifier.SCREEN_CAPTURE.getId(),
                         DevicePolicyManager.POLICY_SCOPE_USER,
-                        Boolean.valueOf(true));
+                        PolicyIdentifier.SCREEN_CAPTURE_DISALLOWED);
 
         assertThat(sLocalDevicePolicyManager.getScreenCaptureDisabled(/* admin= */ null)).isTrue();
+    }
+
+    /** Check that setting the policy at the device scope to false works */
+    @PolicyAppliesTest(policy = ScreenCaptureDisabledUser.class)
+    @Postsubmit(reason = "new test")
+    @ApiTest(
+            apis = {
+                "android.app.admin.DevicePolicyManager#setPolicy",
+                "android.app.admin.DevicePolicyManager#getScreenCaptureDisabled",
+                "android.app.admin.DevicePolicyManager#POLICY_SCOPE_USER",
+                "android.app.admin.PolicyIdentifier#SCREEN_CAPTURE"
+            })
+    @RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING)
+    public void setPolicy_userScope_allowed_works() {
+        boolean isParentInstance = dpc(sDeviceState).isParentInstance();
+        if (isParentInstance) {
+            // TODO(b/434655549): Support the parent scope.
+
+            return;
+        }
+
+        dpc(sDeviceState)
+                .devicePolicyManager()
+                .setIntegerPolicy(
+                        PolicyIdentifier.SCREEN_CAPTURE.getId(),
+                        DevicePolicyManager.POLICY_SCOPE_USER,
+                        PolicyIdentifier.SCREEN_CAPTURE_ALLOWED);
+
+        assertThat(sLocalDevicePolicyManager.getScreenCaptureDisabled(/* admin= */ null)).isFalse();
+    }
+
+    /** Check that setting the policy at the user scope to null works */
+    @PolicyAppliesTest(policy = ScreenCaptureDisabledUser.class)
+    @Postsubmit(reason = "new test")
+    @ApiTest(
+            apis = {
+                "android.app.admin.DevicePolicyManager#setPolicy",
+                "android.app.admin.DevicePolicyManager#getScreenCaptureDisabled",
+                "android.app.admin.DevicePolicyManager#POLICY_SCOPE_USER",
+                "android.app.admin.PolicyIdentifier#SCREEN_CAPTURE"
+            })
+    @RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING)
+    public void setPolicy_userScope_null_works() {
+        boolean isParentInstance = dpc(sDeviceState).isParentInstance();
+        if (isParentInstance) {
+            // TODO(b/434655549): Support the parent scope.
+
+            return;
+        }
+
+        dpc(sDeviceState)
+                .devicePolicyManager()
+                .clearPolicy(
+                        PolicyIdentifier.SCREEN_CAPTURE.getId(),
+                        DevicePolicyManager.POLICY_SCOPE_USER);
+
+        assertThat(sLocalDevicePolicyManager.getScreenCaptureDisabled(/* admin= */ null)).isFalse();
     }
 
     private boolean takeScreenshotExpectingRedactionOrNull() {

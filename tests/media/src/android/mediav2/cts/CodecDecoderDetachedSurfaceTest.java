@@ -19,6 +19,7 @@ package android.mediav2.cts;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
 import static android.media.codec.Flags.FLAG_NULL_OUTPUT_SURFACE;
 import static android.media.codec.Flags.apvSupport;
+import static android.mediav2.cts.DolbyVisionDecoderParamPreparer.getDvTestParams;
 
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
@@ -145,6 +146,7 @@ public class CodecDecoderDetachedSurfaceTest extends CodecDecoderTestBase {
                     {MediaFormat.MIMETYPE_VIDEO_APV, "pattern_640x480_30fps_16mbps_apv_10bit.mp4"},
             }));
         }
+        args.addAll(getDvTestParams(CodecDecoderDetachedSurfaceTest.class));
         for (Object[] arg : args) {
             for (int burstLength : BURST_LENGTHS) {
                 Object[] testArgs = new Object[arg.length + 1];
@@ -371,8 +373,7 @@ public class CodecDecoderDetachedSurfaceTest extends CodecDecoderTestBase {
      * This is continued till end of sequence. The test checks if the number of frames rendered
      * to each surface at the end of session is as expected.
      */
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
     @RequiresFlagsEnabled(FLAG_NULL_OUTPUT_SURFACE)
     @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_DetachedSurface",
             "android.media.MediaCodec#detachOutputSurface",
@@ -435,8 +436,7 @@ public class CodecDecoderDetachedSurfaceTest extends CodecDecoderTestBase {
      * detachOutputSurface() must work as documented. Additionally, after detaching output
      * surface, the application releases the surface and expects normal decode functionality.
      */
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
     @RequiresFlagsEnabled(FLAG_NULL_OUTPUT_SURFACE)
     @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_DetachedSurface",
             "android.media.MediaCodec#CONFIGURE_FLAG_DETACHED_SURFACE"})

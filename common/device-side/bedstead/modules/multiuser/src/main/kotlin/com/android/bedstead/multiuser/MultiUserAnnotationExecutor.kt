@@ -18,7 +18,7 @@ package com.android.bedstead.multiuser
 import com.android.bedstead.harrier.AnnotationExecutor
 import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.UserType
-import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
+import com.android.bedstead.multiuser.annotations.EnsureCanAddSecondaryUser
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser
 import com.android.bedstead.multiuser.annotations.OtherUser
@@ -54,7 +54,7 @@ class MultiUserAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationE
 
     override fun applyAnnotation(annotation: Annotation): Unit = annotation.run {
         when (this) {
-            is EnsureCanAddUser -> logic()
+            is EnsureCanAddSecondaryUser -> logic()
             is RequireUserSupported -> logic()
             is EnsureHasNoUserAnnotation -> logic(usersComponent)
 

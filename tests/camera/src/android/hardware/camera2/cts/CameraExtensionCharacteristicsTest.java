@@ -33,6 +33,7 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.provider.Settings;
 import android.util.ArraySet;
 import android.util.Log;
 import android.util.Range;
@@ -41,6 +42,7 @@ import android.util.Size;
 import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.PropertyUtil;
+import com.android.compatibility.common.util.SystemUtil;
 import com.android.internal.camera.flags.Flags;
 
 import org.junit.After;
@@ -70,6 +72,8 @@ public class CameraExtensionCharacteristicsTest {
     @Rule
     public final Camera2AndroidTestRule mTestRule = new Camera2AndroidTestRule(mContext);
 
+    private int mOriginalFallbackValue;
+
     @Before
     public void setUp() throws Exception {
         mExtensionList.addAll(Arrays.asList(
@@ -78,10 +82,23 @@ public class CameraExtensionCharacteristicsTest {
                 CameraExtensionCharacteristics.EXTENSION_BOKEH,
                 CameraExtensionCharacteristics.EXTENSION_HDR,
                 CameraExtensionCharacteristics.EXTENSION_NIGHT));
+        try {
+            mOriginalFallbackValue = Settings.Secure.getInt(
+                    mContext.getContentResolver(), Settings.Secure.CAMERA_EXTENSIONS_FALLBACK);
+        } catch (Settings.SettingNotFoundException e) {
+            // Default value
+            mOriginalFallbackValue = 0;
+        }
+        SystemUtil.runWithShellPermissionIdentity(() ->
+                Settings.Secure.putInt(mContext.getContentResolver(),
+                        Settings.Secure.CAMERA_EXTENSIONS_FALLBACK, 1));
     }
 
     @After
     public void tearDown() throws Exception {
+        SystemUtil.runWithShellPermissionIdentity(() ->
+                Settings.Secure.putInt(mContext.getContentResolver(),
+                        Settings.Secure.CAMERA_EXTENSIONS_FALLBACK, mOriginalFallbackValue));
         mExtensionList.clear();
     }
 

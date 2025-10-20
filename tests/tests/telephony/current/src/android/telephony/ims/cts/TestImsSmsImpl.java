@@ -101,7 +101,9 @@ public class TestImsSmsImpl extends ImsSmsImplBase {
         return mMessageRef;
     }
 
+    @Override
     public void onMemoryAvailable(int token) {
+        super.onMemoryAvailable(token);
         mToken = token;
         mMemoryEventReceived = true;
         mOnMemoryAvailableLatch.countDown();

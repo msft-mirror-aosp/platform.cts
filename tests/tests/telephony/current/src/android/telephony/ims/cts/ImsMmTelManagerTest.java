@@ -56,6 +56,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -544,6 +545,7 @@ public class ImsMmTelManagerTest {
     }
 
     @Test
+    @Ignore("b/441284325 - Need to fix and re-enable this test.")
     @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have access to telephony provider")
     public void testVoWiFiRoamingModeSettingUsingNonTerrestrialNetwork() throws Exception {
         // Get original VoWiFi roaming mode

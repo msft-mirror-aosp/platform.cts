@@ -19,6 +19,7 @@ package android.appsearch.cts;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.android.tradefed.device.ITestDevice;
+import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
 
@@ -46,13 +47,23 @@ public abstract class AppSearchHostTestBase extends BaseHostJUnit4Test {
 
     protected void runDeviceTestAsUserInPkgA(@Nonnull String testMethod, int userId)
             throws Exception {
-        assertWithMessage(testMethod + " failed").that(
-                runDeviceTests(getDevice(), TARGET_PKG_A, TEST_CLASS_A, testMethod, userId,
-                        DEFAULT_INSTRUMENTATION_TIMEOUT_MS)).isTrue();
+        assertWithMessage("Test %s passed on user %s", testMethod, userId)
+                .that(
+                        runDeviceTests(
+                                getDevice(),
+                                TARGET_PKG_A,
+                                TEST_CLASS_A,
+                                testMethod,
+                                userId,
+                                DEFAULT_INSTRUMENTATION_TIMEOUT_MS))
+                .isTrue();
     }
 
     protected void runDeviceTestAsUserInPkgA(@Nonnull String testMethod, int userId,
             @Nonnull Map<String, String> args) throws Exception {
+        CLog.d(
+                "runDeviceTestAsUserInPkgA(): userId=%d, testMethod=%s, args=%s",
+                userId, testMethod, args);
         DeviceTestRunOptions deviceTestRunOptions = new DeviceTestRunOptions(TARGET_PKG_A)
                 .setTestClassName(TEST_CLASS_A)
                 .setTestMethodName(testMethod)
@@ -61,19 +72,33 @@ public abstract class AppSearchHostTestBase extends BaseHostJUnit4Test {
         for (Map.Entry<String, String> entry : args.entrySet()) {
             deviceTestRunOptions.addInstrumentationArg(entry.getKey(), entry.getValue());
         }
-        assertWithMessage(testMethod + " failed").that(
-                runDeviceTests(deviceTestRunOptions)).isTrue();
+        assertWithMessage("Test %s passed on user %s", testMethod, userId)
+                .that(runDeviceTests(deviceTestRunOptions))
+                .isTrue();
     }
 
     protected void runStorageAugmenterDeviceTestAsUserInPkgA(@Nonnull String testMethod, int userId)
             throws Exception {
-        assertWithMessage(testMethod + " failed").that(
-                runDeviceTests(getDevice(), TARGET_PKG_A, TEST_STORAGE_AUGMENTER_CLASS_A,
-                        testMethod, userId, DEFAULT_INSTRUMENTATION_TIMEOUT_MS)).isTrue();
+        CLog.d(
+                "runStorageAugmenterDeviceTestAsUserInPkgA(): userId=%d, testMethod=%s",
+                userId, testMethod);
+        assertWithMessage("Test %s passed on user %s", testMethod, userId)
+                .that(
+                        runDeviceTests(
+                                getDevice(),
+                                TARGET_PKG_A,
+                                TEST_STORAGE_AUGMENTER_CLASS_A,
+                                testMethod,
+                                userId,
+                                DEFAULT_INSTRUMENTATION_TIMEOUT_MS))
+                .isTrue();
     }
 
     protected void runContactsIndexerDeviceTestAsUserInPkgA(@Nonnull String testMethod, int userId,
             @Nonnull Map<String, String> args) throws Exception {
+        CLog.d(
+                "runContactsIndexerDeviceTestAsUserInPkgA(): userId=%d, testMethod=%s, args=%s",
+                userId, testMethod, args);
         DeviceTestRunOptions deviceTestRunOptions = new DeviceTestRunOptions(TARGET_PKG_A)
                 .setTestClassName(TEST_CONTACTS_INDEXER_CLASS_A)
                 .setTestMethodName(testMethod)
@@ -82,12 +107,16 @@ public abstract class AppSearchHostTestBase extends BaseHostJUnit4Test {
         for (Map.Entry<String, String> entry : args.entrySet()) {
             deviceTestRunOptions.addInstrumentationArg(entry.getKey(), entry.getValue());
         }
-        assertWithMessage(testMethod + " failed").that(
-                runDeviceTests(deviceTestRunOptions)).isTrue();
+        assertWithMessage("Test %s passed on user %s", testMethod, userId)
+                .that(runDeviceTests(deviceTestRunOptions))
+                .isTrue();
     }
 
     protected void runEnterpriseContactsDeviceTestAsUserInPkgA(@Nonnull String testMethod,
             int userId, @Nonnull Map<String, String> args) throws Exception {
+        CLog.d(
+                "runEnterpriseContactsDeviceTestAsUserInPkgA(): userId=%d, testMethod=%s, args=%s",
+                userId, testMethod, args);
         DeviceTestRunOptions deviceTestRunOptions = new DeviceTestRunOptions(TARGET_PKG_A)
                 .setTestClassName(TEST_ENTERPRISE_CONTACTS_CLASS_A)
                 .setTestMethodName(testMethod)
@@ -96,15 +125,24 @@ public abstract class AppSearchHostTestBase extends BaseHostJUnit4Test {
         for (Map.Entry<String, String> entry : args.entrySet()) {
             deviceTestRunOptions.addInstrumentationArg(entry.getKey(), entry.getValue());
         }
-        assertWithMessage(testMethod + " failed").that(
-                runDeviceTests(deviceTestRunOptions)).isTrue();
+        assertWithMessage("Test %s passed on user %s", testMethod, userId)
+                .that(runDeviceTests(deviceTestRunOptions))
+                .isTrue();
     }
 
     protected void runDeviceTestAsUserInPkgB(@Nonnull String testMethod, int userId)
             throws Exception {
-        assertWithMessage(testMethod + " failed").that(
-                runDeviceTests(getDevice(), TARGET_PKG_B, TEST_CLASS_B, testMethod, userId,
-                        DEFAULT_INSTRUMENTATION_TIMEOUT_MS)).isTrue();
+        CLog.d("runDeviceTestAsUserInPkgB(): userId=%d, testMethod=%s", userId, testMethod);
+        assertWithMessage("Test %s passed on user %s", testMethod, userId)
+                .that(
+                        runDeviceTests(
+                                getDevice(),
+                                TARGET_PKG_B,
+                                TEST_CLASS_B,
+                                testMethod,
+                                userId,
+                                DEFAULT_INSTRUMENTATION_TIMEOUT_MS))
+                .isTrue();
     }
 
     protected void rebootAndWaitUntilReady() throws Exception {
@@ -112,6 +150,7 @@ public abstract class AppSearchHostTestBase extends BaseHostJUnit4Test {
     }
 
     protected static void rebootAndWaitUntilReady(ITestDevice device) throws Exception {
+        CLog.i("rebootAndWaitUntilReady()");
         if (device.getBooleanProperty("init.userspace_reboot.is_supported", false)) {
             // Soft reboot, reboots only userspace part of device. It waits for device to be
             // available.

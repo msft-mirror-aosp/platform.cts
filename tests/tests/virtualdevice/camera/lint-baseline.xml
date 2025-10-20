@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 8.4.0-alpha08" type="baseline" client="" dependencies="true" name="" variant="all" version="8.4.0-alpha08">
+
+    <issue
+        id="MissingCheckFlagsRule"
+        message="Class `VirtualCameraCaptureTest` uses @RequiresFlagsEnabled or @RequiresFlagsDisabled and must have a CheckFlagsRule."
+        errorLine1="public class VirtualCameraCaptureTest {"
+        errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/tests/virtualdevice/camera/src/android/virtualdevice/cts/camera/VirtualCameraCaptureTest.java"
+            line="100"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="MissingCheckFlagsRule"
+        message="Class `VirtualCameraConfigTest` uses @RequiresFlagsEnabled or @RequiresFlagsDisabled and must have a CheckFlagsRule."
+        errorLine1="public class VirtualCameraConfigTest {"
+        errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/tests/virtualdevice/camera/src/android/virtualdevice/cts/camera/VirtualCameraConfigTest.java"
+            line="67"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="MissingCheckFlagsRule"
+        message="Class `VirtualCameraPermissionTest` uses @RequiresFlagsEnabled or @RequiresFlagsDisabled and must have a CheckFlagsRule."
+        errorLine1="public class VirtualCameraPermissionTest {"
+        errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/tests/virtualdevice/camera/src/android/virtualdevice/cts/camera/VirtualCameraPermissionTest.java"
+            line="73"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="MissingCheckFlagsRule"
+        message="Class `VirtualCameraTest` uses @RequiresFlagsEnabled or @RequiresFlagsDisabled and must have a CheckFlagsRule."
+        errorLine1="public class VirtualCameraTest {"
+        errorLine2="             ~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/tests/virtualdevice/camera/src/android/virtualdevice/cts/camera/VirtualCameraTest.java"
+            line="114"
+            column="14"/>
+    </issue>
+
+</issues>

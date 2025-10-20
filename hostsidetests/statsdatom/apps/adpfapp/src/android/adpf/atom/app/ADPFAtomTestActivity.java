@@ -57,6 +57,8 @@ public class ADPFAtomTestActivity extends Activity {
 
     private static final int FIRST_API_LEVEL = PropertyUtil.getFirstApiLevel();
 
+    private PerformanceHintManager.Session mSession;
+
     private RelativeLayout mRelativeLayout;
 
     @Override
@@ -144,7 +146,9 @@ public class ADPFAtomTestActivity extends Activity {
         assertNotNull(hintManager);
         CountDownLatch stopLatch = new CountDownLatch(1);
         int[] tids = createThreads(5, stopLatch);
-        hintManager.createHintSession(tids, 100);
+        // Keep a reference to the returned session to ensure it isn't closed until after this
+        // activity is cleaned up.
+        mSession = hintManager.createHintSession(tids, 100);
         stopLatch.countDown();
         return tids;
     }

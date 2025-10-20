@@ -213,12 +213,10 @@ class VideoAspectRatioAndCropTest(its_base_test.ItsBaseTest):
             height = int(video_size.split('x')[-1])
 
             # Pull the video recording file from the device.
-            self.dut.adb.pull([video_recording_obj['recordedOutputPath'],
-                               self.log_path])
             logging.debug('Recorded video is available at: %s',
                           self.log_path)
-            video_file_name = video_recording_obj[
-                'recordedOutputPath'].split('/')[-1]
+            video_file_name = its_session_utils.pull_file_from_dut(
+                self.dut, video_recording_obj, self.log_path)
             logging.debug('video_file_name: %s', video_file_name)
 
             # Validate colorspace

@@ -24,6 +24,7 @@ import static android.view.KeyEvent.KEYCODE_HOME;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
@@ -97,6 +98,10 @@ public class CarTaskViewControllerTest {
 
     @Before
     public void setUp() throws Exception {
+        assumeFalse(
+                "CarTaskViews are not supported with auto task stack windowing. "
+                        + "Please use car-wm-shell APIs instead.",
+                isAutoTaskStackWindowingEnabled());
         Car car = Car.createCar(mContext);
         mUiAutomation.adoptShellPermissionIdentity(
                 // for CAM.getCarTaskViewController
@@ -126,6 +131,11 @@ public class CarTaskViewControllerTest {
         );
         PollingCheck.waitFor(() -> mCallback.mCarTaskViewController != null,
                 "Failed to get the CarTaskViewController");
+    }
+
+    private boolean isAutoTaskStackWindowingEnabled() {
+        String dumpsysOutput = SystemUtil.runShellCommandOrThrow("dumpsys car_service");
+        return dumpsysOutput.contains("IsAutoTaskStackUsed: true");
     }
 
     @After

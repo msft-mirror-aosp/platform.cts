@@ -22,6 +22,7 @@ import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_REMO
 import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_RESET;
 import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_SEND_DATA_TO_WEARABLE;
 import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_SET_BOOLEAN_STATE;
+import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_SYSTEM_EXIT;
 import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_VERIFY_BOOLEAN_STATE;
 import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_VERIFY_DATA_RECEIVED_FROM_PFD;
 import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_VERIFY_DATA_RECEIVED_FROM_WEARABLE;
@@ -353,46 +354,6 @@ public class WearableSensingManagerIsolatedServiceTest {
 
         byte[] dataReceived = receiveMessageFromCdm(cdmSecureChannelContext);
         assertThat(dataReceived).isEqualTo(DATA_TO_WRITE_0.getBytes(StandardCharsets.UTF_8));
-    }
-
-    @Test
-    @ApiTest(
-            apis = {
-                "android.app.wearable.WearableSensingManager#provideConnection",
-                "android.service.wearable.WearableSensingService#onSecureConnectionProvided"
-            })
-    @Parameters({"true", "false"})
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
-    public void provideConnection_wearableStreamClosedThenSendDataFromWss_channelErrorStatus(
-            boolean isForConcurrentApi) throws Exception {
-        getInstrumentation()
-                .getUiAutomation()
-                .adoptShellPermissionIdentity(
-                        Manifest.permission.MANAGE_WEARABLE_SENSING_SERVICE,
-                        Manifest.permission.REQUEST_COMPANION_SELF_MANAGED,
-                        Manifest.permission.USE_COMPANION_TRANSPORTS);
-        AtomicInteger statusCodeRef = new AtomicInteger(WearableSensingManager.STATUS_UNKNOWN);
-        CountDownLatch successStatusLatch = new CountDownLatch(1);
-        // Count down twice because we expect a success status followed by a channel error
-        CountDownLatch channelErrorStatusLatch = new CountDownLatch(2);
-        mCdmAssociationId0 = attachTransportToCdm(mSocketPair0[0]).mAssociationId;
-
-        provideConnection(
-                isForConcurrentApi,
-                mSocketPair0[1],
-                (statusCode) -> {
-                    statusCodeRef.set(statusCode);
-                    successStatusLatch.countDown();
-                    channelErrorStatusLatch.countDown();
-                });
-        assertThat(successStatusLatch.await(3, SECONDS)).isTrue();
-        assertThat(statusCodeRef.get()).isEqualTo(WearableSensingManager.STATUS_SUCCESS);
-
-        mSocketPair0[0].close();
-        sendDataToWearableFromWss(DATA_TO_WRITE_0);
-
-        assertThat(channelErrorStatusLatch.await(3, SECONDS)).isTrue();
-        assertThat(statusCodeRef.get()).isEqualTo(WearableSensingManager.STATUS_CHANNEL_ERROR);
     }
 
     @Test
@@ -1159,6 +1120,43 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(apis = {"android.app.wearable.WearableSensingManager#provideDataStream"})
+    public void provideDataStream_binderDied_receivesServiceUnavailableStatus() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        Manifest.permission.MANAGE_WEARABLE_SENSING_SERVICE,
+                        Manifest.permission.REQUEST_COMPANION_SELF_MANAGED,
+                        Manifest.permission.USE_COMPANION_TRANSPORTS);
+
+        AtomicInteger dataStreamStatus = new AtomicInteger(WearableSensingManager.STATUS_UNKNOWN);
+        CountDownLatch dataStreamSuccessLatch = new CountDownLatch(1);
+        CountDownLatch dataStreamServiceUnavailableLatch = new CountDownLatch(1);
+        ParcelFileDescriptor[] dataStreamSocketPair = ParcelFileDescriptor.createSocketPair();
+        mParcelFileDescriptorsToCleanUp.add(dataStreamSocketPair[0]);
+        mParcelFileDescriptorsToCleanUp.add(dataStreamSocketPair[1]);
+
+        mWearableSensingManager.provideDataStream(
+                dataStreamSocketPair[0],
+                EXECUTOR,
+                (statusCode) -> {
+                    dataStreamStatus.set(statusCode);
+                    if (statusCode == WearableSensingManager.STATUS_SUCCESS) {
+                        dataStreamSuccessLatch.countDown();
+                    } else if (statusCode == WearableSensingManager.STATUS_SERVICE_UNAVAILABLE) {
+                        dataStreamServiceUnavailableLatch.countDown();
+                    }
+                });
+        assertThat(dataStreamSuccessLatch.await(3, SECONDS)).isTrue();
+
+        systemExitIsolatedWearableSensingService();
+
+        assertThat(dataStreamServiceUnavailableLatch.await(3, SECONDS)).isTrue();
+        assertThat(dataStreamStatus.get())
+                .isEqualTo(WearableSensingManager.STATUS_SERVICE_UNAVAILABLE);
+    }
+
+    @Test
     @ApiTest(
             apis = {
                 "android.app.wearable.WearableSensingManager#provideReadOnlyParcelFileDescriptor"
@@ -1452,6 +1450,16 @@ public class WearableSensingManagerIsolatedServiceTest {
 
     private void resetIsolatedWearableSensingServiceStates() throws Exception {
         sendActionToIsolatedWearableSensingServiceAndWait(ACTION_RESET);
+    }
+
+    private void systemExitIsolatedWearableSensingService() throws Exception {
+        PersistableBundle instruction = new PersistableBundle();
+        instruction.putString(BUNDLE_ACTION_KEY, ACTION_SYSTEM_EXIT);
+        mWearableSensingManager.provideData(
+                instruction,
+                null,
+                EXECUTOR,
+                (status) -> {});
     }
 
     private void verifyDataReceivedFromWearable(String expectedString) throws Exception {

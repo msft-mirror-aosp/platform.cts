@@ -38,6 +38,7 @@ import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
+import android.media.VolumeShaper;
 import android.media.audio.Flags;
 import android.media.cts.Utils;
 import android.net.Uri;
@@ -51,6 +52,8 @@ import android.provider.Settings;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
+
+import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.After;
 import org.junit.Before;
@@ -66,6 +69,9 @@ public class RingtoneManagerTest {
 
     private static final String PKG = "android.media.audio.cts";
     private static final String TAG = "RingtoneManagerTest";
+    private static final int RAMPING_RINGER_VIBRATION_DURATION = 5000;
+    private static final int RAMPING_RINGER_DURATION = 10000;
+    private static final float EPSILON = 1e-6f;
 
     private RingtonePickerActivity mActivity;
     private ActivityScenario<RingtonePickerActivity> mActivityScenario;
@@ -338,5 +344,39 @@ public class RingtoneManagerTest {
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                 .setHapticChannelsMuted(hapticChannelsMuted)
                 .build();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.media.flags.Flags.FLAG_RELEASE_RINGTONE_AS_API)
+    @ApiTest(apis = {"android.media.RingtoneManager#getRingtone"})
+    public void testGetRingtone() {
+        AudioAttributes audioAttributes =
+                new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .setHapticChannelsMuted(false)
+                        .build();
+        float silencePoint =
+                (float) (RAMPING_RINGER_VIBRATION_DURATION)
+                        / (float) (RAMPING_RINGER_VIBRATION_DURATION + RAMPING_RINGER_DURATION);
+        VolumeShaper.Configuration volumeShaperConfig =
+                new VolumeShaper.Configuration.Builder()
+                        .setDuration(RAMPING_RINGER_VIBRATION_DURATION + RAMPING_RINGER_DURATION)
+                        .setCurve(
+                                new float[] {
+                                    0.f, silencePoint + EPSILON /*keep monotonicity*/, 1.f
+                                },
+                                new float[] {0.f, 0.f, 1.f})
+                        .setInterpolatorType(VolumeShaper.Configuration.INTERPOLATOR_TYPE_LINEAR)
+                        .build();
+
+        Ringtone ringtone =
+                RingtoneManager.getRingtone(
+                        mContext,
+                        Settings.System.DEFAULT_RINGTONE_URI,
+                        volumeShaperConfig,
+                        audioAttributes);
+        assertNotNull(ringtone);
+        assertEquals(audioAttributes, ringtone.getAudioAttributes());
     }
 }

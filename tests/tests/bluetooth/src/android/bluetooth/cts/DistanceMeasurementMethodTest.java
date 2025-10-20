@@ -20,8 +20,6 @@ import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
-import static com.android.bluetooth.flags.Flags.FLAG_CHANNEL_SOUNDING_25Q2_APIS;
-
 import static com.google.common.truth.Truth.assertThat;
 
 import android.bluetooth.BluetoothAdapter;
@@ -29,7 +27,6 @@ import android.bluetooth.le.DistanceMeasurementMethod;
 import android.content.Context;
 import android.os.Build;
 import android.os.Parcel;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
@@ -95,7 +92,6 @@ public class DistanceMeasurementMethodTest {
         }
     }
 
-    @RequiresFlagsEnabled(FLAG_CHANNEL_SOUNDING_25Q2_APIS)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void createFromParcelForMethodId() {
@@ -126,7 +122,6 @@ public class DistanceMeasurementMethodTest {
                 .isEqualTo(DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI);
     }
 
-    @RequiresFlagsEnabled(FLAG_CHANNEL_SOUNDING_25Q2_APIS)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetMethodId() {

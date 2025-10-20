@@ -37,15 +37,13 @@ import static org.junit.Assert.fail;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
+import android.media.cts.InputSurface;
 import android.mediav2.common.cts.CodecTestBase;
 import android.mediav2.common.cts.EncoderConfigParams;
-import android.mediav2.common.cts.InputSurface;
 import android.mediav2.common.cts.OutputManager;
 import android.opengl.GLES20;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.util.Pair;
 import android.util.Size;
@@ -61,7 +59,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -298,12 +295,9 @@ class CodecEncoderGLSurface extends CodecTestBase {
  * This class comprises of tests that validate codec resource availability apis for video encoders
  */
 @RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
 @RunWith(Parameterized.class)
 public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
     private static final String LOG_TAG = VideoEncoderAvailabilityTest.class.getSimpleName();
     private static List<CodecResource> GLOBAL_AVBL_RESOURCES;
 

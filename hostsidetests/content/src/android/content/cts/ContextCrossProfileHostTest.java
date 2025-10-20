@@ -65,8 +65,6 @@ public class ContextCrossProfileHostTest extends BaseContextCrossProfileTest
     public void setUp() throws Exception {
         super.setUp();
 
-        assumeTrue(mSupportsMultiUser);
-
         mParentUserId = getDevice().getCurrentUser();
         // Headless mode always uses non-system user as current user.
         if (!getDevice().isHeadlessSystemUserMode()) {
@@ -293,6 +291,7 @@ public class ContextCrossProfileHostTest extends BaseContextCrossProfileTest
     @Test
     public void testBindServiceAsUser_differentProfileGroup_samePackage_withAcrossUsersPermission_bindsService()
             throws Exception {
+        assumeTrue(mSupportsSecondaryUsers);
         int userInDifferentProfileGroup = createUser();
         getDevice().startUser(userInDifferentProfileGroup, /* waitFlag= */true);
         mTestArgs.put("testUser", Integer.toString(userInDifferentProfileGroup));
@@ -322,6 +321,7 @@ public class ContextCrossProfileHostTest extends BaseContextCrossProfileTest
     @Test
     public void testBindServiceAsUser_differentProfileGroup_differentPackage_withAcrossUsersPermission_throwsException()
             throws Exception {
+        assumeTrue(mSupportsSecondaryUsers);
         int userInDifferentProfileGroup = createUser();
         getDevice().startUser(userInDifferentProfileGroup, /* waitFlag= */true);
         mTestArgs.put("testUser", Integer.toString(userInDifferentProfileGroup));
@@ -351,6 +351,7 @@ public class ContextCrossProfileHostTest extends BaseContextCrossProfileTest
     @Test
     public void testBindServiceAsUser_differentProfileGroup_withInteractAcrossProfilesAppOp_throwsException()
             throws Exception {
+        assumeTrue(mSupportsSecondaryUsers);
         int userInDifferentProfileGroup = createUser();
         getDevice().startUser(userInDifferentProfileGroup, /* waitFlag= */true);
         mTestArgs.put("testUser", Integer.toString(userInDifferentProfileGroup));
@@ -380,6 +381,7 @@ public class ContextCrossProfileHostTest extends BaseContextCrossProfileTest
     @Test
     public void testBindServiceAsUser_differentProfileGroup_withInteractAcrossProfilesPermission_throwsException()
             throws Exception {
+        assumeTrue(mSupportsSecondaryUsers);
         int userInDifferentProfileGroup = createUser();
         getDevice().startUser(userInDifferentProfileGroup, /* waitFlag= */true);
         mTestArgs.put("testUser", Integer.toString(userInDifferentProfileGroup));

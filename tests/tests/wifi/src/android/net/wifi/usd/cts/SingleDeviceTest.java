@@ -38,9 +38,12 @@ import android.net.wifi.usd.UsdManager;
 import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -51,10 +54,9 @@ import com.android.compatibility.common.util.ShellIdentityUtils;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -74,6 +76,9 @@ import java.util.function.Consumer;
 @RequiresFlagsEnabled(Flags.FLAG_USD)
 @RunWith(AndroidJUnit4.class)
 public class SingleDeviceTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String USD_SERVICE_NAME = "USD_CTS_TEST";
     private static final int WAIT_FOR_USD_CALLBACK_SECS = 15;
     private static final int TEST_TIMEOUT_SECS = 1;

@@ -1228,7 +1228,7 @@ public class SubscriptionManagerTest {
     @Test
     @AppModeNonSdkSandbox(
             reason = "SDK sandboxes do not have READ_PRIVILEGED_PHONE_STATE permission")
-    public void tetsSetAndGetPhoneNumber() throws Exception {
+    public void testSetAndGetPhoneNumber() throws Exception {
         // The phone number may be anything depends on the state of SIM and device.
         // Simply call the getter and make sure no exception.
 
@@ -1268,11 +1268,16 @@ public class SubscriptionManagerTest {
                     mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_UICC);
                     mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_IMS);
 
+                    String originalPhoneNumber =
+                            mSm.getPhoneNumber(
+                                    mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_CARRIER);
                     mSm.setCarrierPhoneNumber(mSubId, carrierNumber);
                     assertEquals(
                             carrierNumber,
                             mSm.getPhoneNumber(
                                     mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_CARRIER));
+                    // Restore original phone number to prevent side effects on other tests.
+                    mSm.setCarrierPhoneNumber(mSubId, originalPhoneNumber);
                 });
 
         // Otherwise, getter and setter will hit SecurityException

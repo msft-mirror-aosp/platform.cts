@@ -133,6 +133,24 @@ class RunAllUnitTests(unittest.TestCase):
     self.assertIn('TEST_BED_TABLET_SCENES', str(config_file_contents))
     self.assertEqual(len(config_file_contents['TestBeds']), 1)
 
+  def test_tablet_config_file_contents_valid_with_extension_tablet_scenes(self):
+    """Ensures tablet config is valid with extension tablet scenes."""
+    config_file_contents = run_all_tests.get_config_file_contents_for_scenes(
+        self.tablet_scenes_config_file_contents,
+        ['scene_extensions']
+    )
+    self.assertIn('TEST_BED_TABLET_SCENES', str(config_file_contents))
+    self.assertEqual(len(config_file_contents['TestBeds']), 1)
+
+  def test_tablet_config_file_contents_valid_with_tele_tablet_scenes(self):
+    """Ensures tablet config is valid with TELE tablet scenes."""
+    config_file_contents = run_all_tests.get_config_file_contents_for_scenes(
+        self.tablet_scenes_config_file_contents,
+        ['scene_tele']
+    )
+    self.assertIn('TEST_BED_TABLET_SCENES', str(config_file_contents))
+    self.assertEqual(len(config_file_contents['TestBeds']), 1)
+
   def test_tablet_config_file_contents_valid_with_implicit_tablet_scenes(self):
     """Ensures tablet config is valid with implicit tablet scenes."""
     config_file_contents = run_all_tests.get_config_file_contents_for_scenes(

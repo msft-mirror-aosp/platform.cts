@@ -19,6 +19,7 @@ package android.media.cts;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
+import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.ddmlib.testrunner.RemoteAndroidTestRunner;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil.CLog;
@@ -54,7 +55,7 @@ public class BaseMultiUserTest extends BaseMediaHostSideTest {
 
     private String mPackageVerifier;
 
-    private int mInitialUserId;
+    protected int mInitialUserId;
     private Set<String> mExistingPackages;
     private List<Integer> mExistingUsers;
     private HashSet<String> mAvailableFeatures;
@@ -78,17 +79,8 @@ public class BaseMultiUserTest extends BaseMediaHostSideTest {
                 "0",
                 USER_ALL);
 
-        mInitialUserId = getDevice().getCurrentUser();
+        mInitialUserId = DevicePolicyUsersPreparer.getInitialCurrentUserId();
         mExistingUsers = getDevice().listUsers();
-        Integer mainUserId = getDevice().getMainUserId();
-        Integer primaryUserId = getDevice().getPrimaryUserId();
-        if (primaryUserId != null) {
-            getDevice().switchUser(primaryUserId);
-        } else if (mainUserId != null) {
-            getDevice().switchUser(mainUserId);
-        } else {
-            // Neither a primary nor a main user exists. Just use the current one.
-        }
         executeShellCommand("wm dismiss-keyguard");
     }
 
@@ -246,13 +238,16 @@ public class BaseMultiUserTest extends BaseMediaHostSideTest {
         assertTestsPassed(result);
     }
 
-    /**
-     * Checks whether it is possible to create the desired number of users.
-     */
-    protected boolean canCreateAdditionalUsers(int numberOfUsers)
+    /** Checks whether it is possible to create the desired number of users. */
+    protected boolean canCreateAdditionalUsers(String userType, int numberOfUsers)
             throws DeviceNotAvailableException {
-        return getDevice().listUsers().size() + numberOfUsers <=
-                getDevice().getMaxNumberOfUsersSupported();
+        return getDevice().getRemainingCreatableUserCount(userType) >= numberOfUsers;
+    }
+
+    /** Checks whether it is possible to create the desired number of secondary users. */
+    protected boolean canCreateAdditionalSecondaryUsers(int numberOfUsers)
+            throws DeviceNotAvailableException {
+        return canCreateAdditionalUsers("android.os.usertype.full.SECONDARY", numberOfUsers);
     }
 
     /**

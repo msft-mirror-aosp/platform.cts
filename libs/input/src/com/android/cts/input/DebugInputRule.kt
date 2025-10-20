@@ -47,6 +47,7 @@ class DebugInputRule : TestWatcher() {
                 "InputManager",
                 "InputManagerGlobal",
                 "TouchpadInputMapperGestures",
+                "SysfsNodeMonitor",
         )
 
         @JvmStatic
@@ -55,17 +56,19 @@ class DebugInputRule : TestWatcher() {
         }
 
         /**
-         * For tests checking the functionality of lights, we also want to print the contents
-         * of the sysfs 'leds' path. This will confirm whether the kernel has registered any lights
-         * for the input device.
-         * For example:
+         * For tests checking the functionality of Sony devices like lights/battery, we also want
+         * to print the contents of the corresponding sysfs node. This will confirm whether the
+         * kernel has registered any corresponding sysfs nodes for the input device capability.
+         * For example for lights/battery:
         @formatter:off
            $ /sys/devices/virtual/misc/uhid/0005:054C:05C4.0002/leds # ls
            0005:054C:05C4.0002:blue  0005:054C:05C4.0002:global  0005:054C:05C4.0002:green  0005:054C:05C4.0002:red
+           $ /sys/devices/virtual/misc/uhid/0005:054C:0DF2.0001/power_supply # ls
+           ps-controller-battery-14:3a:9a:cb:15:fa
         @formatter:on
          */
         @JvmStatic
-        fun dumpSonyLightNodes() {
+        fun dumpSonySysfsNode(node: String) {
             try {
                 val dumpsysOutput = SystemUtil.runShellCommandOrThrow("dumpsys input")
                 val lines = dumpsysOutput.lines()
@@ -86,7 +89,7 @@ class DebugInputRule : TestWatcher() {
 
                 val path = pathLine.substringAfter("SysfsDevicePath:").trim()
                 if (path.isNotEmpty()) {
-                    logShellCommand("ls -l $path/leds")
+                    logShellCommand("ls -l $path/$node")
                 } else {
                     Log.i(TAG, "SysfsDevicePath is blank.")
                 }
@@ -115,15 +118,13 @@ class DebugInputRule : TestWatcher() {
      */
     annotation class DebugInput(val bug: Long)
 
-    val initialValues = mutableMapOf<String, String>()
+    private val scopedTags = mutableListOf<ScopedInputTag>()
 
     override fun starting(description: Description?) {
         if (!shouldEnableInputDebugging(description!!)) return
 
         for (tag in debugInputTags) {
-            initialValues[tag] =
-                    SystemUtil.runShellCommandOrThrow("getprop log.tag.$tag")!!.trim()
-            SystemUtil.runShellCommandOrThrow("setprop log.tag.$tag DEBUG")
+            scopedTags.add(ScopedInputTag(tag))
         }
         SystemUtil.runShellCommandOrThrow(
             "wm logging enable-text WM_DEBUG_FOCUS_LIGHT WM_DEBUG_FOCUS"
@@ -137,11 +138,8 @@ class DebugInputRule : TestWatcher() {
     override fun finished(description: Description?) {
         if (!shouldEnableInputDebugging(description!!)) return
 
-        for (entry in initialValues) {
-            val value = entry.value.ifBlank { "UNKNOWN" }
-            SystemUtil.runShellCommandOrThrow("setprop log.tag.${entry.key} $value")
-        }
-        initialValues.clear()
+        scopedTags.forEach { it.close() }
+        scopedTags.clear()
         SystemUtil.runShellCommandOrThrow(
             "wm logging disable-text WM_DEBUG_FOCUS_LIGHT WM_DEBUG_FOCUS"
         )

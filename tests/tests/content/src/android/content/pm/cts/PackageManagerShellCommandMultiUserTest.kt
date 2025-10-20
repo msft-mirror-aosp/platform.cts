@@ -113,6 +113,16 @@ class PackageManagerShellCommandMultiUserTest {
         private const val EXTRA_MIME_TYPES = "EXTRA_MIME_TYPES"
         private const val MIME_GROUP = "mime_group"
 
+        /** A list of some user types (not necessarily all). */
+        private val SELECT_USER_TYPES = listOf(
+            UserManager.USER_TYPE_FULL_SYSTEM,
+            UserManager.USER_TYPE_FULL_SECONDARY,
+            UserManager.USER_TYPE_FULL_GUEST,
+            UserManager.USER_TYPE_PROFILE_MANAGED,
+            UserManager.USER_TYPE_PROFILE_CLONE,
+            UserManager.USER_TYPE_PROFILE_PRIVATE,
+        )
+
         @JvmField
         @ClassRule(order = 0)
         @Rule
@@ -1323,6 +1333,50 @@ class PackageManagerShellCommandMultiUserTest {
                 },
                 Manifest.permission.INTERACT_ACROSS_USERS,
                 Manifest.permission.INTERACT_ACROSS_USERS_FULL
+        )
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.multiuser.Flags.FLAG_CONSISTENT_MAX_USERS)
+    fun testGetMaxUsers() {
+        val userManager = context.getSystemService(UserManager::class.java)!!
+
+        runWithShellPermissionIdentity(
+            uiAutomation,
+            {
+            for (userType in SELECT_USER_TYPES) {
+                val expectedMaxUsers = userManager.getCurrentAllowedNumberOfUsers(userType)
+                val shellOutput = SystemUtil.runShellCommand(
+                    "pm get-max-users --user-type $userType"
+                ).trim()
+                assertThat(
+                    shellOutput
+                ).isEqualTo("Maximum supported users of type $userType: $expectedMaxUsers")
+            }
+        },
+            Manifest.permission.CREATE_USERS
+        )
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.multiuser.Flags.FLAG_CONSISTENT_MAX_USERS)
+    fun testGetRemainingUserCount() {
+        val userManager = context.getSystemService(UserManager::class.java)!!
+
+        runWithShellPermissionIdentity(
+            uiAutomation,
+            {
+            for (userType in SELECT_USER_TYPES) {
+                val expectedRemainingCount = userManager.getRemainingCreatableUserCount(userType)
+                val shellOutput = SystemUtil.runShellCommand(
+                    "pm get-remaining-user-count --user-type $userType"
+                ).trim()
+                assertThat(
+                    shellOutput
+                ).isEqualTo("Remaining creatable users of type $userType: $expectedRemainingCount")
+            }
+        },
+            Manifest.permission.CREATE_USERS
         )
     }
 

@@ -19,6 +19,7 @@ package android.packageinstaller.cts.cuj.installer;
 import static android.app.PendingIntent.FLAG_MUTABLE;
 import static android.app.PendingIntent.FLAG_UPDATE_CURRENT;
 import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK;
+import static android.content.Intent.FLAG_ACTIVITY_MULTIPLE_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.pm.PackageInstaller.EXTRA_STATUS;
 import static android.content.pm.PackageInstaller.STATUS_FAILURE_INVALID;
@@ -55,12 +56,17 @@ public class MainActivity extends Activity {
     private static final String INSTALLER_APK_V2_NAME = "CtsInstallerCujTestInstallerV2.apk";
     private static final String TEST_APP_PACKAGE_NAME =
             "android.packageinstaller.cts.cuj.app";
+    public static final String EMPTY_TEST_APP_PACKAGE_NAME =
+            "android.packageinstaller.emptytestapp.cts";
+
     private static final String TEST_APK_NAME = "CtsInstallerCujTestApp.apk";
     private static final String TEST_APK_V2_NAME = "CtsInstallerCujTestAppV2.apk";
     public static final String TEST_NO_LAUNCHER_ACTIVITY_APK_NAME =
             "CtsInstallerCujTestNoLauncherActivityApp.apk";
     public static final String TEST_NO_LAUNCHER_ACTIVITY_APK_V2_NAME =
             "CtsInstallerCujTestNoLauncherActivityAppV2.apk";
+    private static final String EMPTY_TEST_APK_NAME = "CtsEmptyTestApp.apk";
+    private static final String EMPTY_TEST_APK_V2_NAME = "CtsEmptyTestAppV2.apk";
 
     private static final String CONTENT_AUTHORITY =
             "android.packageinstaller.cts.cuj.installer.fileprovider";
@@ -83,6 +89,8 @@ public class MainActivity extends Activity {
             "extra_test_no_launcher_activity_apk_uri";
     private static final String EXTRA_TEST_NO_LAUNCHER_ACTIVITY_APK_V2_URI =
             "extra_test_no_launcher_activity_apk_v2_uri";
+    private static final String EXTRA_EMPTY_TEST_APK_URI = "extra_empty_test_apk_uri";
+    private static final String EXTRA_EMPTY_TEST_APK_V2_URI = "extra_empty_test_apk_v2_uri";
     private static final String EXTRA_TEST_PACKAGE_NAME = "extra_test_package_name";
 
     private static final String EXTRA_IS_UPDATE = "extra_is_update";
@@ -101,6 +109,8 @@ public class MainActivity extends Activity {
     private static final int EVENT_REQUEST_INSTALLER_INTENT_WITH_PACKAGE_URI = 3;
     private static final int EVENT_REQUEST_INSTALLER_INTENT_WITH_PACKAGE_URI_FOR_RESULT = 4;
     private static final int EVENT_REQUEST_INSTALLER_INTENT_WITH_ACTION_VIEW = 5;
+    private static final int EVENT_REQUEST_INSTALLER_SESSION_MULTI_PACKAGE = 6;
+
     private static final int REQUEST_CODE = 311;
     private static String sTestPackageName;
     private static String sSystemPackageInstallerPackageName;
@@ -200,6 +210,8 @@ public class MainActivity extends Activity {
                     TEST_NO_LAUNCHER_ACTIVITY_APK_NAME);
             copyTestFile(EXTRA_TEST_NO_LAUNCHER_ACTIVITY_APK_V2_URI,
                     TEST_NO_LAUNCHER_ACTIVITY_APK_V2_NAME);
+            copyTestFile(EXTRA_EMPTY_TEST_APK_URI, EMPTY_TEST_APK_NAME);
+            copyTestFile(EXTRA_EMPTY_TEST_APK_V2_URI, EMPTY_TEST_APK_V2_NAME);
         } catch (Exception ex) {
             Log.e(TAG, "Copy test apks from uri failed." , ex);
             mNotifyReady = false;
@@ -234,6 +246,54 @@ public class MainActivity extends Activity {
         }
 
         session.commit(getIntentSender(getApplicationContext()));
+    }
+
+    private void startInstallationViaPackageInstallerSessionForMultiPackage(boolean isUpdate)
+            throws Exception {
+        final int childSessionId1 =
+                createSessionAndWriteApkFile(
+                        /* apkName= */ isUpdate ? TEST_APK_V2_NAME : TEST_APK_NAME,
+                        /* packageName= */ TEST_APP_PACKAGE_NAME);
+        final int childSessionId2 =
+                createSessionAndWriteApkFile(
+                        /* apkName= */ isUpdate ? EMPTY_TEST_APK_V2_NAME : EMPTY_TEST_APK_NAME,
+                        /* packageName= */ EMPTY_TEST_APP_PACKAGE_NAME);
+
+        final PackageInstaller.SessionParams params =
+                new PackageInstaller.SessionParams(
+                        PackageInstaller.SessionParams.MODE_FULL_INSTALL);
+        params.setMultiPackage();
+        final int parentSessionId = mPackageInstaller.createSession(params);
+        final PackageInstaller.Session parentSession =
+                mPackageInstaller.openSession(parentSessionId);
+        parentSession.addChildSessionId(childSessionId1);
+        parentSession.addChildSessionId(childSessionId2);
+        Log.i(
+                TAG,
+                "Created parent session "
+                        + parentSessionId
+                        + " with child sessions: "
+                        + childSessionId1
+                        + ","
+                        + childSessionId2);
+
+        parentSession.commit(getIntentSender(getApplicationContext()));
+    }
+
+    private int createSessionAndWriteApkFile(String apkName, String packageName)
+            throws IOException {
+        final PackageInstaller.SessionParams sessionParams =
+                new PackageInstaller.SessionParams(
+                        PackageInstaller.SessionParams.MODE_FULL_INSTALL);
+        sessionParams.setAppPackageName(packageName);
+        final int sessionId = mPackageInstaller.createSession(sessionParams);
+        final PackageInstaller.Session session = mPackageInstaller.openSession(sessionId);
+        final File apk = new File(getFilesDir(), apkName);
+        try (OutputStream os = session.openWrite("base.apk", 0, apk.length());
+                InputStream is = new FileInputStream(apk)) {
+            writeFullStream(is, os);
+        }
+        return sessionId;
     }
 
     private void startInstallationViaIntentWithActionView(String apkName) {
@@ -308,7 +368,12 @@ public class MainActivity extends Activity {
             sendInstallerResponseBroadcast(context, status);
             if (status == STATUS_PENDING_USER_ACTION) {
                 Intent extraIntent = intent.getParcelableExtra(Intent.EXTRA_INTENT, Intent.class);
-                extraIntent.addFlags(FLAG_ACTIVITY_CLEAR_TASK | FLAG_ACTIVITY_NEW_TASK);
+                // Allow multiple instances of Pia for multiple Developer Verification dialogs
+                // during multi-package installations.
+                extraIntent.addFlags(
+                        FLAG_ACTIVITY_CLEAR_TASK
+                                | FLAG_ACTIVITY_NEW_TASK
+                                | FLAG_ACTIVITY_MULTIPLE_TASK);
                 context.startActivity(extraIntent);
             }
         }
@@ -380,6 +445,12 @@ public class MainActivity extends Activity {
             } else if (event == EVENT_REQUEST_INSTALLER_INTENT_WITH_ACTION_VIEW) {
                 try {
                     startInstallationViaIntentWithActionView(testApkName);
+                } catch (Exception ex) {
+                    Log.e(TAG, "Exception event:" + event, ex);
+                }
+            } else if (event == EVENT_REQUEST_INSTALLER_SESSION_MULTI_PACKAGE) {
+                try {
+                    startInstallationViaPackageInstallerSessionForMultiPackage(isUpdate);
                 } catch (Exception ex) {
                     Log.e(TAG, "Exception event:" + event, ex);
                 }

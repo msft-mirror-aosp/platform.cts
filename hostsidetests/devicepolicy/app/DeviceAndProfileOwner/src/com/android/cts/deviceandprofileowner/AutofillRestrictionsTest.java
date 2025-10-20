@@ -22,6 +22,10 @@ import static android.provider.Settings.Secure.USER_SETUP_COMPLETE;
 
 import android.content.Intent;
 
+import com.android.compatibility.common.util.PollingCheck;
+
+import java.util.concurrent.TimeUnit;
+
 public class AutofillRestrictionsTest extends BaseDeviceAdminTest {
 
     private static final String SERVICE_NAME =
@@ -56,40 +60,35 @@ public class AutofillRestrictionsTest extends BaseDeviceAdminTest {
 
     public void testDisallowAutofill_allowed() throws Exception {
         enableService();
-
-        final boolean enabledBefore = launchActivityAndGetEnabled();
-        assertTrue(enabledBefore);
+        PollingCheck.waitFor(TimeUnit.SECONDS.toMillis(5), this::launchActivityAndGetEnabled);
 
         mDevicePolicyManager.addUserRestriction(ADMIN_RECEIVER_COMPONENT, DISALLOW_AUTOFILL);
-
-        // Must try a couple times because it will be disabled asynchronously.
-        for (int i = 1; i <= 15; i++) {
-            final boolean disabledAfter = !launchActivityAndGetEnabled();
-            if (disabledAfter) {
-                return;
-            }
-            Thread.sleep(100);
-        }
-        fail("Not disabled after a period of time");
+        PollingCheck.waitFor(TimeUnit.SECONDS.toMillis(5), () -> !launchActivityAndGetEnabled());
     }
 
-    private boolean launchActivityAndGetEnabled() throws Exception {
-        final Intent launchIntent = new Intent();
-        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        launchIntent.setClassName(AUTOFILL_PACKAGE_NAME, AUTOFILL_ACTIVITY_NAME);
-        final AutofillActivity activity = launchActivity("com.android.cts.deviceandprofileowner",
-                AutofillActivity.class, null);
-        return activity.isAutofillEnabled();
+    private boolean launchActivityAndGetEnabled() {
+        try {
+            final Intent launchIntent = new Intent();
+            launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            launchIntent.setClassName(AUTOFILL_PACKAGE_NAME, AUTOFILL_ACTIVITY_NAME);
+            final AutofillActivity activity =
+                    launchActivity(
+                            "com.android.cts.deviceandprofileowner", AutofillActivity.class, null);
+            return activity.isAutofillEnabled();
+        } catch (Exception e) {
+            throw new AssertionError(e.getCause());
+        }
     }
 
     private void enableService() throws Exception {
-        runShellCommand("settings put secure --user %d %s %d default",
-                mUserId, USER_SETUP_COMPLETE, 1);
+        runShellCommand(
+                "settings put secure --user %d %s %d default", mUserId, USER_SETUP_COMPLETE, 1);
 
         if (USES_CLONED_SETTINGS) {
             runShellCommand("settings put secure %s %s default", AUTOFILL_SERVICE, SERVICE_NAME);
         } else {
-            runShellCommand("settings put --user %d secure %s %s default",
+            runShellCommand(
+                    "settings put --user %d secure %s %s default",
                     mUserId, AUTOFILL_SERVICE, SERVICE_NAME);
         }
         waitForServiceSettingSaved(SERVICE_NAME);

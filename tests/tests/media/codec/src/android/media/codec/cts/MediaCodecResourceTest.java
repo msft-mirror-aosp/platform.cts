@@ -53,7 +53,7 @@ import java.util.List;
 
 // This class verifies the resource management aspects of MediaCodecs.
 @SmallTest
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU, codeName = "Tiramisu")
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
 public class MediaCodecResourceTest {
     private static final String TAG = "MediaCodecResourceTest";
 

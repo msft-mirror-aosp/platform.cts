@@ -13,20 +13,20 @@
 # limitations under the License.
 """Image processing utility functions."""
 
-
 import copy
 import io
 import logging
 import math
-import matplotlib
-from matplotlib import pyplot as plt
 import os
 import sys
 
 import capture_request_utils
 import error_util
+import matplotlib
+from matplotlib import pyplot as plt
 import noise_model_constants
 import numpy
+from PIL import ExifTags
 from PIL import Image
 from PIL import ImageCms
 
@@ -39,7 +39,9 @@ _CMAP_RED = ('black', 'red', 'lightcoral')
 _CMAP_SIZE = 6  # 6 inches
 _NATURAL_ORIENTATION_PORTRAIT = (90, 270)  # orientation in "normal position"
 _NUM_RAW_CHANNELS = 4  # R, Gr, Gb, B
-
+ORIENTATION_TAG_ID = next(
+        tag for tag, name in ExifTags.TAGS.items() if name == 'Orientation'
+  )
 LENS_SHADING_MAP_ON = 1
 
 # The matrix is from JFIF spec
@@ -490,6 +492,29 @@ def decompress_jpeg_to_rgb_image(jpeg_buffer):
   w = img.size[0]
   h = img.size[1]
   return numpy.array(img).reshape((h, w, 3)) / 255.0
+
+
+def decompress_ultrahdr_image(ultrahdr_image_path, rgb_hdr_out_path):
+  """Decompress a UltraHDR-compressed image, returning as an RGB image.
+
+  Args:
+    ultrahdr_image_path: The UltraHDR image path.
+    rgb_hdr_out_path: The RGB HDR image output path.
+  """
+  img = Image.open(ultrahdr_image_path)
+  exif_data = img.getexif()
+  if ORIENTATION_TAG_ID in exif_data:
+    # Get the existing rotation value
+    rotation_value = exif_data[ORIENTATION_TAG_ID]
+    logging.debug(f'Found existing rotation value: {rotation_value}')
+  else:
+    # Default to 1 (Normal) if the tag is not found
+    rotation_value = 1
+    exif_data[ORIENTATION_TAG_ID] = rotation_value
+    logging.debug('Orientation tag not found. '
+                  f'Defaulting to rotation value: {rotation_value}')
+
+  img.save(rgb_hdr_out_path, exif=exif_data)
 
 
 def decompress_jpeg_to_yuv_image(jpeg_buffer):

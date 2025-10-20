@@ -120,6 +120,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_MOVE_FM_API_TO_BM)
     public void testGetEnrollmentCount() throws Exception {
+        assumeFalse(isCar() || isWatch());
         assumeTrue(Utils.isFirstApiLevel29orGreater());
         mBiometricManager
                 .getEnrollmentStatus()
@@ -203,10 +204,11 @@ public class BiometricSimpleTests extends BiometricTestBase {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
         final BiometricServiceState state = getCurrentState();
         final PackageManager pm = mContext.getPackageManager();
+        final File initGsiRc = new File("/system/system_ext/etc/init/init.gsi.rc");
+
         if (mSensorProperties.isEmpty()) {
             assertTrue(state.mSensorStates.sensorStates.isEmpty());
 
-            final File initGsiRc = new File("/system/system_ext/etc/init/init.gsi.rc");
             if (!initGsiRc.exists()) {
                 assertFalse(pm.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT));
                 assertFalse(pm.hasSystemFeature(PackageManager.FEATURE_FACE));
@@ -215,12 +217,18 @@ public class BiometricSimpleTests extends BiometricTestBase {
 
             assertTrue(state.mSensorStates.sensorStates.isEmpty());
         } else {
-            assertEquals(pm.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT),
-                    state.mSensorStates.containsModality(SensorStateProto.FINGERPRINT));
-            assertEquals(pm.hasSystemFeature(PackageManager.FEATURE_FACE),
-                    state.mSensorStates.containsModality(SensorStateProto.FACE));
-            assertEquals(pm.hasSystemFeature(PackageManager.FEATURE_IRIS),
-                    state.mSensorStates.containsModality(SensorStateProto.IRIS));
+            // TODO (b/448180365): Fix this test for GSI and remove this if-statement
+            if (!initGsiRc.exists()) {
+                assertEquals(
+                        pm.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT),
+                        state.mSensorStates.containsModality(SensorStateProto.FINGERPRINT));
+                assertEquals(
+                        pm.hasSystemFeature(PackageManager.FEATURE_FACE),
+                        state.mSensorStates.containsModality(SensorStateProto.FACE));
+                assertEquals(
+                        pm.hasSystemFeature(PackageManager.FEATURE_IRIS),
+                        state.mSensorStates.containsModality(SensorStateProto.IRIS));
+            }
         }
     }
 

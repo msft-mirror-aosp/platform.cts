@@ -37,8 +37,8 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
-import com.android.bedstead.harrier.policies.CreateAndManageUser;
-import com.android.bedstead.multiuser.annotations.EnsureCanAddUser;
+import com.android.bedstead.enterprise.policies.CreateAndManageUser;
+import com.android.bedstead.multiuser.annotations.EnsureCanAddSecondaryUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.permissions.PermissionContext;
@@ -51,7 +51,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(BedsteadJUnit4.class)
-@EnsureCanAddUser
+@EnsureCanAddSecondaryUser
 public final class CreateAndManageUserTest {
 
     private static final String USER_NAME = "testUserName";

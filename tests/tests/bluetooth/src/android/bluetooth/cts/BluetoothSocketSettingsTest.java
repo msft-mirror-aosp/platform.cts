@@ -33,7 +33,6 @@ import android.bluetooth.BluetoothSocketSettings;
 import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.bluetooth.test_utils.Permissions;
 import android.os.Build;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
@@ -41,7 +40,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.ApiLevelUtil;
 
 import com.google.common.truth.Expect;
@@ -99,6 +97,25 @@ public class BluetoothSocketSettingsTest {
             serverSocket = sAdapter.listenUsingSocketSettings(settings);
         }
         assertThat(serverSocket).isNotNull();
+        serverSocket.close();
+    }
+
+    private void createServerSocketUsingSettingsAndComparePsm(
+            BluetoothSocketSettings settings, int psm) throws IOException {
+        assertThrows(SecurityException.class, () -> sAdapter.listenUsingSocketSettings(settings));
+        final BluetoothServerSocket serverSocket;
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT)) {
+            serverSocket = sAdapter.listenUsingSocketSettings(settings);
+        }
+        assertThat(serverSocket).isNotNull();
+        /* Specifying PSM as input to LECoC Server is not allowed for non-Bluetooth privileged
+         * applications & it should never host the LE CoC Server on the input PSM channel.
+         * As CTS is a non-Bluetooth privileged application, this ensures validation of fixed
+         * PSM usage being limited only to Bluetooth privileged applications.
+         * This particular test has a random chance of failing when randomly allocated
+         * PSM matches the input PSM
+         */
+        assertThat(serverSocket.getPsm()).isNotEqualTo(psm);
         serverSocket.close();
     }
 
@@ -353,6 +370,21 @@ public class BluetoothSocketSettingsTest {
 
         BluetoothSocketSettings settings = builder.build();
         createServerSocketUsingSettings(settings);
+    }
+
+    @Test
+    /* Negative test to ensure PSM is ignored for Listening sockets
+     */
+    public void createListeningInsecureLeCocSocketWithFixedPsm() throws IOException {
+        BluetoothSocketSettings.Builder builder =
+                new BluetoothSocketSettings.Builder()
+                        .setSocketType(BluetoothSocket.TYPE_LE)
+                        .setEncryptionRequired(false)
+                        .setAuthenticationRequired(false)
+                        .setL2capPsm(0xFE);
+
+        BluetoothSocketSettings settings = builder.build();
+        createServerSocketUsingSettingsAndComparePsm(settings, 0xFE);
     }
 
     @Test

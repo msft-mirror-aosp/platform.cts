@@ -16,6 +16,7 @@
 
 package android.server.wm.window;
 
+import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP;
 import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
@@ -149,6 +150,7 @@ public class ScreenRecordingCallbackTests extends WindowManagerTestBase {
         if (launchCookie != null) {
             activityOptions.setLaunchCookie(launchCookie);
         }
+        activityOptions.setLaunchWindowingMode(WINDOWING_MODE_FULLSCREEN);
         mContext.startActivity(intent, activityOptions.toBundle());
     }
 

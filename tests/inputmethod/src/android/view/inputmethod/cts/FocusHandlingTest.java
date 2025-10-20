@@ -48,6 +48,7 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.showSoftInputMatch
 import static com.android.cts.mockime.ImeEventStreamTestUtils.withDescription;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotSame;
@@ -75,6 +76,7 @@ import android.provider.DeviceConfig;
 import android.server.wm.BuildUtils;
 import android.server.wm.WindowManagerStateHelper;
 import android.text.TextUtils;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -377,6 +379,51 @@ public final class FocusHandlingTest extends EndToEndImeTestBase {
 
             // Input should start
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+        }
+    }
+
+    /**
+     * Verifies that with config_preventImeStartupUnlessTextEditor, the IME can be destroyed when a
+     * focused EditText loses focus, and the IME client will be unbound from the IME. Note that
+     * destroying the IME requires another startInput signal, so this test must focus a new Window
+     * (but without any EditText).
+     */
+    @Test
+    public void testDestroyImeAfterEditorLostFocusWithPreventImeStartup() throws Exception {
+        Assume.assumeTrue(isPreventImeStartup());
+        try (MockImeSession imeSession = createTestImeSession()) {
+            final var stream = imeSession.openEventStream();
+
+            final String editTextMarker = getTestMarker("EditText");
+            TestActivity.startSync(activity -> {
+                final var layout = new LinearLayout(activity);
+                layout.setOrientation(LinearLayout.VERTICAL);
+                layout.setGravity(Gravity.BOTTOM);
+                final var editText = new EditText(activity);
+                editText.setHint("editText");
+                editText.setPrivateImeOptions(editTextMarker);
+                editText.requestFocus();
+                layout.addView(editText);
+                return layout;
+            });
+
+            // Input should start
+            expectEvent(stream, eventMatcher("onCreate"), TIMEOUT);
+            expectEvent(stream, eventMatcher("bindInput"), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInput", editTextMarker), TIMEOUT);
+
+            // Start a new activity with no EditText.
+            final var emptyActivity = TestActivity.startSync(LinearLayout::new);
+
+            // IME should be destroyed, but we should gracefully finish the input connection.
+            expectEvent(stream, eventMatcher("onDestroy"), TIMEOUT);
+            expectEvent(stream, eventMatcher("onFinishInput"), TIMEOUT);
+            notExpectEvent(stream, eventMatcher("onCreate"), NOT_EXPECT_TIMEOUT);
+
+            final var imm = emptyActivity.getSystemService(InputMethodManager.class);
+            assertWithMessage("IME client should not be bound")
+                    .that(imm.isImeBoundForTesting())
+                    .isFalse();
         }
     }
 

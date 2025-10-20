@@ -27,9 +27,11 @@ import static android.telecom.cts.apps.TelecomTestApp.ConnectionServiceVoipAppMa
 import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceApp;
 import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceAppClone;
 
+import android.os.Bundle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.telecom.CallAttributes;
 import android.telecom.Connection;
+import android.telecom.DisconnectCause;
 import android.telecom.cts.apps.AppControlWrapper;
 import android.telecom.cts.apps.TelecomTestApp;
 import android.telecom.cts.cuj.BaseAppVerifier;
@@ -50,6 +52,9 @@ import java.util.List;
 @RunWith(JUnit4.class)
 public class CallSequencingBasicCallTest extends BaseAppVerifier {
     public static final String TAG = CallSequencingBasicCallTest.class.getSimpleName();
+    // Used in ManagedConnectionService to facilitate a force disconnect of the connection with the
+    // specified disconnect cause.
+    private static final String FORCE_DISCONNECT_CAUSE_KEY = "FORCE_DISCONNECT_CAUSE_KEY";
 
     /**
      * Verify that for the managed case that we disallow an incoming call to be received when
@@ -82,7 +87,6 @@ public class CallSequencingBasicCallTest extends BaseAppVerifier {
      * same phone account case.
      */
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_ADD_DROPS_FG_EXTRA_DIFF_ACCOUNTS})
     public void testAnswerIncomingDropsFg_BothManaged() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -219,6 +223,90 @@ public class CallSequencingBasicCallTest extends BaseAppVerifier {
             verifyCallIsInState(callUt, STATE_DIALING);
         } finally {
             tearDownApps(Collections.unmodifiableList(Arrays.asList(firstApp, secondApp)));
+        }
+    }
+
+    /**
+     * Verify that when two calls are swapped that if a call resume fails for the bg call, that we
+     * unhold the fg call.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_AUTO_UNHOLD_ON_CALL_FAIL)
+    public void testAutoUnholdOnCallFail() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        AppControlWrapper firstApp = null;
+        AppControlWrapper secondApp = null;
+        try {
+            firstApp = bindToApp(ManagedConnectionServiceApp);
+            secondApp = bindToApp(ManagedConnectionServiceAppClone);
+            String call1 = addOutgoingCallAndVerify(firstApp);
+            verifyCallIsInState(call1, STATE_DIALING);
+            // Put the first call on hold
+            setCallStateAndVerify(firstApp, call1, STATE_HOLDING);
+            Bundle extras = new Bundle();
+            // Add a second call and specify the disconnect cause (ERROR) to force disconnect the
+            // connection with.
+            extras.putInt(FORCE_DISCONNECT_CAUSE_KEY, DisconnectCause.ERROR);
+            addOutgoingCallAndVerifyFailure(secondApp, extras);
+            // Verify the held call is set active
+            verifyCallIsInState(call1, STATE_ACTIVE);
+
+            // Put the first call back on hold
+            setCallStateAndVerify(firstApp, call1, STATE_HOLDING);
+            // Add a third call and specify the disconnect cause (CANCELED)  to force disconnect the
+            // connection with.
+            extras.putInt(FORCE_DISCONNECT_CAUSE_KEY, DisconnectCause.CANCELED);
+            // Add a new call
+            addOutgoingCallAndVerifyFailure(secondApp, extras);
+            // Verify the held call is set active
+            verifyCallIsInState(call1, STATE_ACTIVE);
+            // Clean up calls
+            setCallStateAndVerify(firstApp, call1, STATE_DISCONNECTED);
+        } finally {
+            List<AppControlWrapper> controls = new ArrayList<>();
+            controls.add(firstApp);
+            controls.add(secondApp);
+            tearDownApps(controls);
+        }
+    }
+
+    /**
+     * Verify that when a call ends in ERROR after being set to ACTIVE, it does NOT auto-unhold a
+     * background call.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_AUTO_UNHOLD_ON_CALL_FAIL)
+    public void testNoAutoUnholdOnCallFailAfterActive() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        AppControlWrapper firstApp = null;
+        AppControlWrapper secondApp = null;
+        try {
+            firstApp = bindToApp(ManagedConnectionServiceApp);
+            secondApp = bindToApp(ManagedConnectionServiceAppClone);
+            String call1 = addOutgoingCallAndVerify(firstApp);
+            verifyCallIsInState(call1, STATE_DIALING);
+            setCallStateAndVerify(firstApp, call1, STATE_ACTIVE);
+            // Put the first call on hold
+            setCallStateAndVerify(firstApp, call1, STATE_HOLDING);
+            // Add a second call and make it active
+            String call2 = addOutgoingCallAndVerify(secondApp);
+            verifyCallIsInState(call2, STATE_DIALING);
+            setCallStateAndVerify(secondApp, call2, STATE_ACTIVE);
+            // Disconnect the second call with DisconnectCause.ERROR
+            setCallStateAndVerify(secondApp, call2, STATE_DISCONNECTED, DisconnectCause.ERROR);
+            // Verify the first call remains held
+            verifyCallIsInState(call1, STATE_HOLDING);
+            // Clean up calls
+            setCallStateAndVerify(firstApp, call1, STATE_DISCONNECTED);
+        } finally {
+            List<AppControlWrapper> controls = new ArrayList<>();
+            controls.add(firstApp);
+            controls.add(secondApp);
+            tearDownApps(controls);
         }
     }
 

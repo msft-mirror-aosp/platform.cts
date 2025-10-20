@@ -198,7 +198,8 @@ public class TestUtils {
             .setAddress(Uri.parse("tel:555-TEST"))
             .setSubscriptionAddress(Uri.parse("tel:555-TEST"))
             .setCapabilities(PhoneAccount.CAPABILITY_CALL_PROVIDER |
-                    PhoneAccount.CAPABILITY_SIM_SUBSCRIPTION)
+                    PhoneAccount.CAPABILITY_SIM_SUBSCRIPTION |
+                    PhoneAccount.CAPABILITY_PLACE_EMERGENCY_CALLS)
             .setHighlightColor(Color.RED)
             .setShortDescription(SIM_ACCOUNT_LABEL)
             .addSupportedUriScheme(PhoneAccount.SCHEME_TEL)

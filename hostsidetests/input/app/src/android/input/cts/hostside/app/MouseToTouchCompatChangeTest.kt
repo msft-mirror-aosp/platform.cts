@@ -26,10 +26,13 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.cts.input.BlockingQueueEventVerifier
 import com.android.cts.input.CaptureEventActivity
+import com.android.cts.input.DebugInputRule
 import com.android.cts.input.inputeventmatchers.withActionButton
 import com.android.cts.input.inputeventmatchers.withMotionAction
 import com.android.cts.input.inputeventmatchers.withSource
 import com.android.cts.input.inputeventmatchers.withToolType
+import kotlin.math.ceil
+import kotlin.math.max
 import org.hamcrest.CoreMatchers.allOf
 import org.hamcrest.Matcher
 import org.junit.Before
@@ -46,6 +49,9 @@ class MouseToTouchCompatChangeTest {
     @get:Rule(order = 2)
     val activityScenarioRule = ActivityScenarioRule(CaptureEventActivity::class.java)
 
+    @get:Rule(order = 3)
+    val debugInputRile = DebugInputRule()
+
     private lateinit var eventVerifier: BlockingQueueEventVerifier
 
     @Before
@@ -59,11 +65,17 @@ class MouseToTouchCompatChangeTest {
             val bounds = windowManager.currentWindowMetrics.bounds
             windowCenter.x = bounds.centerX()
             windowCenter.y = bounds.centerY()
-
-            // Move twice to make sure at least one event is dispatched before the test starts.
-            desktopMouseRule.move(DEFAULT_DISPLAY, windowCenter.x - 1, windowCenter.y - 1)
-            desktopMouseRule.move(DEFAULT_DISPLAY, windowCenter.x, windowCenter.y)
         }
+
+        val mouseMinMovePx = desktopMouseRule.getMouseMinMovePx(DEFAULT_DISPLAY)
+        // Move twice to make sure at least one event is dispatched before the test starts.
+        // Use ceil() to ensure coord moves from windowCenter even with mouseMinMovePx < 1f
+        desktopMouseRule.move(
+            DEFAULT_DISPLAY,
+            windowCenter.x - ceil(mouseMinMovePx.dx).toInt(),
+            windowCenter.y - ceil(mouseMinMovePx.dy).toInt()
+        )
+        desktopMouseRule.move(DEFAULT_DISPLAY, windowCenter.x, windowCenter.y)
 
         // DesktopMouseRule splits move into multiple deltas. Consume events until it reaches the
         // center.
@@ -78,12 +90,13 @@ class MouseToTouchCompatChangeTest {
                     )
                 )
             val coordsNearCenter: Boolean =
-                (Math.abs(event.rawX - windowCenter.x) < 1f) &&
-                        (Math.abs(event.rawY - windowCenter.y) < 1f)
+                (Math.abs(event.rawX - windowCenter.x) < max(1f, mouseMinMovePx.dx)) &&
+                        (Math.abs(event.rawY - windowCenter.y) < max(1f, mouseMinMovePx.dy))
         } while (!coordsNearCenter)
         eventVerifier.assertNoEvents()
     }
 
+    @DebugInputRule.DebugInput(bug = 439445482)
     @Test
     fun testEnabled_clickToTouch() {
         desktopMouseRule.click()
@@ -112,6 +125,7 @@ class MouseToTouchCompatChangeTest {
         )
     }
 
+    @DebugInputRule.DebugInput(bug = 439445482)
     @Test
     fun testEnabled_rightClickAsIs() {
         desktopMouseRule.click(BUTTON_SECONDARY)
@@ -152,6 +166,7 @@ class MouseToTouchCompatChangeTest {
         )
     }
 
+    @DebugInputRule.DebugInput(bug = 439445482)
     @Test
     fun testDisabled_click() {
         desktopMouseRule.click()

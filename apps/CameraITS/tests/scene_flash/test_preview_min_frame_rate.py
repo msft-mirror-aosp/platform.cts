@@ -47,8 +47,17 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
   recording's frame rate is at the minimum of the requested FPS range.
   """
 
+  def setup_class(self):
+    super().setup_class()
+    # establish connection with lighting controller
+    self.use_gen2 = (self.lighting_cntl ==
+                gen2_rig_controller_utils.DEFAULT_GEN2_LIGHTS_NAME)
+    self.lighting_control_port = lighting_control_utils.lighting_control(
+        self.lighting_cntl, self.lighting_ch, self.use_gen2)
+
   def teardown_test(self):
-    if self.use_gen2: self.lighting_control_port.close()
+    if self.lighting_control_port:
+      self.lighting_control_port.close()
 
   def test_preview_min_frame_rate(self):
     with its_session_utils.ItsSession(
@@ -68,16 +77,10 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
       ae_target_fps_range = camera_properties_utils.get_fps_range_to_test(
           fps_ranges)
 
-      # establish connection with lighting controller
-      use_gen2 = (self.lighting_cntl ==
-                  gen2_rig_controller_utils.DEFAULT_GEN2_LIGHTS_NAME)
-      lighting_control_port = lighting_control_utils.lighting_control(
-          self.lighting_cntl, self.lighting_ch, use_gen2)
-
       # turn OFF lights to darken scene
       lighting_control_utils.set_lighting_state(
-          lighting_control_port, self.lighting_ch,
-          lighting_control_utils.LIGHT_OFF, use_gen2)
+          self.lighting_control_port, self.lighting_ch,
+          lighting_control_utils.LIGHT_OFF, self.use_gen2)
 
       # turn OFF DUT to reduce reflections
       lighting_control_utils.turn_off_device_screen(self.dut)
@@ -126,12 +129,12 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
 
       # turn lights back ON
       lighting_control_utils.set_lighting_state(
-          lighting_control_port, self.lighting_ch,
-          lighting_control_utils.LIGHT_ON, use_gen2)
+          self.lighting_control_port, self.lighting_ch,
+          lighting_control_utils.LIGHT_ON, self.use_gen2)
 
       # pull the video recording file from the device.
-      self.dut.adb.pull([preview_recording_obj['recordedOutputPath'],
-                         self.log_path])
+      its_session_utils.pull_file_from_dut(
+          self.dut, preview_recording_obj, self.log_path)
       logging.debug('Recorded preview video is available at: %s',
                     self.log_path)
       preview_file_name = preview_recording_obj[

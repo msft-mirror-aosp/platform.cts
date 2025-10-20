@@ -49,5 +49,7 @@
         <option name="runtime-hint" value="42m45s" />
         <!-- disable isolated storage so tests can access dynamic config stored in /sdcard. -->
         <option name="isolated-storage" value="false" />
+        <option name="exclude-annotation" value="com.android.compatibility.common.util.ModuleSpecificTest" />
+        <option name="instrumentation-arg" key="media-testing-mode" value="cts" />
     </test>
 </configuration>

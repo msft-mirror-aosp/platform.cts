@@ -17,10 +17,7 @@
 package android.media.codec.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_Format32bitABGR2101010;
-import static android.media.MediaCodecInfo.CodecProfileLevel.AV1ProfileMain10;
-import static android.media.MediaCodecInfo.CodecProfileLevel.AVCProfileHigh10;
-import static android.media.MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10;
-import static android.media.MediaCodecInfo.CodecProfileLevel.VP9Profile2;
+import static android.media.MediaCodecInfo.CodecProfileLevel.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -193,6 +190,27 @@ public class DecodeEditEncodeTest {
         return false;
     }
 
+    private void setProfileLevelKeys(MediaFormat format) {
+        if (mUseHighBitDepth) {
+            if (mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_AVC)) {
+                format.setInteger(MediaFormat.KEY_PROFILE, AVCProfileHigh10);
+                format.setInteger(MediaFormat.KEY_LEVEL, AVCLevel1);
+            } else if (mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_HEVC)) {
+                format.setInteger(MediaFormat.KEY_PROFILE, HEVCProfileMain10);
+                format.setInteger(MediaFormat.KEY_LEVEL, HEVCMainTierLevel1);
+            } else if (mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_VP9)) {
+                format.setInteger(MediaFormat.KEY_PROFILE, VP9Profile2);
+                format.setInteger(MediaFormat.KEY_LEVEL, VP9Level1);
+            } else if (mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_AV1)) {
+                format.setInteger(MediaFormat.KEY_PROFILE, AV1ProfileMain10);
+                format.setInteger(MediaFormat.KEY_LEVEL, AV1Level2);
+            } else {
+                fail("Test is not updated to handle mediaType " + mMediaType
+                        + " for 10-bit testing.");
+            }
+        }
+    }
+
     @Before
     public void shouldSkip() throws IOException {
         MediaFormat format = MediaFormat.createVideoFormat(mMediaType, mWidth, mHeight);
@@ -203,25 +221,8 @@ public class DecodeEditEncodeTest {
             assumeTrue(mEncoderName + " doesn't support RGBA1010102",
                     hasSupportForColorFormat(mEncoderName, mMediaType,
                             COLOR_Format32bitABGR2101010, /* isEncoder */ true));
-
-            switch (mMediaType) {
-                case MediaFormat.MIMETYPE_VIDEO_AVC:
-                    format.setInteger(MediaFormat.KEY_PROFILE, AVCProfileHigh10);
-                    break;
-                case MediaFormat.MIMETYPE_VIDEO_HEVC:
-                    format.setInteger(MediaFormat.KEY_PROFILE, HEVCProfileMain10);
-                    break;
-                case MediaFormat.MIMETYPE_VIDEO_VP9:
-                    format.setInteger(MediaFormat.KEY_PROFILE, VP9Profile2);
-                    break;
-                case MediaFormat.MIMETYPE_VIDEO_AV1:
-                    format.setInteger(MediaFormat.KEY_PROFILE, AV1ProfileMain10);
-                    break;
-                default:
-                    fail("MediaType " + mMediaType + " is not supported for 10-bit testing.");
-                    break;
-            }
         }
+        setProfileLevelKeys(format);
         assumeTrue(MediaUtils.supports(mEncoderName, format));
         assumeTrue(MediaUtils.supports(mDecoderName, format));
         // Few cuttlefish specific color conversion issues were fixed after Android T.
@@ -239,7 +240,7 @@ public class DecodeEditEncodeTest {
         }
     }
 
-    @Parameterized.Parameters(name = "{index}_{0}_{1}_{2}_{3}_{4}_{5}")
+    @Parameterized.Parameters(name = "{index}_{0}_{1}_{7}")
     public static Collection<Object[]> input() {
         final List<Object[]> baseArgsList = Arrays.asList(new Object[][]{
                 // width, height, bitrate
@@ -258,8 +259,12 @@ public class DecodeEditEncodeTest {
                     if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_VP8) && useHighBitDepth) {
                         continue;
                     }
-                    exhaustiveArgsList.add(
-                            new Object[]{mediaType, obj[0], obj[1], obj[2], useHighBitDepth});
+                    String label = String.format("%s_%dx%d_%dkbps_%s", mediaType,
+                            ((Integer) obj[0]).intValue(), ((Integer) obj[1]).intValue(),
+                            ((Integer) obj[2]).intValue() / 1000,
+                            useHighBitDepth ? "rgba1010102" : "rgba8888");
+                    exhaustiveArgsList.add(new Object[] {
+                            mediaType, obj[0], obj[1], obj[2], useHighBitDepth, label});
                 }
             }
         }
@@ -267,7 +272,8 @@ public class DecodeEditEncodeTest {
     }
 
     public DecodeEditEncodeTest(String encoder, String decoder, String mimeType, int width,
-            int height, int bitRate, boolean useHighBitDepth) {
+            int height, int bitRate, boolean useHighBitDepth,
+            @SuppressWarnings("unused") String label) {
         if ((width % 16) != 0 || (height % 16) != 0) {
             Log.w(TAG, "WARNING: width or height not multiple of 16");
         }
@@ -380,6 +386,7 @@ public class DecodeEditEncodeTest {
             format.setInteger(MediaFormat.KEY_BIT_RATE, mBitRate);
             format.setInteger(MediaFormat.KEY_FRAME_RATE, FRAME_RATE);
             format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, IFRAME_INTERVAL);
+            setProfileLevelKeys(format);
             if (mUseHighBitDepth) {
                 format.setInteger(MediaFormat.KEY_COLOR_RANGE, MediaFormat.COLOR_RANGE_FULL);
                 format.setInteger(MediaFormat.KEY_COLOR_STANDARD,
@@ -433,6 +440,8 @@ public class DecodeEditEncodeTest {
         // Loop until the output side is done.
         boolean inputDone = false;
         boolean outputDone = false;
+        boolean eos = false;
+        long inputDoneTs = 0;
         while (!outputDone) {
             if (VERBOSE) Log.d(TAG, "gen loop");
 
@@ -446,17 +455,31 @@ public class DecodeEditEncodeTest {
                         // Might drop a frame, but at least we won't crash mediaserver.
                         try { Thread.sleep(500); } catch (InterruptedException ie) {}
                         outputDone = true;
-                    } else {
-                        encoder.signalEndOfInputStream();
+                        eos = true;
                     }
                     inputDone = true;
+                    inputDoneTs = System.currentTimeMillis();
                 } else {
                     generateSurfaceFrame(generateIndex);
                     inputSurface.setPresentationTime(computePresentationTime(generateIndex) * 1000);
                     if (VERBOSE) Log.d(TAG, "inputSurface swapBuffers");
                     inputSurface.swapBuffers();
+                    generateIndex++;
                 }
-                generateIndex++;
+            }
+
+            if (inputDone && !eos) {
+                if (outputCount < NUM_FRAMES) {
+                    long now = System.currentTimeMillis();
+                    if ((now - inputDoneTs) > 1000) {
+                        Log.d(TAG, (NUM_FRAMES - outputCount) + " frames are not delievered ");
+                        encoder.signalEndOfInputStream();
+                        eos = true;
+                    }
+                } else {
+                    encoder.signalEndOfInputStream();
+                    eos = true;
+                }
             }
 
             // Check for output from the encoder.  If there's no output yet, we either need to
@@ -573,6 +596,7 @@ public class DecodeEditEncodeTest {
                     inputFormat.getInteger(MediaFormat.KEY_FRAME_RATE));
             outputFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL,
                     inputFormat.getInteger(MediaFormat.KEY_I_FRAME_INTERVAL));
+            setProfileLevelKeys(outputFormat);
             if (mUseHighBitDepth) {
                 outputFormat.setInteger(MediaFormat.KEY_COLOR_RANGE, MediaFormat.COLOR_RANGE_FULL);
                 outputFormat.setInteger(MediaFormat.KEY_COLOR_STANDARD,

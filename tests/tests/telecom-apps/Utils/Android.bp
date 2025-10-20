@@ -27,6 +27,7 @@ java_library {
     srcs: [
         "src/**/*.java",
         "aidl/**/*.aidl",
+        ":framework-telecom-aidl-export-sources",
     ],
     aidl: {
         local_include_dirs: ["aidl/"],

@@ -16,7 +16,6 @@
 
 package android.content.broadcast.cts;
 
-import static android.content.pm.Flags.FLAG_MERGE_PACKAGE_CHANGED_BROADCAST;
 import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
 import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED;
 import static android.os.Process.myUserHandle;
@@ -35,8 +34,6 @@ import android.os.Bundle;
 import android.os.RemoteCallback;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
@@ -89,6 +86,8 @@ public class PackageChangedBroadcastGroupPolicyTest {
     private static final String PACKAGE_CHANGED_TEST_APP_PACKAGE_NAME =
             "android.content.cts.packagechangedtestapp";
     private static final String SLEEP_ACTION = "android.content.broadcast.cts.SLEEP_ACTION";
+    private static final int NUM_SENT_BROADCASTS = 4;
+    private static final int NUM_RECEIVED_BROADCASTS = 1;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -130,24 +129,9 @@ public class PackageChangedBroadcastGroupPolicyTest {
         assertThat(isAppInstalledForUser(PACKAGE_CHANGED_TEST_APP_PACKAGE_NAME, mUserId)).isFalse();
     }
 
-    @RequiresFlagsEnabled(FLAG_MERGE_PACKAGE_CHANGED_BROADCAST)
     @Test
     public void changeWholePackageState_enableDisableFourTimes_shouldReceiveLastBroadcastOnce()
             throws Exception {
-        enableAndDisableWholePackageStateContinuously(
-                4 /* numSentBroadcasts */, 1 /* numReceivedBroadcasts */);
-    }
-
-    @RequiresFlagsDisabled(FLAG_MERGE_PACKAGE_CHANGED_BROADCAST)
-    @Test
-    public void changeWholePackageState_enableDisableFourTimes_shouldReceiveFourBroadcasts()
-            throws Exception {
-        enableAndDisableWholePackageStateContinuously(
-                4 /* numSentBroadcasts */, 4 /* numReceivedBroadcasts */);
-    }
-
-    private void enableAndDisableWholePackageStateContinuously(
-            int numSentBroadcasts, int numReceivedBroadcasts) throws Exception {
         // Launch the package changed broadcast test app to receive the PACKAGE_CHANGED broadcast.
         // The test app will send the number of receiving the PACKAGE_CHANGED broadcast.
         final Intent intent =
@@ -201,7 +185,7 @@ public class PackageChangedBroadcastGroupPolicyTest {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
                     // Start changing test app state multiple times in a row.
-                    for (int i = 0; i < numSentBroadcasts; i++) {
+                    for (int i = 0; i < NUM_SENT_BROADCASTS; i++) {
                         setApplicationEnabledSetting(
                                 PACKAGE_CHANGED_TEST_APP_PACKAGE_NAME,
                                 i % 2 == 0
@@ -219,7 +203,7 @@ public class PackageChangedBroadcastGroupPolicyTest {
                 });
 
         int broadcastNumber = broadcastFuture.get(LONG_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        assertThat(broadcastNumber).isEqualTo(numReceivedBroadcasts);
+        assertThat(broadcastNumber).isEqualTo(NUM_RECEIVED_BROADCASTS);
     }
 
     private void setApplicationEnabledSetting(String packageName, int newState, int flags) {

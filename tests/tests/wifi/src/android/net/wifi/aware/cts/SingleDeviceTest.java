@@ -82,16 +82,13 @@ import android.os.Parcel;
 import android.os.PersistableBundle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.ApiTest;
@@ -99,11 +96,19 @@ import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.modules.utils.build.SdkLevel;
 import com.android.wifi.flags.Flags;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -123,6 +128,9 @@ import java.util.function.Consumer;
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class SingleDeviceTest extends WifiJUnit4TestBase {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String TAG = "WifiAwareCtsTests";
 
     // wait for Wi-Fi Aware state changes & network requests callbacks
@@ -767,6 +775,7 @@ public class SingleDeviceTest extends WifiJUnit4TestBase {
             params.setNdpSessionLimit(0);
             ShellIdentityUtils.invokeWithShellPermissions(
                     () -> mWifiAwareManager.setAwareParams(params));
+            Thread.sleep(1000);
             assertEquals(
                     deviceNdpNum,
                     mWifiAwareManager.getCharacteristics().getNumberOfSupportedDataPaths());
@@ -1446,8 +1455,126 @@ public class SingleDeviceTest extends WifiJUnit4TestBase {
                 DiscoverySessionCallbackTest.ON_SESSION_CONFIG_UPDATED));
 
         // 3. destroy
-        assertFalse("Subscribe not terminated", discoveryCb.hasCallbackAlreadyHappened(
-                DiscoverySessionCallbackTest.ON_SESSION_TERMINATED));
+        assertFalse(
+                "Subscribe not terminated",
+                discoveryCb.hasCallbackAlreadyHappened(
+                        DiscoverySessionCallbackTest.ON_SESSION_TERMINATED));
+        discoverySession.close();
+
+        // 4. try update post-destroy: should time-out waiting for cb
+        discoverySession.updateSubscribe(subscribeConfig);
+        assertFalse(
+                "Subscribe update post destroy",
+                discoveryCb.waitForCallback(
+                        DiscoverySessionCallbackTest.ON_SESSION_CONFIG_UPDATED));
+        assertEquals(
+                numOfAllSubscribeSessions,
+                mWifiAwareManager
+                        .getAvailableAwareResources()
+                        .getAvailableSubscribeSessionsCount());
+        if (ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU)) {
+            assertTrue("Time out waiting for resource change", receiver.waitForStateChange());
+            assertEquals(
+                    numOfAllSubscribeSessions,
+                    receiver.getResources().getAvailableSubscribeSessionsCount());
+        }
+
+        session.close();
+    }
+
+    /**
+     * Validate a successful subscribe discovery session lifetime with geofence: subscribe, update
+     * subscribe, destroy.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_AWARE_INGRESS_EGRESS_DISTANCE)
+    @ApiTest(
+            apis = {
+                "android.net.wifi.aware.SubscribeConfig.Builder#setEgressDistanceMm",
+                "android.net.wifi.aware.SubscribeConfig.Builder#setIngressDistanceMm",
+                "android.net.wifi.aware.SubscribeConfig#getEgressDistanceMm",
+                "android.net.wifi.aware.SubscribeConfig#getIngressDistanceMm"
+            })
+    public void subscribeDiscoverySuccessWithGeofence() throws Exception {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
+            return;
+        }
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(WifiAwareManager.ACTION_WIFI_AWARE_RESOURCE_CHANGED);
+        WifiAwareResourcesBroadcastReceiver receiver = new WifiAwareResourcesBroadcastReceiver();
+        mContext.registerReceiver(receiver, intentFilter);
+        final String serviceName = "SubscribeName";
+
+        WifiAwareSession session = attachAndGetSession();
+
+        SubscribeConfig subscribeConfig =
+                new SubscribeConfig.Builder().setServiceName(serviceName).build();
+        DiscoverySessionCallbackTest discoveryCb = new DiscoverySessionCallbackTest();
+        int numOfAllSubscribeSessions =
+                mWifiAwareManager.getAvailableAwareResources().getAvailableSubscribeSessionsCount();
+        // 1. subscribe
+        session.subscribe(subscribeConfig, discoveryCb, mHandler);
+        assertTrue(
+                "Subscribe started",
+                discoveryCb.waitForCallback(DiscoverySessionCallbackTest.ON_SUBSCRIBE_STARTED));
+        SubscribeDiscoverySession discoverySession = discoveryCb.getSubscribeDiscoverySession();
+        assertNotNull("Subscribe session", discoverySession);
+        assertFalse(
+                discoveryCb.waitForCallback(DiscoverySessionCallbackTest.ON_SERVICE_DISCOVERED));
+        assertFalse(
+                discoveryCb.waitForCallback(
+                        DiscoverySessionCallbackTest.ON_SESSION_DISCOVERED_LOST));
+        assertEquals(
+                numOfAllSubscribeSessions - 1,
+                mWifiAwareManager
+                        .getAvailableAwareResources()
+                        .getAvailableSubscribeSessionsCount());
+        if (ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU)) {
+            assertTrue("Time out waiting for resource change", receiver.waitForStateChange());
+            assertEquals(
+                    numOfAllSubscribeSessions - 1,
+                    receiver.getResources().getAvailableSubscribeSessionsCount());
+        }
+
+        // 2. update-subscribe
+        boolean rttSupported =
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI_RTT);
+        SubscribeConfig.Builder builder =
+                new SubscribeConfig.Builder()
+                        .setServiceName(serviceName)
+                        .setServiceSpecificInfo("extras".getBytes());
+
+        if (rttSupported) {
+            builder.setEgressDistanceMm(MIN_DISTANCE_MM);
+            builder.setIngressDistanceMm(MAX_DISTANCE_MM);
+        }
+
+        List<OuiKeyedData> vendorData = generateOuiKeyedDataList(5);
+        if (isVendorDataSupported()) {
+            builder.setVendorData(vendorData);
+        }
+
+        subscribeConfig = builder.build();
+        if (isVendorDataSupported()) {
+            assertEquals(vendorData, subscribeConfig.getVendorData());
+        }
+
+        if (rttSupported) {
+            assertEquals(MAX_DISTANCE_MM, subscribeConfig.getEgressDistanceMm());
+            assertEquals(MIN_DISTANCE_MM, subscribeConfig.getIngressDistanceMm());
+        }
+
+        discoverySession.updateSubscribe(subscribeConfig);
+        assertTrue(
+                "Subscribe update",
+                discoveryCb.waitForCallback(
+                        DiscoverySessionCallbackTest.ON_SESSION_CONFIG_UPDATED));
+
+        // 3. destroy
+        assertFalse(
+                "Subscribe not terminated",
+                discoveryCb.hasCallbackAlreadyHappened(
+                        DiscoverySessionCallbackTest.ON_SESSION_TERMINATED));
         discoverySession.close();
 
         // 4. try update post-destroy: should time-out waiting for cb
@@ -1684,6 +1811,77 @@ public class SingleDeviceTest extends WifiJUnit4TestBase {
         assertEquals(
                 SubscribeConfig.PERIODIC_RANGING_INTERVAL_128TU,
                 subscribeConfig.getPeriodicRangingInterval());
+        assertEquals(MIN_RTT_BURST_SIZE, subscribeConfig.getRttBurstSize());
+        assertEquals(2437, subscribeConfig.getFrequencyMhz());
+        assertEquals(0, subscribeConfig.getCenterFreq0Mhz());
+        assertEquals(0, subscribeConfig.getCenterFreq1Mhz());
+        assertEquals(ScanResult.PREAMBLE_LEGACY, subscribeConfig.getPreamble());
+        assertEquals(ScanResult.CHANNEL_WIDTH_20MHZ, subscribeConfig.getChannelWidth());
+
+        DiscoverySessionCallbackTest discoveryCb = new DiscoverySessionCallbackTest();
+
+        // 1. subscribe
+        session.subscribe(subscribeConfig, discoveryCb, mHandler);
+        assertTrue(
+                "Subscribe started",
+                discoveryCb.waitForCallback(DiscoverySessionCallbackTest.ON_SUBSCRIBE_STARTED));
+        SubscribeDiscoverySession discoverySession = discoveryCb.getSubscribeDiscoverySession();
+        assertNotNull("Subscribe session", discoverySession);
+        assertFalse(
+                discoveryCb.waitForCallback(DiscoverySessionCallbackTest.ON_SERVICE_DISCOVERED));
+        assertFalse(
+                discoveryCb.waitForCallback(
+                        DiscoverySessionCallbackTest.ON_RANGING_RESULTS_RECEIVED));
+        assertFalse(
+                discoveryCb.waitForCallback(
+                        DiscoverySessionCallbackTest.ON_SESSION_DISCOVERED_LOST));
+
+        // 2. destroy
+        assertFalse(
+                "Subscribe not terminated",
+                discoveryCb.hasCallbackAlreadyHappened(
+                        DiscoverySessionCallbackTest.ON_SESSION_TERMINATED));
+        discoverySession.close();
+        session.close();
+    }
+
+    /** Validate success subscribe with supported periodic ranging. */
+    @Test
+    @RequiresFlagsEnabled(com.android.wifi.flags.Flags.FLAG_AWARE_PERIODIC_RANGING_INTERVALS)
+    @ApiTest(apis = {"android.net.wifi.aware.Characteristics#getSupportedPeriodicRangingIntervals"})
+    public void subscribeWithSupportedPeriodicRanging() {
+        if (!TestUtils.shouldTestWifiAware(mContext)) {
+            return;
+        }
+        Characteristics characteristics = mWifiAwareManager.getCharacteristics();
+
+        if (!characteristics.isPeriodicRangingSupported()
+                || characteristics.getSupportedPeriodicRangingIntervals()
+                        == Characteristics.SUPPORTED_PERIODIC_RANGING_INTERVAL_NONE) {
+            return;
+        }
+        final String serviceName = "SubscribeName";
+        WifiAwareSession session = attachAndGetSession();
+        // Get the first supported periodic ranging interval
+        int periodicRangingInterval =
+                Integer.lowestOneBit(characteristics.getSupportedPeriodicRangingIntervals());
+
+        SubscribeConfig subscribeConfig =
+                new SubscribeConfig.Builder()
+                        .setServiceName(serviceName)
+                        .setPeriodicRangingEnabled(true)
+                        .setPeriodicRangingInterval(periodicRangingInterval)
+                        .setRttBurstSize(MIN_RTT_BURST_SIZE)
+                        .setFrequencyMhz(2437)
+                        .setCenterFreq0Mhz(0)
+                        .setCenterFreq1Mhz(0)
+                        .setPreamble(ScanResult.PREAMBLE_LEGACY)
+                        .setChannelWidth(ScanResult.CHANNEL_WIDTH_20MHZ)
+                        .build();
+
+        // validate periodic ranging config
+        assertTrue(subscribeConfig.isPeriodicRangingEnabled());
+        assertEquals(periodicRangingInterval, subscribeConfig.getPeriodicRangingInterval());
         assertEquals(MIN_RTT_BURST_SIZE, subscribeConfig.getRttBurstSize());
         assertEquals(2437, subscribeConfig.getFrequencyMhz());
         assertEquals(0, subscribeConfig.getCenterFreq0Mhz());
@@ -2186,24 +2384,17 @@ public class SingleDeviceTest extends WifiJUnit4TestBase {
      */
     @Test
     public void awareParamsInvalid() {
-        if (!TestUtils.shouldTestWifiAware(mContext)) {
-            return;
-        }
         AwareParams params = new AwareParams();
-        params.setDiscoveryWindowWakeInterval24Ghz(-1);
-        assertThrows(IllegalArgumentException.class, () -> mWifiAwareManager.setAwareParams(params));
-        params.setDiscoveryWindowWakeInterval24Ghz(5);
-        params.setDiscoveryWindowWakeInterval5Ghz(-1);
-        assertThrows(IllegalArgumentException.class, () -> mWifiAwareManager.setAwareParams(params));
-        params.setDiscoveryWindowWakeInterval5Ghz(5);
-        params.setDiscoveryBeaconIntervalMillis(-1);
-        assertThrows(IllegalArgumentException.class, () -> mWifiAwareManager.setAwareParams(params));
-        params.setDiscoveryBeaconIntervalMillis(50);
-        params.setMacRandomizationIntervalSeconds(-1);
-        assertThrows(IllegalArgumentException.class, () -> mWifiAwareManager.setAwareParams(params));
-        params.setMacRandomizationIntervalSeconds(1000);
-        params.setNumSpatialStreamsInDiscovery(-1);
-        assertThrows(IllegalArgumentException.class, () -> mWifiAwareManager.setAwareParams(params));
+        assertThrows(IllegalArgumentException.class,
+            () -> params.setDiscoveryWindowWakeInterval24Ghz(-1));
+        assertThrows(IllegalArgumentException.class,
+            () -> params.setDiscoveryWindowWakeInterval5Ghz(-1));
+        assertThrows(IllegalArgumentException.class,
+            () -> params.setDiscoveryBeaconIntervalMillis(-1));
+        assertThrows(IllegalArgumentException.class,
+            () -> params.setMacRandomizationIntervalSeconds(-1));
+        assertThrows(IllegalArgumentException.class,
+            () -> params.setNumSpatialStreamsInDiscovery(-1));
     }
 
     @Test
@@ -2335,5 +2526,18 @@ public class SingleDeviceTest extends WifiJUnit4TestBase {
         int cbCalled = attachCb.waitForAnyCallback();
         assertEquals("Wi-Fi Aware attach", AttachCallbackTest.ATTACHED, cbCalled);
         return attachCb;
+    }
+
+    @ApiTest(apis = {"android.net.wifi.aware.WifiAwareManager#getTxtRecordTlvBuffer",
+            "android.net.wifi.aware.WifiAwareManager#getTxtRecordMap"})
+    @Test
+    public void testTxtRecordTlvBuffer() {
+        Map<String, String> txtRecord = new HashMap<>();
+        txtRecord.put("key1", "value1");
+        txtRecord.put("key2", "value2");
+        byte[] txtRecordTlvBuffer = WifiAwareManager.getTxtRecordTlvBuffer(txtRecord);
+        Map<String, String> rereadTxtRecord = WifiAwareManager.getTxtRecordMap(txtRecordTlvBuffer);
+        assertEquals(txtRecord.size(), rereadTxtRecord.size());
+        assertEquals(txtRecord, rereadTxtRecord);
     }
 }

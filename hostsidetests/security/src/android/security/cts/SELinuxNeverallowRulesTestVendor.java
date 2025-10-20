@@ -93,7 +93,7 @@ public class SELinuxNeverallowRulesTestVendor extends BaseHostJUnit4Test {
                                             SELinuxHostTest.copyResourceToTempFile("/" + name);
                                     String policy = Files.readString(publicPolicy.toPath());
                                     List<SELinuxNeverallowRule> parsedRules =
-                                            SELinuxNeverallowRule.parsePolicy(policy);
+                                            SELinuxNeverallowRule.parsePolicy(policy, ver);
 
                                     for (SELinuxNeverallowRule rule : parsedRules) {
                                         rules.add(new Object[] {ver, rule.getStableId(), rule});

@@ -29,7 +29,6 @@ extern int register_android_graphics_cts_FrameRateCtsActivity(JNIEnv*);
 extern int register_android_graphics_cts_MediaVulkanGpuTest(JNIEnv*);
 extern int register_android_graphics_cts_VulkanFeaturesTest(JNIEnv*);
 extern int register_android_graphics_cts_VulkanPreTransformCtsActivity(JNIEnv*);
-extern int register_android_graphics_fonts_cts_SystemFontTest(JNIEnv*);
 
 jint JNI_OnLoad(JavaVM* vm, void* /*reserved*/) {
     JNIEnv* env = nullptr;
@@ -58,8 +57,6 @@ jint JNI_OnLoad(JavaVM* vm, void* /*reserved*/) {
     if (register_android_graphics_cts_BasicVulkanGpuTest(env))
         return JNI_ERR;
     if (register_android_graphics_cts_CameraVulkanGpuTest(env))
-        return JNI_ERR;
-    if (register_android_graphics_fonts_cts_SystemFontTest(env))
         return JNI_ERR;
     if (register_android_graphics_cts_ComputeAhbTest(env))
         return JNI_ERR;

@@ -46,7 +46,9 @@ import android.util.Pair;
 import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.core.content.FileProvider;
+
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
 import com.android.cts.verifier.ArrayTestListAdapter;
@@ -54,6 +56,14 @@ import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.DialogTestListActivity;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.TestResult;
+
+import com.google.common.collect.ImmutableMap;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.junit.rules.TestName;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileDescriptor;
@@ -77,16 +87,13 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.junit.rules.TestName;
 
 /**
  * Test for Camera features that require that the camera be aimed at a specific test scene.
@@ -115,6 +122,7 @@ public class ItsTestActivity extends DialogTestListActivity {
     private static final String JCA_DEBUG_MODE_KEY = "KEY_DEBUG_MODE";
     public static final String JCA_VIDEO_PATH_TAG = "JCA_VIDEO_CAPTURE_PATH";
     public static final String JCA_CAPTURE_PATHS_TAG = "JCA_CAPTURE_PATHS";
+    public static final String JCA_CAPTURE_URIS_TAG = "JCA_CAPTURE_URIS";
     public static final String JCA_CAPTURE_STATUS_TAG = "JCA_CAPTURE_STATUS";
     public static final String JCA_DATE_TIME_TAG = "yyyyMMdd_HHmmss";
 
@@ -122,6 +130,9 @@ public class ItsTestActivity extends DialogTestListActivity {
     private static final String CAM_ID_KEY = "camera_id";
     private static final String TABLET_NAME_KEY = "tablet_name";
     private static final int PERF_METRICS_PERMANENT_KEY_COUNT = 2; // CAM_ID_KEY, TABLET_NAME_KEY
+
+    private static final String PERF_METRICS_VERSION = "version";
+    private static final String CURRENT_PERF_METRICS_VERSION = "16.0";
 
     private static final String RESULT_PASS = "PASS";
     private static final String RESULT_FAIL = "FAIL";
@@ -257,36 +268,98 @@ public class ItsTestActivity extends DialogTestListActivity {
     private  String mPrimaryFrontCameraIdUnfolded = null;
     private ArrayTestListAdapter mAdapter;
 
+    private static final int TYPE_STRING = 0;
+    private static final int TYPE_DOUBLE = 1;
+    private static final int TYPE_REPEAT_INT32 = 2;
+    private static final int TYPE_BOOLEAN = 3;
+
+    private static final ImmutableMap<String, Integer> mPerfMetricsTypeMap =
+            ImmutableMap.<String, Integer>builder()
+                    .put("camera_id", TYPE_STRING)
+                    .put("yuv_plus_jpeg_rms_diff", TYPE_DOUBLE)
+                    .put("yuv_plus_raw_rms_diff", TYPE_DOUBLE)
+                    .put("imu_drift_duration_seconds", TYPE_DOUBLE)
+                    .put("imu_drift_gyro_sampling_rate_hz", TYPE_DOUBLE)
+                    .put("imu_drift_gyro_drift_degrees_xyz", TYPE_STRING)
+                    .put("imu_drift_rv_sampling_rate_hz", TYPE_DOUBLE)
+                    .put("imu_drift_rv_drift_degrees_xyz", TYPE_STRING)
+                    .put("night_extension_chart_luma", TYPE_REPEAT_INT32)
+                    .put("night_extension_avg_luma", TYPE_DOUBLE)
+                    .put("night_extension_delta_avg_luma", TYPE_DOUBLE)
+                    .put("low_light_boost_chart_luma", TYPE_REPEAT_INT32)
+                    .put("low_light_boost_avg_luma", TYPE_DOUBLE)
+                    .put("low_light_boost_delta_avg_luma", TYPE_DOUBLE)
+                    .put("burst_capture_max_frame_time_minus_frameduration_ns", TYPE_DOUBLE)
+                    .put("yuv_plus_raw10_rms_diff", TYPE_DOUBLE)
+                    .put("sensor_fusion_corr_dist", TYPE_DOUBLE)
+                    .put("sensor_fusion_offset_ms", TYPE_DOUBLE)
+                    .put("ae_awb_regions_ae_y_change", TYPE_DOUBLE)
+                    .put("tablet_name", TYPE_STRING)
+                    .put("preview_distortion_min_zoom", TYPE_DOUBLE)
+                    .put("preview_distortion_min_physical_id", TYPE_DOUBLE)
+                    .put("preview_distortion_min_chkr_distortion_error", TYPE_DOUBLE)
+                    .put("preview_distortion_min_chkr_chart_coverage", TYPE_DOUBLE)
+                    .put("preview_distortion_min_aruco_distortion_error", TYPE_DOUBLE)
+                    .put("preview_distortion_min_aruco_chart_coverage", TYPE_DOUBLE)
+                    .put("preview_distortion_max_zoom", TYPE_DOUBLE)
+                    .put("preview_distortion_max_physical_id", TYPE_DOUBLE)
+                    .put("preview_distortion_max_chkr_distortion_error", TYPE_DOUBLE)
+                    .put("preview_distortion_max_chkr_chart_coverage", TYPE_DOUBLE)
+                    .put("preview_distortion_max_aruco_distortion_error", TYPE_DOUBLE)
+                    .put("lens_intrinsic_calibration_max_principal_point_diff", TYPE_DOUBLE)
+                    .put(
+                            "lens_intrinsic_calibration_samples_principal_points_diff_detected",
+                            TYPE_BOOLEAN)
+                    .put("preview_zoom_max_rel_variation", TYPE_DOUBLE)
+                    .put("preview_zoom_max_rel_variation_zoom", TYPE_DOUBLE)
+                    .put("preview_zoom_rms_z_variations", TYPE_DOUBLE)
+                    .put("preview_zoom_rms_rel_variations", TYPE_DOUBLE)
+                    .put("feature_query_proto", TYPE_STRING)
+                    .put("default_jca_ip_fov_match", TYPE_STRING)
+                    .put("default_jca_ip_camera_hardware_level", TYPE_STRING)
+                    .put("default_jca_ip_mean_brightness_diff", TYPE_DOUBLE)
+                    .put("default_jca_ip_mean_white_balance_diff", TYPE_DOUBLE)
+                    .put("preview_stabilization_fov_reduction_percentage", TYPE_DOUBLE)
+                    .put("has_gainmap", TYPE_STRING)
+                    .put("camera_launch_time_ms", TYPE_DOUBLE)
+                    .build();
+    // Assign the return value of JSONObject Get functions to stop
+    // the compiler from optimizing away them. We use the Get functions
+    // to catch type mismatch.
+    private static volatile Object sUnused;
+
     // Scenes
-    private static final List<String> mSceneIds = List.of(
-            "scene0",
-            "scene1_1",
-            "scene1_2",
-            "scene1_3",
-            "scene2_a",
-            "scene2_b",
-            "scene2_c",
-            "scene2_d",
-            "scene2_e",
-            "scene2_f",
-            "scene2_g",
-            "scene3",
-            "scene4",
-            "scene5",
-            "scene6",
-            "scene7",
-            "scene8",
-            "scene9",
-            "scene_extensions/scene_hdr",
-            "scene_extensions/scene_low_light",
-            "scene_tele/scene6_tele",
-            "scene_tele/scene7_tele",
-            "scene_video",
-            "sensor_fusion",
-            "feature_combination",
-            "scene_flash",
-            "scene_ip",
-            "scene_gen2_chart");
+    private static final List<String> mSceneIds =
+            List.of(
+                    "scene0",
+                    "scene1_1",
+                    "scene1_2",
+                    "scene1_3",
+                    "scene2_a",
+                    "scene2_b",
+                    "scene2_c",
+                    "scene2_d",
+                    "scene2_e",
+                    "scene2_f",
+                    "scene2_g",
+                    "scene3",
+                    "scene4",
+                    "scene5",
+                    "scene6",
+                    "scene7",
+                    "scene8",
+                    "scene9",
+                    "scene_extensions/scene_hdr",
+                    "scene_extensions/scene_low_light",
+                    "scene_tele/scene6_tele",
+                    "scene_tele/scene7_tele",
+                    "scene_video",
+                    "sensor_fusion",
+                    "feature_combination",
+                    "scene_flash",
+                    "scene_ip",
+                    "scene_gen2_chart",
+                    "scene_wide_gamut");
 
     // This must match scenes of SUB_CAMERA_TESTS in tools/run_all_tests.py
     private static final List<String> mHiddenPhysicalCameraSceneIds = List.of(
@@ -610,33 +683,32 @@ public class ItsTestActivity extends DialogTestListActivity {
                     continue;
                 }
 
-                // Remove all outdated keys in mFinalPerfMetricsArr
+                // Merge the new JSON object with existing object of the same camera
+                // ID and tablet.
                 Iterator<String> keys = newObj.keys();
                 while (keys.hasNext()) {
                     String key = keys.next();
-                    if (key.equals(CAM_ID_KEY) || key.equals(TABLET_NAME_KEY)) {
-                        continue;
-                    }
-
-                    obj.remove(key);
+                    Object value = newObj.get(key);
+                    obj.put(key, value);
                 }
 
-                // Only contains CAM_ID_KEY and TABLET_NAME_KEY
-                if (obj.length() <= PERF_METRICS_PERMANENT_KEY_COUNT) {
-                    mFinalPerfMetricsArr.remove(i);
-                } else {
-                    mFinalPerfMetricsArr.put(i, obj);
-                    foundCameraIdAndTablet = true;
-                }
+                foundCameraIdAndTablet = true;
             }
 
             if (!foundCameraIdAndTablet) {
                 mFinalPerfMetricsArr.put(newObj);
             }
 
-            // Submitting the report log generates a CtsCameraITSTestCases.reportlog.json
-            // on device at path /sdcard/ReportLogFiles
+            // Validate and submit the report log generates a
+            // CtsCameraITSTestCases.reportlog.json on device at path
+            // /sdcard/ReportLogFiles
+            validatePerfMetrics();
             mReportLog.addValues(PERF_METRICS, mFinalPerfMetricsArr);
+            mReportLog.addValue(
+                    PERF_METRICS_VERSION,
+                    CURRENT_PERF_METRICS_VERSION,
+                    ResultType.NEUTRAL,
+                    ResultUnit.NONE);
             mReportLog.submit();
         }
 
@@ -731,6 +803,42 @@ public class ItsTestActivity extends DialogTestListActivity {
             return true;
         }
 
+        private void validatePerfMetrics() throws JSONException {
+            // Verify all Perf Metrics JSON making sure their values match types.
+            for (int i = 0; i < mFinalPerfMetricsArr.length(); i++) {
+                JSONObject obj = mFinalPerfMetricsArr.getJSONObject(i);
+                for (Map.Entry<String, Integer> entry : mPerfMetricsTypeMap.entrySet()) {
+                    String key = entry.getKey();
+                    Integer type = entry.getValue();
+
+                    if (!obj.has(key)) {
+                        continue;
+                    }
+
+                    switch (type) {
+                        case TYPE_STRING:
+                            sUnused = obj.getString(key);
+                            break;
+                        case TYPE_DOUBLE:
+                            sUnused = obj.getDouble(key);
+                            break;
+                        case TYPE_BOOLEAN:
+                            sUnused = obj.getBoolean(key);
+                            break;
+                        case TYPE_REPEAT_INT32: {
+                            JSONArray intArray = obj.getJSONArray(key);
+                            for (int j = 0; j < intArray.length(); j++) {
+                                sUnused = intArray.getInt(j);
+                            }
+                        }
+                            break;
+                        default:
+                            throw new JSONException("Unhandled ITS Metrics type " + type);
+                    }
+                }
+            }
+        }
+
         private void parsePerfMetrics(String perfMetricsResult, JSONObject obj,
                 List<String> floatKeys, List<String> booleanKeys, List<String> integerKeys)
                 throws org.json.JSONException {
@@ -738,9 +846,13 @@ public class ItsTestActivity extends DialogTestListActivity {
             String resultKey = result.split(":")[0].strip();
             String strValue = result.split(":")[1].strip();
 
+            // Do not write "None" due to incompatibility with various protobuf
+            // types.
             if (strValue.equalsIgnoreCase("None")) {
-                obj.put(resultKey, strValue);
-            } else if (floatKeys.stream().anyMatch(resultKey::contains)) {
+                return;
+            }
+
+            if (floatKeys.stream().anyMatch(resultKey::contains)) {
                 float value = Float.parseFloat(strValue);
                 obj.put(resultKey, value);
             } else if (booleanKeys.stream().anyMatch(resultKey::contains)) {
@@ -885,7 +997,7 @@ public class ItsTestActivity extends DialogTestListActivity {
                             Collections.emptyList());
                 }
                 if (previewZoomMetricsMatches) {
-                    List<String> floatKeys = Arrays.asList("_variations");
+                    List<String> floatKeys = Arrays.asList("_variation");
                     parsePerfMetrics(perfMetricsResult, obj, floatKeys, Collections.emptyList(),
                             Collections.emptyList());
                 }
@@ -951,9 +1063,11 @@ public class ItsTestActivity extends DialogTestListActivity {
         if (parts.length == 2) {
             String key = parts[0].trim().replaceFirst(TEST_PATTERN, "");
             String value = parts[1].trim();
+            // TODO: b/442698260: value must be float/double
             Log.i(TAG, "Key: " + key);
             Log.i(TAG, "Value: " + value);
-            obj.put(key, value);
+            float valueF = Float.parseFloat(value);
+            obj.put(key, valueF);
         } else {
             Log.i(TAG, "Invalid output string");
         }
@@ -1109,6 +1223,18 @@ public class ItsTestActivity extends DialogTestListActivity {
                                 + e, Toast.LENGTH_SHORT).show();
             }
         }
+
+        // Access the build number from the generated BuildConfig
+        String buildNumber = BuildConfig.BUILD_NUMBER;
+        Log.i(TAG, "CtsVerifier ITS Test. Android Build Number: " + buildNumber);
+
+        if ("local".equals(buildNumber)) {
+            Log.w(TAG, "Note: This appears to be a local build.");
+        } else {
+            // Potentially add logic specific to official builds
+            Log.i(TAG, "Running on build from ab/" + buildNumber);
+        }
+
 
         super.onCreate(savedInstanceState);
 
@@ -1366,14 +1492,16 @@ public class ItsTestActivity extends DialogTestListActivity {
                 Logt.i(TAG, "Result data: " + data.getStringArrayListExtra(
                         MediaStore.EXTRA_OUTPUT).toString());
                 ArrayList<String> jcaCapturePaths = new ArrayList<String>();
+                ArrayList<String> jcaCaptureUris = new ArrayList<String>();
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern(
                         JCA_DATE_TIME_TAG).withZone(ZoneId.systemDefault());
                 String timestamp = formatter.format(Instant.now());
                 int i = 0;
                 for (String intentUri : data.getStringArrayListExtra(MediaStore.EXTRA_OUTPUT)) {
+                    jcaCaptureUris.add(intentUri);
                     Uri uri = Uri.parse(intentUri);
                     try {
-                        Path imagePath = moveImageFromUri(
+                        Path imagePath = copyImageFromUri(
                                 uri, "ITS_JCA_" + i + "_" + timestamp + ".jpg");
                         jcaCapturePaths.add(imagePath.toString());
                     } catch (FileNotFoundException e) {
@@ -1387,6 +1515,7 @@ public class ItsTestActivity extends DialogTestListActivity {
                 }
                 Intent serviceIntent = new Intent(this, ItsService.class);
                 serviceIntent.putExtra(JCA_CAPTURE_PATHS_TAG, jcaCapturePaths);
+                serviceIntent.putExtra(JCA_CAPTURE_URIS_TAG, jcaCaptureUris);
                 serviceIntent.putExtra(JCA_CAPTURE_STATUS_TAG, resultCode);
                 startService(serviceIntent);
             }
@@ -1414,7 +1543,7 @@ public class ItsTestActivity extends DialogTestListActivity {
         }
     }
 
-    private Path moveImageFromUri(Uri uri, String name)
+    private Path copyImageFromUri(Uri uri, String name)
             throws FileNotFoundException, IOException {
         ParcelFileDescriptor parcelFileDescriptor =
                 getContentResolver().openFileDescriptor(uri, "r");
@@ -1427,7 +1556,6 @@ public class ItsTestActivity extends DialogTestListActivity {
         }
         Path imagePath = new File(imageDir, name).toPath();
         Files.copy(inputStream, imagePath, StandardCopyOption.REPLACE_EXISTING);
-        getContentResolver().delete(uri, null, null);
         return imagePath;
     }
 

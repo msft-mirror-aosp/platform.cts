@@ -23,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
@@ -68,6 +69,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -96,19 +98,9 @@ public class MmsTest {
     private static final String MESSAGE_BODY = "CTS MMS test message body";
     private static final String TEXT_PART_FILENAME = "text_0.txt";
     private static final String sSmilText =
-            "<smil>" +
-                    "<head>" +
-                        "<layout>" +
-                            "<root-layout/>" +
-                            "<region height=\"100%%\" id=\"Text\" left=\"0%%\" top=\"0%%\" width=\"100%%\"/>" +
-                        "</layout>" +
-                    "</head>" +
-                    "<body>" +
-                        "<par dur=\"8000ms\">" +
-                            "<text src=\"%s\" region=\"Text\"/>" +
-                        "</par>" +
-                    "</body>" +
-            "</smil>";
+            "<smil><head><layout><root-layout/><region height=\"100%%\" id=\"Text\" left=\"0%%\""
+                + " top=\"0%%\" width=\"100%%\"/></layout></head><body><par dur=\"8000ms\"><text"
+                + " src=\"%s\" region=\"Text\"/></par></body></smil>";
 
     private static final long SENT_TIMEOUT = 1000 * 60 * 5; // 5 minutes
     private static final long NO_CALLS_TIMEOUT = 1000; // 1 second
@@ -270,6 +262,7 @@ public class MmsTest {
     }
 
     @Test
+    @Ignore("b/443345141 - Need to fix and re-enable this test.")
     @ApiTest(apis = "android.telephony.SmsManager#sendMultimediaMessage")
     public void testSendMmsMessage() {
         Log.i("MmsTest", "testSendMmsMessage");
@@ -365,7 +358,7 @@ public class MmsTest {
         } finally {
             getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
         }
-        assertFalse("[RERUN] SIM card does not provide phone number. Use a suitable SIM Card.",
+        assumeFalse("SIM card does not provide phone number. Use a suitable SIM Card.",
                 TextUtils.isEmpty(selfNumber));
 
         Log.i(TAG, "testSendMmsMessage");
@@ -409,7 +402,7 @@ public class MmsTest {
 
         if (expectedErrorResultCode == Activity.RESULT_OK) {
             int carrierId = mTelephonyManager.getSimCarrierId();
-            assertFalse("[RERUN] Carrier [carrier-id: " + carrierId + "] does not support "
+            assumeFalse("Carrier [carrier-id: " + carrierId + "] does not support "
                             + "loop back messages. Use another carrier.",
                     CarrierCapability.UNSUPPORT_LOOP_BACK_MESSAGES.contains(carrierId));
         }

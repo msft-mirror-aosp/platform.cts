@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 8.4.0-alpha08" type="baseline" client="" dependencies="true" name="" variant="all" version="8.4.0-alpha08">
+
+    <issue
+        id="MissingCheckFlagsRule"
+        message="Class `VirtualAudioPermissionTest` uses @RequiresFlagsEnabled or @RequiresFlagsDisabled and must have a CheckFlagsRule."
+        errorLine1="public class VirtualAudioPermissionTest {"
+        errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/tests/virtualdevice/audio/src/android/virtualdevice/cts/audio/VirtualAudioPermissionTest.java"
+            line="99"
+            column="14"/>
+    </issue>
+
+</issues>

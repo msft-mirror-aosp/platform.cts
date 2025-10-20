@@ -25,7 +25,6 @@ import android.provider.ContactsContract;
 import android.provider.ContactsContract.CommonDataKinds.StructuredName;
 import android.provider.ContactsContract.Contacts;
 import android.provider.ContactsContract.Contacts.AggregationSuggestions;
-import android.provider.ContactsContract.RawContacts;
 import android.provider.cts.contacts.ContactsContract_TestDataBuilder.TestRawContact;
 import android.test.AndroidTestCase;
 
@@ -158,8 +157,6 @@ public class ContactsContract_AggregationSuggestionsTest extends AndroidTestCase
 
     private long[] setupThreeContacts() throws Exception {
         TestRawContact rawContact1 = mBuilder.newRawContact()
-                .with(RawContacts.ACCOUNT_TYPE, "test_account")
-                .with(RawContacts.ACCOUNT_NAME, "test_name")
                 .insert();
         rawContact1.newDataRow(StructuredName.CONTENT_ITEM_TYPE)
                 .with(StructuredName.GIVEN_NAME, "first1")
@@ -168,8 +165,6 @@ public class ContactsContract_AggregationSuggestionsTest extends AndroidTestCase
         rawContact1.load();
 
         TestRawContact rawContact2 = mBuilder.newRawContact()
-                .with(RawContacts.ACCOUNT_TYPE, "test_account")
-                .with(RawContacts.ACCOUNT_NAME, "test_name")
                 .insert();
         rawContact2.newDataRow(StructuredName.CONTENT_ITEM_TYPE)
                 .with(StructuredName.GIVEN_NAME, "first2")
@@ -178,8 +173,6 @@ public class ContactsContract_AggregationSuggestionsTest extends AndroidTestCase
         rawContact2.load();
 
         TestRawContact rawContact3 = mBuilder.newRawContact()
-                .with(RawContacts.ACCOUNT_TYPE, "test_account")
-                .with(RawContacts.ACCOUNT_NAME, "test_name")
                 .insert();
         rawContact3.newDataRow(StructuredName.CONTENT_ITEM_TYPE)
                 .with(StructuredName.GIVEN_NAME, "completely")

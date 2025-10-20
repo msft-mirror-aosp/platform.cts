@@ -17,10 +17,12 @@
 package android.mediav2.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_MultipleFrames;
+import static android.media.audio.Flags.iamfDefinitionsApi;
 import static android.media.codec.Flags.FLAG_LARGE_AUDIO_FRAME_FINISH;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
 
 import static com.android.media.codec.flags.Flags.FLAG_LARGE_AUDIO_FRAME;
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableIamf;
 
 import static org.junit.Assert.fail;
 
@@ -66,7 +68,7 @@ import java.util.Map;
  * The test runs the component in MultipleFrames mode and normal mode and expects same output for
  * a given input.
  **/
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName = "VanillaIceCream")
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @AppModeFull(reason = "Instant apps cannot access the SD card")
 @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
 @RunWith(Parameterized.class)
@@ -109,6 +111,8 @@ public class CodecDecoderMultiAccessUnitTest extends CodecDecoderMultiAccessUnit
                 "audio/ac4_200_48kHz_48.mp4");
         RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_EAC3,
                 "audio/eac3_200_48kHz_128.mp4");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_IAMF,
+                "audio/7_1_4_PCM16_48000_no_video.mp4");
     }
 
     static final List<Object[]> exhaustiveArgsList = new ArrayList<>(Arrays.asList(new Object[][]{
@@ -167,7 +171,7 @@ public class CodecDecoderMultiAccessUnitTest extends CodecDecoderMultiAccessUnit
             {MediaFormat.MIMETYPE_AUDIO_AC3, "audio/ac3_200_48kHz_256.mp4"},
             {MediaFormat.MIMETYPE_AUDIO_AC3, "audio/ac3_510_48kHz_256.mp4"},
 
-            {MediaFormat.MIMETYPE_AUDIO_AC4, "audio/ac4_510_48hkz_96.mp4"},
+            {MediaFormat.MIMETYPE_AUDIO_AC4, "audio/ac4_510_48kHz_96.mp4"},
             {MediaFormat.MIMETYPE_AUDIO_AC4, "audio/ac4_510_48kHz_128.mp4"},
             {MediaFormat.MIMETYPE_AUDIO_AC4, "audio/ac4_510_48kHz_256.mp4"},
 
@@ -175,6 +179,12 @@ public class CodecDecoderMultiAccessUnitTest extends CodecDecoderMultiAccessUnit
             {MediaFormat.MIMETYPE_AUDIO_EAC3, "audio/eac3_510_48kHz_256.mp4"},
     }));
 
+    static {
+        if (IS_AT_LEAST_B && iamfDefinitionsApi() && extractorMp4EnableIamf()) {
+            exhaustiveArgsList.add(new Object[] {
+                    MediaFormat.MIMETYPE_AUDIO_IAMF, "audio/7_1_4_Opus_no_video.mp4"});
+        }
+    }
 
     private final String mReconfigFile;
 

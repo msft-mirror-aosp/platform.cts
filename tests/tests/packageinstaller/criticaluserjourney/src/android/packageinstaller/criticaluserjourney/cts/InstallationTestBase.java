@@ -94,6 +94,8 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
             "extra_test_no_launcher_activity_apk_uri";
     private static final String EXTRA_TEST_NO_LAUNCHER_ACTIVITY_APK_V2_URI =
             "extra_test_no_launcher_activity_apk_v2_uri";
+    private static final String EXTRA_EMPTY_TEST_APK_URI = "extra_empty_test_apk_uri";
+    private static final String EXTRA_EMPTY_TEST_APK_V2_URI = "extra_empty_test_apk_v2_uri";
     private static final String EXTRA_TEST_PACKAGE_NAME = "extra_test_package_name";
 
     private static final String EXTRA_IS_UPDATE = "extra_is_update";
@@ -108,6 +110,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
     private static final int EVENT_REQUEST_INSTALLER_INTENT_WITH_PACKAGE_URI = 3;
     private static final int EVENT_REQUEST_INSTALLER_INTENT_WITH_PACKAGE_URI_FOR_RESULT = 4;
     private static final int EVENT_REQUEST_INSTALLER_INTENT_WITH_ACTION_VIEW = 5;
+    private static final int EVENT_REQUEST_INSTALLER_SESSION_MULTI_PACKAGE = 6;
 
     private static final int STATUS_CUJ_INSTALLER_READY = 1000;
     private static final int STATUS_CUJ_INSTALLER_START_ACTIVITY_READY = 1001;
@@ -174,6 +177,8 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
         copyTestFile(TEST_APK_V2_NAME);
         copyTestFile(TEST_NO_LAUNCHER_ACTIVITY_APK_NAME);
         copyTestFile(TEST_NO_LAUNCHER_ACTIVITY_APK_V2_NAME);
+        copyTestFile(EMPTY_TEST_APK_NAME);
+        copyTestFile(EMPTY_TEST_APK_V2_NAME);
     }
 
     private static void copyTestFile(@NonNull String testApkName) throws Exception {
@@ -219,8 +224,12 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
         getFileUriAndUpdateIntent(INSTALLER_APK_V2_NAME, EXTRA_INSTALLER_APK_V2_URI, intent);
         getFileUriAndUpdateIntent(TEST_NO_LAUNCHER_ACTIVITY_APK_NAME,
                 EXTRA_TEST_NO_LAUNCHER_ACTIVITY_APK_URI, intent);
-        getFileUriAndUpdateIntent(TEST_NO_LAUNCHER_ACTIVITY_APK_V2_NAME,
-                EXTRA_TEST_NO_LAUNCHER_ACTIVITY_APK_V2_URI, intent);
+        getFileUriAndUpdateIntent(
+                TEST_NO_LAUNCHER_ACTIVITY_APK_V2_NAME,
+                EXTRA_TEST_NO_LAUNCHER_ACTIVITY_APK_V2_URI,
+                intent);
+        getFileUriAndUpdateIntent(EMPTY_TEST_APK_NAME, EXTRA_EMPTY_TEST_APK_URI, intent);
+        getFileUriAndUpdateIntent(EMPTY_TEST_APK_V2_NAME, EXTRA_EMPTY_TEST_APK_V2_URI, intent);
 
         getContext().startActivity(intent);
     }
@@ -411,6 +420,17 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
         assertInstallPendingUserAction();
     }
 
+    /** Start a multi-package installation using the PackageInstaller.Session APIs. */
+    public static void startMultiPackageInstallViaPackageInstallerSession(boolean isUpdate)
+            throws Exception {
+        sendRequestInstallerBroadcast(
+                EVENT_REQUEST_INSTALLER_SESSION_MULTI_PACKAGE,
+                /* useTestApp= */ true,
+                /* update= */ isUpdate,
+                /* isNoLauncherActivityTestApp= */ false);
+        assertInstallPendingUserAction();
+    }
+
     private static void sendRequestInstallerBroadcast(int event) throws Exception {
         sendRequestInstallerBroadcast(event, /* updateTestAppV2= */ false);
     }
@@ -426,8 +446,9 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
                 /* isNoLauncherActivityTestApp= */ false);
     }
 
-    private static void sendRequestInstallerBroadcast(int event, boolean useTestApp,
-            boolean update, boolean isNoLauncherActivityTestApp) throws Exception {
+    private static void sendRequestInstallerBroadcast(
+            int event, boolean useTestApp, boolean update, boolean isNoLauncherActivityTestApp)
+            throws Exception {
         final Intent intent = new Intent(ACTION_REQUEST_INSTALLER);
         intent.setPackage(INSTALLER_PACKAGE_NAME);
         intent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
@@ -869,7 +890,8 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
     }
 
     /** Click the Install without verifying button and wait for the dialog to disappear. */
-    public static void clickInstallWithoutVerifyingButton(boolean isAppUpdating) throws Exception {
+    public static void clickInstallWithoutVerifyingButton(
+            boolean isAppUpdating, boolean expectingMoreDialogs) throws Exception {
         if (isAppUpdating) {
             clickAndWaitForNewWindow(
                     findPackageInstallerObject(BUTTON_UPDATE_WITHOUT_VERIFYING_LABEL));
@@ -877,7 +899,10 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
             clickAndWaitForNewWindow(
                     findPackageInstallerObject(BUTTON_INSTALL_WITHOUT_VERIFYING_LABEL));
         }
-        if (!isTestPackageInstalled()) {
+        boolean isInstallFinished =
+                isAppUpdating ? isTestPackageVersion2Installed() : isTestPackageInstalled();
+
+        if (!expectingMoreDialogs && !isInstallFinished) {
             // It's possible that GPP dialog will show up after the developer verification dialog
             allowInstallIfVerificationDialogExists();
         }

@@ -53,11 +53,15 @@ import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoDriverSeatVe
 import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoEvBatteryCapacityVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoEvConnectorTypeVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoEvPortLocationVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoMakeVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoModelVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoModelYearVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getLocationCharacterizationVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getNightModeVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getParkingBrakeOnVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfOdometerVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfSteeringAngleVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfVehicleSpeedVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getRangeRemainingVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getSeatOccupancyVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getTirePressureVerifierBuilder;
@@ -83,6 +87,7 @@ import android.car.VehiclePropertyIds;
 import android.car.VehicleUnit;
 import android.car.cts.AbstractCarTestCase;
 import android.car.cts.utils.CarSvcPropsParser;
+import android.car.cts.utils.ShellPermissionUtils;
 import android.car.cts.utils.VehiclePropertyVerifier;
 import android.car.cts.utils.VehiclePropertyVerifiers;
 import android.car.feature.Flags;
@@ -118,6 +123,7 @@ import android.car.hardware.property.LaneDepartureWarningState;
 import android.car.hardware.property.LaneKeepAssistState;
 import android.car.hardware.property.LowSpeedAutomaticEmergencyBrakingState;
 import android.car.hardware.property.LowSpeedCollisionWarningState;
+import android.car.hardware.property.PropertyAccessDeniedSecurityException;
 import android.car.hardware.property.PropertyNotAvailableAndRetryException;
 import android.car.hardware.property.PropertyNotAvailableException;
 import android.car.hardware.property.Subscription;
@@ -164,12 +170,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.time.Year;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -208,8 +210,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     private static final int FAST_OR_FASTEST_EVENT_COUNTER = 10;
     private static final int SECONDS_TO_MILLIS = 1_000;
     private static final long ASYNC_WAIT_TIMEOUT_IN_SEC = 15;
-    private static final int REASONABLE_FUTURE_MODEL_YEAR_OFFSET = 5;
-    private static final int REASONABLE_PAST_MODEL_YEAR_OFFSET = -10;
     private static final ImmutableSet<Integer> NO_READ_ACCESS_SET =
             ImmutableSet.of(
                     CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_NONE,
@@ -1411,42 +1411,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         }
     }
 
-    @Test
-    public void testAllPropertiesHaveAVehiclePropertyVerifier() {
-        Set<Integer> verifierPropertyIds = new ArraySet<>();
-        for (VehiclePropertyVerifier verifier : getAllVerifiers()) {
-            verifierPropertyIds.add(verifier.getPropertyId());
-        }
-
-        for (Field field : VehiclePropertyIds.class.getDeclaredFields()) {
-            boolean isIntConstant =
-                    field.getType() == int.class
-                            && field.getModifiers()
-                                    == (Modifier.STATIC | Modifier.FINAL | Modifier.PUBLIC);
-            if (!isIntConstant) {
-                continue;
-            }
-
-            Integer propertyId = null;
-            try {
-                propertyId = field.getInt(null);
-            } catch (Exception e) {
-                assertWithMessage("Failed trying to find value for " + field.getName() + ", " + e)
-                        .fail();
-            }
-            if (PROPERTIES_NOT_EXPOSED_THROUGH_CPM.contains(propertyId)) {
-                continue;
-            }
-            expectWithMessage(
-                            "Property: "
-                                    + VehiclePropertyIds.toString(propertyId)
-                                    + " does not have a VehiclePropertyVerifier included in"
-                                    + " getAllVerifiers()")
-                    .that(propertyId)
-                    .isIn(verifierPropertyIds);
-        }
-    }
-
     static final class AllStepsProvider extends TestParameterValuesProvider {
         @Override
         public List<?> provideValues(Context context) {
@@ -1798,12 +1762,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         // Run the verification.
         var verifier = verifierInfo.mBuilder.setCarPropertyManager(mCarPropertyManager).build();
         verifier.verify(step, verifierInfo.mExceptedExceptionClass);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Float> getPerfVehicleSpeedVerifierBuilder() {
-        return VehiclePropertyVerifier.<Float>newDefaultBuilder(
-                        VehiclePropertyIds.PERF_VEHICLE_SPEED)
-                .requireProperty();
     }
 
     private static VehiclePropertyVerifier.Builder<Integer>
@@ -2294,62 +2252,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                 assertWithMessage("INFO_VIN must be 17 characters")
                                         .that(vin)
                                         .hasLength(17));
-    }
-
-    private static VehiclePropertyVerifier.Builder<String> getInfoMakeVerifierBuilder() {
-        return VehiclePropertyVerifier.<String>newDefaultBuilder(VehiclePropertyIds.INFO_MAKE)
-                .setCarPropertyValueVerifier(
-                        (verifierContext,
-                                carPropertyConfig,
-                                propertyId,
-                                areaId,
-                                timestampNanos,
-                                make) ->
-                                assertWithMessage("INFO_MAKE must not be empty")
-                                        .that(make)
-                                        .isNotEmpty());
-    }
-
-    private static VehiclePropertyVerifier.Builder<String> getInfoModelVerifierBuilder() {
-        return VehiclePropertyVerifier.<String>newDefaultBuilder(VehiclePropertyIds.INFO_MODEL)
-                .setCarPropertyValueVerifier(
-                        (verifierContext,
-                                carPropertyConfig,
-                                propertyId,
-                                areaId,
-                                timestampNanos,
-                                model) ->
-                                assertWithMessage("INFO_MODEL must not be empty")
-                                        .that(model)
-                                        .isNotEmpty());
-    }
-
-    private static VehiclePropertyVerifier.Builder<Integer> getInfoModelYearVerifierBuilder() {
-        return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
-                        VehiclePropertyIds.INFO_MODEL_YEAR)
-                .setCarPropertyValueVerifier(
-                        (verifierContext,
-                                carPropertyConfig,
-                                propertyId,
-                                areaId,
-                                timestampNanos,
-                                modelYear) -> {
-                            int currentYear = Year.now().getValue();
-                            assertWithMessage(
-                                            "INFO_MODEL_YEAR Integer value must be greater"
-                                                    + " than or equal "
-                                                    + (currentYear
-                                                            + REASONABLE_PAST_MODEL_YEAR_OFFSET))
-                                    .that(modelYear)
-                                    .isAtLeast(currentYear + REASONABLE_PAST_MODEL_YEAR_OFFSET);
-                            assertWithMessage(
-                                            "INFO_MODEL_YEAR Integer value must be less"
-                                                    + " than or equal "
-                                                    + (currentYear
-                                                            + REASONABLE_FUTURE_MODEL_YEAR_OFFSET))
-                                    .that(modelYear)
-                                    .isAtMost(currentYear + REASONABLE_FUTURE_MODEL_YEAR_OFFSET);
-                        });
     }
 
     private static VehiclePropertyVerifier.Builder<Float> getInfoFuelCapacityVerifierBuilder() {
@@ -3113,6 +3015,13 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                                 + " or equal to max current draw by the vehicle")
                                     .that(evChargeCurrentDrawLimit)
                                     .isAtMost(maxCurrentDrawThresholdAmps);
+                        })
+                .setSupportedValuesGenerator(
+                        (verifierContext, carPropertyConfig, areaId) -> {
+                            // First value in the configArray specifies the max current draw allowed
+                            // by the vehicle.
+                            return ImmutableList.of(
+                                    carPropertyConfig.getConfigArray().get(0).floatValue());
                         });
     }
 
@@ -3166,6 +3075,23 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                         .that(evChargePercentLimit.intValue())
                                         .isIn(evChargePercentLimitConfigArray);
                             }
+                        })
+                .setSupportedValuesGenerator(
+                        (verifierContext, carPropertyConfig, areaId) -> {
+                            ImmutableList.Builder<Float> possibleValues = ImmutableList.builder();
+                            List<Integer> configArray = carPropertyConfig.getConfigArray();
+                            if (!configArray.isEmpty()) {
+                                for (Integer possibleEvChargePercentLimit : configArray) {
+                                    possibleValues.add(possibleEvChargePercentLimit.floatValue());
+                                }
+                            } else {
+                                // If the configArray is not specified, then values between 0 and
+                                // 100 percent must
+                                // be supported.
+                                possibleValues.add(0f);
+                                possibleValues.add(100f);
+                            }
+                            return possibleValues.build();
                         });
     }
 
@@ -4133,7 +4059,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                 continue;
                             } catch (PropertyNotAvailableAndRetryException
                                     | PropertyNotAvailableException
-                                    | CarInternalErrorException e) {
+                                    | CarInternalErrorException
+                                    | PropertyAccessDeniedSecurityException e) {
                                 Log.w(
                                         TAG,
                                         "Failed to get property:"
@@ -4445,7 +4372,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                 continue;
                             } catch (PropertyNotAvailableAndRetryException
                                     | PropertyNotAvailableException
-                                    | CarInternalErrorException e) {
+                                    | CarInternalErrorException
+                                    | PropertyAccessDeniedSecurityException e) {
                                 Log.w(
                                         TAG,
                                         "Failed getIntArrayProperty for property:"
@@ -5347,6 +5275,91 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 });
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_STATUS_DETAILED_NOT_AVAILABLE)
+    @ApiTest(apis = {"android.car.hardware.CarPropertyValue#getPropertyVendorStatus"})
+    @Test
+    public void testGetPropertyVendorStatus_withPermission() throws Exception {
+        runWithShellPermissionIdentity(
+                () -> {
+                    var carPropertyValues = getVehicleSpeedValuesWithSubscription();
+
+                    for (CarPropertyValue carPropertyValue : carPropertyValues) {
+                        assertThat(carPropertyValue.getPropertyVendorStatus()).isAtLeast(0);
+                    }
+                },
+                ShellPermissionUtils.CHECK_MODE_ASSERT,
+                Car.PERMISSION_SPEED,
+                Car.PERMISSION_READ_PROPERTY_VENDOR_STATUS);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_STATUS_DETAILED_NOT_AVAILABLE)
+    @ApiTest(apis = {"android.car.hardware.CarPropertyValue#getPropertyVendorStatus"})
+    @Test
+    public void testGetPropertyVendorStatus_withoutPermission_throwsException() throws Exception {
+        runWithShellPermissionIdentity(
+                () -> {
+                    var carPropertyValues = getVehicleSpeedValuesWithSubscription();
+
+                    for (CarPropertyValue carPropertyValue : carPropertyValues) {
+                        assertThrows(
+                                SecurityException.class,
+                                () -> carPropertyValue.getPropertyVendorStatus());
+                    }
+                },
+                ShellPermissionUtils.CHECK_MODE_ASSERT,
+                // No PERMISSION_READ_PROPERTY_VENDOR_STATUS
+                Car.PERMISSION_SPEED);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_STATUS_DETAILED_NOT_AVAILABLE)
+    @ApiTest(apis = {"android.car.hardware.CarPropertyValue#getPropertyVendorStatus"})
+    @Test
+    public void testGetPropertyVendorStatus_withoutPermission_statusFiltered() throws Exception {
+        runWithShellPermissionIdentity(
+                () -> {
+                    var carPropertyValues = getVehicleSpeedValuesWithSubscription();
+
+                    for (CarPropertyValue carPropertyValue : carPropertyValues) {
+                        var carPropertyValueWithPermission =
+                                carPropertyValue.cloneWithPermissionToReadPropertyVendorStatus();
+                        assertThat(carPropertyValueWithPermission.getPropertyVendorStatus())
+                                .isEqualTo(0);
+                    }
+                },
+                ShellPermissionUtils.CHECK_MODE_ASSERT,
+                // No PERMISSION_READ_PROPERTY_VENDOR_STATUS
+                Car.PERMISSION_SPEED);
+    }
+
+    private Set<CarPropertyValue<?>> getVehicleSpeedValuesWithSubscription() throws Exception {
+        // Permissions are checked at the first subscription, so we must get a new
+        // CarPropertyManager here.
+        Car car = Car.createCar(mContext);
+        CarPropertyManager carPropertyManager = car.getCarManager(CarPropertyManager.class);
+
+        int vehicleSpeed = VehiclePropertyIds.PERF_VEHICLE_SPEED;
+        CarPropertyEventCounter speedListener = new CarPropertyEventCounter();
+
+        // Disable VUR so that we can receive multiple events.
+        Subscription subscription =
+                new Subscription.Builder(vehicleSpeed)
+                        .setUpdateRateFastest()
+                        .setVariableUpdateRateEnabled(false)
+                        .build();
+
+        try {
+            carPropertyManager.subscribePropertyEvents(
+                    List.of(subscription), /* callbackExecutor= */ null, speedListener);
+
+            speedListener.assertOnChangeEventCalled();
+
+            return speedListener.getReceivedCarPropertyValues();
+        } finally {
+            carPropertyManager.unsubscribePropertyEvents(vehicleSpeed, speedListener);
+            car.disconnect();
+        }
+    }
+
     @ApiTest(
             apis = {
                 "android.car.hardware.property.CarPropertyManager#subscribePropertyEvents",
@@ -6080,8 +6093,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
             int areaId,
             VehiclePropertyVerifier<?> verifier,
             Class<T> propertyType) {
-        Collection<T> possibleValues = (Collection<T>) verifier.getPossibleValues(areaId);
-        if (possibleValues == null || possibleValues.isEmpty()) {
+        List<T> possibleValues = (List<T>) verifier.getPossibleValues(areaId);
+        if (possibleValues.isEmpty()) {
             Log.w(
                     TAG,
                     "we can't find possible values to set for property: "

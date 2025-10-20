@@ -17,7 +17,9 @@
 package android.webkit.cts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import android.net.Uri;
 import android.os.Handler;
@@ -239,16 +241,18 @@ public class PostMessageTest extends SharedWebViewTest {
         final WebMessagePort[] channel = mOnUiThread.createWebMessageChannel();
         WebMessage message = new WebMessage(WEBVIEW_MESSAGE, new WebMessagePort[]{channel[1]});
         mOnUiThread.postWebMessage(message, Uri.parse(BASE_URI));
-        WebkitUtils.onMainThreadSync(() -> {
-            try {
-                channel[0].close();
-                channel[0].postMessage(new WebMessage(WEBVIEW_MESSAGE));
-            } catch (IllegalStateException ex) {
-                // expect to receive an exception
-                return;
-            }
-            Assert.fail("A closed port cannot be used to transfer messages");
-        });
+        WebkitUtils.onMainThreadSync(
+                () -> {
+                    try {
+                        channel[0].close();
+                    } catch (IllegalStateException ex) {
+                        throw new AssertionError("Closing the channel should work", ex);
+                    }
+                    assertThrows(
+                            "A closed port cannot be used to transfer messages",
+                            IllegalStateException.class,
+                            () -> channel[0].postMessage(new WebMessage(WEBVIEW_MESSAGE)));
+                });
     }
 
     // Sends a new message channel from JS to Java.

@@ -33,6 +33,7 @@ android_test {
         "truth",
         "telephony-cts-utils",
         "telephony_flags_core_java_lib",
+        "bedstead-enterprise",
     ],
     libs: [
         "android.test.runner.stubs.test",
@@ -45,4 +46,7 @@ android_test {
         "general-tests",
     ],
     sdk_version: "test_current",
+    data : [
+        ":TestSmsRetrieverApp",
+    ],
 }

@@ -33,6 +33,12 @@ public class LocationUtils {
     private static final float MIN_ACCURACY = 1;
     private static final float MAX_ACCURACY = 100;
 
+    public static void setLocationEnabled(Instrumentation instrumentation, boolean enable)
+            throws IOException {
+        SystemUtil.runShellCommand(
+                instrumentation, String.format("cmd location set-location-enabled %s", enable));
+    }
+
     public static void registerMockLocationProvider(Instrumentation instrumentation,
             boolean enable) throws IOException {
         SystemUtil.runShellCommand(instrumentation,

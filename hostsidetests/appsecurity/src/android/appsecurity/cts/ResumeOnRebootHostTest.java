@@ -24,6 +24,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
@@ -39,6 +40,7 @@ import com.android.tradefed.util.CommandResult;
 import com.android.tradefed.util.CommandStatus;
 
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -86,7 +88,7 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
     // This is the PIN set in EncryptionAppTest.testSetUp()
     private static final String DEFAULT_PIN = "1234";
 
-    private boolean mSupportsMultiUser;
+    private boolean mSupportsSecondaryUsers;
     private String mOriginalVerifyAdbInstallerSetting = null;
 
     @Rule(order = 0)
@@ -103,8 +105,10 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
     public void setUp() throws Exception {
         assertNotNull(getAbi());
         assertNotNull(getBuild());
+        assertTrue("Resume on reboot needs network connectivity", getDevice().checkConnectivity());
 
-        mSupportsMultiUser = getDevice().getMaxNumberOfUsersSupported() > 1;
+        mSupportsSecondaryUsers =
+                getDevice().getMaxNumberOfUsersSupported("android.os.usertype.full.SECONDARY") > 0;
 
         normalizeUserStates();
         setScreenStayOnValue(true);
@@ -169,7 +173,7 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
             removeUser(managedUserId);
 
             // Remove secure lock screens and tear down test app
-            runDeviceTestsAsUser("testTearDown", initialUser);
+            runTestTearDownForUsers(initialUser);
 
             deviceClearLskf();
         }
@@ -179,7 +183,7 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
     public void resumeOnReboot_TwoUsers_SingleUserUnlock_Success() throws Exception {
         assumeTrue("Device isn't at least S or has no lock screen", isSupportedSDevice());
         assumeTrue("Device does not support file-based encryption", supportFileBasedEncryption());
-        assumeSupportsMultiUser();
+        assumeSupportsSecondaryUsers();
 
         int[] users = prepareUsers(2);
         int initialUser = users[0];
@@ -216,12 +220,7 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
             switchUser(secondaryUser);
             runDeviceTestsAsUser("testVerifyLockedAndDismiss", secondaryUser);
         } finally {
-            // Remove secure lock screens and tear down test app
-            switchUser(secondaryUser);
-            runDeviceTestsAsUser("testTearDown", secondaryUser);
-            switchUser(initialUser);
-            runDeviceTestsAsUser("testTearDown", initialUser);
-
+            runTestTearDownForUsers(users);
             deviceClearLskf();
         }
     }
@@ -230,7 +229,7 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
     public void resumeOnReboot_TwoUsers_BothUserUnlock_Success() throws Exception {
         assumeTrue("Device isn't at least S or has no lock screen", isSupportedSDevice());
         assumeTrue("Device does not support file-based encryption", supportFileBasedEncryption());
-        assumeSupportsMultiUser();
+        assumeSupportsSecondaryUsers();
 
         int[] users = prepareUsers(2);
         int initialUser = users[0];
@@ -269,12 +268,7 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
             switchUser(secondaryUser);
             runDeviceTestsAsUser("testVerifyUnlockedAndDismiss", secondaryUser);
         } finally {
-            // Remove secure lock screens and tear down test app
-            switchUser(secondaryUser);
-            runDeviceTestsAsUser("testTearDown", secondaryUser);
-            switchUser(initialUser);
-            runDeviceTestsAsUser("testTearDown", initialUser);
-
+            runTestTearDownForUsers(users);
             deviceClearLskf();
         }
     }
@@ -306,8 +300,7 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
             runDeviceTestsAsUser("testCheckServiceInteraction", /* userId= */ 0);
         } finally {
             // Remove secure lock screens and tear down test app
-            runDeviceTestsAsUser("testTearDown", initialUser);
-
+            runTestTearDownForUsers(initialUser);
             deviceClearLskf();
         }
     }
@@ -346,8 +339,7 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
             runDeviceTestsAsUser("testCheckServiceInteraction", /* userId= */ 0);
         } finally {
             // Remove secure lock screens and tear down test app
-            runDeviceTestsAsUser("testTearDown", initialUser);
-
+            runTestTearDownForUsers(initialUser);
             deviceClearLskf();
         }
     }
@@ -385,8 +377,7 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
             runDeviceTestsAsUser("testCheckServiceInteraction", /* userId= */ 0);
         } finally {
             // Remove secure lock screens and tear down test app
-            runDeviceTestsAsUser("testTearDown", initialUser);
-
+            runTestTearDownForUsers(initialUser);
             deviceClearLskf();
         }
     }
@@ -490,8 +481,9 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
 
     private boolean isLskfCapturedForClient(String clientName) throws Exception {
         Pattern pattern = Pattern.compile(".*LSKF capture status: (\\w+)");
-        String status = getDevice().executeShellCommand(
-                "cmd recovery is-lskf-captured " + clientName);
+        String cmd = "cmd recovery is-lskf-captured " + clientName;
+        String status = getDevice().executeShellCommand(cmd);
+        CLog.d("isLskfCapturedForClient(%s): cmd '%s' returned '%s'", clientName, cmd, status);
         Matcher matcher = pattern.matcher(status);
         if (!matcher.find()) {
             CLog.i(TAG, "is-lskf-captured isn't implemented on build, assuming captured");
@@ -506,22 +498,31 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
     }
 
     private void deviceRebootAndApply(String clientName) throws Exception {
-        CLog.d("deviceRebootAndApply(clientName=%s)", clientName);
+        var device = getDevice();
+        int currentUserBeforeReboot = device.getCurrentUser();
+        CLog.d(
+                "deviceRebootAndApply(clientName=%s): current user is %d",
+                clientName, currentUserBeforeReboot);
 
         verifyLskfCaptured(clientName);
         mBootCountTrackingRule.increaseExpectedBootCountDifference(1);
 
-        String res =
-                executeShellCommandWithLogging(
-                        "cmd recovery reboot-and-apply " + clientName + " cts-test");
+        String cmd = "cmd recovery reboot-and-apply " + clientName + " cts-test";
+        String res = executeShellCommandWithLogging(cmd);
+        CLog.d("Response of '%s': '%s'", cmd, res);
         if (res != null && res.contains("Reboot and apply status: failure")) {
-            fail("could not call reboot-and-apply");
+            fail("could not call reboot-and-apply. Response was: " + res);
         }
 
-        getDevice().waitForDeviceNotAvailable(SHUTDOWN_TIME_MS);
-        getDevice().waitForDeviceOnline(120000);
+        device.waitForDeviceNotAvailable(SHUTDOWN_TIME_MS);
+        device.waitForDeviceOnline(120000);
 
-        waitForBootCompleted(getDevice());
+        CLog.d("After reboot, current user is %d", currentUserBeforeReboot);
+
+        waitForBootCompleted(device);
+
+        // TODO(b/420640007): remove call below once it's handled by tradefed
+        switchUser(currentUserBeforeReboot);
     }
 
     private void installTestPackages() throws Exception {
@@ -603,15 +604,37 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
             throws DeviceNotAvailableException {
         String command = "pm create-user --profileOf " + parentUserId + " --managed "
                 + "TestProfile_" + System.currentTimeMillis();
-        CLog.d("Starting command " + command);
+        CLog.d("Starting command %s", command);
         String commandOutput = getDevice().executeShellCommand(command);
-        CLog.d("Output for command " + command + ": " + commandOutput);
+        CLog.d("Output for command %s: %s", command, commandOutput);
         return commandOutput;
     }
 
     private void runDeviceTestsAsUser(String testMethodName, int userId)
             throws DeviceNotAvailableException {
         Utils.runDeviceTests(getDevice(), PKG, CLASS, testMethodName, userId);
+    }
+
+    private void runTestTearDownForUsers(int... userIds) throws Exception {
+        int currentUserId = getDevice().getCurrentUser();
+        CLog.d(
+                "runTestTearDownForUsers(%s): current user is %d",
+                Arrays.toString(userIds), currentUserId);
+
+        // Unlock the screen for the current user first because the switching to another one while
+        // the current user is still locked may fail.
+        runDeviceTestsAsUser("testTearDown", currentUserId);
+
+        for (int userId : userIds) {
+            if (userId == currentUserId) {
+                continue;
+            }
+
+            switchUser(userId);
+            runDeviceTestsAsUser("testTearDown", userId);
+        }
+
+        switchUser(currentUserId);
     }
 
     private boolean isSupportedSDevice() throws Exception {
@@ -699,11 +722,17 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
         return result;
     }
 
-    private int[] prepareUsers(int users) throws DeviceNotAvailableException {
-        return Utils.prepareMultipleUsers(getDevice(), users);
+    private int[] prepareUsers(int count) throws DeviceNotAvailableException {
+        int[] preparedUsers = Utils.prepareMultipleFullUsers(getDevice(), count);
+
+        Assert.assertTrue(
+            String.format("Only %d users were prepared instead of %d", preparedUsers.length, count),
+            preparedUsers.length == count);
+
+        return preparedUsers;
     }
 
-    private void assumeSupportsMultiUser() {
-        assumeTrue("Device doesn't support multi-user", mSupportsMultiUser);
+    private void assumeSupportsSecondaryUsers() {
+        assumeTrue("Device doesn't support multi-user", mSupportsSecondaryUsers);
     }
 }

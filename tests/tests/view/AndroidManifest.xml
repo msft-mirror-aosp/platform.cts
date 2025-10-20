@@ -405,6 +405,13 @@
             </intent-filter>
         </activity>
 
+        <activity android:name="com.android.cts.input.CaptureEventActivity"
+                  android:label="Activity that captures input events"
+            android:turnScreenOn="true"
+            android:theme="@style/no_starting_window"
+            android:exported="true">
+        </activity>
+
         <activity android:name="android.view.cts.input.InputDeviceKeyLayoutMapTestActivity"
              android:enableOnBackInvokedCallback="false"
              android:configChanges="keyboardHidden|navigation|keyboard"
@@ -509,6 +516,16 @@
                 <action android:name="android.service.textclassifier.TextClassifierService"/>
             </intent-filter>
         </service>
+
+        <receiver android:name="android.view.cts.input.CtsKeyboardLayoutProvider"
+            android:label="CTS keyboard layout provider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.hardware.input.action.QUERY_KEYBOARD_LAYOUTS" />
+            </intent-filter>
+            <meta-data android:name="android.hardware.input.metadata.KEYBOARD_LAYOUTS"
+                android:resource="@xml/keyboard_layouts" />
+        </receiver>
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

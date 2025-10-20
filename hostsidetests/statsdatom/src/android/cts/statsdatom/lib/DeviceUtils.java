@@ -302,6 +302,38 @@ public final class DeviceUtils {
     }
 
     /**
+     * Returns the package name from the AID.
+     *
+     * @param device The test device.
+     * @param aid Android ID of the package.
+     * @return The package name associated with the AID.
+     * @throws Error if no package is found for the given AID.
+     */
+    public static String getPkgNameFromAid(ITestDevice device, int aid)
+            throws DeviceNotAvailableException {
+        // Execute the adb command to list packages filtered by the specific UID.
+        String commandOutput = device.executeShellCommand("cmd package list packages --uid " + aid);
+
+        // A UID can be shared, resulting in multiple lines. We'll parse the first valid one.
+        final String[] lines = commandOutput.split("\\R+");
+        for (final String line : lines) {
+            if (line.startsWith("package:")) {
+                // The package name starts after "package:"
+                final int pkgStartIndex = line.indexOf(':') + 1;
+                // The package name ends before the space leading to "uid:..."
+                int pkgEndIndex = line.indexOf(' ', pkgStartIndex);
+
+                return line.substring(pkgStartIndex, pkgEndIndex);
+            }
+        }
+
+        throw new Error(
+                String.format(
+                        "Could not find package name for UID: %d from output: '%s'",
+                        aid, commandOutput));
+    }
+
+    /**
      * Determines if the device has the given features.
      *
      * @param feature name of the feature (e.g. "android.hardware.bluetooth")
@@ -405,6 +437,51 @@ public final class DeviceUtils {
         device.executeShellCommand("input keyevent KEYCODE_SLEEP");
     }
 
+    /** Returns the current brightness level of the given device. */
+    public static int getCurrentBrightnessLevel(ITestDevice device) throws Exception {
+        return Integer.parseInt(
+                device.executeShellCommand("settings get system screen_brightness").trim());
+    }
+
+    /** Sets the brightness level of the given device. */
+    public static void setScreenBrightnessLevel(ITestDevice device, int newBrightness)
+            throws Exception {
+        device.executeShellCommand("settings put system screen_brightness " + newBrightness);
+    }
+
+    /** Returns the current brightness mode of the given device. */
+    public static int getCurrentBrightnessMode(ITestDevice device) throws Exception {
+        return Integer.parseInt(
+                device.executeShellCommand("settings get system screen_brightness_mode").trim());
+    }
+
+    /** Sets the brightness mode of the given device. */
+    public static void setAutoBrightnessMode(ITestDevice device, int mode) throws Exception {
+        device.executeShellCommand("settings put system screen_brightness_mode " + mode);
+    }
+
+    /** Gets the user rotation mode of the given device. */
+    public static int getCurrentUserRotationMode(ITestDevice device) throws Exception {
+        return Integer.parseInt(
+                device.executeShellCommand("settings get system user_rotation").trim());
+    }
+
+    /** Sets the user rotation mode of the given device. */
+    public static void setUserRotationMode(ITestDevice device, int mode) throws Exception {
+        device.executeShellCommand("settings put system user_rotation " + mode);
+    }
+
+    /** Gets the accelerometer rotation mode of the given device. */
+    public static int getCurrentAccelerometerRotationMode(ITestDevice device) throws Exception {
+        return Integer.parseInt(
+                device.executeShellCommand("settings get system accelerometer_rotation").trim());
+    }
+
+    /** Sets the accelerometer rotation mode of the given device. */
+    public static void setAccelerometerRotationMode(ITestDevice device, int mode) throws Exception {
+        device.executeShellCommand("settings put system accelerometer_rotation " + mode);
+    }
+
     public static void turnBatteryStatsAutoResetOn(ITestDevice device) throws Exception {
         device.executeShellCommand("dumpsys batterystats enable no-auto-reset");
     }
@@ -489,7 +566,6 @@ public final class DeviceUtils {
             String service, String actionValue) throws Exception {
         executeServiceAction(device, testPackage, service, actionValue);
     }
-
 
     /**
      * Runs a (background) service to perform the given action.

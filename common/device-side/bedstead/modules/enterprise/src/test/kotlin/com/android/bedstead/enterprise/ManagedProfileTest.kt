@@ -19,7 +19,6 @@ import android.os.Build
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile
 import com.android.bedstead.harrier.BedsteadJUnit4
-import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.users.UserType
@@ -76,7 +75,7 @@ class ManagedProfileTest {
     @Test
     @EnsureHasNoDeviceOwner // Device Owners can disable managed profiles
     @EnsureHasNoWorkProfile
-    @EnsureCanAddUser
+    // TODO(b/442891661) Check that Managed Profile is supported?
     fun createUser_specifiesManagedProfileUserType_createsUser() {
         val personalUser = TestApis.users().instrumented()
         val user = TestApis.users()
@@ -93,7 +92,7 @@ class ManagedProfileTest {
     }
 
     @Test
-    @EnsureCanAddUser
+    // TODO(b/442891661) Check that Managed Profile is supported?
     fun createUser_androidLessThanS_createsManagedProfileNotOnSystemUser_throwsException() {
         Assume.assumeTrue(
             "After Android S, managed profiles may be a profile of a non-system user",

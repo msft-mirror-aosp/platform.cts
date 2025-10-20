@@ -57,6 +57,7 @@ import java.util.function.Function;
 public class TestActivity extends Activity {
 
     public static final String OVERLAY_WINDOW_NAME = "TestActivity.APP_OVERLAY_WINDOW";
+    private static final String EXTRA_KEY_FITS_SYSTEM_WINDOWS = "fits_system_windows";
     private static final AtomicReference<Function<TestActivity, View>> sInitializer =
             new AtomicReference<>();
 
@@ -140,7 +141,9 @@ public class TestActivity extends Activity {
         setSoftInputState(SOFT_INPUT_STATE_UNCHANGED);
 
         final FrameLayout contentView = new FrameLayout(this);
-        contentView.setFitsSystemWindows(true);
+        boolean fitsSystemWindows =
+                getIntent().getBooleanExtra(EXTRA_KEY_FITS_SYSTEM_WINDOWS, true);
+        contentView.setFitsSystemWindows(fitsSystemWindows);
         contentView.addView(mInitializer.apply(this));
         setContentView(contentView);
     }
@@ -272,6 +275,7 @@ public class TestActivity extends Activity {
         private int mAdditionalFlags = 0;
         private ActivityOptions mOptions = null;
         private boolean mRequireShellPermission = false;
+        private Boolean mFitsSystemWindows = null;
 
         public Starter() {
         }
@@ -345,6 +349,15 @@ public class TestActivity extends Activity {
         }
 
         /**
+         * Makes {@link TestActivity#onCreate(Bundle)} to call {@link
+         * View#setFitsSystemWindows(boolean)} with the given argument.
+         */
+        public Starter fitsSystemWindows(boolean fitsSystemWindows) {
+            mFitsSystemWindows = fitsSystemWindows;
+            return this;
+        }
+
+        /**
          * Launches {@link TestActivity} with the given initialization logic for content view
          * with already specified parameters.
          *
@@ -369,6 +382,9 @@ public class TestActivity extends Activity {
                     .setAction(Intent.ACTION_MAIN)
                     .setClass(instrumentation.getContext(), activityClass)
                     .addFlags(mFlags | mAdditionalFlags);
+            if (mFitsSystemWindows != null) {
+                intent.putExtra(EXTRA_KEY_FITS_SYSTEM_WINDOWS, mFitsSystemWindows.booleanValue());
+            }
             final Callable<TestActivity> launcher =
                     () -> (TestActivity) instrumentation.startActivitySync(
                             intent, mOptions == null ? null : mOptions.toBundle());
@@ -411,6 +427,9 @@ public class TestActivity extends Activity {
                     .setAction(Intent.ACTION_MAIN)
                     .setClass(fromActivity, activityClass)
                     .addFlags(mFlags | mAdditionalFlags);
+            if (mFitsSystemWindows != null) {
+                intent.putExtra(EXTRA_KEY_FITS_SYSTEM_WINDOWS, mFitsSystemWindows.booleanValue());
+            }
             final Callable<TestActivity> launcher = () -> {
                 fromActivity.startActivity(intent, mOptions == null ? null : mOptions.toBundle());
                 final SettableFuture<TestActivity> future = SettableFuture.create();

@@ -57,3 +57,19 @@ cc_library {
         "-Wno-unused-variable",
     ],
 }
+
+cc_library {
+    name: "libread_only_native_lib_jni",
+    srcs: ["native_lib.cpp"],
+    shared_libs: [
+        "libnativehelper_compat_libc++",
+    ],
+    static_libs: [
+        "libcutils",
+    ],
+
+    cflags: [
+        "-Wall",
+        "-Werror",
+    ],
+}

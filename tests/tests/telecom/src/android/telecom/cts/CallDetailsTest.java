@@ -53,6 +53,7 @@ import android.telephony.TelephonyManager;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FileUtils;
+import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.server.telecom.flags.Flags;
 
 import java.io.InputStream;
@@ -89,6 +90,8 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
     public static final String TEST_EVENT = "com.test.event.TEST";
     public static final Uri TEST_DEFLECT_URI = Uri.fromParts("tel", "+16505551212", null);
     private static final int ASYNC_TIMEOUT = 10000;
+    private static final float TEST_MIN_BITRATE_FOR_HD_PLUS = 24.4f;
+    ;
     private StatusHints mStatusHints;
     private Bundle mExtras = new Bundle();
     private Uri mContactUri;
@@ -157,7 +160,6 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
 
                 mInCallService = mInCallCallbacks.getService();
                 mCall = mInCallService.getLastCall();
-
                 assertCallState(mCall, Call.STATE_DIALING);
                 isSetUpComplete = true;
             } finally {
@@ -531,12 +533,15 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
     /**
      * Tests whether the getCreationTimeMillis() getter returns the correct object.
      */
+    @ApiTest(apis = {"android.telecom.Call.Details#getCreationTimeMillis"})
     public void testCreationTimeMillis() {
         if (!mShouldTestTelecom) {
             return;
         }
 
         assertThat(mCall.getDetails().getCreationTimeMillis(), instanceOf(Long.class));
+        assertTrue("Call creation time should always be > 0.",
+                mCall.getDetails().getCreationTimeMillis() > 0);
     }
 
     /**
@@ -1013,6 +1018,34 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
         assertNull(extras);
         mOnConnectionEventCounter.reset();
 
+        mConnection.sendConnectionEvent(Call.EVENT_PHONE_ACCOUNT_CHANGED, null);
+        mOnConnectionEventCounter.waitForCount(1, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        event = (String) (mOnConnectionEventCounter.getArgs(0)[1]);
+        extras = (Bundle) (mOnConnectionEventCounter.getArgs(0)[2]);
+        assertEquals(Call.EVENT_PHONE_ACCOUNT_CHANGED, event);
+        assertNull(extras);
+        mOnConnectionEventCounter.reset();
+
+        mConnection.setActive();
+        assertCallState(mCall, Call.STATE_ACTIVE);
+
+        // Get the current PhoneAccount for the call
+        PhoneAccountHandle currentHandle = mCall.getDetails().getAccountHandle();
+        assertNotNull(currentHandle);
+        PhoneAccount currentAccount = mTelecomManager.getPhoneAccount(currentHandle);
+        assertNotNull(currentAccount);
+
+        // Re-register the same PhoneAccount. This should trigger internal updates
+        // in Telecom and cause CallsManager to notify the Call.
+
+        mTelecomManager.registerPhoneAccount(currentAccount);
+        mOnConnectionEventCounter.waitForCount(1, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        event = (String) (mOnConnectionEventCounter.getArgs(0)[1]);
+        extras = (Bundle) (mOnConnectionEventCounter.getArgs(0)[2]);
+        assertEquals(Call.EVENT_PHONE_ACCOUNT_CHANGED, event);
+        assertNull(extras);
+        mOnConnectionEventCounter.reset();
+
         TestParcelable testParcelable = createTestParcelable();
         testBundle = createTestBundle(testParcelable);
         mConnection.sendConnectionEvent(OTT_TEST_EVENT_NAME, testBundle);
@@ -1041,6 +1074,18 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
         Uri address = (Uri) (counter.getArgs(0)[0]);
 
         assertEquals(TEST_DEFLECT_URI, address);
+    }
+
+    /**
+     * Stub test to verify coverage of {@code Connection#onHandoverComplete}; this API is not used
+     * any more, but APIs are forever so we need to have skeletal coverage.
+     */
+    public void testHandoverComplete() {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+
+        mConnection.onHandoverComplete();
     }
 
     /**
@@ -1102,7 +1147,6 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
         if (!mShouldTestTelecom) {
             return;
         }
-
         assertEquals(Call.Details.DIRECTION_OUTGOING, mCall.getDetails().getCallDirection());
         assertFalse(Call.Details.DIRECTION_INCOMING == mCall.getDetails().getCallDirection());
         assertFalse(Call.Details.DIRECTION_UNKNOWN == mCall.getDetails().getCallDirection());
@@ -1134,7 +1178,7 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
     }
 
     /**
-     * Tests whether the CallLogManager logs the features of a call(HD call, Wifi call, VoLTE)
+     * Tests whether the CallLogManager logs the features of a call(HD/HD+ call, Wifi call, VoLTE)
      * correctly.
      */
     public void testLogFeatures() throws Exception {
@@ -1146,13 +1190,14 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
         CountDownLatch callLogEntryLatch = getCallLogEntryLatch();
 
         Bundle testBundle = new Bundle();
-        testBundle.putInt(TelecomManager.EXTRA_CALL_NETWORK_TYPE,
-                          TelephonyManager.NETWORK_TYPE_LTE);
+        testBundle.putInt(
+                TelecomManager.EXTRA_CALL_NETWORK_TYPE, TelephonyManager.NETWORK_TYPE_LTE);
+        // To Verify the HD+ call log
+        testBundle.putInt(Connection.EXTRA_AUDIO_CODEC, Connection.AUDIO_CODEC_EVS_SWB);
         mConnection.putExtras(testBundle);
+
         // Wait for the 2nd invocation; setExtras is called in the setup method.
         mOnExtrasChangedCounter.waitForCount(2, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
-
-        Bundle extra = mCall.getDetails().getExtras();
 
         mCall.disconnect();
 
@@ -1166,13 +1211,52 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
         int features = callsCursor.getInt(callsCursor.getColumnIndex("features"));
         assertEquals(CallLog.Calls.FEATURES_HD_CALL,
                 features & CallLog.Calls.FEATURES_HD_CALL);
+        if (Flags.hdPlusCall()) {
+            // To Verify the HD+ call log
+            assertEquals(
+                    CallLog.Calls.FEATURES_HD_PLUS_CALL,
+                    features & CallLog.Calls.FEATURES_HD_PLUS_CALL);
+        }
         assertEquals(CallLog.Calls.FEATURES_WIFI, features & CallLog.Calls.FEATURES_WIFI);
         assertEquals(CallLog.Calls.FEATURES_VOLTE, features & CallLog.Calls.FEATURES_VOLTE);
     }
 
     /**
-     * Verifies operation of the test telecom call ID system APIs.
+     * Tests whether the CallLogManager logs the features of a HD+ call correctly.
+     *
+     * @throws Exception
      */
+    public void testHdCallFeatures() throws Exception {
+        if (!mShouldTestTelecom || !Flags.hdPlusCall()) {
+            return;
+        }
+        // Register content observer on call log and get latch
+        CountDownLatch callLogEntryLatch = getCallLogEntryLatch();
+
+        Bundle testBundle = new Bundle();
+        testBundle.putInt(Connection.EXTRA_AUDIO_CODEC, Connection.AUDIO_CODEC_EVS_FB);
+        testBundle.putFloat(
+                Connection.EXTRA_AUDIO_CODEC_BITRATE_KBPS, TEST_MIN_BITRATE_FOR_HD_PLUS);
+        mConnection.putExtras(testBundle);
+
+        // Wait for the 2nd invocation; setExtras is called in the setup method.
+        mOnExtrasChangedCounter.waitForCount(2, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        mCall.disconnect();
+        // Wait on the call log latch.
+        callLogEntryLatch.await(ASYNC_TIMEOUT, TimeUnit.MILLISECONDS);
+
+        // Verify the contents of the call log
+        Cursor callsCursor =
+                mContext.getContentResolver()
+                        .query(CallLog.Calls.CONTENT_URI, null, null, null, "_id DESC");
+        callsCursor.moveToFirst();
+        int features = callsCursor.getInt(callsCursor.getColumnIndex("features"));
+        assertEquals(
+                CallLog.Calls.FEATURES_HD_PLUS_CALL,
+                features & CallLog.Calls.FEATURES_HD_PLUS_CALL);
+    }
+
+    /** Verifies operation of the test telecom call ID system APIs. */
     public void testTelecomCallId() {
         if (!mShouldTestTelecom) {
             return;
@@ -1243,10 +1327,86 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
         }
         mConnection.setActive();
         assertCallState(mCall, Call.STATE_ACTIVE);
-
         mConnection.setPhoneAccountHandle(TEST_PHONE_ACCOUNT_HANDLE_2);
         assertEquals(TEST_PHONE_ACCOUNT_HANDLE_2, mConnection.getPhoneAccountHandle());
         mOnPhoneAccountChangedCounter.waitForCount(1, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
         assertEquals(TEST_PHONE_ACCOUNT_HANDLE_2, mOnPhoneAccountChangedCounter.getArgs(0)[1]);
+    }
+
+    /**
+     * Verifies that the audio mode is set to MODE_RINGTONE when a call with CRS (Customized Ringing
+     * Signal) is received.
+     */
+    public void testRingToneModeForCRS() throws Exception {
+        if (!mShouldTestTelecom || !android.telecom.flags.Flags.isUsingCrs()) {
+            return;
+        }
+
+        // 1. Registered the phone account with CAPABILITY_SIM_SUBSCRIPTION.
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                mTelecomManager,
+                tm -> tm.registerPhoneAccount(TestUtils.TEST_SIM_PHONE_ACCOUNT_2),
+                "android.permission.REGISTER_SIM_SUBSCRIPTION");
+        TestUtils.enablePhoneAccount(
+                getInstrumentation(), TestUtils.TEST_SIM_PHONE_ACCOUNT_HANDLE_2);
+        mConnection.setPhoneAccountHandle(TestUtils.TEST_SIM_PHONE_ACCOUNT_HANDLE_2);
+        assertEquals(
+                TestUtils.TEST_SIM_PHONE_ACCOUNT_HANDLE_2, mConnection.getPhoneAccountHandle());
+
+        // 2. Create a bundle to simulate CRS enabled.
+        Bundle extras = new Bundle();
+        extras.putInt(
+                android.telecom.Call.EXTRA_CRS_AUDIO_MODE, android.telecom.Call.CRS_MODE_RINGTONE);
+        extras.putInt(
+                android.telecom.Call.EXTRA_CRS_MEDIA_TYPE,
+                android.telecom.Call.CRS_MEDIA_TYPE_AUDIO);
+        mConnection.putExtras(extras);
+        mOnExtrasChangedCounter.waitForCount(2, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+
+        // 3. Setup the call to be in a ringing state.
+        mConnection.setRinging();
+        assertCallState(mCall, Call.STATE_RINGING);
+
+        // 4. Get the AudioManager instance and check for the mode.
+        AudioManager audioManager = mContext.getSystemService(AudioManager.class);
+        assertAudioMode(audioManager, AudioManager.MODE_RINGTONE);
+    }
+
+    /**
+     * Verifies that the audio mode is set to MODE_IN_CALL when a call with CRS (Customized Ringing
+     * Signal) is received.
+     */
+    public void testInCallModeForCRS() throws Exception {
+        if (!mShouldTestTelecom || !android.telecom.flags.Flags.isUsingCrs()) {
+            return;
+        }
+        // 1. Registered the phone account with CAPABILITY_SIM_SUBSCRIPTION.
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                mTelecomManager,
+                tm -> tm.registerPhoneAccount(TestUtils.TEST_SIM_PHONE_ACCOUNT_2),
+                "android.permission.REGISTER_SIM_SUBSCRIPTION");
+        TestUtils.enablePhoneAccount(
+                getInstrumentation(), TestUtils.TEST_SIM_PHONE_ACCOUNT_HANDLE_2);
+        mConnection.setPhoneAccountHandle(TestUtils.TEST_SIM_PHONE_ACCOUNT_HANDLE_2);
+        assertEquals(
+                TestUtils.TEST_SIM_PHONE_ACCOUNT_HANDLE_2, mConnection.getPhoneAccountHandle());
+
+        // 2. Create a bundle to simulate CRS enabled.
+        Bundle extras = new Bundle();
+        extras.putInt(
+                android.telecom.Call.EXTRA_CRS_AUDIO_MODE, android.telecom.Call.CRS_MODE_IN_CALL);
+        extras.putInt(
+                android.telecom.Call.EXTRA_CRS_MEDIA_TYPE,
+                android.telecom.Call.CRS_MEDIA_TYPE_AUDIO);
+        mConnection.putExtras(extras);
+        mOnExtrasChangedCounter.waitForCount(2, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+
+        // 3. Setup the call to be in a ringing state.
+        mConnection.setRinging();
+        assertCallState(mCall, Call.STATE_RINGING);
+
+        // 4. Get the AudioManager instance and check for the mode.
+        AudioManager audioManager = mContext.getSystemService(AudioManager.class);
+        assertAudioMode(audioManager, AudioManager.MODE_IN_CALL);
     }
 }

@@ -28,6 +28,8 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -78,9 +80,11 @@ import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
 import android.media.MediaRecorder;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.ConditionVariable;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -126,7 +130,9 @@ import org.junit.runner.Result;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.ServerSocket;
@@ -211,6 +217,7 @@ public class ItsService extends Service implements SensorEventListener {
     public static final String REGION_AF_KEY = "af";
     public static final String LOCK_AE_KEY = "aeLock";
     public static final String LOCK_AWB_KEY = "awbLock";
+    public static final String ALLOW_AF_NOT_FOCUS_LOCKED_KEY = "allowAFNotFocusLocked";
     public static final String TRIGGER_KEY = "triggers";
     public static final String PHYSICAL_ID_KEY = "physicalId";
     public static final String TRIGGER_AE_KEY = "ae";
@@ -339,6 +346,7 @@ public class ItsService extends Service implements SensorEventListener {
     private volatile boolean mDoAE = true;
     private volatile boolean mDoAF = true;
     private volatile boolean mSend3AResults = true;
+    private volatile boolean mAllowAFNotFocusLocked = false;
     private final LinkedBlockingQueue<String> unavailableEventQueue = new LinkedBlockingQueue<>();
     private final LinkedBlockingQueue<Pair<String, String>> unavailablePhysicalCamEventQueue =
                 new LinkedBlockingQueue<>();
@@ -560,7 +568,10 @@ public class ItsService extends Service implements SensorEventListener {
                     JSONObject obj = new JSONObject();
                     JSONArray jcaCapturePaths = new JSONArray(intent.getStringArrayListExtra(
                             ItsTestActivity.JCA_CAPTURE_PATHS_TAG));
+                    JSONArray jcaCaptureUris = new JSONArray(intent.getStringArrayListExtra(
+                            ItsTestActivity.JCA_CAPTURE_URIS_TAG));
                     obj.put(ItsTestActivity.JCA_CAPTURE_PATHS_TAG, jcaCapturePaths);
+                    obj.put(ItsTestActivity.JCA_CAPTURE_URIS_TAG, jcaCaptureUris);
                     Logt.i(TAG, "Sending JCA capture paths: " + obj.toString());
                     mSocketRunnableObj.sendResponse(
                             ItsTestActivity.JCA_CAPTURE_PATHS_TAG,
@@ -987,6 +998,7 @@ public class ItsService extends Service implements SensorEventListener {
                 Logt.e(TAG, "Default language is not set to " + Locale.US + "!");
                 stopSelf();
             }
+            Logt.i(TAG, "cmd: " + cmd);
 
             // Each command is a serialized JSON object.
             try {
@@ -1125,7 +1137,7 @@ public class ItsService extends Service implements SensorEventListener {
                 } else if ("doGetDefaultCameraPkgName".equals(cmdObj.getString("cmdName"))) {
                     doGetDefaultCameraPkgName();
                 } else if ("doGainMapCheck".equals(cmdObj.getString("cmdName"))) {
-                    doGainMapCheck(cmdObj);
+                    doGainMapCheckHelper(cmdObj);
                 } else if ("isNightModeIndicatorSupported".equals(cmdObj.getString("cmdName"))) {
                     String cameraId = cmdObj.getString("cameraId");
                     doCheckNightModeIndicatorSupported(cameraId);
@@ -1278,6 +1290,9 @@ public class ItsService extends Service implements SensorEventListener {
             try {
                 JSONObject videoJson = new JSONObject();
                 videoJson.put("recordedOutputPath", obj.recordedOutputPath);
+                // copy file in the path to a content URI for HSUM
+                Uri destinationUri = getOutputMediaUri(obj.recordedOutputPath);
+                videoJson.put("contentUri", destinationUri.toString());
                 videoJson.put("quality", obj.quality);
                 if (obj.isFrameRateValid()) {
                     videoJson.put("videoFrameRate", obj.videoFrameRate);
@@ -1296,6 +1311,8 @@ public class ItsService extends Service implements SensorEventListener {
                 sendResponse("recordingResponse", null, videoJson, null);
             } catch (org.json.JSONException e) {
                 throw new ItsException("JSON error: ", e);
+            } catch (IOException e) {
+                throw new ItsException("IO error: ", e);
             }
         }
 
@@ -2334,6 +2351,7 @@ public class ItsService extends Service implements SensorEventListener {
                 // values, waiting until the HAL has reported that the lock was successful.
                 mNeedsLockedAE = params.optBoolean(LOCK_AE_KEY, false);
                 mNeedsLockedAWB = params.optBoolean(LOCK_AWB_KEY, false);
+                mAllowAFNotFocusLocked = params.optBoolean(ALLOW_AF_NOT_FOCUS_LOCKED_KEY, false);
                 mConvergedAE = false;
                 mConvergedAWB = false;
                 mConvergedAF = false;
@@ -2747,19 +2765,36 @@ public class ItsService extends Service implements SensorEventListener {
         mSocketRunnableObj.sendResponse("defaultCameraPkg", pkgName);
     }
 
-    private void doGainMapCheck(JSONObject params) throws ItsException {
+    private void doGainMapCheckHelper(JSONObject params) throws ItsException {
         String filePath;
+        boolean gainmapPresent;
         try {
             filePath = params.getString("filePath");
         } catch(org.json.JSONException e) {
             throw new ItsException("JSON error: ", e);
         }
-        Bitmap bitmapImage = BitmapFactory.decodeFile(filePath);
-        assert(bitmapImage != null);
-        boolean gainmapPresent = bitmapImage.hasGainmap();
+        File file = new File(filePath);
+        if (file.exists()) {
+            Log.d(TAG, "File exists: " + filePath);
+            gainmapPresent = doGainMapCheck(BitmapFactory.decodeFile(filePath));
+        } else {
+            Log.d(TAG, "File does not exist: " + filePath + ", trying to use content provider");
+            Uri fileUri = Uri.parse(filePath);
+            try (InputStream inputStream = getContentResolver().openInputStream(fileUri)) {
+                gainmapPresent = doGainMapCheck(BitmapFactory.decodeStream(inputStream));
+            } catch (IOException e) {
+                throw new ItsException("Failed to open input stream", e);
+            }
+        }
         Log.i(TAG, "Gainmap present? " + gainmapPresent);
         mSocketRunnableObj.sendResponse("gainmapPresent",
                 gainmapPresent ? "true" : "false");
+    }
+
+    private boolean doGainMapCheck(Bitmap bitmapImage) {
+        assert(bitmapImage != null);
+        boolean gainmapPresent = bitmapImage.hasGainmap();
+        return gainmapPresent;
     }
 
     private void doGetSupportedVideoSizesCapped(String id) throws ItsException {
@@ -3961,6 +3996,40 @@ public class ItsService extends Service implements SensorEventListener {
         return mediaFile + fileExtension;
     }
 
+    private Uri getOutputMediaUri(String recordedOutputPath) throws IOException {
+        ContentResolver resolver = getContentResolver();
+        ContentValues values = new ContentValues();
+        File recordedOutputFile = new File(recordedOutputPath);
+        String fileName = recordedOutputFile.getName();
+        String mimeType = "video/mp4";
+        if (fileName.endsWith(".3gp")) {
+            mimeType = "video/3gpp";
+        } else if (fileName.endsWith(".webm")) {
+            mimeType = "video/webm";
+        }
+        values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
+        values.put(MediaStore.MediaColumns.MIME_TYPE, mimeType);
+        values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+        Uri destinationUri = resolver.insert(
+                MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+        if (destinationUri == null) {
+            throw new IOException("Failed to create new MediaStore record.");
+        }
+        try (InputStream in = new FileInputStream(recordedOutputPath);
+                OutputStream out = resolver.openOutputStream(destinationUri)) {
+            if (out == null) {
+                throw new IOException("Failed to open output stream for " + destinationUri);
+            }
+            // Copy the file contents
+            byte[] buf = new byte[1024];
+            int len;
+            while ((len = in.read(buf)) > 0) {
+                out.write(buf, 0, len);
+            }
+        }
+        return destinationUri;
+    }
+
     private void doCaptureWithFlash(JSONObject params) throws ItsException {
         // Parse the json to get the capture requests
         List<CaptureRequest.Builder> previewStartRequests = ItsSerializer.deserializeRequestList(
@@ -4881,8 +4950,21 @@ public class ItsService extends Service implements SensorEventListener {
                     }
                 }
                 if (result.get(CaptureResult.CONTROL_AF_STATE) != null) {
-                    mConvergedAF = result.get(CaptureResult.CONTROL_AF_STATE)
-                             == CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED;
+                    Integer afState = result.get(CaptureResult.CONTROL_AF_STATE);
+                    mConvergedAF =
+                            (afState == CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED)
+                                    || (mAllowAFNotFocusLocked
+                                            && (afState
+                                                    == CaptureResult
+                                                            .CONTROL_AF_STATE_NOT_FOCUSED_LOCKED));
+                    Log.i(
+                            TAG,
+                            "afState = "
+                                    + afState
+                                    + ", mAllowAFNotFocusLocked: "
+                                    + mAllowAFNotFocusLocked
+                                    + ", mConvergedAF: "
+                                    + mConvergedAF);
                 }
                 if (result.get(CaptureResult.CONTROL_AWB_STATE) != null) {
                     mConvergedAWB = result.get(CaptureResult.CONTROL_AWB_STATE)
@@ -5131,7 +5213,7 @@ public class ItsService extends Service implements SensorEventListener {
         /**
          * Time to wait for autofocus to converge.
          */
-        private static final long PREVIEW_AUTOFOCUS_TIMEOUT_MS = 1000;
+        private static final long PREVIEW_AUTOFOCUS_TIMEOUT_MS = 2000;
 
         /**
          * {@link ConditionVariable} to open when autofocus has converged.

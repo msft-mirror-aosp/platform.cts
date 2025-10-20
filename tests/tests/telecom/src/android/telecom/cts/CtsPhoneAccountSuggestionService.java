@@ -38,6 +38,8 @@ public class CtsPhoneAccountSuggestionService extends PhoneAccountSuggestionServ
         new Handler(Looper.getMainLooper()).postDelayed(
                 () -> suggestPhoneAccounts(number, sSuggestionsToProvide),
                 sSuggestionWaitTime);
+        // Required for coverage counting.
+        super.onAccountSuggestionRequest(number);
     }
 
     public static void enableService(Context context) {

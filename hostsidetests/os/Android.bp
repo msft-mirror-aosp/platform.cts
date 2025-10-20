@@ -59,6 +59,8 @@ java_test_host {
         ":CtsStaticSharedNativeLibConsumer",
         ":CtsStaticSharedNativeLibProvider",
         ":CtsStaticSharedNativeLibProvider1",
+        ":CtsStaticSharedLibMatchesPackageNameApp",
+        ":CtsStaticSharedLibMatchesLibraryNameApp",
     ],
     per_testcase_directory: true,
 }

@@ -16,8 +16,12 @@
 
 package android.companion.cts.core
 
+import android.Manifest.permission.REQUEST_COMPANION_SELF_MANAGED
 import android.companion.AssociationRequest
+import android.companion.AssociationRequest.DEVICE_PROFILE_COMPUTER
+import android.companion.AssociationRequest.PERMISSION_GROUP_NEARBY
 import android.companion.CompanionDeviceManager.FLAG_CALL_METADATA
+import android.companion.CompanionDeviceManager.FLAG_UNIVERSAL_MODES
 import android.companion.DeviceId
 import android.companion.cts.common.CUSTOM_ID_A
 import android.companion.cts.common.CUSTOM_ID_B
@@ -28,6 +32,7 @@ import android.companion.cts.common.RecordingCallback
 import android.companion.cts.common.RecordingCallback.OnAssociationPending
 import android.companion.cts.common.SIMPLE_EXECUTOR
 import android.companion.cts.common.getAssociationForPackage
+import android.content.pm.PackageManager
 import android.net.MacAddress
 import android.platform.test.annotations.AppModeFull
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -86,6 +91,50 @@ class AssociateTest : CoreTestBase() {
         cdm.disableSystemDataSyncForTypes(associations[0].id, FLAG_CALL_METADATA)
         associations = cdm.myAssociations
         assertEquals(0, associations[0].systemDataSyncFlags and FLAG_CALL_METADATA)
+    }
+
+    @Test
+    fun test_systemDataSyncForTypes_requiresPermissionForRestrictedTypes() = with(targetApp) {
+        associate(MAC_ADDRESS_A)
+
+        fun association() = cdm.myAssociations[0]
+
+        // Attempts to interact with restricted flags without the
+        // REQUEST_COMPANION_SELF_MANAGED permission should lead to a
+        // SecurityException being thrown.
+        assertFailsWith(SecurityException::class) {
+            cdm.enableSystemDataSyncForTypes(association().id, FLAG_UNIVERSAL_MODES)
+        }
+        assertEquals(
+            0,
+            association().systemDataSyncFlags and FLAG_UNIVERSAL_MODES
+        )
+
+        // Same call with the REQUEST_COMPANION_SELF_MANAGED permissions should succeed.
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.enableSystemDataSyncForTypes(association().id, FLAG_UNIVERSAL_MODES)
+        }
+        assertEquals(
+            FLAG_UNIVERSAL_MODES,
+            association().systemDataSyncFlags and FLAG_UNIVERSAL_MODES
+        )
+
+        // Repeat for disabling the restricted flag.
+        assertFailsWith(SecurityException::class) {
+            cdm.disableSystemDataSyncForTypes(association().id, FLAG_UNIVERSAL_MODES)
+        }
+        assertEquals(
+            FLAG_UNIVERSAL_MODES,
+            association().systemDataSyncFlags and FLAG_UNIVERSAL_MODES
+        )
+
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.disableSystemDataSyncForTypes(association().id, FLAG_UNIVERSAL_MODES)
+        }
+        assertEquals(
+            0,
+            association().systemDataSyncFlags and FLAG_UNIVERSAL_MODES
+        )
     }
 
     @Test
@@ -220,6 +269,88 @@ class AssociateTest : CoreTestBase() {
             expected = MAC_ADDRESS_A,
             actual = deviceIdC.macAddress
         )
+    }
+
+    @Test
+    fun test_associate_profileNull_grantsExtraPermission() = with (testApp) {
+        withShellPermissionIdentity {
+            nearbyPerms.forEach { p ->
+                uiAutomation.revokeRuntimePermission(packageName, p)
+            }
+        }
+
+        nearbyPerms.forEach { p ->
+            assertEquals(
+                PackageManager.PERMISSION_DENIED,
+                pm.checkPermission(p, packageName)
+            )
+        }
+
+        associate(MAC_ADDRESS_A, "null", PERMISSION_GROUP_NEARBY)
+
+        nearbyPerms.forEach { p ->
+            assertEquals(
+                PackageManager.PERMISSION_GRANTED,
+                pm.checkPermission(p, packageName)
+            )
+        }
+    }
+
+    @Test
+    fun test_associate_profileNotNull_doesNotGrantsExtraPermission() = with (testApp) {
+        withShellPermissionIdentity {
+            nearbyPerms.forEach { p ->
+                uiAutomation.revokeRuntimePermission(packageName, p)
+            }
+        }
+
+        nearbyPerms.forEach { p ->
+            assertEquals(
+                PackageManager.PERMISSION_DENIED,
+                pm.checkPermission(p, packageName)
+            )
+        }
+
+        associate(MAC_ADDRESS_A, DEVICE_PROFILE_COMPUTER, PERMISSION_GROUP_NEARBY)
+
+        nearbyPerms.forEach { p ->
+            assertEquals(
+                PackageManager.PERMISSION_DENIED,
+                pm.checkPermission(p, packageName)
+            )
+        }
+    }
+
+    @Test
+    fun test_disassociate_profileNull_revokesExtraPermission() = with(testApp) {
+        associate(MAC_ADDRESS_A, "null", PERMISSION_GROUP_NEARBY)
+
+        nearbyPerms.forEach { p ->
+            assertEquals(
+                PackageManager.PERMISSION_GRANTED,
+                pm.checkPermission(p, packageName)
+            )
+        }
+
+        associate(MAC_ADDRESS_B, "null", PERMISSION_GROUP_NEARBY)
+
+        disassociate(MAC_ADDRESS_A)
+
+        nearbyPerms.forEach { p ->
+            assertEquals(
+                PackageManager.PERMISSION_GRANTED,
+                pm.checkPermission(p, packageName)
+            )
+        }
+
+        disassociate(MAC_ADDRESS_B)
+
+        nearbyPerms.forEach { p ->
+            assertEquals(
+                PackageManager.PERMISSION_DENIED,
+                pm.checkPermission(p, packageName)
+            )
+        }
     }
 
     private fun createDeviceId(id: String?, macAddress: MacAddress?): DeviceId {

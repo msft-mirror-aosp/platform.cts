@@ -1,14 +1,14 @@
 {
   "presubmit": [
     {
-      "name": "CtsPackageManagerHostTestCases_cts_splittests",
+      "name": "CtsPackageManagerSplitHostTestCases",
       "file_patterns": ["SplitTests\\.java"]
     },
     {
       "name": "CtsInstantAppsHostTestCases_cts_ephemeraltest"
     },
     {
-      "name": "CtsPackageManagerHostTestCases_cts_isolatedsplitstests",
+      "name": "CtsPackageManagerIsolatedSplitHostTestCases",
       "file_patterns": ["IsolatedSplitsTests\\.java"]
     }
   ]

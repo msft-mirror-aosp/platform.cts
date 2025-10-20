@@ -16,6 +16,7 @@
 package com.android.bedstead.settings
 
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
+import com.android.bedstead.harrier.annotations.meta.BedsteadTest
 
 /**
  * Marks tests that need to have a specific settings preference in a particular state before the
@@ -34,6 +35,7 @@ import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
 @UsesAnnotationExecutor(UsesAnnotationExecutor.SETTINGS)
+@BedsteadTest
 annotation class PreferenceTest(
     val screenKey: String,
     val preferenceKey: String,

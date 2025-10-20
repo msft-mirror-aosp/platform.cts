@@ -16,7 +16,7 @@
 
 package android.mediapc.cts;
 
-import android.mediav2.common.cts.WorkDirBase;
+import android.media.cts.WorkDirBase;
 
 /**
  * Return the primary shared/external storage directory used by the tests
@@ -24,6 +24,6 @@ import android.mediav2.common.cts.WorkDirBase;
  */
 class WorkDir extends WorkDirBase {
     static final String getMediaDirString() {
-        return getMediaDirString("CtsMediaPerformanceClassTestCases-3.4");
+        return getMediaDirString("CtsMediaPerformanceClassTestCases-4.0");
     }
 }

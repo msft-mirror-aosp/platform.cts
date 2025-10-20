@@ -40,6 +40,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.CddTest
+import com.android.compatibility.common.util.SystemUtil
 import com.google.common.truth.Truth
 import com.google.common.truth.Truth.assertWithMessage
 import org.junit.After
@@ -185,6 +186,13 @@ class SensitiveNotificationAppHidingTest {
         notificationAssistant = notificationHelper.enableAssistant(NLS_PACKAGE_NAME)
 
         setUpNotifListener()
+
+        // make sure no toast when a test starts
+        SystemUtil.eventually {
+            assertWithMessage("Expected to start test with no toast")
+                .that(ToastVerifier.waitForNoToast())
+                .isTrue()
+        }
     }
 
     @After

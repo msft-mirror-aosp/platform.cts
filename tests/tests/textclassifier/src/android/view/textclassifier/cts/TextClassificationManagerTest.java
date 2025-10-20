@@ -34,10 +34,10 @@ import android.view.textclassifier.TextClassificationManager;
 import android.view.textclassifier.TextClassifier;
 
 import androidx.test.InstrumentationRegistry;
+import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -66,10 +66,9 @@ public class TextClassificationManagerTest {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @RequiresFlagsEnabled(Flags.FLAG_TEXT_CLASSIFIER_CHOICE_API_ENABLED)
     public void testGetClassifierWithoutPermission() {
-        Assume.assumeTrue(isAtLeastB());
-        Assume.assumeTrue(Flags.textClassifierChoiceApiEnabled());
         assertThrows(SecurityException.class,
                 () -> mManager.getClassifier(TextClassifier.CLASSIFIER_TYPE_DEVICE_DEFAULT));
         assertThrows(SecurityException.class,
@@ -79,10 +78,9 @@ public class TextClassificationManagerTest {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @RequiresFlagsEnabled(Flags.FLAG_TEXT_CLASSIFIER_CHOICE_API_ENABLED)
     public void testGetClassifierWithPermission() {
-        Assume.assumeTrue(isAtLeastB());
-        Assume.assumeTrue(Flags.textClassifierChoiceApiEnabled());
         runWithShellPermissionIdentity(() -> {
             assertThat(
                     mManager.getClassifier(
@@ -95,10 +93,5 @@ public class TextClassificationManagerTest {
                     TextClassifier.CLASSIFIER_TYPE_SELF_PROVIDED)).isSameInstanceAs(
                     TextClassifier.NO_OP);
         }, Manifest.permission.ACCESS_TEXT_CLASSIFIER_BY_TYPE);
-    }
-
-    private boolean isAtLeastB() {
-        return Build.VERSION.CODENAME.equals("Baklava")
-                || Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA;
     }
 }

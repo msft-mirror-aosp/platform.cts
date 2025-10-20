@@ -17,6 +17,7 @@
 
 <configuration description="Config for CTS InputMethod test cases">
     <option name="test-suite-tag" value="cts" />
+    <option name="test-suite-tag" value="gts" />
     <option name="config-descriptor:metadata" key="component" value="inputmethod" />
     <option name="config-descriptor:metadata" key="parameter" value="all_foldable_states" />
     <option name="config-descriptor:metadata" key="parameter" value="instant_app" />
@@ -24,6 +25,10 @@
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
     <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
+
+    <!-- Only run tests if the device under test is SDK version 36 (Android 16) or above. -->
+    <object type="module_controller" class="com.android.tradefed.testtype.suite.module.Sdk36ModuleController" />
+
     <!--
         TODO(yukawa): come up with a proper way to take care of devices that do not support
         installable IMEs.  Ideally target_preparer should have an option to annotate required

@@ -16,9 +16,12 @@
 
 package com.android.bedstead.performanceanalyzer.annotations
 
+import com.android.bedstead.harrier.annotations.meta.BedsteadTest
+
 /**
  * Indicates that this is a performance analyzer test.
  *
  * Use this with [PerformanceAnalyzer].
  */
+@BedsteadTest
 annotation class PerformanceTest()

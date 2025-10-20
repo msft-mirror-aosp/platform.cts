@@ -35,17 +35,17 @@ import java.util.List;
 @RunWith(AndroidJUnit4.class)
 public class KeystoreFeatureMapTest {
     /**
-     * Inspect all feature tags defined
-     * `hardware/interfaces/security/keymint/aidl/android/hardware/security/keymint/Tag.aidl`
-     * are mapped to value in
+     * Inspect all feature tags defined in
+     * `hardware/interfaces/security/keymint/aidl/android/hardware/security/keymint/Tag.aidl` and
+     * check they are mapped to a value in
      * `frameworks/base/core/java/android/security/keymaster/KeymasterDefs.java` .
+     *
      * @throws IllegalArgumentException
      * @throws IllegalAccessException
      * @throws NoSuchFieldException
      */
     @Test
-    public void testFeatureTagsMapping()
-            throws IllegalArgumentException, IllegalAccessException {
+    public void testFeatureTagsMapping() throws IllegalArgumentException, IllegalAccessException {
         List<String> skipFields =
                 Arrays.asList(
                         "APPLICATION_DATA",
@@ -56,6 +56,7 @@ public class KeystoreFeatureMapTest {
                         "HARDWARE_TYPE",
                         "IDENTITY_CREDENTIAL_KEY",
                         "MAX_BOOT_LEVEL",
+                        "ML_DSA_VARIANT", // TODO(b/395069628): remove this exception when v5 frozen
                         "OS_PATCHLEVEL",
                         "OS_VERSION",
                         "ROLLBACK_RESISTANCE",

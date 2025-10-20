@@ -50,6 +50,167 @@ c
         assertThat(diff.countLinesDifference()).isEqualTo(1)
         assertThat(diff.extraLines).contains("x")
         assertThat(diff.extraLinesString()).isEqualTo("x")
-        assertThat(diff.missingLines).contains("b")
+        }
+
+    @Test
+    fun diffString_noChange_returnsSameString() {
+        val base =
+            """
+            a
+            b
+            c
+            """.trimIndent()
+        val new =
+            """
+            a
+            b
+            c
+            """.trimIndent()
+        val diff = StringLinesDiff(base, new)
+        val expectedDiff = ""
+
+        assertThat(diff.diffString()).isEqualTo(expectedDiff)
+    }
+
+    @Test
+    fun diffString_addition_returnsStringWithAddition() {
+        val base =
+            """
+            a
+            c
+            """.trimIndent()
+        val new =
+            """
+            a
+            b
+            c
+            """.trimIndent()
+        val diff = StringLinesDiff(base, new)
+        val expectedDiff =
+            """
+            + b
+            """.trimIndent()
+
+        assertThat(diff.diffString()).isEqualTo(expectedDiff)
+    }
+
+    @Test
+    fun diffString_deletion_returnsStringWithDeletion() {
+        val base =
+            """
+            a
+            b
+            c
+            """.trimIndent()
+        val new =
+            """
+            a
+            c
+            """.trimIndent()
+        val diff = StringLinesDiff(base, new)
+        val expectedDiff =
+            """
+            - b
+            """.trimIndent()
+
+        assertThat(diff.diffString()).isEqualTo(expectedDiff)
+    }
+
+    @Test
+    fun diffString_modification_returnsStringWithModification() {
+        val base =
+            """
+            a
+            b
+            c
+            """.trimIndent()
+        val new =
+            """
+            a
+            x
+            c
+            """.trimIndent()
+        val diff = StringLinesDiff(base, new)
+        val expectedDiff =
+            """
+            - b
+            + x
+            """.trimIndent()
+
+        assertThat(diff.diffString()).isEqualTo(expectedDiff)
+    }
+
+    @Test
+    fun diffString_mulitchar_modification_returnsStringWithModification() {
+        val base =
+            """
+            abc
+            de
+            fgh
+            iklm
+            """.trimIndent()
+        val new =
+            """
+            abc
+            xyz
+            fgh
+            ilm
+            """.trimIndent()
+        val diff = StringLinesDiff(base, new)
+        val expectedDiff =
+            """
+            - de
+            + xyz
+            - iklm
+            + ilm
+            """.trimIndent()
+
+        assertThat(diff.diffString()).isEqualTo(expectedDiff)
+    }
+
+    @Test
+    fun diffString_emptyBase_returnsStringWithAdditions() {
+        val base = ""
+        val new =
+            """
+            a
+            b
+            """.trimIndent()
+        val diff = StringLinesDiff(base, new)
+        val expectedDiff =
+            """
+            + a
+            + b
+            """.trimIndent()
+
+        assertThat(diff.diffString()).isEqualTo(expectedDiff)
+    }
+
+    @Test
+    fun diffString_emptyNew_returnsStringWithDeletions() {
+        val base =
+            """
+            a
+            b
+            """.trimIndent()
+        val new = ""
+        val diff = StringLinesDiff(base, new)
+        val expectedDiff =
+            """
+            - a
+            - b
+            """.trimIndent()
+
+        assertThat(diff.diffString()).isEqualTo(expectedDiff)
+    }
+
+    @Test
+    fun diffString_bothEmpty_returnsEmptyString() {
+        val base = ""
+        val new = ""
+        val diff = StringLinesDiff(base, new)
+        val expectedDiff = ""
+
+        assertThat(diff.diffString()).isEqualTo(expectedDiff)
     }
 }

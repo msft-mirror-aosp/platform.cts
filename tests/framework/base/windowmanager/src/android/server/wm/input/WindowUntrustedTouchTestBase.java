@@ -20,8 +20,6 @@ import static android.Manifest.permission.ACCESS_SURFACE_FLINGER;
 import static android.app.AppOpsManager.MODE_ALLOWED;
 import static android.app.AppOpsManager.OPSTR_SYSTEM_ALERT_WINDOW;
 import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
-import static android.server.wm.UiDeviceUtils.pressUnlockButton;
-import static android.server.wm.UiDeviceUtils.pressWakeupButton;
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
 import static android.server.wm.overlay.Components.UntrustedTouchTestService.EXTRA_DISPLAY_ID;
 import static android.view.WindowInsets.Type.navigationBars;
@@ -44,6 +42,7 @@ import android.app.WindowConfiguration;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Rect;
 import android.hardware.input.InputManager;
@@ -62,6 +61,7 @@ import android.server.wm.Condition;
 import android.server.wm.CtsWindowInfoUtils;
 import android.server.wm.FutureConnection;
 import android.server.wm.TouchHelper;
+import android.server.wm.WindowInsetsAnimationWaiter;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerStateHelper;
 import android.server.wm.overlay.Components;
@@ -71,7 +71,6 @@ import android.server.wm.shared.IUntrustedTouchTestService;
 import android.util.ArrayMap;
 import android.util.ArraySet;
 import android.util.Log;
-import android.view.Display;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -120,8 +119,8 @@ public abstract class WindowUntrustedTouchTestBase {
 
     static final float MAXIMUM_OBSCURING_OPACITY = .8f;
     static final long TIMEOUT_MS = 5000L * HW_TIMEOUT_MULTIPLIER;
-    static final long MAX_ANIMATION_DURATION_MS = 3000L;
-    static final long ANIMATION_DURATION_TOLERANCE_MS = 500L;
+    static final long MAX_ANIMATION_DURATION_MS = 1500L;
+    static final long ANIMATION_DURATION_TOLERANCE_MS = 800L;
 
     private static final int OVERLAY_COLOR = 0xFFFF0000;
     private static final int ACTIVITY_COLOR = 0xFFFFFFFF;
@@ -140,12 +139,16 @@ public abstract class WindowUntrustedTouchTestBase {
     InputManager mInputManager;
     private NotificationManager mNotificationManager;
     TestActivity mActivity;
+    int mActivityDisplayId;
+
     View mContainer;
     private Toast mToast;
     float mPreviousTouchOpacity;
     private int mPreviousSawAppOp;
     private final Set<String> mSawWindowsAdded = new ArraySet<>();
     private final AtomicInteger mTouchesReceived = new AtomicInteger(0);
+    private final WindowInsetsAnimationWaiter mInsetsAnimationWaiter =
+            new WindowInsetsAnimationWaiter();
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -170,6 +173,12 @@ public abstract class WindowUntrustedTouchTestBase {
     public ActivityScenarioRule<TestActivity> activityRule =
             new ActivityScenarioRule<>(TestActivity.class, createLaunchActivityOptionsBundle());
 
+    private boolean shouldSkipToastBoundsCheck() {
+        final PackageManager pm = mContext.getPackageManager();
+        return pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+                && pm.hasSystemFeature("android.software.car.splitscreen_multitasking");
+    }
+
     @Before
     public void setUp() throws Exception {
         activityRule.getScenario().onActivity(activity -> {
@@ -177,9 +186,15 @@ public abstract class WindowUntrustedTouchTestBase {
             mContainer = mActivity.view;
             // On ARC++, text toast is fixed on the screen. Its position may overlays the navigation
             // bar. Hide it to ensure the text toast overlays the app. b/191075641
+            mContainer.setWindowInsetsAnimationCallback(mInsetsAnimationWaiter);
             mContainer.getWindowInsetsController().hide(statusBars() | navigationBars());
             mContainer.setOnTouchListener(this::onTouchEvent);
         });
+        assertTrue(
+                "Failed to wait for activity to be on top",
+                CtsWindowInfoUtils.waitForWindowOnTop(mActivity.getWindow()));
+        mActivityDisplayId = mActivity.getDisplayId();
+
         mInstrumentation = getInstrumentation();
         mContext = mInstrumentation.getContext();
         mAppSelf = mContext.getPackageName();
@@ -194,14 +209,11 @@ public abstract class WindowUntrustedTouchTestBase {
         mPreviousTouchOpacity = setMaximumObscuringOpacityForTouch(MAXIMUM_OBSCURING_OPACITY);
         SystemUtil.runWithShellPermissionIdentity(
                 () -> mNotificationManager.setToastRateLimitingEnabled(false));
-
-        pressWakeupButton();
-        pressUnlockButton();
     }
 
     @After
     public void tearDown() throws Throwable {
-        mWmState.waitForAppTransitionIdleOnDisplay(Display.DEFAULT_DISPLAY);
+        mWmState.waitForAppTransitionIdleOnDisplay(mActivityDisplayId);
         mTouchesReceived.set(0);
         removeOverlays();
         for (FutureConnection<IUntrustedTouchTestService> connection : mConnections.values()) {
@@ -235,8 +247,20 @@ public abstract class WindowUntrustedTouchTestBase {
     }
 
     void assertAnimationRunning() {
-        assertThat(mWmState.getDisplay(Display.DEFAULT_DISPLAY).getAppTransitionState()).isEqualTo(
-                WindowManagerStateHelper.APP_STATE_RUNNING);
+        assertThat(mWmState.getDisplay(mActivityDisplayId).getAppTransitionState())
+                .isEqualTo(WindowManagerStateHelper.APP_STATE_RUNNING);
+    }
+
+    /**
+     * Waits for the animations that hide system bars (such as the taskbar) to finish after the
+     * initial creation of the test activity.
+     *
+     * <p>This is necessary for tests that inject touches near the edges of the screen, as {@code
+     * WindowManagerService} doesn't know about inset animations, so they're not covered by {@link
+     * #mTouchHelper}'s waitForAnimations logic. (b/440842960)
+     */
+    protected void waitForInsetsAnimation() throws InterruptedException {
+        mInsetsAnimationWaiter.waitForFinishing();
     }
 
     void addToastOverlay(@NonNull ComponentName component, boolean custom) throws Exception {
@@ -302,17 +326,24 @@ public abstract class WindowUntrustedTouchTestBase {
         if (!toastWindow.isSurfaceShown()) {
             return "toast surface not shown";
         }
-        Rect toastBounds = toastWindow.getFrame();
-        int[] viewXY = new int[2];
-        mContainer.getLocationOnScreen(viewXY);
-        Rect containerRect =
-                new Rect(
-                        viewXY[0],
-                        viewXY[1],
-                        viewXY[0] + mContainer.getWidth(),
-                        viewXY[1] + mContainer.getHeight());
-        if (!containerRect.contains(toastBounds.centerX(), toastBounds.centerY())) {
-            return "toast window is outside container bounds";
+        // TODO(b/440669095): Improve the test.
+        if (!shouldSkipToastBoundsCheck()) {
+            // In some non-phone targets, e.g. Automotive's multi tasking environments based on
+            // multiple root tasks where the activities are not launched in full screen,
+            // there are scenarios that the toast does not appear within the test activity's
+            // bounds. Skipping this check for these targets.
+            Rect toastBounds = toastWindow.getFrame();
+            int[] viewXY = new int[2];
+            mContainer.getLocationOnScreen(viewXY);
+            Rect containerRect =
+                    new Rect(
+                            viewXY[0],
+                            viewXY[1],
+                            viewXY[0] + mContainer.getWidth(),
+                            viewXY[1] + mContainer.getHeight());
+            if (!containerRect.contains(toastBounds.centerX(), toastBounds.centerY())) {
+                return "toast window is outside container bounds";
+            }
         }
         // Toast window is valid
         return null;
@@ -559,7 +590,7 @@ public abstract class WindowUntrustedTouchTestBase {
         FutureConnection<IUntrustedTouchTestService> connection =
                 new FutureConnection<>(IUntrustedTouchTestService.Stub::asInterface);
         Intent intent = new Intent();
-        intent.putExtra(EXTRA_DISPLAY_ID, mActivity.getDisplay().getDisplayId());
+        intent.putExtra(EXTRA_DISPLAY_ID, mActivityDisplayId);
         intent.setComponent(component);
         assertTrue(mContext.bindService(intent, connection, Context.BIND_AUTO_CREATE));
         return connection;

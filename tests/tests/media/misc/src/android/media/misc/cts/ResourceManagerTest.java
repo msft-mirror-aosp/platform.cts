@@ -16,6 +16,7 @@
 
 package android.media.misc.cts;
 
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Intent;
@@ -32,8 +33,10 @@ import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
+import com.android.compatibility.common.util.UserHelper;
 import com.android.media.codec.flags.Flags;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -85,6 +88,13 @@ public class ResourceManagerTest {
     public final ActivityTestRule<ResourceManagerStubActivity> mActivityRule =
             new ActivityTestRule<>(ResourceManagerStubActivity.class, false, false);
 
+    private UserHelper mUserHelper;
+
+    @Before
+    public void setUp() {
+        mUserHelper = new UserHelper();
+    }
+
     private void doTestReclaimResource(int type1, int type2,
             boolean highResolutionForActivity1,
             boolean highResolutionForActivity2) throws Exception {
@@ -102,6 +112,8 @@ public class ResourceManagerTest {
 
     private void doTestVideoCodecReclaim(boolean highResolution, String mimeType)
             throws Exception {
+        assumeFalse("Camera is not support for visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         // Run high resolution test case only when the devices shipped on U.
         if (SDK_IS_AT_LEAST_U || !highResolution) {
             ResourceManagerStubActivity activity = mActivityRule.launchActivity(new Intent());

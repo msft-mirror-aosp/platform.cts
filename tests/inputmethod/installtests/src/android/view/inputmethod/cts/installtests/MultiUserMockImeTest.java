@@ -16,10 +16,20 @@
 
 package android.view.inputmethod.cts.installtests;
 
+import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
+import static android.server.wm.WindowManagerState.STATE_RESUMED;
+import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED;
+import static android.view.inputmethod.cts.util.InputMethodVisibilityVerifier.expectImeInvisible;
+import static android.view.inputmethod.cts.util.InputMethodVisibilityVerifier.expectImeVisible;
+
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.hideSoftInputMatcher;
+
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -34,8 +44,14 @@ import android.platform.test.annotations.AppModeFull;
 import android.server.wm.LockScreenSession;
 import android.server.wm.WindowManagerStateHelper;
 import android.text.TextUtils;
+import android.view.Gravity;
+import android.view.WindowInsets;
 import android.view.inputmethod.cts.installtests.common.ShellCommandUtils;
 import android.view.inputmethod.cts.util.MockTestActivityUtil;
+import android.view.inputmethod.cts.util.TestActivity;
+import android.view.inputmethod.cts.util.TestUtils;
+import android.widget.EditText;
+import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
 import androidx.test.filters.LargeTest;
@@ -53,6 +69,7 @@ import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingSupplier;
 import com.android.cts.input.DebugInputRule;
+import com.android.cts.input.UinputTouchScreen;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImePackageNames;
 import com.android.cts.mockime.MockImeSession;
@@ -67,6 +84,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 @LargeTest
 @RequireMultiUserSupport
@@ -153,6 +171,213 @@ public final class MultiUserMockImeTest {
                     expectEvent(stream1, event -> "onDestroy".equals(event.getEventName()),
                             TIMEOUT);
                 }
+            }
+        }
+    }
+
+    /**
+     * Verifies that having the IME visible on two apps from different profiles, and switching
+     * between them, allows the IME visibility to be restored.
+     */
+    @Test
+    @RequireFeature(CommonPackages.FEATURE_MANAGED_USERS)
+    @EnsureHasWorkProfile
+    public void testProfileSwitchingCanRestoreImeVisibility() throws Exception {
+        final UserReference currentUser = sDeviceState.initialUser();
+        final UserReference workUser = workProfile(sDeviceState, currentUser);
+        final int currentUserId = currentUser.id();
+        final int workUserId = workUser.id();
+
+        assertTrue(workUser.isRunning());
+
+        final var instrumentation = InstrumentationRegistry.getInstrumentation();
+        final var context = instrumentation.getContext();
+        final var uiAutomation = instrumentation.getUiAutomation();
+        final boolean isInstant = isInstantApp(context, uiAutomation);
+
+        // Copy required packages from the current user to the profile user. Note that currently
+        // bedstead does not support install-existing with "--instant" option so here we directly
+        // use shell commands.
+
+        // For MockIme, always install as full (non-instant) app.
+        runShellCommandOrThrow(ShellCommandUtils.installExisting(
+                MockImePackageNames.MockIme1, workUserId, false /* instant */));
+        // For the test app, propagate isInstant option from the current user to the work user.
+        runShellCommandOrThrow(ShellCommandUtils.installExisting(
+                MockTestActivityUtil.TEST_ACTIVITY.getPackageName(), workUserId, isInstant));
+
+        try (var session1 = MockImeSession.create(context, uiAutomation,
+                new ImeSettings.Builder());
+                var session2 = MockImeSession.create(context, uiAutomation,
+                     new ImeSettings.Builder()
+                             .setTargetUser(workUser.userHandle()))) {
+            var stream1 = session1.openEventStream();
+            var stream2 = session2.openEventStream();
+
+            final String marker1 = getTestMarker(FIRST_EDIT_TEXT_TAG);
+
+            try (var activity1 = MockTestActivityUtil.launchAsUser(
+                    currentUserId, isInstant,
+                    Map.of(MockTestActivityUtil.EXTRA_KEY_PRIVATE_IME_OPTIONS, marker1,
+                            MockTestActivityUtil.EXTRA_SOFT_INPUT_MODE,
+                            Integer.toString(SOFT_INPUT_STATE_UNSPECIFIED)))) {
+                expectEvent(stream1, editorMatcher("onStartInput", marker1), TIMEOUT);
+
+                MockTestActivityUtil.sendBroadcastAction(
+                        MockTestActivityUtil.EXTRA_SHOW_SOFT_INPUT, currentUserId);
+                expectEvent(stream1, eventMatcher("showSoftInput"), TIMEOUT);
+                expectImeVisible(TIMEOUT);
+
+                final String marker2 = getTestMarker(SECOND_EDIT_TEXT_TAG);
+                try (var activity2 = MockTestActivityUtil.launchAsUser(
+                        workUserId, isInstant,
+                        Map.of(MockTestActivityUtil.EXTRA_KEY_PRIVATE_IME_OPTIONS, marker2,
+                                MockTestActivityUtil.EXTRA_SOFT_INPUT_MODE,
+                                Integer.toString(SOFT_INPUT_STATE_UNSPECIFIED)))) {
+                    expectEvent(stream2, editorMatcher("onStartInput", marker2), TIMEOUT);
+                    expectEvent(stream1, event -> "onDestroy".equals(event.getEventName()),
+                            TIMEOUT);
+
+                    MockTestActivityUtil.sendBroadcastAction(
+                            MockTestActivityUtil.EXTRA_SHOW_SOFT_INPUT, workUserId);
+                    expectEvent(stream2, eventMatcher("showSoftInput"), TIMEOUT);
+                    expectImeVisible(TIMEOUT);
+
+                    MockTestActivityUtil.sendBroadcastAction(
+                            MockTestActivityUtil.EXTRA_FINISH, workUserId);
+                    expectEvent(stream2, event -> "onDestroy".equals(event.getEventName()),
+                            TIMEOUT);
+                    expectEvent(stream1, editorMatcher("onStartInput", marker1), TIMEOUT);
+                    expectEvent(stream1, eventMatcher("showSoftInput"), TIMEOUT);
+
+                    expectImeVisible(TIMEOUT);
+                }
+            }
+        }
+    }
+
+
+
+    /**
+     * Verifies that having the IME visible in two apps in split screen, each from a different
+     * user profile, hiding the IME in one, switching to the other, switching back to the first one
+     * and requesting to show it does succeed.
+     */
+    @Test
+    @RequireFeature(CommonPackages.FEATURE_MANAGED_USERS)
+    @EnsureHasWorkProfile
+    public void testHidingKeyboardInSplitScreenWithCrossProfileAppsCanShowKeyboardAgain()
+            throws Exception {
+        final UserReference currentUser = sDeviceState.initialUser();
+        final UserReference workUser = workProfile(sDeviceState, currentUser);
+        final int workUserId = workUser.id();
+
+        assertTrue(workUser.isRunning());
+
+        final var instrumentation = InstrumentationRegistry.getInstrumentation();
+        final var context = instrumentation.getContext();
+        final var uiAutomation = instrumentation.getUiAutomation();
+        final boolean isInstant = isInstantApp(context, uiAutomation);
+
+        // Copy required packages from the current user to the profile user. Note that currently
+        // bedstead does not support install-existing with "--instant" option so here we directly
+        // use shell commands.
+
+        // For MockIme, always install as full (non-instant) app.
+        runShellCommandOrThrow(ShellCommandUtils.installExisting(
+                MockImePackageNames.MockIme1, workUserId, false /* instant */));
+        // For the test app, propagate isInstant option from the current user to the work user.
+        runShellCommandOrThrow(ShellCommandUtils.installExisting(
+                MockTestActivityUtil.TEST_ACTIVITY.getPackageName(), workUserId, isInstant));
+
+        try (var session1 = MockImeSession.create(context, uiAutomation,
+                new ImeSettings.Builder());
+                var session2 = MockImeSession.create(context, uiAutomation,
+                     new ImeSettings.Builder()
+                             .setTargetUser(workUser.userHandle()))) {
+            var stream1 = session1.openEventStream();
+            var stream2 = session2.openEventStream();
+
+            final String marker1 = getTestMarker(FIRST_EDIT_TEXT_TAG);
+
+            final AtomicReference<EditText> editTextRef = new AtomicReference<>();
+            // Launch in the same process for the current user. We need the activity reference so
+            // that we can launch it in split screen together with activity2 below.
+            final TestActivity activity1 = new TestActivity.Starter().asNewTask()
+                    .withWindowingMode(WINDOWING_MODE_FULLSCREEN)
+                    .startSync(activity -> {
+                        final LinearLayout layout = new LinearLayout(activity);
+                        layout.setOrientation(LinearLayout.VERTICAL);
+                        // Place EditText at bottom to enable clicking it in vertical split screen.
+                        layout.setGravity(Gravity.BOTTOM);
+
+                        final EditText focusedEditText = new EditText(activity);
+                        focusedEditText.setHint("focused editText");
+                        focusedEditText.setPrivateImeOptions(marker1);
+                        focusedEditText.requestFocus();
+                        layout.addView(focusedEditText);
+                        editTextRef.set(focusedEditText);
+                        return layout;
+                    }, TestActivity.class);
+            final var editText = editTextRef.get();
+            final var display = editText.getContext().getDisplay();
+
+            expectEvent(stream1, editorMatcher("onStartInput", marker1), TIMEOUT);
+
+            activity1.runOnUiThread(() ->
+                    editText.getWindowInsetsController().show(WindowInsets.Type.ime()));
+            expectEvent(stream1, eventMatcher("showSoftInput"), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            activity1.runOnUiThread(() ->
+                    editText.getWindowInsetsController().hide(WindowInsets.Type.ime()));
+            expectEvent(stream1, hideSoftInputMatcher(), TIMEOUT);
+            expectImeInvisible(TIMEOUT);
+
+            final String marker2 = getTestMarker(SECOND_EDIT_TEXT_TAG);
+            try (var touch = new UinputTouchScreen(instrumentation, display);
+                    var activity2 = MockTestActivityUtil.launchSyncAsUser(activity1,
+                            workUserId, isInstant, true /* splitScreen */,
+                            Map.of(MockTestActivityUtil.EXTRA_KEY_PRIVATE_IME_OPTIONS, marker2,
+                                MockTestActivityUtil.EXTRA_SOFT_INPUT_MODE,
+                                Integer.toString(SOFT_INPUT_STATE_UNSPECIFIED)), null)) {
+                expectEvent(stream2, eventMatcher("onCreate"), TIMEOUT);
+                expectEvent(stream2, editorMatcher("onStartInput", marker2), TIMEOUT);
+                expectEvent(stream1, eventMatcher("onDestroy"), TIMEOUT);
+
+                mWmState.waitForAppTransitionIdleOnDisplay(display.getDisplayId());
+                assertWithMessage("Second activity should be resumed after launch in split screen")
+                        .that(mWmState.waitForActivityState(MockTestActivityUtil.TEST_ACTIVITY,
+                                STATE_RESUMED))
+                        .isTrue();
+
+                MockTestActivityUtil.sendBroadcastAction(
+                        MockTestActivityUtil.EXTRA_SHOW_SOFT_INPUT, workUserId);
+                expectEvent(stream2, eventMatcher("showSoftInput"), TIMEOUT);
+                expectImeVisible(TIMEOUT);
+
+                // Able to show successfully after hiding and switching profiles.
+                touch.tapOnViewCenter(editText);
+                TestUtils.waitOnMainUntil(() -> editText.hasFocus() && editText.hasWindowFocus(),
+                        TIMEOUT, "EditText is focused after click");
+
+                // TODO(b/280797309): The tap sends the IME show request before the
+                //  input focus changes, so we simulate a "slower" tap that actually sent the
+                //  request.
+                // If the tap is too fast, we fail the IME show request as the window is not
+                // focused. If the tap is too slow, we send the IME show request after the process
+                // is created/bound, and it succeeds. For this particular race condition we must get
+                // the requestedVisibleTypes set again on the app window , but before the
+                // IME process is created/bound.
+                activity1.runOnUiThread(() ->
+                        editText.getWindowInsetsController().show(WindowInsets.Type.ime()));
+
+                expectEvent(stream2, eventMatcher("onDestroy"), TIMEOUT);
+                expectEvent(stream1, eventMatcher("onCreate"), TIMEOUT);
+                expectEvent(stream1, editorMatcher("onStartInput", marker1), TIMEOUT);
+
+                expectEvent(stream1, eventMatcher("showSoftInput"), TIMEOUT);
+                expectImeVisible(TIMEOUT);
             }
         }
     }

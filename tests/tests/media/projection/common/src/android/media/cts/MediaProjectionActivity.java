@@ -62,11 +62,15 @@ public class MediaProjectionActivity extends Activity {
     private static final int TIMEOUT_MS = 10000;
     private static final String TAG = "MediaProjectionActivity";
     private static final String SYSTEM_UI_PACKAGE = "com.android.systemui";
+    private static final String SYSTEM_UI_PACKAGE_WEAR =
+            "com.google.android.apps.wearable.systemui";
 
     // Builds from 24Q3 and earlier will have screen_share_mode_spinner, while builds from
     // 24Q4 onwards will have screen_share_mode_options, so need to check both options here
     private static final String SCREEN_SHARE_OPTIONS_REGEX =
-            SYSTEM_UI_PACKAGE + ":id/screen_share_mode_(options|spinner)";
+            String.format(
+                    "(%s|%s):id/screen_share_mode_(options|spinner)",
+                    SYSTEM_UI_PACKAGE, SYSTEM_UI_PACKAGE_WEAR);
 
     // Extra used to specify a foreground service to use for the MediaProjection session.
     // If unset MediaProjection will default to the LocalMediaProjectionService implementation.
@@ -82,6 +86,8 @@ public class MediaProjectionActivity extends Activity {
             "screen_share_permission_dialog_option_entire_screen";
     public static final String SINGLE_APP_STRING_RES_NAME =
             "screen_share_permission_dialog_option_single_app";
+    public static final String CONNECTED_DISPLAY_STRING_RES_NAME =
+            "screen_share_permission_dialog_option_text_entire_screen_for_display";
 
     private boolean mHandleActivityResult = false;
 
@@ -181,17 +187,22 @@ public class MediaProjectionActivity extends Activity {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         // Only handle onActivityResult if the caller actually tries to start
+        Log.d(TAG, "onActivityResult mHandleActivityResult=" + mHandleActivityResult);
         if (!mHandleActivityResult) {
             return;
         }
 
+        IllegalStateException exception = null;
         if (requestCode != PERMISSION_CODE) {
-            throw new IllegalStateException("Unknown request code: " + requestCode);
+            exception = new IllegalStateException("Unknown request code: " + requestCode);
         }
         if (resultCode != RESULT_OK) {
-            throw new IllegalStateException("User denied screen sharing permission");
+            exception = new IllegalStateException("User denied screen sharing permission");
         }
-        Log.d(TAG, "onActivityResult");
+
+        if (exception != null) {
+            Log.e(TAG, exception.getMessage(), exception);
+        }
         mResultCode = resultCode;
         mResultData = data;
         mCountDownLatch.countDown();
@@ -202,7 +213,7 @@ public class MediaProjectionActivity extends Activity {
     }
 
     /** Perform the steps required to pass the MediaProjection consent flow */
-    public void performMediaProjectionConsent() throws InterruptedException {
+    public void performMediaProjectionConsent(String displayName) throws InterruptedException {
         // If MediaProjection consent was skipped, instantly return
         if (mCountDownLatch.getCount() == 0) {
             return;
@@ -218,25 +229,24 @@ public class MediaProjectionActivity extends Activity {
         // Thus, we try to click that button multiple times.
         do {
             assertTrue("Can't get the permission", count <= retryCount);
-            dismissPermissionDialog(
-                    /* isWatch= */ getPackageManager()
-                            .hasSystemFeature(PackageManager.FEATURE_WATCH),
-                    getResourceString(this, ENTIRE_SCREEN_STRING_RES_NAME));
+            String optionString =
+                    displayName != null
+                            ? getResourceString(
+                                    this, CONNECTED_DISPLAY_STRING_RES_NAME, displayName)
+                            : getResourceString(this, ENTIRE_SCREEN_STRING_RES_NAME);
+            dismissPermissionDialog(optionString);
             count++;
         } while (!mCountDownLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS));
     }
 
     /** The permission dialog will be auto-opened by the activity - find it and accept */
-    private static void dismissPermissionDialog(
-            boolean isWatch, @Nullable String entireScreenString) {
+    private static void dismissPermissionDialog(@Nullable String optionString) {
         // Ensure the device is initialized before interacting with any UI elements.
         UiDevice.getInstance(getInstrumentation());
-        if (entireScreenString != null && !isWatch) {
-            // if not testing on a watch device, then we need to select the entire screen option
-            // before pressing "Start recording" button. This is because single app capture is
-            // not supported on watches.
-            if (!selectEntireScreenOption(entireScreenString)) {
-                Log.e(TAG, "Couldn't select entire screen option");
+        if (optionString != null) {
+            // Select the screen option before pressing "Start recording" button.
+            if (!selectScreenOption(optionString)) {
+                Log.e(TAG, "Couldn't select screen option: " + optionString);
             }
         }
         pressStartRecording();
@@ -269,7 +279,7 @@ public class MediaProjectionActivity extends Activity {
         return obj;
     }
 
-    private static boolean selectEntireScreenOption(String entireScreenString) {
+    private static boolean selectScreenOption(String optionString) {
         UiObject2 optionSelector =
                 findUiObject(
                         By.res(SCREEN_SHARE_OPTIONS_RES_PATTERN),
@@ -285,32 +295,41 @@ public class MediaProjectionActivity extends Activity {
 
         UiDevice.getInstance(getInstrumentation())
                 .waitForWindowUpdate(null, PERMISSION_DIALOG_WAIT_MS);
-        UiObject2 entireScreenOption = waitForObject(By.text(entireScreenString));
-        if (entireScreenOption == null) {
+        UiObject2 optionItem = waitForObject(By.text(optionString));
+        if (optionItem == null) {
             Log.e(TAG, "Couldn't find entire screen option");
             return false;
         }
-        entireScreenOption.click();
+        optionItem.click();
         return true;
     }
 
     /** Returns the string for the drop down option to capture the entire screen. */
     @Nullable
-    public static String getResourceString(@NonNull Context context, String resName) {
+    public static String getResourceString(
+            @NonNull Context context, String resName, Object... args) {
+        boolean isWatch =
+                context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
+        String systemUiPackage = isWatch ? SYSTEM_UI_PACKAGE_WEAR : SYSTEM_UI_PACKAGE;
+        return getResourceString(context, systemUiPackage, resName, args);
+    }
+
+    @Nullable
+    private static String getResourceString(
+            Context context, String packageName, String resName, Object[] args) {
         Resources sysUiResources;
         try {
-            sysUiResources =
-                    context.getPackageManager().getResourcesForApplication(SYSTEM_UI_PACKAGE);
+            sysUiResources = context.getPackageManager().getResourcesForApplication(packageName);
         } catch (NameNotFoundException e) {
             return null;
         }
         int resourceId =
-                sysUiResources.getIdentifier(resName, /* defType= */ "string", SYSTEM_UI_PACKAGE);
+                sysUiResources.getIdentifier(resName, /* defType= */ "string", packageName);
         if (resourceId == 0) {
             // Resource id not found
             return null;
         }
-        return sysUiResources.getString(resourceId);
+        return sysUiResources.getString(resourceId, args);
     }
 
     private static void pressStartRecording() {

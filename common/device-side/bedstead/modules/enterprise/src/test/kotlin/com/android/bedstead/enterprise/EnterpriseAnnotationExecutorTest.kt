@@ -59,7 +59,7 @@ import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters
-import com.android.bedstead.harrier.policies.DisallowBluetooth
+import com.android.bedstead.enterprise.policies.DisallowBluetooth
 import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
 import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode
 import com.android.bedstead.multiuser.profile
@@ -72,7 +72,6 @@ import com.android.bedstead.nene.devicepolicy.DeviceOwnerType
 import com.android.bedstead.nene.devicepolicy.ProfileOwner
 import com.android.bedstead.nene.packages.ComponentReference
 import com.android.bedstead.nene.types.OptionalBoolean
-import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME
 import com.android.bedstead.nene.utils.Assert.assertThrows
 import com.android.bedstead.permissions.CommonPermissions
@@ -86,7 +85,6 @@ import com.android.queryable.annotations.Query
 import com.android.queryable.annotations.StringQuery
 import com.android.xts.root.annotations.RequireRootInstrumentation
 import com.google.common.truth.Truth.assertThat
-import org.junit.Assert
 import org.junit.ClassRule
 import org.junit.Ignore
 import org.junit.Rule

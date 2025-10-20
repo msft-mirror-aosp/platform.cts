@@ -36,12 +36,12 @@ import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_NAME
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
@@ -112,7 +112,7 @@ import java.util.stream.Collectors;
 public class OutputSwitcherTest {
     private static final String TAG = "OutputSwitcherTest";
     private static final String SYSTEM_UI_PACKAGE = "com.android.systemui";
-    private static final int TIMEOUT_MS = 5000;
+    private static final int TIMEOUT_MS = 15_000;
 
     // This comes from the value of com.android.systemui.R.string.media_output_item_connected_state
     // (frameworks/base/packages/SystemUI/res/values/strings.xml)
@@ -147,7 +147,7 @@ public class OutputSwitcherTest {
     @Mock private StubMediaRoute2ProviderService.Proxy mProviderProxy;
 
     @Mock private MediaRouter2.TransferCallback mTransferCallback;
-    @Mock private MediaRouter2.ControllerCallback mControllerCallback;
+    private MediaRouter2.ControllerCallback mControllerCallback;
 
     private Context mContext;
     private Executor mExecutor;
@@ -169,6 +169,8 @@ public class OutputSwitcherTest {
         MediaRouter2TestActivity.startActivity(mContext);
         mService = mProviderSetup.setupAndGetService(mContext);
         mService.setProxy(mProviderProxy);
+        // We use a spy to make new overloads work as intended (call the overload with fewer args).
+        mControllerCallback = spy(MediaRouter2.ControllerCallback.class);
     }
 
     @After
@@ -267,7 +269,6 @@ public class OutputSwitcherTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
     public void selectOneRoute_closeAndOpenDialog_routeStillSelected() throws Exception {
         mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID2));
         registerRouteCallback(List.of(FEATURE_SAMPLE));
@@ -287,7 +288,6 @@ public class OutputSwitcherTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
     public void selectOneRoute_thenTransferToAnother_sessionTransferred() throws Exception {
         mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID5_TO_TRANSFER_TO));
         registerRouteCallback(List.of(FEATURE_SAMPLE));
@@ -306,7 +306,6 @@ public class OutputSwitcherTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
     public void selectOneRoute_thenTransferToThisDevice_sessionTransferred() throws Exception {
         mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID2));
         registerRouteCallback(List.of(FEATURE_SAMPLE, FEATURE_LIVE_AUDIO));
@@ -392,7 +391,6 @@ public class OutputSwitcherTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
     public void providerReleasesSessionWhileDialogOpen_dialogUpdates() throws Exception {
         mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID2));
         registerRouteCallback(List.of(FEATURE_SAMPLE));
@@ -412,7 +410,6 @@ public class OutputSwitcherTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
     public void appCallsTransferToWhileDialogOpen_dialogUpdates() throws Exception {
         mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID5_TO_TRANSFER_TO));
         registerRouteCallback(List.of(FEATURE_SAMPLE));
@@ -462,7 +459,6 @@ public class OutputSwitcherTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
     public void streamExpansion_addSecondRoute_eventsFire() throws Exception {
         mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID4_TO_SELECT_AND_DESELECT));
         registerRouteCallback(List.of(FEATURE_SAMPLE));
@@ -498,7 +494,6 @@ public class OutputSwitcherTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
     public void streamExpansion_addAndRemoveSecondRoute_eventsFire() throws Exception {
         mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID4_TO_SELECT_AND_DESELECT));
         registerRouteCallback(List.of(FEATURE_SAMPLE));
@@ -518,7 +513,6 @@ public class OutputSwitcherTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
     public void streamExpansion_selectSecondRouteUsingController_dialogUpdates() throws Exception {
         mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID4_TO_SELECT_AND_DESELECT));
         registerRouteCallback(List.of(FEATURE_SAMPLE));
@@ -545,7 +539,6 @@ public class OutputSwitcherTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OUTPUT_SWITCHER_REDESIGN)
     public void streamExpansion_deselectRouteUsingController_dialogUpdates() throws Exception {
         mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID4_TO_SELECT_AND_DESELECT));
         registerRouteCallback(List.of(FEATURE_SAMPLE));
@@ -677,7 +670,6 @@ public class OutputSwitcherTest {
     }
 
     private static void assertDialogShowsConnectionToRoute(BySelector selector) throws Exception {
-        assumeTrue(Flags.enableOutputSwitcherRedesign());
         UiObject2 routeNode = UiAutomatorUtils2.waitFindObject(selector, TIMEOUT_MS);
         UiAutomatorUtils2.assertWithUiDump(
                 () ->

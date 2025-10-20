@@ -16,7 +16,9 @@
 
 package android.appwidget.cts.appbal;
 
+import android.app.ActivityOptions;
 import android.app.Service;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.IBinder;
@@ -45,9 +47,14 @@ public class BalService extends Service {
     void startBackgroundActivity() {
         try {
             Log.i("BalService", "Start background activity called");
-            Intent intent = new Intent(this, EmptyActivity.class);
+            Intent intent = new Intent()
+                .setComponent(new ComponentName("android.appwidget.cts",
+                    "android.appwidget.cts.activity.EmptyActivity"));
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            this.startActivity(intent);
+            this.startActivity(intent, ActivityOptions.makeBasic()
+                .setPendingIntentBackgroundActivityStartMode(
+                    ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOW_ALWAYS)
+                .toBundle());
 
         } catch (Exception e) {
             e.printStackTrace();

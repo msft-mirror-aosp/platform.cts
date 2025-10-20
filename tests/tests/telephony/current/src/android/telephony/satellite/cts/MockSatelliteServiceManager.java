@@ -1970,6 +1970,8 @@ class MockSatelliteServiceManager {
 
     private static class MockPointingUiActivityStatusReceiver extends BroadcastReceiver {
         private Semaphore mSemaphore;
+        static final String EXTRA_IS_EMERGENCY = "isEmergency";
+        private boolean mIsEmergency = false;
 
         MockPointingUiActivityStatusReceiver(Semaphore semaphore) {
             mSemaphore = semaphore;
@@ -1983,6 +1985,7 @@ class MockSatelliteServiceManager {
                     || (ExternalMockPointingUi.ACTION_MOCK_POINTING_UI_ACTIVITY_STARTED.equals(
                     intent.getAction()))) {
                 logd("MockPointingUiActivityStatusReceiver: onReceive");
+                mIsEmergency = intent.getBooleanExtra(EXTRA_IS_EMERGENCY, false);
                 try {
                     mSemaphore.release();
                 } catch (Exception ex) {
@@ -1990,6 +1993,14 @@ class MockSatelliteServiceManager {
                 }
             }
         }
+
+        public boolean getEmergencyMode() {
+            return mIsEmergency;
+        }
+    }
+
+    public boolean getPuiEmergencyMode() {
+        return mMockPointingUiActivityStatusReceiver.getEmergencyMode();
     }
 
     private String getSatelliteServicePackageName() {

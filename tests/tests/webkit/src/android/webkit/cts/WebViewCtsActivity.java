@@ -50,7 +50,7 @@ public class WebViewCtsActivity extends Activity {
     @Override
     public void onDestroy() {
         if (mWebView != null) {
-            ViewParent parent =  mWebView.getParent();
+            ViewParent parent = mWebView.getParent();
             if (parent instanceof ViewGroup) {
                 ((ViewGroup) parent).removeView(mWebView);
             }

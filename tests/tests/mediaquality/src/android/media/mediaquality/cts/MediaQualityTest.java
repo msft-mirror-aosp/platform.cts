@@ -138,11 +138,20 @@ public class MediaQualityTest {
     public void testUpdatePictureProfile() throws InterruptedException {
         PictureProfile toCreate = getTestPictureProfile("updatePictureProfile");
         mManager.createPictureProfile(toCreate);
-        Thread.sleep(500);
+        boolean created =
+                waitForCondition(
+                        () -> {
+                            return mManager.getPictureProfile(
+                                            toCreate.getProfileType(),
+                                            toCreate.getName(),
+                                            includeParams(true))
+                                    != null;
+                        });
+        Assert.assertTrue("Profile was not created within the timeout.", created);
+
         PictureProfile profile =
                 mManager.getPictureProfile(
                         toCreate.getProfileType(), toCreate.getName(), includeParams(true));
-        Thread.sleep(500);
         Assert.assertNotNull(profile);
         PersistableBundle expected = toCreate.getParameters();
         PersistableBundle actual = profile.getParameters();
@@ -164,22 +173,36 @@ public class MediaQualityTest {
         PictureProfile toUpdate =
                 new PictureProfile.Builder(profile).setParameters(newParams).build();
         mManager.updatePictureProfile(profile.getProfileId(), toUpdate);
-        Thread.sleep(1000);
+        final int newBrightness = newParams.getInt(PictureQuality.PARAMETER_BRIGHTNESS);
+        boolean updated =
+                waitForCondition(
+                        () -> {
+                            PictureProfile p =
+                                    mManager.getPictureProfile(
+                                            toUpdate.getProfileType(),
+                                            toUpdate.getName(),
+                                            includeParams(true));
+                            return p != null
+                                    && p.getParameters().getInt(PictureQuality.PARAMETER_BRIGHTNESS)
+                                            == newBrightness;
+                        });
+        Assert.assertTrue("Profile was not updated within the timeout.", updated);
+
         PictureProfile profile2 =
-                mManager.getPictureProfile(
-                        toUpdate.getProfileType(), toUpdate.getName(), includeParams(true));
+            mManager.getPictureProfile(
+                    toUpdate.getProfileType(), toUpdate.getName(), includeParams(true));
         Assert.assertNotNull(profile2);
-        PersistableBundle created = toCreate.getParameters();
-        PersistableBundle updated = profile2.getParameters();
+        PersistableBundle createdParams = toCreate.getParameters();
+        PersistableBundle updatedParams = profile2.getParameters();
         Assert.assertNotEquals(
-                created.getInt(PictureQuality.PARAMETER_BRIGHTNESS),
-                updated.getInt(PictureQuality.PARAMETER_BRIGHTNESS));
+                createdParams.getInt(PictureQuality.PARAMETER_BRIGHTNESS),
+                updatedParams.getInt(PictureQuality.PARAMETER_BRIGHTNESS));
         Assert.assertNotEquals(
-                created.getInt(PictureQuality.PARAMETER_SATURATION),
-                updated.getInt(PictureQuality.PARAMETER_SATURATION));
+                createdParams.getInt(PictureQuality.PARAMETER_SATURATION),
+                updatedParams.getInt(PictureQuality.PARAMETER_SATURATION));
         Assert.assertNotEquals(
-                created.getInt(PictureQuality.PARAMETER_CONTRAST),
-                updated.getInt(PictureQuality.PARAMETER_CONTRAST));
+                createdParams.getInt(PictureQuality.PARAMETER_CONTRAST),
+                updatedParams.getInt(PictureQuality.PARAMETER_CONTRAST));
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
@@ -501,19 +524,40 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
-    public void testGetPictureProfileHandle() {
+    public void testGetPictureProfileHandle() throws InterruptedException {
         PictureProfile profile = getTestPictureProfile("testGetPictureProfileHandle");
 
         mManager.createPictureProfile(profile);
-        PictureProfile created =
+        boolean created =
+            waitForCondition(
+                    () -> mManager.getPictureProfile(
+                                    profile.getProfileType(),
+                                    profile.getName(),
+                                    includeParams(false))
+                            != null);
+        Assert.assertTrue("Profile was not created within the timeout for handle test.", created);
+        PictureProfile createdProfile =
                 mManager.getPictureProfile(
                         profile.getProfileType(), profile.getName(), includeParams(false));
-        assertNotNull(created);
+        Assert.assertNotNull(createdProfile);
+        String[] ids = {createdProfile.getProfileId()};
+        List<PictureProfileHandle> ppHandle = new ArrayList<>();
+        boolean handleRetrieved =
+            waitForCondition(
+                    () -> {
+                        List<PictureProfileHandle> handles = mManager.getPictureProfileHandle(ids);
+                        if (handles != null && !handles.isEmpty()) {
+                            ppHandle.clear();
+                            ppHandle.addAll(handles);
+                            return true;
+                        }
+                        return false;
+                    });
+        Assert.assertTrue(
+                "PictureProfileHandle was not retrieved within the timeout.", handleRetrieved);
 
-        String[] ids = {created.getProfileId()};
-        List<PictureProfileHandle> ppHandle = mManager.getPictureProfileHandle(ids);
-        assertNotNull(ppHandle);
-        assertEquals(ppHandle.size(), 1);
+        Assert.assertNotNull(ppHandle);
+        Assert.assertEquals(1, ppHandle.size());
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)

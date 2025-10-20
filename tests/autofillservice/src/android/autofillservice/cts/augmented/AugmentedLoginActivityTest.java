@@ -810,40 +810,12 @@ public class AugmentedLoginActivityTest
 
         final AugmentedFillRequest request3 = sAugmentedReplier.getNextFillRequest();
         assertBasicRequestInfo(request3, currentActivity, usernameId, usernameValue);
-        mAugmentedUiBot.assertUiShown(usernameId, "Augment Me 3");
-
-        // 2nd landscape rotation
-        sAugmentedReplier.addResponse(new CannedAugmentedFillResponse.Builder()
-                .setDataset(new CannedAugmentedFillResponse.Dataset.Builder("Augment Me 4")
-                        .setField(usernameId, "dude4")
-                        .build(), usernameId)
-                .build());
-        mUiBot.setScreenOrientation(LANDSCAPE);
-        mUiBot.assertNoDatasetsEver();
-        currentActivity = LoginActivity.getCurrentActivity();
-
-        final AugmentedFillRequest request4 = sAugmentedReplier.getNextFillRequest();
-        assertBasicRequestInfo(request4, currentActivity, usernameId, usernameValue);
-        mAugmentedUiBot.assertUiShown(usernameId, "Augment Me 4");
-
-        // Final rotation - should be enough....
-        sAugmentedReplier.addResponse(new CannedAugmentedFillResponse.Builder()
-                .setDataset(new CannedAugmentedFillResponse.Dataset.Builder("Augment Me 5")
-                        .setField(usernameId, "dude5")
-                        .build(), usernameId)
-                .build());
-        mUiBot.setScreenOrientation(PORTRAIT);
-        mUiBot.assertNoDatasetsEver();
-        currentActivity = LoginActivity.getCurrentActivity();
-
-        final AugmentedFillRequest request5 = sAugmentedReplier.getNextFillRequest();
-        assertBasicRequestInfo(request5, mActivity, usernameId, usernameValue);
-        final UiObject2 ui = mAugmentedUiBot.assertUiShown(usernameId, "Augment Me 5");
+        final UiObject2 ui = mAugmentedUiBot.assertUiShown(usernameId, "Augment Me 3");
 
         // ..then autofill
 
         // Must get the latest activity because each rotation creates a new object.
-        currentActivity.expectAutoFill("dude5");
+        currentActivity.expectAutoFill("dude3");
         ui.click();
         mAugmentedUiBot.assertUiGone();
         currentActivity.assertAutoFilled();

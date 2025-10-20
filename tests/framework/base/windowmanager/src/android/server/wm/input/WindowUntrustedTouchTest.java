@@ -38,6 +38,7 @@ import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
 
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityOptions;
 import android.graphics.Rect;
@@ -48,7 +49,6 @@ import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.wm.overlay.R;
 import android.server.wm.shared.BlockingResultReceiver;
-import android.view.Display;
 import android.view.WindowManager.LayoutParams;
 
 import androidx.test.filters.FlakyTest;
@@ -643,10 +643,9 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
                 false /* touchable */,
                 R.anim.long_alpha_0_7,
                 R.anim.long_alpha_1);
-        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
         long start = SystemClock.elapsedRealtime();
 
-        assertTrue(mWmState.waitForAppTransitionIdleOnDisplay(Display.DEFAULT_DISPLAY));
+        assertTrue(mWmState.waitForAppTransitionIdleOnDisplay(mActivityDisplayId));
         long duration = SystemClock.elapsedRealtime() - start;
         assertThat(duration).isAtMost(MAX_ANIMATION_DURATION_MS + ANIMATION_DURATION_TOLERANCE_MS);
     }
@@ -666,14 +665,14 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         // transition in the duration of the exit animation below. Otherwise
         // waitForAppTransitionRunningOnDisplay might return immediately if this transition is not
         // done by then instead of waiting for the exit animation to start running.
-        assertTrue(mWmState.waitForAppTransitionIdleOnDisplay(Display.DEFAULT_DISPLAY));
+        assertTrue(mWmState.waitForAppTransitionIdleOnDisplay(mActivityDisplayId));
 
         sendFinishToExitAnimationActivity(
                 SECOND_EXIT_ANIMATION_ACTIVITY, EXTRA_VALUE_LONG_ANIMATION_0_7);
-        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
+        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(mActivityDisplayId));
         long start = SystemClock.elapsedRealtime();
 
-        assertTrue(mWmState.waitForAppTransitionIdleOnDisplay(Display.DEFAULT_DISPLAY));
+        assertTrue(mWmState.waitForAppTransitionIdleOnDisplay(mActivityDisplayId));
         long duration = SystemClock.elapsedRealtime() - start;
         assertThat(duration).isAtMost(MAX_ANIMATION_DURATION_MS + ANIMATION_DURATION_TOLERANCE_MS);
     }
@@ -687,7 +686,6 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
 
         addAnimatedActivityOverlay(
                 SECOND_OVERLAY_ACTIVITY, false /* touchable */, R.anim.alpha_0_9, R.anim.alpha_1);
-        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
 
         mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
 
@@ -704,7 +702,6 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
 
         addAnimatedActivityOverlay(
                 SECOND_OVERLAY_ACTIVITY, false /* touchable */, R.anim.alpha_0_7, R.anim.alpha_1);
-        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
 
         mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
 
@@ -721,7 +718,6 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
 
         addAnimatedActivityOverlay(
                 SECOND_OVERLAY_ACTIVITY, true /* touchable */, R.anim.alpha_0_7, R.anim.alpha_1);
-        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
 
         mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
 
@@ -741,11 +737,11 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         // Wait for ExitAnimationActivity open transition to complete to avoid
         // waitForAppTransitionRunningOnDisplay returning immediately if this transition is not
         // done by then instead of waiting for the exit animation to start running.
-        assertTrue(mWmState.waitForAppTransitionIdleOnDisplay(Display.DEFAULT_DISPLAY));
+        assertTrue(mWmState.waitForAppTransitionIdleOnDisplay(mActivityDisplayId));
 
         sendFinishToExitAnimationActivity(
                 SECOND_EXIT_ANIMATION_ACTIVITY, EXTRA_VALUE_ANIMATION_0_7);
-        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
+        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(mActivityDisplayId));
 
         mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
 
@@ -763,7 +759,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         addExitAnimationActivity(SECOND_EXIT_ANIMATION_ACTIVITY);
         sendFinishToExitAnimationActivity(
                 SECOND_EXIT_ANIMATION_ACTIVITY, EXTRA_VALUE_ANIMATION_0_9);
-        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
+        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(mActivityDisplayId));
 
         mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
 
@@ -781,7 +777,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         addExitAnimationActivity(SAME_UID_EXIT_ANIMATION_ACTIVITY);
         sendFinishToExitAnimationActivity(
                 SAME_UID_EXIT_ANIMATION_ACTIVITY, EXTRA_VALUE_ANIMATION_0_9);
-        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
+        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(mActivityDisplayId));
 
         mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
 
@@ -797,11 +793,37 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
+        waitForInsetsAnimation();
         addToastOverlay(SAME_UID_UNTRUSTED_TOUCH_TEST_SERVICE, /* custom */ false);
-        Rect toast = mWmState.waitForResult("toast bounds",
-                state -> state.findFirstWindowWithType(LayoutParams.TYPE_TOAST).getFrame());
 
-        mTouchHelper.tapOnCenter(toast, mActivity.getDisplayId());
+        // In some non-phone targets, e.g. Automotive's multi tasking environments based on
+        // multiple root tasks where the activities are not launched in full screen,
+        // there are scenarios that the toast does not appear within the test activity's bounds.
+        // Tapping the center of the toast could lead to a missed touch if they do not overlap at
+        // all.
+        // To account for such geometries, we first attempt to find the intersection between the
+        // toast and the activity. If any intersection can be found, we tap the center of the
+        // intersection. Otherwise, we have to skip the test.
+        Rect toast =
+                mWmState.waitForResult(
+                        "toast bounds",
+                        state -> state.findFirstWindowWithType(LayoutParams.TYPE_TOAST).getFrame());
+
+        int[] viewXY = new int[2];
+        mContainer.getLocationOnScreen(viewXY);
+        final Rect containerRect =
+                new Rect(
+                        viewXY[0],
+                        viewXY[1],
+                        viewXY[0] + mContainer.getWidth(),
+                        viewXY[1] + mContainer.getHeight());
+        final Rect intersection = new Rect();
+        // TODO(b/440669095): Improve the test.
+        assumeTrue(
+                "Toast does not overlap with the activity, skipping test.",
+                intersection.setIntersect(toast, containerRect));
+
+        mTouchHelper.tapOnCenter(intersection, mActivity.getDisplayId());
 
         assertTouchReceived();
     }
@@ -813,11 +835,34 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
                 FeatureUtil.isXrHeadset());
 
         assumeFalse("Watch does not support new Toast behavior yet.", FeatureUtil.isWatch());
+        waitForInsetsAnimation();
         addToastOverlay(SECOND_UNTRUSTED_TOUCH_TEST_SERVICE, /* custom */ false);
         Rect toast = mWmState.waitForResult("toast bounds",
                 state -> state.findFirstWindowWithType(LayoutParams.TYPE_TOAST).getFrame());
 
-        mTouchHelper.tapOnCenter(toast, mActivity.getDisplayId());
+        // In some non-phone targets, e.g. Automotive's multi tasking environments based on
+        // multiple root tasks where the activities are not launched in full screen,
+        // there are scenarios that the toast does not appear within the test activity's bounds.
+        // Tapping the center of the toast could lead to a missed touch if they do not overlap at
+        // all.
+        // To account for such geometries, we first attempt to find the intersection between the
+        // toast and the activity. If any intersection can be found, we tap the center of the
+        // intersection. Otherwise, we have to skip the test.
+        int[] viewXY = new int[2];
+        mContainer.getLocationOnScreen(viewXY);
+        final Rect containerRect =
+                new Rect(
+                        viewXY[0],
+                        viewXY[1],
+                        viewXY[0] + mContainer.getWidth(),
+                        viewXY[1] + mContainer.getHeight());
+        final Rect intersection = new Rect();
+        // TODO(b/440669095): Improve the test.
+        assumeTrue(
+                "Toast does not overlap with the activity, skipping test.",
+                intersection.setIntersect(toast, containerRect));
+
+        mTouchHelper.tapOnCenter(intersection, mActivity.getDisplayId());
 
         assertTouchReceived();
     }

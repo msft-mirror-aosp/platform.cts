@@ -265,6 +265,24 @@ public final class FakeAppSearchConfig implements ServiceAppSearchConfig {
     }
 
     @Override
+    public long getCachedCheckOptimizeDelayMillis() {
+        throwIfClosed();
+        return defaultCheckOptimizeDelayMillis();
+    }
+
+    @Override
+    public long getCachedMaxBytesOptimizeThreshold() {
+        throwIfClosed();
+        return DEFAULT_MAX_BYTES_OPTIMIZE_THRESHOLD;
+    }
+
+    @Override
+    public long getCachedMaxDocCountOptimizeThreshold() {
+        throwIfClosed();
+        return DEFAULT_MAX_DOC_COUNT_OPTIMIZE_THRESHOLD;
+    }
+
+    @Override
     public int getIntegerIndexBucketSplitThreshold() {
         throwIfClosed();
         return DEFAULT_INTEGER_INDEX_BUCKET_SPLIT_THRESHOLD;
@@ -335,6 +353,12 @@ public final class FakeAppSearchConfig implements ServiceAppSearchConfig {
     public int getCompressionThresholdBytes() {
         throwIfClosed();
         return DEFAULT_COMPRESSION_THRESHOLD_BYTES;
+    }
+
+    @Override
+    public int getEmbeddingIndexNumShards() {
+        throwIfClosed();
+        return DEFAULT_EMBEDDING_INDEX_NUM_SHARDS;
     }
 
     private void throwIfClosed() {

@@ -16,22 +16,33 @@
 
 package android.hardware.input.cts.tests;
 
-import static org.junit.Assume.assumeTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import android.hardware.cts.R;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.view.View;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
+import com.android.cts.input.DebugInputRule;
 import com.android.cts.kernelinfo.KernelInfo;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class SonyDualshock4BluetoothTest extends InputHidTestCase {
+
+    @Rule public DebugInputRule mDebugInputRule = new DebugInputRule();
+
+    @Rule public CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     // Simulates the behavior of PlayStation DualShock4 gamepad (model CUH-ZCT1U)
     public SonyDualshock4BluetoothTest() {
@@ -59,15 +70,35 @@ public class SonyDualshock4BluetoothTest extends InputHidTestCase {
     }
 
     @Test
+    @DebugInputRule.DebugInput(bug = 437684441)
     public void testBattery() {
         testInputBatteryEvents(R.raw.sony_dualshock4_bluetooth_batteryeventtests);
     }
 
+    /**
+     * The same as {@link #testAllTouch()}, but doesn't specify a pointer capture mode. It will be
+     * broken by the change to make {@link View#POINTER_CAPTURE_MODE_RELATIVE} the default, hence
+     * requiring the pointer capture modes flag to be disabled. When that flag launches, this test
+     * case should be removed.
+     */
     @Test
-    public void testAllTouch() throws Throwable {
+    @RequiresFlagsDisabled(com.android.hardware.input.Flags.FLAG_POINTER_CAPTURE_MODES)
+    public void testAllTouch_legacy() {
         assumeFalse("b/337286136 - Broken since kernel 6.2 from driver changes",
                 KernelInfo.isKernelVersionGreaterThan("6.2"));
         try (PointerCaptureSession session = new PointerCaptureSession()) {
+            testInputEvents(R.raw.sony_dualshock4_toucheventtests);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.hardware.input.Flags.FLAG_POINTER_CAPTURE_MODES)
+    public void testAllTouch() {
+        assumeFalse(
+                "b/337286136 - Broken since kernel 6.2 from driver changes",
+                KernelInfo.isKernelVersionGreaterThan("6.2"));
+        try (PointerCaptureSession session =
+                new PointerCaptureSession(View.POINTER_CAPTURE_MODE_ABSOLUTE)) {
             testInputEvents(R.raw.sony_dualshock4_toucheventtests);
         }
     }

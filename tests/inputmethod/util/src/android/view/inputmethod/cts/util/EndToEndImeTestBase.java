@@ -67,18 +67,23 @@ public abstract class EndToEndImeTestBase {
     private static final String SET_VERBOSE_IME_TRACKER_LOGGING_CMD =
             "setprop persist.debug.imetracker";
 
-    /** Feature used to represent Automotive Scalable UI targets */
+    /** Feature used to represent Automotive Multi-Window targets */
     private static final String FEATURE_CAR_SPLITSCREEN_MULTITASKING =
             "android.software.car.splitscreen_multitasking";
 
-    /**
-     * Returns {@code true} if device is Automotive Scalable UI.
-     */
-    public static boolean isAutomotiveScalableUI() {
+    /** Returns {@code true} if device is Automotive Multi-Window. */
+    public static boolean isAutomotiveMultiWindow() {
         final var instrumentation = InstrumentationRegistry.getInstrumentation();
         final var pm = instrumentation.getTargetContext().getPackageManager();
         return pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
                 && pm.hasSystemFeature(FEATURE_CAR_SPLITSCREEN_MULTITASKING);
+    }
+
+    /** Returns {@code true} if device supports freeform window management. */
+    public static boolean isFreeformSupported() {
+        final var instrumentation = InstrumentationRegistry.getInstrumentation();
+        final var pm = instrumentation.getTargetContext().getPackageManager();
+        return pm.hasSystemFeature(PackageManager.FEATURE_FREEFORM_WINDOW_MANAGEMENT);
     }
 
     /**
@@ -192,11 +197,16 @@ public abstract class EndToEndImeTestBase {
     public void clearLaunchParams() {
         final Context context = InstrumentationRegistry.getInstrumentation().getContext();
         final ActivityTaskManager atm = context.getSystemService(ActivityTaskManager.class);
-        SystemUtil.runWithShellPermissionIdentity(() -> {
-            // Clear launch params for all test packages to make sure each test is run in a clean
-            // state.
-            atm.clearLaunchParamsForPackages(List.of(context.getPackageName()));
-        }, Manifest.permission.MANAGE_ACTIVITY_TASKS);
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    // Clear launch params for test packages to make sure each test is run in a
+                    // clean state.
+                    atm.clearLaunchParamsForPackages(
+                            List.of(
+                                    context.getPackageName(),
+                                    "android.view.inputmethod.ctstestapp"));
+                },
+                Manifest.permission.MANAGE_ACTIVITY_TASKS);
     }
 
     protected static boolean isPreventImeStartup() {

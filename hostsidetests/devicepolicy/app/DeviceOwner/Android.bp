@@ -35,8 +35,8 @@ android_test_helper_app {
         "org.apache.http.legacy.stubs.system",
     ],
     static_libs: [
+        "androidx.test.espresso.intents",
         "ctstestrunner-axt",
-        "com.android.net.flags-aconfig-java",
         "compatibility-device-util-axt",
         "androidx.test.rules",
         "cts-security-test-support-library",
@@ -45,8 +45,8 @@ android_test_helper_app {
         "androidx.legacy_legacy-support-v4",
         "devicepolicy-deviceside-common",
         "DpmWrapper",
-        "NeneInternal",
         "CtsLockTaskStateChecker",
+        "mockito-target-minus-junit4",
     ],
     min_sdk_version: "21",
     // tag this module as a cts test artifact

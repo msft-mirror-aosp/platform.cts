@@ -21,8 +21,6 @@ import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 import static android.bluetooth.le.DistanceMeasurementResult.NADM_ATTACK_IS_VERY_UNLIKELY;
 
-import static com.android.bluetooth.flags.Flags.FLAG_CHANNEL_SOUNDING_25Q2_APIS;
-
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
@@ -33,7 +31,6 @@ import android.content.Context;
 import android.os.Build;
 import android.os.Parcel;
 import android.os.SystemClock;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
@@ -191,7 +188,6 @@ public class DistanceMeasurementResultTest {
         assertThat(result.getVelocityMetersPerSecond()).isEqualTo(60.0);
     }
 
-    @RequiresFlagsEnabled(FLAG_CHANNEL_SOUNDING_25Q2_APIS)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetMeasurementTimestampNanos() {
@@ -227,7 +223,6 @@ public class DistanceMeasurementResultTest {
                 .isEqualTo(result.getVelocityMetersPerSecond());
     }
 
-    @RequiresFlagsEnabled(FLAG_CHANNEL_SOUNDING_25Q2_APIS)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void readWriteParcelForCsMeasurementTimestamp() {

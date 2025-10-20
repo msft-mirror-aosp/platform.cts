@@ -16,6 +16,7 @@
 
 package android.view.inputmethod.cts;
 
+import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
 import static android.inputmethodservice.InputMethodService.DISALLOW_INPUT_METHOD_INTERFACE_OVERRIDE;
@@ -109,6 +110,7 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.GestureNavSwitchHelper;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 import com.android.cts.mockime.ImeCommand;
 import com.android.cts.mockime.ImeEvent;
 import com.android.cts.mockime.ImeEventStream;
@@ -120,7 +122,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -146,9 +147,13 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
 
     private static final String OTHER_IME_ID = "com.android.cts.spellcheckingime/.SpellCheckingIme";
 
-    private static final String ERASE_FONT_SCALE_CMD = "settings delete system font_scale";
+    private static final String ERASE_FONT_SCALE_CMD =
+            "settings delete --user %d system font_scale";
+
     // 1.2 is an arbitrary value.
-    private static final String PUT_FONT_SCALE_CMD = "settings put system font_scale 1.2";
+    private static final String PUT_FONT_SCALE_CMD = "settings put --user %d system font_scale 1.2";
+
+    private static final int EDIT_TEXT_ID = 777;
 
     @Rule
     public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
@@ -162,6 +167,8 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
     private final String mMarker = getTestMarker();
 
     private Instrumentation mInstrumentation;
+
+    private final UserHelper mUserHelper = new UserHelper();
 
     private static DescribedPredicate<ImeEvent> backKeyDownMatcher(boolean expectedReturnValue) {
         return withDescription("onKeyDown(KEYCODE_BACK) = " + expectedReturnValue, event -> {
@@ -181,26 +188,32 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
     }
 
-    private TestActivity createTestActivity(int windowFlags) {
-        return TestActivity.startSync(activity -> createLayout(windowFlags, activity));
+    private TestActivity createTestActivity(int windowFlags, boolean autoRequestFocus) {
+        return TestActivity.startSync(
+                activity -> createLayout(windowFlags, activity, autoRequestFocus));
     }
 
     private TestActivity createTestActivity2(int windowFlags) {
-        return new TestActivity.Starter().startSync(activity -> createLayout(windowFlags, activity),
+        return new TestActivity.Starter().startSync(
+                activity -> createLayout(windowFlags, activity, /* autoRequestFocus */ true),
                 TestActivity2.class);
     }
 
-    private LinearLayout createLayout(final int windowFlags, final Activity activity) {
+    private LinearLayout createLayout(
+            final int windowFlags, final Activity activity, boolean autoRequestFocus) {
         final LinearLayout layout = new LinearLayout(activity);
         layout.setOrientation(LinearLayout.VERTICAL);
 
         final EditText editText = new EditText(activity);
+        editText.setId(EDIT_TEXT_ID);
         editText.setText("Editable");
         editText.setPrivateImeOptions(mMarker);
         layout.addView(editText);
-        editText.requestFocus();
 
-        activity.getWindow().setSoftInputMode(windowFlags);
+        if (autoRequestFocus) {
+            editText.requestFocus();
+            activity.getWindow().setSoftInputMode(windowFlags);
+        }
         return layout;
     }
 
@@ -213,7 +226,7 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE, /* autoRequestFocus */ true);
             expectEvent(stream, editorMatcher("onStartInputView", mMarker), TIMEOUT);
 
             final ImeCommand command = imeSession.verifyLayoutInflaterContext();
@@ -273,19 +286,21 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
     }
 
     private void verifyImeConsumesBackButton(int backDisposition) throws Exception {
-        try (MockImeSession imeSession = MockImeSession.create(
-                InstrumentationRegistry.getInstrumentation().getContext(),
-                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-                new ImeSettings.Builder())) {
+        try (MockImeSession imeSession =
+                MockImeSession.create(
+                        InstrumentationRegistry.getInstrumentation().getContext(),
+                        InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                        new ImeSettings.Builder().setOnBackCallbackEnabled(false))) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final TestActivity testActivity = createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            final TestActivity testActivity =
+                    createTestActivity(
+                            SOFT_INPUT_STATE_ALWAYS_VISIBLE, /* autoRequestFocus */ true);
             expectEvent(stream, editorMatcher("onStartInputView", mMarker), TIMEOUT);
 
             final ImeCommand command = imeSession.callSetBackDisposition(backDisposition);
             expectCommand(stream, command, TIMEOUT);
 
-            testActivity.setIgnoreBackKey(true);
             assertEquals(0,
                     (long) getOnMainSync(() -> testActivity.getOnBackPressedCallCount()));
             mInstrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
@@ -333,7 +348,7 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE, /* autoRequestFocus */ true);
             expectEvent(stream, editorMatcher("onStartInputView", mMarker), TIMEOUT);
 
             expectImeVisible(TIMEOUT);
@@ -359,7 +374,7 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            createTestActivity(SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+            createTestActivity(SOFT_INPUT_STATE_ALWAYS_HIDDEN, /* autoRequestFocus */ true);
             notExpectEvent(
                     stream, editorMatcher("onStartInputView", mMarker), TIMEOUT);
 
@@ -387,7 +402,7 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
             final ImeEventStream stream = imeSession.openEventStream();
 
             // Case 1: Activity handles configChanges="fontScale"
-            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE, /* autoRequestFocus */ true);
             expectEvent(stream, editorMatcher("onStartInput", mMarker), TIMEOUT);
             expectEvent(stream, eventMatcher("showSoftInput"), TIMEOUT);
             // MockIme handles fontScale. Make sure changing fontScale doesn't restart IME.
@@ -418,13 +433,9 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
      * This function will apply font scale changes.
      */
     private void enableFontScale() {
-        try {
-            final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
-            SystemUtil.runShellCommand(instrumentation, PUT_FONT_SCALE_CMD);
-            instrumentation.waitForIdleSync();
-        } catch (IOException io) {
-            fail("Couldn't apply font scale.");
-        }
+        final String command = String.format(PUT_FONT_SCALE_CMD, mUserHelper.getUserId());
+        SystemUtil.runShellCommandOrThrow(command);
+        mInstrumentation.waitForIdleSync();
     }
 
     /**
@@ -432,13 +443,9 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
      * This function will apply font scale changes.
      */
     private void eraseFontScale() {
-        try {
-            final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
-            SystemUtil.runShellCommand(instrumentation, ERASE_FONT_SCALE_CMD);
-            instrumentation.waitForIdleSync();
-        } catch (IOException io) {
-            fail("Couldn't apply font scale.");
-        }
+        final String command = String.format(ERASE_FONT_SCALE_CMD, mUserHelper.getUserId());
+        SystemUtil.runShellCommandOrThrow(command);
+        mInstrumentation.waitForIdleSync();
     }
 
     private static void assertSynthesizedSoftwareKeyEvent(KeyEvent keyEvent, int expectedAction,
@@ -699,7 +706,7 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
             // initialization.
             assertTrue(expectEvent(stream, verificationMatcher("getDisplay"),
                     CHECK_EXIT_EVENT_ONLY, TIMEOUT).getReturnBooleanValue());
-            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE, /* autoRequestFocus */ true);
 
             expectEvent(stream, editorMatcher("onStartInput", mMarker), TIMEOUT);
             // Verify if getDisplay doesn't throw exception
@@ -882,7 +889,9 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final Activity activity = createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            final Activity activity =
+                    createTestActivity(
+                            SOFT_INPUT_STATE_ALWAYS_VISIBLE, /* autoRequestFocus */ true);
             expectEvent(stream, editorMatcher("onStartInput", mMarker), TIMEOUT);
             expectImeVisible(TIMEOUT);
             final int initialOrientation = activity.getRequestedOrientation();
@@ -924,7 +933,9 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder().setWindowLayoutInfoCallbackEnabled(true))) {
 
             final ImeEventStream stream = imeSession.openEventStream();
-            TestActivity activity = createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            TestActivity activity =
+                    createTestActivity(
+                            SOFT_INPUT_STATE_ALWAYS_VISIBLE, /* autoRequestFocus */ true);
             assertThat(expectEvent(stream, verificationMatcher("windowLayoutComponentLoaded"),
                     CHECK_EXIT_EVENT_ONLY, TIMEOUT).getReturnBooleanValue()).isTrue();
             final Display display = activity.getDisplay();
@@ -1031,7 +1042,7 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
             // Verify if InputMethodService#isUiContext returns true in #onCreate
             assertTrue(expectEvent(stream, verificationMatcher("isUiContext"),
                     CHECK_EXIT_EVENT_ONLY, TIMEOUT).getReturnBooleanValue());
-            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE, /* autoRequestFocus */ true);
 
             expectEvent(stream, editorMatcher("onStartInput", mMarker), TIMEOUT);
             // Verify if InputMethodService#isUiContext returns true
@@ -1045,10 +1056,18 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
         try (MockImeSession imeSession = MockImeSession.create(
                 mInstrumentation.getContext(), mInstrumentation.getUiAutomation(),
                 new ImeSettings.Builder())) {
+            TestActivity testActivity =
+                    createTestActivity(
+                            SOFT_INPUT_STATE_ALWAYS_VISIBLE, /* autoRequestFocus */ false);
             final ImeEventStream stream = imeSession.openEventStream();
+            EditText editText = testActivity.requireViewById(EDIT_TEXT_ID);
+            mInstrumentation.runOnMainSync(
+                    () -> {
+                        editText.requestFocus();
+                        testActivity.getWindow().setSoftInputMode(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+                    });
 
-            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
-
+            mInstrumentation.waitForIdleSync();
             final ImeEventStream forkedStream = stream.copy();
             expectEvent(stream, editorMatcher("onStartInput", mMarker), TIMEOUT);
             // Verify if InputMethodService#isUiContext returns true
@@ -1070,7 +1089,7 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
             }
 
             // start a test activity and expect it not to crash
-            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE, /* autoRequestFocus */ true);
         } finally {
             // restore all previous IMEs
             SystemUtil.runShellCommand("ime reset");
@@ -1127,7 +1146,7 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE, /* autoRequestFocus */ true);
             expectEvent(stream, editorMatcher("onStartInput", mMarker), TIMEOUT);
             expectImeVisible(TIMEOUT);
 
@@ -1150,7 +1169,7 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE, /* autoRequestFocus */ true);
             expectEvent(stream, editorMatcher("onStartInput", mMarker), TIMEOUT);
             expectImeVisible(TIMEOUT);
 
@@ -1190,6 +1209,11 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
                 InstrumentationRegistry.getInstrumentation().getUiAutomation(),
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
+
+            expectEvent(stream, eventMatcher("onCreate"), TIMEOUT);
+            expectEvent(stream, eventMatcher("bindInput"), TIMEOUT);
+            expectEvent(stream, eventMatcher("onStartInput"), TIMEOUT);
+
             final int injectedKeyCode = KeyEvent.KEYCODE_1;
             injectKeyEvent(injectedKeyCode, mInstrumentation);
 
@@ -1222,7 +1246,17 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
                                         : ImeSettings.FullscreenModePolicy.NO_FULLSCREEN))) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final var activity = createTestActivity(SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+            final var activity =
+                    new TestActivity.Starter()
+                            .asNewTask()
+                            .withWindowingMode(WINDOWING_MODE_FULLSCREEN)
+                            .startSync(
+                                    act ->
+                                            createLayout(
+                                                    SOFT_INPUT_STATE_ALWAYS_HIDDEN,
+                                                    act,
+                                                    /* autoRequestFocus= */ true),
+                                    TestActivity.class);
             final var decorView = activity.getWindow().getDecorView();
             int imeHeight = decorView.getRootWindowInsets().getInsets(ime()).bottom;
 
@@ -1279,7 +1313,7 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
             assumeTrue("IME Switcher button should be shown at the start of the test",
                     imeSession.shouldShowImeSwitcherButtonForTest());
 
-            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE, /* autoRequestFocus */ true);
             expectEvent(stream, eventMatcher("onStartInput"), TIMEOUT);
 
             final boolean imeCaptionBarVisible =
@@ -1349,7 +1383,7 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
             assumeTrue("IME Switcher button should be shown at the start of the test",
                     imeSession.shouldShowImeSwitcherButtonForTest());
 
-            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE, /* autoRequestFocus */ true);
             expectEvent(stream, eventMatcher("onStartInput"), TIMEOUT);
             notExpectEvent(stream, eventMatcher("onCustomImeSwitcherButtonRequestedVisible"),
                     EXPECTED_TIMEOUT);
@@ -1393,7 +1427,7 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
             assumeTrue("IME Switcher button should be shown at the start of the test",
                     imeSession.shouldShowImeSwitcherButtonForTest());
 
-            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE, /* autoRequestFocus */ true);
             expectEvent(stream, eventMatcher("onStartInput"), TIMEOUT);
             notExpectEvent(stream, eventMatcher("onCustomImeSwitcherButtonRequestedVisible"),
                     EXPECTED_TIMEOUT);
@@ -1459,7 +1493,7 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
     /** Explicitly start-up the IME process if it would have been prevented. */
     protected void ensureImeRunning() {
         if (isPreventImeStartup()) {
-            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE, /* autoRequestFocus */ true);
         }
     }
 

@@ -34,6 +34,7 @@ TestBeds:
       scene: <scene-name>  # if <scene-name> runs all scenes
       foldable_device: "False"  # "True" if testing foldable device
       chart_scaling: "None"  # use the values available for scene to be tested
+      resultstore_upload: "False"  # "True" if results should be uploaded to ResultStore
 
   - Name: TEST_BED_SENSOR_FUSION  # Need 'sensor_fusion' in name for
     # checkerboard scenes (SF, scene_flash, and feature_combination) tests
@@ -57,6 +58,7 @@ TestBeds:
       lighting_ch: <controller-channel>
       scene: "checkerboard"  # "checkerboard" for both SF and scene_flash
       parallel_execution: "True"  # "False" for low-performance hosts
+      resultstore_upload: "False"  # "True" if results should be uploaded to ResultStore
 
   - Name: TEST_BED_GEN2
     # Test configuration for scene_ip and scene_gen2_chart
@@ -79,3 +81,5 @@ TestBeds:
       img_size: 640,480  # width, height
       test_length: 7
       debug_mode: "False"  # quotes are needed here
+      parallel_execution: "True"  # "False" for low-performance hosts
+      resultstore_upload: "False"  # "True" if results should be uploaded to ResultStore

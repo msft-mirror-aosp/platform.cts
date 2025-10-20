@@ -50,7 +50,8 @@ public class RoleSecurityTest extends StsExtraBusinessLogicHostTestBase {
 
         final int initialUserId = getDevice().getCurrentUser();
         final int secondaryUserId = userIds[1];
-        assumeTrue("Unable to switch user", getDevice().switchUser(secondaryUserId));
+        assumeTrue("Unable to switch to user " + secondaryUserId,
+                getDevice().switchUser(secondaryUserId));
         try {
             uninstallApp(ROLE_SECURITY_TEST_APP_PACKAGE);
             try {

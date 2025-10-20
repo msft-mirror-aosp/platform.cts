@@ -127,6 +127,9 @@
         <service android:name="android.hardware.cts.HardwareBufferTestService$NativeRemote"
             android:process=":native" />
 
+        <meta-data
+            android:name="android.software.car.display_compatibility"
+            android:value="false" />
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

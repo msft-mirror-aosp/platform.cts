@@ -319,7 +319,13 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         }
 
         String errorString = tryRunCommand(command.toArray(new String[0]));
-        assertTrue(errorString, errorString.length() == 0);
+        assertTrue(
+                "Building vendor SEPolicy failed. "
+                        + "vendorVersion="
+                        + vendorVersion
+                        + "\n"
+                        + errorString,
+                errorString.length() == 0);
 
         synchronized (cache) {
             cache.put(device, builtPolicyFile);
@@ -1058,12 +1064,12 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         assertSepolicyTests("TestDevTypeViolations", "/sepolicy_tests", true);
     }
 
-   /**
+    /**
      * Tests that the policy defines no booleans (runtime conditional policy).
      *
      * @throws Exception
      */
-    @CddTest(requirement="9.7")
+    @CddTest(requirement = "9.7")
     @Test
     public void testNoBooleans() throws Exception {
 
@@ -1074,9 +1080,8 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
                    + errorString, errorString.length() == 0);
     }
 
-   /**
-     * Tests that taking a bugreport does not produce any dumpstate-related
-     * SELinux denials.
+    /**
+     * Tests that taking a bugreport does not produce any dumpstate-related SELinux denials.
      *
      * @throws Exception
      */
@@ -1090,7 +1095,9 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         Set<String> types = sepolicyAnalyzeGetTypesAssociatedWithAttribute("hal_dumpstate_server");
         types.add("dumpstate");
         String typeRegex = types.stream().collect(Collectors.joining("|"));
-        Pattern p = Pattern.compile("avc: *denied.*scontext=u:(?:r|object_r):(?:" + typeRegex + "):s0.*");
+        Pattern p =
+                Pattern.compile(
+                        "avc: *denied.*scontext=u:(?:r|object_r):(?:" + typeRegex + "):s0.*");
         // Fail if logcat contains such a denial.
         Matcher m = p.matcher(log);
         StringBuilder errorString = new StringBuilder();
@@ -1101,80 +1108,122 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         assertTrue("Found illegal SELinux denial(s): " + errorString, errorString.length() == 0);
     }
 
-    /**
-     * Tests that important domain labels are being appropriately applied.
-     */
+    /** Tests that important domain labels are being appropriately applied. */
 
     /**
      * Asserts that no processes are running in a domain.
      *
-     * @param domain
-     *  The domain or SELinux context to check.
+     * @param domain The domain or SELinux context to check.
      */
     private void assertDomainEmpty(String domain) throws DeviceNotAvailableException {
         List<ProcessDetails> procs = ProcessDetails.getProcMap(mDevice).get(domain);
-        String msg = "Expected no processes in SELinux domain \"" + domain + "\""
-            + " Found: \"" + procs + "\"";
+        String msg =
+                "Expected no processes in SELinux domain \""
+                        + domain
+                        + "\""
+                        + " Found: \""
+                        + procs
+                        + "\"";
         assertNull(msg, procs);
     }
 
     /**
-     * Asserts that a domain exists and that only one, well defined, process is
-     * running in that domain.
+     * Asserts that a domain exists and that only one, well defined, process is running in that
+     * domain.
      *
-     * @param domain
-     *  The domain or SELinux context to check.
-     * @param executable
-     *  The path of the executable or application package name.
+     * @param domain The domain or SELinux context to check.
+     * @param executable The path of the executable or application package name.
      */
-    private void assertDomainOne(String domain, String executable) throws DeviceNotAvailableException {
+    private void assertDomainOne(String domain, String executable)
+            throws DeviceNotAvailableException {
         List<ProcessDetails> procs = ProcessDetails.getProcMap(mDevice).get(domain);
         List<ProcessDetails> exeProcs = ProcessDetails.getExeMap(mDevice).get(executable);
-        String msg = "Expected 1 process in SELinux domain \"" + domain + "\""
-            + " Found \"" + procs + "\"";
+        String msg =
+                "Expected 1 process in SELinux domain \""
+                        + domain
+                        + "\""
+                        + " Found \""
+                        + procs
+                        + "\"";
         assertNotNull(msg, procs);
         assertEquals(msg, 1, procs.size());
 
-        msg = "Expected executable \"" + executable + "\" in SELinux domain \"" + domain + "\""
-            + "Found: \"" + procs + "\"";
+        msg =
+                "Expected executable \""
+                        + executable
+                        + "\" in SELinux domain \""
+                        + domain
+                        + "\""
+                        + "Found: \""
+                        + procs
+                        + "\"";
         assertEquals(msg, executable, procs.get(0).procTitle);
 
-        msg = "Expected 1 process with executable \"" + executable + "\""
-            + " Found \"" + procs + "\"";
+        msg =
+                "Expected 1 process with executable \""
+                        + executable
+                        + "\""
+                        + " Found \""
+                        + procs
+                        + "\"";
         assertNotNull(msg, exeProcs);
         assertEquals(msg, 1, exeProcs.size());
 
-        msg = "Expected executable \"" + executable + "\" in SELinux domain \"" + domain + "\""
-            + "Found: \"" + procs + "\"";
+        msg =
+                "Expected executable \""
+                        + executable
+                        + "\" in SELinux domain \""
+                        + domain
+                        + "\""
+                        + "Found: \""
+                        + procs
+                        + "\"";
         assertEquals(msg, domain, exeProcs.get(0).label);
     }
 
     /**
-     * Asserts that a domain may exist. If a domain exists, the cardinality of
-     * the domain is verified to be 1 and that the correct process is running in
-     * that domain. If the process is running, it is running in that domain.
+     * Asserts that a domain may exist. If a domain exists, the cardinality of the domain is
+     * verified to be 1 and that the correct process is running in that domain. If the process is
+     * running, it is running in that domain.
      *
-     * @param domain
-     *  The domain or SELinux context to check.
-     * @param executable
-     *  The path of the executable or application package name.
+     * @param domain The domain or SELinux context to check.
+     * @param executable The path of the executable or application package name.
      */
     private void assertDomainZeroOrOne(String domain, String executable)
-        throws DeviceNotAvailableException {
+            throws DeviceNotAvailableException {
         List<ProcessDetails> procs = ProcessDetails.getProcMap(mDevice).get(domain);
         List<ProcessDetails> exeProcs = ProcessDetails.getExeMap(mDevice).get(executable);
         if (procs != null) {
-            String msg = "Expected 1 process in SELinux domain \"" + domain + "\""
-                + " Found: \"" + procs + "\"";
+            String msg =
+                    "Expected 1 process in SELinux domain \""
+                            + domain
+                            + "\""
+                            + " Found: \""
+                            + procs
+                            + "\"";
             assertEquals(msg, 1, procs.size());
 
-            msg = "Expected executable \"" + executable + "\" in SELinux domain \"" + domain + "\""
-                + "Found: \"" + procs.get(0) + "\"";
+            msg =
+                    "Expected executable \""
+                            + executable
+                            + "\" in SELinux domain \""
+                            + domain
+                            + "\""
+                            + "Found: \""
+                            + procs.get(0)
+                            + "\"";
             assertEquals(msg, executable, procs.get(0).procTitle);
         }
         if (exeProcs != null) {
-            String msg = "Expected executable \"" + executable + "\" in SELinux domain \"" + domain + "\""
-                + " Instead found it running in the domain \"" + exeProcs.get(0).label + "\"";
+            String msg =
+                    "Expected executable \""
+                            + executable
+                            + "\" in SELinux domain \""
+                            + domain
+                            + "\""
+                            + " Instead found it running in the domain \""
+                            + exeProcs.get(0).label
+                            + "\"";
             assertNotNull(msg, procs);
 
             msg = "Expected 1 process with executable \"" + executable + "\""
@@ -1226,21 +1275,26 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     /**
      * Asserts that a domain, if it exists, is only running the listed executables.
      *
-     * @param domain
-     *  The domain or SELinux context to check.
-     * @param executables
-     *  The path of the allowed executables or application package names.
+     * @param domain The domain or SELinux context to check.
+     * @param executables The path of the allowed executables or application package names.
      */
     private void assertDomainHasExecutable(String domain, String... executables)
-        throws DeviceNotAvailableException {
+            throws DeviceNotAvailableException {
         List<ProcessDetails> procs = ProcessDetails.getProcMap(mDevice).get(domain);
 
         if (procs != null) {
             Set<String> execList = new HashSet<String>(Arrays.asList(executables));
 
             for (ProcessDetails p : procs) {
-                String msg = "Expected one of \"" + execList + "\" in SELinux domain \""
-                    + domain + "\"" + " Found: \"" + p + "\"";
+                String msg =
+                        "Expected one of \""
+                                + execList
+                                + "\" in SELinux domain \""
+                                + domain
+                                + "\""
+                                + " Found: \""
+                                + p
+                                + "\"";
                 assertTrue(msg, execList.contains(p.procTitle));
             }
         }
@@ -1249,13 +1303,11 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     /**
      * Asserts that an executable exists and is only running in the listed domains.
      *
-     * @param executable
-     *  The path of the executable to check.
-     * @param domains
-     *  The list of allowed domains.
+     * @param executable The path of the executable to check.
+     * @param domains The list of allowed domains.
      */
     private void assertExecutableExistsAndHasDomain(String executable, String... domains)
-        throws DeviceNotAvailableException {
+            throws DeviceNotAvailableException {
         List<ProcessDetails> exeProcs = ProcessDetails.getExeMap(mDevice).get(executable);
         Set<String> domainList = new HashSet<String>(Arrays.asList(domains));
 
@@ -1263,8 +1315,15 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         assertNotNull(msg, exeProcs);
 
         for (ProcessDetails p : exeProcs) {
-            msg = "Expected one of  \"" + domainList + "\" for executable \"" + executable
-                    + "\"" + " Found: \"" + p.label + "\"";
+            msg =
+                    "Expected one of  \""
+                            + domainList
+                            + "\" for executable \""
+                            + executable
+                            + "\""
+                            + " Found: \""
+                            + p.label
+                            + "\"";
             assertTrue(msg, domainList.contains(p.label));
         }
     }
@@ -1272,20 +1331,25 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     /**
      * Asserts that an executable, if it exists, is only running in the listed domains.
      *
-     * @param executable
-     *  The path of the executable to check.
-     * @param domains
-     *  The list of allowed domains.
+     * @param executable The path of the executable to check.
+     * @param domains The list of allowed domains.
      */
     private void assertExecutableHasDomain(String executable, String... domains)
-        throws DeviceNotAvailableException {
+            throws DeviceNotAvailableException {
         List<ProcessDetails> exeProcs = ProcessDetails.getExeMap(mDevice).get(executable);
         Set<String> domainList = new HashSet<String>(Arrays.asList(domains));
 
         if (exeProcs != null) {
             for (ProcessDetails p : exeProcs) {
-                String msg = "Expected one of  \"" + domainList + "\" for executable \"" + executable
-                    + "\"" + " Found: \"" + p.label + "\"";
+                String msg =
+                        "Expected one of  \""
+                                + domainList
+                                + "\" for executable \""
+                                + executable
+                                + "\""
+                                + " Found: \""
+                                + p.label
+                                + "\"";
                 assertTrue(msg, domainList.contains(p.label));
             }
         }
@@ -1322,7 +1386,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     }
 
     /* Vold is always there */
-    @CddTest(requirement="9.7")
+    @CddTest(requirement = "9.7")
     @Test
     public void testVoldDomain() throws DeviceNotAvailableException {
         assertDomainOne("u:r:vold:s0", "/system/bin/vold");
@@ -1332,7 +1396,11 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     @CddTest(requirement="9.7")
     @Test
     public void testNetdDomain() throws DeviceNotAvailableException {
-        assertDomainN("u:r:netd:s0", "/system/bin/netd", "/system/bin/iptables-restore", "/system/bin/ip6tables-restore");
+        assertDomainN(
+                "u:r:netd:s0",
+                "/system/bin/netd",
+                "/system/bin/iptables-restore",
+                "/system/bin/ip6tables-restore");
     }
 
     /* Surface flinger is always there */
@@ -1343,7 +1411,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     }
 
     /* Zygote is always running */
-    @CddTest(requirement="9.7")
+    @CddTest(requirement = "9.7")
     @Test
     public void testZygoteDomain() throws DeviceNotAvailableException {
         assertDomainN("u:r:zygote:s0", "zygote", "zygote64", "usap32", "usap64");
@@ -1353,7 +1421,11 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     @CddTest(requirement="9.7")
     @Test
     public void testDrmServerDomain() throws DeviceNotAvailableException {
-        assertDomainHasExecutable("u:r:drmserver:s0", "/system/bin/drmserver", "/system/bin/drmserver32", "/system/bin/drmserver64");
+        assertDomainHasExecutable(
+                "u:r:drmserver:s0",
+                "/system/bin/drmserver",
+                "/system/bin/drmserver32",
+                "/system/bin/drmserver64");
     }
 
     /* Installd is always running */
@@ -1399,7 +1471,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     }
 
     /* Wifi may be off so cardinality of 0 or 1 is ok */
-    @CddTest(requirement="9.7")
+    @CddTest(requirement = "9.7")
     @Test
     public void testWpaDomain() throws DeviceNotAvailableException {
         assertDomainZeroOrOne("u:r:wpa:s0", "/system/bin/wpa_supplicant");
@@ -1409,8 +1481,10 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     @CddTest(requirement="9.7")
     @Test
     public void testPermissionControllerDomain() throws DeviceNotAvailableException {
-        assertExecutableHasDomain("com.google.android.permissioncontroller", "u:r:permissioncontroller_app:s0");
-        assertExecutableHasDomain("com.android.permissioncontroller", "u:r:permissioncontroller_app:s0");
+        assertExecutableHasDomain(
+                "com.google.android.permissioncontroller", "u:r:permissioncontroller_app:s0");
+        assertExecutableHasDomain(
+                "com.android.permissioncontroller", "u:r:permissioncontroller_app:s0");
     }
 
     /* vzwomatrigger may or may not be running */
@@ -1504,7 +1578,6 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
                     + " cmd: " + procTitle;
         }
 
-
         private static void createProcMap(ITestDevice tDevice) throws DeviceNotAvailableException {
 
             /* take the output of a ps -Z to do our analysis */
@@ -1512,9 +1585,13 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
             // TODO: remove "toybox" below and just run "ps"
             tDevice.executeShellCommand("toybox ps -A -o label,user,pid,ppid,cmdline", psOut);
             String psOutString = psOut.getOutput();
-            Pattern p = Pattern.compile(
-                    "^([\\w_:,]+)\\s+([\\w_]+)\\s+(\\d+)\\s+(\\d+)\\s+(\\p{Graph}+)(\\s\\p{Graph}+)*\\s*$"
-            );
+            String pattern =
+                    "^([\\w_:,]+)\\s+" // label
+                            + "([\\w_]+)\\s+" // user
+                            + "(\\d+)\\s+" // pid
+                            + "(\\d+)\\s+" // ppid
+                            + "(\\p{Graph}+)(\\s\\p{Graph}+)*\\s*$"; // cmdline
+            Pattern p = Pattern.compile(pattern);
             procMap = new HashMap<String, ArrayList<ProcessDetails>>();
             exeMap = new HashMap<String, ArrayList<ProcessDetails>>();
             for(String line : psOutString.split("\n")) {

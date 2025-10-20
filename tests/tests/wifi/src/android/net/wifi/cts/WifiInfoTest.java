@@ -171,7 +171,8 @@ public class WifiInfoTest extends WifiJUnit4TestBase{
                 "Wifi not connected - Please ensure there is a saved network in range of this "
                         + "device",
                 WIFI_CONNECT_TIMEOUT_MILLIS,
-                () -> sWifiManager.getConnectionInfo().getNetworkId() != -1);
+                () -> sWifiManager.getConnectionInfo().getSupplicantState()
+                        == SupplicantState.COMPLETED);
 
         // this test case should in Wifi environment
         WifiInfo wifiInfo = sWifiManager.getConnectionInfo();
@@ -180,8 +181,12 @@ public class WifiInfoTest extends WifiJUnit4TestBase{
 
         setWifiEnabled(false);
 
-        PollingCheck.check("getNetworkId not -1", 20000,
-                () -> sWifiManager.getConnectionInfo().getNetworkId() == -1);
+        PollingCheck.check(
+                "getSupplicantState not UNINITIALIZED",
+                20000,
+                () ->
+                        sWifiManager.getConnectionInfo().getSupplicantState()
+                                == SupplicantState.UNINITIALIZED);
 
         PollingCheck.check("getWifiState not disabled", 20000,
                 () -> sWifiManager.getWifiState() == WifiManager.WIFI_STATE_DISABLED);

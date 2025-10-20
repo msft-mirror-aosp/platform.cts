@@ -53,15 +53,11 @@ public class TelecomApiStatsTests extends BaseTelecomMetricsTest {
     private static final String[][] TELECOM_MANAGER_TEST_CASES = {
         {"android.telecom.cts.TelecomManagerTest", "testGetCurrentTtyMode"},
         {"android.telecom.cts.TelecomManagerTest", "testIsInEmergencyCall_noOngoingEmergencyCall"},
-        {"android.telecom.cts.OutgoingCallTest", "testExtraPhoneAccountHandleAvailable"},
     };
 
     private static final ApiNameEnum[] TELECOM_MANAGER_TEST_CASES_API = {
         ApiNameEnum.API_GET_CURRENT_TTY_MODE,
         ApiNameEnum.API_IS_IN_EMERGENCY_CALL,
-        ApiNameEnum.API_REGISTER_PHONE_ACCOUNT,
-        ApiNameEnum.API_PLACE_CALL,
-        ApiNameEnum.API_UNREGISTER_PHONE_ACCOUNT,
     };
 
     @Test

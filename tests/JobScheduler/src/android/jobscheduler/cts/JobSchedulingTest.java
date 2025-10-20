@@ -43,6 +43,7 @@ import android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver;
 import android.os.SystemClock;
 import android.os.Temperature;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
@@ -78,11 +79,12 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
     private static final int JOB_ID = JobSchedulingTest.class.hashCode();
     // The maximum number of jobs that can run concurrently.
     private static final int MAX_JOB_CONTEXTS_COUNT = 64;
+    private static final int MAX_JOBS = 150;
 
     @Override
     @After
     public void tearDown() throws Exception {
-        mJobScheduler.cancel(JOB_ID);
+        mJobScheduler.cancelAll();
         SystemUtil.runShellCommand(getInstrumentation(), "cmd jobscheduler reset-schedule-quota");
         BatteryUtils.runDumpsysBatteryReset();
         AppOpsUtils.setOpMode(MY_PACKAGE, OPSTR_RUN_USER_INITIATED_JOBS, MODE_DEFAULT);
@@ -1036,5 +1038,21 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
                                 + " "
                                 + JOB_ID)
                 .trim();
+    }
+
+    @Test
+    public void testSchedule_jobCountLimit() {
+        for (int i = 0; i <= MAX_JOBS; ++i) {
+            JobInfo job = new JobInfo.Builder(JOB_ID + i, kJobServiceComponent)
+                    .setMinimumLatency(HOUR_IN_MILLIS)
+                    .build();
+            assertThat(mJobScheduler.schedule(job)).isEqualTo(JobScheduler.RESULT_SUCCESS);
+        }
+
+        //TODO(b/439876823): Fix one-off error when checking maxJobs in JobSchedulerService.
+        JobInfo extraJob = new JobInfo.Builder(JOB_ID + MAX_JOBS + 1, kJobServiceComponent)
+                .setMinimumLatency(HOUR_IN_MILLIS)
+                .build();
+        assertThrows(IllegalStateException.class, () -> mJobScheduler.schedule(extraJob));
     }
 }

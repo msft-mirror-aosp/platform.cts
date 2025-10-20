@@ -34,11 +34,10 @@ import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.SlowApiTest
-import com.android.bedstead.harrier.policies.GlobalSecurityLogging
-import com.android.bedstead.harrier.policies.SecurityLogging
+import com.android.bedstead.enterprise.policies.GlobalSecurityLogging
+import com.android.bedstead.enterprise.policies.SecurityLogging
 import com.android.bedstead.multiuser.additionalUser
 import com.android.bedstead.nene.TestApis
-import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.permissions.CommonPermissions
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission

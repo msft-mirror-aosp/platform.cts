@@ -20,6 +20,7 @@ import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrec
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestGenerator;
+import com.android.bedstead.harrier.annotations.meta.BedsteadTest;
 import com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4;
 
 import java.lang.annotation.ElementType;
@@ -39,6 +40,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @RequiresBedsteadJUnit4
 @UsesParameterizedTestGenerator(UsesParameterizedTestGenerator.PERMISSIONS)
+@BedsteadTest
 public @interface PermissionTest {
     /**
      * The permissions which enable the functionality being tested.

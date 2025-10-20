@@ -41,6 +41,7 @@ import com.android.bedstead.remotedpc.RemoteTestApp
 import com.android.bedstead.testapp.TestAppInstance
 import com.android.bedstead.testapp.TestAppProvider
 import com.android.bedstead.testapps.TestAppsComponent
+import com.android.bedstead.testapps.TestAppsComponent.Companion.DELEGATE_KEY
 
 /**
  * Contains Enterprise specific logic for device state tests.
@@ -75,7 +76,7 @@ class EnterpriseComponent(locator: BedsteadServiceLocator) : DeviceStateComponen
                     "(current primary is $primaryPolicyManager)"
         }
         testAppsComponent.ensureTestAppInstalled(
-            EnsureHasDelegate.DELEGATE_KEY,
+            DELEGATE_KEY,
             RemoteDelegate.sTestApp,
             dpc.user()
         )

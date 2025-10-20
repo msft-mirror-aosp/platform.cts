@@ -47,6 +47,9 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <activity android:name="androidx.activity.ComponentActivity"
+            android:configChanges="assetsPaths|uiMode"
+            android:exported="true" />
 
         <service android:name=".NotificationListener"
                  android:exported="true"

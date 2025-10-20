@@ -18,28 +18,26 @@ package android.mediapc.cts.common;
 
 import static android.util.DisplayMetrics.DENSITY_HIGH;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityManager;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.hardware.display.DisplayManager;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecInfo.VideoCapabilities.PerformancePoint;
 import android.media.MediaFormat;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.SystemProperties;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.util.Size;
 import android.view.Display;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.MediaUtils;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -49,113 +47,79 @@ import java.util.stream.Stream;
 
 /** Test utilities. */
 public final class Utils {
-
-    private static final int sDisplayDpi;
-    private static final int sDisplayLongPixel;
-    private static final int sDisplayShortPixel;
-    public static final boolean IS_HDR;
-    public static final float HDR_DISPLAY_AVERAGE_LUMINANCE;
-
-    private static final long sTotalMemoryMb;
-    private static final int sPc;
-
     private static final String TAG = "PerformanceClassTestUtils";
     private static final String MEDIA_PERF_CLASS_KEY = "media-performance-class";
 
-    public static final boolean MEETS_AVC_CODEC_PRECONDITIONS;
-    static {
-        // with a default-media-performance-class that can be configured through a command line
-        // argument.
-        android.os.Bundle args;
+    private static final int sPc = getMpc();
+
+    private static int getMpc() {
+        Bundle bundle = null;
+
         try {
-            args = InstrumentationRegistry.getArguments();
-        } catch (Exception e) {
-            args = null;
+            bundle = InstrumentationRegistry.getArguments();
+        } catch (IllegalStateException ignored) {
+            // Bundle is not guaranteed to be present under all instrumentations.
         }
-        if (args != null) {
-            String mediaPerfClassArg = args.getString(MEDIA_PERF_CLASS_KEY);
-            if (mediaPerfClassArg != null) {
-                Log.d(TAG, "Running the tests with performance class set to " + mediaPerfClassArg);
-                sPc = Integer.parseInt(mediaPerfClassArg);
+
+        String value = null;
+        if (bundle != null) {
+            value = bundle.getString(MEDIA_PERF_CLASS_KEY);
+        }
+
+        int valueInt = 0;
+        if (value != null) {
+            Log.d(TAG, "Running the tests with performance class set to " + value);
+            valueInt = Integer.parseInt(value);
+        } else {
+            if (ApiLevelUtil.isAtLeast(Build.VERSION_CODES.S)) {
+                valueInt = Build.VERSION.MEDIA_PERFORMANCE_CLASS;
             } else {
-                sPc = ApiLevelUtil.isAtLeast(Build.VERSION_CODES.S)
-                        ? Build.VERSION.MEDIA_PERFORMANCE_CLASS
-                        : SystemProperties.getInt("ro.odm.build.media_performance_class", 0);
+                valueInt = SystemProperties.getInt("ro.odm.build.media_performance_class", 0);
             }
-            Log.d(TAG, "performance class is " + sPc);
-        } else {
-            sPc = 0;
         }
-
-        Context context;
-        try {
-            context = InstrumentationRegistry.getInstrumentation().getContext();
-        } catch (Exception e) {
-            context = null;
-        }
-        // When used from ItsService, context will be null
-        if (context != null) {
-            DisplayManager displayManager = context.getSystemService(DisplayManager.class);
-            Display defaultDisplay = displayManager.getDisplay(Display.DEFAULT_DISPLAY);
-            var size = getLargestDisplaySize(displayManager);
-            sDisplayLongPixel = getLongPixels(size);
-            sDisplayShortPixel = getShortPixels(size);
-            sDisplayDpi = getDisplayDpi(context);
-
-            IS_HDR = defaultDisplay.isHdr();
-            HDR_DISPLAY_AVERAGE_LUMINANCE =
-                defaultDisplay.getHdrCapabilities().getDesiredMaxAverageLuminance();
-            sTotalMemoryMb = getTotalMemoryMb(context);
-        } else {
-            sDisplayDpi = 0;
-            sDisplayLongPixel = 0;
-            sDisplayShortPixel = 0;
-            sTotalMemoryMb = 0;
-            IS_HDR = false;
-            HDR_DISPLAY_AVERAGE_LUMINANCE = 0;
-        }
-        MEETS_AVC_CODEC_PRECONDITIONS = meetsAvcCodecPreconditions();
+        return valueInt;
     }
 
-    /** Get the size of the largest display. */
-    public static Size getLargestDisplaySize(DisplayManager displayManager) {
-        Display.Mode maxResolutionDisplayMode = getMaxResolutionDisplayMode(displayManager);
-        int maxWidthPixels = maxResolutionDisplayMode.getPhysicalWidth();
-        int maxHeightPixels = maxResolutionDisplayMode.getPhysicalHeight();
-        return new Size(maxWidthPixels, maxHeightPixels);
+    public static Context getContext() {
+        return InstrumentationRegistry.getInstrumentation().getTargetContext();
     }
 
-    /** Get the max of width and height */
-    public static int getLongPixels(Size s) {
-        return Math.max(s.getWidth(), s.getHeight());
-    }
-
-    /** Get the min of width and height */
-    public static int getShortPixels(Size s) {
-        return Math.min(s.getWidth(), s.getHeight());
-    }
-
-    private static Display.Mode getMaxResolutionDisplayMode(DisplayManager displayManager) {
-        return Arrays.stream(displayManager.getDisplays())
+    public static int getMaxDisplayWidth() {
+        return Arrays.stream(getContext().getSystemService(DisplayManager.class).getDisplays())
                 .map(Display::getSupportedModes)
                 .flatMap(Stream::of)
                 .max(Comparator.comparing(Display.Mode::getPhysicalHeight))
-                .orElseThrow(() -> new RuntimeException("Failed to determine max height"));
+                .orElseThrow(() -> new RuntimeException("Failed to determine max height"))
+                .getPhysicalWidth();
+    }
+
+    public static int getMaxDisplayHeight() {
+        return Arrays.stream(getContext().getSystemService(DisplayManager.class).getDisplays())
+                .map(Display::getSupportedModes)
+                .flatMap(Stream::of)
+                .max(Comparator.comparing(Display.Mode::getPhysicalHeight))
+                .orElseThrow(() -> new RuntimeException("Failed to determine max height"))
+                .getPhysicalHeight();
+    }
+
+    public static int getMaxDisplayDim() {
+        return Math.max(getMaxDisplayWidth(), getMaxDisplayHeight());
+    }
+
+    public static int getMinDisplayDim() {
+        return Math.min(getMaxDisplayWidth(), getMaxDisplayHeight());
     }
 
     /** Get the DPI of the default display or zero if there is none */
-    public static int getDisplayDpi(Context context) {
-        DisplayManager displayManager = context.getSystemService(DisplayManager.class);
-        checkNotNull(displayManager);
-        Display defaultDisplay = displayManager.getDisplay(Display.DEFAULT_DISPLAY);
-        Display.Mode maxResolutionDisplayMode = getMaxResolutionDisplayMode(displayManager);
-        int maxWidthPixels = maxResolutionDisplayMode.getPhysicalWidth();
-        int maxHeightPixels = maxResolutionDisplayMode.getPhysicalHeight();
-
+    public static int getDisplayDpi() {
+        Context ctxt = getContext();
+        Display defaultDisplay =
+                ctxt.getSystemService(DisplayManager.class).getDisplay(Display.DEFAULT_DISPLAY);
+        int maxWidthPixels = getMaxDisplayWidth();
+        int maxHeightPixels = getMaxDisplayHeight();
         int widthPixels = defaultDisplay.getMode().getPhysicalWidth();
         int heightPixels = defaultDisplay.getMode().getPhysicalHeight();
-
-        DisplayMetrics metrics = context.getResources().getDisplayMetrics();
+        DisplayMetrics metrics = ctxt.getResources().getDisplayMetrics();
         final double widthInch = (double) widthPixels / (double) metrics.xdpi;
         final double heightInch = (double) heightPixels / (double) metrics.ydpi;
         final double diagonalInch = Math.sqrt(widthInch * widthInch + heightInch * heightInch);
@@ -164,12 +128,12 @@ public final class Utils {
         // Use max of computed dpi and advertised dpi as these values differ in some devices.
         return Math.max(
                 (int) (maxDiagonalPixels / diagonalInch),
-                context.getResources().getConfiguration().densityDpi);
+                ctxt.getResources().getConfiguration().densityDpi);
     }
 
     /** Get {@link ActivityManager.MemoryInfo#totalMem} in Mb. */
-    public static long getTotalMemoryMb(Context context) {
-        ActivityManager activityManager = context.getSystemService(ActivityManager.class);
+    public static long getTotalMemoryMb() {
+        ActivityManager activityManager = getContext().getSystemService(ActivityManager.class);
         ActivityManager.MemoryInfo memoryInfo = new ActivityManager.MemoryInfo();
         activityManager.getMemoryInfo(memoryInfo);
         return memoryInfo.totalMem / 1024 / 1024;
@@ -208,38 +172,24 @@ public final class Utils {
     private static final int LAST_PERFORMANCE_CLASS = Build.VERSION_CODES.VANILLA_ICE_CREAM;
 
     /**
-     * @deprecated use android.mediapc.cts.common.Preconditions#IS_HANDHELD instead.
+     * Checks if the AVC codec meets the required performance preconditions.
+     *
+     * @param isEncoder True for encoder, false for decoder.
+     * @param width frame width.
+     * @param height frame height.
+     * @param fps frame rate
+     * @param concurrentInstancesCount required concurrent instances
+     * @return True if the codec meets the preconditions, false otherwise.
      */
-    @Deprecated
-    public static boolean isHandheld() {
-        // handheld nature is not exposed to package manager, for now
-        // we check for touchscreen and NOT watch and NOT tv
-        PackageManager pm =
-                InstrumentationRegistry.getInstrumentation().getContext().getPackageManager();
-        return pm.hasSystemFeature(pm.FEATURE_TOUCHSCREEN)
-                && !pm.hasSystemFeature(pm.FEATURE_WATCH)
-                && !pm.hasSystemFeature(pm.FEATURE_TELEVISION)
-                && !pm.hasSystemFeature(pm.FEATURE_AUTOMOTIVE);
-    }
-
-    private static boolean meetsAvcCodecPreconditions(boolean isEncoder) {
-        // Latency tests need the following instances of codecs at 30 fps
-        // 1920x1080 encoder in MediaRecorder for load conditions
-        // 1920x1080 decoder and 1920x1080 encoder for load conditions
-        // 1920x1080 encoder for initialization test
-        // Since there is no way to know if encoder and decoder are supported concurrently at their
-        // maximum load, we will test the above combined requirements are met for both encoder and
-        // decoder (so a minimum of 4 instances required for both encoder and decoder)
-        int minInstancesRequired = 4;
-        int width = 1920;
-        int height = 1080;
-        double fps = 30 /* encoder for media recorder */
-                + 30 /* 1080p decoder for transcoder */
-                + 30 /* 1080p encoder for transcoder */
-                + 30 /* 1080p encoder for latency test */;
-
+    private static boolean meetsAvcCodecPreconditions(boolean isEncoder, int width, int height,
+             double fps, int concurrentInstancesCount) {
         String avcMediaType = MediaFormat.MIMETYPE_VIDEO_AVC;
-        PerformancePoint pp1080p = new PerformancePoint(width, height, (int) fps);
+        // It should be noted that getMaxSupportedInstances() does not make use of the configuration
+        // under test. It is a predefined constant defined in xml. To verify if concurrent instances
+        // of a given configuration are supported, scale the fps such that the performance point is
+        // equivalent to n instances of wxh@fps in terms of throughput.
+        double scaledFps = fps * concurrentInstancesCount;
+        PerformancePoint ppReq = new PerformancePoint(width, height, (int) scaledFps);
         MediaCodec codec;
         try {
             codec = isEncoder ? MediaCodec.createEncoderByType(avcMediaType) :
@@ -260,13 +210,14 @@ public final class Utils {
         }
         boolean supportsRequiredRate = false;
         for (PerformancePoint pp : pps) {
-            if (pp.covers(pp1080p)) {
+            if (pp.covers(ppReq)) {
                 supportsRequiredRate = true;
             }
         }
 
         boolean supportsRequiredSize = caps.getVideoCapabilities().isSizeSupported(width, height);
-        boolean supportsRequiredInstances = caps.getMaxSupportedInstances() >= minInstancesRequired;
+        boolean supportsRequiredInstances =
+                caps.getMaxSupportedInstances() >= concurrentInstancesCount;
         codec.release();
         Log.d(TAG, info.getName() + " supports required FPS : " + supportsRequiredRate
                 + ", supports required size : " + supportsRequiredSize
@@ -274,9 +225,35 @@ public final class Utils {
         return supportsRequiredRate && supportsRequiredSize && supportsRequiredInstances;
     }
 
-    private static boolean meetsAvcCodecPreconditions() {
-        return meetsAvcCodecPreconditions(/* isEncoder */ true)
-                && meetsAvcCodecPreconditions(/* isEncoder */ false);
+    public static boolean meetsAvcCodecPreconditions() {
+        // AVC Codec performance class minimum pre-requisites:
+        //
+        // CDD - [5.1/H-1-2] & [5.1/H-1-4]
+        // - 720@30fps encoding support (6 instances concurrent)
+        // - 720@30fps decoding support (6 instances concurrent)
+        //
+        // CDD - [5.1/H-1-6]
+        // - 720@30fps encoding/decoding support (6 instances concurrent, any combination)
+        //
+        // CDD - [5.1/H-1-7]
+        // Load:
+        // - 1080p@30fps encoding support for video recording session
+        // - 720p@30fps encoding support for video transcoding session
+        // - 1080p@30fps decoding support for video transcoding session
+        // Test:
+        // - 1080p@30fps encoding support for testing initialization latency
+        // - above instances have to be supported concurrently
+        // NOTES: 720p@30fps can be viewed as 0.45 * 1080p@30fps in terms of throughput
+        // [5.1/H-1-7] (viewed alternatively):
+        // - 1080p@73.33fps encoding support
+        // - 1080p@30fps decoding support
+        // CDD - [5.1/H-1-2] & [5.1/H-1-4] (viewed alternatively):
+        // - 1080p@80fps encoding/decoding support
+        // - In terms of throughput, [5.1/H-1-2 or 4 or 6] covers [5.1/H-1-7] as well
+        return meetsAvcCodecPreconditions(/* isEncoder */ true, 1920, 1080, 30, 2)
+                && meetsAvcCodecPreconditions(/* isEncoder */ false, 1920, 1080, 30, 2)
+                && meetsAvcCodecPreconditions(/* isEncoder */ true, 1280, 720, 30, 6)
+                && meetsAvcCodecPreconditions(/* isEncoder */ false, 1280, 720, 30, 6);
     }
 
     public static int getPerfClass() {
@@ -309,20 +286,20 @@ public final class Utils {
 
         // If device doesn't advertise performance class, check if this can be ruled out as a
         // candidate for performance class tests.
-        return isHandheld()
+        return MediaUtils.isHandheld()
                 // Setting the minimum memory to 2.5G so we get statistics on "Mid Tier Devices"
                 // As of 2025 Q1 this is about 80% of daily active devices.
-                && sTotalMemoryMb >= (long) (2.5 * 1024L)
+                && getTotalMemoryMb() >= (long) (2.5 * 1024L)
                 // MPC requires 400 DPI. lowering to HIGH (320) to report statistics on
                 // "mid tier" devices
                 // As of 2025 Q1 this is about 85% of daily active devices.
-                && sDisplayDpi >= DENSITY_HIGH
+                && getDisplayDpi() >= DENSITY_HIGH
                 // MPC requires 1920. lowering to 1280 to report statistics on "mid tier" devices
                 // As of 2025 Q1 this is about 99% of daily active devices.
-                && sDisplayLongPixel >= 1280
+                && getMaxDisplayDim() >= 1280
                 // MPC requires 1080. lowering to 720 to report statistics on "mid tier" devices
                 // As of 2025 Q1 this is about 99% of daily active devices.
-                && sDisplayShortPixel >= 720;
+                && getMinDisplayDim() >= 720;
     }
 
     /**

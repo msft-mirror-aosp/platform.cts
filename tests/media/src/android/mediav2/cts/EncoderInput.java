@@ -16,11 +16,15 @@
 
 package android.mediav2.cts;
 
+import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_Format32bitABGR2101010;
+import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_Format32bitABGR8888;
+import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
 import static android.mediav2.common.cts.CodecEncoderTestBase.audioEncodingToString;
 
 import android.graphics.ImageFormat;
+import android.graphics.PixelFormat;
 import android.media.AudioFormat;
 import android.mediav2.common.cts.EncoderConfigParams;
 import android.mediav2.common.cts.RawResource;
@@ -28,7 +32,6 @@ import android.mediav2.common.cts.RawResource;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Class containing encoder input resources.
@@ -50,6 +53,20 @@ public class EncoderInput {
                     .setDimension(352, 288)
                     .setBytesPerSample(2)
                     .setColorFormat(ImageFormat.YCBCR_P010)
+                    .build();
+    private static final RawResource INPUT_VIDEO_FILE_RGB =
+            new RawResource.Builder()
+                    .setFileName(MEDIA_DIR + "stefan_sif_abgr8888_30fps.raw", false)
+                    .setDimension(352, 240)
+                    .setBytesPerSample(4)
+                    .setColorFormat(PixelFormat.RGBA_8888)
+                    .build();
+    private static final RawResource INPUT_VIDEO_FILE_RGB_HBD =
+            new RawResource.Builder()
+                    .setFileName(MEDIA_DIR + "cosmat_cif_24fps_abgr2101010.raw", false)
+                    .setDimension(352, 288)
+                    .setBytesPerSample(4)
+                    .setColorFormat(PixelFormat.RGBA_1010102)
                     .build();
 
     private static final List<RawResource> INPUT_AUDIO_FILES = new ArrayList<>();
@@ -94,11 +111,30 @@ public class EncoderInput {
                     return res;
                 }
             }
+            for (RawResource res : INPUT_AUDIO_FILES) {
+                if (cfg.mChannelCount == res.mChannelCount && 48000 == res.mSampleRate
+                        && cfg.mPcmEncoding == res.mAudioEncoding) {
+                    return res;
+                }
+            }
+            for (RawResource res : INPUT_AUDIO_FILES) {
+                if (2 == res.mChannelCount && 48000 == res.mSampleRate
+                        && cfg.mPcmEncoding == res.mAudioEncoding) {
+                    return res;
+                }
+            }
+            return null;
         } else {
             if (cfg.mColorFormat == COLOR_FormatYUV420Flexible) {
                 return INPUT_VIDEO_FILE;
             } else if (cfg.mColorFormat == COLOR_FormatYUVP010) {
                 return INPUT_VIDEO_FILE_HBD;
+            } else if (cfg.mColorFormat == COLOR_Format32bitABGR8888
+                    || (cfg.mColorFormat == COLOR_FormatSurface && cfg.mInputBitDepth == 8)) {
+                return INPUT_VIDEO_FILE_RGB;
+            } else if (cfg.mColorFormat == COLOR_Format32bitABGR2101010
+                    || (cfg.mColorFormat == COLOR_FormatSurface && cfg.mInputBitDepth == 10)) {
+                return INPUT_VIDEO_FILE_RGB_HBD;
             }
         }
         return null;

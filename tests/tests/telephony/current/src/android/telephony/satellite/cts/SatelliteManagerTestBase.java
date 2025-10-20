@@ -245,6 +245,18 @@ public class SatelliteManagerTestBase {
             logd("Skipping tests because the device has no active subscription");
             return false;
         }
+
+        // Check if the device has a default SMS app.
+        String defaultSmsApp = null;
+        ComponentName defaultSmsAppComp =
+                SmsApplication.getDefaultSmsApplication(getContext(), false);
+        if (defaultSmsAppComp != null) {
+            defaultSmsApp = defaultSmsAppComp.getPackageName();
+        }
+        if (defaultSmsApp == null) {
+            logd("Skipping tests because the device has no default SMS app");
+            return false;
+        }
         return true;
     }
 
@@ -693,6 +705,9 @@ public class SatelliteManagerTestBase {
         private final Semaphore mSemaphore = new Semaphore(0);
         private final Semaphore mModemOffSemaphore = new Semaphore(0);
         private final Semaphore mModemIdleOrNotConnectedSemaphore = new Semaphore(0);
+        private boolean mIsEmergency = false;
+        private final Object mEmergencyModeLock = new Object();
+        private final Semaphore mEmergencyModeSemaphore = new Semaphore(0);
 
         @Override
         public void onSatelliteModemStateChanged(int state) {
@@ -723,6 +738,34 @@ public class SatelliteManagerTestBase {
                             + "releasing mModemIdleSemaphore, ex=" + ex);
                 }
             }
+        }
+
+        @Override
+        public void onEmergencyModeChanged(boolean isEmergency) {
+            logd("onEmergencyModeChanged: enabled=" + isEmergency);
+            synchronized (mEmergencyModeLock) {
+                mIsEmergency = isEmergency;
+            }
+            try {
+                mEmergencyModeSemaphore.release();
+            } catch (Exception ex) {
+                loge("onEmergencyModeChanged: Got exception, ex=" + ex);
+            }
+        }
+
+        public boolean waitForEmergencyModeChanged(int expectedNumberOfEvents) {
+            for (int i = 0; i < expectedNumberOfEvents; i++) {
+                try {
+                    if (!mEmergencyModeSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                        loge("Timeout to receive onEmergencyModeChanged");
+                        return false;
+                    }
+                } catch (Exception ex) {
+                    loge("onEmergencyModeChanged: Got exception=" + ex);
+                    return false;
+                }
+            }
+            return true;
         }
 
         public boolean waitUntilResult(int expectedNumberOfEvents) {
@@ -789,6 +832,10 @@ public class SatelliteManagerTestBase {
                 mModemOffSemaphore.drainPermits();
                 mModemIdleOrNotConnectedSemaphore.drainPermits();
             }
+            synchronized (mEmergencyModeLock) {
+                logd("onSatelliteModemStateChanged: clearEmergencyModes");
+                mEmergencyModeSemaphore.drainPermits();
+            }
         }
 
         public int getModemState(int index) {
@@ -800,6 +847,12 @@ public class SatelliteManagerTestBase {
                             + ", mModemStates.size=" + mModemStates.size());
                     return -1;
                 }
+            }
+        }
+
+        public boolean getEmergencyMode() {
+            synchronized (mEmergencyModeLock) {
+                return mIsEmergency;
             }
         }
 
@@ -1503,6 +1556,28 @@ public class SatelliteManagerTestBase {
         sSatelliteManager.requestEnabled(
                 new EnableRequestAttributes.Builder(enabled).setDemoMode(demoEnabled).build(),
                 getContext().getMainExecutor(), error::offer);
+        Integer errorCode;
+        try {
+            errorCode = error.poll(TIMEOUT, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException ex) {
+            fail("requestSatelliteEnabled failed with ex=" + ex);
+            return;
+        }
+        logd("requestSatelliteEnabled: errorCode=" + errorCode);
+        assertNotNull(errorCode);
+        assertEquals(expectedError, (long) errorCode);
+    }
+
+    protected static void requestSatelliteEnabledwithEmergencyMode(
+            boolean enabled, boolean demoEnabled, boolean emergencyEnabled, int expectedError) {
+        LinkedBlockingQueue<Integer> error = new LinkedBlockingQueue<>(1);
+        sSatelliteManager.requestEnabled(
+                new EnableRequestAttributes.Builder(enabled)
+                        .setDemoMode(demoEnabled)
+                        .setEmergencyMode(emergencyEnabled)
+                        .build(),
+                getContext().getMainExecutor(),
+                error::offer);
         Integer errorCode;
         try {
             errorCode = error.poll(TIMEOUT, TimeUnit.MILLISECONDS);
@@ -3228,6 +3303,22 @@ public class SatelliteManagerTestBase {
 
     protected static void setUpSatelliteAccessAllowedAtDefaultTestLocation() {
         logd("setUpSatelliteAccessAllowedAtDefaultTestLocation...");
+        if (!isSatelliteSupported()) {
+            logd("setUpSatelliteAccessAllowedAtDefaultTestLocation: satellite is not supported");
+            SatelliteSupportedStateCallbackTest satelliteSupportedStateCallbackTest =
+                new SatelliteSupportedStateCallbackTest();
+            /* Register callback for satellite supported state changed event */
+            @SatelliteManager.SatelliteResult int registerError =
+                    sSatelliteManager.registerForSupportedStateChanged(
+                            getContext().getMainExecutor(), satelliteSupportedStateCallbackTest);
+            assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerError);
+            assertTrue(satelliteSupportedStateCallbackTest.waitUntilResult(1));
+
+            if (!satelliteSupportedStateCallbackTest.isSupported) {
+                assertTrue(satelliteSupportedStateCallbackTest.waitUntilResult(1));
+                assertTrue(satelliteSupportedStateCallbackTest.isSupported);
+            }
+        }
         assertTrue(sMockSatelliteServiceManager
                 .setIsSatelliteCommunicationAllowedForCurrentLocationCache("disable"));
         assertTrue(sMockSatelliteServiceManager.setCountryCodes(false, "US", null, null, 0));

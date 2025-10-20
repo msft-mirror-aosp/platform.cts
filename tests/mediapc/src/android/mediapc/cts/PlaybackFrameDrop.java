@@ -17,27 +17,26 @@
 package android.mediapc.cts;
 
 import static android.mediapc.cts.FrameDropTestBase.DECODE_31S;
+import static android.mediav2.common.cts.CodecTestBase.areFormatsSupported;
 
 import android.media.MediaCodec;
-import android.media.MediaExtractor;
 import android.media.MediaFormat;
-import android.util.Pair;
 import android.view.Surface;
 
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
 /**
  * The following class calculates the frame drops for the given array of testFiles playback.
  * It will do playback for at least 30 seconds worth of input data or for utmost 31 seconds.
  * If input reaches eos, it will rewind the input to start position.
  */
-public class PlaybackFrameDrop extends CodecDecoderTestBase {
+public class PlaybackFrameDrop extends CodecDecoderPerformanceClassTestBase {
     private static final int AV1_INITIAL_DELAY = 8;
-    private final String mDecoderName;
     private final String[] mTestFiles;
     private final long mEachFrameTimeIntervalUs;
     private final boolean mIsAsync;
@@ -133,9 +132,11 @@ public class PlaybackFrameDrop extends CodecDecoderTestBase {
 
     PlaybackFrameDrop(String mediaType, String decoderName, String[] testFiles, Surface surface,
             int frameRate, boolean isAsync) {
-        super(mediaType, null);
-        mDecoderName = decoderName;
-        mTestFiles = testFiles;
+        super(mediaType, null, decoderName);
+        mTestFiles = new String[testFiles.length];
+        for (int i = 0; i < testFiles.length; i++) {
+            mTestFiles[i] = MEDIA_DIR + testFiles[i];
+        }
         mSurface = surface;
         mEachFrameTimeIntervalUs = 1000000 / frameRate;
         mIsAsync = isAsync;
@@ -144,7 +145,6 @@ public class PlaybackFrameDrop extends CodecDecoderTestBase {
         mMaxPts = 0;
         mSampleIndex = 0;
         mFrameDropCount = 0;
-        mBufferInfos = new ArrayList<>();
         // When testing AV1, because of super frames, we allow initial few frames to be delayed.
         mInitialDelay = mediaType.equals(MediaFormat.MIMETYPE_VIDEO_AV1) ? AV1_INITIAL_DELAY : 0;
         // Decode for 30 seconds
@@ -153,87 +153,19 @@ public class PlaybackFrameDrop extends CodecDecoderTestBase {
         mThread = new Thread(mOutputHandler);
     }
 
-    private MediaFormat createInputList(MediaFormat format, ByteBuffer buffer,
-            ArrayList<MediaCodec.BufferInfo> list, int offset, long ptsOffset) {
-        int csdBuffersSize = 0;
-        if (hasCSD(format)) {
-            MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
-            bufferInfo.offset = offset;
-            bufferInfo.size = 0;
-            bufferInfo.presentationTimeUs = 0;
-            bufferInfo.flags = MediaCodec.BUFFER_FLAG_CODEC_CONFIG;
-            for (int i = 0; ; i++) {
-                String csdKey = "csd-" + i;
-                if (format.containsKey(csdKey)) {
-                    ByteBuffer csdBuffer = format.getByteBuffer(csdKey);
-                    bufferInfo.size += csdBuffer.limit();
-                    buffer.put(csdBuffer);
-                    format.removeKey(csdKey);
-                } else break;
-            }
-            list.add(bufferInfo);
-            offset += bufferInfo.size;
-        }
-        while (true) {
-            MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
-            bufferInfo.size = mExtractor.readSampleData(buffer, offset);
-            if (bufferInfo.size < 0) {
-                break;
-            }
-            bufferInfo.offset = offset;
-            bufferInfo.presentationTimeUs = ptsOffset + mExtractor.getSampleTime();
-            mInputMaxPtsUs = Math.max(mInputMaxPtsUs, bufferInfo.presentationTimeUs);
-            int flags = mExtractor.getSampleFlags();
-            bufferInfo.flags = 0;
-            if ((flags & MediaExtractor.SAMPLE_FLAG_SYNC) != 0) {
-                bufferInfo.flags |= MediaCodec.BUFFER_FLAG_KEY_FRAME;
-            }
-            list.add(bufferInfo);
-            mExtractor.advance();
-            offset += bufferInfo.size;
-        }
-        buffer.clear();
-        buffer.position(offset);
-        return format;
-    }
-
-    public ArrayList<MediaFormat> setUpSourceFiles() throws Exception {
-        ArrayList<MediaFormat> formats = new ArrayList<>();
-        for (String file : mTestFiles) {
-            formats.add(setUpSource(file));
-            mExtractor.release();
-        }
-        int totalSize = 0;
-        for (String srcFile : mTestFiles) {
-            File file = new File(mInpPrefix + srcFile);
-            totalSize += (int) file.length();
-        }
-        totalSize <<= 1;
-        long ptsOffset = 0;
-        int buffOffset = 0;
-        mBuffer = ByteBuffer.allocate(totalSize);
-        for (String file : mTestFiles) {
-            formats.add(createInputList(setUpSource(file), mBuffer, mBufferInfos, buffOffset,
-                    ptsOffset));
-            mExtractor.release();
-            ptsOffset = mInputMaxPtsUs + 1000000L;
-            buffOffset = (mBufferInfos.get(mBufferInfos.size() - 1).offset) +
-                    (mBufferInfos.get(mBufferInfos.size() - 1).size);
-        }
-        return formats;
-    }
-
     public int getFrameDropCount() throws Exception {
-        ArrayList<MediaFormat> formats = setUpSourceFiles();
+        APBTestInputData testInput = prepareInputList(Arrays.asList(mTestFiles), mMediaType);
+        mBuffer = testInput.mByteBuffer;
+        mBufferInfos = (ArrayList<MediaCodec.BufferInfo>) testInput.mInfoList;
 
         // If the decoder doesn't support the formats, then return Integer.MAX_VALUE to indicate
         // that all frames were dropped
-        if (!areFormatsSupported(mDecoderName, formats)) {
+        if (!areFormatsSupported(mCodecName, mMediaType, testInput.mFormats)) {
             return Integer.MAX_VALUE;
         }
 
-        mCodec = MediaCodec.createByCodecName(mDecoderName);
-        configureCodec(formats.get(0), mIsAsync, false, false);
+        mCodec = MediaCodec.createByCodecName(mCodecName);
+        configureCodec(testInput.mFormats.get(0), mIsAsync, false, false);
         mThread.start();
         mCodec.start();
         mDecodeStartTimeMs = System.currentTimeMillis();
@@ -248,7 +180,7 @@ public class PlaybackFrameDrop extends CodecDecoderTestBase {
     }
 
     @Override
-    void enqueueInput(int bufferIndex) {
+    protected void enqueueInput(int bufferIndex) {
         if (mSampleIndex >= mBufferInfos.size() ||
                 // Decode for mMaxNumFrames samples or for utmost 31 seconds
                 mInputCount >= mMaxNumFrames ||

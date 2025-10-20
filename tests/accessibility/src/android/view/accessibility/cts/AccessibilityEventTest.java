@@ -31,6 +31,7 @@ import android.accessibility.cts.common.InstrumentedAccessibilityServiceTestRule
 import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.content.Context;
+import android.graphics.Typeface;
 import android.os.Message;
 import android.os.Parcel;
 import android.os.SystemClock;
@@ -128,6 +129,8 @@ public class AccessibilityEventTest {
                                             mParentView = new EventReportingLinearLayout(activity);
                                             mChildView = new View(activity);
                                             mTextView = new TextView(activity);
+                                            mTextView.setTypeface(
+                                                    Typeface.create("roboto", Typeface.NORMAL));
                                             grandparent.addView(mParentView);
                                             mParentView.addView(mChildView);
                                             mParentView.addView(mTextView);
@@ -372,6 +375,133 @@ public class AccessibilityEventTest {
                         DEFAULT_TIMEOUT_MS);
         assertThat(awaitedEvent.getContentChangeTypes())
                 .isEqualTo(AccessibilityEvent.CONTENT_CHANGE_TYPE_SORT_DIRECTION);
+    }
+
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityEvent#setTextChangeTypes",
+                "android.view.accessibility.AccessibilityEvent#getTextChangeTypes",
+                "android.view.accessibility.AccessibilityEvent#TEXT_CHANGE_TYPE_UNDEFINED"
+            })
+    @RequiresFlagsEnabled(Flags.FLAG_A11Y_TEXT_CHANGE_TYPES_API)
+    public void testTextChangeTypeUndefinedEvent() throws Throwable {
+        final AccessibilityEvent awaitedEvent =
+                sUiAutomation.executeAndWaitForEvent(
+                        () -> {
+                            AccessibilityEvent event =
+                                    new AccessibilityEvent(
+                                            AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED);
+                            mChildView.sendAccessibilityEventUnchecked(event);
+                        },
+                        event -> event.getEventType() == AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED,
+                        DEFAULT_TIMEOUT_MS);
+        assertThat(awaitedEvent.getTextChangeTypes())
+                .isEqualTo(AccessibilityEvent.TEXT_CHANGE_TYPE_UNDEFINED);
+    }
+
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityEvent#setTextChangeTypes",
+                "android.view.accessibility.AccessibilityEvent#getTextChangeTypes",
+                "android.view.accessibility.AccessibilityEvent#TEXT_CHANGE_TYPE_IN_COMPOSITION"
+            })
+    @RequiresFlagsEnabled(Flags.FLAG_A11Y_TEXT_CHANGE_TYPES_API)
+    public void testTextChangeTypeInCompositionEvent() throws Throwable {
+        final AccessibilityEvent awaitedEvent =
+                sUiAutomation.executeAndWaitForEvent(
+                        () -> {
+                            AccessibilityEvent event =
+                                    new AccessibilityEvent(
+                                            AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED);
+                            event.setTextChangeTypes(
+                                    AccessibilityEvent.TEXT_CHANGE_TYPE_IN_COMPOSITION);
+                            mChildView.sendAccessibilityEventUnchecked(event);
+                        },
+                        event -> event.getEventType() == AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED,
+                        DEFAULT_TIMEOUT_MS);
+        assertThat(awaitedEvent.getTextChangeTypes())
+                .isEqualTo(AccessibilityEvent.TEXT_CHANGE_TYPE_IN_COMPOSITION);
+    }
+
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityEvent#setTextChangeTypes",
+                "android.view.accessibility.AccessibilityEvent#getTextChangeTypes",
+                "android.view.accessibility.AccessibilityEvent#TEXT_CHANGE_TYPE_COMMITTED_BY_IME"
+            })
+    @RequiresFlagsEnabled(Flags.FLAG_A11Y_TEXT_CHANGE_TYPES_API)
+    public void testTextChangeTypeCommittedByIMEEvent() throws Throwable {
+        final AccessibilityEvent awaitedEvent =
+                sUiAutomation.executeAndWaitForEvent(
+                        () -> {
+                            AccessibilityEvent event =
+                                    new AccessibilityEvent(
+                                            AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED);
+                            event.setTextChangeTypes(
+                                    AccessibilityEvent.TEXT_CHANGE_TYPE_COMMITTED_BY_IME);
+                            mChildView.sendAccessibilityEventUnchecked(event);
+                        },
+                        event -> event.getEventType() == AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED,
+                        DEFAULT_TIMEOUT_MS);
+        assertThat(awaitedEvent.getTextChangeTypes())
+                .isEqualTo(AccessibilityEvent.TEXT_CHANGE_TYPE_COMMITTED_BY_IME);
+    }
+
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityEvent#setTextChangeTypes",
+                "android.view.accessibility.AccessibilityEvent#getTextChangeTypes",
+                "android.view.accessibility.AccessibilityEvent"
+                        + "#TEXT_CHANGE_TYPE_CONVERSION_SUGGESTION_SELECTED_BY_IME"
+            })
+    @RequiresFlagsEnabled(Flags.FLAG_A11Y_TEXT_CHANGE_TYPES_API)
+    public void testTextChangeTypeConversionSuggestionSelectedByIMEEvent() throws Throwable {
+        final int textChangeType =
+                AccessibilityEvent.TEXT_CHANGE_TYPE_CONVERSION_SUGGESTION_SELECTED_BY_IME;
+        final AccessibilityEvent awaitedEvent =
+                sUiAutomation.executeAndWaitForEvent(
+                        () -> {
+                            AccessibilityEvent event =
+                                    new AccessibilityEvent(
+                                            AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED);
+                            event.setTextChangeTypes(textChangeType);
+                            mChildView.sendAccessibilityEventUnchecked(event);
+                        },
+                        event -> event.getEventType() == AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED,
+                        DEFAULT_TIMEOUT_MS);
+        assertThat(awaitedEvent.getTextChangeTypes()).isEqualTo(textChangeType);
+    }
+
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityEvent#setTextChangeTypes",
+                "android.view.accessibility.AccessibilityEvent#getTextChangeTypes",
+                "android.view.accessibility.AccessibilityEvent#TEXT_CHANGE_TYPE_IN_COMPOSITION",
+                "android.view.accessibility.AccessibilityEvent"
+                        + "#TEXT_CHANGE_TYPE_CONVERSION_SUGGESTION_SELECTED_BY_IME"
+            })
+    @RequiresFlagsEnabled(Flags.FLAG_A11Y_TEXT_CHANGE_TYPES_API)
+    public void testTextChangeMultipleTypesEvent() throws Throwable {
+        final int textChangeTypes =
+                AccessibilityEvent.TEXT_CHANGE_TYPE_IN_COMPOSITION
+                        | AccessibilityEvent.TEXT_CHANGE_TYPE_CONVERSION_SUGGESTION_SELECTED_BY_IME;
+        final AccessibilityEvent awaitedEvent =
+                sUiAutomation.executeAndWaitForEvent(
+                        () -> {
+                            AccessibilityEvent event =
+                                    new AccessibilityEvent(
+                                            AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED);
+                            event.setTextChangeTypes(textChangeTypes);
+                            mChildView.sendAccessibilityEventUnchecked(event);
+                        },
+                        event -> event.getEventType() == AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED,
+                        DEFAULT_TIMEOUT_MS);
+        assertThat(awaitedEvent.getTextChangeTypes()).isEqualTo(textChangeTypes);
     }
 
     @Test

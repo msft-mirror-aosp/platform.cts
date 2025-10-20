@@ -32,6 +32,8 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
+import android.Manifest;
+import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorSpace;
@@ -44,6 +46,8 @@ import android.hardware.DisplayLuts;
 import android.hardware.HardwareBuffer;
 import android.hardware.LutProperties;
 import android.hardware.SyncFence;
+import android.hardware.display.DisplayManager;
+import android.hardware.display.VirtualDisplay;
 import android.media.Image;
 import android.media.ImageReader;
 import android.media.ImageWriter;
@@ -61,12 +65,15 @@ import android.view.SurfaceHolder;
 import android.view.cts.surfacevalidator.ASurfaceControlTestActivity;
 import android.view.cts.surfacevalidator.ASurfaceControlTestActivity.PixelChecker;
 import android.view.cts.surfacevalidator.ASurfaceControlTestActivity.RectChecker;
+import android.view.cts.surfacevalidator.ASurfaceControlTestActivity2;
 import android.view.cts.surfacevalidator.PixelColor;
+import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.annotation.NonNull;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.filters.LargeTest;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.WidgetTestUtils;
 import com.android.cts.hardware.SyncFenceUtil;
@@ -132,6 +139,12 @@ public class SurfaceControlTest {
     @Rule
     public TestName mName = new TestName();
 
+    @Rule
+    public VirtualDeviceRule mVirtualDeviceRule =
+            VirtualDeviceRule.withAdditionalPermissions(Manifest.permission.ACCESS_SURFACE_FLINGER);
+
+    private VirtualDevice mVirtualDevice;
+
     private ASurfaceControlTestActivity mActivity;
 
     private long mDesiredPresentTimeNanos;
@@ -140,6 +153,7 @@ public class SurfaceControlTest {
     public void setup() throws InterruptedException {
         mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
         assertTrue("Window did not become visible", waitForWindowOnTop(mActivity.getWindow()));
+        mVirtualDevice = mVirtualDeviceRule.createManagedVirtualDevice();
     }
 
     SurfaceControl getHostSurfaceControl() {
@@ -151,7 +165,7 @@ public class SurfaceControlTest {
     ///////////////////////////////////////////////////////////////////////////
 
     private abstract class BasicSurfaceHolderCallback implements SurfaceHolder.Callback {
-        private final Set<SurfaceControl> mSurfaceControls = new HashSet<>();
+        protected Set<SurfaceControl> mSurfaceControls = new HashSet<>();
         private final Set<HardwareBuffer> mBuffers = new HashSet<>();
 
         @Override
@@ -2756,5 +2770,170 @@ public class SurfaceControlTest {
                     }
                 }
         );
+    }
+
+    @Test
+    @ApiTest(
+            apis = {
+                "android.companion.virtual.VirtualDeviceManager#createVirtualDisplay",
+                "android.view.SurfaceControl.Transaction#setExtendedRangeBrightness",
+                "android.view.Display#getHdrSdrRatio"
+            })
+    @RequiresFlagsEnabled(com.android.graphics.surfaceflinger.flags.Flags.FLAG_MD_DEGRADE_HDR)
+    public void testHdrSdrRatioLimitedWhenMirroringToSdrDisplay() throws Exception {
+        mActivity.awaitReadyState();
+        Display display = mActivity.getDisplay();
+        assumeTrue("Device does not support HDR", display.isHdrSdrRatioAvailable());
+
+        // Set a low brightness to allow the HDR/Sdr ratio to ramp up
+        mActivity.getWindow().getAttributes().screenBrightness = 0.01f;
+        WidgetTestUtils.runOnMainAndDrawSync(mActivity.getParentFrameLayout(), () -> {});
+
+        final CountDownLatch readyFence = new CountDownLatch(1);
+        AtomicReference<SurfaceControl> surfaceControlRef = new AtomicReference<>();
+        final int extendedDataspace =
+                DataSpace.pack(
+                        DataSpace.STANDARD_BT709,
+                        DataSpace.TRANSFER_SRGB,
+                        DataSpace.RANGE_EXTENDED);
+        final HardwareBuffer buffer =
+                getSolidBuffer(DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT, Color.WHITE);
+
+        ASurfaceControlTestActivity.SurfaceHolderCallback surfaceHolderCallback =
+                new ASurfaceControlTestActivity.SurfaceHolderCallback(
+                        new BasicSurfaceHolderCallback() {
+                            @Override
+                            public void surfaceCreated(SurfaceHolder holder) {
+                                SurfaceControl surfaceControl = createFromWindow(holder);
+                                surfaceControlRef.set(surfaceControl);
+                                new SurfaceControl.Transaction()
+                                        .setBuffer(surfaceControl, buffer)
+                                        .setDataSpace(surfaceControl, extendedDataspace)
+                                        .setExtendedRangeBrightness(surfaceControl, 3.f, 3.f)
+                                        .apply();
+                            }
+                        },
+                        readyFence,
+                        mActivity.getParentFrameLayout().getRootSurfaceControl());
+        mActivity.createSurface(surfaceHolderCallback);
+
+        assertTrue("timeout", readyFence.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));
+        // Wait for ratio to go up
+        float initialHdrSdrRatio = getStableHdrSdrRatio(display);
+        assumeTrue(
+                "Failed to enable HDR. Ratio is: " + initialHdrSdrRatio, initialHdrSdrRatio > 1.0f);
+
+        VirtualDisplay virtualDisplay =
+                mVirtualDeviceRule.createManagedVirtualDisplayWithFlags(
+                        mVirtualDevice, DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC);
+        assertNotNull(virtualDisplay);
+
+        float limitedRatio = getStableHdrSdrRatio(display);
+        assertEquals("HDR/SDR ratio was not limited to 1.0", 1.0f, limitedRatio, 0.01f);
+    }
+
+    @Test
+    @ApiTest(
+            apis = {
+                "android.companion.virtual.VirtualDeviceManager#createVirtualDisplay",
+                "android.view.SurfaceControl.Transaction#setExtendedRangeBrightness",
+                "android.view.Display#getHdrSdrRatio"
+            })
+    @RequiresFlagsEnabled(com.android.graphics.surfaceflinger.flags.Flags.FLAG_MD_DEGRADE_HDR)
+    public void testHdrSdrRatioNotLimitedWhenProjectingToSdrDisplay() throws Exception {
+        mActivity.awaitReadyState();
+        Display display = mActivity.getDisplay();
+        assumeTrue("Device does not support HDR", display.isHdrSdrRatioAvailable());
+
+        // Set a low brightness to allow the HDR/Sdr ratio to ramp up
+        mActivity.getWindow().getAttributes().screenBrightness = 0.01f;
+        WidgetTestUtils.runOnMainAndDrawSync(mActivity.getParentFrameLayout(), () -> {});
+
+        final CountDownLatch readyFence = new CountDownLatch(1);
+        AtomicReference<SurfaceControl> surfaceControlRef = new AtomicReference<>();
+        final int extendedDataspace =
+                DataSpace.pack(
+                        DataSpace.STANDARD_BT709,
+                        DataSpace.TRANSFER_SRGB,
+                        DataSpace.RANGE_EXTENDED);
+        final HardwareBuffer buffer =
+                getSolidBuffer(DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT, Color.WHITE);
+
+        ASurfaceControlTestActivity.SurfaceHolderCallback surfaceHolderCallback =
+                new ASurfaceControlTestActivity.SurfaceHolderCallback(
+                        new BasicSurfaceHolderCallback() {
+                            @Override
+                            public void surfaceCreated(SurfaceHolder holder) {
+                                SurfaceControl surfaceControl = createFromWindow(holder);
+                                surfaceControlRef.set(surfaceControl);
+                                new SurfaceControl.Transaction()
+                                        .setBuffer(surfaceControl, buffer)
+                                        .setDataSpace(surfaceControl, extendedDataspace)
+                                        .setExtendedRangeBrightness(surfaceControl, 3.f, 3.f)
+                                        .apply();
+                            }
+                        },
+                        readyFence,
+                        mActivity.getParentFrameLayout().getRootSurfaceControl());
+        mActivity.createSurface(surfaceHolderCallback);
+
+        assertTrue("timeout", readyFence.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));
+        // Wait for ratio to go up
+        float initialHdrSdrRatio = getStableHdrSdrRatio(display);
+        assumeTrue(
+                "Failed to enable HDR. Ratio is: " + initialHdrSdrRatio, initialHdrSdrRatio > 1.0f);
+
+        VirtualDisplay virtualDisplay =
+                mVirtualDeviceRule.createManagedVirtualDisplay(
+                        mVirtualDeviceRule.createManagedVirtualDevice(),
+                        VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder());
+        ASurfaceControlTestActivity2 projectedActivity =
+                (ASurfaceControlTestActivity2)
+                        mVirtualDeviceRule.startActivityOnDisplaySync(
+                                virtualDisplay, ASurfaceControlTestActivity2.class);
+
+        final CountDownLatch readyFenceTwo = new CountDownLatch(1);
+        AtomicReference<SurfaceControl> surfaceControlRefTwo = new AtomicReference<>();
+        final int extendedDataspaceTwo =
+                DataSpace.pack(
+                        DataSpace.STANDARD_BT709,
+                        DataSpace.TRANSFER_SRGB,
+                        DataSpace.RANGE_EXTENDED);
+        final HardwareBuffer bufferTwo =
+                getSolidBuffer(DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT, Color.WHITE);
+
+        ASurfaceControlTestActivity.SurfaceHolderCallback surfaceHolderCallbackTwo =
+                new ASurfaceControlTestActivity.SurfaceHolderCallback(
+                        new BasicSurfaceHolderCallback() {
+                            @Override
+                            public void surfaceCreated(SurfaceHolder holder) {
+                                assertNotNull("No parent?", projectedActivity.getSurfaceControl());
+                                SurfaceControl surfaceControl =
+                                        new SurfaceControl.Builder()
+                                                .setParent(projectedActivity.getSurfaceControl())
+                                                .setName("SurfaceControl_create")
+                                                .setHidden(false)
+                                                .build();
+                                mSurfaceControls.add(surfaceControl);
+                                surfaceControlRefTwo.set(surfaceControl);
+                                new SurfaceControl.Transaction()
+                                        .setBuffer(surfaceControl, bufferTwo)
+                                        .setDataSpace(surfaceControl, extendedDataspaceTwo)
+                                        .setExtendedRangeBrightness(surfaceControl, 3.f, 3.f)
+                                        .apply();
+                            }
+                        },
+                        readyFenceTwo,
+                        projectedActivity.getParentFrameLayout().getRootSurfaceControl());
+        projectedActivity.createSurface(surfaceHolderCallbackTwo);
+
+        assertTrue("timeout", readyFenceTwo.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));
+
+        float limitedRatio = getStableHdrSdrRatio(display);
+        assertTrue(
+                "Projecting content should not impact the main display's HDR capabilities. Ratio"
+                        + " is: "
+                        + limitedRatio,
+                limitedRatio > 1.0f);
     }
 }

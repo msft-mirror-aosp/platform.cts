@@ -60,7 +60,6 @@ open class UninstallTestBase {
         const val RECEIVER_ACTION: String = "android.packageinstaller.emptytestapp.cts.action"
         const val APP_OP_STR: String = "REQUEST_DELETE_PACKAGES"
 
-        const val FIND_OBJECT_TIMEOUT: Long = 1000
         const val TIMEOUT_MS: Long = 30000
 
         lateinit var context: Context
@@ -117,13 +116,18 @@ open class UninstallTestBase {
         context.unregisterReceiver(receiver)
     }
 
+    /**
+     * Wait for the device idle.
+     */
+    fun waitForUiIdle() {
+        // Make sure the application is idle and input windows is up-to-date.
+        instrumentation.uiAutomation.syncInputTransactions()
+        uiDevice.waitForIdle()
+    }
+
     @Throws(Exception::class)
     fun clickInstallerButton() {
-        // Wait for a minimum 2000ms and maximum 10000ms for the UI to become idle.
-        instrumentation.uiAutomation.waitForIdle(
-            (2 * FIND_OBJECT_TIMEOUT),
-            (10 * FIND_OBJECT_TIMEOUT)
-        )
+        waitForUiIdle()
 
         val buttonSelector = By.text(
             Pattern.compile(
@@ -195,7 +199,7 @@ open class UninstallTestBase {
     @JvmOverloads
     @Throws(RemoteException::class)
     fun startUninstall(intent: Intent = getUninstallIntent()) {
-        uiDevice.waitForIdle()
+        waitForUiIdle()
         // wake up the screen
         uiDevice.wakeUp()
         // Key event from UiDevice can be sent to a different display that isn't the target display
@@ -216,13 +220,13 @@ open class UninstallTestBase {
             sendKeyEvent(KeyEvent.KEYCODE_HOME)
         }
         // Wait for device idle
-        uiDevice.waitForIdle()
+        waitForUiIdle()
 
         Log.d(LOG_TAG, "sending uninstall intent (" + intent + ") on user " + context.user)
         context.startActivity(intent)
 
         // wait for device idle
-        uiDevice.waitForIdle()
+        waitForUiIdle()
     }
 
     fun getUninstallIntent(): Intent {

@@ -35,7 +35,7 @@ import android.media.MediaFormat;
 import android.media.cts.MediaCodecAsyncHelper;
 import android.media.cts.MediaCodecBlockModelHelper;
 import android.media.cts.TestArgs;
-import android.mediav2.common.cts.OutputManager;
+import android.media.cts.TestUtils;
 import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
@@ -174,7 +174,7 @@ public class EncoderBlockModelTest {
                                     false /* graphic */, outputTimestampList));
             if (result == MediaCodecBlockModelHelper.Result.SUCCESS) {
                 StringBuilder msg = new StringBuilder();
-                boolean isOk = OutputManager.isPtsStrictlyIncreasing(
+                boolean isOk = TestUtils.isPtsStrictlyIncreasing(
                         new ArrayList<Long>(outputTimestampList), -1L, msg);
                 assertTrue(msg.toString(), isOk);
             }
@@ -214,6 +214,11 @@ public class EncoderBlockModelTest {
             usage |= HardwareBuffer.USAGE_CPU_WRITE_OFTEN;
             if (mediaCodec.getCodecInfo().isHardwareAccelerated()) {
                 usage |= HardwareBuffer.USAGE_VIDEO_ENCODE;
+                // the internal color format of apv encode is 10 bit 422. hw components seem to use
+                // gpu acceleration for converting 420 8-bit input to desired internal color format
+                if (mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_APV)) {
+                    usage |= HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE;
+                }
             }
             if (!HardwareBuffer.isSupported(
                     kWidth, kHeight, HardwareBuffer.YCBCR_420_888, 1 /* layer */, usage)) {

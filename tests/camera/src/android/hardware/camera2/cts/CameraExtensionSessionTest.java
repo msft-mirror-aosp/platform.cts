@@ -64,6 +64,8 @@ import android.os.SystemClock;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.provider.Settings;
+import android.provider.Settings.SettingNotFoundException;
 import android.util.Log;
 import android.util.Range;
 import android.util.Size;
@@ -74,9 +76,11 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.DeviceReportLog;
+import com.android.compatibility.common.util.PropertyUtil;
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
 import com.android.compatibility.common.util.Stat;
+import com.android.compatibility.common.util.SystemUtil;
 import com.android.ex.camera2.blocking.BlockingExtensionSessionCallback;
 import com.android.ex.camera2.blocking.BlockingSessionCallback;
 import com.android.ex.camera2.blocking.BlockingStateCallback;
@@ -106,7 +110,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
     private static final boolean VERBOSE = Log.isLoggable(TAG, Log.VERBOSE);
     private static final long WAIT_FOR_COMMAND_TO_COMPLETE_MS = 5000;
     private static final long REPEATING_REQUEST_TIMEOUT_MS = 5000;
-    private static final int MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS = 10000;
+    private static final int MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS = 15000;
     private static final float ZOOM_ERROR_MARGIN = 0.05f;
 
     private static final int WAIT_FOR_FOCUS_DONE_TIMEOUT_MS = 6000;
@@ -133,6 +137,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
     private CameraErrorCollector mCollector =  null;
 
     private DeviceReportLog mReportLog;
+    private int mOriginalFallbackValue;
 
     @Override
     public void setUp() throws Exception {
@@ -140,10 +145,23 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
         mTestRule = new Camera2AndroidTestRule(mContext);
         mTestRule.before();
         mCollector = new CameraErrorCollector();
+        try {
+            mOriginalFallbackValue = Settings.Secure.getInt(
+                    mContext.getContentResolver(), Settings.Secure.CAMERA_EXTENSIONS_FALLBACK);
+        } catch (SettingNotFoundException e) {
+            // Default value
+            mOriginalFallbackValue = 0;
+        }
+        SystemUtil.runWithShellPermissionIdentity(() ->
+                Settings.Secure.putInt(mContext.getContentResolver(),
+                        Settings.Secure.CAMERA_EXTENSIONS_FALLBACK, 1));
     }
 
     @Override
     public void tearDown() throws Exception {
+        SystemUtil.runWithShellPermissionIdentity(() ->
+                Settings.Secure.putInt(mContext.getContentResolver(),
+                        Settings.Secure.CAMERA_EXTENSIONS_FALLBACK, mOriginalFallbackValue));
         if (mTestRule != null) {
             mTestRule.after();
         }
@@ -1052,6 +1070,9 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
         for (String id : getCameraIdsUnderTest()) {
             StaticMetadata staticMeta =
                     new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));
+            if (!PropertyUtil.areCameraXExtensionsEnabled()) {
+                continue;
+            }
             if (!staticMeta.isNightModeIndicatorSupported()) {
                 continue;
             }

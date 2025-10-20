@@ -66,7 +66,7 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
     @Test
     @AppModeFull(reason = "instant applications cannot be granted INTERACT_ACROSS_USERS")
     public void testPackageListCrossUserGrant() throws Exception {
-        if (!mSupportsMultiUser) {
+        if (!mSupportsSecondaryUsers) {
             return;
         }
 
@@ -93,7 +93,7 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
     @Test
     @AppModeFull(reason = "instant applications cannot see any other application")
     public void testPackageListCrossUserNoGrant() throws Exception {
-        if (!mSupportsMultiUser) {
+        if (!mSupportsSecondaryUsers) {
             return;
         }
 
@@ -120,7 +120,7 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
     @Test
     @AppModeFull(reason = "instant applications cannot be granted INTERACT_ACROSS_USERS")
     public void testPackageListOtherUserCrossUserGrant() throws Exception {
-        if (!mSupportsMultiUser) {
+        if (!mSupportsSecondaryUsers) {
             return;
         }
 
@@ -144,7 +144,7 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
     @Test
     @AppModeFull(reason = "instant applications cannot see any other application")
     public void testPackageListOtherUserCrossUserNoGrant() throws Exception {
-        if (!mSupportsMultiUser) {
+        if (!mSupportsSecondaryUsers) {
             return;
         }
 
@@ -168,7 +168,7 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
     @Test
     @AppModeFull(reason = "instant applications cannot be granted INTERACT_ACROSS_USERS")
     public void testApplicationListCrossUserGrant() throws Exception {
-        if (!mSupportsMultiUser) {
+        if (!mSupportsSecondaryUsers) {
             return;
         }
 
@@ -195,7 +195,7 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
     @Test
     @AppModeFull(reason = "instant applications cannot see any other application")
     public void testApplicationListCrossUserNoGrant() throws Exception {
-        if (!mSupportsMultiUser) {
+        if (!mSupportsSecondaryUsers) {
             return;
         }
 
@@ -222,7 +222,7 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
     @Test
     @AppModeFull(reason = "instant applications cannot be granted INTERACT_ACROSS_USERS")
     public void testApplicationListOtherUserCrossUserGrant() throws Exception {
-        if (!mSupportsMultiUser) {
+        if (!mSupportsSecondaryUsers) {
             return;
         }
 
@@ -246,7 +246,7 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
     @Test
     @AppModeFull(reason = "instant applications cannot see any other application")
     public void testApplicationListOtherUserCrossUserNoGrant() throws Exception {
-        if (!mSupportsMultiUser) {
+        if (!mSupportsSecondaryUsers) {
             return;
         }
 
@@ -270,7 +270,7 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
     @Test
     @AppModeFull(reason = "instant applications cannot be granted INTERACT_ACROSS_USERS")
     public void testGetPackagesForUidCrossUserGrant() throws Exception {
-        if (!mSupportsMultiUser) {
+        if (!mSupportsSecondaryUsers) {
             return;
         }
 
@@ -300,7 +300,7 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
     @Test
     @AppModeFull(reason = "instant applications cannot see any other application")
     public void testGetPackagesForUidCrossUserNoGrant() throws Exception {
-        if (!mSupportsMultiUser) {
+        if (!mSupportsSecondaryUsers) {
             return;
         }
 
@@ -330,7 +330,7 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
     @Test
     @AppModeFull(reason = "instant applications cannot be granted INTERACT_ACROSS_USERS")
     public void testGetPackageUidCrossUserGrant() throws Exception {
-        if (!mSupportsMultiUser) {
+        if (!mSupportsSecondaryUsers) {
             return;
         }
 
@@ -362,7 +362,7 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
     @Test
     @AppModeFull(reason = "instant applications cannot see any other application")
     public void testGetPackageUidCrossUserNoGrant() throws Exception {
-        if (!mSupportsMultiUser) {
+        if (!mSupportsSecondaryUsers) {
             return;
         }
 
@@ -394,7 +394,7 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
     @Test
     @AppModeFull(reason = "instant applications cannot be granted INTERACT_ACROSS_USERS")
     public void testGetPackageGidsCrossUserGrant() throws Exception {
-        if (!mSupportsMultiUser) {
+        if (!mSupportsSecondaryUsers) {
             return;
         }
 
@@ -426,7 +426,7 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
     @Test
     @AppModeFull(reason = "instant applications cannot see any other application")
     public void testGetPackageGidsCrossUserNoGrant() throws Exception {
-        if (!mSupportsMultiUser) {
+        if (!mSupportsSecondaryUsers) {
             return;
         }
 

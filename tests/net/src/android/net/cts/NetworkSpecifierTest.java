@@ -20,13 +20,13 @@ import static com.android.net.thread.platform.flags.Flags.FLAG_THREAD_MOBILE_ENA
 
 import static org.junit.Assert.assertEquals;
 
-import android.content.pm.PackageManager;
 import android.net.NetworkCapabilities;
 import android.net.NetworkSpecifier;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
-import com.android.testutils.ConnectivityModuleTest;
 import com.android.testutils.DevSdkIgnoreRule;
 import com.android.testutils.DevSdkIgnoreRunner;
 
@@ -36,6 +36,9 @@ import org.junit.runner.RunWith;
 
 @RunWith(DevSdkIgnoreRunner.class)
 public final class NetworkSpecifierTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Rule public DevSdkIgnoreRule mIgnoreRule = new DevSdkIgnoreRule();
 
     private static final class TestNetworkSpecifier extends NetworkSpecifier {}

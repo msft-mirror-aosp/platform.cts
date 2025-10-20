@@ -97,7 +97,7 @@ public class BaseAppVerifier {
     public static final PhoneAccountHandle MANAGED_HANDLE_1 =
             new PhoneAccountHandle(MANAGED_APP_CN, MANAGED_APP_ID);
 
-    private static final PhoneAccount MANAGED_DEFAULT_ACCOUNT_1 =
+    public static final PhoneAccount MANAGED_DEFAULT_ACCOUNT_1 =
             PhoneAccount.builder(MANAGED_HANDLE_1, MANAGED_APP_LABEL)
                     .setAddress(Uri.parse(MANAGED_ADDRESS))
                     .setSubscriptionAddress(Uri.parse(MANAGED_ADDRESS))
@@ -106,7 +106,9 @@ public class BaseAppVerifier {
                                     /* needed in order to be default sub */
                                     | PhoneAccount.CAPABILITY_CALL_PROVIDER
                                     /* needed to place ECC */
-                                    | PhoneAccount.CAPABILITY_PLACE_EMERGENCY_CALLS)
+                                    | PhoneAccount.CAPABILITY_PLACE_EMERGENCY_CALLS
+                                    /* needed for supporting holding ECC */
+                                    | PhoneAccount.CAPABILITY_SIM_SUBSCRIPTION)
                     .setHighlightColor(Color.RED)
                     .addSupportedUriScheme(PhoneAccount.SCHEME_SIP)
                     .addSupportedUriScheme(PhoneAccount.SCHEME_TEL)
@@ -140,7 +142,9 @@ public class BaseAppVerifier {
                                     /* needed in order to be default sub */
                                     | PhoneAccount.CAPABILITY_CALL_PROVIDER
                                     /* needed to place ECC */
-                                    | PhoneAccount.CAPABILITY_PLACE_EMERGENCY_CALLS)
+                                    | PhoneAccount.CAPABILITY_PLACE_EMERGENCY_CALLS
+                                    /* needed for supporting holding ECC */
+                                    | PhoneAccount.CAPABILITY_SIM_SUBSCRIPTION)
                     .setHighlightColor(Color.RED)
                     .addSupportedUriScheme(PhoneAccount.SCHEME_SIP)
                     .addSupportedUriScheme(PhoneAccount.SCHEME_TEL)
@@ -308,6 +312,11 @@ public class BaseAppVerifier {
         mBaseAppVerifierImpl.setConnectionPropertiesOnCall(appControl, callId, properties);
     }
 
+    public int getAudioProcessingUseCase(AppControlWrapper appControl, String callId)
+        throws Exception {
+        return mBaseAppVerifierImpl.getAudioProcessingUseCase(appControl, callId);
+    }
+
     public String addOutgoingCallAndVerify(AppControlWrapper appControl)
             throws Exception {
         CallAttributes outgoingAttributes = mBaseAppVerifierImpl.getRandomAttributes(
@@ -394,16 +403,12 @@ public class BaseAppVerifier {
         return mBaseAppVerifierImpl.addAndGetNewCall(appControl, attributes, idToExclude, consumer);
     }
 
-    public void addOutgoingCallAndVerifyFailure(AppControlWrapper appControl) throws Exception {
+    public void addOutgoingCallAndVerifyFailure(AppControlWrapper appControl, Bundle extras)
+            throws Exception {
         CallAttributes outgoingAttributes =
                 mBaseAppVerifierImpl.getRandomAttributes(
                         appControl.getTelecomApps(), true /*isOutgoing*/, true /* isHoldable */);
-        mBaseAppVerifierImpl.addCallAndVerifyFailure(appControl, outgoingAttributes);
-    }
-
-    public void addOutgoingCallAndVerifyFailure(
-            AppControlWrapper appControl, CallAttributes attributes) throws Exception {
-        mBaseAppVerifierImpl.addCallAndVerifyFailure(appControl, attributes);
+        mBaseAppVerifierImpl.addCallAndVerifyFailure(appControl, outgoingAttributes, extras);
     }
 
     public void addFailedCallWithCreateConnectionVerify(

@@ -55,7 +55,6 @@ import android.graphics.Rect;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.view.KeyEvent;
@@ -79,7 +78,6 @@ import com.android.cts.backportedfixes.BackportedFixRule;
 import com.android.cts.backportedfixes.BackportedFixTest;
 import com.android.cts.input.FailOnTestThreadRule;
 import com.android.cts.input.inputeventmatchers.InputEventMatchersKt;
-import com.android.window.flags.Flags;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -205,7 +203,6 @@ public class ASurfaceControlInputReceiverTest {
         assertMotionEventOnWindowCenter(motionEvents, bounds);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
     @Test
     public void testTransferGestureFromHostToEmbedded() throws InterruptedException {
         LocalSurfaceControlInputReceiverHelper helper = new LocalSurfaceControlInputReceiverHelper(
@@ -248,7 +245,6 @@ public class ASurfaceControlInputReceiverTest {
         assertMotionEventOnWindowCenter(embeddedMotionEvent, bounds);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
     @Test
     public void testTransferGestureFromHostToEmbeddedRemote()
             throws InterruptedException, RemoteException {
@@ -288,7 +284,6 @@ public class ASurfaceControlInputReceiverTest {
         assertMotionEventOnWindowCenter(embeddedMotionEvents, bounds);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
     @Test
     public void testTransferGestureFromEmbeddedToHost() throws InterruptedException {
         LocalSurfaceControlInputReceiverHelper helper = new LocalSurfaceControlInputReceiverHelper(
@@ -329,7 +324,6 @@ public class ASurfaceControlInputReceiverTest {
         assertMotionEventOnWindowCenter(hostMotionEvent, bounds);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
     @Test
     public void testTransferGestureFromEmbeddedToHostRemote()
             throws InterruptedException, RemoteException {

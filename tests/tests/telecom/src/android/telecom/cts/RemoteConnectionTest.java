@@ -45,8 +45,6 @@ import android.telephony.NetworkRegistrationInfo;
 import android.telephony.ServiceState;
 import android.view.Surface;
 
-import com.android.server.telecom.flags.Flags;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -1540,9 +1538,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     private void verifyRemoteConnectionRequestTelecomCallId() {
-        if (Flags.setRemoteConnectionCallId()) {
-            assertNotNull(CtsRemoteConnectionService.getConnectionRequest());
-            assertNotNull(CtsRemoteConnectionService.getConnectionRequest().getTelecomCallId());
-        }
+        assertNotNull(CtsRemoteConnectionService.getConnectionRequest());
+        assertNotNull(CtsRemoteConnectionService.getConnectionRequest().getTelecomCallId());
     }
 }

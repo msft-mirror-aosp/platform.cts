@@ -47,16 +47,14 @@ public class AppSecurityPreparer implements ITargetPreparer, ITargetCleaner, ITe
         // best shot at creating the users we need below.
         removeExtraUsers(device);
 
-        int maxUsers = device.getMaxNumberOfUsersSupported();
-        CLog.d("setUp(): maxUsers=%d, currentUser=%d", maxUsers, device.getCurrentUser());
         try {
-            if (maxUsers > 1) {
+            if (device.getRemainingCreatableUserCount("android.os.usertype.full.SECONDARY") > 0) {
                 String name = "CTS_User1_" + System.nanoTime();
                 int userId = device.createUser(name);
                 CLog.logAndDisplay(
                         LogLevel.INFO, "Created 1st user (id=%d, name=%s)", userId, name);
             }
-            if (maxUsers > 2) {
+            if (device.getRemainingCreatableUserCount("android.os.usertype.full.SECONDARY") > 0) {
                 String name = "CTS_User2_" + System.nanoTime();
                 int userId = device.createUser(name);
                 CLog.logAndDisplay(

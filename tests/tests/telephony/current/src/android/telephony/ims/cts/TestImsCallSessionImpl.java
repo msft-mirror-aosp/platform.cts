@@ -403,6 +403,11 @@ public class TestImsCallSessionImpl extends ImsCallSessionImplBase {
                     Log.d(LOG_TAG, "invokeTransferred");
                     mListener.callSessionTransferred();
                     mIsTransferResultNotified = true;
+                    // The transferor call had to be terminated in order to
+                    // mimic network behavior after the call transfer
+                    mListener.callSessionTerminated(getReasonInfo(
+                        ImsReasonInfo.CODE_LOCAL_CALL_DECLINE, ImsReasonInfo.CODE_UNSPECIFIED));
+                    setState(ImsCallSessionImplBase.State.TERMINATED);
                 } catch (Throwable t) {
                     Throwable cause = t.getCause();
                     if (t instanceof DeadObjectException
@@ -434,6 +439,21 @@ public class TestImsCallSessionImpl extends ImsCallSessionImplBase {
                 }
             }
         });
+    }
+
+    @Override
+    public void transfer(String number, boolean isConfirmationRequired) {
+        if(!isConfirmationRequired) {
+            // The transferor call had to be terminated in order to
+            // mimic network behavior after the call transfer
+            mListener.callSessionTerminated(getReasonInfo(
+                        ImsReasonInfo.CODE_LOCAL_CALL_DECLINE, ImsReasonInfo.CODE_UNSPECIFIED));
+            setState(ImsCallSessionImplBase.State.TERMINATED);
+            return;
+        }
+
+        ImsCallSessionImplBase nullSession = null;
+        transfer(nullSession);
     }
 
     @Override

@@ -37,6 +37,7 @@
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>
     <uses-permission android:name="android.permission.BODY_SENSORS"/>
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE"/>
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.CAPTURE_VIDEO_OUTPUT"/>
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
@@ -3027,20 +3028,6 @@
                        android:value="android.hardware.type.television:android.software.leanback" />
         </activity>
 -->
-        <activity android:name=".p2p.P2pTestListActivity"
-                android:label="@string/p2p_test"
-                android:exported="true"
-                android:configChanges="keyboardHidden|orientation|screenSize">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.cts.intent.category.MANUAL_TEST" />
-            </intent-filter>
-            <meta-data android:name="test_category" android:value="@string/test_category_networking" />
-            <meta-data android:name="test_required_features" android:value="android.hardware.wifi.direct" />
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="NonApiTest" android:value="Helper class. List test activities" />
-        </activity>
 
         <activity android:name=".managedprovisioning.RecentsRedactionActivity"
                 android:label="@string/provisioning_byod_recents" >
@@ -3767,162 +3754,6 @@
                        |android.net.wifi.WifiManager#removeNetworkSuggestions
                        |android.net.wifi.WifiManager#removeSuggestionConnectionStatusListener
                        |android.net.wifi.WifiManager#addSuggestionConnectionStatusListener" />
-        </activity>
-
-        <activity android:name=".p2p.GoNegRequesterTestListActivity"
-                android:label="@string/p2p_go_neg_requester"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="NonApiTest" android:value="Helper class. List test activities" />
-        </activity>
-
-        <activity android:name=".p2p.GoNegRequesterTestActivity"
-                android:label="@string/p2p_go_neg_requester"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                    android:value="android.net.wifi.p2p.WifiP2pManager#connect|android.net.wifi.p2p.WifiP2pManager#discoverPeers" />
-        </activity>
-
-        <activity android:name=".p2p.GoNegResponderTestActivity"
-                android:label="@string/p2p_go_neg_responder"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                    android:value="android.net.wifi.p2p.WifiP2pManager#discoverPeers" />
-        </activity>
-
-        <activity android:name=".p2p.P2pClientTestListActivity"
-                android:label="@string/p2p_join_go"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="NonApiTest" android:value="Helper class. List test activities" />
-        </activity>
-
-        <activity android:name=".p2p.P2pClientTestActivity"
-                android:label="@string/p2p_join_go"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                    android:value="android.net.wifi.p2p.WifiP2pManager#connect|android.net.wifi.p2p.WifiP2pManager#discoverPeers" />
-        </activity>
-
-        <activity android:name=".p2p.GoTestActivity"
-                android:label="@string/p2p_accept_client"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                    android:value="android.net.wifi.p2p.WifiP2pManager#createGroup|android.net.wifi.p2p.WifiP2pManager#removeGroup" />
-        </activity>
-
-        <activity android:name=".p2p.P2pClientWithConfigTestListActivity"
-                android:label="@string/p2p_join_go"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="NonApiTest" android:value="Helper class. List test activities" />
-        </activity>
-
-        <activity android:name=".p2p.P2pClientWithConfig2gBandTestListActivity"
-                android:label="@string/p2p_join_go"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="NonApiTest" android:value="Helper class. List test activities" />
-        </activity>
-
-        <activity android:name=".p2p.P2pClientWithConfigFixedFrequencyTestListActivity"
-                android:label="@string/p2p_join_go"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="NonApiTest" android:value="Helper class. List test activities" />
-        </activity>
-
-        <activity android:name=".p2p.P2pClientWithConfigTestActivity"
-                android:label="@string/p2p_join_go"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                    android:value="android.net.wifi.p2p.WifiP2pManager#connect|android.net.wifi.p2p.WifiP2pManager#discoverPeers" />
-        </activity>
-
-        <activity android:name=".p2p.P2pClientWithConfig2gBandTestActivity"
-                android:label="@string/p2p_join_go"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                    android:value="android.net.wifi.p2p.WifiP2pManager#connect|android.net.wifi.p2p.WifiP2pManager#discoverPeers" />
-        </activity>
-
-        <activity android:name=".p2p.P2pClientWithConfigFixedFrequencyTestActivity"
-                android:label="@string/p2p_join_go"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                    android:value="android.net.wifi.p2p.WifiP2pManager#connect|android.net.wifi.p2p.WifiP2pManager#discoverPeers" />
-        </activity>
-
-        <activity android:name=".p2p.GoWithConfigTestActivity"
-                android:label="@string/p2p_accept_client"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                    android:value="android.net.wifi.p2p.WifiP2pManager#createGroup|android.net.wifi.p2p.WifiP2pManager#removeGroup" />
-        </activity>
-
-        <activity android:name=".p2p.GoWithConfig2gBandTestActivity"
-                android:label="@string/p2p_accept_client"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                    android:value="android.net.wifi.p2p.WifiP2pManager#createGroup|android.net.wifi.p2p.WifiP2pManager#removeGroup" />
-        </activity>
-
-        <activity android:name=".p2p.GoWithConfigFixedFrequencyTestActivity"
-                android:label="@string/p2p_accept_client"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                    android:value="android.net.wifi.p2p.WifiP2pManager#createGroup|android.net.wifi.p2p.WifiP2pManager#removeGroup" />
-        </activity>
-
-        <activity android:name=".p2p.ServiceRequesterTestListActivity"
-                android:label="@string/p2p_service_discovery_requester"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="NonApiTest" android:value="Helper class. List test activities" />
-        </activity>
-
-        <activity android:name=".p2p.ServiceRequesterTestActivity"
-                android:label="@string/p2p_service_discovery_requester"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                    android:value="android.net.wifi.p2p.WifiP2pManager#discoverServices|android.net.wifi.p2p.WifiP2pManager#addServiceRequest|android.net.wifi.p2p.WifiP2pManager#setUpnpServiceResponseListener|android.net.wifi.p2p.WifiP2pManager#setDnsSdResponseListeners|android.net.wifi.p2p.WifiP2pManager#removeServiceRequest|android.net.wifi.p2p.WifiP2pManager#clearServiceRequests" />
-        </activity>
-
-        <activity android:name=".p2p.ServiceResponderTestActivity"
-                android:label="@string/p2p_service_discovery_responder"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                    android:value="android.net.wifi.p2p.WifiP2pManager#addLocalService" />
         </activity>
 
         <!--            CTS Verifier Presence Test Top Screen -->
@@ -6179,100 +6010,6 @@
             </intent-filter>
         </service>
 
-        <activity
-            android:name=".telecom.EnablePhoneAccountTestActivity"
-                android:exported="true"
-            android:label="@string/telecom_enable_phone_account_test">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.cts.intent.category.MANUAL_TEST"/>
-            </intent-filter>
-
-            <meta-data
-                android:name="test_category"
-                android:value="@string/test_category_telecom"/>
-            <meta-data
-                android:name="test_required_features"
-                android:value="android.hardware.telephony"/>
-            <meta-data
-                android:name="test_required_configs"
-                android:value="config_voice_capable"/>
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="test_excluded_features"
-                       android:value="android.hardware.type.watch" />
-        </activity>
-
-        <activity
-            android:name=".telecom.OutgoingCallTestActivity"
-                android:exported="true"
-            android:label="@string/telecom_outgoing_call_test">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.cts.intent.category.MANUAL_TEST"/>
-            </intent-filter>
-
-            <meta-data
-                android:name="test_category"
-                android:value="@string/test_category_telecom"/>
-            <meta-data
-                android:name="test_required_features"
-                android:value="android.hardware.telephony"/>
-            <meta-data
-                android:name="test_required_configs"
-                android:value="config_voice_capable"/>
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="test_excluded_features"
-                       android:value="android.hardware.type.watch" />
-            </activity>
-
-        <activity
-            android:name=".telecom.SelfManagedIncomingCallTestActivity"
-                android:exported="true"
-            android:label="@string/telecom_incoming_self_mgd_test">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.cts.intent.category.MANUAL_TEST"/>
-            </intent-filter>
-
-            <meta-data
-                android:name="test_category"
-                android:value="@string/test_category_telecom"/>
-            <meta-data
-                android:name="test_required_features"
-                android:value="android.hardware.telephony"/>
-            <meta-data
-                android:name="test_required_configs"
-                android:value="config_voice_capable"/>
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-        </activity>
-
-        <activity
-            android:name=".telecom.IncomingCallTestActivity"
-                android:exported="true"
-            android:label="@string/telecom_incoming_call_test">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.cts.intent.category.MANUAL_TEST"/>
-            </intent-filter>
-
-            <meta-data
-                android:name="test_category"
-                android:value="@string/test_category_telecom"/>
-            <meta-data
-                android:name="test_required_features"
-                android:value="android.hardware.telephony"/>
-            <meta-data
-                android:name="test_required_configs"
-                android:value="config_voice_capable"/>
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="test_excluded_features"
-                       android:value="android.hardware.type.watch" />
-        </activity>
-
         <activity android:name=".telecom.CallSwitchingAudioTestActivity"
                   android:exported="true"
                   android:label="@string/telecom_audio_call_test">
@@ -6726,6 +6463,115 @@
                 android:value="android.hardware.type.watch" />
         </activity>
 
+        <activity android:name=".sharesheet.SharesheetInteractiveChooserActivity"
+            android:exported="true"
+            android:label="@string/sharesheet_interactive_chooser_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+
+            <meta-data
+                android:name="test_category"
+                android:value="@string/category_sharesheet" />
+            <meta-data
+                android:name="ApiTest"
+                android:value="android.service.chooser.ChooserManager#startSession
+                |android.service.chooser.ChooserManager#getSession
+                |android.service.chooser.ChooserSession#addStateListener
+                |android.service.chooser.ChooserSession#endSession
+                |android.service.chooser.ChooserSession#getToken
+                |android.service.chooser.ChooserSession.StateListener#onStateChanged
+                |android.service.chooser.ChooserSession.StateListener#onBoundsChanged" />
+            <meta-data android:name="display_mode" android:value="single_display_mode" />
+            <meta-data android:name="test_excluded_features"
+                android:value="android.hardware.type.watch:android.hardware.type.television:android.hardware.type.automotive" />
+        </activity>
+
+        <!-- aliases -->
+        <!-- The six SharesheetInteractiveChooserActivity activity aliases below are used as a predictable set of Chooser targets
+         for the test (i.e. the package manager will return at least 6 targets for this action and category pair).
+         The number of targets is a heuristic (based on the AOSP implementation) to possibly make Chooser be scrollable up. -->
+        <activity-alias
+            android:name=".sharesheet.InteractiveTestTarget1"
+            android:targetActivity=".sharesheet.SharesheetInteractiveChooserActivity"
+            android:enabled="true"
+            android:exported="true"
+            android:label="Target 1">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="com.android.cts.verifier.sharesheet.TEST_CATEGORY" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="test/interactive-chooser-boundary" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".sharesheet.InteractiveTestTarget2"
+            android:targetActivity=".sharesheet.SharesheetInteractiveChooserActivity"
+            android:enabled="true"
+            android:exported="true"
+            android:label="Target 2">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="com.android.cts.verifier.sharesheet.TEST_CATEGORY" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="test/interactive-chooser-boundary" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".sharesheet.InteractiveTestTarget3"
+            android:targetActivity=".sharesheet.SharesheetInteractiveChooserActivity"
+            android:enabled="true"
+            android:exported="true"
+            android:label="Target 3">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="com.android.cts.verifier.sharesheet.TEST_CATEGORY" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="test/interactive-chooser-boundary" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".sharesheet.InteractiveTestTarget4"
+            android:targetActivity=".sharesheet.SharesheetInteractiveChooserActivity"
+            android:enabled="true"
+            android:exported="true"
+            android:label="Target 4">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="com.android.cts.verifier.sharesheet.TEST_CATEGORY" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="test/interactive-chooser-boundary" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".sharesheet.InteractiveTestTarget5"
+            android:targetActivity=".sharesheet.SharesheetInteractiveChooserActivity"
+            android:enabled="true"
+            android:exported="true"
+            android:label="Target 5">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="com.android.cts.verifier.sharesheet.TEST_CATEGORY" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="test/interactive-chooser-boundary" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".sharesheet.InteractiveTestTarget6"
+            android:targetActivity=".sharesheet.SharesheetInteractiveChooserActivity"
+            android:enabled="true"
+            android:exported="true"
+            android:label="Target 6">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="com.android.cts.verifier.sharesheet.TEST_CATEGORY" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="test/interactive-chooser-boundary" />
+            </intent-filter>
+        </activity-alias>
+        <!-- /aliases -->
+
         <provider
             android:authorities="com.android.cts.verifier.sharesheet.images"
             android:name=".sharesheet.SharesheetTestImageProvider"
@@ -6817,6 +6663,11 @@
             <meta-data android:name="NonApiTest"
                 android:value="Helper class. Used to test location attack on camera intents." />
         </activity>
+
+        <!-- Disable Automotive density scaling -->
+        <meta-data
+            android:name="android.software.car.display_compatibility"
+            android:value="false" />
     </application>
 
     <queries>

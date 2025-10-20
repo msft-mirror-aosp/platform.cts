@@ -78,6 +78,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -118,6 +119,7 @@ import java.util.stream.Stream;
 public abstract class CodecTestBase {
     public static final boolean IS_Q = ApiLevelUtil.getApiLevel() == Build.VERSION_CODES.Q;
     public static final boolean IS_AT_LEAST_R = ApiLevelUtil.isAtLeast(Build.VERSION_CODES.R);
+    public static final boolean IS_AT_LEAST_S = ApiLevelUtil.isAtLeast(Build.VERSION_CODES.S);
     public static final boolean IS_AT_LEAST_T =
             ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU);
     public static final boolean IS_AT_LEAST_U =
@@ -125,34 +127,31 @@ public abstract class CodecTestBase {
     public static final boolean IS_BEFORE_U = !IS_AT_LEAST_U;
     public static final boolean IS_AT_LEAST_V =
             ApiLevelUtil.isAtLeast(Build.VERSION_CODES.VANILLA_ICE_CREAM);
-    //TODO(b/248315681) Change to a proper condition
-    public static final boolean IS_AT_LEAST_B =
-            ApiLevelUtil.isAfter(Build.VERSION_CODES.VANILLA_ICE_CREAM)
-                || ApiLevelUtil.codenameEquals("Baklava");
+    public static final boolean IS_AT_LEAST_B = ApiLevelUtil.isAtLeast(Build.VERSION_CODES.BAKLAVA);
+    public static final boolean IS_AFTER_B = ApiLevelUtil.isAfter(Build.VERSION_CODES.BAKLAVA);
     public static final boolean FIRST_SDK_IS_AT_LEAST_T =
             ApiLevelUtil.isFirstApiAtLeast(Build.VERSION_CODES.TIRAMISU);
     public static final boolean FIRST_SDK_IS_AT_LEAST_V =
             ApiLevelUtil.isFirstApiAtLeast(Build.VERSION_CODES.VANILLA_ICE_CREAM);
-    public static final boolean VNDK_IS_AT_LEAST_T =
-            SystemProperties.getInt("ro.vndk.version", Build.VERSION_CODES.CUR_DEVELOPMENT)
-                    >= Build.VERSION_CODES.TIRAMISU;
+    public static final int BOARD_API_LEVEL =
+            SystemProperties.getInt("ro.board.api_level", Build.VERSION_CODES.CUR_DEVELOPMENT);
+    public static final int VNDK_VERSION =
+            SystemProperties.getInt("ro.vndk.version", BOARD_API_LEVEL);
+    public static final boolean VNDK_IS_AT_LEAST_T = VNDK_VERSION >= Build.VERSION_CODES.TIRAMISU;
     public static final boolean VNDK_IS_AT_LEAST_U =
-            SystemProperties.getInt("ro.vndk.version", Build.VERSION_CODES.CUR_DEVELOPMENT)
-                    >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+            VNDK_VERSION >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
     public static final boolean VNDK_IS_BEFORE_U =
-            SystemProperties.getInt("ro.vndk.version", Build.VERSION_CODES.CUR_DEVELOPMENT)
-                    < Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+            VNDK_VERSION < Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
     public static final boolean VNDK_IS_AT_MOST_U =
-            SystemProperties.getInt("ro.vndk.version", Build.VERSION_CODES.CUR_DEVELOPMENT)
-                    <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+            VNDK_VERSION <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
     public static final boolean BOARD_SDK_IS_AT_LEAST_T =
-            SystemProperties.getInt("ro.board.api_level", Build.VERSION_CODES.CUR_DEVELOPMENT)
-                    >= Build.VERSION_CODES.TIRAMISU;
+            BOARD_API_LEVEL >= Build.VERSION_CODES.TIRAMISU;
     public static final boolean BOARD_SDK_IS_BEFORE_U =
-            SystemProperties.getInt("ro.board.api_level", Build.VERSION_CODES.CUR_DEVELOPMENT)
-                    < Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+            BOARD_API_LEVEL < Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
     public static final int ANDROID_VENDOR_API_202404 = 202404;
     public static final int ANDROID_VENDOR_API_202504 = 202504;
+    public static final boolean BOARD_SDK_IS_AFTER_202504 =
+            SystemProperties.getInt("ro.board.api_level", 0) > ANDROID_VENDOR_API_202504;
     // ro.vendor.api_level is guaranteed to be set on devices running in Android T and above,
     // so using a default of 0 when not defined is safe to detect devices launching with 202404.
     // These tests run on older versions where ro.vendor.api_level is not defined. So this
@@ -189,6 +188,7 @@ public abstract class CodecTestBase {
     public static final HashMap<String, int[]> PROFILE_HLG_MAP = new HashMap<>();
     public static final HashMap<String, int[]> PROFILE_HDR10_MAP = new HashMap<>();
     public static final HashMap<String, int[]> PROFILE_HDR10_PLUS_MAP = new HashMap<>();
+    public static final HashMap<String, int[]> PROFILE_DOLBY_HDR_MAP = new HashMap<>();
     public static final HashMap<String, int[]> PROFILE_HDR_MAP = new HashMap<>();
     public static final boolean ENABLE_LOGS = false;
     public static final int PER_TEST_TIMEOUT_LARGE_TEST_MS = 300000;
@@ -202,6 +202,14 @@ public abstract class CodecTestBase {
     public static final String INVALID_CODEC = "unknown.codec_";
     public static final String MIMETYPE_VIDEO_VC1 = "video/wvc1";
     public static final String MIMETYPE_VIDEO_WMV = "video/x-ms-wmv";
+    // Arrays,
+    // <MEDIATYPE>_PROFILES contains all profiles of that media type
+    // <MEDIATYPE>_SDR_PROFILES contains all sdr profiles of that media type
+    // <MEDIATYPE>_HLG_PROFILES contains all hlg profiles of that media type
+    // <MEDIATYPE>_HDR10_PROFILES contains all hdr10 profiles of that media type
+    // <MEDIATYPE>_HDR10_PLUS_PROFILES contains all hdr10+ profiles of that media type
+    // <MEDIATYPE>_HDR_PROFILES = <MEDIATYPE>_[HLG + HDR10 + HDR10_PLUS]_PROFILES
+    // <MEDIATYPE>_PROFILES = <MEDIATYPE>_[SDR + HDR]_PROFILES
     static final int[] MPEG2_PROFILES = new int[]{MPEG2ProfileSimple, MPEG2ProfileMain,
             MPEG2Profile422, MPEG2ProfileSNR, MPEG2ProfileSpatial, MPEG2ProfileHigh};
     static final int[] MPEG4_PROFILES = new int[]{MPEG4ProfileSimple, MPEG4ProfileSimpleScalable,
@@ -257,6 +265,12 @@ public abstract class CodecTestBase {
             AACObjectLD, AACObjectELD, AACObjectXHE};
     static final int[] AC4_PROFILES =
             new int[]{AC4Profile00, AC4Profile10, AC4Profile11, AC4Profile21, AC4Profile22};
+    static final int[] IAMF_PROFILES =
+            {IAMFProfileSimpleOpus, IAMFProfileSimpleAac, IAMFProfileSimpleFlac,
+                    IAMFProfileSimplePcm, IAMFProfileBaseOpus, IAMFProfileBaseAac,
+                    IAMFProfileBaseFlac, IAMFProfileBasePcm, IAMFProfileBaseEnhancedOpus,
+                    IAMFProfileBaseEnhancedAac, IAMFProfileBaseEnhancedFlac,
+                    IAMFProfileBaseEnhancedPcm};
 
     public static final int MAX_DISPLAY_HEIGHT_CURRENT =
             Arrays.stream(getContext().getSystemService(DisplayManager.class).getDisplays())
@@ -451,6 +465,7 @@ public abstract class CodecTestBase {
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("mpeg4", MediaFormat.MIMETYPE_VIDEO_MPEG4);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("h263", MediaFormat.MIMETYPE_VIDEO_H263);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("mpeg2", MediaFormat.MIMETYPE_VIDEO_MPEG2);
+        CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("dolbyvision", MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("vraw", MediaFormat.MIMETYPE_VIDEO_RAW);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("amrnb", MediaFormat.MIMETYPE_AUDIO_AMR_NB);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("amrwb", MediaFormat.MIMETYPE_AUDIO_AMR_WB);
@@ -466,6 +481,7 @@ public abstract class CodecTestBase {
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("ac3", MediaFormat.MIMETYPE_AUDIO_AC3);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("eac3", MediaFormat.MIMETYPE_AUDIO_EAC3);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("ac4", MediaFormat.MIMETYPE_AUDIO_AC4);
+        CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("iamf", MediaFormat.MIMETYPE_AUDIO_IAMF);
 
         android.os.Bundle args = InstrumentationRegistry.getArguments();
         mediaTypeSelKeys = args.getString(MEDIA_TYPE_SEL_KEY);
@@ -486,6 +502,7 @@ public abstract class CodecTestBase {
         PROFILE_SDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_SDR_PROFILES);
         PROFILE_SDR_MAP.put(MediaFormat.MIMETYPE_AUDIO_AAC, AAC_PROFILES);
         PROFILE_SDR_MAP.put(MediaFormat.MIMETYPE_AUDIO_AC4, AC4_PROFILES);
+        PROFILE_SDR_MAP.put(MediaFormat.MIMETYPE_AUDIO_IAMF, IAMF_PROFILES);
 
         PROFILE_HLG_MAP.put(MediaFormat.MIMETYPE_VIDEO_AVC, AVC_HLG_PROFILES);
         PROFILE_HLG_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_HLG_PROFILES);
@@ -503,6 +520,9 @@ public abstract class CodecTestBase {
         PROFILE_HDR10_PLUS_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_HDR10_PLUS_PROFILES);
         PROFILE_HDR10_PLUS_MAP.put(MediaFormat.MIMETYPE_VIDEO_APV, APV_HDR10_PLUS_PROFILES);
 
+        PROFILE_DOLBY_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION,
+                DOLBY_VISION_HDR_PROFILES);
+
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_AVC, AVC_HDR_PROFILES);
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_HDR_PROFILES);
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HDR_PROFILES);
@@ -519,8 +539,10 @@ public abstract class CodecTestBase {
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_PROFILES);
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_PROFILES);
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_APV, APV_HDR_PROFILES);
+        PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION, DOLBY_VISION_HDR_PROFILES);
         PROFILE_MAP.put(MediaFormat.MIMETYPE_AUDIO_AAC, AAC_PROFILES);
         PROFILE_MAP.put(MediaFormat.MIMETYPE_AUDIO_AC4, AC4_PROFILES);
+        PROFILE_MAP.put(MediaFormat.MIMETYPE_AUDIO_IAMF, IAMF_PROFILES);
 
         HDR_INFO_IN_BITSTREAM_CODECS.add(MediaFormat.MIMETYPE_VIDEO_AV1);
         HDR_INFO_IN_BITSTREAM_CODECS.add(MediaFormat.MIMETYPE_VIDEO_AVC);
@@ -531,6 +553,12 @@ public abstract class CodecTestBase {
         int[] result = Arrays.copyOf(first, first.length + second.length);
         System.arraycopy(second, 0, result, first.length, second.length);
         return result;
+    }
+
+    public static int[] combineUnique(int[] first, int[] second) {
+        Stream<Integer> s1 = Arrays.stream(first).boxed();
+        Stream<Integer> s2 = Arrays.stream(second).boxed();
+        return Stream.concat(s1, s2).distinct().mapToInt(Integer::intValue).toArray();
     }
 
     public static Context getContext() {
@@ -662,7 +690,7 @@ public abstract class CodecTestBase {
      * Check if any encoder on the device supports the given feature
      */
     public static boolean isEncoderFeatureSupported(String feature) {
-        for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_REGULAR.getCodecInfos()) {
+        for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_ALL.getCodecInfos()) {
             if (!codecInfo.isEncoder()) {
                 continue;
             }
@@ -694,7 +722,7 @@ public abstract class CodecTestBase {
         if (hdrProfiles == null) {
             return false;
         }
-        for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_REGULAR.getCodecInfos()) {
+        for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_ALL.getCodecInfos()) {
             if (!codecName.equals(codecInfo.getName())) {
                 continue;
             }
@@ -866,6 +894,13 @@ public abstract class CodecTestBase {
         }
         if (!isCSDIdentical(refFormat, testFormat)) return false;
         return isFormatSimilar(refFormat, testFormat);
+    }
+
+    public static MediaCodecInfo getCodecInfo(String codecName) {
+        return Arrays.stream(MEDIA_CODEC_LIST_ALL.getCodecInfos())
+                .filter(codecInfo -> codecName.equals(codecInfo.getName()))
+                .findFirst()
+                .orElse(null);
     }
 
     public static CodecCapabilities getCodecCapabilities(String codecName, String mediaType) {
@@ -1097,8 +1132,30 @@ public abstract class CodecTestBase {
             }
         } else {
             mediaTypes = compileRequestedMediaTypeList();
+            mediaTypes.removeIf(
+                    mediaType -> selectCodecs(mediaType, null, null, isEncoder).isEmpty());
         }
         return mediaTypes;
+    }
+
+    public static ArrayList<String> compileMediaTypesList(ComponentClass selectSwitch,
+            boolean needAudio, boolean needVideo) {
+        return Arrays.stream(MEDIA_CODEC_LIST_REGULAR.getCodecInfos())
+                .filter(codecInfo -> {
+                    boolean isHardware = codecInfo.isHardwareAccelerated();
+                    boolean isSoftware = codecInfo.isSoftwareOnly();
+                    return (selectSwitch == ComponentClass.HARDWARE && isHardware)
+                            || (selectSwitch == ComponentClass.SOFTWARE && isSoftware)
+                            || (selectSwitch == ComponentClass.ALL);
+                })
+                .flatMap(codecInfo -> Arrays.stream(codecInfo.getSupportedTypes()))
+                .filter(type -> {
+                    boolean isAudioType = type.startsWith("audio/");
+                    boolean isVideoType = type.startsWith("video/");
+                    return (needAudio && isAudioType) || (needVideo && isVideoType);
+                })
+                .distinct()
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     public static List<Object[]> prepareParamList(List<Object[]> exhaustiveArgsList,
@@ -1233,43 +1290,72 @@ public abstract class CodecTestBase {
 
     public static ArrayList<String> selectCodecs(String mediaType, ArrayList<MediaFormat> formats,
             String[] features, boolean isEncoder, ComponentClass selectSwitch) {
-        MediaCodecInfo[] codecInfos = MEDIA_CODEC_LIST_REGULAR.getCodecInfos();
-        ArrayList<String> listOfCodecs = new ArrayList<>();
-        for (MediaCodecInfo codecInfo : codecInfos) {
-            if (codecInfo.isEncoder() != isEncoder) continue;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && codecInfo.isAlias()) continue;
-            if (selectSwitch == ComponentClass.HARDWARE && !codecInfo.isHardwareAccelerated()) {
-                continue;
-            } else if (selectSwitch == ComponentClass.SOFTWARE && !codecInfo.isSoftwareOnly()) {
-                continue;
-            }
-            String[] types = codecInfo.getSupportedTypes();
-            for (String type : types) {
-                if (type.equalsIgnoreCase(mediaType)) {
-                    boolean isOk = true;
-                    MediaCodecInfo.CodecCapabilities codecCapabilities =
-                            codecInfo.getCapabilitiesForType(type);
-                    if (formats != null) {
-                        for (MediaFormat format : formats) {
-                            if (!codecCapabilities.isFormatSupported(format)) {
-                                isOk = false;
-                                break;
-                            }
-                        }
+        return selectCodecs(mediaType, formats, features, isEncoder, selectSwitch, false);
+    }
+
+    public static ArrayList<String> selectHardwareCodecs(String mediaType,
+            ArrayList<MediaFormat> formats, String[] features, boolean isEncoder) {
+        return selectCodecs(mediaType, formats, features, isEncoder, ComponentClass.HARDWARE,
+                false);
+    }
+
+    public static ArrayList<String> selectHardwareCodecs(String mediaType,
+            ArrayList<MediaFormat> formats, String[] features, boolean isEncoder,
+            boolean allCodecs) {
+        return selectCodecs(mediaType, formats, features, isEncoder, ComponentClass.HARDWARE,
+                allCodecs);
+    }
+
+    /**
+     * Get list of supported codecs for the criteria provided
+     *
+     * @param mediaType The media type component must support
+     * @param formats Set of MediaFormat(s) the component must support. If there are no MediaFormat
+     *     requirements, null may be provided.
+     * @param features List of features(s) the component must support. If there are no feature
+     *     requirements, null may be provided.
+     * @param isEncoder Is component encoder or decoder
+     * @param selectSwitch The component class to select (ALL, HARDWARE, SOFTWARE).
+     * @param allCodecs True to search through all codecs, false to search through regular codecs.
+     * @return An ArrayList of codec names that match the criteria.
+     */
+    public static ArrayList<String> selectCodecs(String mediaType, ArrayList<MediaFormat> formats,
+            String[] features, boolean isEncoder, ComponentClass selectSwitch, boolean allCodecs) {
+        MediaCodecInfo[] codecInfos = allCodecs ? MEDIA_CODEC_LIST_ALL.getCodecInfos()
+                                                : MEDIA_CODEC_LIST_REGULAR.getCodecInfos();
+
+        return Arrays.stream(codecInfos)
+                .filter(codecInfo -> codecInfo.isEncoder() == isEncoder)
+                .filter(codecInfo
+                        -> Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || !codecInfo.isAlias())
+                .filter(codecInfo -> {
+                    boolean isHardware = codecInfo.isHardwareAccelerated();
+                    boolean isSoftware = codecInfo.isSoftwareOnly();
+                    return (selectSwitch == ComponentClass.HARDWARE && isHardware)
+                            || (selectSwitch == ComponentClass.SOFTWARE && isSoftware)
+                            || (selectSwitch == ComponentClass.ALL);
+                })
+                .filter(codecInfo
+                        -> Arrays.stream(codecInfo.getSupportedTypes())
+                                .anyMatch(type -> type.equalsIgnoreCase(mediaType)))
+                .filter(codecInfo -> {
+                    try {
+                        MediaCodecInfo.CodecCapabilities caps =
+                                codecInfo.getCapabilitiesForType(mediaType);
+
+                        boolean formatsSupported = formats == null
+                                || formats.stream().allMatch(caps::isFormatSupported);
+
+                        boolean featuresSupported = features == null
+                                || Arrays.stream(features).allMatch(caps::isFeatureSupported);
+
+                        return formatsSupported && featuresSupported;
+                    } catch (IllegalArgumentException e) {
+                        return false;
                     }
-                    if (features != null) {
-                        for (String feature : features) {
-                            if (!codecCapabilities.isFeatureSupported(feature)) {
-                                isOk = false;
-                                break;
-                            }
-                        }
-                    }
-                    if (isOk) listOfCodecs.add(codecInfo.getName());
-                }
-            }
-        }
-        return listOfCodecs;
+                })
+                .map(MediaCodecInfo::getName)
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     public static int getWidth(MediaFormat format) {

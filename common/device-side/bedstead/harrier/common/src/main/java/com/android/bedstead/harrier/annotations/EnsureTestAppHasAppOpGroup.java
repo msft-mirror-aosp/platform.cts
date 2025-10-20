@@ -16,7 +16,7 @@
 
 package com.android.bedstead.harrier.annotations;
 
-import static com.android.bedstead.enterprise.annotations.EnsureHasDelegate.ENSURE_HAS_DELEGATE_PRIORITY;
+import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.ENSURE_HAS_DELEGATE_PRIORITY;
 
 import com.android.bedstead.harrier.annotations.meta.RepeatingAnnotation;
 

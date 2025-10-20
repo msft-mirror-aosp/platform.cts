@@ -466,7 +466,7 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
         mActivity.tapLogin();
         mUiBot.waitForIdleSync();
         mActivity.finish();
-        mUiBot.waitForIdleSync();
+        mUiBot.assertShownById("android:id/autofill_save_no");
         // Closes everything, makes sure that the Session is destroyed
         mUiBot.pressHome();
         mUiBot.waitForIdleSync();
@@ -965,7 +965,7 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
                 .build());
 
         // Now switch back to A...
-        backToLoginActivity(/* minimumBackCount= */ 3);
+        backToLoginActivity(/* minimumBackCount= */ 2);
 
         mUiBot.assertShownByRelativeId(ID_USERNAME);
         assertWithMessage("root window has no focus")

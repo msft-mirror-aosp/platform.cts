@@ -87,7 +87,7 @@ public class CodecResource {
 /**
  * This class provides utility functions for managing and comparing codec resources
  */
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
 class CodecResourceUtils {
     private static final long CAPACITY_UNKNOWN = -1L;
     public static final int RESOURCE_EQ = 0;

@@ -15,13 +15,30 @@
  */
 package com.android.bedstead.nene.types
 
+/**
+ * This enum allows annotations to have a nullable boolean field.
+ */
 enum class OptionalBoolean {
     TRUE,
     FALSE,
     ANY;
 
+    /**
+     * Converts this enum to a Boolean value.
+     */
+    fun toBoolean(): Boolean? {
+        return when (this) {
+            TRUE -> true
+            FALSE -> false
+            ANY -> null
+        }
+    }
+
     companion object {
-        fun from(bool: Boolean?) = when(bool) {
+        /**
+         * Converts a Boolean value to OptionalBoolean.
+         */
+        fun from(bool: Boolean?) = when (bool) {
             null -> ANY
             true -> TRUE
             false -> FALSE

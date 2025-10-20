@@ -90,7 +90,7 @@ public class CallStatsTests extends BaseTelecomMetricsTest {
 
         assertThat(stats.getCallDirection()).isEqualTo(CallDirectionEnum.DIR_OUTGOING);
         assertThat(stats.getEmergencyCall()).isEqualTo(false);
-        assertThat(stats.getAccountType()).isEqualTo(AccountTypeEnum.ACCOUNT_MANAGED);
+        assertThat(stats.getAccountType()).isEqualTo(AccountTypeEnum.ACCOUNT_SIM);
     }
 
     @Override

@@ -18,6 +18,7 @@ package android.devicepolicy.cts
 import android.app.admin.ConnectEvent
 import android.app.admin.DnsEvent
 import android.app.admin.NetworkEvent
+import android.app.admin.flags.Flags
 import android.os.SystemClock
 import android.util.Log
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
@@ -34,8 +35,8 @@ import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.UserType.ADDITIONAL_USER
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
-import com.android.bedstead.harrier.policies.GlobalNetworkLogging
-import com.android.bedstead.harrier.policies.NetworkLogging
+import com.android.bedstead.enterprise.policies.GlobalNetworkLogging
+import com.android.bedstead.enterprise.policies.NetworkLogging
 import com.android.bedstead.multiuser.additionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser
@@ -52,7 +53,9 @@ import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
 import org.junit.Assert.fail
 import org.junit.Assume
+import org.junit.Before
 import org.junit.ClassRule
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -63,6 +66,18 @@ import org.testng.Assert
 // migrated to the new infrastructure
 @RunWith(BedsteadJUnit4::class)
 class NetworkLoggingTest {
+    @Before
+    fun setUp() {
+        val users = TestApis.users()
+        if (users.isHeadlessSystemUserMode() && !Flags.deviceOwnerForAll()) {
+            // TODO(b/420745998): Remove this assumption when non-main user can be device owner.
+            Assume.assumeNotNull(
+                "Devices in headless system user mode require a main user to set a device owner.",
+                users.main()
+            )
+        }
+    }
+
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#isNetworkLoggingEnabled"])
     @CannotSetPolicyTest(policy = [GlobalNetworkLogging::class, NetworkLogging::class])
     @Postsubmit(reason = "new test")
@@ -274,6 +289,7 @@ class NetworkLoggingTest {
      * The test is only running in DO configuration since batching logic isn't really dependent on
      * management mode and the test may take quite some time.
      */
+    @Ignore("b/438919878")
     @Postsubmit(reason = "new test")
     @Test
     @EnsureHasDeviceOwner

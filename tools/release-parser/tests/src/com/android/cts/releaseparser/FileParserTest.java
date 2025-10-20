@@ -16,7 +16,10 @@
 
 package com.android.cts.releaseparser;
 
+import static org.junit.Assert.*;
+
 import com.android.cts.releaseparser.ReleaseProto.*;
+
 import com.google.protobuf.TextFormat;
 
 import org.junit.Test;
@@ -24,8 +27,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import java.io.File;
-
-import static org.junit.Assert.*;
 
 /** Unit tests for {@link SoParser} */
 @RunWith(JUnit4.class)
@@ -167,8 +168,8 @@ public class FileParserTest {
                         "Parser does not return the same Entry message of %s with %s.\n%s\n%s",
                         fileName,
                         txtProtobufFileName,
-                        TextFormat.printToString(fileEntry),
-                        TextFormat.printToString(expectedEntryBuilder)),
+                        fileEntry.toString(),
+                        expectedEntryBuilder.toString()),
                 fileEntry.equals(expectedEntryBuilder.build()));
     }
 }

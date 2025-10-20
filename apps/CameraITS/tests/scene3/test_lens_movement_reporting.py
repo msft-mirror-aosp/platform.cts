@@ -18,6 +18,8 @@ import copy
 import logging
 import math
 import os
+
+import cv2
 from mobly import test_runner
 import numpy as np
 
@@ -38,6 +40,7 @@ _MIN_AF_FD_RTOL = 0.2  # AF value must 20% larger than min_fd
 # skip the LENS_INTRINSIC_CALIBRATION check
 _MIN_FD_THRESHOLD = 0.1
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
+_NUM_ARUCO_MARKERS = 4
 _NUM_FRAMES_PER_FD = 12
 _POSITION_RTOL = 0.10  # 10%
 _SHARPNESS_RTOL = 0.10  # 10%
@@ -46,7 +49,7 @@ _VGA_WIDTH, _VGA_HEIGHT = 640, 480
 
 
 def take_caps_and_determine_sharpness(
-    cam, props, fmt, gain, exp, af_fd, chart, log_path):
+    cam, props, fmt, gain, exp, af_fd, log_path):
   """Return fd, sharpness, lens state of the output images.
 
   Args:
@@ -58,7 +61,6 @@ def take_caps_and_determine_sharpness(
          android.sensor.exposureTime
     af_fd: Focus distance for the request as defined in
            android.lens.focusDistance
-    chart: Object that contains chart information
     log_path: log_path to save the captured image
 
   Returns:
@@ -78,6 +80,12 @@ def take_caps_and_determine_sharpness(
     reqs[i]['android.lens.focusDistance'] = fd
   caps = cam.do_capture(reqs, fmt)
   caps = caps[_START_FRAME:]
+  name_with_log_path = f'{os.path.join(log_path, _NAME)}'
+  # determine chart area with first frame.
+  patch_x, patch_y, patch_w, patch_h = (
+      opencv_processing_utils.get_chart_boundary_scene3(
+          caps[0], _NUM_ARUCO_MARKERS, name_with_log_path))
+
   for i, cap in enumerate(caps):
     data = {'fd': fds[i+_START_FRAME]}
     data['frame_num'] = i + _START_FRAME
@@ -92,13 +100,12 @@ def take_caps_and_determine_sharpness(
     timestamp -= timestamp_init
     data['timestamp'] = timestamp
     y, _, _ = image_processing_utils.convert_capture_to_planes(cap, props)
-    chart.img = image_processing_utils.normalize_img(
-        image_processing_utils.get_image_patch(
-            y, chart.xnorm, chart.ynorm, chart.wnorm, chart.hnorm))
+    chart = image_processing_utils.get_image_patch(
+        y, patch_x, patch_y, patch_w, patch_h)
     image_processing_utils.write_image(
-        chart.img, f'{os.path.join(log_path, _NAME)}_i={i}.jpg')
+        chart, f'{name_with_log_path}_sharpness_{i}.jpg')
     data['sharpness'] = (
-        white_level * image_processing_utils.compute_image_sharpness(chart.img))
+        white_level * image_processing_utils.compute_image_sharpness(chart))
     data_set[i+_START_FRAME] = data
   return data_set
 
@@ -134,10 +141,6 @@ class LensMovementReportingTest(its_base_test.ItsBaseTest):
       its_session_utils.load_scene(
           cam, props, self.scene, self.tablet, self.chart_distance)
 
-      # Initialize chart class and locate chart in scene
-      chart = opencv_processing_utils.Chart(
-          cam, props, self.log_path, distance=self.chart_distance)
-
       # Get proper sensitivity, exposure time, and focus distance with 3A.
       mono_camera = camera_properties_utils.mono_camera(props)
       s, e, _, _, af_fd = cam.do_3a(get_results=True, mono_camera=mono_camera)
@@ -145,7 +148,7 @@ class LensMovementReportingTest(its_base_test.ItsBaseTest):
       # Get sharpness for each focal distance
       fmt = {'format': 'yuv', 'width': _VGA_WIDTH, 'height': _VGA_HEIGHT}
       frame_data = take_caps_and_determine_sharpness(
-          cam, props, fmt, s, e, af_fd, chart, self.log_path)
+          cam, props, fmt, s, e, af_fd, self.log_path)
       for k in sorted(frame_data):
         logging.debug(
             'i: %d\tfd: %.3f\tdiopters: %.3f \tsharpness: %.1f  \t'

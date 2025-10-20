@@ -20,6 +20,8 @@
     <option name="config-descriptor:metadata" key="parameter" value="instant_app" />
     <!-- WebView based tests for the SDK sandbox are already separately tested -->
     <option name="config-descriptor:metadata" key="parameter" value="not_run_on_sdk_sandbox" />
+    <!-- Tests in this module will only be executed for a single foldable configuration -->
+    <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
 
     <option name="config-descriptor:metadata" key="parameter" value="multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />

@@ -22,6 +22,7 @@ filegroup {
         "src/android/server/wm/ActivityLauncher.java",
         "src/android/server/wm/CommandSession.java",
         "src/android/server/wm/ComponentNameUtils.java",
+        "src/android/server/wm/CountSpec.kt",
         "src/android/server/wm/NestedShellPermission.java",
         "src/android/server/wm/TestJournalProvider.java",
         "src/android/server/wm/TestLogClient.java",

@@ -355,7 +355,9 @@ public abstract class InputTestCase {
         DebugInputRule.dumpInputStateToLogcat();
 
         if (mTestName.getMethodName().equals("testLights")) {
-            DebugInputRule.dumpSonyLightNodes();
+            DebugInputRule.dumpSonySysfsNode("leds");
+        } else if (mTestName.getMethodName().equals("testBattery")) {
+            DebugInputRule.dumpSonySysfsNode("power_supply");
         }
         if (mEvents.isEmpty()) {
             Log.i(TAG, "The events queue is empty");
@@ -395,24 +397,40 @@ public abstract class InputTestCase {
     }
 
     protected class PointerCaptureSession implements AutoCloseable {
+        /** Starts a pointer capture session using the default capture mode. */
         protected PointerCaptureSession() {
-            ensurePointerCaptureState(true);
+            ensurePointerCaptureState(true, mDecorView::requestPointerCapture);
+        }
+
+        /**
+         * Starts a pointer capture session using the specified pointer capture mode.
+         *
+         * <p>This method calls APIs guarded by the {@link
+         * com.android.hardware.input.Flags#FLAG_POINTER_CAPTURE_MODES} flag, so tests calling it
+         * must currently be guarded by that flag.
+         */
+        protected PointerCaptureSession(int mode) {
+            final boolean enable = mode != View.POINTER_CAPTURE_MODE_UNCAPTURED;
+            ensurePointerCaptureState(
+                    enable,
+                    () -> {
+                        mDecorView.requestPointerCapture(mode);
+                    });
         }
 
         @Override
         public void close() {
-            ensurePointerCaptureState(false);
+            ensurePointerCaptureState(false, mDecorView::releasePointerCapture);
         }
 
-        private void ensurePointerCaptureState(boolean enable) {
+        private void ensurePointerCaptureState(boolean enable, Runnable changeStateRunnable) {
             final CountDownLatch latch = new CountDownLatch(1);
             mTestActivity.setPointerCaptureCallback(hasCapture -> {
                 if (enable == hasCapture) {
                     latch.countDown();
                 }
             });
-            mTestActivity.runOnUiThread(enable ? mDecorView::requestPointerCapture
-                    : mDecorView::releasePointerCapture);
+            mTestActivity.runOnUiThread(changeStateRunnable);
             try {
                 if (!latch.await(60, TimeUnit.SECONDS)) {
                     throw new IllegalStateException(

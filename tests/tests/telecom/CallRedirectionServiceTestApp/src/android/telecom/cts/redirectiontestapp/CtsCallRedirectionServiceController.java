@@ -42,6 +42,7 @@ public class CtsCallRedirectionServiceController extends Service {
     public static final int PLACE_CALL_UNMODIFIED = 2;
     public static final int PLACE_REDIRECTED_CALL = 3;
     public static final int CANCEL_CALL = 4;
+    public static final int PLACE_CALL_TO_ALTERNATE_NUMBER = 5;
     public static final long TIMEOUT = 6000;
 
     private int mDecision = NO_DECISION_YET;
@@ -49,6 +50,7 @@ public class CtsCallRedirectionServiceController extends Service {
     // Redirection information, only valid if decision is PLACE_REDIRECTED_CALL.
     private Uri mTargetHandle = null;
     private Uri mDestinationUri = null;
+    private Uri mDestinationOriginalUri = null;
     private PhoneAccountHandle mRedirectedPhoneAccount = null;
     private PhoneAccountHandle mOriginalPhoneAccount = null;
     private boolean mConfirmFirst = false;
@@ -71,6 +73,17 @@ public class CtsCallRedirectionServiceController extends Service {
                                             boolean confirmFirst) {
                     Log.i(TAG, "redirectCall");
                     mDecision = PLACE_REDIRECTED_CALL;
+                    mTargetHandle = targetHandle;
+                    mRedirectedPhoneAccount = redirectedPhoneAccount;
+                    mConfirmFirst = confirmFirst;
+                }
+
+                @Override
+                public void setPlaceCallToAlternateNumber(Uri targetHandle,
+                                            PhoneAccountHandle redirectedPhoneAccount,
+                                            boolean confirmFirst) {
+                    Log.i(TAG, "placeCallToAlternateNumber");
+                    mDecision = PLACE_CALL_TO_ALTERNATE_NUMBER;
                     mTargetHandle = targetHandle;
                     mRedirectedPhoneAccount = redirectedPhoneAccount;
                     mConfirmFirst = confirmFirst;
@@ -102,6 +115,11 @@ public class CtsCallRedirectionServiceController extends Service {
                     } catch (InterruptedException e) {
                         return false;
                     }
+                }
+
+                @Override
+                public Uri getReceivedOriginalHandle() {
+                    return mDestinationOriginalUri;
                 }
 
                 @Override

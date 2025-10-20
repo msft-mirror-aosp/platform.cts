@@ -27,6 +27,8 @@
         <activity android:name=".AppComponents$EmptyActivity"
             android:allowEmbedded="true" />
         <activity android:name=".AppComponents$SecondActivity" />
+        <activity android:name=".AppComponents$SecureActivity" />
+        <activity android:name=".AppComponents$SecureActivity2" />
         <activity
             android:name=".ActivityBlockingTest$CannotDisplayOnRemoteActivity"
             android:canDisplayOnRemoteDevices="false"
@@ -74,6 +76,10 @@
             android:name="android.app.Activity"
             android:exported="false" />
         <service android:name=".AppComponents$TestService" />
+        <provider
+            android:name=".AppComponents$TestProvider"
+            android:authorities="android.virtualdevice.cts.applaunch.testprovider"
+            android:exported="false" />
     </application>
 
     <!--

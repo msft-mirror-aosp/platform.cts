@@ -56,7 +56,7 @@ import org.junit.Assume;
 /**
  * MediaCodecCryptoAsyncHelper class
  */
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 public class MediaCodecCryptoAsyncHelper {
     private static final String TAG = "MediaCodecCryptoAsyncHelper";
     private static final boolean VERBOSE = false;           // lots of logging
@@ -150,7 +150,8 @@ public class MediaCodecCryptoAsyncHelper {
             int width, int height, boolean useHighBitDepth, boolean secure) {
         OutputSurface outputSurface = null;
         try {
-            outputSurface = new OutputSurface(width, height, useHighBitDepth, secure);
+            outputSurface = new OutputSurface(width, height, useHighBitDepth,
+                    secure, false /* useYuvSampling */);
         } catch (RuntimeException e) {
             // Relaxing EGL errors as these tests are not meant
             // to test EGL.

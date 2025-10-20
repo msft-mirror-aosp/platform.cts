@@ -18,19 +18,30 @@ package android.bluetooth.cts;
 
 import static android.bluetooth.BluetoothCodecConfig.SOURCE_CODEC_TYPE_AAC;
 import static android.bluetooth.BluetoothCodecConfig.SOURCE_CODEC_TYPE_INVALID;
-import static android.bluetooth.BluetoothCodecConfig.SOURCE_CODEC_TYPE_LC3;
+import static android.bluetooth.BluetoothCodecConfig.SOURCE_CODEC_TYPE_LDAC;
 import static android.bluetooth.BluetoothCodecConfig.SOURCE_CODEC_TYPE_SBC;
 import static android.bluetooth.BluetoothCodecType.CODEC_ID_AAC;
+import static android.bluetooth.BluetoothCodecType.CODEC_ID_APTX;
+import static android.bluetooth.BluetoothCodecType.CODEC_ID_APTX_HD;
+import static android.bluetooth.BluetoothCodecType.CODEC_ID_OPUS;
+import static android.bluetooth.BluetoothCodecType.CODEC_ID_SBC;
+import static android.bluetooth.BluetoothCodecType.CODEC_ID_SONY_LDAC;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import android.bluetooth.BluetoothCodecConfig;
 import android.bluetooth.BluetoothCodecStatus;
 import android.bluetooth.BluetoothCodecType;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
+import com.android.bluetooth.flags.Flags;
+
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -40,6 +51,9 @@ import java.util.List;
 @SmallTest
 public class BluetoothCodecsTest {
     private static final String TAG = BluetoothCodecsTest.class.getSimpleName();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     // Codec configs: A and B are same; C is different
     private static final BluetoothCodecConfig config_A =
@@ -360,7 +374,6 @@ public class BluetoothCodecsTest {
         BluetoothCodecType c = BluetoothCodecType.createFromType(SOURCE_CODEC_TYPE_AAC);
         assertThat(c).isNotNull();
 
-        assertThat(BluetoothCodecType.createFromType(SOURCE_CODEC_TYPE_LC3)).isNull();
         assertThat(BluetoothCodecType.createFromType(SOURCE_CODEC_TYPE_INVALID)).isNull();
     }
 
@@ -382,6 +395,35 @@ public class BluetoothCodecsTest {
         BluetoothCodecType cB = BluetoothCodecType.createFromType(SOURCE_CODEC_TYPE_SBC);
         assertThat(cA.isMandatoryCodec()).isFalse();
         assertThat(cB.isMandatoryCodec()).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_A2DP_CREATE_CODEC_TYPE_FROM_ID_API)
+    public void codecType_createFromId() {
+        long[] codecIds = {
+            CODEC_ID_AAC, CODEC_ID_SBC, CODEC_ID_APTX, CODEC_ID_APTX_HD, CODEC_ID_OPUS
+        };
+        for (long codecId : codecIds) {
+            BluetoothCodecType codec = BluetoothCodecType.createFromId(codecId);
+            assertThat(codec).isNotNull();
+            assertThat(codec.getCodecId()).isEqualTo(codecId);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_A2DP_CREATE_CODEC_TYPE_FROM_ID_API, Flags.FLAG_A2DP_LDAC_API})
+    public void codecType_createFromId_Ldac() {
+        BluetoothCodecType cLDAC = BluetoothCodecType.createFromId(CODEC_ID_SONY_LDAC);
+        assertThat(cLDAC).isNotNull();
+        assertThat(cLDAC.getCodecId()).isEqualTo(CODEC_ID_SONY_LDAC);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_A2DP_LDAC_API)
+    public void codecType_createFromType_Ldac() {
+        BluetoothCodecType c = BluetoothCodecType.createFromType(SOURCE_CODEC_TYPE_LDAC);
+        assertThat(c).isNotNull();
+        assertThat(c.getCodecId()).isEqualTo(CODEC_ID_SONY_LDAC);
     }
 
     private static BluetoothCodecConfig buildBluetoothCodecConfig(

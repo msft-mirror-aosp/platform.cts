@@ -33,7 +33,12 @@ import static android.net.wifi.WifiConfiguration.SECURITY_TYPE_WAPI_PSK;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import android.content.Context;
 import android.net.wifi.OuiKeyedData;
@@ -43,27 +48,44 @@ import android.os.Build;
 import android.os.PersistableBundle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
+import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.wifi.flags.Flags;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.Arrays;
 import java.util.List;
 
 @AppModeFull(reason = "Cannot get WifiManager in instant app mode")
-public class WifiConfigurationTest extends WifiJUnit3TestBase {
-    private  WifiManager mWifiManager;
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+@SmallTest
+@RunWith(AndroidJUnit4.class)
+public class WifiConfigurationTest extends WifiJUnit4TestBase {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    private WifiManager mWifiManager;
+    private Context mContext;
+    @Before
+    public void setUp() throws Exception {
+        mContext = InstrumentationRegistry.getInstrumentation().getContext();
         mWifiManager = (WifiManager) mContext
                 .getSystemService(Context.WIFI_SERVICE);
     }
 
+    @Test
     public void testWifiConfiguration() {
-        if (!WifiFeature.isWifiSupported(getContext())) {
+        if (!WifiFeature.isWifiSupported(mContext)) {
             // skip the test if WiFi is not supported
             return;
         }
@@ -77,6 +99,7 @@ public class WifiConfigurationTest extends WifiJUnit3TestBase {
         }
     }
 
+    @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testGetAuthType() throws Exception {
         WifiConfiguration configuration = new WifiConfiguration();
@@ -112,6 +135,7 @@ public class WifiConfigurationTest extends WifiJUnit3TestBase {
         assertEquals(WifiConfiguration.KeyMgmt.WAPI_CERT, configuration.getAuthType());
     }
 
+    @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testGetAuthTypeFailurePsk8021X() throws Exception {
         WifiConfiguration configuration = new WifiConfiguration();
@@ -126,6 +150,7 @@ public class WifiConfigurationTest extends WifiJUnit3TestBase {
         }
     }
 
+    @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testGetAuthTypeFailure8021xEapSae() throws Exception {
         WifiConfiguration configuration = new WifiConfiguration();
@@ -141,6 +166,7 @@ public class WifiConfigurationTest extends WifiJUnit3TestBase {
         }
     }
 
+    @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testSetGetDeletionPriority() throws Exception {
         WifiConfiguration configuration = new WifiConfiguration();
@@ -156,6 +182,7 @@ public class WifiConfigurationTest extends WifiJUnit3TestBase {
         assertEquals(1, configuration.getDeletionPriority());
     }
 
+    @Test
     public void testSetGetMacRandomizationSetting() throws Exception {
         WifiConfiguration configuration = new WifiConfiguration();
 
@@ -172,6 +199,7 @@ public class WifiConfigurationTest extends WifiJUnit3TestBase {
         assertEquals(RANDOMIZATION_AUTO, configuration.getMacRandomizationSetting());
     }
 
+    @Test
     @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
     public void testSetGetSendDhcpHostnameEnabled() throws Exception {
         WifiConfiguration configuration = new WifiConfiguration();
@@ -183,6 +211,7 @@ public class WifiConfigurationTest extends WifiJUnit3TestBase {
         assertTrue(configuration.isSendDhcpHostnameEnabled());
     }
 
+    @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
     public void testGetDefaultDppAkmConfigurations() throws Exception {
         WifiConfiguration configuration = new WifiConfiguration();
@@ -194,6 +223,7 @@ public class WifiConfigurationTest extends WifiJUnit3TestBase {
         assertThat(configuration.getDppPrivateEcKey()).isNotNull();
     }
 
+    @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
     public void testSetGetIsRepeaterEnabled() throws Exception {
         WifiConfiguration configuration = new WifiConfiguration();
@@ -205,7 +235,13 @@ public class WifiConfigurationTest extends WifiJUnit3TestBase {
         assertFalse(configuration.isRepeaterEnabled());
     }
 
+    @Test
     @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @ApiTest(
+            apis = {
+                "android.net.wifi.WifiConfiguration#setVendorData",
+                "android.net.wifi.WifiConfiguration#getVendorData"
+            })
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
              codeName = "VanillaIceCream")
     public void testSetGetVendorData() {
@@ -220,6 +256,7 @@ public class WifiConfigurationTest extends WifiJUnit3TestBase {
     }
 
     // TODO: b/394417020 - change SdkSuppress as minSdkVersion to 2026 Q2
+    @Test
     @SdkSuppress(minSdkVersion = 37)
     @RequiresFlagsEnabled(Flags.FLAG_MULTI_USER_WIFI_ENHANCEMENT)
     @ApiTest(

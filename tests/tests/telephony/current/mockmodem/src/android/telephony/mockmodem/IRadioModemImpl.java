@@ -48,7 +48,7 @@ public class IRadioModemImpl extends IRadioModem.Stub {
     private MockModemConfigInterface mMockModemConfigInterface;
     private final Object mCacheUpdateMutex;
     private final Handler mHandler;
-    private int mSubId;
+    private int mLogicalSlotIndex;
     private String mTag;
 
     // ***** Events
@@ -77,17 +77,17 @@ public class IRadioModemImpl extends IRadioModem.Stub {
         mMockModemConfigInterface = configInterface;
         mCacheUpdateMutex = new Object();
         mHandler = new IRadioModemHandler();
-        mSubId = instanceId;
+        mLogicalSlotIndex = instanceId;
 
         // Register events
         mMockModemConfigInterface.registerForBasebandVersionChanged(
-                mSubId, mHandler, EVENT_BASEBAND_VERSION_CHANGED, null);
+                mLogicalSlotIndex, mHandler, EVENT_BASEBAND_VERSION_CHANGED, null);
         mMockModemConfigInterface.registerForDeviceIdentityChanged(
-                mSubId, mHandler, EVENT_DEVICE_IDENTITY_CHANGED, null);
+                mLogicalSlotIndex, mHandler, EVENT_DEVICE_IDENTITY_CHANGED, null);
         mMockModemConfigInterface.registerForRadioStateChanged(
-                mSubId, mHandler, EVENT_RADIO_STATE_CHANGED, null);
+                mLogicalSlotIndex, mHandler, EVENT_RADIO_STATE_CHANGED, null);
         mMockModemConfigInterface.registerForDeviceImeiInfoChanged(
-                mSubId, mHandler, EVENT_DEVICE_IMEI_INFO_CHANGED, null);
+                mLogicalSlotIndex, mHandler, EVENT_DEVICE_IMEI_INFO_CHANGED, null);
     }
 
     /** Handler class to handle callbacks */
@@ -437,7 +437,7 @@ public class IRadioModemImpl extends IRadioModem.Stub {
                 } else {
                     mRadioState = MockModemConfigInterface.RADIO_STATE_OFF;
                 }
-                mMockModemConfigInterface.setRadioState(mSubId, mRadioState, mTag);
+                mMockModemConfigInterface.setRadioState(mLogicalSlotIndex, mRadioState, mTag);
             }
             rsp = mService.makeSolRsp(serial);
         }

@@ -73,6 +73,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.Process
+import android.permission.flags.Flags
 import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.annotations.RequiresFlagsEnabled
@@ -91,6 +92,7 @@ import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executor
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeoutException
@@ -105,7 +107,6 @@ import org.junit.Rule
 import org.junit.Test
 import android.bluetooth.cts.BTAdapterUtils.disableAdapter as disableBTAdapter
 import android.bluetooth.cts.BTAdapterUtils.enableAdapter as enableBTAdapter
-import android.permission.flags.Flags
 
 private const val TEST_SERVICE_PKG = "android.app.appops.cts.appthatusesappops"
 private const val TIMEOUT_MILLIS = 10000L
@@ -149,6 +150,7 @@ class AppOpsLoggingTest {
 
     private lateinit var testService: IAppOpsUserService
     private lateinit var serviceConnection: ServiceConnection
+    private lateinit var cameraExecutor: ExecutorService
 
     // Collected note-op calls inside of this process
     private val noted = mutableListOf<Pair<SyncNotedAppOp, Array<StackTraceElement>>>()
@@ -162,6 +164,7 @@ class AppOpsLoggingTest {
         connectToService()
         setNotedAppOpsCollector()
         clearCollectedNotedOps()
+        cameraExecutor = Executors.newSingleThreadExecutor()
     }
 
     @After
@@ -170,6 +173,11 @@ class AppOpsLoggingTest {
         runWithShellPermissionIdentity {
             locationManager.setLocationEnabledForUser(wasLocationEnabled, myUserHandle)
         }
+    }
+
+    @After
+    fun tearDown() {
+        cameraExecutor.shutdown()
     }
 
     @get:Rule val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
@@ -805,7 +813,7 @@ class AppOpsLoggingTest {
             }
         }
 
-        cameraManager.openCamera(cameraId, context.mainExecutor, cameraDeviceCallback)
+        cameraManager.openCamera(cameraId, cameraExecutor, cameraDeviceCallback)
 
         openedCamera.get(TIMEOUT_MILLIS, MILLISECONDS).close()
 
@@ -820,6 +828,9 @@ class AppOpsLoggingTest {
      * Realistic end-to-end test for opening camera
      */
     @Test
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(
+            reason = "camera is not supported for visible background users"
+    )
     @FlakyTest
     fun openCameraWithAttribution() {
         openCamera(context.createAttributionContext(TEST_ATTRIBUTION_TAG))
@@ -830,6 +841,9 @@ class AppOpsLoggingTest {
      * This is interesting as null attribution handling is more complex in native code.
      */
     @Test
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(
+            reason = "camera is not supported for visible background users"
+    )
     fun openCameraWithDefaultAttribution() {
         openCamera(context)
     }

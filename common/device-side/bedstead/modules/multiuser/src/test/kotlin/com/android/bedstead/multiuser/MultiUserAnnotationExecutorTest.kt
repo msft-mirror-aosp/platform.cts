@@ -20,7 +20,7 @@ import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.EnsureHasNoSecondaryUser
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
-import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
+import com.android.bedstead.multiuser.annotations.EnsureCanAddSecondaryUser
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasCloneProfile
 import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser
@@ -66,9 +66,9 @@ import org.junit.runner.RunWith
 @RunWith(BedsteadJUnit4::class)
 class MultiUserAnnotationExecutorTest {
 
-    @EnsureCanAddUser(number = 2)
+    @EnsureCanAddSecondaryUser(number = 2)
     @Test
-    fun ensureCanAddUser_canAddUsers() {
+    fun ensureCanAddSecondaryUser_canAddUsers() {
         users().createUser().create().use { _ ->
             users().createUser().create().use { _ -> }
         }

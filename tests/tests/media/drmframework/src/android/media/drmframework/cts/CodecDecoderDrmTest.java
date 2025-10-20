@@ -56,7 +56,7 @@ import java.util.UUID;
  */
 // This test is limited to V and above as it doesn't work as intended on the older versions
 // due to issues in block model buffer handling. Refer: b/331921194, b/325512893 and b/329767811.
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName = "VanillaIceCream")
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @AppModeFull(reason = "Instant apps cannot access the SD card")
 @RunWith(Parameterized.class)
 public class CodecDecoderDrmTest extends CodecDecoderDrmTestBase {

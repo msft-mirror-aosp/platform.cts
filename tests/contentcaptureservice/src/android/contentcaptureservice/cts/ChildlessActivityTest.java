@@ -48,8 +48,6 @@ import android.contentcaptureservice.cts.CtsContentCaptureService.ServiceWatcher
 import android.contentcaptureservice.cts.CtsContentCaptureService.Session;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
@@ -60,7 +58,6 @@ import android.view.contentcapture.ContentCaptureEvent;
 import android.view.contentcapture.ContentCaptureManager;
 import android.view.contentcapture.ContentCaptureSession;
 import android.view.contentcapture.ContentCaptureSessionId;
-import android.view.contentcapture.flags.Flags;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -111,7 +108,7 @@ public class ChildlessActivityTest
 
     @Test
     public void testDefaultLifecycle() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
 
         final ChildlessActivity activity = launchActivity();
@@ -120,7 +117,10 @@ public class ChildlessActivityTest
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         Log.v(TAG, "session id: " + session.id);
 
         activity.assertDefaultEvents(session);
@@ -288,7 +288,7 @@ public class ChildlessActivityTest
 
     @Test
     public void testAddAndRemoveImportantChild() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
 
         // TODO(b/120494182): Child must be created inside the lambda because it needs to use the
@@ -312,7 +312,10 @@ public class ChildlessActivityTest
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         final ContentCaptureSessionId sessionId = session.id;
         Log.v(TAG, "session id: " + sessionId);
 
@@ -347,7 +350,7 @@ public class ChildlessActivityTest
 
     @Test
     public void testAddImportantChildAfterSessionStarted() throws Exception {
-        final CtsContentCaptureService service = enableService();
+        enableService();
         final ActivityWatcher watcher = startWatcher();
 
         final ChildlessActivity activity = launchActivity();
@@ -361,7 +364,10 @@ public class ChildlessActivityTest
         activity.finish();
         watcher.waitFor(DESTROYED);
 
-        final Session session = service.getOnlyFinishedSession();
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
         final ContentCaptureSessionId sessionId = session.id;
         Log.v(TAG, "session id: " + sessionId);
 
@@ -976,107 +982,7 @@ public class ChildlessActivityTest
      * have been batched.
      */
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_FLUSH_AFTER_EACH_FRAME)
-    public void testRemoveChildrenFromDifferentSessions_flagOff() throws Exception {
-        final CtsContentCaptureService service = enableService();
-        final ActivityWatcher watcher = startWatcher();
-
-        final ChildlessActivity activity = launchActivity();
-        watcher.waitFor(RESUMED);
-        final LinearLayout rootView = activity.getRootView();
-        final ContentCaptureSession mainSession = rootView.getContentCaptureSession();
-        final ContentCaptureSessionId mainSessionId = mainSession.getContentCaptureSessionId();
-        Log.v(TAG, "main session id: " + mainSessionId);
-
-        // Create 1st session
-        final ContentCaptureContext context1 = newContentCaptureContextBuilder("session1")
-                .build();
-        final ContentCaptureSession childSession1 = mainSession
-                .createContentCaptureSession(context1);
-        final ContentCaptureSessionId childSessionId1 = childSession1.getContentCaptureSessionId();
-        Log.v(TAG, "child session id 1: " + childSessionId1);
-
-        // Session 1, child 1
-        final TextView s1c1 = addChild(activity, childSession1, "s1c1");
-        final AutofillId s1c1Id = s1c1.getAutofillId();
-        Log.v(TAG, "childrens from session1: " + s1c1Id);
-
-        // Create 2nd session
-        final ContentCaptureContext context2 = newContentCaptureContextBuilder("session2")
-                .build();
-        final ContentCaptureSession childSession2 = mainSession
-                .createContentCaptureSession(context2);
-        final ContentCaptureSessionId childSessionId2 = childSession2.getContentCaptureSessionId();
-        Log.v(TAG, "child session id 2: " + childSessionId2);
-
-        final TextView s2c1 = newImportantView(activity, childSession2, "s2c1");
-        final AutofillId s2c1Id = s2c1.getAutofillId();
-        final TextView s2c2 = newImportantView(activity, childSession2, "s2c2");
-        final AutofillId s2c2Id = s2c2.getAutofillId();
-        Log.v(TAG, "childrens from session2: " + s2c1Id + ", " + s2c2Id);
-
-        // Add 2 children together so they're wrapped a view_tree batch
-        activity.syncRunOnUiThread(() -> {
-            rootView.addView(s2c1);
-            rootView.addView(s2c2);
-        });
-
-        // Remove views - should generate one batch event for s2 and one single event for s1
-        waitAndRemoveViews(activity, s2c1, s2c2, s1c1);
-
-        activity.finish();
-        watcher.waitFor(DESTROYED);
-
-        final List<ContentCaptureSessionId> receivedIds = service.getAllSessionIds();
-        assertThat(receivedIds).containsExactly(
-                mainSessionId,
-                childSessionId1,
-                childSessionId2)
-            .inOrder();
-
-        // Assert main sessions info
-        final Session mainTestSession = service.getFinishedSession(mainSessionId);
-        assertMainSessionContext(mainTestSession, activity);
-        final List<ContentCaptureEvent> mainEvents = mainTestSession.getEvents();
-        Log.v(TAG, "mainEvents(" + mainEvents.size() + "): " + mainEvents);
-
-        // Logs events before asserting
-        final Session childTestSession1 = service.getFinishedSession(childSessionId1);
-        assertChildSessionContext(childTestSession1, "session1");
-        final List<ContentCaptureEvent> events1 = childTestSession1.getEvents();
-        Log.v(TAG, "events1(" + events1.size() + "): " + events1);
-        final Session childTestSession2 = service.getFinishedSession(childSessionId2);
-        final List<ContentCaptureEvent> events2 = childTestSession2.getEvents();
-        assertChildSessionContext(childTestSession2, "session2");
-        Log.v(TAG, "events2(" + events2.size() + "): " + events2);
-
-        // Assert children
-         assertThat(events1.size()).isAtLeast(6);
-        final AutofillId rootId = rootView.getAutofillId();
-        assertViewTreeStarted(events1, 0);
-        assertViewAppeared(events1, 1, s1c1, rootId);
-        assertViewTreeFinished(events1, 2);
-        assertViewTreeStarted(events1, 3);
-        assertViewDisappeared(events1, 4, s1c1Id);
-        assertViewTreeFinished(events1, 5);
-
-        assertThat(events2.size()).isAtLeast(7);
-        assertViewTreeStarted(events2, 0);
-        assertViewAppeared(events2, 1, s2c1, rootId);
-        assertViewAppeared(events2, 2, s2c2, rootId);
-        assertViewTreeFinished(events2, 3);
-        assertViewTreeStarted(events2, 4);
-        assertViewsDisappeared(events2, 5, s2c1Id, s2c2Id);
-        assertViewTreeFinished(events2, 6);
-    }
-
-    /**
-     * Tests scenario where views from different session are removed in sequence - they should not
-     * have been batched.
-     */
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_FLUSH_AFTER_EACH_FRAME)
-    public void testRemoveChildrenFromDifferentSessions_flagOn() throws Exception {
+    public void testRemoveChildrenFromDifferentSessions() throws Exception {
         final CtsContentCaptureService service = enableService();
         final ActivityWatcher watcher = startWatcher();
 

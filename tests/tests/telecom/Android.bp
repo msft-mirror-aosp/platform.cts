@@ -87,6 +87,14 @@ filegroup {
     path: "NonUiInCallServiceWoExport/",
 }
 
+filegroup {
+    name: "redirection-app-aidl",
+    srcs: [
+        "aidl/android/telecom/cts/redirectiontestapp/ICtsCallRedirectionServiceController.aidl",
+    ],
+    path: "aidl/",
+}
+
 android_test {
     name: "CtsTelecomTestCases",
     defaults: ["cts_defaults"],
@@ -98,7 +106,10 @@ android_test {
         "CtsTelecomUtilLib",
         "telecom_flags_core_java_lib",
         "telephony_flags_core_java_lib",
+        "telecom_module_flags-export-java",
         "TelecomTestAppUtilsLib",
+        "flag-junit",
+        "telecom_module_flags-export-java",
     ],
     libs: [
         "android.test.base.stubs.test",
@@ -114,7 +125,7 @@ android_test {
         "ThirdPtyInCallServiceTestApp/**/*.java",
         "ThirdPtyInCallServiceTestApp/**/I*.aidl",
         "CallRedirectionServiceTestApp/**/*.java",
-        "CallRedirectionServiceTestApp/**/I*.aidl",
+        "CallRedirectionServiceTestApp2/**/*.java",
         "Api29InCallServiceTestApp/**/*.java",
         "Api29InCallServiceTestApp/**/I*.aidl",
         "NonUiInCallServiceWoExport/**/*.java",
@@ -134,7 +145,6 @@ android_test {
         local_include_dirs: [
             "NonUiInCallServiceWoExport/aidl/",
             "ThirdPtyInCallServiceTestApp/aidl/",
-            "CallRedirectionServiceTestApp/aidl/",
             "CallScreeningServiceTestApp/aidl/",
             "CallStreamingServiceTestApp/aidl/",
             "aidl/",
@@ -154,6 +164,7 @@ android_test {
         ":SelfManagedCSTestAppOne",
         ":Api29InCallServiceTestApp",
         ":CallRedirectionServiceTestApp",
+        ":CallRedirectionServiceTestApp2",
         ":ThirdPtyDialerTestAppTwo",
         ":ThirdPtyDialerTestApp",
         ":CarModeTestApp",

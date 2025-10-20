@@ -45,6 +45,18 @@ public class Checkers {
     }
 
     @Test
+    public void checkLandscapeOrientationSupported() {
+        PackageManager pm = InstrumentationRegistry.getContext().getPackageManager();
+        assertThat(pm.hasSystemFeature(PackageManager.FEATURE_SCREEN_LANDSCAPE)).isTrue();
+    }
+
+    @Test
+    public void checkPortraitOrientationSupported() {
+        PackageManager pm = InstrumentationRegistry.getContext().getPackageManager();
+        assertThat(pm.hasSystemFeature(PackageManager.FEATURE_SCREEN_PORTRAIT)).isTrue();
+    }
+
+    @Test
     public void checkVibratorPrimitivesTickAndClickAreSupported() {
         Vibrator v = InstrumentationRegistry.getContext().getSystemService(Vibrator.class);
         assertThat(

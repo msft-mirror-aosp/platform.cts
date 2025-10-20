@@ -74,6 +74,7 @@ public class ProcStateAtomTests extends DeviceTestCase implements IBuildReceiver
 
     private static final String FEATURE_WATCH = "android.hardware.type.watch";
     private static final String FEATURE_AUTOMOTIVE = "android.hardware.type.automotive";
+    private static final String FEATURE_PC = "android.hardware.type.pc";
 
     // The tests here are using the BatteryStats definition of 'background'.
     private static final Set<Integer> BG_STATES = new HashSet<>(
@@ -224,32 +225,45 @@ public class ProcStateAtomTests extends DeviceTestCase implements IBuildReceiver
         if (DeviceUtils.hasFeature(getDevice(), FEATURE_WATCH)) return;
         if (DeviceUtils.hasFeature(getDevice(), FEATURE_AUTOMOTIVE)) return;
 
-        Set<Integer> onStates = new HashSet<>(Arrays.asList(
-                ProcessStateEnum.PROCESS_STATE_TOP_SLEEPING_VALUE));
-        Set<Integer> offStates = complement(onStates);
+        if (DeviceUtils.hasFeature(getDevice(), FEATURE_PC)) {
+            // On desktop devices, turning screen off puts the device to sleep
+            // and unreachable via ADB. Hold a wakelock to prevent that.
+            getDevice().executeShellCommand("cmd power set-wakelock acquire PARTIAL_WAKE_LOCK");
+        }
 
-        List<Set<Integer>> stateSet = Arrays.asList(onStates, offStates); // state sets, in order
-        ConfigUtils.uploadConfigForPushedAtomWithUid(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
-                PROC_STATE_ATOM_TAG, /*useUidAttributionChain=*/false);
+        try {
+            Set<Integer> onStates = new HashSet<>(Arrays.asList(
+                    ProcessStateEnum.PROCESS_STATE_TOP_SLEEPING_VALUE));
+            Set<Integer> offStates = complement(onStates);
 
-        DeviceUtils.turnScreenOn(getDevice());
-        RunUtil.getDefault().sleep(WAIT_TIME_FOR_SCREEN_MS);
+            List<Set<Integer>> stateSet = Arrays.asList(onStates, offStates); // state sets, in order
+            ConfigUtils.uploadConfigForPushedAtomWithUid(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
+                    PROC_STATE_ATOM_TAG, /*useUidAttributionChain=*/false);
 
-        executeForegroundActivity(getDevice(), ACTION_SLEEP_WHILE_TOP);
-        RunUtil.getDefault().sleep(WAIT_TIME_FOR_SCREEN_MS);
-        DeviceUtils.turnScreenOff(getDevice());
-        final int waitTime = SLEEP_OF_ACTION_SLEEP_WHILE_TOP + EXTRA_WAIT_TIME_MS;
-        RunUtil.getDefault().sleep(waitTime + STATSD_REPORT_WAIT_TIME_MS);
+            DeviceUtils.turnScreenOn(getDevice());
+            RunUtil.getDefault().sleep(WAIT_TIME_FOR_SCREEN_MS);
 
-        List<EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
-        AtomTestUtils.popUntilFind(data,
-                new HashSet<>(Arrays.asList(ProcessStateEnum.PROCESS_STATE_TOP_VALUE)),
-                PROC_STATE_FUNCTION); // clear out anything prior to it entering TOP.
-        AtomTestUtils.popUntilFind(data, onStates, PROC_STATE_FUNCTION); // clear out TOP itself.
-        // reset screen back on
-        DeviceUtils.turnScreenOn(getDevice());
-        // Don't check the wait time, since it's up to the system how long top sleeping persists.
-        AtomTestUtils.assertStatesOccurredInOrder(stateSet, data, 0, PROC_STATE_FUNCTION);
+            executeForegroundActivity(getDevice(), ACTION_SLEEP_WHILE_TOP);
+            RunUtil.getDefault().sleep(WAIT_TIME_FOR_SCREEN_MS);
+            DeviceUtils.turnScreenOff(getDevice());
+            final int waitTime = SLEEP_OF_ACTION_SLEEP_WHILE_TOP + EXTRA_WAIT_TIME_MS;
+            RunUtil.getDefault().sleep(waitTime + STATSD_REPORT_WAIT_TIME_MS);
+
+            List<EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
+            AtomTestUtils.popUntilFind(data,
+                    new HashSet<>(Arrays.asList(ProcessStateEnum.PROCESS_STATE_TOP_VALUE)),
+                    PROC_STATE_FUNCTION); // clear out anything prior to it entering TOP.
+            AtomTestUtils.popUntilFind(data, onStates, PROC_STATE_FUNCTION); // clear out TOP itself.
+            // reset screen back on
+            DeviceUtils.turnScreenOn(getDevice());
+            // Don't check the wait time, since it's up to the system how long top sleeping persists.
+            AtomTestUtils.assertStatesOccurredInOrder(stateSet, data, 0, PROC_STATE_FUNCTION);
+        } finally {
+            if (DeviceUtils.hasFeature(getDevice(), FEATURE_PC)) {
+                // Clean up the wakelock.
+                getDevice().executeShellCommand("cmd power set-wakelock release PARTIAL_WAKE_LOCK");
+            }
+        }
     }
 
     public void testCached() throws Exception {

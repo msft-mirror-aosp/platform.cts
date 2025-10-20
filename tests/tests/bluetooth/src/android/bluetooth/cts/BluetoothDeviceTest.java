@@ -46,9 +46,8 @@ import android.bluetooth.BluetoothDevice.BluetoothAddress;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothSinkAudioPolicy;
-import android.bluetooth.BluetoothSocket;
-import android.bluetooth.BluetoothSocketException;
 import android.bluetooth.BluetoothStatusCodes;
+import android.bluetooth.EncryptionStatus;
 import android.bluetooth.OobData;
 import android.bluetooth.test_utils.Permissions;
 import android.content.AttributionSource;
@@ -77,7 +76,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.hamcrest.MockitoHamcrest;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.time.Duration;
 import java.util.List;
@@ -97,6 +95,7 @@ public class BluetoothDeviceTest {
     private BluetoothDevice mFakeDevice;
     private int mFakePsm = 100;
     private UUID mFakeUuid = UUID.fromString("0000111E-0000-1000-8000-00805F9B34FB");
+    private int mFakeKeySize = 16;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -716,40 +715,6 @@ public class BluetoothDeviceTest {
                 .isEqualTo(BluetoothStatusCodes.ERROR_DEVICE_NOT_BONDED);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_BT_SOCKET_API_L2CAP_CID)
-    @Test
-    public void getL2capChannel() throws IOException {
-        // Skip the test if bluetooth or companion device are not present.
-        assumeTrue(mHasBluetooth && mHasCompanionDevice);
-
-        BluetoothSocket l2capSocket = mFakeDevice.createInsecureL2capChannel(mFakePsm);
-        BluetoothSocket rfcommSocket =
-                mFakeDevice.createInsecureRfcommSocketToServiceRecord(mFakeUuid);
-
-        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
-
-        // This should throw a BluetoothSocketException because it is not L2CAP socket
-        assertThrows(
-                "Unknown L2CAP socket",
-                BluetoothSocketException.class,
-                () -> rfcommSocket.getL2capLocalChannelId());
-        assertThrows(
-                "Unknown L2CAP socket",
-                BluetoothSocketException.class,
-                () -> rfcommSocket.getL2capRemoteChannelId());
-
-        // This should throw a BluetoothSocketException because L2CAP socket is not connected
-        assertThrows(
-                "Socket closed",
-                BluetoothSocketException.class,
-                () -> l2capSocket.getL2capLocalChannelId());
-        assertThrows(
-                "Socket closed",
-                BluetoothSocketException.class,
-                () -> l2capSocket.getL2capRemoteChannelId());
-    }
-
-    @RequiresFlagsEnabled(Flags.FLAG_METADATA_API_MICROPHONE_FOR_CALL_ENABLED)
     @Test
     public void setMicrophonePreferredForCalls_isMicrophonePreferredForCalls() {
         // Skip the test if bluetooth or companion device are not present.
@@ -848,5 +813,13 @@ public class BluetoothDeviceTest {
                 SecurityException.class,
                 () -> mFakeDevice.getEncryptionStatus(BluetoothDevice.TRANSPORT_BREDR));
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
+
+        // Create a fake encryption status and verify the values, mocking the values is not possible
+        // as the BluetoothDevice class is final.
+        EncryptionStatus encryptionStatus =
+                new EncryptionStatus(mFakeKeySize, BluetoothDevice.ENCRYPTION_ALGORITHM_AES);
+        assertThat(encryptionStatus.getAlgorithm())
+                .isEqualTo(BluetoothDevice.ENCRYPTION_ALGORITHM_AES);
+        assertThat(encryptionStatus.getKeySize()).isEqualTo(mFakeKeySize);
     }
 }

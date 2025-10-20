@@ -441,6 +441,15 @@ public class ImsCallingTest extends ImsCallingBase {
         // Ensure the original call was reused for the conference and thus is still ACTIVE:
         isCallActive(call, callSession);
 
+        // Verify that hold capabilities are present.
+        int capabilities = call.getDetails().getCallCapabilities();
+        assertTrue(
+                "Call should have CAPABILITY_SUPPORT_HOLD when in a remotely hosted conf.",
+                (capabilities & Call.Details.CAPABILITY_SUPPORT_HOLD) != 0);
+        assertTrue(
+                "Call should have CAPABILITY_HOLD when in a remotely hosted conf..",
+                (capabilities & Call.Details.CAPABILITY_HOLD) != 0);
+
         // End the conference call and ensure it is cleaned up correctly:
         callSession.terminateIncomingCall();
         isCallDisconnected(call, callSession);
@@ -1662,6 +1671,79 @@ public class ImsCallingTest extends ImsCallingBase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_IGNORE_INCALL_MMI_FOR_EMERGENCY)
+    public void testOutgoingEmergencyCall_InCallMmiCode() throws Exception {
+        if (!ImsUtils.shouldTestImsCall()) {
+            return;
+        }
+
+        boolean supportDomainSelection =
+                ShellIdentityUtils.invokeMethodWithShellPermissions(sTelephonyManager,
+                        (tm) -> tm.isDomainSelectionSupported());
+
+        // A similar test is implemented in EmergencyCallDomainSelectionTestOnMockModem to test the
+        // case where domain selection is supported.
+        if (supportDomainSelection) {
+            return;
+        }
+
+        LinkedBlockingQueue<List<CallState>> queue = new LinkedBlockingQueue<>();
+        ImsCallingTest.TestTelephonyCallbackForCallStateChange testCb =
+                new ImsCallingTest.TestTelephonyCallbackForCallStateChange(queue);
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                sTelephonyManager, (tm) -> tm.registerTelephonyCallback(Runnable::run, testCb));
+
+        testCb.setTestEmergencyNumber(TEST_EMERGENCY_NUMBER);
+        setupForEmergencyCalling(TEST_EMERGENCY_NUMBER);
+        assertTrue(testCb.waitForTestEmergencyNumberConfigured());
+
+        bindImsService();
+        mServiceCallBack = new ServiceCallBack();
+        InCallServiceStateValidator.setCallbacks(mServiceCallBack);
+
+        TelecomManager telecomManager = (TelecomManager) InstrumentationRegistry
+                .getInstrumentation().getContext().getSystemService(Context.TELECOM_SERVICE);
+
+        // It is possible on some devices (particularly wearables) that
+        // the packages/services/Telephony/res/values/config.xml value
+        // `config_pstnCanPlaceEmergencyCalls` is `FALSE`.  In this case, there will be no
+        // TelephonyConnectionService phone account registered with
+        // `CAPABILITY_PLACE_EMERGENCY_CALLS`; as a consequence this test would fail because Telecom
+        // will not be able to find a phone account capable of placing an emergency call, even
+        // though we're using a test ImsService.
+        assumeTrue(
+                "Device has `config_pstnCanPlaceEmergencyCalls` set `false`, skipping",
+                ImsUtils.hasEmergencyCallCapablePhoneAccount());
+
+        // Place outgoing emergency call
+        telecomManager.placeCall(TEST_EMERGENCY_URI, new Bundle());
+
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        Call call = getCall(mCurrentCallId);
+        waitForCallSessionToNotBe(null);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+
+        assertTrue(testCb.waitForOutgoingEmergencyCall(TEST_EMERGENCY_NUMBER));
+        assertTrue(testCb.waitForCallActive());
+
+        TestImsCallSessionImpl callSession = sServiceConnector.getCarrierService().getMmTelFeature()
+                .getImsCallsession();
+        isCallActive(call, callSession);
+
+        // Send InCall MMI code to hang up the emergency call and ensure it does not affect the
+        // ACTIVE emergency call.
+        telecomManager.placeCall(TEST_HANG_UP_IN_CALL_MMI_URI, new Bundle());
+        TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
+        isCallActive(call, callSession);
+
+        call.disconnect();
+        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        isCallDisconnected(call, callSession);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        waitForUnboundService();
+    }
+
+    @Test
     @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_IMS_MMTEL_INTERFACE)
     public void testCallSessionTransferred() throws Exception {
         if (!ImsUtils.shouldTestImsCall()) {
@@ -1695,14 +1777,12 @@ public class ImsCallingTest extends ImsCallingBase {
                     }
                 }, WAIT_FOR_CALL_STATE_ACTIVE, "Notify IMS call session transfer result");
 
-        mCall2.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
-        isCallDisconnected(mCall2, mCallSession2);
+        isCallDisconnected(mCall1, mCallSession1);
         assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
 
-        mCall1.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
-        isCallDisconnected(mCall1, mCallSession1);
+        // Terminate the other call to mimic network behavior after the call transfer
+        mCallSession2.terminate(ImsReasonInfo.CODE_USER_TERMINATED);
+        isCallDisconnected(mCall2, mCallSession2);
         assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
 
         waitForUnboundService();
@@ -2147,6 +2227,18 @@ public class ImsCallingTest extends ImsCallingBase {
         overrideCarrierConfig(null);
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_AUTO_UNHOLD)
+    @Test
+    public void testAutoUnholdBgCallOnRemoteDisconnect_ConfigSupported() throws Exception {
+        verifyAutoUnholdFeature(true /* enableAutoUnhold */);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_AUTO_UNHOLD)
+    @Test
+    public void testAutoUnholdBgCallOnRemoteDisconnect_ConfigNotSupported() throws Exception {
+        verifyAutoUnholdFeature(false /* enableAutoUnhold */);
+    }
+
     @RequiresFlagsEnabled(Flags.FLAG_LOG_CALLS_ANSWERED_ELSEWHERE)
     @ApiTest(apis = "android.telephony.CarrierConfigManager#KEY_LOG_CALLS_ANSWERED_ELSEWHERE_BOOL")
     @Test
@@ -2241,6 +2333,242 @@ public class ImsCallingTest extends ImsCallingBase {
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled(android.telecom.flags.Flags.FLAG_EXPLICIT_CALL_TRANSFER)
+    public void testBlindTransfer() throws Exception {
+        if (!ImsUtils.shouldTestImsCall()) {
+            return;
+        }
+
+        bindImsService();
+        mServiceCallBack = new ServiceCallBack();
+        InCallServiceStateValidator.setCallbacks(mServiceCallBack);
+
+        TelecomManager telecomManager = (TelecomManager) InstrumentationRegistry
+                .getInstrumentation().getContext().getSystemService(Context.TELECOM_SERVICE);
+
+        final Uri imsUri = Uri.fromParts(PhoneAccount.SCHEME_TEL, String.valueOf(++sCounter), null);
+        Bundle extras = new Bundle();
+
+        // Place outgoing call
+        telecomManager.placeCall(imsUri, extras);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+
+        Call call = getCall(mCurrentCallId);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+
+        waitForCallSessionToNotBe(null);
+        TestImsCallSessionImpl callSession =
+                sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+
+        isCallActive(call, callSession);
+
+        callSession.addTestType(TestImsCallSessionImpl.TEST_TYPE_TRANSFERRED);
+
+        final Uri imsTransferUri = Uri.fromParts(PhoneAccount.SCHEME_TEL,
+                                                 String.valueOf(++sCounter), null);
+        call.transfer(imsTransferUri, false);
+
+        // The transferor call had to be terminated
+        isCallDisconnected(call, callSession);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.telecom.flags.Flags.FLAG_EXPLICIT_CALL_TRANSFER)
+    public void testAssuredTransfer() throws Exception {
+        if (!ImsUtils.shouldTestImsCall()) {
+            return;
+        }
+
+
+        bindImsService();
+        mServiceCallBack = new ServiceCallBack();
+        InCallServiceStateValidator.setCallbacks(mServiceCallBack);
+
+        TelecomManager telecomManager = (TelecomManager) InstrumentationRegistry
+                .getInstrumentation().getContext().getSystemService(Context.TELECOM_SERVICE);
+
+        final Uri imsUri = Uri.fromParts(PhoneAccount.SCHEME_TEL, String.valueOf(++sCounter), null);
+        Bundle extras = new Bundle();
+
+        // Place outgoing call
+        telecomManager.placeCall(imsUri, extras);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+
+        Call call = getCall(mCurrentCallId);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+
+        waitForCallSessionToNotBe(null);
+        TestImsCallSessionImpl callSession =
+                sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+
+        isCallActive(call, callSession);
+
+        callSession.addTestType(TestImsCallSessionImpl.TEST_TYPE_TRANSFERRED);
+
+        final Uri imsTransferUri = Uri.fromParts(PhoneAccount.SCHEME_TEL,
+                                                 String.valueOf(++sCounter), null);
+        call.transfer(imsTransferUri, true);
+
+        // The transferor call had to be terminated in order to
+        // mimic network behavior after the call transfer
+        isCallDisconnected(call, callSession);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+
+        waitForUnboundService();
+
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.telecom.flags.Flags.FLAG_EXPLICIT_CALL_TRANSFER)
+    public void testAssuredTransferFailed() throws Exception {
+        if (!ImsUtils.shouldTestImsCall()) {
+            return;
+        }
+
+        bindImsService();
+        mServiceCallBack = new ServiceCallBack();
+        InCallServiceStateValidator.setCallbacks(mServiceCallBack);
+
+        TelecomManager telecomManager = (TelecomManager) InstrumentationRegistry
+                .getInstrumentation().getContext().getSystemService(Context.TELECOM_SERVICE);
+
+        final Uri imsUri = Uri.fromParts(PhoneAccount.SCHEME_TEL, String.valueOf(++sCounter), null);
+        Bundle extras = new Bundle();
+
+        // Place outgoing call
+        telecomManager.placeCall(imsUri, extras);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+
+        Call call = getCall(mCurrentCallId);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+
+        waitForCallSessionToNotBe(null);
+        TestImsCallSessionImpl callSession =
+                sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+
+        isCallActive(call, callSession);
+
+        callSession.addTestType(TestImsCallSessionImpl.TEST_TYPE_TRANSFER_FAILED);
+
+        final Uri imsTransferUri = Uri.fromParts(PhoneAccount.SCHEME_TEL,
+                                                 String.valueOf(++sCounter), null);
+        call.transfer(imsTransferUri, true);
+
+        // The transferor call has to be active in order to
+        // mimic network behavior after the call transfer
+        isCallActive(call, callSession);
+
+        call.disconnect();
+        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        isCallDisconnected(call, callSession);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+
+        waitForUnboundService();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.telecom.flags.Flags.FLAG_EXPLICIT_CALL_TRANSFER)
+    public void testConsultativeTransfer() throws Exception {
+        if (!ImsUtils.shouldTestImsCall()) {
+            return;
+        }
+
+        bindImsService();
+        mServiceCallBack = new ServiceCallBack();
+        InCallServiceStateValidator.setCallbacks(mServiceCallBack);
+
+        // Places 2 outgoing calls. mCall1 and mCall2.
+        // mCall1 is on hold, mCall2 is active
+        addOutgoingCalls();
+
+        // Initiate a Consultative Transfer
+        mCallSession2.addTestType(TestImsCallSessionImpl.TEST_TYPE_TRANSFERRED);
+        mCall2.transfer(mCall1);
+
+
+        // Wait for transfer result notification
+        waitUntilConditionIsTrueOrTimeout(
+                new Condition() {
+                    @Override
+                    public Object expected() {
+                        return true;
+                    }
+
+                    @Override
+                    public Object actual() {
+                        return mCallSession2.isTransferResultNotified();
+                    }
+                }, WAIT_FOR_CALL_STATE_ACTIVE, "Notify IMS call session transfer result");
+
+        // Verify if both the calls are disconnected from Transferor point of view.
+        isCallDisconnected(mCall2, mCallSession2);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+
+        mCallSession1.terminate(ImsReasonInfo.CODE_USER_TERMINATED);
+
+        isCallDisconnected(mCall1, mCallSession1);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+
+        waitForUnboundService();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.telecom.flags.Flags.FLAG_EXPLICIT_CALL_TRANSFER)
+    public void testConsultativeTransferFailed() throws Exception {
+        if (!ImsUtils.shouldTestImsCall()) {
+            return;
+        }
+
+        bindImsService();
+        mServiceCallBack = new ServiceCallBack();
+        InCallServiceStateValidator.setCallbacks(mServiceCallBack);
+
+        // Places 2 outgoing calls. mCall1 and mCall2.
+        // mCall1 is on hold, mCall2 is active
+        addOutgoingCalls();
+
+        // Initiate a Consultative Transfer
+        mCallSession2.addTestType(TestImsCallSessionImpl.TEST_TYPE_TRANSFER_FAILED);
+        mCall2.transfer(mCall1);
+
+
+        // Wait for transfer result notification
+        waitUntilConditionIsTrueOrTimeout(
+                new Condition() {
+                    @Override
+                    public Object expected() {
+                        return true;
+                    }
+
+                    @Override
+                    public Object actual() {
+                        return mCallSession2.isTransferResultNotified();
+                    }
+                }, WAIT_FOR_CALL_STATE_ACTIVE, "Notify IMS call session transfer result");
+
+        // Verify if both the calls are still held & active since the transfer failed.
+        assertTrue("Call is not in Hold State", (mCall1.getDetails().getState()
+                == Call.STATE_HOLDING));
+
+        assertTrue("Call is not in Active State", (mCall2.getDetails().getState()
+                == Call.STATE_ACTIVE));
+
+        // Disconnect both the calls.
+        mCall2.disconnect();
+        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        isCallDisconnected(mCall2, mCallSession2);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+
+        mCall1.disconnect();
+        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        isCallDisconnected(mCall1, mCallSession1);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+
+        waitForUnboundService();
+    }
 
     private void verifySrvccStateChange(int state) throws Exception {
         assertTrue(sMockModemManager.srvccStateNotify(sTestSlot, state));
@@ -2740,6 +3068,46 @@ public class ImsCallingTest extends ImsCallingBase {
                 .getConferenceHelper();
         if (confHelper != null) {
             confHelper.clearSessions();
+        }
+    }
+
+    private void verifyAutoUnholdFeature(boolean enableAutoUnhold) throws Exception {
+        bindImsService();
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putBoolean(CarrierConfigManager.KEY_ALLOW_HOLD_IN_IMS_CALL_BOOL, true);
+        // Disable the corresponding carrier config key to verify that auto-unhold doesn't happen.
+        bundle.putBoolean(
+                CarrierConfigManager.KEY_AUTO_UNHOLD_ON_REMOTE_DISCONNECT_BOOL, enableAutoUnhold);
+        overrideCarrierConfig(bundle);
+
+        // Place outgoing call.
+        Call firstCall = placeOutgoingCall();
+        waitForCallSessionToNotBe(null);
+        TestImsCallSessionImpl firstCallSession =
+                sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+        isCallActive(firstCall, firstCallSession);
+
+        // Place second call
+        Call secondCall = placeOutgoingCall();
+        waitForCallSessionToNotBe(firstCallSession);
+        TestImsCallSessionImpl secondCallSession =
+                sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+        // Ensure that the first call is held and the new call is active.
+        isCallHolding(firstCall, firstCallSession);
+        isCallActive(secondCall, secondCallSession);
+
+        // Remotely disconnect the active call.
+        secondCallSession.simulateCallDisconnection(ImsReasonInfo.CODE_USER_TERMINATED_BY_REMOTE);
+        isCallDisconnected(secondCall, secondCallSession);
+
+        // Verify either the bg call was unheld or not depending on the state of the carrier config
+        // (KEY_AUTO_UNHOLD_ON_REMOTE_DISCONNECT_BOOL) value.
+        if (enableAutoUnhold) {
+            isCallActive(firstCall, firstCallSession);
+        } else {
+            assertTrue(
+                    firstCallSession.isSessionOnHold()
+                            && firstCall.getDetails().getState() == Call.STATE_HOLDING);
         }
     }
 }

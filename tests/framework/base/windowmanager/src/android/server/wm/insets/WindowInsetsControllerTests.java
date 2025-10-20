@@ -76,6 +76,7 @@ import android.platform.test.annotations.Presubmit;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.MockImeHelper;
+import android.server.wm.WindowInsetsAnimationWaiter;
 import android.server.wm.WindowManagerTestBase;
 import android.text.TextUtils;
 import android.util.Log;
@@ -102,6 +103,7 @@ import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImePackageNames;
 import com.android.cts.mockime.MockImeSession;
 
+import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -130,7 +132,8 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
     private static final long TIMEOUT_UPDATING_INPUT_WINDOW = 500; // milliseconds
     private static final long TIMEOUT_UPDATING_SYSTEM_BAR_VISIBILITY = 500; // milliseconds
     private static final long TIME_SLICE = 50; // milliseconds
-    private static final AnimationCallback ANIMATION_CALLBACK = new AnimationCallback();
+    private static final WindowInsetsAnimationWaiter ANIMATION_CALLBACK =
+            new WindowInsetsAnimationWaiter();
 
     private static final String AM_BROADCAST_CLOSE_SYSTEM_DIALOGS =
             "am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS";
@@ -667,6 +670,7 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
 
     @Test
     public void testShowImeOnCreate() throws Exception {
+        Assume.assumeFalse(isPreventImeStartup());
         final Instrumentation instrumentation = getInstrumentation();
         assumeThat(MockImeSession.getUnavailabilityReason(instrumentation.getContext()),
                 nullValue());
@@ -680,6 +684,7 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
 
     @Test
     public void testShowImeOnCreate_doesntCauseImeToReappearWhenDialogIsShown() throws Exception {
+        Assume.assumeFalse(isPreventImeStartup());
         final Instrumentation instrumentation = getInstrumentation();
         assumeThat(MockImeSession.getUnavailabilityReason(instrumentation.getContext()),
                 nullValue());
@@ -1200,66 +1205,6 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
         getInstrumentation().getUiAutomation().injectInputEvent(event, true);
     }
 
-    private static class AnimationCallback extends WindowInsetsAnimation.Callback {
-
-        private static final long ANIMATION_TIMEOUT = 5000; // milliseconds
-
-        private WindowInsetsAnimation mAnimation;
-        private boolean mFinished = false;
-
-        AnimationCallback() {
-            super(DISPATCH_MODE_CONTINUE_ON_SUBTREE);
-        }
-
-        @Override
-        public void onPrepare(@NonNull WindowInsetsAnimation animation) {
-            Log.d(TAG, "onPrepare animation=" + toString(animation), new Throwable());
-            mAnimation = animation;
-        }
-
-        @Override
-        public WindowInsets onProgress(
-                @NonNull WindowInsets insets,
-                @NonNull List<WindowInsetsAnimation> runningAnimations) {
-            return insets;
-        }
-
-        @Override
-        public void onEnd(@NonNull WindowInsetsAnimation animation) {
-            synchronized (this) {
-                Log.d(TAG, "onEnd animation=" + toString(animation), new Throwable());
-                if (mAnimation == animation) {
-                    mFinished = true;
-                    notify();
-                }
-            }
-        }
-
-        void waitForFinishing() throws InterruptedException {
-            synchronized (this) {
-                if (!mFinished) {
-                    wait(ANIMATION_TIMEOUT);
-                }
-            }
-        }
-
-        void reset() {
-            synchronized (this) {
-                mAnimation = null;
-                mFinished = false;
-            }
-        }
-
-        private static String toString(@NonNull WindowInsetsAnimation animation) {
-            return animation
-                    + "{insetsTypes=" + WindowInsets.Type.toString(animation.getTypeMask())
-                    + " fraction=" + animation.getFraction()
-                    + " alpha=" + animation.getAlpha()
-                    + " duration=" + animation.getDurationMillis()
-                    + "}";
-        }
-    }
-
     private static View setViews(Activity activity, @Nullable String privateImeOptions) {
         LinearLayout layout = new LinearLayout(activity);
         View text = new TextView(activity);
@@ -1321,5 +1266,16 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
         getInstrumentation().runOnMainSync(() -> result[0] = f.get());
         //noinspection unchecked
         return (R) result[0];
+    }
+
+    private static boolean isPreventImeStartup() {
+        final Context context = getInstrumentation().getContext();
+        try {
+            return context.getResources()
+                    .getBoolean(android.R.bool.config_preventImeStartupUnlessTextEditor);
+        } catch (Resources.NotFoundException e) {
+            // Assume this is not enabled.
+            return false;
+        }
     }
 }

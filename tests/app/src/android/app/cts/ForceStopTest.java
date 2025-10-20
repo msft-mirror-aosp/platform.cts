@@ -48,6 +48,7 @@ import android.os.ConditionVariable;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -80,7 +81,9 @@ public final class ForceStopTest {
     private static final String APP_APK = "/data/local/tmp/cts/apps/CtsAppTestStubsApp1.apk";
     private static final String APP_ACTIVITY = "android.app.stubs.SimpleActivity";
     private static final String APP_PROVIDER_PACKAGE = "com.android.app.cts.provider";
+    private static final String SECONDARY_MAIN_ACTION = "android.app.stubs.ISecondaryMain";
 
+    private static final int INVALID_REASON = -2;
     private static final long DELAY_MILLIS = 10_000;
     private static final long SHORT_DELAY_MILLIS = 1_000;
 
@@ -88,10 +91,6 @@ public final class ForceStopTest {
     private ActivityManager mActivityManager;
     private PackageManager mPackageManager;
     private Instrumentation mInstrumentation;
-
-    private long mTimestampMs;
-
-    private int mUnstoppedReason = -3;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -119,8 +118,8 @@ public final class ForceStopTest {
         // Ensure that there are no remaining component records of the test app package.
         runWithShellPermissionIdentity(
                 () -> mActivityManager.forceStopPackage(intent.getPackage()));
-        ActivityReceiverFilter appStartedReceiver = new ActivityReceiverFilter(
-                SimpleActivity.ACTION_ACTIVITY_STARTED);
+        ActivityReceiverFilter appStartedReceiver =
+                new ActivityReceiverFilter(mTargetContext, SimpleActivity.ACTION_ACTIVITY_STARTED);
         // Start an activity of another APK.
         mTargetContext.startActivity(intent);
         assertThat(appStartedReceiver.waitForActivity()).isTrue();
@@ -152,28 +151,9 @@ public final class ForceStopTest {
         final String packageName = intent.getPackage();
 
         // Setup to receive broadcasts about stopped state
-        final ConditionVariable gotRestarted = new ConditionVariable();
-        final BroadcastReceiver receiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                final String action = intent.getAction();
-                final Uri uri = intent.getData();
-                final String pkg = uri != null ? uri.getSchemeSpecificPart() : null;
-                if (Intent.ACTION_PACKAGE_RESTARTED.equals(action)
-                        && packageName.equals(pkg)) {
-                    mTimestampMs = intent.getLongExtra(Intent.EXTRA_TIME, 0L);
-                    gotRestarted.open();
-                }
-            }
-        };
-
-        mTimestampMs = 0;
+        final BlockingQueue<Long> timestampQueue = new LinkedBlockingQueue<>();
         final long preStopTimestampMs = SystemClock.elapsedRealtime();
-
-        final IntentFilter filter = new IntentFilter();
-        filter.addDataScheme("package");
-        filter.addAction(Intent.ACTION_PACKAGE_RESTARTED);
-        mTargetContext.registerReceiver(receiver, filter);
+        registerPackageEventReceiver(Intent.ACTION_PACKAGE_RESTARTED, packageName, timestampQueue);
 
         forceStopAndStartSimpleActivity(intent);
 
@@ -181,12 +161,12 @@ public final class ForceStopTest {
         runWithShellPermissionIdentity(
                 () -> mActivityManager.forceStopPackage(packageName));
 
-        if (!gotRestarted.block(DELAY_MILLIS)) {
-            assertWithMessage("Didn't get ACTION_PACKAGE_RESTARTED").fail();
-        }
+        final Long timestampMs = timestampQueue.poll(DELAY_MILLIS, TimeUnit.MILLISECONDS);
+        assertWithMessage("Didn't get ACTION_PACKAGE_RESTARTED").that(timestampMs).isNotNull();
+
         if (Flags.stayStopped()) {
-            assertWithMessage("EXTRA_TIME " + mTimestampMs + " not after " + preStopTimestampMs)
-                    .that(mTimestampMs >= preStopTimestampMs)
+            assertWithMessage("EXTRA_TIME " + timestampMs + " not after " + preStopTimestampMs)
+                    .that(timestampMs >= preStopTimestampMs)
                     .isTrue();
         }
     }
@@ -198,38 +178,18 @@ public final class ForceStopTest {
         final String packageName = intent.getPackage();
 
         // Setup to receive broadcasts about stopped state
-        final ConditionVariable gotUnstopped = new ConditionVariable();
-        final BroadcastReceiver receiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                final String action = intent.getAction();
-                final Uri uri = intent.getData();
-                final String pkg = uri != null ? uri.getSchemeSpecificPart() : null;
-                if (Intent.ACTION_PACKAGE_UNSTOPPED.equals(action)
-                        && packageName.equals(pkg)) {
-                    mTimestampMs = intent.getLongExtra(Intent.EXTRA_TIME, 0L);
-                    gotUnstopped.open();
-                }
-            }
-        };
-
-        mTimestampMs = 0;
+        final BlockingQueue<Long> timestampQueue = new LinkedBlockingQueue<>();
         final long preUnstopTimestampMs = SystemClock.elapsedRealtime();
-
-        final IntentFilter filter = new IntentFilter();
-        filter.addDataScheme("package");
-        filter.addAction(Intent.ACTION_PACKAGE_UNSTOPPED);
-        mTargetContext.registerReceiver(receiver, filter);
+        registerPackageEventReceiver(Intent.ACTION_PACKAGE_UNSTOPPED, packageName, timestampQueue);
 
         forceStopAndStartSimpleActivity(intent);
 
-        assertWithMessage("EXTRA_TIME " + mTimestampMs + " not after " + preUnstopTimestampMs)
-                .that(mTimestampMs >= preUnstopTimestampMs)
-                .isTrue();
+        final Long timestampMs = timestampQueue.poll(DELAY_MILLIS, TimeUnit.MILLISECONDS);
+        assertWithMessage("Didn't get ACTION_PACKAGE_UNSTOPPED").that(timestampMs).isNotNull();
 
-        if (!gotUnstopped.block(DELAY_MILLIS)) {
-            assertWithMessage("Didn't get ACTION_PACKAGE_UNSTOPPED").fail();
-        }
+        assertWithMessage("EXTRA_TIME " + timestampMs + " not after " + preUnstopTimestampMs)
+                .that(timestampMs >= preUnstopTimestampMs)
+                .isTrue();
 
         // Force-stop it again to clean up
         runWithShellPermissionIdentity(
@@ -238,38 +198,19 @@ public final class ForceStopTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_STAY_STOPPED)
+    @AppModeFull(reason = "Instant apps don't get BOOT_COMPLETED broadcasts")
     public void testBootCompletedBroadcasts_activity() throws Exception {
         final Intent intent = createSimpleActivityIntent();
 
-        final ConditionVariable gotLockedBoot = new ConditionVariable();
-        final ConditionVariable gotBoot = new ConditionVariable();
-        final ConditionVariable gotActivityStarted = new ConditionVariable();
-        final BroadcastReceiver receiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                final String action = intent.getAction();
-                if (BootReceiver.ACTION_BOOT_COMPLETED_RECEIVED.equals(action)) {
-                    final String extraAction = intent.getStringExtra(
-                            BootReceiver.EXTRA_BOOT_COMPLETED_ACTION);
-                    if (Intent.ACTION_LOCKED_BOOT_COMPLETED.equals(extraAction)) {
-                        gotLockedBoot.open();
-                    } else if (Intent.ACTION_BOOT_COMPLETED.equals(extraAction)) {
-                        gotBoot.open();
-                    }
-                } else if (SimpleActivity.ACTION_ACTIVITY_STARTED.equals(action)) {
-                    gotActivityStarted.open();
-                }
-            }
-        };
-        final IntentFilter filter = new IntentFilter();
-        filter.addAction(BootReceiver.ACTION_BOOT_COMPLETED_RECEIVED);
-        filter.addAction(SimpleActivity.ACTION_ACTIVITY_STARTED);
-        mTargetContext.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
+        final BootCompletedReceiver bootCompletedReceiver = new BootCompletedReceiver();
+        bootCompletedReceiver.register(mTargetContext);
+        final ActivityStartedReceiver activityStartedReceiver = new ActivityStartedReceiver();
+        activityStartedReceiver.register(mTargetContext);
 
         mTargetContext.startActivity(intent);
 
         assertWithMessage("Activity didn't start")
-                .that(gotActivityStarted.block(DELAY_MILLIS))
+                .that(activityStartedReceiver.mGotActivityStarted.block(DELAY_MILLIS))
                 .isTrue();
 
         runWithShellPermissionIdentity(
@@ -278,45 +219,28 @@ public final class ForceStopTest {
         mTargetContext.startActivity(intent);
 
         assertWithMessage("Didn't get LOCKED_BOOT_COMPLETED")
-                .that(gotLockedBoot.block(DELAY_MILLIS))
+                .that(bootCompletedReceiver.mGotLockedBoot.block(DELAY_MILLIS))
                 .isTrue();
-        assertWithMessage("Didn't get BOOT_COMPLETED").that(gotBoot.block(DELAY_MILLIS)).isTrue();
+        assertWithMessage("Didn't get BOOT_COMPLETED")
+                .that(bootCompletedReceiver.mGotBoot.block(DELAY_MILLIS))
+                .isTrue();
 
         runWithShellPermissionIdentity(
                 () -> mActivityManager.forceStopPackage(APP_PACKAGE));
     }
 
     // Verifies that no BOOT_COMPLETED broadcasts are received on first launch for given action
-    private void verifyNoBootCompletedBroadcastsGeneric(Runnable r) throws Exception {
+    private void verifyNoBootCompletedBroadcastsOnFirstLaunch(Runnable actionToTriggerAppStart)
+            throws Exception {
         // Re-install the app to reset the notLaunched package state
         executeShellCommand("pm uninstall " + APP_PACKAGE);
-        executeShellCommand("pm install -r --force-queryable " + APP_APK);
+        executeShellCommand("pm install -r -g --force-queryable " + APP_APK);
 
-        final ConditionVariable gotLockedBoot = new ConditionVariable();
-        final ConditionVariable gotBoot = new ConditionVariable();
         final ConditionVariable gotAppStarted = new ConditionVariable();
+        final BootCompletedReceiver receiver = new BootCompletedReceiver();
+        receiver.register(mTargetContext);
 
-        final BroadcastReceiver receiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                final String action = intent.getAction();
-                if (BootReceiver.ACTION_BOOT_COMPLETED_RECEIVED.equals(action)) {
-                    final String extraAction = intent.getStringExtra(
-                            BootReceiver.EXTRA_BOOT_COMPLETED_ACTION);
-                    if (Intent.ACTION_LOCKED_BOOT_COMPLETED.equals(extraAction)) {
-                        gotLockedBoot.open();
-                    } else if (Intent.ACTION_BOOT_COMPLETED.equals(extraAction)) {
-                        gotBoot.open();
-                    }
-                }
-            }
-        };
-        final IntentFilter filter = new IntentFilter();
-        filter.addAction(BootReceiver.ACTION_BOOT_COMPLETED_RECEIVED);
-        filter.addAction(SimpleActivity.ACTION_ACTIVITY_STARTED);
-        mTargetContext.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
-
-        r.run();
+        actionToTriggerAppStart.run();
 
         CommandReceiver.sendCommandWithResultReceiver(mTargetContext,
                 CommandReceiver.COMMAND_EMPTY, APP_PACKAGE, APP_PACKAGE,
@@ -331,10 +255,10 @@ public final class ForceStopTest {
         assertWithMessage("App didn't start").that(gotAppStarted.block(DELAY_MILLIS)).isTrue();
 
         assertWithMessage("Got unexpected LOCKED_BOOT_COMPLETED")
-                .that(gotLockedBoot.block(DELAY_MILLIS))
+                .that(receiver.mGotLockedBoot.block(DELAY_MILLIS))
                 .isFalse();
         assertWithMessage("Got unexpected BOOT_COMPLETED")
-                .that(gotBoot.block(SHORT_DELAY_MILLIS))
+                .that(receiver.mGotBoot.block(SHORT_DELAY_MILLIS))
                 .isFalse();
 
         runWithShellPermissionIdentity(
@@ -346,11 +270,13 @@ public final class ForceStopTest {
      */
     @Test
     @RequiresFlagsEnabled(FLAG_USE_APP_INFO_NOT_LAUNCHED)
+    @AppModeFull(reason = "Instant apps don't get BOOT_COMPLETED broadcasts")
     public void testNoBootCompletedBroadcastsOnFirstLaunch_activity() throws Exception {
-        verifyNoBootCompletedBroadcastsGeneric(() -> {
-            final Intent intent = createSimpleActivityIntent();
-            mTargetContext.startActivity(intent);
-        });
+        verifyNoBootCompletedBroadcastsOnFirstLaunch(
+                () -> {
+                    final Intent intent = createSimpleActivityIntent();
+                    mTargetContext.startActivity(intent);
+                });
     }
 
     /**
@@ -358,8 +284,9 @@ public final class ForceStopTest {
      */
     @Test
     @RequiresFlagsEnabled(FLAG_USE_APP_INFO_NOT_LAUNCHED)
+    @AppModeFull(reason = "Instant apps don't get BOOT_COMPLETED broadcasts")
     public void testNoBootCompletedBroadcastsOnFirstLaunch_broadcast() throws Exception {
-        verifyNoBootCompletedBroadcastsGeneric(
+        verifyNoBootCompletedBroadcastsOnFirstLaunch(
                 () ->
                         CommandReceiver.sendCommandWithResultReceiver(
                                 mTargetContext,
@@ -376,8 +303,9 @@ public final class ForceStopTest {
      */
     @Test
     @RequiresFlagsEnabled(FLAG_USE_APP_INFO_NOT_LAUNCHED)
+    @AppModeFull(reason = "Instant apps don't get BOOT_COMPLETED broadcasts")
     public void testNoBootCompletedBroadcastsOnFirstLaunch_bindService() throws Exception {
-        verifyNoBootCompletedBroadcastsGeneric(
+        verifyNoBootCompletedBroadcastsOnFirstLaunch(
                 () -> {
                     int startReason = getStartReasonFromAppPackageService();
                     assertWithMessage("ForceStop reason should not be returned, should be -ve")
@@ -388,25 +316,10 @@ public final class ForceStopTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_STAY_STOPPED)
+    @AppModeFull(reason = "Instant apps don't get BOOT_COMPLETED broadcasts")
     public void testBootCompletedBroadcasts_broadcast() throws Exception {
-        final ConditionVariable gotLockedBoot = new ConditionVariable();
-        final ConditionVariable gotBoot = new ConditionVariable();
         final ConditionVariable appStarted = new ConditionVariable();
-        final BroadcastReceiver receiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                final String action = intent.getAction();
-                if (BootReceiver.ACTION_BOOT_COMPLETED_RECEIVED.equals(action)) {
-                    final String extraAction = intent.getStringExtra(
-                            BootReceiver.EXTRA_BOOT_COMPLETED_ACTION);
-                    if (Intent.ACTION_LOCKED_BOOT_COMPLETED.equals(extraAction)) {
-                        gotLockedBoot.open();
-                    } else if (Intent.ACTION_BOOT_COMPLETED.equals(extraAction)) {
-                        gotBoot.open();
-                    }
-                }
-            }
-        };
+        final BootCompletedReceiver receiver = new BootCompletedReceiver();
         CommandReceiver.sendCommandWithResultReceiver(mTargetContext,
                 CommandReceiver.COMMAND_EMPTY, APP_PACKAGE, APP_PACKAGE,
                 0, null,
@@ -424,21 +337,41 @@ public final class ForceStopTest {
 
         AmUtils.waitForBroadcastBarrier();
 
-        final IntentFilter filter = new IntentFilter();
-        filter.addAction(BootReceiver.ACTION_BOOT_COMPLETED_RECEIVED);
-        mTargetContext.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
+        receiver.register(mTargetContext);
 
         CommandReceiver.sendCommand(mTargetContext,
                 CommandReceiver.COMMAND_EMPTY, APP_PACKAGE, APP_PACKAGE,
                 0, null);
 
         assertWithMessage("Didn't get LOCKED_BOOT_COMPLETED")
-                .that(gotLockedBoot.block(DELAY_MILLIS))
+                .that(receiver.mGotLockedBoot.block(DELAY_MILLIS))
                 .isTrue();
-        assertWithMessage("Didn't get BOOT_COMPLETED").that(gotBoot.block(DELAY_MILLIS)).isTrue();
+        assertWithMessage("Didn't get BOOT_COMPLETED")
+                .that(receiver.mGotBoot.block(DELAY_MILLIS))
+                .isTrue();
 
         runWithShellPermissionIdentity(
                 () -> mActivityManager.forceStopPackage(APP_PACKAGE));
+    }
+
+    private void registerPackageEventReceiver(
+            String action, String packageName, BlockingQueue<Long> queue) {
+        final BroadcastReceiver receiver =
+                new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        final String intentAction = intent.getAction();
+                        final Uri uri = intent.getData();
+                        final String pkg = uri != null ? uri.getSchemeSpecificPart() : null;
+                        if (action.equals(intentAction) && packageName.equals(pkg)) {
+                            queue.offer(intent.getLongExtra(Intent.EXTRA_TIME, 0L));
+                        }
+                    }
+                };
+        final IntentFilter filter = new IntentFilter();
+        filter.addDataScheme("package");
+        filter.addAction(action);
+        mTargetContext.registerReceiver(receiver, filter);
     }
 
     private void clearHistoricalStartInfo() throws Exception {
@@ -484,24 +417,13 @@ public final class ForceStopTest {
 
         final Intent intent = createSimpleActivityIntent();
 
-        final ConditionVariable gotActivityStarted = new ConditionVariable();
-        final BroadcastReceiver receiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                final String action = intent.getAction();
-                if (SimpleActivity.ACTION_ACTIVITY_STARTED.equals(action)) {
-                    gotActivityStarted.open();
-                }
-            }
-        };
-        final IntentFilter filter = new IntentFilter();
-        filter.addAction(SimpleActivity.ACTION_ACTIVITY_STARTED);
-        mTargetContext.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
+        final ActivityReceiverFilter activityStartedReceiver =
+                new ActivityReceiverFilter(mTargetContext, SimpleActivity.ACTION_ACTIVITY_STARTED);
 
         // Check startActivity after a force-stop
         mTargetContext.startActivity(intent);
         assertWithMessage("Activity didn't start")
-                .that(gotActivityStarted.block(DELAY_MILLIS))
+                .that(activityStartedReceiver.waitForActivity())
                 .isTrue();
 
         final int startReason = getStartReasonFromAppPackageService();
@@ -517,23 +439,22 @@ public final class ForceStopTest {
      * Returns the start reason only if the app was force-stopped earlier, else returns -ve.
      */
     private int getStartReasonFromAppPackageService() {
-        final ConditionVariable serviceConnected = new ConditionVariable();
-
-        Intent serviceIntent = new Intent("android.app.stubs.ISecondaryMain");
+        final BlockingQueue<Integer> reasonQueue = new LinkedBlockingQueue<>();
+        Intent serviceIntent = new Intent(SECONDARY_MAIN_ACTION);
         serviceIntent.setPackage(APP_PACKAGE);
-        mUnstoppedReason = -2;
         final ServiceConnection connection =
                 new ServiceConnection() {
                     @Override
                     public void onServiceConnected(ComponentName name, IBinder service) {
                         try {
-                            mUnstoppedReason =
-                                    (ISecondary.Stub.asInterface(service))
-                                            .getWasForceStoppedReason();
+                            reasonQueue.offer(
+                                    ISecondary.Stub.asInterface(service)
+                                            .getWasForceStoppedReason());
                         } catch (RemoteException re) {
-                            // Expected
+                            // Expected in some cases, so we just unblock the poll.
+                            // The caller will get a value that's not a valid reason.
+                            reasonQueue.offer(INVALID_REASON);
                         }
-                        serviceConnected.open();
                     }
 
                     @Override
@@ -541,14 +462,16 @@ public final class ForceStopTest {
                 };
         try {
             mTargetContext.bindService(serviceIntent, connection, Context.BIND_AUTO_CREATE);
-
+            Integer reason = reasonQueue.poll(DELAY_MILLIS, TimeUnit.MILLISECONDS);
             assertWithMessage("Couldn't connect to android.app.stubs.ISecondaryMain")
-                    .that(serviceConnected.block(DELAY_MILLIS))
-                    .isTrue();
+                    .that(reason)
+                    .isNotNull();
+            return reason;
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         } finally {
             mTargetContext.unbindService(connection);
         }
-        return mUnstoppedReason;
     }
 
     @Test
@@ -682,16 +605,62 @@ public final class ForceStopTest {
         return blockingQueue.poll(DELAY_MILLIS, TimeUnit.MILLISECONDS);
     }
 
+    /** Receiver that listens for BOOT_COMPLETED broadcasts. */
+    private static final class BootCompletedReceiver extends BroadcastReceiver {
+        final ConditionVariable mGotLockedBoot = new ConditionVariable();
+        final ConditionVariable mGotBoot = new ConditionVariable();
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final String action = intent.getAction();
+            if (BootReceiver.ACTION_BOOT_COMPLETED_RECEIVED.equals(action)) {
+                final String extraAction =
+                        intent.getStringExtra(BootReceiver.EXTRA_BOOT_COMPLETED_ACTION);
+                if (Intent.ACTION_LOCKED_BOOT_COMPLETED.equals(extraAction)) {
+                    mGotLockedBoot.open();
+                } else if (Intent.ACTION_BOOT_COMPLETED.equals(extraAction)) {
+                    mGotBoot.open();
+                }
+            }
+        }
+
+        void register(Context context) {
+            final IntentFilter filter = new IntentFilter();
+            filter.addAction(BootReceiver.ACTION_BOOT_COMPLETED_RECEIVED);
+            context.registerReceiver(this, filter, Context.RECEIVER_EXPORTED);
+        }
+    }
+
+    /** Receiver that listens for ACTIVITY_STARTED broadcasts. */
+    private static final class ActivityStartedReceiver extends BroadcastReceiver {
+        final ConditionVariable mGotActivityStarted = new ConditionVariable();
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (SimpleActivity.ACTION_ACTIVITY_STARTED.equals(intent.getAction())) {
+                mGotActivityStarted.open();
+            }
+        }
+
+        void register(Context context) {
+            final IntentFilter filter = new IntentFilter();
+            filter.addAction(SimpleActivity.ACTION_ACTIVITY_STARTED);
+            context.registerReceiver(this, filter, Context.RECEIVER_EXPORTED);
+        }
+    }
+
     // The receiver filter needs to be instantiated with the command to filter for before calling
     // startActivity.
-    private final class ActivityReceiverFilter extends BroadcastReceiver {
+    private static final class ActivityReceiverFilter extends BroadcastReceiver {
         // The activity we want to filter for.
         private final String mActivityToFilter;
         private final ConditionVariable mBroadcastCondition = new ConditionVariable();
+        private final Context mTargetContext;
 
         // Create the filter with the intent to look for.
-        ActivityReceiverFilter(String activityToFilter) {
+        ActivityReceiverFilter(Context targetContext, String activityToFilter) {
             mActivityToFilter = activityToFilter;
+            mTargetContext = targetContext;
             final IntentFilter filter = new IntentFilter();
             filter.addAction(mActivityToFilter);
             mTargetContext.registerReceiver(this, filter,
@@ -702,6 +671,7 @@ public final class ForceStopTest {
         public void onReceive(Context context, Intent intent) {
             if (intent.getAction().equals(mActivityToFilter)) {
                 mBroadcastCondition.open();
+                mTargetContext.unregisterReceiver(this);
             }
         }
 
