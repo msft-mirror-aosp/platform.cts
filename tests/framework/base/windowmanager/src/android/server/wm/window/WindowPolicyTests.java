@@ -197,6 +197,10 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
         runInKidsModeSync(
                 () -> {
                     // The screenOrientation attr is considered only in fullscreen mode.
+                    // TODO(b/453670983): Launch the activity on the display assigned to the test
+                    // running user instead of always assuming the DEFAULT_DISPLAY once this test is
+                    // ready to be re-enabled for visible background users.
+                    // See runInKidsModeSync for the context of test skipping.
                     final TestActivity activity =
                             startActivityInFullscreenSync(PortraitTestActivity.class);
                     PollingCheck.waitFor(
@@ -215,6 +219,10 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
         runInKidsModeSync(
                 () -> {
                     // The screenOrientation attr is considered only in fullscreen mode.
+                    // TODO(b/453670983): Launch the activity on the display assigned to the test
+                    // running user instead of always assuming the DEFAULT_DISPLAY once this test is
+                    // ready to be re-enabled for visible background users.
+                    // See runInKidsModeSync for the context of test skipping.
                     final TestActivity activity =
                             startActivityInFullscreenSync(LandscapeTestActivity.class);
                     PollingCheck.waitFor(
@@ -227,6 +235,18 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
     }
 
     private void runInKidsModeSync(Runnable runnable) {
+        // This test involves calling into StatusBarManager#setNavBarMode.
+        // The StatusBarManagerService isn't configured to handle visible background users
+        // running concurrently with the primary user.
+        // To prevent passengers from interfering with the driver experience,
+        // visible background users can't interact with StatusBarManagerInternal.
+        // Skipping the test until StatusBarManagerService is able to handle visible background
+        // users.
+        // TODO(b/453670983): Re-enable tests that call runInKidsModeSync once
+        // StatusBarManagerService is able to handle visible background users.
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
+                "StatusBarManagerService is not currently able to handle visible background users");
+
         final StatusBarManager statusBarManager = mContext.getSystemService(StatusBarManager.class);
         assumeNotNull(statusBarManager);
 
