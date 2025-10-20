@@ -16,15 +16,25 @@
 
 package com.android.cts.managedprofile;
 
+import static android.app.admin.flags.Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 import android.graphics.Color;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 public class OrganizationInfoTest extends BaseManagedProfileTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     // needs to match DevicePolicyManagerService.ActiveAdmin.DEF_ORGANIZATION_COLOR
     private static final int DEFAULT_ORGANIZATION_COLOR = Color.parseColor("#00796B");
@@ -52,7 +62,8 @@ public class OrganizationInfoTest extends BaseManagedProfileTest {
 
             for (int color : colors) {
                 mDevicePolicyManager.setOrganizationColor(ADMIN_RECEIVER_COMPONENT, color);
-                assertEquals(color | 0xFF000000 /* opacity always enforced to 100% */,
+                assertEquals(
+                        color | 0xFF000000 /* opacity always enforced to 100% */,
                         mDevicePolicyManager.getOrganizationColor(ADMIN_RECEIVER_COMPONENT));
             }
         } finally {
@@ -91,8 +102,8 @@ public class OrganizationInfoTest extends BaseManagedProfileTest {
         try {
             final CharSequence name = "test-set-name";
             mDevicePolicyManager.setOrganizationName(ADMIN_RECEIVER_COMPONENT, name);
-            CharSequence organizationName = mDevicePolicyManager.getOrganizationName(
-                    ADMIN_RECEIVER_COMPONENT);
+            CharSequence organizationName =
+                    mDevicePolicyManager.getOrganizationName(ADMIN_RECEIVER_COMPONENT);
             assertEquals(name, organizationName);
         } finally {
             mDevicePolicyManager.setOrganizationName(ADMIN_RECEIVER_COMPONENT,
@@ -100,6 +111,8 @@ public class OrganizationInfoTest extends BaseManagedProfileTest {
         }
     }
 
+    // TODO(450898476): This test needs to be deleted when the flag is ready for clean-up.
+    @RequiresFlagsDisabled({FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING})
     @Test
     public void testSetOrGetOrganizationNameWithNullAdminFails() {
         try {
@@ -112,6 +125,24 @@ public class OrganizationInfoTest extends BaseManagedProfileTest {
             mDevicePolicyManager.getOrganizationName(null);
             fail("Exception should have been thrown for null admin ComponentName");
         } catch (Exception expected) {
+        }
+    }
+
+    @RequiresFlagsEnabled({FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING})
+    @Test
+    public void testSetOrGetOrganizationNameWithNullAdmin() {
+        CharSequence previousOrganizationName =
+                mDevicePolicyManager.getOrganizationName(/* admin= */ null);
+
+        try {
+            final CharSequence name = "test-set-name";
+            mDevicePolicyManager.setOrganizationName(/* admin= */ null, name);
+            CharSequence organizationName =
+                    mDevicePolicyManager.getOrganizationName(/* admin= */ null);
+            assertNotNull(organizationName);
+            assertEquals(name.toString(), organizationName.toString());
+        } finally {
+            mDevicePolicyManager.setOrganizationName(/* admin= */ null, previousOrganizationName);
         }
     }
 }
