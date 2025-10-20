@@ -134,7 +134,6 @@
   <option name="compatibility:include-filter" value="CtsSharedLibsApiSignatureTestCases"/>
   <option name="compatibility:include-filter" value="CtsAdminTestCases"/>
   <option name="compatibility:include-filter" value="CtsPackageManagerParsingHostTestCases"/>
-  <option name="compatibility:include-filter" value="CtsInstalledLoadingProgressHostTests"/>
   <option name="compatibility:include-filter" value="CtsSandboxedTopicsManagerTests"/>
   <option name="compatibility:include-filter" value="CtsLegacyNotification30TestCases"/>
   <option name="compatibility:include-filter" value="CtsPackageInstallAppOpDeniedTestCases"/>
