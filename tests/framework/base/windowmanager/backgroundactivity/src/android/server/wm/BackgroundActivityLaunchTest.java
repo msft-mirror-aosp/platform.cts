@@ -948,7 +948,6 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_BAL_CHECK_BROADCAST_WHEN_DISPATCHED)
     public void testBroadcastAllowsBalPendingIntentCreatedByReceivingApp() throws Exception {
         TestServiceClient serviceA = getTestService(APP_A_TEST_SERVICE);
         TestServiceClient serviceB = getTestService(APP_B_TEST_SERVICE);
@@ -978,7 +977,6 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_BAL_CHECK_BROADCAST_WHEN_DISPATCHED)
     public void testBroadcastAllowsBalPendingIntentCreatedBySendingApp() throws Exception {
         TestServiceClient serviceA = getTestService(APP_A_TEST_SERVICE);
         TestServiceClient serviceB = getTestService(APP_B_TEST_SERVICE);
