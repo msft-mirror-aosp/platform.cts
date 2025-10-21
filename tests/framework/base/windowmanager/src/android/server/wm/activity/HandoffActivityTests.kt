@@ -51,7 +51,7 @@ class HandoffActivityTests : WindowManagerTestBase() {
      * [Activity.setHandoffEnabled] is called
      */
     @Test
-    @RequiresFlagsEnabled(android.companion.Flags.FLAG_ENABLE_TASK_CONTINUITY)
+    @RequiresFlagsEnabled(android.companion.Flags.FLAG_TASK_CONTINUITY)
     fun setHandoffEnabled_updatesActivity() {
         val activity = startTestActivity()
 
@@ -69,7 +69,7 @@ class HandoffActivityTests : WindowManagerTestBase() {
      * requested.
      */
     @Test
-    @RequiresFlagsEnabled(android.companion.Flags.FLAG_ENABLE_TASK_CONTINUITY)
+    @RequiresFlagsEnabled(android.companion.Flags.FLAG_TASK_CONTINUITY)
     fun onHandoffActivityDataRequested_returnsHandoffActivityData() {
         val activity = startTestActivity()
         val handoffActivityData = HandoffActivityData.Builder(activity!!.componentName)
@@ -85,7 +85,7 @@ class HandoffActivityTests : WindowManagerTestBase() {
      * fields.
      */
     @Test
-    @RequiresFlagsEnabled(android.companion.Flags.FLAG_ENABLE_TASK_CONTINUITY)
+    @RequiresFlagsEnabled(android.companion.Flags.FLAG_TASK_CONTINUITY)
     fun onHandoffActivityDataRequested_returnsHandoffActivityDataWithSetExtras() {
         val activity = startTestActivity()
         val handoffActivityData = HandoffActivityData.Builder(activity!!.componentName)
