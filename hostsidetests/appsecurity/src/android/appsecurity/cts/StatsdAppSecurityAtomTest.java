@@ -80,9 +80,6 @@ public class StatsdAppSecurityAtomTest extends BaseHostJUnit4Test {
         for (AtomsProto.Atom atom : ReportUtils.getGaugeMetricAtoms(getDevice())) {
             AtomsProto.RoleHolder roleHolder = atom.getRoleHolder();
 
-            assertThat(roleHolder.getPackageName()).isNotNull();
-            assertThat(roleHolder.getRole()).isNotNull();
-
             // Verify that only empty roles have the special -1 UID
             if (roleHolder.getPackageName().equals("")) {
                 assertThat(roleHolder.getUid()).isEqualTo(-1);

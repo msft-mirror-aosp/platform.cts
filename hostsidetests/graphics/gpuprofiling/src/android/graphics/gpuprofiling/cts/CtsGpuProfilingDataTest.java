@@ -198,26 +198,24 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
             for (int j = 0; j < count; j++) {
                 DataSource source = state.getDataSources(j);
                 DataSourceDescriptor descriptor = source.getDsDescriptor();
-                if (descriptor != null) {
-                    if (descriptor.getName().equals(COUNTERS_SOURCE_NAME)) {
-                        countersSourceFound = true;
-                        Assert.assertTrue(
-                                "GpuCounterDescriptor field not found in data source descriptor ("
-                                        + COUNTERS_SOURCE_NAME
-                                        + ")",
-                                descriptor.hasGpuCounterDescriptor());
+                if (descriptor.getName().equals(COUNTERS_SOURCE_NAME)) {
+                    countersSourceFound = true;
+                    Assert.assertTrue(
+                            "GpuCounterDescriptor field not found in data source descriptor ("
+                                    + COUNTERS_SOURCE_NAME
+                                    + ")",
+                            descriptor.hasGpuCounterDescriptor());
 
-                        counterIds =
-                                descriptor.getGpuCounterDescriptor().getSpecsList().stream()
-                                        .map(spec -> spec.getCounterId())
-                                        .collect(Collectors.toSet());
-                    }
-                    if (descriptor.getName().equals(STAGES_SOURCE_NAME)) {
-                        stagesSourceFound = true;
-                    }
-                    if (countersSourceFound && stagesSourceFound) {
-                        break;
-                    }
+                    counterIds =
+                            descriptor.getGpuCounterDescriptor().getSpecsList().stream()
+                                    .map(spec -> spec.getCounterId())
+                                    .collect(Collectors.toSet());
+                }
+                if (descriptor.getName().equals(STAGES_SOURCE_NAME)) {
+                    stagesSourceFound = true;
+                }
+                if (countersSourceFound && stagesSourceFound) {
+                    break;
                 }
             }
             if (countersSourceFound && stagesSourceFound) {
