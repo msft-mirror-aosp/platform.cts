@@ -18,6 +18,7 @@ package android.server.wm.activity
 
 import android.app.HandoffActivityData
 import android.app.HandoffActivityDataRequestInfo
+import android.app.HandoffActivityParams
 import android.net.Uri
 import android.os.PersistableBundle
 import android.platform.test.annotations.RequiresFlagsEnabled
@@ -30,21 +31,18 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
-/**
- * Build/Install/Run:
- * atest CtsWindowManagerDeviceActivity:HandoffActivityTests
- */
+/** Build/Install/Run: atest CtsWindowManagerDeviceActivity:HandoffActivityTests */
 @ApiTest(
-    apis = [
-    "android.app.Activity#onHandoffActivityDataRequested",
-    "android.app.Activity#setHandoffEnabled",
-    "android.app.Activity#isHandoffEnabled",
-    ]
+    apis =
+        [
+            "android.app.Activity#onHandoffActivityDataRequested",
+            "android.app.Activity#setHandoffEnabled",
+            "android.app.Activity#isHandoffEnabled",
+        ]
 )
 class HandoffActivityTests : WindowManagerTestBase() {
 
-    @get:Rule
-    val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+    @get:Rule val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     /**
      * Tests that [ActivityRecord.mIsHandoffEnabled] is correctly set when
@@ -57,10 +55,10 @@ class HandoffActivityTests : WindowManagerTestBase() {
 
         assertFalse(activity.isHandoffEnabled)
 
-        activity.setHandoffEnabled(true)
+        activity.setHandoffEnabled(true, null)
         assertTrue(activity.isHandoffEnabled)
 
-        activity.setHandoffEnabled(false)
+        activity.setHandoffEnabled(false, null)
         assertFalse(activity.isHandoffEnabled)
     }
 
@@ -72,8 +70,7 @@ class HandoffActivityTests : WindowManagerTestBase() {
     @RequiresFlagsEnabled(android.companion.Flags.FLAG_TASK_CONTINUITY)
     fun onHandoffActivityDataRequested_returnsHandoffActivityData() {
         val activity = startTestActivity()
-        val handoffActivityData = HandoffActivityData.Builder(activity!!.componentName)
-            .build()
+        val handoffActivityData = HandoffActivityData.Builder(activity!!.componentName).build()
         activity.setHandoffActivityData(handoffActivityData)
         val result = activity.onHandoffActivityDataRequested(HandoffActivityDataRequestInfo(true))
         assertEquals(result!!.componentName, activity!!.componentName)
@@ -88,12 +85,11 @@ class HandoffActivityTests : WindowManagerTestBase() {
     @RequiresFlagsEnabled(android.companion.Flags.FLAG_TASK_CONTINUITY)
     fun onHandoffActivityDataRequested_returnsHandoffActivityDataWithSetExtras() {
         val activity = startTestActivity()
-        val handoffActivityData = HandoffActivityData.Builder(activity!!.componentName)
-            .setExtras(PersistableBundle().apply {
-                putString("test_key", "test_value")
-            })
-            .setFallbackUri(Uri.parse("https://www.google.com"))
-            .build()
+        val handoffActivityData =
+            HandoffActivityData.Builder(activity!!.componentName)
+                .setExtras(PersistableBundle().apply { putString("test_key", "test_value") })
+                .setFallbackUri(Uri.parse("https://www.google.com"))
+                .build()
         activity.setHandoffActivityData(handoffActivityData)
         val result = activity.onHandoffActivityDataRequested(HandoffActivityDataRequestInfo(true))
         assertEquals(activity!!.componentName, result!!.componentName)
