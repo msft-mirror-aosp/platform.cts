@@ -15,6 +15,8 @@ import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.os.PersistableBundle;
 
+import org.junit.Test;
+
 /**
  * Tests that the {@link DevicePolicyManager} APIs that should work for {@link
  * DevicePolicyManager#getParentProfileInstance(ComponentName)} are supported.
@@ -25,6 +27,7 @@ public class DevicePolicyManagerParentSupportTest extends BaseManagedProfileTest
     private static final ComponentName FAKE_COMPONENT = new ComponentName(
             FakeComponent.class.getPackage().getName(), FakeComponent.class.getName());
 
+    @Test
     public void testSetAndGetRequiredPasswordComplexity_onParent() {
        if (!mHasSecureLockScreen) {
             return;
@@ -42,6 +45,7 @@ public class DevicePolicyManagerParentSupportTest extends BaseManagedProfileTest
         }
     }
 
+    @Test
     public void testSetAndGetPasswordHistoryLength_onParent() {
         if (!mHasSecureLockScreen) {
             return;
@@ -56,6 +60,7 @@ public class DevicePolicyManagerParentSupportTest extends BaseManagedProfileTest
         assertThat(actualPasswordHistoryLength).isEqualTo(passwordHistoryLength);
     }
 
+    @Test
     public void testGetPasswordComplexity_onParent() {
         if (!mHasSecureLockScreen) {
             return;
@@ -67,6 +72,7 @@ public class DevicePolicyManagerParentSupportTest extends BaseManagedProfileTest
                 PASSWORD_COMPLEXITY_NONE);
     }
 
+    @Test
     public void testSetAndGetPasswordExpirationTimeout_onParent() {
         if (!mHasSecureLockScreen) {
             return;
@@ -81,6 +87,7 @@ public class DevicePolicyManagerParentSupportTest extends BaseManagedProfileTest
         assertThat(actualPasswordExpirationTimeout).isEqualTo(passwordExpirationTimeout);
     }
 
+    @Test
     public void testGetPasswordExpiration_onParent() {
         if (!mHasSecureLockScreen) {
             return;
@@ -96,6 +103,7 @@ public class DevicePolicyManagerParentSupportTest extends BaseManagedProfileTest
         assertThat(actualPasswordExpiration).isAtLeast(passwordExpirationTimeout + currentTime);
     }
 
+    @Test
     public void testGetMaximumPasswordLength_onParent() {
         if (!mHasSecureLockScreen) {
             return;
@@ -106,6 +114,7 @@ public class DevicePolicyManagerParentSupportTest extends BaseManagedProfileTest
         assertThat(actualMaximumPasswordLength).isGreaterThan(0);
     }
 
+    @Test
     public void testIsActivePasswordSufficient_onParent_setOnParent_isSupported() {
         try {
             mParentDevicePolicyManager.setRequiredPasswordComplexity(PASSWORD_COMPLEXITY_HIGH);
@@ -115,6 +124,7 @@ public class DevicePolicyManagerParentSupportTest extends BaseManagedProfileTest
         }
     }
 
+    @Test
     public void testIsActivePasswordSufficient_onParent_setOnProfile_isSupported() {
         try {
             mDevicePolicyManager.setRequiredPasswordComplexity(PASSWORD_COMPLEXITY_HIGH);
@@ -124,6 +134,7 @@ public class DevicePolicyManagerParentSupportTest extends BaseManagedProfileTest
         }
     }
 
+    @Test
     public void testSetPasswordQuality_onParent_isNotSupported() {
         assertThrows(SecurityException.class,
                 () -> setPasswordQuality(PASSWORD_QUALITY_NUMERIC_COMPLEX));
@@ -133,6 +144,7 @@ public class DevicePolicyManagerParentSupportTest extends BaseManagedProfileTest
         mParentDevicePolicyManager.setPasswordQuality(ADMIN_RECEIVER_COMPONENT, quality);
     }
 
+    @Test
     public void testIsActivePasswordSufficient_onParent_respectsProfileQualityWhenUnified() {
         mDevicePolicyManager.setPasswordQuality(
                 ADMIN_RECEIVER_COMPONENT, PASSWORD_QUALITY_UNSPECIFIED);
@@ -147,10 +159,12 @@ public class DevicePolicyManagerParentSupportTest extends BaseManagedProfileTest
         }
     }
 
+    @Test
     public void testGetCurrentFailedPasswordAttempts_onParent_isSupported() {
         assertThat(mParentDevicePolicyManager.getCurrentFailedPasswordAttempts()).isEqualTo(0);
     }
 
+    @Test
     public void testSetAndGetMaximumFailedPasswordsForWipe_onParent() {
         if (!mHasSecureLockScreen) {
             return;
@@ -166,6 +180,7 @@ public class DevicePolicyManagerParentSupportTest extends BaseManagedProfileTest
         assertThat(actualMaximumFailedPasswordsForWipe).isEqualTo(maximumFailedPasswordsForWipe);
     }
 
+    @Test
     public void testSetAndGetMaximumTimeToLock_onParent() {
         final int maximumTimeToLock = 6000;
 
@@ -177,6 +192,7 @@ public class DevicePolicyManagerParentSupportTest extends BaseManagedProfileTest
         assertThat(actualMaximumTimeToLock).isEqualTo(maximumTimeToLock);
     }
 
+    @Test
     public void testSetAndGetKeyguardDisabledFeatures_onParent() {
         mParentDevicePolicyManager.setKeyguardDisabledFeatures(
                 ADMIN_RECEIVER_COMPONENT, KEYGUARD_DISABLE_TRUST_AGENTS);
@@ -186,6 +202,7 @@ public class DevicePolicyManagerParentSupportTest extends BaseManagedProfileTest
         assertThat(actualKeyguardDisabledFeatures).isEqualTo(KEYGUARD_DISABLE_TRUST_AGENTS);
     }
 
+    @Test
     public void testSetAndGetTrustAgentConfiguration_onParent() {
         if (!mHasSecureLockScreen) {
             return;
@@ -204,6 +221,7 @@ public class DevicePolicyManagerParentSupportTest extends BaseManagedProfileTest
         assertThat(actualConfiguration.get(key)).isEqualTo(value);
     }
 
+    @Test
     public void testSetAndGetRequiredStrongAuthTimeout_onParent() {
         if (!mHasSecureLockScreen) {
             return;

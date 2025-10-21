@@ -23,6 +23,10 @@ import static android.app.admin.DevicePolicyManager.PASSWORD_QUALITY_ALPHANUMERI
 import static android.app.admin.DevicePolicyManager.PASSWORD_QUALITY_NUMERIC;
 import static android.app.admin.DevicePolicyManager.PASSWORD_QUALITY_UNSPECIFIED;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.testng.Assert.assertThrows;
 
 import android.os.Process;
@@ -31,11 +35,14 @@ import android.os.UserManager;
 
 import com.android.compatibility.common.util.SystemUtil;
 
+import org.junit.Before;
+import org.junit.Test;
+
 public class ActivePasswordSufficientForDeviceTest extends BaseManagedProfileTest {
     int mParentUserId;
 
-    @Override
-    protected void setUp() throws Exception {
+    @Before
+    public void setUp() throws Exception {
         super.setUp();
         mParentUserId = getParentUserId();
         mDevicePolicyManager.setPasswordQuality(ADMIN_RECEIVER_COMPONENT,
@@ -44,20 +51,24 @@ public class ActivePasswordSufficientForDeviceTest extends BaseManagedProfileTes
         mParentDevicePolicyManager.setRequiredPasswordComplexity(PASSWORD_COMPLEXITY_NONE);
     }
 
+    @Test
     public void testActivePsswordSufficientForDevice_notCallableOnProfileInstance() {
         assertThrows(SecurityException.class,
                 () -> mDevicePolicyManager.isActivePasswordSufficientForDeviceRequirement());
     }
 
+    @Test
     public void testActivePsswordSufficientForDevice_NoPolicy() {
         assertTrue(mParentDevicePolicyManager.isActivePasswordSufficientForDeviceRequirement());
     }
 
+    @Test
     public void testActivePsswordSufficientForDevice_UnmetParentPolicy() {
         mParentDevicePolicyManager.setRequiredPasswordComplexity(PASSWORD_COMPLEXITY_MEDIUM);
         assertFalse(mParentDevicePolicyManager.isActivePasswordSufficientForDeviceRequirement());
     }
 
+    @Test
     public void testActivePsswordSufficientForDevice_IrrelevantProfilePolicy() {
         mDevicePolicyManager.setPasswordQuality(ADMIN_RECEIVER_COMPONENT, PASSWORD_QUALITY_NUMERIC);
         mDevicePolicyManager.setPasswordMinimumLength(ADMIN_RECEIVER_COMPONENT, 4);
@@ -65,6 +76,7 @@ public class ActivePasswordSufficientForDeviceTest extends BaseManagedProfileTes
         assertTrue(mParentDevicePolicyManager.isActivePasswordSufficientForDeviceRequirement());
     }
 
+    @Test
     public void testActivePsswordSufficientForDevice_UnifiedPassword_BothPolicies() {
         changeUserCredential("1234", null, mParentUserId);
         try {

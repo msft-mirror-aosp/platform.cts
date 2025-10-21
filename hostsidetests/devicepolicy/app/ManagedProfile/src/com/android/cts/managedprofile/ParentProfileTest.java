@@ -16,11 +16,14 @@
 
 package com.android.cts.managedprofile;
 
+import static org.junit.Assert.assertTrue;
 import static org.testng.Assert.assertThrows;
 
 import android.app.admin.DevicePolicyManager;
 import android.util.ArraySet;
 import android.util.Log;
+
+import org.junit.Test;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -115,13 +118,14 @@ public class ParentProfileTest extends BaseManagedProfileTest {
     private static final String CLASS_NAME = DevicePolicyManager.class.getSimpleName();
 
     /**
-     * Verify that all public API methods of {@link android.app.admin.DevicePolicyManager},
-     * except those explicitly allowed in {@link #SUPPORTED_APIS},
-     * throw a {@link SecurityException} when called on a parent profile.
+     * Verify that all public API methods of {@link android.app.admin.DevicePolicyManager}, except
+     * those explicitly allowed in {@link #SUPPORTED_APIS}, throw a {@link SecurityException} when
+     * called on a parent profile.
      *
-     * <p><b>Note:</b> System API methods (i.e. those with the
-     * {@link android.annotation.SystemApi} annotation) are NOT tested.
+     * <p><b>Note:</b> System API methods (i.e. those with the {@link android.annotation.SystemApi}
+     * annotation) are NOT tested.
      */
+    @Test
     public void testParentProfileApiDisabled() throws Exception {
         List<Method> methods = CurrentApiHelper.getPublicApis(PACKAGE_NAME, CLASS_NAME);
         assertValidMethodNames(SUPPORTED_APIS, methods);
@@ -172,11 +176,13 @@ public class ParentProfileTest extends BaseManagedProfileTest {
         }
     }
 
+    @Test
     public void testCannotWipeParentProfile() {
         assertThrows(SecurityException.class,
                 () -> mParentDevicePolicyManager.wipeData(0));
     }
 
+    @Test
     public void testCannotCallSetDefaultSmsApplicationOnParentProfile() {
         String messagesPackageName = "com.google.android.apps.messaging";
         assertThrows(SecurityException.class,

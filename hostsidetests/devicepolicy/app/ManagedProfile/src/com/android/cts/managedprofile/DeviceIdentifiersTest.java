@@ -15,16 +15,22 @@
  */
 package com.android.cts.managedprofile;
 
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
+
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.telephony.TelephonyManager;
+
+import org.junit.Test;
 
 /**
  * Verifies a profile owner on a personal device cannot access device identifiers.
  */
 public class DeviceIdentifiersTest extends BaseManagedProfileTest {
 
+    @Test
     public void testProfileOwnerOnPersonalDeviceCannotGetDeviceIdentifiers() {
         // The profile owner with the READ_PHONE_STATE permission should still receive a
         // SecurityException when querying for device identifiers if it's not on an
