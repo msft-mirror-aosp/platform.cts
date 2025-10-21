@@ -563,9 +563,9 @@ public class PkgInstallSignatureVerificationTest extends BaseAppSecurityTest {
 
     @Test
     public void testInstallEmpty() throws Exception {
-        assertInstallFailsWithError("empty-unsigned.apk", "Unknown failure");
-        assertInstallFailsWithError("v1-only-empty.apk", "Unknown failure");
-        assertInstallFailsWithError("v2-only-empty.apk", "Unknown failure");
+        assertInstallFailsWithError("empty-unsigned.apk", "INSTALL_PARSE_FAILED");
+        assertInstallFailsWithError("v1-only-empty.apk", "INSTALL_PARSE_FAILED");
+        assertInstallFailsWithError("v2-only-empty.apk", "INSTALL_PARSE_FAILED");
     }
 
     @AsbSecurityTest(cveBugId = 64211847)
@@ -574,7 +574,7 @@ public class PkgInstallSignatureVerificationTest extends BaseAppSecurityTest {
         // The APKs below are competely fine except they don't start with ZIP Local File Header
         // magic. Thus, these APKs will install just fine unless Package Manager requires that APKs
         // start with ZIP Local File Header magic.
-        String error = "Unknown failure";
+        String error = "INSTALL_PARSE_FAILED";
 
         // Obtained by modifying apksigner to output four unused 0x00 bytes at the start of the APK
         assertInstallFailsWithError("v1-only-starts-with-00000000-magic.apk", error);
@@ -1981,11 +1981,20 @@ public class PkgInstallSignatureVerificationTest extends BaseAppSecurityTest {
         try {
             apkFile = getFileFromResource(apkFilenameInResources);
             if (ephemeral) {
-                return getDevice().installPackage(apkFile, true, "--ephemeral",
-                        INSTALL_ARG_FORCE_QUERYABLE, INSTALL_ARG_BYPASS_LOW_TARGET_SDK_BLOCK);
+                return getDevice()
+                        .adbInstallPackage(
+                                apkFile,
+                                true,
+                                "--ephemeral",
+                                INSTALL_ARG_FORCE_QUERYABLE,
+                                INSTALL_ARG_BYPASS_LOW_TARGET_SDK_BLOCK);
             } else {
-                return getDevice().installPackage(apkFile, true, INSTALL_ARG_FORCE_QUERYABLE,
-                        INSTALL_ARG_BYPASS_LOW_TARGET_SDK_BLOCK);
+                return getDevice()
+                        .adbInstallPackage(
+                                apkFile,
+                                true,
+                                INSTALL_ARG_FORCE_QUERYABLE,
+                                INSTALL_ARG_BYPASS_LOW_TARGET_SDK_BLOCK);
             }
         } finally {
             cleanUpFile(apkFile);
