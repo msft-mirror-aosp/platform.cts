@@ -105,8 +105,7 @@ import org.junit.ClassRule
 import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
-import android.bluetooth.cts.BTAdapterUtils.disableAdapter as disableBTAdapter
-import android.bluetooth.cts.BTAdapterUtils.enableAdapter as enableBTAdapter
+import android.bluetooth.test_utils.BlockingBluetoothAdapter
 
 private const val TEST_SERVICE_PKG = "android.app.appops.cts.appthatusesappops"
 private const val TIMEOUT_MILLIS = 10000L
@@ -443,7 +442,7 @@ class AppOpsLoggingTest {
         val testContext = context.createAttributionContext(TEST_ATTRIBUTION_TAG)
         val btAdapter = testContext.getSystemService(BluetoothManager::class.java)!!.adapter
 
-        val wasEnabled = enableBTAdapter(btAdapter, testContext)
+        val wasEnabled = BlockingBluetoothAdapter.enable()
         assumeTrue("Need to be able enable BT", wasEnabled)
 
         clearCollectedNotedOps()
@@ -462,7 +461,7 @@ class AppOpsLoggingTest {
                 btAdapter.cancelDiscovery()
             }
         } finally {
-            disableBTAdapter(btAdapter, testContext)
+            BlockingBluetoothAdapter.disable(true)
         }
     }
 
@@ -477,7 +476,7 @@ class AppOpsLoggingTest {
         val testContext = context.createAttributionContext(TEST_ATTRIBUTION_TAG)
         val btAdapter = testContext.getSystemService(BluetoothManager::class.java)!!.adapter
 
-        val wasEnabled = enableBTAdapter(btAdapter, testContext)
+        val wasEnabled = BlockingBluetoothAdapter.enable()
         assumeTrue("Need to be able enable BT", wasEnabled)
 
         clearCollectedNotedOps()
@@ -499,7 +498,7 @@ class AppOpsLoggingTest {
                 btScanner.stopScan(scanCallback)
             }
         } finally {
-            disableBTAdapter(btAdapter, testContext)
+            BlockingBluetoothAdapter.disable(true)
         }
     }
 
