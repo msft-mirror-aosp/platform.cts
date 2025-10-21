@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import android.app.ApplicationExitInfo;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.DeadObjectException;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -55,26 +56,44 @@ public class ExcessiveBroadcastsTest extends BaseBroadcastTest {
     @Test
     public void testEnqueueExcessiveBroadcasts_senderTerminated() throws Exception {
         clearAppExitInfos(HELPER_PKG1);
-        final TestServiceConnection connection = bindToHelperService(HELPER_PKG1);
+        final TestServiceConnection connection1 = bindToHelperService(HELPER_PKG1);
+        final TestServiceConnection connection2 = bindToHelperService(HELPER_PKG2);
         try {
-            final ICommandReceiver cmdReceiver = connection.getCommandReceiver();
+            final ICommandReceiver cmdReceiver1 = connection1.getCommandReceiver();
+            final ICommandReceiver cmdReceiver2 = connection2.getCommandReceiver();
+            final IntentFilter filter = new IntentFilter(TEST_ACTION1);
+            cmdReceiver2.clearCookie(TEST_ACTION1);
+            cmdReceiver2.monitorBroadcasts(filter, TEST_ACTION1);
+
+            // Send a broadcast that will cause the receiver to wait, blocking the queue.
             final Intent intent =
                     new Intent(Common.ACTION_WAIT_BROADCAST)
                             .setPackage(HELPER_PKG2)
                             .putExtra(Common.EXTRA_WAIT_PERIOD_MS, BROADCAST_RECEIVER_WAIT_MS);
+            cmdReceiver1.sendBroadcast(intent, null /* options */);
+
             final int maxPendingBroadcastsPerSenderUid =
                     Integer.parseInt(
                             getBroadcastConstant(KEY_MAX_PENDING_BROADCASTS_PER_SENDER_UID));
-            for (int i = 0; i < maxPendingBroadcastsPerSenderUid; ++i) {
-                cmdReceiver.sendBroadcast(intent, null /* options */);
+            // Fill the broadcast queue up to the limit.
+            for (int i = 0; i < maxPendingBroadcastsPerSenderUid - 1; ++i) {
+                cmdReceiver1.sendBroadcast(new Intent(TEST_ACTION1), null /* options */);
             }
+            // Send one more broadcast to exceed the limit. This should cause the sender app
+            // (HELPER_PKG1) to be killed, resulting in a DeadObjectException.
             try {
-                cmdReceiver.sendBroadcast(intent, null /* options */);
+                cmdReceiver1.sendBroadcast(new Intent(TEST_ACTION1), null /* options */);
             } catch (DeadObjectException e) {
                 // Expected; ignore
             }
+
+            // Verify that none of the enqueued broadcasts after the initial "wait" broadcast
+            // were delivered, as they should be discarded as part of the treatment of the app
+            // exceeding the broadcast enqueue limit
+            assertThat(cmdReceiver2.getReceivedBroadcasts(TEST_ACTION1)).isEmpty();
         } finally {
-            connection.unbind();
+            connection1.unbind();
+            connection2.unbind();
         }
         final List<ApplicationExitInfo> appExitInfos =
                 SystemUtil.runWithShellPermissionIdentity(
