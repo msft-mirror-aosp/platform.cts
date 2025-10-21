@@ -78,6 +78,10 @@ public class WindowMetricsActivityTests extends WindowManagerTestBase {
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
 
+    /**
+     * Verifies that the {@link WindowMetrics} obtained in {@link Activity#onCreate()} match the
+     * activity's layout metrics after the first layout pass.
+     */
     @Test
     public void testMetricsMatchesLayoutOnActivityOnCreate() {
         final MetricsActivity activity = startActivityInWindowingModeFullScreen(
@@ -95,6 +99,10 @@ public class WindowMetricsActivityTests extends WindowManagerTestBase {
         );
     }
 
+    /**
+     * Verifies that the {@link WindowMetrics} of a fullscreen activity match the metrics of its
+     * containing display area}.
+     */
     @Test
     public void testMetricsMatchesDisplayAreaOnActivity() {
         final MetricsActivity activity = startActivityInWindowingModeFullScreen(
@@ -103,6 +111,10 @@ public class WindowMetricsActivityTests extends WindowManagerTestBase {
         assertMetricsValidity(activity);
     }
 
+    /**
+     * Verifies that the {@link WindowMetrics} of a non-resizable activity correctly reflect its
+     * bounds, especially when sandboxed due to aspect ratio constraints.
+     */
     @Test
     @RequireNotAutomotive(reason = "Automotive screens don't support rotation")
     public void testMetricsMatchesActivityBoundsOnNonresizableActivity() {
@@ -115,6 +127,10 @@ public class WindowMetricsActivityTests extends WindowManagerTestBase {
         assertMetricsValidityForNonresizableActivity(activity);
     }
 
+    /**
+     * Verifies that {@link WindowMetrics} are correctly updated to match the layout when an
+     * activity enters and is in Picture-in-Picture (PiP) mode.
+     */
     @Test
     public void testMetricsMatchesLayoutOnPipActivity() {
         assumeTrue(supportsPip());
@@ -130,6 +146,10 @@ public class WindowMetricsActivityTests extends WindowManagerTestBase {
         assertMetricsMatchesLayout(activity);
     }
 
+    /**
+     * Verifies that the {@link WindowMetrics} of a Picture-in-Picture (PiP) activity are valid and
+     * consistent with the display area.
+     */
     @Test
     @FlakyTest(bugId = 416173119)
     public void testMetricsMatchesDisplayAreaOnPipActivity() {
@@ -146,6 +166,10 @@ public class WindowMetricsActivityTests extends WindowManagerTestBase {
         assertMetricsValidity(activity);
     }
 
+    /**
+     * Verifies that {@link WindowMetrics} are correctly updated to match the layout when an
+     * activity enters split-screen mode.
+     */
     @Test
     public void testMetricsMatchesLayoutOnSplitActivity() {
         assumeTrue(supportsSplitScreenMultiWindow());
@@ -165,6 +189,10 @@ public class WindowMetricsActivityTests extends WindowManagerTestBase {
         assertMetricsMatchesLayout(activity);
     }
 
+    /**
+     * Verifies that the {@link WindowMetrics} of a split-screen activity are valid and consistent
+     * with the display area.
+     */
     @Test
     public void testMetricsMatchesDisplayAreaOnSplitActivity() {
         assumeTrue(supportsSplitScreenMultiWindow());
@@ -184,6 +212,10 @@ public class WindowMetricsActivityTests extends WindowManagerTestBase {
         assertMetricsValidity(activity);
     }
 
+    /**
+     * Verifies that {@link WindowMetrics} are correctly updated to match the layout when a freeform
+     * activity is launched, resized, and moved.
+     */
     @Test
     public void testMetricsMatchesLayoutOnFreeformActivity() {
         assumeTrue(supportsFreeform());
@@ -226,6 +258,10 @@ public class WindowMetricsActivityTests extends WindowManagerTestBase {
         assertMetricsMatchesLayout(activity);
     }
 
+    /**
+     * Verifies that the {@link WindowMetrics} of a freeform activity are valid and consistent with
+     * the display area after being launched, resized, and moved.
+     */
     @Test
     public void testMetricsMatchesDisplayAreaOnFreeformActivity() {
         assumeTrue(supportsFreeform());
@@ -237,18 +273,24 @@ public class WindowMetricsActivityTests extends WindowManagerTestBase {
 
         launchActivity(new ComponentName(mTargetContext, MetricsActivity.class),
                 WINDOWING_MODE_FREEFORM);
+        final Rect boundsBeforeResizing =
+                activity.getWindowManager().getCurrentWindowMetrics().getBounds();
 
         // Resize the task.
         resizeActivityTask(activity.getComponentName(), WINDOW_BOUNDS.left, WINDOW_BOUNDS.top,
                 WINDOW_BOUNDS.right, WINDOW_BOUNDS.bottom);
         PollingCheck.waitFor(
                 () ->
-                        activity.getWindowManager()
+                        !activity.getWindowManager()
                                 .getCurrentWindowMetrics()
                                 .getBounds()
-                                .equals(WINDOW_BOUNDS));
+                                .equals(boundsBeforeResizing),
+                "Bounds must be updated, but they are still " + boundsBeforeResizing);
 
         assertMetricsValidity(activity);
+
+        final Rect boundsAfterResizing =
+                activity.getWindowManager().getCurrentWindowMetrics().getBounds();
 
         final Rect newBounds = new Rect(WINDOW_BOUNDS);
         newBounds.offset(MOVE_OFFSET, MOVE_OFFSET);
@@ -261,10 +303,10 @@ public class WindowMetricsActivityTests extends WindowManagerTestBase {
                 newBounds.bottom);
         PollingCheck.waitFor(
                 () ->
-                        activity.getWindowManager()
+                        !activity.getWindowManager()
                                 .getCurrentWindowMetrics()
                                 .getBounds()
-                                .equals(newBounds));
+                                .equals(boundsAfterResizing));
 
         assertMetricsValidity(activity);
     }
