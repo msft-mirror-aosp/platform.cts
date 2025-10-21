@@ -1129,6 +1129,9 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
         resultKeys.add(CaptureResult.REPROCESS_EFFECTIVE_EXPOSURE_FACTOR);
         resultKeys.add(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID);
         resultKeys.add(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_SENSOR_CROP_REGION);
+        if (Flags.logicalMultiCameraAdditionalResults()) {
+            resultKeys.add(CaptureResult.LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS);
+        }
         resultKeys.add(CaptureResult.DISTORTION_CORRECTION_MODE);
         resultKeys.add(CaptureResult.EXTENSION_STRENGTH);
         resultKeys.add(CaptureResult.EXTENSION_CURRENT_TYPE);

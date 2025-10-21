@@ -61,6 +61,7 @@ import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.BatteryManager;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.ArraySet;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -73,6 +74,7 @@ import android.view.WindowManager;
 import com.android.compatibility.common.util.CddTest;
 import com.android.ex.camera2.blocking.BlockingSessionCallback;
 import com.android.ex.camera2.utils.StateWaiter;
+import com.android.internal.camera.flags.Flags;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -81,6 +83,7 @@ import org.junit.runners.Parameterized;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -543,7 +546,8 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
 
                 // Check for invalid setting get/set
                 try {
-                    requestBuilder.getPhysicalCameraKey(CaptureRequest.CONTROL_CAPTURE_INTENT, "-1");
+                    requestBuilder.getPhysicalCameraKey(
+                            CaptureRequest.CONTROL_CAPTURE_INTENT, "-1");
                     fail("No exception for invalid physical camera id");
                 } catch (IllegalArgumentException e) {
                     //expected
@@ -938,6 +942,84 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
                         }
                     }
                 }
+            } finally {
+                closeDevice();
+            }
+        }
+    }
+
+    /**
+     * Test for making sure that logical stream requests with additional result will get more than 1
+     * physical metadata in the total results.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS)
+    public void testLogicalCameraAdditionalResult() throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            try {
+                Log.i(TAG, "Testing Camera " + id);
+
+                StaticMetadata staticInfo = mAllStaticInfo.get(id);
+                Set<CaptureRequest.Key<?>> requestKeys = new HashSet<>();
+                requestKeys.add(CaptureRequest.LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS);
+                if (!staticInfo.areRequestKeysAvailable(requestKeys)) {
+                    Log.i(
+                            TAG,
+                            "Camera " + id + " does not support additional results, skipping");
+                    continue;
+                }
+
+                if (!staticInfo.isColorOutputSupported()) {
+                    Log.i(TAG, "Camera " + id + " does not support color outputs, skipping");
+                    continue;
+                }
+
+                mCollector.expectTrue(
+                        "the logical multi camera additional results key can only be available"
+                                + " on logical multi camera",
+                        staticInfo.isLogicalMultiCamera());
+
+                openDevice(id);
+                Size yuvSize = mOrderedPreviewSizes.get(0);
+                // Create a YUV image reader.
+                ImageReader imageReader =
+                        CameraTestUtils.makeImageReader(
+                                yuvSize,
+                                ImageFormat.YUV_420_888,
+                                MAX_IMAGE_COUNT,
+                                new ImageDropperListener(),
+                                mHandler);
+
+                List<OutputConfiguration> outputConfigs = new ArrayList<>();
+                OutputConfiguration config = new OutputConfiguration(imageReader.getSurface());
+                outputConfigs.add(config);
+
+                mSessionListener = new BlockingSessionCallback();
+                mSession =
+                        configureCameraSessionWithConfig(
+                                mCamera, outputConfigs, mSessionListener, mHandler);
+
+                CaptureRequest.Builder requestBuilder =
+                        mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+                requestBuilder.addTarget(imageReader.getSurface());
+                requestBuilder.set(CaptureRequest.LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS, true);
+                SimpleCaptureCallback simpleResultListener = new SimpleCaptureCallback();
+                mSession.capture(requestBuilder.build(), simpleResultListener, mHandler);
+
+                TotalCaptureResult result =
+                        simpleResultListener.getTotalCaptureResult(WAIT_FOR_RESULT_TIMEOUT_MS);
+                Boolean additionalResultKey = result
+                        .get(CaptureResult.LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS);
+
+                mCollector.expectTrue(
+                        "additional result feature should also set the key on in the result",
+                        additionalResultKey != null && additionalResultKey);
+
+                if (mSession != null) {
+                    mSession.close();
+                }
+                CameraTestUtils.closeImageReader(imageReader);
+
             } finally {
                 closeDevice();
             }
