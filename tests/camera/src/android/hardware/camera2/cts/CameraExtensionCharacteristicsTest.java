@@ -54,9 +54,11 @@ import org.junit.runners.JUnit4;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 @RunWith(JUnit4.class)
 public class CameraExtensionCharacteristicsTest {
@@ -202,6 +204,33 @@ public class CameraExtensionCharacteristicsTest {
         assertEquals("Extensions system property : " + extensionsEnabledProp + " does not match " +
                 "with the advertised extensions: " + extensionsAdvertised, extensionsEnabledProp,
                 extensionsAdvertised);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VENDOR_DEFINED_CAMERA_EXTENSIONS)
+    public void testIsExtensionAvailable() throws Exception {
+        final int EXTENSION_RANGE_ITERATIONS = 100;
+        for (String id : mTestRule.getCameraIdsUnderTest()) {
+            StaticMetadata staticMeta =
+                    new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));
+            if (!staticMeta.isColorOutputSupported()) {
+                continue;
+            }
+            CameraExtensionCharacteristics extensionChars =
+                    mTestRule.getCameraManager().getCameraExtensionCharacteristics(id);
+            List<Integer> supportedExtensions = extensionChars.getSupportedExtensions();
+            for (Integer extension : mExtensionList) {
+                assertEquals(supportedExtensions.contains(extension),
+                        extensionChars.isExtensionSupported(extension));
+            }
+
+            int publicEnd = Collections.max(mExtensionList) + 1;
+            assertTrue( publicEnd < CameraExtensionCharacteristics.EXTENSION_VENDOR_START);
+            for (int i = 0; i < EXTENSION_RANGE_ITERATIONS; i++) {
+                assertFalse(extensionChars.isExtensionSupported(ThreadLocalRandom.current().nextInt(
+                        publicEnd, CameraExtensionCharacteristics.EXTENSION_VENDOR_START)));
+            }
+        }
     }
 
     @Test
