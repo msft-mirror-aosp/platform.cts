@@ -27,10 +27,13 @@ import android.content.UriRelativeFilterGroup;
 import android.content.pm.Flags;
 import android.net.Uri;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -39,6 +42,9 @@ import java.util.List;
 
 @RunWith(AndroidJUnit4.class)
 public class UriRelativeFilterGroupTest {
+    @Rule
+    public final CheckFlagsRule checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String DOMAIN = "https://testhost";
     private static final String PATH = "/testpath";
     private static final String QUERY = "query=test";

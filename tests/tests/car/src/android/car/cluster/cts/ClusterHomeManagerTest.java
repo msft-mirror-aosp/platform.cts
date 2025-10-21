@@ -39,6 +39,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
@@ -69,6 +71,9 @@ public final class ClusterHomeManagerTest {
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
+
+    @Rule
+    public final CheckFlagsRule checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final long TIMEOUT_MS = 10_000;
     private static final String FEATURE_CAR_SPLITSCREEN_MULTITASKING =
