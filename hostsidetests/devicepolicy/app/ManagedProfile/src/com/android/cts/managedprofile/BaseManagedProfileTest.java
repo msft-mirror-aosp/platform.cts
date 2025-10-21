@@ -15,20 +15,29 @@
  */
 package com.android.cts.managedprofile;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import android.app.admin.DeviceAdminReceiver;
 import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.test.InstrumentationTestCase;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.Before;
+import org.junit.runner.RunWith;
 
 /**
  * Base class for profile-owner based tests.
  *
- * This class handles making sure that the test is the profile owner and that it has an active admin
- * registered, so that all tests may assume these are done.
+ * <p>This class handles making sure that the test is the profile owner and that it has an active
+ * admin registered, so that all tests may assume these are done.
  */
-public class BaseManagedProfileTest extends InstrumentationTestCase {
+@RunWith(AndroidJUnit4.class)
+public class BaseManagedProfileTest {
 
     public static class BasicAdminReceiver extends DeviceAdminReceiver {
     }
@@ -41,10 +50,9 @@ public class BaseManagedProfileTest extends InstrumentationTestCase {
     protected Context mContext;
     protected boolean mHasSecureLockScreen;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        mContext = getInstrumentation().getContext();
+    @Before
+    public void setUp() throws Exception {
+        mContext = InstrumentationRegistry.getInstrumentation().getContext();
 
         mDevicePolicyManager = (DevicePolicyManager)
                 mContext.getSystemService(Context.DEVICE_POLICY_SERVICE);

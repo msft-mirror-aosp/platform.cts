@@ -16,11 +16,18 @@
 
 package com.android.cts.managedprofile;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProviderInfo;
 import android.content.Context;
 
 import com.android.compatibility.common.util.PollingCheck;
+
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.List;
 import java.util.Set;
@@ -38,6 +45,7 @@ public class CrossProfileWidgetTest extends BaseManagedProfileTest {
 
     private AppWidgetManager mAppWidgetManager;
 
+    @Before
     public void setUp() throws Exception {
         super.setUp();
         mAppWidgetManager = (AppWidgetManager) mContext.getSystemService(Context.APPWIDGET_SERVICE);
@@ -47,6 +55,7 @@ public class CrossProfileWidgetTest extends BaseManagedProfileTest {
      * This test checks that the widget provider was successfully allowlisted and verifies that if
      * was added successfully and can be found inside the profile.
      */
+    @Test
     public void testCrossProfileWidgetProviderAdded() {
         List<String> providers =
                 mDevicePolicyManager.getCrossProfileWidgetProviders(ADMIN_RECEIVER_COMPONENT);
@@ -59,6 +68,7 @@ public class CrossProfileWidgetTest extends BaseManagedProfileTest {
                 "Cross-profile widget provider not found");
     }
 
+    @Test
     public void testCrossProfileWidgetProviderSet() {
         mDevicePolicyManager.setCrossProfileWidgetProviders(
                 Set.of(WIDGET_PROVIDER_PKG, WIDGET_PROVIDER_PKG_2, WIDGET_PROVIDER_PKG_3));
@@ -72,6 +82,7 @@ public class CrossProfileWidgetTest extends BaseManagedProfileTest {
         assertTrue(providers.contains(WIDGET_PROVIDER_PKG_3));
     }
 
+    @Test
     public void testCrossProfileWidgetProviderSetThenAdd() {
         mDevicePolicyManager.setCrossProfileWidgetProviders(
                 Set.of(WIDGET_PROVIDER_PKG, WIDGET_PROVIDER_PKG_2));
@@ -87,6 +98,7 @@ public class CrossProfileWidgetTest extends BaseManagedProfileTest {
         assertTrue(providers.contains(WIDGET_PROVIDER_PKG_3));
     }
 
+    @Test
     public void testCrossProfileWidgetProviderSetThenRemove() {
         mDevicePolicyManager.setCrossProfileWidgetProviders(
                 Set.of(WIDGET_PROVIDER_PKG, WIDGET_PROVIDER_PKG_2, WIDGET_PROVIDER_PKG_3));
@@ -102,6 +114,7 @@ public class CrossProfileWidgetTest extends BaseManagedProfileTest {
         assertFalse(providers.contains(WIDGET_PROVIDER_PKG));
     }
 
+    @Test
     public void testCrossProfileWidgetProviderAddThenSet() {
         mDevicePolicyManager.addCrossProfileWidgetProvider(
                 ADMIN_RECEIVER_COMPONENT,
@@ -119,6 +132,7 @@ public class CrossProfileWidgetTest extends BaseManagedProfileTest {
     }
 
     /** This test verifies that the widget provider was successfully removed from the allowlist. */
+    @Test
     public void testCrossProfileWidgetProviderRemoved() {
         List<String> providers =
                 mDevicePolicyManager.getCrossProfileWidgetProviders(ADMIN_RECEIVER_COMPONENT);
@@ -130,6 +144,7 @@ public class CrossProfileWidgetTest extends BaseManagedProfileTest {
                 "Cross-profile widget provider not found");
     }
 
+    @Test
     public void testClearCrossProfileWidgetProviders() {
          mDevicePolicyManager.setCrossProfileWidgetProviders(Set.of());
     }

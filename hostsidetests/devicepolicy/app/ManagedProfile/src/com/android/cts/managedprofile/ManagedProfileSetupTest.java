@@ -15,13 +15,14 @@
  */
 package com.android.cts.managedprofile;
 
+import org.junit.Test;
 
 public class ManagedProfileSetupTest extends BaseManagedProfileTest {
 
     // This test verifies that the setUp assertions on the base class are working to verify
     // we are the profile owner and have a valid active admin.
+    @Test
     public void testManagedProfileSetup() {
         // Empty test. We just want the assertions from super.setUp() to be executed.
     }
-
 }

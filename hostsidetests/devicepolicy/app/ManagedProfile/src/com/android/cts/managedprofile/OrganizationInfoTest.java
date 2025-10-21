@@ -16,19 +16,27 @@
 
 package com.android.cts.managedprofile;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
+
 import android.graphics.Color;
+
+import org.junit.Test;
 
 public class OrganizationInfoTest extends BaseManagedProfileTest {
 
     // needs to match DevicePolicyManagerService.ActiveAdmin.DEF_ORGANIZATION_COLOR
     private static final int DEFAULT_ORGANIZATION_COLOR = Color.parseColor("#00796B");
 
+    @Test
     public void testDefaultOrganizationColor() {
         int defaultColor = mDevicePolicyManager.getOrganizationColor(ADMIN_RECEIVER_COMPONENT);
         assertEquals("Default color returned: " + Integer.toHexString(defaultColor),
                 DEFAULT_ORGANIZATION_COLOR, defaultColor);
     }
 
+    @Test
     public void testSetOrganizationColor() {
         int previousColor = mDevicePolicyManager.getOrganizationColor(ADMIN_RECEIVER_COMPONENT);
 
@@ -53,6 +61,7 @@ public class OrganizationInfoTest extends BaseManagedProfileTest {
         }
     }
 
+    @Test
     public void testSetOrGetOrganizationColorWithNullAdminFails() {
         try {
             mDevicePolicyManager.setOrganizationColor(null, Color.GRAY);
@@ -67,12 +76,14 @@ public class OrganizationInfoTest extends BaseManagedProfileTest {
         }
     }
 
+    @Test
     public void testDefaultOrganizationNameIsNull() {
         CharSequence organizationName = mDevicePolicyManager.getOrganizationName(
                 ADMIN_RECEIVER_COMPONENT);
         assertNull(organizationName);
     }
 
+    @Test
     public void testSetOrganizationName() {
         CharSequence previousOrganizationName = mDevicePolicyManager.getOrganizationName(
                 ADMIN_RECEIVER_COMPONENT);
@@ -89,6 +100,7 @@ public class OrganizationInfoTest extends BaseManagedProfileTest {
         }
     }
 
+    @Test
     public void testSetOrGetOrganizationNameWithNullAdminFails() {
         try {
             mDevicePolicyManager.setOrganizationName(null, "null-admin-fails");
