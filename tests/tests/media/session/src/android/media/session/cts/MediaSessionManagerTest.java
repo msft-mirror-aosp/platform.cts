@@ -739,7 +739,9 @@ public class MediaSessionManagerTest {
                 mSessionManager.getActiveSessionsForPackage(getPackageName());
         assertThat(controllers.size()).isEqualTo(sessions.size());
 
-        SessionChangeListener listener = new SessionChangeListener(1);
+        SessionChangeListener listener =
+                new SessionChangeListener(
+                        /* count= */ 1, /* expectedControllerCountFromListener= */ 1);
         mSessionManager.addOnActiveSessionsForPackageChangedListener(
                 createExecutorWithScheduledShutdown(), getPackageName(), listener);
         mResourceReleaser.add(
@@ -763,7 +765,9 @@ public class MediaSessionManagerTest {
                 mSessionManager.getActiveSessionsForPackage(getPackageName());
         assertThat(controllers.size()).isEqualTo(2);
 
-        SessionChangeListener listener = new SessionChangeListener(1);
+        SessionChangeListener listener =
+                new SessionChangeListener(
+                        /* count= */ 1, /* expectedControllerCountFromListener= */ -1);
         mSessionManager.addOnActiveSessionsForPackageChangedListener(
                 createExecutorWithScheduledShutdown(), getPackageName(), listener);
 
@@ -875,15 +879,26 @@ public class MediaSessionManagerTest {
             implements MediaSessionManager.OnActiveSessionsChangedListener {
         private List<MediaController> mMediaControllers = null;
         private final CountDownLatch mCountDownLatch;
+        // Set to -1 if this is not required from the listener.
+        private final int mExpectedControllerCountFromListener;
 
-        SessionChangeListener(int count) {
+        SessionChangeListener(int count, int expectedControllerCountFromListener) {
             mCountDownLatch = new CountDownLatch(count);
+            mExpectedControllerCountFromListener = expectedControllerCountFromListener;
         }
 
         @Override
         public void onActiveSessionsChanged(@Nullable List<MediaController> controllers) {
-            mCountDownLatch.countDown();
             mMediaControllers = controllers;
+            // Wait for the controller count to reach expected value.
+            if (mExpectedControllerCountFromListener == -1 || hasExpectedLength()) {
+                mCountDownLatch.countDown();
+            }
+        }
+
+        private boolean hasExpectedLength() {
+            return mMediaControllers != null
+                    && mMediaControllers.size() == mExpectedControllerCountFromListener;
         }
     }
 
