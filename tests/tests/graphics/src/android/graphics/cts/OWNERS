@@ -11,6 +11,3 @@ per-file ColorTest.java = file:platform/frameworks/base:/core/java/android/conte
 
 # Bug template url: https://b.corp.google.com/issues/new?component=25699&template=183271 = per-file Typeface*.java
 per-file Typeface* = nona@google.com, haoyuchang@google.com, justinghan@google.com
-
-# Bug template url: https://b.corp.google.com/issues/new?component=122570&template=195524 = per-file Vulkan*.java
-per-file Vulkan*.java = chrisforbes@google.com, anjanasherin@google.com, nikigupta@google.com, cgopinathc@google.com, tomnom@google.com

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.graphics.cts;
+package android.gpu.vulkan.cts;
 
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;

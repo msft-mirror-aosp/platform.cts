@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.graphics.cts;
+package android.gpu.cts;
 
 import android.opengl.EGL14;
 import android.opengl.EGLConfig;
@@ -35,7 +35,7 @@ import org.junit.runners.BlockJUnit4ClassRunner;
 public class EGL14Test {
 
     static {
-        System.loadLibrary("ctsgraphics_jni");
+        System.loadLibrary("ctsgpu_jni");
     }
 
     private static final String TAG = EGL14Test.class.getSimpleName();

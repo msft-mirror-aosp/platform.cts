@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.graphics.cts;
+package android.gpu.cts;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
@@ -55,7 +55,7 @@ import java.time.Duration;
 public class EGL15Test {
 
     static {
-        System.loadLibrary("ctsgraphics_jni");
+        System.loadLibrary("ctsgpu_jni");
     }
 
     private static final String TAG = EGL15Test.class.getSimpleName();

@@ -151,8 +151,8 @@ static JNINativeMethod gMethods[] = {
      (void *)loadMediaAndVerifyFrameImport},
 };
 
-int register_android_graphics_cts_MediaVulkanGpuTest(JNIEnv *env) {
-  jclass clazz = env->FindClass("android/graphics/cts/MediaVulkanGpuTest");
+int register_android_gpu_vulkan_cts_MediaVulkanGpuTest(JNIEnv *env) {
+  jclass clazz = env->FindClass("android/gpu/vulkan/cts/MediaVulkanGpuTest");
   return env->RegisterNatives(clazz, gMethods,
                               sizeof(gMethods) / sizeof(JNINativeMethod));
 }

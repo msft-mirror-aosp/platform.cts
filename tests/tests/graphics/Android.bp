@@ -108,12 +108,7 @@ android_ravenwood_test {
     ],
     exclude_srcs: [
         // Require hardware support
-        "src/android/graphics/cts/ComputeAhbTest.java",
-        "src/android/graphics/cts/EGL14Test.java",
-        "src/android/graphics/cts/EGL15Test.java",
-        "src/android/graphics/cts/*Vulkan*.java",
         "src/android/graphics/cts/HardwareRendererTest.java",
-        "src/android/graphics/cts/OpenGlEsDeqpLevelTest.java",
         "src/android/graphics/cts/SyncTest.java",
 
         // Testing NDK APIs
@@ -125,7 +120,6 @@ android_ravenwood_test {
         // Require activity support
         "src/android/graphics/**/*Activity.java",
         "src/android/graphics/cts/AnimatorLeakTest.java",
-        "src/android/graphics/cts/CameraGpuTest.java",
         "src/android/graphics/cts/FrameRateOverrideTest.java",
         "src/android/graphics/cts/MatchContentFrameRateTest.java",
         "src/android/graphics/cts/SetFrameRateTest.java",
@@ -149,13 +143,6 @@ test_module_config {
     base: "CtsGraphicsTestCases",
     test_suites: ["general-tests"],
     include_filters: ["android.graphics.drawable.cts.IconTest"],
-}
-
-test_module_config {
-    name: "CtsGraphicsTestCases_cts_vulkanpretransformtest",
-    base: "CtsGraphicsTestCases",
-    test_suites: ["general-tests"],
-    include_filters: ["android.graphics.cts.VulkanPreTransformTest"],
 }
 
 test_module_config {

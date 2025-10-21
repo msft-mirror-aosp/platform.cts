@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package android.graphics.cts;
+package android.gpu.vulkan.cts;
 
 import android.content.res.AssetManager;
 
@@ -32,7 +32,7 @@ import java.util.Arrays;
 public class BasicVulkanGpuTest {
 
     static {
-        System.loadLibrary("ctsgraphics_jni");
+        System.loadLibrary("ctsgpu_jni");
     }
 
     @Parameters(name = "{0}")
