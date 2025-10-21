@@ -37,6 +37,8 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.Settings;
 import android.view.Display;
 import android.view.ViewConfiguration;
+import android.virtualdevice.cts.applaunch.AppComponents.EmptyActivity;
+import android.virtualdevice.cts.applaunch.AppComponents.SecondActivity;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -70,8 +72,8 @@ public class VirtualDeviceViewConfigurationTest {
                         VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder());
         int displayId = virtualDisplay.getDisplay().getDisplayId();
 
-        // Launch the activity on the virtual device and verify that we get the default values.
-        Activity vdActivity = mRule.startActivityOnDisplaySync(displayId, Activity.class);
+        // Launch an activity on the virtual device and verify that we get the default values.
+        Activity vdActivity = mRule.startActivityOnDisplaySync(displayId, SecondActivity.class);
         ViewConfiguration vdViewconfiguration = ViewConfiguration.get(vdActivity);
         assertEquals(
                 defaultViewconfiguration.getTapTimeoutMillis(),
@@ -178,11 +180,11 @@ public class VirtualDeviceViewConfigurationTest {
                                 .setTapTimeoutDuration(Duration.ofMillis(overriddenValue))
                                 .build());
 
-        // Launch the activity on the virtual device and verify that we get the overridden value.
-        activity = mRule.startActivityOnDisplaySync(displayId, Activity.class);
+        // Launch an activity on the virtual device and verify that we get the overridden value.
+        activity = mRule.startActivityOnDisplaySync(displayId, SecondActivity.class);
         assertEquals(overriddenValue, ViewConfiguration.get(activity).getTapTimeoutMillis());
-        // Launch the activity on the default device and verify that we get the default value.
-        activity = mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
+        // Launch an activity on the default device and verify that we get the default value.
+        activity = mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, EmptyActivity.class);
         assertEquals(valueOnDefaultDevice, ViewConfiguration.get(activity).getTapTimeoutMillis());
     }
 
@@ -203,11 +205,11 @@ public class VirtualDeviceViewConfigurationTest {
                                 .setDoubleTapTimeoutDuration(Duration.ofMillis(overriddenValue))
                                 .build());
 
-        // Launch the activity on the virtual device and verify that we get the overridden value.
-        activity = mRule.startActivityOnDisplaySync(displayId, Activity.class);
+        // Launch an activity on the virtual device and verify that we get the overridden value.
+        activity = mRule.startActivityOnDisplaySync(displayId, SecondActivity.class);
         assertEquals(overriddenValue, ViewConfiguration.get(activity).getDoubleTapTimeoutMillis());
-        // Launch the activity on the default device and verify that we get the default value.
-        activity = mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
+        // Launch an activity on the default device and verify that we get the default value.
+        activity = mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, EmptyActivity.class);
         assertEquals(
                 valueOnDefaultDevice, ViewConfiguration.get(activity).getDoubleTapTimeoutMillis());
     }
@@ -229,11 +231,11 @@ public class VirtualDeviceViewConfigurationTest {
                                 .setLongPressTimeoutDuration(Duration.ofMillis(overriddenValue))
                                 .build());
 
-        // Launch the activity on the virtual device and verify that we get the overridden value.
-        activity = mRule.startActivityOnDisplaySync(displayId, Activity.class);
+        // Launch an activity on the virtual device and verify that we get the overridden value.
+        activity = mRule.startActivityOnDisplaySync(displayId, SecondActivity.class);
         assertEquals(overriddenValue, ViewConfiguration.get(activity).getLongPressTimeoutMillis());
-        // Launch the activity on the default device and verify that we get the default value.
-        activity = mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
+        // Launch an activity on the default device and verify that we get the default value.
+        activity = mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, EmptyActivity.class);
         assertEquals(
                 valueOnDefaultDevice, ViewConfiguration.get(activity).getLongPressTimeoutMillis());
     }
@@ -255,11 +257,11 @@ public class VirtualDeviceViewConfigurationTest {
                                 .setMultiPressTimeoutDuration(Duration.ofMillis(overriddenValue))
                                 .build());
 
-        // Launch the activity on the virtual device and verify that we get the overridden value.
-        activity = mRule.startActivityOnDisplaySync(displayId, Activity.class);
+        // Launch an activity on the virtual device and verify that we get the overridden value.
+        activity = mRule.startActivityOnDisplaySync(displayId, SecondActivity.class);
         assertEquals(overriddenValue, ViewConfiguration.get(activity).getMultiPressTimeoutMillis());
-        // Launch the activity on the default device and verify that we get the default value.
-        activity = mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
+        // Launch an activity on the default device and verify that we get the default value.
+        activity = mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, EmptyActivity.class);
         assertEquals(
                 valueOnDefaultDevice, ViewConfiguration.get(activity).getMultiPressTimeoutMillis());
     }
@@ -282,12 +284,12 @@ public class VirtualDeviceViewConfigurationTest {
                                 .setScrollFriction(overriddenValue)
                                 .build());
 
-        // Launch the activity on the virtual device and verify that we get the overridden value.
-        activity = mRule.startActivityOnDisplaySync(displayId, Activity.class);
+        // Launch an activity on the virtual device and verify that we get the overridden value.
+        activity = mRule.startActivityOnDisplaySync(displayId, SecondActivity.class);
         assertEquals(
                 overriddenValue, ViewConfiguration.get(activity).getScrollFrictionAmount(), DELTA);
-        // Launch the activity on the default device and verify that we get the default value.
-        activity = mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
+        // Launch an activity on the default device and verify that we get the default value.
+        activity = mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, EmptyActivity.class);
         assertEquals(
                 valueOnDefaultDevice,
                 ViewConfiguration.get(activity).getScrollFrictionAmount(),
@@ -312,11 +314,11 @@ public class VirtualDeviceViewConfigurationTest {
                                 .setTouchSlopPixels(overriddenValue)
                                 .build());
 
-        // Launch the activity on the virtual device and verify that we get the overridden value.
-        activity = mRule.startActivityOnDisplaySync(displayId, Activity.class);
+        // Launch an activity on the virtual device and verify that we get the overridden value.
+        activity = mRule.startActivityOnDisplaySync(displayId, SecondActivity.class);
         assertEquals(overriddenValue, ViewConfiguration.get(activity).getScaledTouchSlop());
-        // Launch the activity on the default device and verify that we get the default value.
-        activity = mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
+        // Launch an activity on the default device and verify that we get the default value.
+        activity = mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, EmptyActivity.class);
         assertEquals(valueOnDefaultDevice, ViewConfiguration.get(activity).getScaledTouchSlop());
     }
 
@@ -338,12 +340,12 @@ public class VirtualDeviceViewConfigurationTest {
                                 .setMinimumFlingVelocityPixelsPerSecond(overriddenValue)
                                 .build());
 
-        // Launch the activity on the virtual device and verify that we get the overridden value.
-        activity = mRule.startActivityOnDisplaySync(displayId, Activity.class);
+        // Launch an activity on the virtual device and verify that we get the overridden value.
+        activity = mRule.startActivityOnDisplaySync(displayId, SecondActivity.class);
         assertEquals(
                 overriddenValue, ViewConfiguration.get(activity).getScaledMinimumFlingVelocity());
-        // Launch the activity on the default device and verify that we get the default value.
-        activity = mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
+        // Launch an activity on the default device and verify that we get the default value.
+        activity = mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, EmptyActivity.class);
         assertEquals(
                 valueOnDefaultDevice,
                 ViewConfiguration.get(activity).getScaledMinimumFlingVelocity());
@@ -367,12 +369,12 @@ public class VirtualDeviceViewConfigurationTest {
                                 .setMaximumFlingVelocityPixelsPerSecond(overriddenValue)
                                 .build());
 
-        // Launch the activity on the virtual device and verify that we get the overridden value.
-        activity = mRule.startActivityOnDisplaySync(displayId, Activity.class);
+        // Launch an activity on the virtual device and verify that we get the overridden value.
+        activity = mRule.startActivityOnDisplaySync(displayId, SecondActivity.class);
         assertEquals(
                 overriddenValue, ViewConfiguration.get(activity).getScaledMaximumFlingVelocity());
-        // Launch the activity on the default device and verify that we get the default value.
-        activity = mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
+        // Launch an activity on the default device and verify that we get the default value.
+        activity = mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, EmptyActivity.class);
         assertEquals(
                 valueOnDefaultDevice,
                 ViewConfiguration.get(activity).getScaledMaximumFlingVelocity());
@@ -417,7 +419,7 @@ public class VirtualDeviceViewConfigurationTest {
                             VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder());
             int displayId = virtualDisplay.getDisplay().getDisplayId();
 
-            // Launch the activity on the virtual device and verify that we get the new value.
+            // Launch an activity on the virtual device and verify that we get the new value.
             Activity vdActivity = mRule.startActivityOnDisplaySync(displayId, Activity.class);
             ViewConfiguration viewconfiguration = ViewConfiguration.get(vdActivity);
             assertEquals(
