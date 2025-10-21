@@ -1261,9 +1261,12 @@ public class NotificationAssistantServiceTest {
 
         assertTrue("Latch timed out", latch.await(SLEEP_TIME, TimeUnit.MILLISECONDS));
 
-        assertThat(mAssistant.mSystemAdjustments).hasSize(2);
-        assertThat(mAssistant.mSystemAdjustments.get(0).getKey()).isEqualTo(adjustment1.getKey());
-        assertThat(mAssistant.mSystemAdjustments.get(1).getKey()).isEqualTo(adjustment2.getKey());
+        // The adjustments may come in any order, so we'll just check that we received both.
+        List<String> adjustmentKeys =
+                mAssistant.mSystemAdjustments.stream()
+                        .map(Adjustment::getKey)
+                        .collect(Collectors.toList());
+        assertThat(adjustmentKeys).containsExactly(adjustment1.getKey(), adjustment2.getKey());
     }
 
     @Test
