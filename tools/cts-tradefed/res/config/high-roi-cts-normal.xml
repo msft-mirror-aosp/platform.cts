@@ -4059,6 +4059,7 @@
     <option name="compatibility:include-filter" value="CtsWallpaperTestCases android.app.cts.wallpapers.WallpaperManagerTest#getOrientation_returnsCorrectResult"/>
     <option name="compatibility:include-filter" value="CtsWallpaperTestCases android.app.cts.wallpapers.WallpaperManagerTest#testEngineCallbackCountsParam[LIVE_SAME_MULTI]"/>
     <!-- CtsWebkitTestCases -->
+    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.CookieManagerTest#testAcceptCookie"/>
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.CookieManagerTest#testFlush"/>
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.CookieManagerTest#testRemoveCookies"/>
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.CookieManagerTest#testSameSiteLaxByDefault"/>
@@ -4080,6 +4081,10 @@
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.RemovedApisTest#testWebSettings_AccessPluginsPath"/>
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.RemovedApisTest#testWebSettings_AccessUseDoubleTree"/>
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.RemovedApisTest#testWebSettings_AppCacheEnabled"/>
+    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.RemovedApisTest#testWebView_AccessPluginList"/>
+    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.RemovedApisTest#testWebView_DebugDump"/>
+    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.RemovedApisTest#testWebView_GetVisibleTitleHeight"/>
+    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.RemovedApisTest#testWebView_PlatformNotifications"/>
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebChromeClientTest#testOnConsoleMessage"/>
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebChromeClientTest#testOnJsConfirm"/>
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebChromeClientTest#testOnReceivedIcon"/>
@@ -4096,6 +4101,7 @@
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewClientTest#testOnFormResubmission"/>
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewClientTest#testOnPageCommitVisibleCalled"/>
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewClientTest#testOnReceivedHttpAuthRequest"/>
+    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewClientTest#testShouldOverrideUrlLoadingOnCreateWindow"/>
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewSslTest#testIgnoreClientCertRequest"/>
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewSslTest#testProceedClientCertRequest"/>
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewTest#testAddJavascriptInterface"/>
