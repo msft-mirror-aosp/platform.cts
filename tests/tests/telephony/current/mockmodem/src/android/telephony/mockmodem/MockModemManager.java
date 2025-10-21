@@ -223,6 +223,22 @@ public class MockModemManager {
     }
 
     /**
+     * Resolve a logical slot ID to a physical slot ID.
+     *
+     * @param slotId the logical slot ID to resolve to a physical slot ID.
+     * @return int the physical slot ID if found, or SubscriptionManager.INVALID_SIM_SLOT_INDEX
+     *     otherwise.
+     */
+    public int getSimPhysicalSlotId(int slotId) throws Exception {
+        Log.d(TAG, "getSimPhysicalSlotId[" + slotId + "]");
+
+        MockModemConfigInterface configInterface = mMockModemService.getMockModemConfigInterface();
+        return (configInterface != null)
+                ? configInterface.getSimPhysicalSlotId(slotId, TAG)
+                : SubscriptionManager.INVALID_SIM_SLOT_INDEX;
+    }
+
+    /**
      * Query whether an active SIM card is present on this slot or not.
      *
      * @param slotId which slot would be checked.

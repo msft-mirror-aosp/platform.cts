@@ -20,13 +20,18 @@ import static com.android.internal.telephony.RILConstants.RIL_REQUEST_RADIO_POWE
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.telephony.mockmodem.MockModemManager;
 import android.util.Log;
@@ -36,6 +41,9 @@ import androidx.test.InstrumentationRegistry;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Base class for test cases performed on MockModem.
@@ -48,6 +56,7 @@ public class MockModemTestBase {
     private static final String TAG = "MockModemTestBase";
     private static final String RESOURCE_PACKAGE_NAME = "android";
     private static final boolean DEBUG_BUILD = !"user".equals(Build.TYPE);
+    private static final int TIMEOUT_WAIT_FOR_SIM_STATE_SECONDS = 30;
 
     protected static final boolean VDBG = true;
 
@@ -159,5 +168,59 @@ public class MockModemTestBase {
     // but still want to depend on it to simplify the setUp/tearDown processes.
     public static MockModemManager getMockModemManager() {
         return sMockModemManager;
+    }
+
+    protected static void waitForSimCardState(int slotIndex, int expectedState) throws Exception {
+        final CountDownLatch latch = new CountDownLatch(1);
+        BroadcastReceiver receiver =
+                new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        if (!TelephonyManager.ACTION_SIM_CARD_STATE_CHANGED.equals(
+                                intent.getAction())) {
+                            return;
+                        }
+                        if (intent.getIntExtra(SubscriptionManager.EXTRA_SLOT_INDEX, -1)
+                                == slotIndex) {
+                            int currentState =
+                                    intent.getIntExtra(
+                                            TelephonyManager.EXTRA_SIM_STATE,
+                                            TelephonyManager.SIM_STATE_UNKNOWN);
+                            if (currentState == expectedState) {
+                                latch.countDown();
+                            }
+                        }
+                    }
+                };
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity();
+        try {
+            if (sTelephonyManager.getSimCardState(sMockModemManager.getSimPhysicalSlotId(slotIndex))
+                    == expectedState) {
+                return;
+            }
+
+            IntentFilter filter = new IntentFilter(TelephonyManager.ACTION_SIM_CARD_STATE_CHANGED);
+            try {
+                getContext().registerReceiver(receiver, filter);
+
+                if (!latch.await(TIMEOUT_WAIT_FOR_SIM_STATE_SECONDS, TimeUnit.SECONDS)) {
+                    fail(
+                            "Timeout waiting for SIM state "
+                                    + expectedState
+                                    + " on slot "
+                                    + slotIndex
+                                    + ". Current state is "
+                                    + sTelephonyManager.getSimCardState(slotIndex));
+                }
+            } finally {
+                getContext().unregisterReceiver(receiver);
+            }
+        } finally {
+            InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation()
+                    .dropShellPermissionIdentity();
+        }
     }
 }

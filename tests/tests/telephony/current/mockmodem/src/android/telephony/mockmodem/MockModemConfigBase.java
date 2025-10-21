@@ -1179,6 +1179,12 @@ public class MockModemConfigBase implements MockModemConfigInterface {
 
     // ***** Utility methods implementation
     @Override
+    public int getSimPhysicalSlotId(int logicalSlotId, String client) {
+        Log.d(mTAG, "getSimPhysicalSlotId[" + logicalSlotId + "] from: " + client);
+        return getSimPhysicalSlotId(logicalSlotId);
+    }
+
+    @Override
     public boolean isSimCardPresent(int logicalSlotId, String client) {
         Log.d(mTAG, "isSimCardPresent[" + logicalSlotId + "] from: " + client);
 

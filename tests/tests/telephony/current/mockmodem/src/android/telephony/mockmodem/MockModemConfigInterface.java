@@ -319,6 +319,16 @@ public interface MockModemConfigInterface {
 
     // ***** Utility methods
     /**
+     * Resolve a logical slot ID to a physical slot ID.
+     *
+     * @param logicalSlotId the Id of logical sim slot.
+     * @param client for tracking calling client
+     * @return int the physical slot ID or SubscriptionManager.INVALID_SIM_SLOT_INDEX if no physical
+     *     slot can be found.
+     */
+    int getSimPhysicalSlotId(int logicalSlotId, String client);
+
+    /**
      * Query whether any SIM cards are present or not.
      *
      * @param logicalSlotId the Id of logical sim slot.
