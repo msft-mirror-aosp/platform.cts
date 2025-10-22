@@ -18,15 +18,22 @@ package android.packageinstaller.criticaluserjourney.cts;
 
 import static org.junit.Assume.assumeTrue;
 
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
 public class DeveloperVerificationTestBase extends InstallationTestBase {
+    @Rule
+    public final CheckFlagsRule checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     static final int RESPONSE_COMPLETE_WITH_PASS = 1;
     static final int RESPONSE_COMPLETE_WITH_REJECT = 2;
     static final int RESPONSE_INCOMPLETE_UNKNOWN = 3;
