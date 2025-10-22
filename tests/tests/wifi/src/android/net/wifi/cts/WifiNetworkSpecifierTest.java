@@ -346,6 +346,7 @@ public class WifiNetworkSpecifierTest extends WifiJUnit4TestBase {
         WifiNetworkSpecifier specifier =
                 TestHelper.createSpecifierBuilderWithCredentialFromSavedNetwork(sTestNetwork, true)
                 .setSsidPattern(new PatternMatcher(ssidPrefix, PatternMatcher.PATTERN_PREFIX))
+                .setIsHiddenSsid(false)
                 .build();
         assertThat(specifier.getPreferredChannelFrequenciesMhz().length != 0).isTrue();
         assertThat(ScanResult.convertFrequencyMhzToChannelIfSupported(specifier
