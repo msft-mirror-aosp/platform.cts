@@ -31,6 +31,7 @@ import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.content.Context;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresDevice;
+import android.sysprop.BluetoothProperties;
 import android.util.Log;
 
 import androidx.test.filters.SmallTest;
@@ -136,5 +137,15 @@ public final class CarBluetoothTest extends AbstractCarTestCase {
         verify(mServiceListener, timeout(PROXY_CONNECTIONS_TIMEOUT_MS))
                 .onServiceConnected(eq(BluetoothProfile.PBAP_CLIENT), notNull());
         verify(mServiceListener, never()).onServiceDisconnected(any());
+    }
+
+    // [A-0-2] : Android Automotive devices must support Audio/Video Remote Control Profile (AVRCP)
+    // [Media playback control]
+    @Test
+    @CddTest(requirements = {"7.4.3/A-0-2"})
+    public void verifySupportAvrcpController() {
+        // There is no API exposing the BluetoothProfile.AVRCP_CONTROLLER. We can only validate the
+        // configuration was correctly set
+        assertThat(BluetoothProperties.isProfileAvrcpControllerEnabled().orElse(false)).isTrue();
     }
 }
