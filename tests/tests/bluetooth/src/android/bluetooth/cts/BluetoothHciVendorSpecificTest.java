@@ -41,6 +41,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.exceptions.verification.WantedButNotInvoked;
 
 import java.util.Set;
 
@@ -287,16 +288,31 @@ public final class BluetoothHciVendorSpecificTest {
             sAdapter.registerBluetoothHciVendorSpecificCallback(
                     Set.of(), sContext.getMainExecutor(), callback);
 
+            // Send the command Get Vendor Capabilities.
             sAdapter.sendBluetoothHciVendorSpecificCommand(0x153, new byte[] {});
 
-            verify(callback, timeout(1_000))
-                    .onCommandComplete(eq(0x153), return_parameters.capture());
+            try {
+                verify(callback, timeout(1_000))
+                        .onCommandComplete(eq(0x153), return_parameters.capture());
 
-            int length_until_version_number = 9;
-            assertThat(return_parameters.getValue().length).isAtLeast(length_until_version_number);
+            } catch (WantedButNotInvoked e) {
+                // If the command complete event is not received, the controller should have sent a
+                // command status event with status UNKNOWN_HCI_COMMAND instead.
+                verify(callback).onCommandStatus(eq(0x153), eq(0x1));
+                return;
+            }
 
+            // The command complete event should include at least 1 byte for the status code.
+            assertThat(return_parameters.getValue().length).isAtLeast(1);
+
+            // If the status code is SUCCESS, the response should include at least 9 bytes
+            // as specified in the first version of the Get Vendor Capabilities command.
             int status = return_parameters.getValue()[0];
-            assertThat(status).isEqualTo(0);
+            int length_until_version_number = 9;
+            if (status == 0) {
+                assertThat(return_parameters.getValue().length)
+                        .isAtLeast(length_until_version_number);
+            }
 
             sAdapter.unregisterBluetoothHciVendorSpecificCallback(callback);
         }
