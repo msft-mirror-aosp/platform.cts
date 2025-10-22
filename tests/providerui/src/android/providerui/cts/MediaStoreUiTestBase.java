@@ -55,6 +55,9 @@ import java.nio.charset.StandardCharsets;
 public class MediaStoreUiTestBase {
     private static final String TAG = "MediaStoreUiTestBase";
 
+    protected static final String EXTERNAL_STORAGE_PROVIDER_AUTHORITY =
+            "com.android.externalstorage.documents";
+
     protected Context mContext;
     protected UiDevice mDevice;
     protected GetResultActivity mActivity;

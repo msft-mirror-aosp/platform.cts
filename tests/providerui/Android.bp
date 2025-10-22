@@ -59,3 +59,24 @@ android_test {
     ],
     sdk_version: "test_current",
 }
+
+android_test {
+    name: "CtsProviderUiWithManageDocumentsTestCases",
+    defaults: ["cts_defaults"],
+    manifest: "AndroidManifest-ManageDocuments.xml",
+    dont_merge_manifests: true,
+    certificate: "platform",
+    static_libs: [
+        "CtsProviderUiTestsLib",
+    ],
+    srcs: [
+        "src/android/providerui/cts/managedocuments/MediaStoreUiWithManageDocumentsTest.java",
+    ],
+    test_config: "AndroidTest-ManageDocuments.xml",
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+    sdk_version: "test_current",
+}

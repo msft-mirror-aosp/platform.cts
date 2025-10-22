@@ -16,6 +16,7 @@
 
 package android.providerui.cts;
 
+import static android.provider.cts.media.MediaProviderTestUtils.clearOwner;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -113,10 +114,37 @@ public class MediaStoreUiTest extends MediaStoreUiTestBase {
     }
 
     @Test
-    public void testGetDocumentUri_throwsWithoutPermission() throws Exception {
+    public void testGetDocumentUri_noPermissionOnDocumentUri() throws Exception {
         assumeTrue(supportsHardware());
 
         prepareFile(mVolumeName);
+        clearDocumentsUi();
+        mDevice.waitForIdle();
+
+        final Uri docUri = MediaStore.getDocumentUri(mActivity, mMediaStoreUri);
+        assertNotNull(docUri);
+        assertEquals(EXTERNAL_STORAGE_PROVIDER_AUTHORITY, docUri.getAuthority());
+
+        // Open should fail
+        final ContentResolver resolver = mActivity.getContentResolver();
+        try (ParcelFileDescriptor fd = resolver.openFileDescriptor(docUri, "r")) {
+            fail("Expected open for read to fail with SecurityException");
+        } catch (SecurityException e) {
+            // Expected
+        }
+        try (ParcelFileDescriptor fd = resolver.openFileDescriptor(docUri, "wt")) {
+            fail("Expected open for write to fail with SecurityException");
+        } catch (SecurityException e) {
+            // Expected
+        }
+    }
+
+    @Test
+    public void testGetDocumentUri_throwsWithoutPermissionOnMediaUri() throws Exception {
+        assumeTrue(supportsHardware());
+
+        prepareFile(mVolumeName);
+        clearOwner(mMediaStoreUri);
         clearDocumentsUi();
         mDevice.waitForIdle();
 
