@@ -743,7 +743,7 @@ public class MediaSessionManagerTest {
                 new SessionChangeListener(
                         /* count= */ 1, /* expectedControllerCountFromListener= */ 1);
         mSessionManager.addOnActiveSessionsForPackageChangedListener(
-                createExecutorWithScheduledShutdown(), getPackageName(), listener);
+                getPackageName(), createExecutorWithScheduledShutdown(), listener);
         mResourceReleaser.add(
                 () -> mSessionManager.removeOnActiveSessionsForPackageChangedListener(listener));
 
@@ -769,7 +769,7 @@ public class MediaSessionManagerTest {
                 new SessionChangeListener(
                         /* count= */ 1, /* expectedControllerCountFromListener= */ -1);
         mSessionManager.addOnActiveSessionsForPackageChangedListener(
-                createExecutorWithScheduledShutdown(), getPackageName(), listener);
+                getPackageName(), createExecutorWithScheduledShutdown(), listener);
 
         // Remove the listener
         mSessionManager.removeOnActiveSessionsForPackageChangedListener(listener);
