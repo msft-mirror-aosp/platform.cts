@@ -742,7 +742,7 @@ public abstract class ActivityManagerTestBase {
         }
 
         if (ENABLE_SHELL_TRANSITIONS
-                && !mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY)) {
+                && !mWmState.waitForAppTransitionIdleOnDisplay(getMainDisplayId())) {
             mPostAssertionRule.addError(
                     new IllegalStateException("Shell transition left unfinished!"));
         }
