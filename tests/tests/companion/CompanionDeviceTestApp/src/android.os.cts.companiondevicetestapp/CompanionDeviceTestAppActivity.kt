@@ -41,6 +41,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Parcelable
 import android.os.Process
+import android.text.format.DateFormat
 import android.util.Log
 import android.widget.Button
 import android.widget.CheckBox
@@ -52,6 +53,7 @@ import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import java.util.Locale
 import java.util.regex.Pattern
 
 class CompanionDeviceTestAppActivity : Activity() {
@@ -92,6 +94,9 @@ class CompanionDeviceTestAppActivity : Activity() {
     var device: BluetoothDevice? = null
 
     private val mainHandler = Handler(Looper.getMainLooper())
+
+    // This map will store the timestamp locally when an association happens.
+    private val associationTimeMap = mutableMapOf<String, Long>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -166,6 +171,8 @@ class CompanionDeviceTestAppActivity : Activity() {
                         if (macAddressToDisassociate != "Unknown Address") {
                             toast("Disassociating $macAddressToDisassociate")
                             cdm.disassociate(macAddressToDisassociate)
+                            val key = macAddressToDisassociate.uppercase(Locale.getDefault())
+                            associationTimeMap.remove(key)
                             // Refresh the list after a short delay to reflect the change
                             mainHandler.postDelayed({ refresh() }, 500)
                         } else {
@@ -251,6 +258,10 @@ class CompanionDeviceTestAppActivity : Activity() {
             toast("result code: $resultCode, device: $device")
 
             if (resultCode == Activity.RESULT_OK) {
+                device?.address?.let { macAddress ->
+                    val key = macAddress.uppercase(Locale.getDefault())
+                    associationTimeMap[key] = System.currentTimeMillis()
+                }
                 // Post-delay to give the system time to update the associations list
                 mainHandler.postDelayed({ refresh() }, 500)
             }
@@ -319,8 +330,17 @@ class CompanionDeviceTestAppActivity : Activity() {
                 else -> associationInfo.deviceProfile
             }
 
+            val key = macAddress.uppercase(Locale.getDefault())
+            val timestampMillis = associationTimeMap[key]
+
+            val timeString = if (timestampMillis != null && timestampMillis > 0) {
+                DateFormat.format("yyyy-MM-dd HH:mm:ss", timestampMillis).toString()
+            } else {
+                "Unknown Time (Not in this app session)"
+            }
+
             val radioButton = RadioButton(this).apply {
-                text = "$displayName ($macAddress) - [$profileString]"
+                text = "$displayName ($macAddress) - [$profileString] - [$timeString]"
                 tag = macAddress
                 id = index
             }
