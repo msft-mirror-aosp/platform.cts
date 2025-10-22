@@ -26,6 +26,7 @@ import camera_properties_utils
 import capture_request_utils
 import image_processing_utils
 import its_session_utils
+import gen2_rig_controller_utils
 
 _BLUE = 'blue'
 _BRIGHTNESS_INCREASE_THRESHOLD = 0.08  # 8%
@@ -242,7 +243,7 @@ def _extract_xy(data_list):
   y_values = data_list[1::2]
   return x_values, y_values
 
-# TODO: b/438764039 - configure gen2 rig before the test runs
+
 class TonemapSequence(its_base_test.ItsBaseTest):
   """Test tonemap curves with default, linear, exponential & nonuniform pins."""
 
@@ -267,6 +268,12 @@ class TonemapSequence(its_base_test.ItsBaseTest):
           camera_properties_utils.max_curve_points(props)
       )
       log_path = self.log_path
+
+      # Initialize rotation rig
+      if self.rotator_cntl == 'None' or self.lighting_cntl == 'None':
+        logging.debug('Gen2 rig is not available.')
+      else:
+        gen2_rig_controller_utils.setup_gen2_rig(self, cam)
 
       # Define formats
       largest_yuv = capture_request_utils.get_largest_format('yuv', props)

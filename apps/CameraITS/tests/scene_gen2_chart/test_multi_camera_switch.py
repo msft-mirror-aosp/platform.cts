@@ -27,6 +27,7 @@ import its_base_test
 import camera_properties_utils
 import image_processing_utils
 import its_session_utils
+import gen2_rig_controller_utils
 import multi_camera_switch_utils
 import preview_processing_utils
 
@@ -169,6 +170,12 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
           vendor_api_level >= its_session_utils.ANDROID16_API_LEVEL)
       multi_camera_switch_utils.check_lens_switch_conditions(
           props, first_api_level, _ZOOM_RANGE_UW_W)
+
+      # Initialize rotation rig
+      if self.rotator_cntl == 'None' or self.lighting_cntl == 'None':
+        logging.debug('Gen2 rig is not available.')
+      else:
+        gen2_rig_controller_utils.setup_gen2_rig(self, cam)
 
       # Set up scene and configure preview size
       preview_test_size = preview_processing_utils.get_max_preview_test_size(
