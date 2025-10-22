@@ -40,7 +40,7 @@ class HandoffActivity : Activity() {
         handoffData = intent.getIntExtra(HANDOFF_DATA_KEY, 0)
         Log.d(TAG, "handoffData: $handoffData")
         currentInstance = this
-        setHandoffEnabled(true)
+        setHandoffEnabled(true, null)
         Log.d(TAG, "Handoff enabled")
     }
 
