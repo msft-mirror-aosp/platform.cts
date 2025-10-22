@@ -132,7 +132,7 @@ public class DecoderRenderTest extends MediaTestBase {
         MediaFormat videoFormat = videoExtractor.getTrackFormat(videoTrackIndex);
         MediaCodec videoCodec = createCodecFor(videoFormat);
         assumeFalse("No video codec found for " + fileName, videoCodec == null);
-        videoCodec.configure(videoFormat, getActivity().getSurfaceHolder().getSurface(), null, 0);
+        videoCodec.configure(videoFormat, surface, null, 0);
 
         VideoDecoderCallback videoDecoderCallback = new VideoDecoderCallback(videoExtractor);
         videoCodec.setCallback(videoDecoderCallback);
