@@ -19,6 +19,11 @@ package android.provider.cts.contacts;
 
 import static android.provider.ContactsContract.CommonDataKinds;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertTrue;
+
 import android.content.ContentProviderClient;
 import android.content.ContentResolver;
 import android.content.ContentValues;
@@ -27,6 +32,8 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.SystemClock;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.ContactsContract;
 import android.provider.ContactsContract.CommonDataKinds.Callable;
 import android.provider.ContactsContract.CommonDataKinds.Contactables;
@@ -45,13 +52,22 @@ import android.provider.ContactsContract.RawContactsEntity;
 import android.provider.cts.contacts.ContactsContract_TestDataBuilder.TestContact;
 import android.provider.cts.contacts.ContactsContract_TestDataBuilder.TestData;
 import android.provider.cts.contacts.ContactsContract_TestDataBuilder.TestRawContact;
-import android.test.InstrumentationTestCase;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.providers.contacts.flags.Flags;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.util.ArrayList;
 
-public class ContactsContract_DataTest extends InstrumentationTestCase {
+@RunWith(AndroidJUnit4.class)
+public class ContactsContract_DataTest {
     private ContentResolver mResolver;
     private ContactsContract_TestDataBuilder mBuilder;
 
@@ -195,21 +211,26 @@ public class ContactsContract_DataTest extends InstrumentationTestCase {
 
     private TestRawContact[] mRawContacts = new TestRawContact[3];
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        mResolver = getInstrumentation().getTargetContext().getContentResolver();
+    @Rule
+    public final CheckFlagsRule checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Before
+    public void setUp() throws Exception {
+        mResolver =
+                InstrumentationRegistry.getInstrumentation()
+                        .getTargetContext()
+                        .getContentResolver();
         ContentProviderClient provider =
                 mResolver.acquireContentProviderClient(ContactsContract.AUTHORITY);
         mBuilder = new ContactsContract_TestDataBuilder(provider);
     }
 
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
+    @After
+    public void tearDown() throws Exception {
         mBuilder.cleanup();
     }
 
+    @Test
     public void testGetLookupUriBySourceId() throws Exception {
         TestRawContact rawContact = mBuilder.newRawContact()
                 .with(RawContacts.ACCOUNT_TYPE, "test_type")
@@ -231,6 +252,7 @@ public class ContactsContract_DataTest extends InstrumentationTestCase {
                 lookupContact.getId(), data.load().getRawContact().load().getContactId());
     }
 
+    @Test
     public void testDataProjection() throws Exception {
         TestRawContact rawContact = mBuilder.newRawContact()
                 .with(RawContacts.ACCOUNT_TYPE, "test_type")
@@ -247,6 +269,7 @@ public class ContactsContract_DataTest extends InstrumentationTestCase {
         );
     }
 
+    @Test
     public void testRawContactsEntityProjection() throws Exception {
         TestRawContact rawContact = mBuilder.newRawContact()
                 .with(RawContacts.ACCOUNT_TYPE, "test_type")
@@ -309,6 +332,7 @@ public class ContactsContract_DataTest extends InstrumentationTestCase {
         );
     }
 
+    @Test
     public void testEntityProjection() throws Exception {
         TestRawContact rawContact = mBuilder.newRawContact()
                 .with(RawContacts.ACCOUNT_TYPE, "test_type")
@@ -413,6 +437,7 @@ public class ContactsContract_DataTest extends InstrumentationTestCase {
         );
     }
 
+    @Test
     public void testGetLookupUriByDisplayName() throws Exception {
         TestRawContact rawContact = mBuilder.newRawContact()
                 .with(RawContacts.ACCOUNT_TYPE, "test_type")
@@ -430,6 +455,7 @@ public class ContactsContract_DataTest extends InstrumentationTestCase {
                 lookupContact.getId(), data.load().getRawContact().load().getContactId());
     }
 
+    @Test
     public void testContactablesUri() throws Exception {
         TestRawContact rawContact = mBuilder.newRawContact()
                 .with(RawContacts.ACCOUNT_TYPE, "test_account")
@@ -470,6 +496,7 @@ public class ContactsContract_DataTest extends InstrumentationTestCase {
         }
     }
 
+    @Test
     public void testContactablesFilterByLastName_returnsCorrectDataRows() throws Exception {
         long[] ids = setupContactablesTestData();
         Uri filterUri = Uri.withAppendedPath(Contactables.CONTENT_FILTER_URI, "tamale");
@@ -477,6 +504,7 @@ public class ContactsContract_DataTest extends InstrumentationTestCase {
                 ContactablesTestHelper.getContentValues(0));
     }
 
+    @Test
     public void testContactablesFilterByFirstName_returnsCorrectDataRows() throws Exception {
         long[] ids = setupContactablesTestData();
         Uri filterUri = Uri.withAppendedPath(Contactables.CONTENT_FILTER_URI, "hot");
@@ -487,6 +515,7 @@ public class ContactsContract_DataTest extends InstrumentationTestCase {
                 ContactablesTestHelper.getContentValues(0, 1));
     }
 
+    @Test
     public void testContactablesFilterByPhonePrefix_returnsCorrectDataRows() throws Exception {
         long[] ids = setupContactablesTestData();
         Uri filterUri = Uri.withAppendedPath(Contactables.CONTENT_FILTER_URI, "518");
@@ -497,6 +526,7 @@ public class ContactsContract_DataTest extends InstrumentationTestCase {
                 ContactablesTestHelper.getContentValues(0, 2));
     }
 
+    @Test
     public void testContactablesFilterByEmailPrefix_returnsCorrectDataRows() throws Exception {
         long[] ids = setupContactablesTestData();
         Uri filterUri = Uri.withAppendedPath(Contactables.CONTENT_FILTER_URI, "doeassoc");
@@ -504,6 +534,7 @@ public class ContactsContract_DataTest extends InstrumentationTestCase {
                 ContactablesTestHelper.getContentValues(2));
     }
 
+    @Test
     public void testContactablesFilter_doesNotExist_returnsCorrectDataRows() throws Exception {
         long[] ids = setupContactablesTestData();
         Uri filterUri = Uri.withAppendedPath(Contactables.CONTENT_FILTER_URI, "doesnotexist");
@@ -511,9 +542,10 @@ public class ContactsContract_DataTest extends InstrumentationTestCase {
     }
 
     /**
-     * Verifies that Callable.CONTENT_URI returns only data items that can be called (i.e.
-     * phone numbers and sip addresses)
+     * Verifies that Callable.CONTENT_URI returns only data items that can be called (i.e. phone
+     * numbers and sip addresses)
      */
+    @Test
     public void testCallableUri_returnsCorrectDataRows() throws Exception {
         long[] ids = setupContactablesTestData();
         Uri uri = Callable.CONTENT_URI;
@@ -521,6 +553,7 @@ public class ContactsContract_DataTest extends InstrumentationTestCase {
                 sContentValues[5], sContentValues[6]);
     }
 
+    @Test
     public void testCallableFilterByNameOrOrganization_returnsCorrectDataRows() throws Exception {
         long[] ids = setupContactablesTestData();
         Uri uri = Uri.withAppendedPath(Callable.CONTENT_FILTER_URI, "doe");
@@ -529,6 +562,7 @@ public class ContactsContract_DataTest extends InstrumentationTestCase {
                 sContentValues[6]);
     }
 
+    @Test
     public void testCallableFilterByNumber_returnsCorrectDataRows() throws Exception {
         long[] ids = setupContactablesTestData();
         Uri uri = Uri.withAppendedPath(Callable.CONTENT_FILTER_URI, "510");
@@ -541,6 +575,7 @@ public class ContactsContract_DataTest extends InstrumentationTestCase {
         assertCursorStoredValuesWithRawContactsFilter(uri, ids, sContentValues[6]);
     }
 
+    @Test
     public void testEnterpriseCallableFilterByNameOrOrganization_returnsCorrectDataRows()
             throws Exception {
         long[] ids = setupContactablesTestData();
@@ -553,6 +588,7 @@ public class ContactsContract_DataTest extends InstrumentationTestCase {
                 sContentValues[6]);
     }
 
+    @Test
     public void testEnterpriseCallableFilterByNumber_returnsCorrectDataRows() throws Exception {
         long[] ids = setupContactablesTestData();
         Uri uri = Uri.withAppendedPath(Callable.ENTERPRISE_CONTENT_FILTER_URI, "510").buildUpon()
@@ -562,8 +598,8 @@ public class ContactsContract_DataTest extends InstrumentationTestCase {
         assertCursorStoredValuesWithRawContactsFilter(uri, ids, sContentValues[1]);
     }
 
-    public void testEnterpriseCallableFilterBySipAddress_returnsCorrectDataRows()
-            throws Exception {
+    @Test
+    public void testEnterpriseCallableFilterBySipAddress_returnsCorrectDataRows() throws Exception {
         long[] ids = setupContactablesTestData();
         Uri uri = Uri.withAppendedPath(Callable.ENTERPRISE_CONTENT_FILTER_URI, "mysip").buildUpon()
                 .appendQueryParameter(ContactsContract.DIRECTORY_PARAM_KEY,
@@ -572,6 +608,7 @@ public class ContactsContract_DataTest extends InstrumentationTestCase {
         assertCursorStoredValuesWithRawContactsFilter(uri, ids, sContentValues[6]);
     }
 
+    @Test
     public void testDataInsert_updatesContactLastUpdatedTimestamp() {
         DatabaseAsserts.ContactIdPair ids = DatabaseAsserts.assertAndCreateContact(mResolver);
         long baseTime = ContactUtil.queryContactLastUpdatedTimestamp(mResolver, ids.mContactId);
@@ -586,6 +623,7 @@ public class ContactsContract_DataTest extends InstrumentationTestCase {
         RawContactUtil.delete(mResolver, ids.mRawContactId, true);
     }
 
+    @Test
     public void testDataDelete_updatesContactLastUpdatedTimestamp() {
         DatabaseAsserts.ContactIdPair ids = DatabaseAsserts.assertAndCreateContact(mResolver);
 
@@ -607,7 +645,8 @@ public class ContactsContract_DataTest extends InstrumentationTestCase {
      * Tests that specifying the {@link android.provider.ContactsContract#REMOVE_DUPLICATE_ENTRIES}
      * boolean parameter correctly results in deduped phone numbers.
      */
-    public void testPhoneQuery_removeDuplicateEntries() throws Exception{
+    @Test
+    public void testPhoneQuery_removeDuplicateEntries() throws Exception {
         long[] ids = setupContactablesTestData();
 
         // Insert duplicate data entry for raw contact 3. (existing phone number 518-354-1111)
@@ -639,7 +678,8 @@ public class ContactsContract_DataTest extends InstrumentationTestCase {
      * Tests that specifying the {@link android.provider.ContactsContract#REMOVE_DUPLICATE_ENTRIES}
      * boolean parameter correctly results in deduped email addresses.
      */
-    public void testEmailQuery_removeDuplicateEntries() throws Exception{
+    @Test
+    public void testEmailQuery_removeDuplicateEntries() throws Exception {
         long[] ids = setupContactablesTestData();
 
         // Insert duplicate data entry for raw contact 3. (existing email doeassociates@deer.com)
@@ -667,6 +707,7 @@ public class ContactsContract_DataTest extends InstrumentationTestCase {
                 sContentValues[2], sContentValues[3], sContentValues[4]);
     }
 
+    @Test
     public void testDataUpdate_updatesContactLastUpdatedTimestamp() {
         DatabaseAsserts.ContactIdPair ids = DatabaseAsserts.assertAndCreateContact(mResolver);
         long dataId = createData(ids.mRawContactId);
@@ -686,6 +727,7 @@ public class ContactsContract_DataTest extends InstrumentationTestCase {
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_RESTRICT_PII_DATA_URI_COLUMNS)
+    @Test
     public void testDataView_projection_unrestrictedForLegacySdk() throws Exception {
         TestRawContact rawContact =
                 mBuilder.newRawContact()
@@ -699,7 +741,7 @@ public class ContactsContract_DataTest extends InstrumentationTestCase {
                 .insert();
 
         // Verify that the columns are present for an app targeting SDK 30.
-        final Context context = getInstrumentation().getTargetContext();
+        final Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         final ContentResolver resolver = context.getContentResolver();
         // We don't need to query for the data row just created, querying for all rows
         // and getting a non-null Cursor should suffice for us.
