@@ -29,10 +29,12 @@ public class TestAppFunctionServiceLifecycleReceiver extends BroadcastReceiver {
     private static final String ACTION_SERVICE_ON_CREATE = "oncreate";
     private static final String ACTION_SERVICE_ON_DESTROY = "ondestroy";
     private static final String ACTION_SERVICE_OP_CANCELLED = "oncancel";
+    private static final String ACTION_CANCEL_LISTENER_SET = "oncancelset";
 
     private static volatile CountDownLatch sOnCreateLatch = new CountDownLatch(1);
     private static volatile CountDownLatch sOnDestroyedLatch = new CountDownLatch(1);
     private static volatile CountDownLatch sOnOpCancelledLatch = new CountDownLatch(1);
+    private static volatile CountDownLatch sOnOpCancelListenerSetLatch = new CountDownLatch(1);
 
     /**
      * Resets the latch and enables another wait cycle. Should never call this method with any other
@@ -42,6 +44,7 @@ public class TestAppFunctionServiceLifecycleReceiver extends BroadcastReceiver {
         sOnCreateLatch = new CountDownLatch(1);
         sOnDestroyedLatch = new CountDownLatch(1);
         sOnOpCancelledLatch = new CountDownLatch(1);
+        sOnOpCancelListenerSetLatch = new CountDownLatch(1);
     }
 
     /**
@@ -56,6 +59,20 @@ public class TestAppFunctionServiceLifecycleReceiver extends BroadcastReceiver {
     public static boolean waitForServiceOnDestroy(long timeout, TimeUnit unit)
             throws InterruptedException {
         return sOnDestroyedLatch.await(timeout, unit);
+    }
+
+    /**
+     * Blocks the current thread until {@link
+     * android.os.CancellationSignal#setOnCancelListener(Runnable)} is called.
+     *
+     * @param timeout The duration to wait for.
+     * @param unit The unit of time for the timeout value.
+     * @return True if the onDestroy was invoked within the timeout, false otherwise.
+     * @throws InterruptedException If the current thread is interrupted while waiting.
+     */
+    public static boolean waitForCancelListenerSet(long timeout, TimeUnit unit)
+            throws InterruptedException {
+        return sOnOpCancelListenerSetLatch.await(timeout, unit);
     }
 
     /**
@@ -101,6 +118,11 @@ public class TestAppFunctionServiceLifecycleReceiver extends BroadcastReceiver {
         notifyEvent(context, ACTION_SERVICE_OP_CANCELLED);
     }
 
+    /** Notifies that cancellation listener is set. */
+    public static void notifyOnCancelListenerSet(Context context) {
+        notifyEvent(context, ACTION_CANCEL_LISTENER_SET);
+    }
+
     private static void notifyEvent(Context context, String action) {
         Intent intent = new Intent(context, TestAppFunctionServiceLifecycleReceiver.class);
         intent.setComponent(
@@ -120,6 +142,8 @@ public class TestAppFunctionServiceLifecycleReceiver extends BroadcastReceiver {
             sOnDestroyedLatch.countDown();
         } else if (ACTION_SERVICE_OP_CANCELLED.equals(intent.getAction())) {
             sOnOpCancelledLatch.countDown();
+        } else if (ACTION_CANCEL_LISTENER_SET.equals(intent.getAction())) {
+            sOnOpCancelListenerSetLatch.countDown();
         }
     }
 }

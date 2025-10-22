@@ -19,6 +19,8 @@ package android.app.appfunctions.testutils
 import android.app.Service
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.AppFunctionRegistration
+import android.app.appfunctions.testutils.TestAppFunctionFactory.createAppFunction
+import android.app.appfunctions.testutils.TestAppFunctionFactory.getFunctionId
 import android.content.Intent
 import android.os.IBinder
 import android.util.Log
@@ -31,23 +33,29 @@ class TestAppFunctionRegistrationService : Service() {
 
     private val binder =
             object : ITestAppFunctionRegistrationService.Stub() {
-                override fun registerAppFunction() {
-                    val functionId = TestAppFunctionConcatStrings.CONCAT_STRINGS_FUNCTION_ID
+                override fun registerAppFunction(functionType: String) {
+                    val functionType = FunctionType.valueOf(functionType)
+                    val functionId = getFunctionId(functionType)
+                    val function = createAppFunction(
+                        functionType,
+                        this@TestAppFunctionRegistrationService
+                    )
                     val registration =
                             manager.registerAppFunction(
                                     functionId,
                                     mainExecutor,
-                                    TestAppFunctionConcatStrings()
+                                    function
                             )
                     registrations[functionId] = registration
                     Log.d(TAG, "Registered callback for function id $functionId")
                 }
 
-                override fun unregisterAppFunction() {
-                    val functionId = TestAppFunctionConcatStrings.CONCAT_STRINGS_FUNCTION_ID
+                override fun unregisterAppFunction(functionType: String) {
+                    val functionId = getFunctionId(FunctionType.valueOf(functionType))
                     if (!registrations.containsKey(functionId)) {
                         throw IllegalStateException(
-                                "Callback for function id $functionId not registered")
+                                "Callback for function id $functionId not registered"
+                        )
                     }
                     registrations[functionId]?.unregister()
                     registrations.remove(functionId)

@@ -32,6 +32,10 @@ import android.app.appsearch.testutil.GlobalSearchSessionShimImpl
 import android.content.Context
 import android.os.CancellationSignal
 import android.os.OutcomeReceiver
+import com.android.bedstead.nene.users.UserReference
+import com.android.bedstead.nene.utils.ShellCommand
+import com.android.compatibility.common.util.SystemUtil
+import com.google.common.truth.Truth.assertThat
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -82,6 +86,29 @@ object AppFunctionUtils {
                 }
             },
         )
+    }
+
+    /** Grants app function access to a target package. */
+    fun grantAppFunctionAccess(agentPackage: String, targetPackage: String) {
+        ShellCommand.builder("cmd app_function grant-app-function-access")
+            .addOption("--agent-package", agentPackage)
+            .addOption("--target-package", targetPackage)
+            .execute()
+    }
+
+    /** Revokes app function access to a target package. */
+    fun revokeAppFunctionAccess(agentPackage: String, targetPackage: String) {
+        ShellCommand.builder("cmd app_function revoke-app-function-access")
+            .addOption("--agent-package", agentPackage)
+            .addOption("--target-package", targetPackage)
+            .execute()
+    }
+
+    /** Install package to the user */
+    fun installExistingPackageAsUser(packageName: String, user: UserReference) {
+        val userId = user.id()
+        assertThat(SystemUtil.runShellCommand("pm install-existing --user $userId $packageName"))
+            .isEqualTo("Package $packageName installed for user: $userId\n")
     }
 
     /** Gets all the static metadata packages. */
