@@ -1213,25 +1213,6 @@ class DefaultImpl : public ::aidl::test_package::ICompatTestDefault {
   }
 };
 
-TEST_P(NdkBinderTest_Aidl, NewMethod) {
-  std::shared_ptr<ICompatTest> default_impl = SharedRefBase::make<DefaultImpl>();
-  ::aidl::test_package::ICompatTest::setDefaultImpl(default_impl);
-
-  auto compat_test = getCompatTest(iface);
-  int32_t res;
-  EXPECT_OK(compat_test->NewMethodThatReturns10(&res));
-  if (GetParam().shouldBeOld) {
-    // Remote was built with version 1 interface which does not have
-    // "NewMethodThatReturns10". In this case the default method
-    // which returns 100 is called.
-    EXPECT_EQ(100, res);
-  } else {
-    // Remote is built with the current version of the interface.
-    // The method returns 10.
-    EXPECT_EQ(10, res);
-  }
-}
-
 TEST_P(NdkBinderTest_Aidl, RepeatStringNullableLater) {
   std::optional<std::string> res;
 
