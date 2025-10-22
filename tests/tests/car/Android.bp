@@ -72,4 +72,7 @@ android_test {
     java_resources: [
         ":CarSvcProps_JSON",
     ],
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }

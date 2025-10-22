@@ -42,4 +42,7 @@ android_test {
         "general-tests",
     ],
     per_testcase_directory: true,
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
