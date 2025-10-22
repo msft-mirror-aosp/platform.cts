@@ -47,6 +47,9 @@ import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.LinearLayout.VERTICAL
+import android.widget.RadioButton
+import android.widget.RadioGroup
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import java.util.regex.Pattern
@@ -68,6 +71,18 @@ class CompanionDeviceTestAppActivity : Activity() {
     val glassesCheckbox by lazy { CheckBox(this).apply { text = "Glasses" } }
     val medicalCheckbox by lazy { CheckBox(this).apply { text = "Medical" } }
     val nearbyCheckbox by lazy { CheckBox(this).apply { text = "Nearby Devices" } }
+
+    val associationListLabel by lazy { TextView(this).apply { text = "Association List:" } }
+    val associationListRadioGroup by lazy { RadioGroup(this).apply {
+        orientation = VERTICAL
+    }}
+    val associationListScrollView by lazy { ScrollView(this).apply {
+        addView(associationListRadioGroup)
+        layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            300
+        )
+    }}
 
     val cdm: CompanionDeviceManager by lazy { val java = CompanionDeviceManager::class.java
         getSystemService(java)!! }
@@ -101,6 +116,8 @@ class CompanionDeviceTestAppActivity : Activity() {
             addView(glassesCheckbox)
             addView(medicalCheckbox)
             addView(nearbyCheckbox)
+            addView(associationListLabel)
+            addView(associationListScrollView)
 
             addView(cdmButton("Associate") {
                 if (singleCheckbox.isChecked) {
@@ -136,9 +153,24 @@ class CompanionDeviceTestAppActivity : Activity() {
             addView(Button(ctx).apply {
                 text = "Disassociate"
                 setOnClickListener {
-                    cdm.associations.firstOrNull()?.let { firstAddress ->
-                        toast("Disassociating $firstAddress")
-                        cdm.disassociate(firstAddress)
+                    val selectedId = associationListRadioGroup.checkedRadioButtonId
+                    if (selectedId == -1) {
+                        // No device selected
+                        toast("need to select a device")
+                    } else {
+                        val selectedRadioButton =
+                            associationListRadioGroup.findViewById<RadioButton>(selectedId)
+                        // Get the MAC address stored in the tag
+                        val macAddressToDisassociate = selectedRadioButton.tag as String
+
+                        if (macAddressToDisassociate != "Unknown Address") {
+                            toast("Disassociating $macAddressToDisassociate")
+                            cdm.disassociate(macAddressToDisassociate)
+                            // Refresh the list after a short delay to reflect the change
+                            mainHandler.postDelayed({ refresh() }, 500)
+                        } else {
+                            toast("Cannot disassociate device with unknown address")
+                        }
                     }
                 }
             })
@@ -217,6 +249,11 @@ class CompanionDeviceTestAppActivity : Activity() {
         if (requestCode == REQUEST_CODE_CDM) {
             device = getDevice(data)
             toast("result code: $resultCode, device: $device")
+
+            if (resultCode == Activity.RESULT_OK) {
+                // Post-delay to give the system time to update the associations list
+                mainHandler.postDelayed({ refresh() }, 500)
+            }
         }
         super.onActivityResult(requestCode, resultCode, data)
     }
@@ -258,6 +295,45 @@ class CompanionDeviceTestAppActivity : Activity() {
         associateNumber.text = "Association Number: ${
             cdm.associations.size
         }"
+
+        // Store the currently checked MAC address to re-check it if it still exists
+        val currentCheckedId = associationListRadioGroup.checkedRadioButtonId
+        var currentCheckedMac: String? = null
+        if (currentCheckedId != -1) {
+            currentCheckedMac = associationListRadioGroup
+                .findViewById<RadioButton>(currentCheckedId)?.tag as? String
+        }
+
+        associationListRadioGroup.removeAllViews()
+        var newCheckedId = -1
+
+        cdm.myAssociations.forEachIndexed { index, associationInfo ->
+            val macAddress = associationInfo.deviceMacAddress?.toString() ?: "Unknown Address"
+            val displayName = associationInfo.displayName ?: "Unknown Name"
+
+            val profileString = when (associationInfo.deviceProfile) {
+                DEVICE_PROFILE_WATCH -> "Watch"
+                DEVICE_PROFILE_GLASSES -> "Glasses"
+                DEVICE_PROFILE_MEDICAL -> "Medical"
+                null -> "Non-Profile Device"
+                else -> associationInfo.deviceProfile
+            }
+
+            val radioButton = RadioButton(this).apply {
+                text = "$displayName ($macAddress) - [$profileString]"
+                tag = macAddress
+                id = index
+            }
+            associationListRadioGroup.addView(radioButton)
+
+            if (macAddress == currentCheckedMac) {
+                newCheckedId = radioButton.id
+            }
+        }
+
+        if (newCheckedId != -1) {
+            associationListRadioGroup.check(newCheckedId)
+        }
     }
 
     companion object {
