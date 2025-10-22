@@ -402,6 +402,68 @@ public class MessageQueueTest {
         }
     }
 
+    /**
+     * Stress test to check that message fields are correctly cleared when messages are recycled.
+     * This test works by flooding a handler with messages with what = 1000, while continuously
+     * checking from other threads whether the handler's queue contains a message with what = 0. If
+     * message recycling races when clearing the 'what' field (or clears it when it shouldn't), a
+     * message with what = 0 will be in the queue.
+     */
+    @Test
+    public void testStressMessageFieldClears() throws Throwable {
+        int threadCount = Math.max(Runtime.getRuntime().availableProcessors() - 1, 1);
+
+        AssertableHandlerThread thread = new AssertableHandlerThread();
+        thread.start();
+
+        AssertableHandlerThread[] checkThreads = new AssertableHandlerThread[threadCount];
+
+        final int what = 1000;
+        final AtomicBoolean done = new AtomicBoolean();
+        try {
+            Handler h = new Handler(thread.getLooper());
+
+            for (int i = 0; i < threadCount; i++) {
+                checkThreads[i] = new AssertableHandlerThread();
+                checkThreads[i].start();
+                Handler checkHandler = new Handler(checkThreads[i].getLooper());
+                Message m =
+                        Message.obtain(
+                                checkHandler,
+                                () -> {
+                                    while (!done.get()) {
+                                        // Because we only enqueue messages with what = 1000, we
+                                        // should never find a message with what = 0 unless there is
+                                        // a race that caused the field to be cleared improperly.
+                                        assertFalse(h.hasMessages(0));
+                                    }
+                                });
+                m.what = what;
+                checkHandler.sendMessage(m);
+            }
+
+            for (int i = 0; i < 10_000; i++) {
+                Message m = Message.obtain();
+                m.what = what;
+                h.sendMessage(m);
+            }
+
+            Message stopMessage =
+                    Message.obtain(
+                            h,
+                            () -> {
+                                done.set(true);
+                            });
+            stopMessage.what = what;
+            h.sendMessage(stopMessage);
+        } finally {
+            thread.quitAndRethrow();
+            for (AssertableHandlerThread t : checkThreads) {
+                t.quitAndRethrow();
+            }
+        }
+    }
+
     @Test
     @LargeTest
     public void testStressQuit() throws Throwable {

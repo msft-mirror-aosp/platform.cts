@@ -96,6 +96,9 @@ android_test {
     aaptflags: ["-0 .policy"],
     min_sdk_version: "29",
     per_testcase_directory: true,
+    static_libs: [
+        "guava-android-testlib",
+    ],
 }
 
 android_ravenwood_test {
@@ -143,6 +146,9 @@ android_ravenwood_test {
     ravenizer: {
         strip_mockito: true,
     },
+    static_libs: [
+        "guava-android-testlib",
+    ],
 }
 
 test_module_config {

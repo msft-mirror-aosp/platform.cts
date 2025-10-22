@@ -34,6 +34,7 @@
         <option name="runner" value="androidx.test.runner.AndroidJUnitRunner" />
         <option name="exclude-annotation" value="com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile" />
         <option name="exclude-annotation" value="com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser" />
+        <option name="exclude-filter" value="com.google.common.collect.testing" />
         <!-- Do not disable hidden-api-checks for this test. This test includes
              StrictModeTest which relies on hidden API checks being enabled in
              order to function properly. Any APIs used by this test should be
