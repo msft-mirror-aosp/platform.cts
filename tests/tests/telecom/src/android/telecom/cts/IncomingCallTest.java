@@ -578,4 +578,56 @@ public class IncomingCallTest extends BaseTelecomTestWithMockServices {
                 "Call should have extras key " + expectedKey
         );
     }
+
+    /**
+     * Verifies that an incoming call with the {@link android.telecom.Call#EXTRA_CRS_AUDIO_MODE}
+     * extra will result in a ringing call.
+     */
+    public void testIncomingCallWithCrsInCallAudioMode() throws Exception {
+        if (!mShouldTestTelecom || !android.telecom.flags.Flags.isUsingCrs()) {
+            return;
+        }
+        setupConnectionService(null, FLAG_REGISTER | FLAG_ENABLE);
+        Uri testNumber = createTestNumber();
+        addAndVerifyNewIncomingCall(testNumber, null);
+
+        final MockConnection connection = verifyConnectionForIncomingCall();
+        Bundle extras = new Bundle();
+        extras.putInt(Call.EXTRA_CRS_AUDIO_MODE, AudioManager.MODE_IN_CALL);
+        connection.setExtras(extras);
+
+        verifyPhoneStateListenerCallbacksForCall(
+                CALL_STATE_RINGING, testNumber.getSchemeSpecificPart());
+        Call call = mInCallCallbacks.getService().getLastCall();
+        assertCallExtrasKey(call, Call.EXTRA_CRS_AUDIO_MODE);
+        assertEquals(
+                AudioManager.MODE_IN_CALL,
+                call.getDetails().getExtras().getInt(Call.EXTRA_CRS_AUDIO_MODE));
+    }
+
+    /**
+     * Verifies that an incoming call with the {@link android.telecom.Call#EXTRA_CRS_AUDIO_MODE}
+     * extra will result in a ringing call.
+     */
+    public void testIncomingCallWithCrsInRingToneAudioMode() throws Exception {
+        if (!mShouldTestTelecom || !android.telecom.flags.Flags.isUsingCrs()) {
+            return;
+        }
+        setupConnectionService(null, FLAG_REGISTER | FLAG_ENABLE);
+        Uri testNumber = createTestNumber();
+        addAndVerifyNewIncomingCall(testNumber, null);
+
+        final MockConnection connection = verifyConnectionForIncomingCall();
+        Bundle extras = new Bundle();
+        extras.putInt(Call.EXTRA_CRS_AUDIO_MODE, AudioManager.MODE_RINGTONE);
+        connection.setExtras(extras);
+
+        verifyPhoneStateListenerCallbacksForCall(
+                CALL_STATE_RINGING, testNumber.getSchemeSpecificPart());
+        Call call = mInCallCallbacks.getService().getLastCall();
+        assertCallExtrasKey(call, Call.EXTRA_CRS_AUDIO_MODE);
+        assertEquals(
+                AudioManager.MODE_RINGTONE,
+                call.getDetails().getExtras().getInt(Call.EXTRA_CRS_AUDIO_MODE));
+    }
 }
