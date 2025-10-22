@@ -157,7 +157,7 @@ open class BasePaletteTest {
         val uiModeManager = context.getSystemService(UiModeManager::class.java)
 
         val isDynamicColorSupported =
-            !(FeatureUtil.isTV() || FeatureUtil.isWatch() || FeatureUtil.isAutomotive()) ||
+            !(FeatureUtil.isTV() || FeatureUtil.isWatch() || FeatureUtil.isAutomotive()) &&
             // DynamicColor was broken on HSUM but got fixed.
             // So we skip testing if Headless AND the fix is not applied.
             !(UserManager.isHeadlessSystemUserMode() &&
