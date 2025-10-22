@@ -397,6 +397,7 @@ def change_jca_aspect_ratio(dut, log_path, aspect_ratio):
       raise AssertionError(
           f'Testing ratio {aspect_ratio} not found in JCA app UI!') from e
   dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
+  dut.ui.press.back()
 
 
 def do_jca_video_setup(dut, log_path, facing, aspect_ratio, stabilization_mode,
@@ -446,6 +447,7 @@ def _set_jca_video_stabilization(dut, log_path, stabilization_mode):
   OPTICAL: optical stabilization is turned on in the default camera app
     when the video stabilization mode is OFF
   """
+  dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
   dut.ui(res=SETTINGS_BUTTON_RESOURCE_ID).click()
   dut.ui(scrollable=True).scroll.down(
       res=SETTINGS_VIDEO_STABILIZATION_RESOURCE_ID)
@@ -523,6 +525,7 @@ def _set_jca_video_quality(dut, log_path, video_quality):
     log_path: str; log path to save screenshots.
     video_quality: str.
   """
+  dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
   dut.ui(res=SETTINGS_BUTTON_RESOURCE_ID).click()
   scrollable_menu = dut.ui(scrollable=True)
   scrollable_menu.scroll.down(res=SETTINGS_VIDEO_QUALITY_RESOURCE_ID)
