@@ -16,17 +16,15 @@
 
 package android.car.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
-import android.content.BroadcastReceiver;
+import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresDevice;
 import android.util.Log;
@@ -40,9 +38,7 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.FeatureUtil;
-import com.android.compatibility.common.util.ShellIdentityUtils;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -73,98 +69,7 @@ public final class CarBluetoothTest extends AbstractCarTestCase {
 
     private Context mContext;
 
-    // Bluetooth Core objects
-    private BluetoothManager mBluetoothManager;
-    private BluetoothAdapter mBluetoothAdapter;
-
-    // Timeout for waiting for an adapter state change
-    private static final int BT_ADAPTER_TIMEOUT_MS = 8000; // ms
-
-    // Objects to block until the adapter has reached a desired state
-    private ReentrantLock mBluetoothAdapterLock;
-    private Condition mConditionAdapterStateReached;
-    private int mDesiredState;
-    private int mOriginalState;
-
-    /**
-     * Handles BluetoothAdapter state changes and signals when we've reached a desired state
-     */
-    private class BluetoothAdapterReceiver extends BroadcastReceiver {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-
-            // Decode the intent
-            String action = intent.getAction();
-
-            // Watch for BluetoothAdapter intents only
-            if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(action)) {
-                int newState = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, -1);
-                if (DBG) {
-                    Log.d(TAG, "Bluetooth adapter state changed: " + newState);
-                }
-
-                // Signal if the state is set to the one we're waiting on. If it's not and we got a
-                // STATE_OFF event then handle the unexpected off event. Note that we could
-                // proactively turn the adapter back on to continue testing. For now we'll just
-                // log it
-                mBluetoothAdapterLock.lock();
-                try {
-                    if (mDesiredState == newState) {
-                        mConditionAdapterStateReached.signal();
-                    } else if (newState == BluetoothAdapter.STATE_OFF) {
-                        Log.w(TAG, "Bluetooth turned off unexpectedly while test was running.");
-                    }
-                } finally {
-                    mBluetoothAdapterLock.unlock();
-                }
-            }
-        }
-    }
-    private BluetoothAdapterReceiver mBluetoothAdapterReceiver;
-
-    private void waitForAdapterOn() {
-        if (DBG) {
-            Log.d(TAG, "Waiting for adapter to be on...");
-        }
-        waitForAdapterState(BluetoothAdapter.STATE_ON);
-    }
-
-    private void waitForAdapterOff() {
-        if (DBG) {
-            Log.d(TAG, "Waiting for adapter to be off...");
-        }
-        waitForAdapterState(BluetoothAdapter.STATE_OFF);
-    }
-
-    // Wait for the bluetooth adapter to be in a given state
-    private void waitForAdapterState(int desiredState) {
-        if (DBG) {
-            Log.d(TAG, "Waiting for adapter state " + desiredState);
-        }
-        mBluetoothAdapterLock.lock();
-        try {
-            // Update the desired state so that we'll signal when we get there
-            mDesiredState = desiredState;
-            if (desiredState == BluetoothAdapter.STATE_ON) {
-                ShellIdentityUtils.invokeWithShellPermissions(() -> mBluetoothAdapter.enable());
-            } else {
-                ShellIdentityUtils.invokeWithShellPermissions(() -> mBluetoothAdapter.disable());
-            }
-
-            // Wait until we're reached that desired state
-            while (desiredState != mBluetoothAdapter.getState()) {
-                if (!mConditionAdapterStateReached.await(
-                    BT_ADAPTER_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
-                    Log.e(TAG, "Timeout while waiting for Bluetooth adapter state " + desiredState);
-                    break;
-                }
-            }
-        } catch (InterruptedException e) {
-            Log.w(TAG, "waitForAdapterState(" + desiredState + "): interrupted", e);
-        } finally {
-            mBluetoothAdapterLock.unlock();
-        }
-    }
+    private final BluetoothAdapter mBluetoothAdapter = BlockingBluetoothAdapter.getAdapter();
 
     // Utility class to hold profile information and state
     private static class ProfileInfo {
@@ -322,34 +227,14 @@ public final class CarBluetoothTest extends AbstractCarTestCase {
         // Get the context
         mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
 
-        // Get bluetooth core objects so we can get proxies/check for profile existence
-        mBluetoothManager = (BluetoothManager) mContext.getSystemService(
-                Context.BLUETOOTH_SERVICE);
-        mBluetoothAdapter = mBluetoothManager.getAdapter();
-
         // Initialize all the profile connection variables
         mProfilesSupported = 0;
         mProfileConnectedLock = new ReentrantLock();
         mConditionAllProfilesConnected = mProfileConnectedLock.newCondition();
         clearProfileStatuses();
 
-        // Register the adapter receiver and initialize adapter state wait objects
-        mDesiredState = -1; // Set and checked by waitForAdapterState()
-        mBluetoothAdapterLock = new ReentrantLock();
-        mConditionAdapterStateReached = mBluetoothAdapterLock.newCondition();
-        mBluetoothAdapterReceiver = new BluetoothAdapterReceiver();
-        IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
-        mContext.registerReceiver(mBluetoothAdapterReceiver, filter);
-
         // Make sure Bluetooth is enabled before the test
-        waitForAdapterOn();
-        assertTrue(mBluetoothAdapter.isEnabled());
-    }
-
-    @After
-    public void tearDown() {
-        waitForAdapterOff();
-        mContext.unregisterReceiver(mBluetoothAdapterReceiver);
+        assertThat(BlockingBluetoothAdapter.enable()).isTrue();
     }
 
     // [A-0-2] : Android Automotive devices must support the following Bluetooth profiles:
