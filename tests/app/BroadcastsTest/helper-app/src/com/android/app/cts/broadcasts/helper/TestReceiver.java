@@ -17,7 +17,9 @@
 package com.android.app.cts.broadcasts.helper;
 
 import static com.android.app.cts.broadcasts.Common.ACTION_QUERY_PACKAGE_NAME;
+import static com.android.app.cts.broadcasts.Common.ACTION_WAIT_BROADCAST;
 import static com.android.app.cts.broadcasts.Common.EXTRA_PACKAGE_NAMES;
+import static com.android.app.cts.broadcasts.Common.EXTRA_WAIT_PERIOD_MS;
 import static com.android.app.cts.broadcasts.Common.ORDERED_BROADCAST_ACTION;
 import static com.android.app.cts.broadcasts.Common.ORDERED_BROADCAST_RESULT_DATA;
 import static com.android.app.cts.broadcasts.Common.TAG;
@@ -26,6 +28,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.util.Log;
 
 import java.util.ArrayList;
@@ -35,22 +38,25 @@ public class TestReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         Log.i(TAG, "TestReceiver received intent: " + intent);
-        if (ORDERED_BROADCAST_ACTION.equals(intent.getAction())) {
-            setResultData(ORDERED_BROADCAST_RESULT_DATA);
-        } else if (ACTION_QUERY_PACKAGE_NAME.equals(intent.getAction())) {
-            final Bundle resultExtras = getOrCreateResultExtras();
-            ArrayList<String> packages = resultExtras.getStringArrayList(EXTRA_PACKAGE_NAMES);
-            if (packages == null) {
-                packages = new ArrayList<>();
-            }
-            packages.add(context.getPackageName());
-            resultExtras.putStringArrayList(EXTRA_PACKAGE_NAMES, packages);
-            setResultExtras(resultExtras);
+        final String action = intent.getAction();
+        switch (action) {
+            case ORDERED_BROADCAST_ACTION:
+                setResultData(ORDERED_BROADCAST_RESULT_DATA);
+                break;
+            case ACTION_QUERY_PACKAGE_NAME:
+                final Bundle resultExtras = getResultExtras(true /* makeMap */);
+                ArrayList<String> packages = resultExtras.getStringArrayList(EXTRA_PACKAGE_NAMES);
+                if (packages == null) {
+                    packages = new ArrayList<>();
+                }
+                packages.add(context.getPackageName());
+                resultExtras.putStringArrayList(EXTRA_PACKAGE_NAMES, packages);
+                setResultExtras(resultExtras);
+                break;
+            case ACTION_WAIT_BROADCAST:
+                final int waitPeriodMs = intent.getIntExtra(EXTRA_WAIT_PERIOD_MS, 0);
+                SystemClock.sleep(waitPeriodMs);
+                break;
         }
-    }
-
-    private Bundle getOrCreateResultExtras() {
-        final Bundle resultExtras = getResultExtras(false /* makeMap */);
-        return resultExtras == null ? new Bundle() : resultExtras;
     }
 }

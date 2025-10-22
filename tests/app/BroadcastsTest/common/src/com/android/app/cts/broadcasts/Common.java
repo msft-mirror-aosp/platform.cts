@@ -16,8 +16,12 @@
 
 package com.android.app.cts.broadcasts;
 
-public class Common {
+public final class Common {
+    private Common() {}
+
     public static final String TAG = "BroadcastTest";
+
+    public static final String ACTION_WAIT_BROADCAST = "com.android.app.cts.broadcasts.helper.WAIT";
 
     public static final String ORDERED_BROADCAST_ACTION =
             "com.android.app.cts.broadcasts.helper.ORDERED";
@@ -33,4 +37,7 @@ public class Common {
 
     public static final String EXTRA_PACKAGE_NAMES =
             "com.android.app.cts.broadcasts.helper.extra.PACKAGE_NAMES";
+
+    public static final String EXTRA_WAIT_PERIOD_MS =
+            "com.android.app.cts.broadcasts.helper.extra.WAIT_PERIOD_MS";
 }

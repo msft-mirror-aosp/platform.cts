@@ -45,6 +45,7 @@ import com.android.compatibility.common.util.TestUtils;
 import com.android.compatibility.common.util.ThrowingSupplier;
 
 import com.google.common.base.Objects;
+import com.google.errorprone.annotations.FormatMethod;
 
 import org.junit.After;
 import org.junit.Before;
@@ -80,6 +81,8 @@ abstract class BaseBroadcastTest {
 
     // TODO: Avoid hardcoding the device_config constant here.
     protected static final String KEY_FREEZE_DEBOUNCE_TIMEOUT = "freeze_debounce_timeout";
+    protected static final String KEY_MAX_PENDING_BROADCASTS_PER_SENDER_UID =
+            "bcast_max_pending_broadcasts_per_sender_uid";
 
     protected Context mContext;
     protected ActivityManager mAm;
@@ -143,7 +146,8 @@ abstract class BaseBroadcastTest {
         return SystemUtil.runWithShellPermissionIdentity(() -> mAm.isProcessFrozen(pid));
     }
 
-    protected String runShellCmd(String cmdFormat, Object... args) {
+    @FormatMethod
+    protected static String runShellCmd(String cmdFormat, Object... args) {
         final String cmd = String.format(cmdFormat, args);
         final String output = SystemUtil.runShellCommand(cmd);
         Log.d(TAG, String.format("Output of '%s': '%s'", cmd, output));
@@ -295,6 +299,14 @@ abstract class BaseBroadcastTest {
     protected void waitForBroadcastBarrier() {
         SystemUtil.runCommandAndPrintOnLogcat(TAG,
                 "cmd activity wait-for-broadcast-barrier --flush-application-threads");
+    }
+
+    protected void clearAppExitInfos(String pkgName) {
+        runShellCmd("cmd activity clear-exit-info --user all %s", pkgName);
+    }
+
+    protected static String getBroadcastConstant(String key) {
+        return runShellCmd("cmd activity get-broadcast-constant %s", key).trim();
     }
 
     protected TestServiceConnection bindToHelperService(String packageName) {
