@@ -183,8 +183,6 @@ public final class CarBluetoothTest extends AbstractCarTestCase {
     static {
         sRequiredBluetoothProfiles.put(11,
                 new ProfileInfo("A2DP Sink")); // BluetoothProfile.A2DP_SINK
-        sRequiredBluetoothProfiles.put(12,
-                new ProfileInfo("AVRCP Controller")); // BluetoothProfile.AVRCP_CONTROLLER
         sRequiredBluetoothProfiles.put(16,
                 new ProfileInfo("HSP Client")); // BluetoothProfile.HEADSET_CLIENT
         sRequiredBluetoothProfiles.put(17,
