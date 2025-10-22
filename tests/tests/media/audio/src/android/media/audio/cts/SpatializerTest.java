@@ -21,9 +21,14 @@ import static android.media.audio.Flags.FLAG_FEATURE_SPATIAL_AUDIO_HEADTRACKING_
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 import android.annotation.NonNull;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.media.AudioAttributes;
 import android.media.AudioDeviceAttributes;
@@ -36,10 +41,16 @@ import android.os.SystemProperties;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 
-import com.android.compatibility.common.util.CtsAndroidTestCase;
+import androidx.test.InstrumentationRegistry;
+import androidx.test.runner.AndroidJUnit4;
+
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.Arrays;
 import java.util.List;
@@ -48,28 +59,32 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 @FrameworkSpecificTest
-public class SpatializerTest extends CtsAndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public class SpatializerTest {
 
     private AudioManager mAudioManager;
     private static final String TAG = "SpatializerTest";
     private static final int LISTENER_WAIT_TIMEOUT_MS = 3000;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void setUp() throws Exception {
         mAudioManager = (AudioManager) getContext().getSystemService(AudioManager.class);
     }
 
-    @Override
-    protected void tearDown() throws Exception {
-        getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+    @After
+    public void tearDown() throws Exception {
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .dropShellPermissionIdentity();
     }
 
+    @Test
     public void testGetSpatializer() throws Exception {
         Spatializer spat = mAudioManager.getSpatializer();
         assertNotNull("Spatializer shouldn't be null", spat);
     }
 
+    @Test
     public void testUnsupported() throws Exception {
         Spatializer spat = mAudioManager.getSpatializer();
         if (spat.getImmersiveAudioLevel() != Spatializer.SPATIALIZER_IMMERSIVE_LEVEL_NONE) {
@@ -81,12 +96,14 @@ public class SpatializerTest extends CtsAndroidTestCase {
     }
 
     /**
-     * Test that if the device reports the property ro.audio.spatializer_enabled as true
-     * and has an audio effect of type EFFECT_TYPE_SPATIALIZER,
-     * then the Spatializer's immersive audio level has some spatialization capability
-     * @throws Exception when SPATIALIZER_IMMERSIVE_LEVEL_NONE is the reported immersive level
-     *                   by the Spatializer instance
+     * Test that if the device reports the property ro.audio.spatializer_enabled as true and has an
+     * audio effect of type EFFECT_TYPE_SPATIALIZER, then the Spatializer's immersive audio level
+     * has some spatialization capability
+     *
+     * @throws Exception when SPATIALIZER_IMMERSIVE_LEVEL_NONE is the reported immersive level by
+     *     the Spatializer instance
      */
+    @Test
     public void testEffectSpatializer() throws Exception {
         final boolean spatEnabled = SystemProperties.getBoolean("ro.audio.spatializer_enabled",
                 false);
@@ -114,6 +131,7 @@ public class SpatializerTest extends CtsAndroidTestCase {
                 spat.getImmersiveAudioLevel() != Spatializer.SPATIALIZER_IMMERSIVE_LEVEL_NONE);
     }
 
+    @Test
     public void testSupportedDevices() throws Exception {
         Spatializer spat = mAudioManager.getSpatializer();
         if (spat.getImmersiveAudioLevel() == Spatializer.SPATIALIZER_IMMERSIVE_LEVEL_NONE) {
@@ -147,7 +165,8 @@ public class SpatializerTest extends CtsAndroidTestCase {
                 () -> spat.isHeadTrackerEnabled(device));
 
         // try again with permission, then add a device and remove it
-        getInstrumentation().getUiAutomation()
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
                 .adoptShellPermissionIdentity("android.permission.MODIFY_DEFAULT_AUDIO_EFFECTS");
         spat.addCompatibleAudioDevice(device);
         List<AudioDeviceAttributes> compatDevices = spat.getCompatibleAudioDevices();
@@ -165,10 +184,13 @@ public class SpatializerTest extends CtsAndroidTestCase {
         assertFalse("removed device still in list of compatible devices",
                 compatDevices.contains(device));
 
-        getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .dropShellPermissionIdentity();
     }
 
     @RequiresFlagsEnabled(FLAG_FEATURE_SPATIAL_AUDIO_HEADTRACKING_LOW_LATENCY)
+    @Test
     public void testLowLatencyHeadtrackingFeature() throws Exception {
         Spatializer spat = mAudioManager.getSpatializer();
         if (spat.getImmersiveAudioLevel() != Spatializer.SPATIALIZER_IMMERSIVE_LEVEL_NONE) {
@@ -180,6 +202,7 @@ public class SpatializerTest extends CtsAndroidTestCase {
                         PackageManager.FEATURE_AUDIO_SPATIAL_HEADTRACKING_LOW_LATENCY));
     }
 
+    @Test
     public void testHeadTrackingListener() throws Exception {
         Spatializer spat = mAudioManager.getSpatializer();
         if (spat.getImmersiveAudioLevel() == Spatializer.SPATIALIZER_IMMERSIVE_LEVEL_NONE) {
@@ -206,7 +229,8 @@ public class SpatializerTest extends CtsAndroidTestCase {
                 SecurityException.class,
                 () -> spat.addOnHeadTrackingModeChangedListener(Executors.newSingleThreadExecutor(),
                         listener));
-        getInstrumentation().getUiAutomation()
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
                 .adoptShellPermissionIdentity("android.permission.MODIFY_DEFAULT_AUDIO_EFFECTS");
 
         // argument validation
@@ -267,6 +291,7 @@ public class SpatializerTest extends CtsAndroidTestCase {
         spat.removeOnHeadTrackingModeChangedListener(listener);
     }
 
+    @Test
     public void testSpatializerOutput() throws Exception {
         Spatializer spat = mAudioManager.getSpatializer();
         if (spat.getImmersiveAudioLevel() == Spatializer.SPATIALIZER_IMMERSIVE_LEVEL_NONE) {
@@ -287,7 +312,8 @@ public class SpatializerTest extends CtsAndroidTestCase {
                 SecurityException.class,
                 () -> spat.clearOnSpatializerOutputChangedListener());
 
-        getInstrumentation().getUiAutomation()
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
                 .adoptShellPermissionIdentity("android.permission.MODIFY_DEFAULT_AUDIO_EFFECTS");
 
         // argument validation
@@ -310,6 +336,7 @@ public class SpatializerTest extends CtsAndroidTestCase {
                 () -> spat.clearOnSpatializerOutputChangedListener());
     }
 
+    @Test
     public void testExercisePose() throws Exception {
         Spatializer spat = mAudioManager.getSpatializer();
         if (spat.getImmersiveAudioLevel() == Spatializer.SPATIALIZER_IMMERSIVE_LEVEL_NONE) {
@@ -336,7 +363,8 @@ public class SpatializerTest extends CtsAndroidTestCase {
                 IllegalStateException.class,
                 () -> spat.clearOnHeadToSoundstagePoseUpdatedListener());
 
-        getInstrumentation().getUiAutomation()
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
                 .adoptShellPermissionIdentity("android.permission.MODIFY_DEFAULT_AUDIO_EFFECTS");
         // TODO once headtracking is properly reported: check pose changes on recenter and transform
         spat.setOnHeadToSoundstagePoseUpdatedListener(
@@ -348,6 +376,7 @@ public class SpatializerTest extends CtsAndroidTestCase {
         spat.clearOnHeadToSoundstagePoseUpdatedListener();
     }
 
+    @Test
     public void testEffectParameters() throws Exception {
         Spatializer spat = mAudioManager.getSpatializer();
         if (spat.getImmersiveAudioLevel() == Spatializer.SPATIALIZER_IMMERSIVE_LEVEL_NONE) {
@@ -373,6 +402,7 @@ public class SpatializerTest extends CtsAndroidTestCase {
                 () -> spat.getEffectParameter(0, val));
     }
 
+    @Test
     public void testSpatializerStateListenerManagement() throws Exception {
         final Spatializer spat = mAudioManager.getSpatializer();
         final MySpatStateListener stateListener = new MySpatStateListener();
@@ -413,6 +443,7 @@ public class SpatializerTest extends CtsAndroidTestCase {
                 () -> spat.removeOnSpatializerStateChangedListener(stateListener));
     }
 
+    @Test
     public void testMinSpatializationCapabilities() throws Exception {
         Spatializer spat = mAudioManager.getSpatializer();
         if (spat.getImmersiveAudioLevel() == Spatializer.SPATIALIZER_IMMERSIVE_LEVEL_NONE) {
@@ -440,6 +471,7 @@ public class SpatializerTest extends CtsAndroidTestCase {
         }
     }
 
+    @Test
     public void testSpatializerDisabling() throws Exception {
         Spatializer spat = mAudioManager.getSpatializer();
         if (spat.getImmersiveAudioLevel() == Spatializer.SPATIALIZER_IMMERSIVE_LEVEL_NONE) {
@@ -462,7 +494,8 @@ public class SpatializerTest extends CtsAndroidTestCase {
 
         spat.addOnSpatializerStateChangedListener(Executors.newSingleThreadExecutor(),
                 stateListener);
-        getInstrumentation().getUiAutomation()
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
                 .adoptShellPermissionIdentity("android.permission.MODIFY_DEFAULT_AUDIO_EFFECTS");
         try {
             spat.setEnabled(false);
@@ -474,12 +507,15 @@ public class SpatializerTest extends CtsAndroidTestCase {
         } finally {
             // restore state
             spat.setEnabled(true);
-            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+            InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation()
+                    .dropShellPermissionIdentity();
             spat.removeOnSpatializerStateChangedListener(stateListener);
             assertEquals("Spatializer state cannot be restored", true, spat.isEnabled());
         }
     }
 
+    @Test
     public void testHeadTrackerAvailable() throws Exception {
         Spatializer spat = mAudioManager.getSpatializer();
         if (spat.getImmersiveAudioLevel() == Spatializer.SPATIALIZER_IMMERSIVE_LEVEL_NONE) {
@@ -611,5 +647,9 @@ public class SpatializerTest extends CtsAndroidTestCase {
         public void onHeadTrackerAvailableChanged(Spatializer spatializer, boolean available) {
             Log.i(TAG, "onHeadTrackerAvailable(" + available + ")");
         }
+    }
+
+    private static Context getContext() {
+        return InstrumentationRegistry.getInstrumentation().getTargetContext();
     }
 }
