@@ -73,7 +73,7 @@ public class InstalledIncrementalPackageStatsTests extends PackageManagerStatsTe
         assertEquals(2, filterMetrics.size());
 
         // The order of the UIDs in the metrics can be different from the order of the installations
-        for (AtomsProto.Atom atom : data) {
+        for (AtomsProto.Atom atom : filterMetrics) {
             assertFalse(atom.getInstalledIncrementalPackage().getIsLoading());
             Truth.assertThat(atom.getInstalledIncrementalPackage().getLoadingCompletedTimestamp()
                     ).isGreaterThan(currentEpochTimeSeconds);
