@@ -170,7 +170,7 @@ public final class DeviceUtils {
      */
     public static void installStatsdTestApp(ITestDevice device, IBuildInfo ctsBuildInfo)
             throws FileNotFoundException, DeviceNotAvailableException {
-        installTestApp(device, STATSD_ATOM_TEST_APK, STATSD_ATOM_TEST_PKG, ctsBuildInfo);
+        installTestAppWithAdb(device, STATSD_ATOM_TEST_APK, STATSD_ATOM_TEST_PKG, ctsBuildInfo);
     }
 
     /**
