@@ -16,6 +16,8 @@
 
 package android.settings.cts;
 
+import static android.content.pm.PackageManager.FEATURE_SECURE_LOCK_SCREEN;
+
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
 import static com.android.bedstead.nene.packages.CommonPackages.FEATURE_AUTOMOTIVE;
@@ -43,6 +45,8 @@ import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.ShellCommand;
+
+import com.android.compatibility.common.util.FeatureUtil;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -176,6 +180,7 @@ public class DeviceStateAppFunctionsTest {
     @Test
     public void testGetDeviceStateMetadata_deviceLocked_throwsException() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getDeviceStateMetadata"));
+        assumeTrue(supportsSecureLock());
 
         dpc(sDeviceState).devicePolicyManager().lockNow();
         Poll.forValue("isDeviceLocked", sLocalKeyguardManager::isDeviceLocked)
@@ -196,6 +201,7 @@ public class DeviceStateAppFunctionsTest {
     public void testGetDeviceStateMetadata_requestInitiatedWhileUnlockedSet_doesNotThrowException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("getDeviceStateMetadata"));
+        assumeTrue(supportsSecureLock());
 
         dpc(sDeviceState).devicePolicyManager().lockNow();
         Poll.forValue("isDeviceLocked", sLocalKeyguardManager::isDeviceLocked)
@@ -232,6 +238,7 @@ public class DeviceStateAppFunctionsTest {
     @Test
     public void testGetUncategorizedDeviceState_deviceLocked_throwsException() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getUncategorizedDeviceState"));
+        assumeTrue(supportsSecureLock());
 
         dpc(sDeviceState).devicePolicyManager().lockNow();
         Poll.forValue("isDeviceLocked", sLocalKeyguardManager::isDeviceLocked)
@@ -253,6 +260,7 @@ public class DeviceStateAppFunctionsTest {
             testGetUncategorizedDeviceState_requestInitiatedWhileUnlockedSet_doesNotThrowException()
                     throws Exception {
         assumeTrue(deviceSupportsAppFunction("getUncategorizedDeviceState"));
+        assumeTrue(supportsSecureLock());
 
         dpc(sDeviceState).devicePolicyManager().lockNow();
         Poll.forValue("isDeviceLocked", sLocalKeyguardManager::isDeviceLocked)
@@ -289,6 +297,7 @@ public class DeviceStateAppFunctionsTest {
     @Test
     public void testGetStorageDeviceState_deviceLocked_throwsException() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getStorageDeviceState"));
+        assumeTrue(supportsSecureLock());
 
         dpc(sDeviceState).devicePolicyManager().lockNow();
         Poll.forValue("isDeviceLocked", sLocalKeyguardManager::isDeviceLocked)
@@ -309,6 +318,7 @@ public class DeviceStateAppFunctionsTest {
     public void testGetStorageDeviceState_requestInitiatedWhileUnlockedSet_doesNotThrowException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("getStorageDeviceState"));
+        assumeTrue(supportsSecureLock());
 
         dpc(sDeviceState).devicePolicyManager().lockNow();
         Poll.forValue("isDeviceLocked", sLocalKeyguardManager::isDeviceLocked)
@@ -344,6 +354,7 @@ public class DeviceStateAppFunctionsTest {
     @Test
     public void testGetBatteryDeviceState_deviceLocked_throwsException() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getBatteryDeviceState"));
+        assumeTrue(supportsSecureLock());
 
         dpc(sDeviceState).devicePolicyManager().lockNow();
         Poll.forValue("isDeviceLocked", sLocalKeyguardManager::isDeviceLocked)
@@ -364,6 +375,7 @@ public class DeviceStateAppFunctionsTest {
     public void testGetBatteryDeviceState_requestInitiatedWhileUnlockedSet_doesNotThrowException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("getBatteryDeviceState"));
+        assumeTrue(supportsSecureLock());
 
         dpc(sDeviceState).devicePolicyManager().lockNow();
         Poll.forValue("isDeviceLocked", sLocalKeyguardManager::isDeviceLocked)
@@ -399,6 +411,7 @@ public class DeviceStateAppFunctionsTest {
     @Test
     public void testSetDeviceStateItem_deviceLocked_throwsException() throws Exception {
         assumeTrue(deviceSupportsAppFunction("setDeviceStateItem"));
+        assumeTrue(supportsSecureLock());
 
         dpc(sDeviceState).devicePolicyManager().lockNow();
         Poll.forValue("isDeviceLocked", sLocalKeyguardManager::isDeviceLocked)
@@ -424,6 +437,7 @@ public class DeviceStateAppFunctionsTest {
     public void testSetDeviceStateItem_requestInitiatedWhileUnlockedSet_doesNotThrowException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("setDeviceStateItem"));
+        assumeTrue(supportsSecureLock());
 
         dpc(sDeviceState).devicePolicyManager().lockNow();
         Poll.forValue("isDeviceLocked", sLocalKeyguardManager::isDeviceLocked)
@@ -466,6 +480,7 @@ public class DeviceStateAppFunctionsTest {
     public void testOffsetNumericDeviceStateItemByValue_deviceLocked_throwsException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("offsetNumericDeviceStateItemByValue"));
+        assumeTrue(supportsSecureLock());
 
         dpc(sDeviceState).devicePolicyManager().lockNow();
         Poll.forValue("isDeviceLocked", sLocalKeyguardManager::isDeviceLocked)
@@ -492,6 +507,7 @@ public class DeviceStateAppFunctionsTest {
             testOffsetNumericDeviceStateItemByValue_requestInitiatedWhileUnlockedSet_doesNotThrowException()
                     throws Exception {
         assumeTrue(deviceSupportsAppFunction("offsetNumericDeviceStateItemByValue"));
+        assumeTrue(supportsSecureLock());
 
         dpc(sDeviceState).devicePolicyManager().lockNow();
         Poll.forValue("isDeviceLocked", sLocalKeyguardManager::isDeviceLocked)
@@ -535,6 +551,7 @@ public class DeviceStateAppFunctionsTest {
     public void testAdjustNumericDeviceStateItemByPercentage_deviceLocked_throwsException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("adjustNumericDeviceStateItemByPercentage"));
+        assumeTrue(supportsSecureLock());
 
         dpc(sDeviceState).devicePolicyManager().lockNow();
         Poll.forValue("isDeviceLocked", sLocalKeyguardManager::isDeviceLocked)
@@ -561,6 +578,7 @@ public class DeviceStateAppFunctionsTest {
             testAdjustNumericDeviceStateItemByPercentage_requestInitiatedWhileUnlockedSet_doesNotThrowException()
                     throws Exception {
         assumeTrue(deviceSupportsAppFunction("adjustNumericDeviceStateItemByPercentage"));
+        assumeTrue(supportsSecureLock());
 
         dpc(sDeviceState).devicePolicyManager().lockNow();
         Poll.forValue("isDeviceLocked", sLocalKeyguardManager::isDeviceLocked)
@@ -617,5 +635,9 @@ public class DeviceStateAppFunctionsTest {
     private boolean deviceSupportsAppFunction(String functionName) throws AdbException {
         String command = "dumpsys app_function";
         return ShellCommand.builder(command).execute().trim().contains(functionName);
+    }
+
+    private boolean supportsSecureLock() {
+        return FeatureUtil.hasSystemFeature(FEATURE_SECURE_LOCK_SCREEN);
     }
 }
