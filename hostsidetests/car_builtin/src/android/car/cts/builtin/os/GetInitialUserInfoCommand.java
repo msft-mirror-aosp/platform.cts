@@ -23,8 +23,13 @@ import com.android.tradefed.log.LogUtil.CLog;
 
 public final class GetInitialUserInfoCommand extends CtsCarShellCommand {
 
+    // default timeout defined in CarUserService
+    private static final long DEFAULT_HAL_TIMEOUT_MS = 5_000L;
     public static final String OK_STATUS_RETURN_HEADER = "Call status: OK";
-    private static final String COMMAND_NAME = "cmd car_service get-initial-user-info FIRST_BOOT";
+    private static final String COMMAND_NAME = String.format(
+            "cmd car_service get-initial-user-info FIRST_BOOT --timeout %d",
+            DEFAULT_HAL_TIMEOUT_MS
+    );
 
     public GetInitialUserInfoCommand(ITestDevice device) {
         super(COMMAND_NAME, device);
