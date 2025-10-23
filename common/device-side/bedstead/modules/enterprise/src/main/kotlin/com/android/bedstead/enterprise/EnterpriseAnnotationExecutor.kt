@@ -24,8 +24,10 @@ import com.android.bedstead.enterprise.annotations.EnsureHasNoDelegate
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasNoProfileOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasNoTestDeviceAdmin
+import com.android.bedstead.enterprise.annotations.EnsureHasNoUserController
 import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile
 import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
+import com.android.bedstead.enterprise.annotations.EnsureHasUserController
 import com.android.bedstead.enterprise.annotations.EnsureHasUserRestriction
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
 import com.android.bedstead.enterprise.annotations.EnsureTestAppInstalledAsPrimaryDPC
@@ -98,6 +100,9 @@ class EnterpriseAnnotationExecutor(locator: BedsteadServiceLocator) : Annotation
             is EnsureHasUserRestriction -> userRestrictions.ensureHasUserRestriction(value, onUser)
             is EnsureDoesNotHaveUserRestriction ->
                 userRestrictions.ensureDoesNotHaveUserRestriction(value, onUser)
+            /** Multi-User Management */
+            is EnsureHasUserController -> profileOwnersComponent.ensureHasUserController(this)
+            is EnsureHasNoUserController -> profileOwnersComponent.ensureHasNoUserController(this)
         }
     }
 }
