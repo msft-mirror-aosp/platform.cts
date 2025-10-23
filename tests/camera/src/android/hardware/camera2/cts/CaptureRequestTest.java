@@ -45,6 +45,8 @@ import android.hardware.cts.helpers.CameraUtils;
 import android.media.Image;
 import android.os.Build;
 import android.os.Parcel;
+import com.android.cts.backportedfixes.BackportedFixTest;
+import com.android.cts.backportedfixes.BackportedFixRule;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -153,6 +155,9 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Rule
+    public final BackportedFixRule mBackportedFixRule = new BackportedFixRule();
 
     @Override
     public void setUp() throws Exception {
@@ -1119,6 +1124,7 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
      * DEFAULT, PREVIEW, STILL_CAPTURE, VIDEO_RECORD, PREVIEW_VIDEO_STILL, VIDEO_CALL
      */
     @Test
+    @BackportedFixTest(452390376)
     public void testAeModeOnLowLightBoostBrightnessPriorityWithStreamUseCase() throws Exception {
         long[] streamUseCases = {
                 CameraMetadata.SCALER_AVAILABLE_STREAM_USE_CASES_DEFAULT,
