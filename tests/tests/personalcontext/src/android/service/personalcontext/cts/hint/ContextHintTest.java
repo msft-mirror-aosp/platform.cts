@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.service.personalcontext.cts;
+package android.service.personalcontext.cts.hint;
 
 import static com.google.common.truth.Truth.assertThat;
 
