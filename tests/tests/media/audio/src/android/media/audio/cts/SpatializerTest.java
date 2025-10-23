@@ -39,6 +39,8 @@ import android.media.Spatializer;
 import android.media.audiofx.AudioEffect;
 import android.os.SystemProperties;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
@@ -51,6 +53,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.Rule;
 
 import java.util.Arrays;
 import java.util.List;
@@ -61,6 +64,8 @@ import java.util.concurrent.TimeUnit;
 @FrameworkSpecificTest
 @RunWith(AndroidJUnit4.class)
 public class SpatializerTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private AudioManager mAudioManager;
     private static final String TAG = "SpatializerTest";
