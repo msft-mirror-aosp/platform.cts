@@ -367,11 +367,25 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                         WindowMetrics windowMetrics = getWindowManager().getCurrentWindowMetrics();
                         Rect windowBounds = windowMetrics.getBounds();
                         Insets systemBarInsets = insets.getInsets(WindowInsets.Type.systemBars());
-                        mContentBounds.set(
-                                windowBounds.left + systemBarInsets.left,
-                                windowBounds.top + systemBarInsets.top,
-                                windowBounds.right - systemBarInsets.right,
-                                windowBounds.bottom - systemBarInsets.bottom);
+                        boolean isDesktopMode = insets.isVisible(WindowInsets.Type.captionBar());
+                        if (isDesktopMode) {
+                            // TODO(b/454352473): Use {@link insets#getRoundedCorner()} when it's
+                            //  fully supported.
+                            int radius = 128;
+                            Insets captionBarInsets =
+                                    insets.getInsets(WindowInsets.Type.captionBar());
+                            mContentBounds.set(
+                                    windowBounds.left + systemBarInsets.left,
+                                    windowBounds.top + captionBarInsets.top + radius,
+                                    windowBounds.right - systemBarInsets.right,
+                                    windowBounds.bottom - systemBarInsets.bottom - radius);
+                        } else {
+                            mContentBounds.set(
+                                    windowBounds.left + systemBarInsets.left,
+                                    windowBounds.top + systemBarInsets.top,
+                                    windowBounds.right - systemBarInsets.right,
+                                    windowBounds.bottom - systemBarInsets.bottom);
+                        }
                         mContentBoundsLatch.countDown();
                         return insets;
                     });
