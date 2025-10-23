@@ -565,95 +565,93 @@ def get_color_rendering_variation(default_color_cells, jca_color_cells, is_hdr):
   logging.debug('Doing color accuracy check')
   if is_hdr:
     logging.debug('Images captured are HDR.')
-    return None, None
-    # TODO(ruchamk):Need a function to load HDR images
-  else:
-    default_ref_delta_ab_values = get_ref_delta_ab(default_color_cells)
-    jca_ref_delta_ab_values = get_ref_delta_ab(jca_color_cells)
-    default_jca_delta_ab_values = get_delta_ab(
-        default_color_cells, jca_color_cells
-    )
-    default_jca_delta_e76_values = get_delta_e76(
-        default_color_cells, jca_color_cells
-    )
 
-    logging.debug('default_ref_delta_ab_values: %s',
-                  [round(x, 2) for x in default_ref_delta_ab_values])
-    logging.debug('jca_ref_delta_ab_values: %s',
-                  [round(x, 2) for x in jca_ref_delta_ab_values])
-    logging.debug('default_jca_delta_ab_values: %s',
-                  [round(x, 2) for x in default_jca_delta_ab_values])
-    logging.debug('default_jca_delta_e76_values: %s',
-                  [round(x, 2) for x in default_jca_delta_e76_values])
+  default_ref_delta_ab_values = get_ref_delta_ab(default_color_cells)
+  jca_ref_delta_ab_values = get_ref_delta_ab(jca_color_cells)
+  default_jca_delta_ab_values = get_delta_ab(
+      default_color_cells, jca_color_cells
+  )
+  default_jca_delta_e76_values = get_delta_e76(
+      default_color_cells, jca_color_cells
+  )
 
-    for i, (
-        default_ref_delta_ab,
-        jca_ref_delta_ab,
-        default_jca_delta_ab,
-        default_jca_delta_e76,
-    ) in enumerate(
-        zip(
-            default_ref_delta_ab_values,
-            jca_ref_delta_ab_values,
-            default_jca_delta_ab_values,
-            default_jca_delta_e76_values,
-        )
+  logging.debug('default_ref_delta_ab_values: %s',
+                [round(x, 2) for x in default_ref_delta_ab_values])
+  logging.debug('jca_ref_delta_ab_values: %s',
+                [round(x, 2) for x in jca_ref_delta_ab_values])
+  logging.debug('default_jca_delta_ab_values: %s',
+                [round(x, 2) for x in default_jca_delta_ab_values])
+  logging.debug('default_jca_delta_e76_values: %s',
+                [round(x, 2) for x in default_jca_delta_e76_values])
+
+  for i, (
+      default_ref_delta_ab,
+      jca_ref_delta_ab,
+      default_jca_delta_ab,
+      default_jca_delta_e76,
+  ) in enumerate(
+      zip(
+          default_ref_delta_ab_values,
+          jca_ref_delta_ab_values,
+          default_jca_delta_ab_values,
+          default_jca_delta_e76_values,
+      )
+  ):
+    # Check that the diff between reference and default/jca does
+    # not exceed the max absolute error
+    if (default_ref_delta_ab > MAX_DELTA_AB_ABSOLUTE_ERROR) or (
+        jca_ref_delta_ab > MAX_DELTA_AB_ABSOLUTE_ERROR
     ):
-      # Check that the diff between reference and default/jca does
-      # not exceed the max absolute error
-      if (default_ref_delta_ab > MAX_DELTA_AB_ABSOLUTE_ERROR) or (
-          jca_ref_delta_ab > MAX_DELTA_AB_ABSOLUTE_ERROR
-      ):
-        e_msg = (
-            'Color variation between reference and default/JCA for color cell'
-            f' {i + 1} exceeds the threshold. Actual default:'
-            f' {default_ref_delta_ab:.2f}, Actual jca: {jca_ref_delta_ab:.2f},'
-            f' Expected: {MAX_DELTA_AB_ABSOLUTE_ERROR:.2f}'
-        )
-        logging.debug(e_msg)
-
-      # Check that the diff between default and jca does not exceed the max
-      # absolute error
-      if default_jca_delta_ab > MAX_CELL_DELTA_AB_ABSOLUTE_ERROR:
-        e_msg = (
-            f'Color variation between default and JCA for color cell {i + 1} '
-            f'exceeds the threshold. Actual: {default_jca_delta_ab:.2f}, '
-            f'Expected: {MAX_CELL_DELTA_AB_ABSOLUTE_ERROR:.2f}'
-        )
-        logging.debug(e_msg)
-      # Check that the diff between default and jca does not exceed the max
-      # absolute error
-      if default_jca_delta_e76 > MAX_DELTA_E76_ABSOLUTE_ERROR:
-        e_msg = (
-            f'Color variation between default and JCA for color cell {i + 1} '
-            f'exceeds the threshold. Actual: {default_jca_delta_e76:.2f}, '
-            f'Expected: {MAX_DELTA_E76_ABSOLUTE_ERROR:.2f}'
-        )
-        logging.debug(e_msg)
-
-    # Check that the mean delta ab diff between default and jca does not exceed
-    # the max relative error
-    mean_delta_ab_diff = sum(default_jca_delta_ab_values) / len(
-        default_jca_delta_ab_values
-    )
-    if mean_delta_ab_diff > MAX_AVG_RELATIVE_AB_TOL:
       e_msg = (
-          'Average AB error between the default camera and JCA camera is '
-          f'too high. Actual: {mean_delta_ab_diff:.2f}, '
-          f'Expected: {MAX_AVG_RELATIVE_AB_TOL:.2f}'
+          'Color variation between reference and default/JCA for color cell'
+          f' {i + 1} exceeds the threshold. Actual default:'
+          f' {default_ref_delta_ab:.2f}, Actual jca: {jca_ref_delta_ab:.2f},'
+          f' Expected: {MAX_DELTA_AB_ABSOLUTE_ERROR:.2f}'
       )
       logging.debug(e_msg)
-    mean_delta_e76_diff = sum(default_jca_delta_e76_values) / len(
-        default_jca_delta_e76_values
-    )
 
-    if mean_delta_e76_diff > MAX_DELTA_E76_ABSOLUTE_ERROR:
+    # Check that the diff between default and jca does not exceed the max
+    # absolute error
+    if default_jca_delta_ab > MAX_CELL_DELTA_AB_ABSOLUTE_ERROR:
       e_msg = (
-          'Average delta E76 error between default camera and JCA camera '
-          f'is too high. Actual: {mean_delta_e76_diff:.2f}, '
+          f'Color variation between default and JCA for color cell {i + 1} '
+          f'exceeds the threshold. Actual: {default_jca_delta_ab:.2f}, '
+          f'Expected: {MAX_CELL_DELTA_AB_ABSOLUTE_ERROR:.2f}'
+      )
+      logging.debug(e_msg)
+    # Check that the diff between default and jca does not exceed the max
+    # absolute error
+    if default_jca_delta_e76 > MAX_DELTA_E76_ABSOLUTE_ERROR:
+      e_msg = (
+          f'Color variation between default and JCA for color cell {i + 1} '
+          f'exceeds the threshold. Actual: {default_jca_delta_e76:.2f}, '
           f'Expected: {MAX_DELTA_E76_ABSOLUTE_ERROR:.2f}'
       )
       logging.debug(e_msg)
-      # TODO(ruchamk):Raise an error if the threshold exceeds
-    return mean_delta_ab_diff, mean_delta_e76_diff
+
+  # Check that the mean delta ab diff between default and jca does not exceed
+  # the max relative error
+  mean_delta_ab_diff = sum(default_jca_delta_ab_values) / len(
+      default_jca_delta_ab_values
+  )
+  if mean_delta_ab_diff > MAX_AVG_RELATIVE_AB_TOL:
+    e_msg = (
+        'Average AB error between the default camera and JCA camera is '
+        f'too high. Actual: {mean_delta_ab_diff:.2f}, '
+        f'Expected: {MAX_AVG_RELATIVE_AB_TOL:.2f}'
+    )
+    logging.debug(e_msg)
+  mean_delta_e76_diff = sum(default_jca_delta_e76_values) / len(
+      default_jca_delta_e76_values
+  )
+
+  if mean_delta_e76_diff > MAX_DELTA_E76_ABSOLUTE_ERROR:
+    e_msg = (
+        'Average delta E76 error between default camera and JCA camera '
+        f'is too high. Actual: {mean_delta_e76_diff:.2f}, '
+        f'Expected: {MAX_DELTA_E76_ABSOLUTE_ERROR:.2f}'
+    )
+    logging.debug(e_msg)
+    # TODO(ruchamk):Raise an error if the threshold exceeds
+  return mean_delta_ab_diff, mean_delta_e76_diff
 
