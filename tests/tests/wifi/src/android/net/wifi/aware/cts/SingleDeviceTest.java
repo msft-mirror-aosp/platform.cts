@@ -2531,6 +2531,7 @@ public class SingleDeviceTest extends WifiJUnit4TestBase {
     @ApiTest(apis = {"android.net.wifi.aware.WifiAwareManager#getTxtRecordTlvBuffer",
             "android.net.wifi.aware.WifiAwareManager#getTxtRecordMap"})
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SEND_SERVICE_SPECIFIC_INFO_IN_BOOTSTRAPPING_REQUEST)
     public void testTxtRecordTlvBuffer() {
         Map<String, String> txtRecord = new HashMap<>();
         txtRecord.put("key1", "value1");
