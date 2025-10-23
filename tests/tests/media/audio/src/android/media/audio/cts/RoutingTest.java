@@ -40,6 +40,8 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
@@ -51,6 +53,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.Rule;
 
 import java.io.File;
 import java.util.Arrays;
@@ -71,6 +74,9 @@ import java.util.concurrent.TimeUnit;
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 @RunWith(AndroidJUnit4.class)
 public class RoutingTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String TAG = "RoutingTest";
     private static final long WAIT_ROUTING_CHANGE_TIME_MS = 3000;
     private static final int AUDIO_BIT_RATE_IN_BPS = 12200;
