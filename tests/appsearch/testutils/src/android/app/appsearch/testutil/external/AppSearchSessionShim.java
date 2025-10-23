@@ -154,7 +154,8 @@ public interface AppSearchSessionShim extends Closeable {
     default @NonNull ListenableFuture<OpenBlobForWriteResponse> openBlobForWriteAsync(
             @NonNull Set<AppSearchBlobHandle> handles) {
         throw new UnsupportedOperationException(
-                Features.BLOB_STORAGE + " is not available on this AppSearch implementation.");
+                Features.SCHEMA_BLOB_HANDLE
+                        + " is not available on this AppSearch implementation.");
     }
 
     /**
@@ -180,7 +181,8 @@ public interface AppSearchSessionShim extends Closeable {
     default @NonNull ListenableFuture<RemoveBlobResponse> removeBlobAsync(
             @NonNull Set<AppSearchBlobHandle> handles) {
         throw new UnsupportedOperationException(
-                Features.BLOB_STORAGE + " is not available on this AppSearch implementation.");
+                Features.SCHEMA_BLOB_HANDLE
+                        + " is not available on this AppSearch implementation.");
     }
 
     /**
@@ -216,7 +218,8 @@ public interface AppSearchSessionShim extends Closeable {
     default @NonNull ListenableFuture<CommitBlobResponse> commitBlobAsync(
             @NonNull Set<AppSearchBlobHandle> handles) {
         throw new UnsupportedOperationException(
-                Features.BLOB_STORAGE + " is not available on this AppSearch implementation.");
+                Features.SCHEMA_BLOB_HANDLE
+                        + " is not available on this AppSearch implementation.");
     }
 
     /**
@@ -235,7 +238,8 @@ public interface AppSearchSessionShim extends Closeable {
     default @NonNull ListenableFuture<OpenBlobForReadResponse> openBlobForReadAsync(
             @NonNull Set<AppSearchBlobHandle> handles) {
         throw new UnsupportedOperationException(
-                Features.BLOB_STORAGE + " is not available on this AppSearch implementation.");
+                Features.SCHEMA_BLOB_HANDLE
+                        + " is not available on this AppSearch implementation.");
     }
 
     /**
@@ -255,7 +259,8 @@ public interface AppSearchSessionShim extends Closeable {
     default @NonNull ListenableFuture<Void> setBlobVisibilityAsync(
             @NonNull SetBlobVisibilityRequest request) {
         throw new UnsupportedOperationException(
-                Features.BLOB_STORAGE + " is not available on this AppSearch implementation.");
+                Features.SCHEMA_BLOB_HANDLE
+                        + " is not available on this AppSearch implementation.");
     }
 
     /**
