@@ -312,21 +312,42 @@ public class AppSearchDeviceTest {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     @Test
     public void setUpStressTestDbs() throws Exception {
-        for (int i = 0; i < STRESS_TEST_MAX_NUM_SESSIONS; ++i) {
+        setUpTestDb(STRESS_TEST_MAX_NUM_SESSIONS, STRESS_TEST_MAX_NUM_DOCS);
+    }
+
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
+    @Test
+    public void setUpTestDb() throws Exception {
+        setUpTestDb(/*numSessions=*/ 1, /*numDocs=*/ 1);
+    }
+
+
+    private void setUpTestDb(int numSessions, int numDocs) throws Exception {
+        for (int i = 0; i < numSessions; ++i) {
             AppSearchSessionShim db =
                     AppSearchSessionShimImpl.createSearchSessionAsync(
                                     new AppSearchManager.SearchContext.Builder("my_test_db" + i)
                                             .build())
                             .get();
-            populateStressTestData("my_test_db" + i, db);
+            populateStressTestData("my_test_db" + i, db, numDocs);
             db.close();
         }
     }
 
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     @Test
+    public void verifyTestDb() throws Exception {
+        verifyTestDbs(/*numSessions=*/ 1, /*numDocs=*/ 1);
+    }
+
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
+    @Test
     public void verifyStressTestDbs() throws Exception {
-        for (int i = 0; i < STRESS_TEST_MAX_NUM_SESSIONS; ++i) {
+        verifyTestDbs(STRESS_TEST_MAX_NUM_SESSIONS, STRESS_TEST_MAX_NUM_DOCS);
+    }
+
+    private void verifyTestDbs(int numSessions, int numDocs) throws Exception {
+        for (int i = 0; i < numSessions; ++i) {
             String dbName = "my_test_db" + i;
             Log.i(TAG, "Verifying db " + dbName);
             AppSearchSessionShim db =
@@ -339,10 +360,10 @@ public class AppSearchDeviceTest {
                     db.search(
                             "test",
                             new SearchSpec.Builder()
-                                    .setResultCountPerPage(STRESS_TEST_MAX_NUM_DOCS)
+                                    .setResultCountPerPage(numDocs)
                                     .build());
             List<SearchResult> searchResults = shimResults.getNextPageAsync().get();
-            assertThat(searchResults).hasSize(STRESS_TEST_MAX_NUM_DOCS);
+            assertThat(searchResults).hasSize(numDocs);
 
             // Embedding search
             EmbeddingVector searchEmbedding =
@@ -355,13 +376,13 @@ public class AppSearchDeviceTest {
                             .setRankingStrategy(
                                     "sum(this.matchedSemanticScores(getEmbeddingParameter(0)))")
                             .setListFilterQueryLanguageEnabled(true)
-                            .setResultCountPerPage(STRESS_TEST_MAX_NUM_DOCS)
+                            .setResultCountPerPage(numDocs)
                             .build();
             shimResults =
                     db.search(
                             "semanticSearch(getEmbeddingParameter(0), -1, 1)", embeddingSearchSpec);
             searchResults = shimResults.getNextPageAsync().get();
-            assertThat(searchResults).hasSize(STRESS_TEST_MAX_NUM_DOCS);
+            assertThat(searchResults).hasSize(numDocs);
 
             // Check blob
             byte[] data = "hello world".getBytes(StandardCharsets.UTF_8);
@@ -380,7 +401,18 @@ public class AppSearchDeviceTest {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     @Test
     public void clearStressTestDbs() throws Exception {
-        for (int i = 0; i < STRESS_TEST_MAX_NUM_SESSIONS; ++i) {
+        clearTestDbs(STRESS_TEST_MAX_NUM_SESSIONS);
+    }
+
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
+    @Test
+    public void clearTestDb() throws Exception {
+        clearTestDbs(/*numSessions=*/ 1);
+    }
+
+
+    private void clearTestDbs(int numSessions) throws Exception {
+        for (int i = 0; i < numSessions; ++i) {
             String dbName = "my_test_db" + i;
             Log.i(TAG, "Clearing db " + dbName);
             AppSearchSessionShim db =
@@ -398,7 +430,8 @@ public class AppSearchDeviceTest {
         }
     }
 
-    private void populateStressTestData(String dbName, AppSearchSessionShim db) throws Exception {
+    private void populateStressTestData(String dbName, AppSearchSessionShim db, int numDocs)
+            throws Exception {
         // schema registration
         db.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(STRESS_TEST_SCHEMA).build())
                 .get();
@@ -444,8 +477,8 @@ public class AppSearchDeviceTest {
         }
         String bigBody = new String(bigBodyChars);
         PutDocumentsRequest.Builder putDocumentsRequestBuilder = new PutDocumentsRequest.Builder();
-        ArrayList<GenericDocument> docs = new ArrayList<>(STRESS_TEST_MAX_NUM_DOCS);
-        for (int i = 0; i < STRESS_TEST_MAX_NUM_DOCS; ++i) {
+        ArrayList<GenericDocument> docs = new ArrayList<>(numDocs);
+        for (int i = 0; i < numDocs; ++i) {
             GenericDocument doc =
                     new GenericDocument.Builder<>(STRESS_TEST_NAMESPACE, "id" + i, "Email")
                             .setPropertyString("body", bigBody + " test")
