@@ -234,4 +234,7 @@
     <option name="compatibility:exclude-filter" value="CtsIdentityTestCases android.security.identity.cts.UserAuthTest" />
     <option name="compatibility:exclude-filter" value="CtsIdentityTestCases android.security.identity.cts.MultiDocumentPresentationTest#multipleDocuments" />
 
+    <!-- b/454631245 -->
+    <option name="compatibility:exclude-filter" value="CtsBiometricsTestCases android.server.biometrics.BiometricPromptContentViewTest#testMoreOptionsButton_clickButton" />
+
 </configuration>
