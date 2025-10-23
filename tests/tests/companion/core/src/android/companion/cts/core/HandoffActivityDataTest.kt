@@ -24,6 +24,7 @@ import android.os.PersistableBundle
 import android.platform.test.annotations.AppModeFull
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -48,6 +49,80 @@ class HandoffActivityDataTest : CoreTestBase() {
             assertEquals(handoffActivityData.componentName, TEST_COMPONENT_NAME)
             assertEquals(handoffActivityData.extras.getString(TEST_KEY), TEST_VALUE)
             assertEquals(handoffActivityData.fallbackUri, TEST_URI)
+        }
+
+    @Test
+    fun test_setters_fromWebHandoff() =
+        with(targetApp) {
+            val handoffActivityData = HandoffActivityData.createWebHandoff(TEST_URI)
+
+            assertEquals(handoffActivityData.componentName, null)
+            assertEquals(handoffActivityData.fallbackUri, TEST_URI)
+        }
+
+    @Test
+    fun testEquals_noExtras() =
+        with(targetApp) {
+            val handoffActivityData1 =
+                HandoffActivityData.Builder(TEST_COMPONENT_NAME).setFallbackUri(TEST_URI).build()
+            val handoffActivityData2 =
+                HandoffActivityData.Builder(TEST_COMPONENT_NAME).setFallbackUri(TEST_URI).build()
+
+            assertEquals(handoffActivityData1, handoffActivityData2)
+        }
+
+    @Test
+    fun testEquals_withExtras() =
+        with(targetApp) {
+            val handoffActivityData1 =
+                HandoffActivityData.Builder(TEST_COMPONENT_NAME)
+                    .setExtras(PersistableBundle().apply { putString(TEST_KEY, TEST_VALUE) })
+                    .build()
+            val handoffActivityData2 =
+                HandoffActivityData.Builder(TEST_COMPONENT_NAME)
+                    .setExtras(PersistableBundle().apply { putString(TEST_KEY, TEST_VALUE) })
+                    .build()
+
+            assertEquals(handoffActivityData1, handoffActivityData2)
+        }
+
+    @Test
+    fun testEquals_differentFallbackUri_notEqual() =
+        with(targetApp) {
+            val handoffActivityData1 =
+                HandoffActivityData.Builder(TEST_COMPONENT_NAME).setFallbackUri(TEST_URI).build()
+            val handoffActivityData2 =
+                HandoffActivityData.Builder(TEST_COMPONENT_NAME)
+                    .setFallbackUri(Uri.parse("https://www.google.com/2"))
+                    .build()
+
+            assertNotEquals(handoffActivityData1, handoffActivityData2)
+        }
+
+    @Test
+    fun testEquals_differentExtras_notEqual() =
+        with(targetApp) {
+            val handoffActivityData1 =
+                HandoffActivityData.Builder(TEST_COMPONENT_NAME)
+                    .setExtras(PersistableBundle().apply { putString(TEST_KEY, TEST_VALUE) })
+                    .build()
+            val handoffActivityData2 =
+                HandoffActivityData.Builder(TEST_COMPONENT_NAME)
+                    .setExtras(PersistableBundle().apply { putString(TEST_KEY, "different_value") })
+                    .build()
+
+            assertNotEquals(handoffActivityData1, handoffActivityData2)
+        }
+
+    @Test
+    fun testEquals_differentComponentName_notEqual() =
+        with(targetApp) {
+            val handoffActivityData1 =
+                HandoffActivityData.Builder(ComponentName("test_package", "test_class_1")).build()
+            val handoffActivityData2 =
+                HandoffActivityData.Builder(ComponentName("test_package", "test_class_2")).build()
+
+            assertNotEquals(handoffActivityData1, handoffActivityData2)
         }
 
     @Test
@@ -76,6 +151,17 @@ class HandoffActivityDataTest : CoreTestBase() {
             parcel.setDataPosition(0)
             val newHandoffActivityData = HandoffActivityData.CREATOR.createFromParcel(parcel)
 
+            assertEquals(handoffActivityData, newHandoffActivityData)
+        }
+
+    @Test
+    fun test_parcelable_webHandoff() =
+        with(targetApp) {
+            val handoffActivityData = HandoffActivityData.createWebHandoff(TEST_URI)
+            val parcel = Parcel.obtain()
+            handoffActivityData.writeToParcel(parcel, 0)
+            parcel.setDataPosition(0)
+            val newHandoffActivityData = HandoffActivityData.CREATOR.createFromParcel(parcel)
             assertEquals(handoffActivityData, newHandoffActivityData)
         }
 
