@@ -35,6 +35,18 @@ java_library {
 }
 
 java_library {
+    name: "cts_backported_fixes_verifier",
+    defaults: ["cts_backported_fixes_java_defaults"],
+    srcs: [
+        "src/com/android/cts/backportedfixes/BackportedFixVerifier.java",
+    ],
+    static_libs: [
+        "cts_backported_fixes_ids",
+        "cts_backported_fixes_resolver",
+    ],
+}
+
+java_library {
     name: "cts_backported_fixes_rule",
     defaults: ["cts_backported_fixes_java_defaults"],
     srcs: [
@@ -42,8 +54,7 @@ java_library {
     ],
     static_libs: [
         "cts_backported_fixes_annotation",
-        "cts_backported_fixes_ids",
-        "cts_backported_fixes_resolver",
+        "cts_backported_fixes_verifier",
         "junit",
     ],
 }
