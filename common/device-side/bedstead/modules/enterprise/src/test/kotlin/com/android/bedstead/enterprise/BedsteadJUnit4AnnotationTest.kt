@@ -43,6 +43,8 @@ import com.android.bedstead.enterprise.annotations.parameterized.includeRunOnSys
 import com.android.bedstead.enterprise.annotations.policyAppliesTest
 import com.android.bedstead.enterprise.annotations.policyDoesNotApplyTest
 import com.android.bedstead.enterprise.annotations.usesEnterprisePolicies
+import com.android.bedstead.enterprise.annotations.parameterized.includeRunOnUserController
+import com.android.bedstead.enterprise.annotations.parameterized.includeRunOnAdditionalUserWithInitialUserController
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DynamicParameterizedAnnotation
 import com.android.bedstead.harrier.annotations.parameterized.includeNone
@@ -415,5 +417,63 @@ class BedsteadJUnit4AnnotationTest {
                 /* classAnnotations= */ listOf(),
             )
         }
+    }
+
+    @Test
+    fun policyAppliesTest_userControllerAppliesToOwnUser_userControllerAppliesToOwnUser() {
+        assertThat(
+            BedsteadJUnit4.getParameterizedAnnotations(
+                arrayOf(
+                    policyAppliesTest(
+                        policy = arrayOf(
+                            AppliedByUserControllerToOwnUserPolicy::class.java
+                        )
+                    )
+                ),
+                /* classAnnotations= */ listOf(),
+            )
+        ).containsExactly(
+            includeRunOnUserController(),
+        )
+    }
+
+    @Test
+    fun policyDoesNotApplyTest_userControllerAppliesToOwnUser_returnsUserControllerRunOnAdditionalUser() {
+        assertThat(
+            BedsteadJUnit4.getParameterizedAnnotations(
+                arrayOf(
+                    policyDoesNotApplyTest(
+                        policy = arrayOf(
+                            AppliedByUserControllerToOwnUserPolicy::class.java
+                        )
+                    )
+                ),
+                /* classAnnotations= */ listOf(),
+            )
+        ).containsExactly(
+            includeRunOnAdditionalUserWithInitialUserController(),
+        )
+    }
+
+    @Test
+    fun cannotSetPolicyTest_noUserControllerInDpc_doesNotReturnUserControllerState() {
+        val parameterizedAnnotations =
+            BedsteadJUnit4.getParameterizedAnnotations(
+                arrayOf(
+                    cannotSetPolicyTest(
+                        policy = arrayOf(
+                            AppliedByAffiliatedProfileOwnerAppliesToParentPolicy::class.java
+                        )
+                    )
+                ),
+                /* classAnnotations= */ listOf(),
+            )
+
+        assertThat(parameterizedAnnotations).doesNotContain(
+            includeRunOnUserController(),
+        )
+        assertThat(parameterizedAnnotations).doesNotContain(
+            includeRunOnAdditionalUserWithInitialUserController(),
+        )
     }
 }
