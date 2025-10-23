@@ -47,15 +47,14 @@ public class BackportedFixRule implements TestRule {
         return new BackportedFixRule(new SystemPropertyResolver());
     }
 
-    private final ApprovedBackportedFixes mFixes = ApprovedBackportedFixes.getInstance();
-    private final StatusResolver mStatusResolver;
+    private final BackportedFixVerifier mVerifier;
 
     public BackportedFixRule() {
         this(StatusResolver.create());
     }
 
-    private BackportedFixRule(StatusResolver statusResolver) {
-        mStatusResolver = statusResolver;
+    private BackportedFixRule(StatusResolver resolver) {
+        mVerifier = new BackportedFixVerifier(resolver);
     }
 
     // TODO: make host version of this.
@@ -66,8 +65,7 @@ public class BackportedFixRule implements TestRule {
         if (issue == null) {
             return statement;
         }
-        int alias = mFixes.getAlias(issue.value());
-        if (!mFixes.getAllIssues().contains(issue.value())) {
+        if (!mVerifier.isApproved(issue.value())) {
             String msg =
                     String.format(
                             Locale.ROOT,
@@ -82,7 +80,7 @@ public class BackportedFixRule implements TestRule {
                 try {
                     statement.evaluate();
                 } catch (AssertionError e) {
-                    if (mStatusResolver.getBackportedFixStatus(alias) == Status.Fixed) {
+                    if (mVerifier.getStatus(issue.value()) == Status.Fixed) {
                         throw e;
                     }
                     String msg =
@@ -91,7 +89,7 @@ public class BackportedFixRule implements TestRule {
                                     "https://issuetracker.google.com/issues/%d with alias %d is not"
                                             + " marked fixed on this device.",
                                     issue.value(),
-                                    alias);
+                                    mVerifier.getAlias(issue.value()));
                     throw new AssumptionViolatedException(msg, e);
                 }
             }
