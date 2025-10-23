@@ -225,7 +225,6 @@ test_module_config {
         "android.os.cts.FileObserverTest#testConstructor",
         "android.os.storage.cts.StorageManagerTest#testAttemptMountNonObb",
         // TODO(b/265922604)
-        "android.os.cts.VibratorTest",
         "android.os.cts.DebugTest#testStartMethodTracingDefaultExternalStorage",
         // TODO(b/213570804)
         "android.os.cts.AutoRevokeTest#testInstallGrants_notRevokedImmediately",
