@@ -1414,9 +1414,7 @@ public class VehiclePropertyVerifier<T> {
             CarPropertyValue<U> carPropertyValue;
             try {
                 carPropertyValue = carPropertyManager.getProperty(propertyId, areaId);
-            } catch (PropertyNotAvailableAndRetryException
-                    | PropertyNotAvailableException
-                    | CarInternalErrorException e) {
+            } catch (Exception e) {
                 Log.w(
                         TAG,
                         "Failed to get property:"
@@ -1534,9 +1532,7 @@ public class VehiclePropertyVerifier<T> {
             CarPropertyValue<?> currentCarPropertyValue;
             try {
                 currentCarPropertyValue = carPropertyManager.getProperty(propertyId, areaId);
-            } catch (PropertyNotAvailableAndRetryException
-                    | PropertyNotAvailableException
-                    | CarInternalErrorException e) {
+            } catch (Exception e) {
                 Log.w(
                         TAG,
                         "Failed to get property:"
