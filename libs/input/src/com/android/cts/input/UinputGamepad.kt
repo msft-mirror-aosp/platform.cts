@@ -18,6 +18,7 @@ package com.android.cts.input
 
 import android.app.Instrumentation
 import android.view.InputDevice.SOURCE_GAMEPAD
+import android.view.InputDevice.SOURCE_JOYSTICK
 import android.view.InputDevice.SOURCE_KEYBOARD
 import com.android.cts.input.EvdevInputEventCodes.Companion.EV_KEY
 import com.android.cts.input.EvdevInputEventCodes.Companion.EV_KEY_PRESS
@@ -27,7 +28,7 @@ import com.android.cts.input.EvdevInputEventCodes.Companion.SYN_REPORT
 
 private fun createGamepadRegisterCommand(): UinputRegisterCommand {
     val configurationItems = listOf(
-        ConfigurationItem("UI_SET_EVBIT", listOf("EV_KEY")),
+        ConfigurationItem("UI_SET_EVBIT", listOf("EV_KEY", "EV_ABS")),
         ConfigurationItem(
             "UI_SET_KEYBIT",
             listOf(
@@ -45,7 +46,15 @@ private fun createGamepadRegisterCommand(): UinputRegisterCommand {
                 "BTN_THUMBL",
                 "BTN_THUMBR",
             )
-        )
+        ),
+        ConfigurationItem("UI_SET_ABSBIT", listOf("ABS_X", "ABS_Y", "ABS_Z", "ABS_RZ"))
+    )
+
+    val absInfo = mapOf(
+        "ABS_X" to AbsInfo(0, -127, 127, 0, 0, 0),
+        "ABS_Y" to AbsInfo(0, -127, 127, 0, 0, 0),
+        "ABS_Z" to AbsInfo(0, -127, 127, 0, 0, 0),
+        "ABS_RZ" to AbsInfo(0, -127, 127, 0, 0, 0)
     )
 
     return UinputRegisterCommand(
@@ -56,7 +65,7 @@ private fun createGamepadRegisterCommand(): UinputRegisterCommand {
         bus = "usb",
         port = "usb:1",
         configuration = configurationItems,
-        absInfo = emptyMap(),
+        absInfo = absInfo,
     )
 }
 
@@ -65,7 +74,7 @@ private fun createGamepadRegisterCommand(): UinputRegisterCommand {
  */
 class UinputGamepad(instrumentation: Instrumentation) : UinputDevice(
     instrumentation,
-    SOURCE_KEYBOARD or SOURCE_GAMEPAD,
+    SOURCE_KEYBOARD or SOURCE_GAMEPAD or SOURCE_JOYSTICK,
     createGamepadRegisterCommand(),
     null // display
 ) {
