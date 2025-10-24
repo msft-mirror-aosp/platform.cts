@@ -54,6 +54,8 @@ android_test {
         ":car-service-dump-proto-srcs",
         ":native-dump-proto-srcs",
     ],
+    // Allows access to system apis
+    platform_apis: true,
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",

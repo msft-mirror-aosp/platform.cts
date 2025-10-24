@@ -18,7 +18,7 @@ package android.car.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.never;
@@ -39,12 +39,12 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.BeforeClass;
 import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.FeatureUtil;
 
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -106,7 +106,7 @@ public final class CarBluetoothTest extends AbstractCarTestCase {
 
         verify(mServiceListener, timeout(PROXY_CONNECTIONS_TIMEOUT_MS))
                 .onServiceConnected(eq(BluetoothProfile.HEADSET_CLIENT), notNull());
-        verify(mServiceListener, never()).onServiceDisconnected(any());
+        verify(mServiceListener, never()).onServiceDisconnected(anyInt());
     }
 
     // [A-0-2] : Android Automotive devices must support Audio Distribution Profile (A2DP) [Media
@@ -121,7 +121,7 @@ public final class CarBluetoothTest extends AbstractCarTestCase {
 
         verify(mServiceListener, timeout(PROXY_CONNECTIONS_TIMEOUT_MS))
                 .onServiceConnected(eq(BluetoothProfile.A2DP_SINK), notNull());
-        verify(mServiceListener, never()).onServiceDisconnected(any());
+        verify(mServiceListener, never()).onServiceDisconnected(anyInt());
     }
 
     // [A-0-2] : Android Automotive devices must support Phone Book Access Profile (PBAP) [Contact
@@ -136,7 +136,7 @@ public final class CarBluetoothTest extends AbstractCarTestCase {
 
         verify(mServiceListener, timeout(PROXY_CONNECTIONS_TIMEOUT_MS))
                 .onServiceConnected(eq(BluetoothProfile.PBAP_CLIENT), notNull());
-        verify(mServiceListener, never()).onServiceDisconnected(any());
+        verify(mServiceListener, never()).onServiceDisconnected(anyInt());
     }
 
     // [A-0-2] : Android Automotive devices must support Audio/Video Remote Control Profile (AVRCP)
