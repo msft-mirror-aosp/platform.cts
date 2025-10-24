@@ -16,12 +16,13 @@
 
 package android.video.cts;
 
-import static android.mediav2.common.cts.CodecTestBase.MEDIA_CODEC_LIST_REGULAR;
+import static android.mediav2.common.cts.CodecTestBase.MEDIA_CODEC_LIST_ALL;
 import static android.mediav2.common.cts.CodecTestBase.selectCodecs;
 
 import static org.junit.Assert.assertNotNull;
 
 import android.media.MediaCodecInfo;
+import android.media.MediaCodecInfo.CodecCapabilities;
 import android.media.MediaCodecInfo.VideoCapabilities.PerformancePoint;
 import android.mediav2.common.cts.CodecTestBase.ComponentClass;
 import android.util.Range;
@@ -42,13 +43,15 @@ public class VideoCodecClaimsPerformanceTestBase {
     protected final int mWidth;
     protected final int mHeight;
     protected final int mFps;
+    protected final boolean mIsSecure;
     protected final ComponentClass mComponentClass;
     protected final String mTestArgs;
 
     protected final StringBuilder mTestConfig = new StringBuilder();
 
     public VideoCodecClaimsPerformanceTestBase(String mediaType, int width, int height, int fps,
-            boolean isEncoder, ComponentClass componentClass, String allTestParams) {
+            boolean isEncoder, ComponentClass componentClass, boolean isSecure,
+            String allTestParams) {
         mMediaType = mediaType;
         mWidth = width;
         mHeight = height;
@@ -56,6 +59,7 @@ public class VideoCodecClaimsPerformanceTestBase {
         mIsEncoder = isEncoder;
         mComponentClass = componentClass;
         mTestArgs = allTestParams;
+        mIsSecure = isSecure;
     }
 
     @Rule
@@ -70,7 +74,7 @@ public class VideoCodecClaimsPerformanceTestBase {
     }
 
     protected MediaCodecInfo getCodecInfo(String codecName) {
-        for (MediaCodecInfo info : MEDIA_CODEC_LIST_REGULAR.getCodecInfos()) {
+        for (MediaCodecInfo info : MEDIA_CODEC_LIST_ALL.getCodecInfos()) {
             if (info.getName().equals(codecName)) {
                 return info;
             }
@@ -79,8 +83,14 @@ public class VideoCodecClaimsPerformanceTestBase {
     }
 
     protected boolean deviceClaimsPerformanceSupported() {
-        ArrayList<String> codecs =
-                selectCodecs(mMediaType, null, null, mIsEncoder, mComponentClass);
+        ArrayList<String> codecs;
+        if (mIsSecure) {
+            codecs = selectCodecs(mMediaType, null,
+                new String[]{CodecCapabilities.FEATURE_SecurePlayback}, mIsEncoder,
+                mComponentClass, true /* allCodecs */);
+        } else {
+            codecs = selectCodecs(mMediaType, null, null, mIsEncoder, mComponentClass);
+        }
         if (codecs.isEmpty()) {
             String msg = String.format(
                     "device doesn't claim to support any codec for given type : %s_%s", mMediaType,

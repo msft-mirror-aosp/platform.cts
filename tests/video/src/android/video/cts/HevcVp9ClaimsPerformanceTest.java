@@ -66,15 +66,16 @@ public class HevcVp9ClaimsPerformanceTest {
     private final List<VideoCodecClaimsPerformanceTestBase> mBaseInstances = new ArrayList<>();
 
     public HevcVp9ClaimsPerformanceTest(List<String> mediaTypes, int width, int height,
-            int fps, boolean isEncoder, ComponentClass componentClass, String allTestParams) {
+            int fps, boolean isEncoder, ComponentClass componentClass, boolean isSecure,
+            String allTestParams) {
         for (String mediaType : mediaTypes) {
             mBaseInstances.add(
                     new VideoCodecClaimsPerformanceTestBase(mediaType, width, height, fps,
-                            isEncoder, componentClass, allTestParams));
+                            isEncoder, componentClass, isSecure, allTestParams));
         }
     }
 
-    @Parameterized.Parameters(name = "{index}_{0}_{1}_{2}_{3}_{4}")
+    @Parameterized.Parameters(name = "{index}_{0}_{1}_{2}_{3}_{4}_{6}")
     public static Collection<Object[]> input() {
         final boolean isDispHtAtleastUHD = CodecTestBase.MAX_DISPLAY_HEIGHT_LAND >= 2160;
         final boolean isDispHtAtleastFHD = CodecTestBase.MAX_DISPLAY_HEIGHT_LAND >= 1080;
@@ -106,12 +107,16 @@ public class HevcVp9ClaimsPerformanceTest {
         }
 
         final List<Object[]> updatedArgsList = new ArrayList<>();
+        boolean[] boolStates = {true, false};
         for (Object[] arg : argsList) {
-            int argLength = arg.length;
-            Object[] argUpdate = new Object[argLength + 1];
-            System.arraycopy(arg, 0, argUpdate, 0, argLength);
-            argUpdate[argLength] = CodecTestBase.paramToString(argUpdate);
-            updatedArgsList.add(argUpdate);
+            for (boolean isSecure : boolStates) {
+                int argLength = arg.length;
+                Object[] argUpdate = new Object[argLength + 2];
+                System.arraycopy(arg, 0, argUpdate, 0, argLength);
+                argUpdate[argLength] = isSecure;
+                argUpdate[argLength + 1] = CodecTestBase.paramToString(argUpdate);
+                updatedArgsList.add(argUpdate);
+            }
         }
         return updatedArgsList;
     }
