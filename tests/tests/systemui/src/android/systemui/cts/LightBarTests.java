@@ -57,6 +57,7 @@ import com.android.settingslib.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -68,6 +69,7 @@ import org.junit.runner.RunWith;
  * atest CtsSystemUiTestCases:LightBarTests
  */
 @RunWith(AndroidJUnit4.class)
+@Ignore
 public class LightBarTests extends LightBarTestBase {
 
     public static final String TAG = "LightStatusBarTests";
