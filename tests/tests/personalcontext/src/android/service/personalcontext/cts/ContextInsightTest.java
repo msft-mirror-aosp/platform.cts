@@ -59,7 +59,7 @@ public class ContextInsightTest {
         final BundleInsight insight = new BundleInsight.Builder().addOriginHint(hint).build();
         ContextInsight outputInsight = bundleUnbundle(insight);
 
-        assertThat(insight.getInsightType()).isEqualTo(outputInsight.getInsightType());
+        assertThat(outputInsight).isInstanceOf(BundleInsight.class);
         assertThat(insight.getInsightId()).isEqualTo(outputInsight.getInsightId());
 
         assertThat(outputInsight.getOriginHints().size()).isEqualTo(1);
