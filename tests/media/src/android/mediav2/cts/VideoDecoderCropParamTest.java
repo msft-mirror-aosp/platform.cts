@@ -16,6 +16,7 @@
 
 package android.mediav2.cts;
 
+import static android.media.cts.TestUtils.isCtsMode;
 import static android.mediav2.cts.AdaptivePlaybackTest.getSupportedFiles;
 import static android.mediav2.cts.AdaptivePlaybackTest.prepareInputList;
 
@@ -94,6 +95,8 @@ public class VideoDecoderCropParamTest extends CodecDecoderTestBase {
 
     @Before
     public void setUp() throws IOException, InterruptedException {
+        Assume.assumeTrue("Skip crop tests on versions 2024 and below",
+                !isCtsMode() || BOARD_SDK_IS_AT_LEAST_202504);
         mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
         setUpSurface(mActivity);
         mSurfaceView = mActivity.getSurfaceView();
@@ -146,6 +149,10 @@ public class VideoDecoderCropParamTest extends CodecDecoderTestBase {
                         "bbb_760x480_60fps_1mbps_allpad_hevc.mp4",
                         "bbb_600x360_60fps_1mbps_allpad_hevc.mp4"}},
         }));
+        // No need to inject all params if the test is going to be skipped
+        if (isCtsMode() && !BOARD_SDK_IS_AT_LEAST_202504) {
+            exhaustiveArgsList.subList(1, exhaustiveArgsList.size()).clear();
+        }
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, false);
     }
 

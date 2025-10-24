@@ -33,6 +33,7 @@ import android.media.AudioFormat;
 import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
+import android.media.cts.TestUtils;
 import android.mediav2.common.cts.CodecDecoderTestBase;
 import android.mediav2.common.cts.OutputManager;
 
@@ -276,36 +277,6 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
                         -1.0f, 2880098496L, -1, -1, 720, 480, CODEC_ALL},
                 {MEDIA_TYPE_AV1, new String[]{"bbb_720x480_30fps_av1.mkv"}, null, -1.0f,
                         3229978305L, -1, -1, 720, 480, CODEC_ALL},
-
-                // clips with crop parameters
-                {MEDIA_TYPE_HEVC, new String[]{"bbb_560x280_1mbps_30fps_hevc.mkv"},
-                        null, -1.0f, 26298353L, -1, -1, 560, 280, CODEC_ALL},
-                {MEDIA_TYPE_AVC, new String[]{"bbb_504x224_768kbps_30fps_avc.mp4"},
-                        null, -1.0f, 4060874918L, -1, -1, 504, 224, CODEC_ALL},
-                {MEDIA_TYPE_AVC, new String[]{"bbb_616x360_crf24_30fps_avc.mp4"},
-                        null, -1.0f, 1898674726L, -1, -1, 616, 360, CODEC_ALL},
-                {MEDIA_TYPE_HEVC, new String[]{"bbb_586x360_768kbps_30fps_hevc.mp4"},
-                        null, -1.0f, 3398957235L, -1, -1, 586, 360, CODEC_ALL},
-                {MEDIA_TYPE_AVC, new String[]{"bbb_640x342_crf24_30fps_avc.mp4"},
-                        null, -1.0f, 3923231699L, -1, -1, 640, 342, CODEC_ALL},
-                {MEDIA_TYPE_HEVC, new String[]{"bbb_640x284_768kbps_30fps_hevc.mp4"},
-                        null, -1.0f, 1005848908L, -1, -1, 640, 284, CODEC_ALL},
-                {MEDIA_TYPE_AVC, new String[]{"bbb_548x360_crf24_30fps_avc.mp4"},
-                        null, -1.0f, 3679512146L, -1, -1, 548, 360, CODEC_ALL},
-                {MEDIA_TYPE_HEVC, new String[]{"bbb_604x342_768kbps_30fps_hevc.mp4"},
-                        null, -1.0f, 934255622L, -1, -1, 604, 342, CODEC_ALL},
-                {MEDIA_TYPE_AVC, new String[]{"bbb_620x306_crf24_30fps_avc.mp4"},
-                        null, -1.0f, 2051317206L, -1, -1, 620, 306, CODEC_ALL},
-                {MEDIA_TYPE_HEVC, new String[]{"bbb_602x348_768kbps_30fps_hevc.mp4"},
-                        null, -1.0f, 3392987717L, -1, -1, 602, 348, CODEC_ALL},
-                {MEDIA_TYPE_AVC, new String[]{"bbb_622x240_crf24_30fps_avc.mp4"},
-                        null, -1.0f, 737860862L, -1, -1, 622, 240, CODEC_ALL},
-                {MEDIA_TYPE_HEVC, new String[]{"bbb_640x228_768kbps_30fps_hevc.mp4"},
-                        null, -1.0f, 3056357870L, -1, -1, 640, 228, CODEC_ALL},
-                {MEDIA_TYPE_AVC, new String[]{"bbb_532x190_crf24_30fps_avc.mp4"},
-                        null, -1.0f, 3914480472L, -1, -1, 532, 190, CODEC_ALL},
-                {MEDIA_TYPE_HEVC, new String[]{"bbb_532x190_768kbps_30fps_hevc.mp4"},
-                        null, -1.0f, 2511667015L, -1, -1, 532, 190, CODEC_ALL},
 
                 // audio test vectors covering cdd sec 5.1.3
                 // amrnb
@@ -781,6 +752,43 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
                     {MEDIA_TYPE_RAW, new String[]{"audio/highres_2ch_192kHz.wav"},
                             "audio/highres_2ch_192kHz_s16le_5s.raw", 0.0f, -1L, 192000, 2, -1, -1,
                             CODEC_ALL},
+            }));
+        }
+
+        // clips with crop parameters
+        // getOutputImage() is updated to handle format keys MediaFormat.KEY_CROP_* in 202504.
+        // output of mainline codecs always do not contain crop attributes. So enable these params
+        // always. In CTS mode, enable these params for versions at least 202504.
+        if (!TestUtils.isCtsMode() || BOARD_SDK_IS_AT_LEAST_202504) {
+            exhaustiveArgsList.addAll(Arrays.asList(new Object[][] {
+                    {MEDIA_TYPE_HEVC, new String[] {"bbb_560x280_1mbps_30fps_hevc.mkv"}, null,
+                            -1.0f, 26298353L, -1, -1, 560, 280, CODEC_ALL},
+                    {MEDIA_TYPE_AVC, new String[] {"bbb_504x224_768kbps_30fps_avc.mp4"}, null,
+                            -1.0f, 4060874918L, -1, -1, 504, 224, CODEC_ALL},
+                    {MEDIA_TYPE_AVC, new String[] {"bbb_616x360_crf24_30fps_avc.mp4"}, null, -1.0f,
+                            1898674726L, -1, -1, 616, 360, CODEC_ALL},
+                    {MEDIA_TYPE_HEVC, new String[] {"bbb_586x360_768kbps_30fps_hevc.mp4"}, null,
+                            -1.0f, 3398957235L, -1, -1, 586, 360, CODEC_ALL},
+                    {MEDIA_TYPE_AVC, new String[] {"bbb_640x342_crf24_30fps_avc.mp4"}, null, -1.0f,
+                            3923231699L, -1, -1, 640, 342, CODEC_ALL},
+                    {MEDIA_TYPE_HEVC, new String[] {"bbb_640x284_768kbps_30fps_hevc.mp4"}, null,
+                            -1.0f, 1005848908L, -1, -1, 640, 284, CODEC_ALL},
+                    {MEDIA_TYPE_AVC, new String[] {"bbb_548x360_crf24_30fps_avc.mp4"}, null, -1.0f,
+                            3679512146L, -1, -1, 548, 360, CODEC_ALL},
+                    {MEDIA_TYPE_HEVC, new String[] {"bbb_604x342_768kbps_30fps_hevc.mp4"}, null,
+                            -1.0f, 934255622L, -1, -1, 604, 342, CODEC_ALL},
+                    {MEDIA_TYPE_AVC, new String[] {"bbb_620x306_crf24_30fps_avc.mp4"}, null, -1.0f,
+                            2051317206L, -1, -1, 620, 306, CODEC_ALL},
+                    {MEDIA_TYPE_HEVC, new String[] {"bbb_602x348_768kbps_30fps_hevc.mp4"}, null,
+                            -1.0f, 3392987717L, -1, -1, 602, 348, CODEC_ALL},
+                    {MEDIA_TYPE_AVC, new String[] {"bbb_622x240_crf24_30fps_avc.mp4"}, null, -1.0f,
+                            737860862L, -1, -1, 622, 240, CODEC_ALL},
+                    {MEDIA_TYPE_HEVC, new String[] {"bbb_640x228_768kbps_30fps_hevc.mp4"}, null,
+                            -1.0f, 3056357870L, -1, -1, 640, 228, CODEC_ALL},
+                    {MEDIA_TYPE_AVC, new String[] {"bbb_532x190_crf24_30fps_avc.mp4"}, null, -1.0f,
+                            3914480472L, -1, -1, 532, 190, CODEC_ALL},
+                    {MEDIA_TYPE_HEVC, new String[] {"bbb_532x190_768kbps_30fps_hevc.mp4"}, null,
+                            -1.0f, 2511667015L, -1, -1, 532, 190, CODEC_ALL},
             }));
         }
 
