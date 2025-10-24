@@ -39,17 +39,29 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
 
-                        <Button
-                            android:id="@+id/close_chooser"
-                            android:layout_width="wrap_content"
+                        <FrameLayout
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:text="Close" />
+                            android:layout_weight="1">
+                            <Button
+                                android:id="@+id/close_chooser"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="start"
+                                android:text="Close" />
+                        </FrameLayout>
 
-                        <Button
-                            android:id="@+id/update_chooser"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Update" />
+                    <FrameLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1">
+                            <Button
+                                android:id="@+id/update_chooser"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="end"
+                                android:text="Update" />
+                    </FrameLayout>
 
                 </LinearLayout>
 
@@ -57,17 +69,30 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
+
+                    <FrameLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1">
                         <Button
                             android:id="@+id/unsubscribe"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_gravity="start"
                             android:text="Unsubscribe" />
+                    </FrameLayout>
 
+                    <FrameLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1">
                         <Button
                             android:id="@+id/target_status"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_gravity="end"
                             android:text="Disable" />
+                    </FrameLayout>
 
                 </LinearLayout>
         </LinearLayout>
