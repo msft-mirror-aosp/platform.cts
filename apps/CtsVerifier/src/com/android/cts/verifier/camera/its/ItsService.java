@@ -1006,69 +1006,10 @@ public class ItsService extends Service implements SensorEventListener {
                 String cmdName = cmdObj.getString("cmdName");
                 Logt.i(TAG, "Start processing command: " + cmdName);
                 switch (cmdName) {
-                    case "open" -> {
-                        String cameraId = cmdObj.getString("cameraId");
-                        openCameraDevice(cameraId, cmdObj);
-                    }
-                    case "close" -> closeCameraDevice();
-                    case "getCameraProperties" -> doGetProps();
-                    case "getCameraPropertiesById" -> doGetPropsById(cmdObj);
-                    case "startSensorEvents" -> doStartSensorEvents();
+                    // go/keep-sorted start block=yes
                     case "checkSensorExistence" -> doCheckSensorExistence();
-                    case "getSensorEvents" -> doGetSensorEvents();
+                    case "close" -> closeCameraDevice();
                     case "do3A" -> do3A(cmdObj);
-                    case "doCapture" -> doCapture(cmdObj);
-                    case "doVibrate" -> doVibrate(cmdObj);
-                    case "setAudioRestriction" -> doSetAudioRestriction(cmdObj);
-                    case "getCameraIds" -> doGetCameraIds();
-                    case "doReprocessCapture" -> doReprocessCapture(cmdObj);
-                    case "getItsVersion" ->
-                            mSocketRunnableObj.sendResponse("ItsVersion", ITS_SERVICE_VERSION);
-                    case "isStreamCombinationSupported" -> doCheckStreamCombination(cmdObj);
-                    case "getCameraSessionProperties" -> doGetSessionProps(cmdObj);
-                    case "isCameraPrivacyModeSupported" -> doCheckCameraPrivacyModeSupport();
-                    case "isPrimaryCamera" -> {
-                        String cameraId = cmdObj.getString("cameraId");
-                        doCheckPrimaryCamera(cameraId);
-                    }
-                    case "isPerformanceClass" -> doCheckPerformanceClass();
-                    case "isVicPerformanceClass" -> doCheckVicPerformanceClass();
-                    case "measureCameraLaunchMs" -> {
-                        String cameraId = cmdObj.getString("cameraId");
-                        doMeasureCameraLaunchMs(cameraId);
-                    }
-                    case "measureCamera1080pJpegCaptureMs" -> {
-                        String cameraId = cmdObj.getString("cameraId");
-                        doMeasureCamera1080pJpegCaptureMs(cameraId);
-                    }
-                    case "getSupportedVideoQualities" -> {
-                        String cameraId = cmdObj.getString("cameraId");
-                        doGetSupportedVideoQualities(cameraId);
-                    }
-                    case "doGetSupportedVideoSizesCapped" -> {
-                        String cameraId = cmdObj.getString("cameraId");
-                        doGetSupportedVideoSizesCapped(cameraId);
-                    }
-                    case "getSupportedPreviewSizes" -> {
-                        boolean filterRecordable = cmdObj.optBoolean("filter_recordable", false);
-                        doGetSupportedPreviewSizes(filterRecordable);
-                    }
-                    case "getQueryableStreamCombinations" -> doGetQueryableStreamCombinations();
-                    case "getSupportedExtensions" -> {
-                        String cameraId = cmdObj.getString("cameraId");
-                        doGetSupportedExtensions(cameraId);
-                    }
-                    case "getSupportedExtensionSizes" -> {
-                        String cameraId = cmdObj.getString("cameraId");
-                        int extension = cmdObj.getInt("extension");
-                        int format = cmdObj.getInt("format");
-                        doGetSupportedExtensionSizes(cameraId, extension, format);
-                    }
-                    case "getSupportedExtensionPreviewSizes" -> {
-                        String cameraId = cmdObj.getString("cameraId");
-                        int extension = cmdObj.getInt("extension");
-                        doGetSupportedExtensionPreviewSizes(cameraId, extension);
-                    }
                     case "doBasicRecording" -> {
                         String cameraId = cmdObj.getString("cameraId");
                         int profileId = cmdObj.getInt("profileId");
@@ -1094,10 +1035,66 @@ public class ItsService extends Service implements SensorEventListener {
                                 aeAntibandingMode,
                                 faceDetectMode);
                     }
-                    case "doStaticPreviewRecording" -> doStaticPreviewRecording(cmdObj);
-                    case "doDynamicZoomPreviewRecording" -> doDynamicZoomPreviewRecording(cmdObj);
+                    case "doCapture" -> doCapture(cmdObj);
+                    case "doCapturePreviewFrame" -> doCapturePreviewFrame(cmdObj);
+                    case "doCaptureWithExtensions" -> {
+                        int extension = cmdObj.getInt("extension");
+                        doCaptureWithExtensions(cmdObj, extension);
+                    }
+                    case "doCaptureWithFlash" -> doCaptureWithFlash(cmdObj);
                     case "doDynamicMeteringRegionPreviewRecording" ->
                             doDynamicMeteringRegionPreviewRecording(cmdObj);
+                    case "doDynamicZoomPreviewRecording" -> doDynamicZoomPreviewRecording(cmdObj);
+                    case "doGainMapCheck" -> doGainMapCheckHelper(cmdObj);
+                    case "doGetDefaultCameraPkgName" -> doGetDefaultCameraPkgName();
+                    case "doGetSupportedVideoSizesCapped" -> {
+                        String cameraId = cmdObj.getString("cameraId");
+                        doGetSupportedVideoSizesCapped(cameraId);
+                    }
+                    case "doGetUnavailablePhysicalCameras" -> doGetUnavailablePhysicalCameras();
+                    case "doReprocessCapture" -> doReprocessCapture(cmdObj);
+                    case "doStaticPreviewRecording" -> doStaticPreviewRecording(cmdObj);
+                    case "doVibrate" -> doVibrate(cmdObj);
+                    case "getAvailablePhysicalCameraProperties" ->
+                            doGetAvailablePhysicalCameraProperties();
+                    case "getCameraIds" -> doGetCameraIds();
+                    case "getCameraProperties" -> doGetProps();
+                    case "getCameraPropertiesById" -> doGetPropsById(cmdObj);
+                    case "getCameraSessionProperties" -> doGetSessionProps(cmdObj);
+                    case "getDisplaySize" -> doGetDisplaySize();
+                    case "getItsVersion" ->
+                            mSocketRunnableObj.sendResponse("ItsVersion", ITS_SERVICE_VERSION);
+                    case "getMaxCamcorderProfileSize" -> {
+                        String cameraId = cmdObj.getString("cameraId");
+                        doGetMaxCamcorderProfileSize(cameraId);
+                    }
+                    case "getQueryableStreamCombinations" -> doGetQueryableStreamCombinations();
+                    case "getSensorEvents" -> doGetSensorEvents();
+                    case "getSupportedExtensionPreviewSizes" -> {
+                        String cameraId = cmdObj.getString("cameraId");
+                        int extension = cmdObj.getInt("extension");
+                        doGetSupportedExtensionPreviewSizes(cameraId, extension);
+                    }
+                    case "getSupportedExtensionSizes" -> {
+                        String cameraId = cmdObj.getString("cameraId");
+                        int extension = cmdObj.getInt("extension");
+                        int format = cmdObj.getInt("format");
+                        doGetSupportedExtensionSizes(cameraId, extension, format);
+                    }
+                    case "getSupportedExtensions" -> {
+                        String cameraId = cmdObj.getString("cameraId");
+                        doGetSupportedExtensions(cameraId);
+                    }
+                    case "getSupportedPreviewSizes" -> {
+                        boolean filterRecordable = cmdObj.optBoolean("filter_recordable", false);
+                        doGetSupportedPreviewSizes(filterRecordable);
+                    }
+                    case "getSupportedVideoQualities" -> {
+                        String cameraId = cmdObj.getString("cameraId");
+                        doGetSupportedVideoQualities(cameraId);
+                    }
+                    case "hasHifiSensors" -> doCheckHasHifiSensors();
+                    case "isCameraPrivacyModeSupported" -> doCheckCameraPrivacyModeSupport();
                     case "isHLG10SupportedForProfile" -> {
                         String cameraId = cmdObj.getString("cameraId");
                         int profileId = cmdObj.getInt("profileId");
@@ -1109,37 +1106,42 @@ public class ItsService extends Service implements SensorEventListener {
                         int maxFps = cmdObj.getInt("maxFps");
                         doCheckHLG10SupportForSizeAndFps(cameraId, videoSize, maxFps);
                     }
-                    case "isP3Supported" -> {
-                        String cameraId = cmdObj.getString("cameraId");
-                        doCheckP3Support(cameraId);
-                    }
                     case "isLandscapeToPortraitEnabled" -> doCheckLandscapeToPortraitEnabled();
-                    case "doCaptureWithFlash" -> doCaptureWithFlash(cmdObj);
-                    case "doGetUnavailablePhysicalCameras" -> doGetUnavailablePhysicalCameras();
-                    case "doCaptureWithExtensions" -> {
-                        int extension = cmdObj.getInt("extension");
-                        doCaptureWithExtensions(cmdObj, extension);
-                    }
-                    case "getDisplaySize" -> doGetDisplaySize();
-                    case "getMaxCamcorderProfileSize" -> {
-                        String cameraId = cmdObj.getString("cameraId");
-                        doGetMaxCamcorderProfileSize(cameraId);
-                    }
-                    case "getAvailablePhysicalCameraProperties" ->
-                            doGetAvailablePhysicalCameraProperties();
                     case "isLowLightBoostAvailable" -> {
                         String cameraId = cmdObj.getString("cameraId");
                         int extension = cmdObj.getInt("extension");
                         doCheckLowLightBoostAvailable(cameraId, extension);
                     }
-                    case "doCapturePreviewFrame" -> doCapturePreviewFrame(cmdObj);
-                    case "doGetDefaultCameraPkgName" -> doGetDefaultCameraPkgName();
-                    case "doGainMapCheck" -> doGainMapCheckHelper(cmdObj);
                     case "isNightModeIndicatorSupported" -> {
                         String cameraId = cmdObj.getString("cameraId");
                         doCheckNightModeIndicatorSupported(cameraId);
                     }
-                    case "hasHifiSensors" -> doCheckHasHifiSensors();
+                    case "isP3Supported" -> {
+                        String cameraId = cmdObj.getString("cameraId");
+                        doCheckP3Support(cameraId);
+                    }
+                    case "isPerformanceClass" -> doCheckPerformanceClass();
+                    case "isPrimaryCamera" -> {
+                        String cameraId = cmdObj.getString("cameraId");
+                        doCheckPrimaryCamera(cameraId);
+                    }
+                    case "isStreamCombinationSupported" -> doCheckStreamCombination(cmdObj);
+                    case "isVicPerformanceClass" -> doCheckVicPerformanceClass();
+                    case "measureCamera1080pJpegCaptureMs" -> {
+                        String cameraId = cmdObj.getString("cameraId");
+                        doMeasureCamera1080pJpegCaptureMs(cameraId);
+                    }
+                    case "measureCameraLaunchMs" -> {
+                        String cameraId = cmdObj.getString("cameraId");
+                        doMeasureCameraLaunchMs(cameraId);
+                    }
+                    case "open" -> {
+                        String cameraId = cmdObj.getString("cameraId");
+                        openCameraDevice(cameraId, cmdObj);
+                    }
+                    case "setAudioRestriction" -> doSetAudioRestriction(cmdObj);
+                    case "startSensorEvents" -> doStartSensorEvents();
+                    // go/keep-sorted end
                     default -> throw new ItsException("Unknown command: " + cmd);
                 }
                 Logt.i(TAG, "Finish processing command" + cmdName);
