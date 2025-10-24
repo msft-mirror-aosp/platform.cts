@@ -55,6 +55,7 @@ import android.car.hardware.property.CarPropertyManager.SupportedValuesChangeCal
 import android.car.hardware.property.DetailedErrorCode;
 import android.car.hardware.property.ErrorState;
 import android.car.hardware.property.MinMaxSupportedValue;
+import android.car.hardware.property.PropertyAccessDeniedSecurityException;
 import android.car.hardware.property.PropertyNotAvailableAndRetryException;
 import android.car.hardware.property.PropertyNotAvailableErrorCode;
 import android.car.hardware.property.PropertyNotAvailableException;
@@ -1808,7 +1809,7 @@ public class VehiclePropertyVerifier<T> {
             if (valueEquals(valueToSet, currentCarPropertyValue.getValue())) {
                 return;
             }
-        } catch (PropertyNotAvailableAndRetryException e) {
+        } catch (PropertyAccessDeniedSecurityException | PropertyNotAvailableAndRetryException e) {
             Log.w(
                     TAG,
                     "Skipping SET verification for propertyId: "
@@ -1817,7 +1818,9 @@ public class VehiclePropertyVerifier<T> {
                             + areaId
                             + " valueToSet:"
                             + valueToSet
-                            + " because getProperty threw PropertyNotAvailableAndRetryException - "
+                            + " because getProperty threw "
+                            + e.getClass().getSimpleName()
+                            + " - "
                             + e);
             return;
         } catch (PropertyNotAvailableException e) {
@@ -1897,7 +1900,7 @@ public class VehiclePropertyVerifier<T> {
         spaceOutCarPropertyManagerActions();
         try {
             mCarPropertyManager.setProperty(mPropertyType, mPropertyId, areaId, valueToSet);
-        } catch (PropertyNotAvailableAndRetryException e) {
+        } catch (PropertyAccessDeniedSecurityException | PropertyNotAvailableAndRetryException e) {
             // Do nothing
         } catch (PropertyNotAvailableException e) {
             verifyPropertyNotAvailableException(e);
@@ -4571,7 +4574,7 @@ public class VehiclePropertyVerifier<T> {
                 .isTrue();
         try {
             carPropertyManager.setProperty(propertyType, propertyId, areaId, valueToSet);
-        } catch (PropertyNotAvailableAndRetryException e) {
+        } catch (PropertyAccessDeniedSecurityException | PropertyNotAvailableAndRetryException e) {
             return null;
         } catch (PropertyNotAvailableException e) {
             verifyPropertyNotAvailableException(e);
