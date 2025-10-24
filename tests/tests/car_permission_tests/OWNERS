@@ -20,4 +20,4 @@ per-file src/com/android/car/power/* = ericjeong@google.com
 per-file src/com/android/car/watchdog/* = lakshmana@google.com
 
 # Property
-per-file src/com/android/car/CarProperty* = ericjeong@google.com, tylertrephan@google.com, shanyu@google.com
+per-file src/android/car/cts/permissiontest/hardware/property/* = file:platform/hardware/interfaces:/automotive/vehicle/OWNERS
