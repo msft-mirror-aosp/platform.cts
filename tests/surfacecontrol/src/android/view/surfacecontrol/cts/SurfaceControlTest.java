@@ -2318,7 +2318,6 @@ public class SurfaceControlTest {
 
     @Test
     @CddTest(requirement = "5.12/C-8-1")
-    @RequiresFlagsEnabled(com.android.graphics.surfaceflinger.flags.Flags.FLAG_BEGONE_BRIGHT_HLG)
     public void testSurfaceTransaction_throttlesHlgBrightness() throws Throwable {
         mActivity.awaitReadyState();
         Display display = mActivity.getDisplay();
