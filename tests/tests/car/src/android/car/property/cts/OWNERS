@@ -1,5 +1,4 @@
 # Bug component: 526266
+include platform/hardware/interfaces:/automotive/vehicle/OWNERS
 
-per-file *.java=tylertrephan@google.com,evaschen@google.com
-per-file PropertyNotAvailableErrorCodeTest.java=evaschen@google.com
 per-file LocationCharacterizationTest.java=gracemc@google.com
