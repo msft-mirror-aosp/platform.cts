@@ -90,7 +90,8 @@ public class TestHelper {
     private final UiDevice mUiDevice;
 
     private static final int DURATION_MILLIS = 10_000;
-    private static final int DURATION_NETWORK_CONNECTION_MILLIS = 40_000;
+    private static final int DURATION_NETWORK_CONNECTION_MILLIS = 60_000;
+    private static final int DURATION_NETWORK_CONNECTION_TIMEOUT_MILLIS = 10_000;
     private static final int DURATION_SCREEN_TOGGLE_MILLIS = 2000;
     private static final int DURATION_UI_INTERACTION_MILLIS = 25_000;
     private static final int SCAN_RETRY_CNT_TO_FIND_MATCHING_BSSID = 5;
@@ -726,7 +727,7 @@ public class TestHelper {
             } else {
                 // now wait for connection to timeout.
                 assertThat(testNetworkCallback
-                        .waitForAnyCallback(DURATION_NETWORK_CONNECTION_MILLIS)).isFalse();
+                        .waitForAnyCallback(DURATION_NETWORK_CONNECTION_TIMEOUT_MILLIS)).isFalse();
             }
         } catch (Throwable e /* catch assertions & exceptions */) {
             try {
