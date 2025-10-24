@@ -1003,80 +1003,80 @@ public class ItsService extends Service implements SensorEventListener {
             // Each command is a serialized JSON object.
             try {
                 JSONObject cmdObj = new JSONObject(cmd);
-                Logt.i(TAG, "Start processing command: " + cmdObj.getString("cmdName"));
-                if ("open".equals(cmdObj.getString("cmdName"))) {
+                String cmdName = cmdObj.getString("cmdName");
+                Logt.i(TAG, "Start processing command: " + cmdName);
+                if ("open".equals(cmdName)) {
                     String cameraId = cmdObj.getString("cameraId");
                     openCameraDevice(cameraId, cmdObj);
-                } else if ("close".equals(cmdObj.getString("cmdName"))) {
+                } else if ("close".equals(cmdName)) {
                     closeCameraDevice();
-                } else if ("getCameraProperties".equals(cmdObj.getString("cmdName"))) {
+                } else if ("getCameraProperties".equals(cmdName)) {
                     doGetProps();
-                } else if ("getCameraPropertiesById".equals(cmdObj.getString("cmdName"))) {
+                } else if ("getCameraPropertiesById".equals(cmdName)) {
                     doGetPropsById(cmdObj);
-                } else if ("startSensorEvents".equals(cmdObj.getString("cmdName"))) {
+                } else if ("startSensorEvents".equals(cmdName)) {
                     doStartSensorEvents();
-                } else if ("checkSensorExistence".equals(cmdObj.getString("cmdName"))) {
+                } else if ("checkSensorExistence".equals(cmdName)) {
                     doCheckSensorExistence();
-                } else if ("getSensorEvents".equals(cmdObj.getString("cmdName"))) {
+                } else if ("getSensorEvents".equals(cmdName)) {
                     doGetSensorEvents();
-                } else if ("do3A".equals(cmdObj.getString("cmdName"))) {
+                } else if ("do3A".equals(cmdName)) {
                     do3A(cmdObj);
-                } else if ("doCapture".equals(cmdObj.getString("cmdName"))) {
+                } else if ("doCapture".equals(cmdName)) {
                     doCapture(cmdObj);
-                } else if ("doVibrate".equals(cmdObj.getString("cmdName"))) {
+                } else if ("doVibrate".equals(cmdName)) {
                     doVibrate(cmdObj);
-                } else if ("setAudioRestriction".equals(cmdObj.getString("cmdName"))) {
+                } else if ("setAudioRestriction".equals(cmdName)) {
                     doSetAudioRestriction(cmdObj);
-                } else if ("getCameraIds".equals(cmdObj.getString("cmdName"))) {
+                } else if ("getCameraIds".equals(cmdName)) {
                     doGetCameraIds();
-                } else if ("doReprocessCapture".equals(cmdObj.getString("cmdName"))) {
+                } else if ("doReprocessCapture".equals(cmdName)) {
                     doReprocessCapture(cmdObj);
-                } else if ("getItsVersion".equals(cmdObj.getString("cmdName"))) {
+                } else if ("getItsVersion".equals(cmdName)) {
                     mSocketRunnableObj.sendResponse("ItsVersion", ITS_SERVICE_VERSION);
-                } else if ("isStreamCombinationSupported".equals(cmdObj.getString("cmdName"))) {
+                } else if ("isStreamCombinationSupported".equals(cmdName)) {
                     doCheckStreamCombination(cmdObj);
-                } else if ("getCameraSessionProperties".equals(cmdObj.getString("cmdName"))) {
+                } else if ("getCameraSessionProperties".equals(cmdName)) {
                     doGetSessionProps(cmdObj);
-                } else if ("isCameraPrivacyModeSupported".equals(cmdObj.getString("cmdName"))) {
+                } else if ("isCameraPrivacyModeSupported".equals(cmdName)) {
                     doCheckCameraPrivacyModeSupport();
-                } else if ("isPrimaryCamera".equals(cmdObj.getString("cmdName"))) {
+                } else if ("isPrimaryCamera".equals(cmdName)) {
                     String cameraId = cmdObj.getString("cameraId");
                     doCheckPrimaryCamera(cameraId);
-                } else if ("isPerformanceClass".equals(cmdObj.getString("cmdName"))) {
+                } else if ("isPerformanceClass".equals(cmdName)) {
                     doCheckPerformanceClass();
-                } else if ("isVicPerformanceClass".equals(cmdObj.getString("cmdName"))) {
+                } else if ("isVicPerformanceClass".equals(cmdName)) {
                     doCheckVicPerformanceClass();
-                } else if ("measureCameraLaunchMs".equals(cmdObj.getString("cmdName"))) {
+                } else if ("measureCameraLaunchMs".equals(cmdName)) {
                     String cameraId = cmdObj.getString("cameraId");
                     doMeasureCameraLaunchMs(cameraId);
-                } else if ("measureCamera1080pJpegCaptureMs".equals(cmdObj.getString("cmdName"))) {
+                } else if ("measureCamera1080pJpegCaptureMs".equals(cmdName)) {
                     String cameraId = cmdObj.getString("cameraId");
                     doMeasureCamera1080pJpegCaptureMs(cameraId);
-                } else if ("getSupportedVideoQualities".equals(cmdObj.getString("cmdName"))) {
+                } else if ("getSupportedVideoQualities".equals(cmdName)) {
                     String cameraId = cmdObj.getString("cameraId");
                     doGetSupportedVideoQualities(cameraId);
-                } else if ("doGetSupportedVideoSizesCapped".equals(cmdObj.getString("cmdName"))) {
+                } else if ("doGetSupportedVideoSizesCapped".equals(cmdName)) {
                     String cameraId = cmdObj.getString("cameraId");
                     doGetSupportedVideoSizesCapped(cameraId);
-                } else if ("getSupportedPreviewSizes".equals(cmdObj.getString("cmdName"))) {
+                } else if ("getSupportedPreviewSizes".equals(cmdName)) {
                     boolean filterRecordable = cmdObj.optBoolean("filter_recordable", false);
                     doGetSupportedPreviewSizes(filterRecordable);
-                } else if ("getQueryableStreamCombinations".equals(cmdObj.getString("cmdName"))) {
+                } else if ("getQueryableStreamCombinations".equals(cmdName)) {
                     doGetQueryableStreamCombinations();
-                } else if ("getSupportedExtensions".equals(cmdObj.getString("cmdName"))) {
+                } else if ("getSupportedExtensions".equals(cmdName)) {
                     String cameraId = cmdObj.getString("cameraId");
                     doGetSupportedExtensions(cameraId);
-                } else if ("getSupportedExtensionSizes".equals(cmdObj.getString("cmdName"))) {
+                } else if ("getSupportedExtensionSizes".equals(cmdName)) {
                     String cameraId = cmdObj.getString("cameraId");
                     int extension = cmdObj.getInt("extension");
                     int format = cmdObj.getInt("format");
                     doGetSupportedExtensionSizes(cameraId, extension, format);
-                } else if ("getSupportedExtensionPreviewSizes"
-                        .equals(cmdObj.getString("cmdName"))) {
+                } else if ("getSupportedExtensionPreviewSizes".equals(cmdName)) {
                     String cameraId = cmdObj.getString("cameraId");
                     int extension = cmdObj.getInt("extension");
                     doGetSupportedExtensionPreviewSizes(cameraId, extension);
-                } else if ("doBasicRecording".equals(cmdObj.getString("cmdName"))) {
+                } else if ("doBasicRecording".equals(cmdName)) {
                     String cameraId = cmdObj.getString("cameraId");
                     int profileId = cmdObj.getInt("profileId");
                     String quality = cmdObj.getString("quality");
@@ -1088,65 +1088,71 @@ public class ItsService extends Service implements SensorEventListener {
                     int aeTargetFpsMax = cmdObj.optInt("aeTargetFpsMax");
                     int aeAntibandingMode = cmdObj.optInt("aeAntibandingMode", -1);
                     int faceDetectMode = cmdObj.optInt("faceDetectMode");
-                    doBasicRecording(cameraId, profileId, quality, recordingDuration,
-                            videoStabilizationMode, hlg10Enabled, zoomRatio,
-                            aeTargetFpsMin, aeTargetFpsMax, aeAntibandingMode, faceDetectMode);
-                } else if ("doStaticPreviewRecording".equals(cmdObj.getString("cmdName"))) {
+                    doBasicRecording(
+                            cameraId,
+                            profileId,
+                            quality,
+                            recordingDuration,
+                            videoStabilizationMode,
+                            hlg10Enabled,
+                            zoomRatio,
+                            aeTargetFpsMin,
+                            aeTargetFpsMax,
+                            aeAntibandingMode,
+                            faceDetectMode);
+                } else if ("doStaticPreviewRecording".equals(cmdName)) {
                     doStaticPreviewRecording(cmdObj);
-                } else if ("doDynamicZoomPreviewRecording".equals(
-                        cmdObj.getString("cmdName"))) {
+                } else if ("doDynamicZoomPreviewRecording".equals(cmdName)) {
                     doDynamicZoomPreviewRecording(cmdObj);
-                } else if ("doDynamicMeteringRegionPreviewRecording".equals(
-                        cmdObj.getString("cmdName"))) {
+                } else if ("doDynamicMeteringRegionPreviewRecording".equals(cmdName)) {
                     doDynamicMeteringRegionPreviewRecording(cmdObj);
-                } else if ("isHLG10SupportedForProfile".equals(cmdObj.getString("cmdName"))) {
+                } else if ("isHLG10SupportedForProfile".equals(cmdName)) {
                     String cameraId = cmdObj.getString("cameraId");
                     int profileId = cmdObj.getInt("profileId");
                     doCheckHLG10SupportForProfile(cameraId, profileId);
-                } else if ("isHLG10SupportedForSizeAndFps".equals(cmdObj.getString("cmdName"))) {
+                } else if ("isHLG10SupportedForSizeAndFps".equals(cmdName)) {
                     String cameraId = cmdObj.getString("cameraId");
                     String videoSize = cmdObj.getString("videoSize");
                     int maxFps = cmdObj.getInt("maxFps");
                     doCheckHLG10SupportForSizeAndFps(cameraId, videoSize, maxFps);
-                } else if ("isP3Supported".equals(cmdObj.getString("cmdName"))) {
+                } else if ("isP3Supported".equals(cmdName)) {
                     String cameraId = cmdObj.getString("cameraId");
                     doCheckP3Support(cameraId);
-                } else if ("isLandscapeToPortraitEnabled".equals(cmdObj.getString("cmdName"))) {
+                } else if ("isLandscapeToPortraitEnabled".equals(cmdName)) {
                     doCheckLandscapeToPortraitEnabled();
-                } else if ("doCaptureWithFlash".equals(cmdObj.getString("cmdName"))) {
+                } else if ("doCaptureWithFlash".equals(cmdName)) {
                     doCaptureWithFlash(cmdObj);
-                } else if ("doGetUnavailablePhysicalCameras".equals(cmdObj.getString("cmdName"))) {
+                } else if ("doGetUnavailablePhysicalCameras".equals(cmdName)) {
                     doGetUnavailablePhysicalCameras();
-                } else if ("doCaptureWithExtensions".equals(cmdObj.getString("cmdName"))) {
+                } else if ("doCaptureWithExtensions".equals(cmdName)) {
                     int extension = cmdObj.getInt("extension");
                     doCaptureWithExtensions(cmdObj, extension);
-                } else if ("getDisplaySize".equals(cmdObj.getString("cmdName"))) {
+                } else if ("getDisplaySize".equals(cmdName)) {
                     doGetDisplaySize();
-                } else if ("getMaxCamcorderProfileSize".equals(cmdObj.getString("cmdName"))) {
+                } else if ("getMaxCamcorderProfileSize".equals(cmdName)) {
                     String cameraId = cmdObj.getString("cameraId");
                     doGetMaxCamcorderProfileSize(cameraId);
-                } else if ("getAvailablePhysicalCameraProperties"
-                        .equals(cmdObj.getString("cmdName"))) {
+                } else if ("getAvailablePhysicalCameraProperties".equals(cmdName)) {
                     doGetAvailablePhysicalCameraProperties();
-                } else if ("isLowLightBoostAvailable".equals(cmdObj.getString("cmdName"))) {
+                } else if ("isLowLightBoostAvailable".equals(cmdName)) {
                     String cameraId = cmdObj.getString("cameraId");
                     int extension = cmdObj.getInt("extension");
                     doCheckLowLightBoostAvailable(cameraId, extension);
-                } else if ("doCapturePreviewFrame".equals(cmdObj.getString("cmdName"))) {
+                } else if ("doCapturePreviewFrame".equals(cmdName)) {
                     doCapturePreviewFrame(cmdObj);
-                } else if ("doGetDefaultCameraPkgName".equals(cmdObj.getString("cmdName"))) {
+                } else if ("doGetDefaultCameraPkgName".equals(cmdName)) {
                     doGetDefaultCameraPkgName();
-                } else if ("doGainMapCheck".equals(cmdObj.getString("cmdName"))) {
+                } else if ("doGainMapCheck".equals(cmdName)) {
                     doGainMapCheckHelper(cmdObj);
-                } else if ("isNightModeIndicatorSupported".equals(cmdObj.getString("cmdName"))) {
+                } else if ("isNightModeIndicatorSupported".equals(cmdName)) {
                     String cameraId = cmdObj.getString("cameraId");
                     doCheckNightModeIndicatorSupported(cameraId);
-                } else if ("hasHifiSensors".equals(cmdObj.getString("cmdName"))) {
+                } else if ("hasHifiSensors".equals(cmdName)) {
                     doCheckHasHifiSensors();
                 } else {
                     throw new ItsException("Unknown command: " + cmd);
                 }
-                Logt.i(TAG, "Finish processing command" + cmdObj.getString("cmdName"));
+                Logt.i(TAG, "Finish processing command" + cmdName);
             } catch (org.json.JSONException e) {
                 Logt.e(TAG, "Invalid command: ", e);
             }
