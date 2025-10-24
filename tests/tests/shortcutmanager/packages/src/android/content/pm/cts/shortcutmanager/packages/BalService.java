@@ -47,7 +47,7 @@ public class BalService extends Service {
             }
             ReplyUtil.sendSuccessReply(this, intent.getStringExtra(Constants.EXTRA_REPLY_ACTION));
             Log.i("BalService", "Started intent from background");
-        }, 10 * 1000);
+        }, 5 * 1000);
         return START_NOT_STICKY;
     }
 
