@@ -596,7 +596,6 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
                 .KEY_CARRIER_ROAMING_NTN_EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_INT,
                 EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_SOS);
         }
-        sMockSatelliteServiceManager.setSatelliteIgnorePlmnListFromStorage(false);
         overrideCarrierConfig(subId, bundle);
     }
 
@@ -623,7 +622,6 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         bundle.putPersistableBundle(
                 CarrierConfigManager.KEY_CARRIER_SUPPORTED_SATELLITE_SERVICES_PER_PROVIDER_BUNDLE,
                 plmnBundle);
-        sMockSatelliteServiceManager.setSatelliteIgnorePlmnListFromStorage(true);
         overrideCarrierConfig(subId, bundle);
     }
 
@@ -909,7 +907,6 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
 
         assertTrue(sMockSatelliteServiceManager
                 .overrideSatelliteEntilementQueryConditions(true, true));
-        assertTrue(sMockSatelliteServiceManager.setSatelliteIgnorePlmnListFromStorage(true));
         sMockSatelliteServiceManager.setMaxAllowedDataModeForCtsTest(
             SatelliteManager.SATELLITE_DATA_SUPPORT_UNCONSTRAINED);
         try {
@@ -983,7 +980,6 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
                 .overrideSatelliteEntilementQueryConditions(false, false);
             sMockSatelliteServiceManager
                 .overrideSatelliteEntilementStatusResponseForCtsTest(null, false);
-            sMockSatelliteServiceManager.setSatelliteIgnorePlmnListFromStorage(false);
             sMockSatelliteServiceManager.setMaxAllowedDataModeForCtsTest(-1);
         }
     }
@@ -1036,7 +1032,6 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
                 .overrideSatelliteEntilementQueryConditions(false, false);
         sMockSatelliteServiceManager
                 .overrideSatelliteEntilementStatusResponseForCtsTest(null, false);
-        sMockSatelliteServiceManager.setSatelliteIgnorePlmnListFromStorage(false);
         sMockSatelliteServiceManager.setMaxAllowedDataModeForCtsTest(-1);
     }
 
@@ -1046,7 +1041,6 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
 
         assertTrue(sMockSatelliteServiceManager
                 .overrideSatelliteEntilementQueryConditions(true, true));
-        assertTrue(sMockSatelliteServiceManager.setSatelliteIgnorePlmnListFromStorage(true));
         sMockSatelliteServiceManager.setMaxAllowedDataModeForCtsTest(
                 SatelliteManager.SATELLITE_DATA_SUPPORT_CONSTRAINED);
         NetworkCallback testNetworkCallback = null;
@@ -1133,7 +1127,6 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
 
         assertTrue(sMockSatelliteServiceManager
                 .overrideSatelliteEntilementQueryConditions(true, true));
-        assertTrue(sMockSatelliteServiceManager.setSatelliteIgnorePlmnListFromStorage(true));
         sMockSatelliteServiceManager.setMaxAllowedDataModeForCtsTest(
                 SatelliteManager.SATELLITE_DATA_SUPPORT_RESTRICTED);
         NetworkCallback testNetworkCallback = null;
@@ -1208,7 +1201,6 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
 
         assertTrue(sMockSatelliteServiceManager
                 .overrideSatelliteEntilementQueryConditions(true, true));
-        assertTrue(sMockSatelliteServiceManager.setSatelliteIgnorePlmnListFromStorage(true));
         sMockSatelliteServiceManager.setMaxAllowedDataModeForCtsTest(
                 SatelliteManager.SATELLITE_DATA_SUPPORT_UNCONSTRAINED);
         NetworkCallback testNetworkCallback = null;
@@ -1392,5 +1384,32 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
             waitFor(500);
         }
         assertThat(i).isLessThan(maxRetry);
+    }
+
+    protected static void setUpNtnOnlyTestEnvironment(int slotId, int simProfileId,
+            String phoneNumber) throws Exception {
+        logd(TAG, "setUpNtnOnlyTestEnvironment");
+        assertTrue(sMockModemManager.insertSimCard(slotId, simProfileId));
+        TimeUnit.MILLISECONDS.sleep(TIMEOUT);
+        moveSimToInService(slotId, simProfileId);
+        sNtnOnlySubId = SubscriptionManager.getSubscriptionId(slotId);
+        assumeTrue(sNtnOnlySubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+        logd(TAG, "setUpNtnOnlyTestEnvironment: sNtnOnlySubId=" + sNtnOnlySubId);
+        if (!isActiveSubId(sNtnOnlySubId)) {
+            logd(TAG, "Skip the test because the NTN only subId is not active.");
+            return;
+        }
+        // Set phone number
+        setPhoneNumber(sNtnOnlySubId, phoneNumber);
+        setUpNtnOnlySubscription();
+    }
+
+    protected static void cleanUpNtnOnlyTestEnvironment(int slotId, int simProfileId)
+            throws Exception {
+        logd(TAG, "cleanUpNtnOnlyTestEnvironment");
+        restoreDeviceProvisionedState();
+        restoreNtnOnlySubscriptions();
+        cleanUpMockSim(slotId, simProfileId, true);
+        sNtnOnlySubId = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
     }
 }

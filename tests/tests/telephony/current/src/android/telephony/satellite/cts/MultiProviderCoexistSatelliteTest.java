@@ -143,7 +143,8 @@ public class MultiProviderCoexistSatelliteTest extends CarrierRoamingSatelliteTe
                 // Insert NTN-only SIM and set up NTN-only subscription
                 logd(TAG, "testSelectBindingSatelliteSubscription_ntnOnly_manualConnect: "
                     + "insert NTN-only SIM and set up NTN-only subscription");
-                setUpNtnOnlyTestEnvironment();
+                setUpNtnOnlyTestEnvironment(
+                    NTN_ONLY_SLOT_ID, NTN_ONLY_SIM_PROFILE_ID, NTN_ONLY_PHONE_NUMBER);
 
                 // The NTN-only subscription should be selected as the binding
                 // satellite subscription.
@@ -186,7 +187,7 @@ public class MultiProviderCoexistSatelliteTest extends CarrierRoamingSatelliteTe
             sSatelliteManager.unregisterForSelectedNbIotSatelliteSubscriptionChanged(
                 selectedNbIotSatelliteSubscriptionCallbackTest);
             cleanUpManualConnectTestEnvironment(ESOS_SLOT_ID, ESOS_SIM_PROFILE_ID);
-            cleanUpNtnOnlyTestEnvironment();
+            cleanUpNtnOnlyTestEnvironment(NTN_ONLY_SLOT_ID, NTN_ONLY_SIM_PROFILE_ID);
         }
     }
 
@@ -292,31 +293,6 @@ public class MultiProviderCoexistSatelliteTest extends CarrierRoamingSatelliteTe
                 selectedNbIotSatelliteSubscriptionCallbackTest);
             cleanUpManualConnectTestEnvironment(SLOT_ID_0, ESOS_SIM_PROFILE_ID);
         }
-    }
-
-    private static void setUpNtnOnlyTestEnvironment() throws Exception {
-        logd(TAG, "setUpNtnOnlyTestEnvironment");
-        assertTrue(sMockModemManager.insertSimCard(NTN_ONLY_SLOT_ID, NTN_ONLY_SIM_PROFILE_ID));
-        TimeUnit.MILLISECONDS.sleep(TIMEOUT);
-        moveSimToInService(NTN_ONLY_SLOT_ID, NTN_ONLY_SIM_PROFILE_ID);
-        sNtnOnlySubId = SubscriptionManager.getSubscriptionId(NTN_ONLY_SLOT_ID);
-        assumeTrue(sNtnOnlySubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
-        logd(TAG, "setUpNtnOnlyTestEnvironment: sNtnOnlySubId=" + sNtnOnlySubId);
-        if (!isActiveSubId(sNtnOnlySubId)) {
-            logd(TAG, "Skip the test because the NTN only subId is not active.");
-            return;
-        }
-        // Set phone number
-        setPhoneNumber(sNtnOnlySubId, NTN_ONLY_PHONE_NUMBER);
-        setUpNtnOnlySubscription();
-    }
-
-    private static void cleanUpNtnOnlyTestEnvironment() throws Exception {
-        logd(TAG, "cleanUpNtnOnlyTestEnvironment");
-        restoreDeviceProvisionedState();
-        restoreNtnOnlySubscriptions();
-        cleanUpMockSim(NTN_ONLY_SLOT_ID, NTN_ONLY_SIM_PROFILE_ID, true);
-        sNtnOnlySubId = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
     }
 
     private static void waitForSelectedSatelliteSubscriptionChanged(
