@@ -584,15 +584,15 @@ public class AccessibilityNodeInfoTest {
         info.setUniqueId("foo.bar:id/baz10");
         info.setContainerTitle("Container title");
         info.setDrawingOrder(5);
-        if (android.view.accessibility.Flags.a11yCharacterInWindowApi()) {
-            info.setAvailableExtraData(
-                      Arrays.asList(
-                      AccessibilityNodeInfo.EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY,
-                      AccessibilityNodeInfo.EXTRA_DATA_TEXT_CHARACTER_LOCATION_IN_WINDOW_KEY));
-        } else {
-            info.setAvailableExtraData(
-                    Arrays.asList(AccessibilityNodeInfo.EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY));
+        final List<String> extraData = new ArrayList<>();
+        extraData.add(AccessibilityNodeInfo.EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY);
+        if (Flags.a11yCharacterInWindowApi()) {
+            extraData.add(AccessibilityNodeInfo.EXTRA_DATA_TEXT_CHARACTER_LOCATION_IN_WINDOW_KEY);
         }
+        if (Flags.a11yLayoutBasedActionsApi()) {
+            extraData.add(AccessibilityNodeInfo.EXTRA_DATA_REQUEST_LAYOUT_BASED_ACTIONS_KEY);
+        }
+        info.setAvailableExtraData(extraData);
         info.setPaneTitle("Pane title");
         info.setError("Error text");
         info.setMaxTextLength(42);
