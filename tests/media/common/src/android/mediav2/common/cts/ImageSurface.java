@@ -16,8 +16,6 @@
 
 package android.mediav2.common.cts;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.media.Image;
@@ -25,7 +23,6 @@ import android.media.ImageReader;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
-import android.util.Pair;
 import android.view.Surface;
 
 import java.util.ArrayDeque;
@@ -42,7 +39,8 @@ import java.util.function.Function;
 public class ImageSurface implements ImageReader.OnImageAvailableListener {
     private static final String LOG_TAG = ImageSurface.class.getSimpleName();
 
-    private final ArrayDeque<Pair<Image, Exception>> mQueue = new ArrayDeque<>();
+    private final ArrayDeque<Image> mQueue = new ArrayDeque<>();
+    private int mOnImageAvailableCount = 0;
     private final Lock mLock = new ReentrantLock();
     private final Condition mCondition = mLock.newCondition();
     private ImageReader mReader;
@@ -50,7 +48,6 @@ public class ImageSurface implements ImageReader.OnImageAvailableListener {
     private HandlerThread mHandlerThread;
     private Handler mHandler;
     private int mImageBoundToSurfaceId;
-    private boolean mQueueOverflowed;
     private Function<ImageAndAttributes, Boolean> mPredicate;
 
     public static class ImageAndAttributes {
@@ -67,19 +64,8 @@ public class ImageSurface implements ImageReader.OnImageAvailableListener {
     public void onImageAvailable(ImageReader reader) {
         mLock.lock();
         try {
-            if (mQueue.size() == reader.getMaxImages()) {
-                Log.w(LOG_TAG, "image queue is at full capacity, releasing oldest image to"
-                        + " make space for image just received");
-                releaseImage(mQueue.poll());
-                mQueueOverflowed = true;
-            }
-            Image image = reader.acquireNextImage();
-            Log.d(LOG_TAG, "received image" + image);
-            mQueue.add(Pair.create(image, null /* Exception */));
+            mOnImageAvailableCount++;
             mCondition.signalAll();
-        } catch (Exception e) {
-            Log.e(LOG_TAG, "Can't handle Exceptions in onImageAvailable " + e);
-            mQueue.add(Pair.create(null /* Image */, e));
         } finally {
             mLock.unlock();
         }
@@ -90,23 +76,33 @@ public class ImageSurface implements ImageReader.OnImageAvailableListener {
         Image image = null;
         mLock.lock();
         try {
-            while (mQueue.size() == 0 && retry > 0) {
+            while (mOnImageAvailableCount <= 0 && retry > 0) {
                 if (!mCondition.await(timeout, TimeUnit.MILLISECONDS)) {
                     retry--;
                 }
             }
+            if (mQueue.size() < mReader.getMaxImages() && mOnImageAvailableCount > 0) {
+                Image acquiredImage = mReader.acquireNextImage();
+                Log.d(LOG_TAG, "received image" + acquiredImage);
+                mQueue.add(acquiredImage);
+                mOnImageAvailableCount--;
+            }
             if (mQueue.size() > 0) {
-                Pair<Image, Exception> imageResult = mQueue.poll();
-                assertNotNull("bad element in image queue", imageResult);
-                image = imageResult.first;
-                Exception e = imageResult.second;
-                assertNull("onImageAvailable() generated an exception: " + e, e);
-                assertNotNull("Wait for an image timed out in " + timeout + "ms", image);
+                image = mQueue.peekFirst();
             }
         } finally {
             mLock.unlock();
         }
         return image;
+    }
+
+    public void pop() {
+        mLock.lock();
+        try {
+            mQueue.pop();
+        } finally {
+            mLock.unlock();
+        }
     }
 
     public void createSurface(int width, int height, int format, int maxNumImages,
@@ -123,7 +119,6 @@ public class ImageSurface implements ImageReader.OnImageAvailableListener {
         mReader.setOnImageAvailableListener(this, mHandler);
         mReaderSurface = mReader.getSurface();
         mImageBoundToSurfaceId = surfaceId;
-        mQueueOverflowed = false;
         mPredicate = predicate;
         Log.v(LOG_TAG, String.format(Locale.getDefault(), "Created ImageReader size (%dx%d),"
                 + " format %d, maxNumImages %d", width, height, format, maxNumImages));
@@ -133,21 +128,23 @@ public class ImageSurface implements ImageReader.OnImageAvailableListener {
         return mReaderSurface;
     }
 
-    private void releaseImage(Pair<Image, Exception> imageResult) {
-        assertNotNull("bad element in image queue", imageResult);
-        Image image = imageResult.first;
-        Exception e = imageResult.second;
-        assertNull("onImageAvailable() generated an exception: " + e, e);
-        assertNotNull("received null for image", image);
+    public int getAvailableImageCount() {
+        int count;
+        mLock.lock();
+        try {
+            count = mQueue.size() + mOnImageAvailableCount;
+        } finally {
+            mLock.unlock();
+        }
+        return count;
+    }
+
+    private void releaseImage(Image image) {
         if (mPredicate != null) {
             assertTrue("predicate failed on image instance",
                     mPredicate.apply(new ImageAndAttributes(image, mImageBoundToSurfaceId)));
         }
         image.close();
-    }
-
-    public boolean hasQueueOverflowed() {
-        return mQueueOverflowed;
     }
 
     public void release() {
