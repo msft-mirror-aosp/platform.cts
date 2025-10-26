@@ -20,83 +20,35 @@ import static android.security.advancedprotection.AdvancedProtectionManager.FEAT
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
 
 import android.app.admin.DevicePolicyManager;
 import android.os.SystemProperties;
 
-import androidx.test.runner.AndroidJUnit4;
-
-import com.android.compatibility.common.util.ApiTest;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-@RunWith(AndroidJUnit4.class)
-public class MemoryTaggingExtensionTest extends BaseAdvancedProtectionTest {
+public class MemoryTaggingExtensionTest extends BaseAdvancedProtectionFeatureTest {
     private static final String MTE_CONTROL_PROPERTY = "arm64.memtag.bootctl";
 
     @Override
-    @Before
-    public void setup() {
-        super.setup();
+    protected int getFeatureId() {
+        return FEATURE_ID_ENABLE_MTE;
     }
 
-    boolean isAvailable() {
-        final String mteDpmSystemProperty =
-                "ro.arm64.memtag.bootctl_device_policy_manager";
-        final String mteSettingsSystemProperty =
-                "ro.arm64.memtag.bootctl_settings_toggle";
+    @Override
+    protected String getFeatureName() {
+        return "Memory Tagging";
+    }
 
-        return SystemProperties.getBoolean(mteDpmSystemProperty,
+    @Override
+    protected boolean isSupportedOnDevice() {
+        final String mteDpmSystemProperty = "ro.arm64.memtag.bootctl_device_policy_manager";
+        final String mteSettingsSystemProperty = "ro.arm64.memtag.bootctl_settings_toggle";
+
+        return SystemProperties.getBoolean(
+                mteDpmSystemProperty,
                 SystemProperties.getBoolean(mteSettingsSystemProperty, false));
     }
 
-    @ApiTest(apis = {
-            "android.security.advancedprotection.AdvancedProtectionManager"
-                    + "#getAdvancedProtectionFeatures",
-            "android.security.advancedprotection.AdvancedProtectionManager"
-                    + "#FEATURE_ID_ENABLE_MTE"
-    })
-    @Test
-    public void testGetFeatures_mteAvailable() {
-        assumeTrue(isAvailable());
-        assertEquals(
-                "The Memory Tagging feature is not in the feature list",
-                1,
-                mManager.getAdvancedProtectionFeatures().stream()
-                        .filter(feature -> feature.getId() == FEATURE_ID_ENABLE_MTE)
-                        .count());
-    }
-
-    @ApiTest(apis = {
-            "android.security.advancedprotection.AdvancedProtectionManager"
-                    + "#getAdvancedProtectionFeatures",
-            "android.security.advancedprotection.AdvancedProtectionManager"
-                    + "#FEATURE_ID_ENABLE_MTE"
-    })
-    @Test
-    public void testGetFeatures_mteUnavailable() {
-        assumeFalse(isAvailable());
-        assertEquals(
-                "The memory tagging feature should not be in the feature list",
-                0,
-                mManager.getAdvancedProtectionFeatures().stream()
-                        .filter(feature -> feature.getId() == FEATURE_ID_ENABLE_MTE)
-                        .count());
-    }
-
-    @ApiTest(
-            apis = {
-                "android.security.advancedprotection.AdvancedProtectionManager"
-                        + "#setAdvancedProtectionEnabled"
-            })
-    @Test
-    public void testEnableProtection() throws InterruptedException {
-        assumeTrue(isAvailable());
-        setAdvancedProtectionEnabled(true);
+    @Override
+    protected void assertFeatureEnabled() {
         assertEquals(
                 "The MTE system is not enabled",
                 "memtag",
@@ -107,15 +59,8 @@ public class MemoryTaggingExtensionTest extends BaseAdvancedProtectionTest {
                 getMtePolicyFromDpm());
     }
 
-    @ApiTest(
-            apis = {
-                "android.security.advancedprotection.AdvancedProtectionManager"
-                        + "#setAdvancedProtectionEnabled"
-            })
-    @Test
-    public void testDisableProtection() throws InterruptedException {
-        assumeTrue(isAvailable());
-        setAdvancedProtectionEnabled(false);
+    @Override
+    protected void assertFeatureDisabled() {
         String mtePropertyValue = SystemProperties.get(MTE_CONTROL_PROPERTY);
         // "default" is the value that should be set by the DevicePolicyManager, but
         // "none" is also valid since that's the default value on the device.
