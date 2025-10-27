@@ -378,6 +378,14 @@ public final class MultiUserMockImeTest {
 
                 expectEvent(stream1, eventMatcher("showSoftInput"), TIMEOUT);
                 expectImeVisible(TIMEOUT);
+
+                // TODO(b/454882327): Remove this hide after fixing the issue with a
+                //  RemoteInsetsControlTarget that still has the IME visible could lead to an
+                //  unexpected show request later.
+                activity1.runOnUiThread(() ->
+                        editText.getWindowInsetsController().hide(WindowInsets.Type.ime()));
+                expectEvent(stream1, eventMatcher("hideSoftInput"), TIMEOUT);
+                expectImeInvisible(TIMEOUT);
             }
         }
     }
