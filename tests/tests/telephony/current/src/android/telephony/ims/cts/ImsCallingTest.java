@@ -1928,7 +1928,6 @@ public class ImsCallingTest extends ImsCallingBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_IMS_MMTEL_INTERFACE)
     public void testCallSessionTransferred() throws Exception {
         if (!ImsUtils.shouldTestImsCall()) {
             return;
@@ -1977,7 +1976,6 @@ public class ImsCallingTest extends ImsCallingBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_IMS_MMTEL_INTERFACE)
     public void testCallSessionTransferFailed() throws Exception {
         if (!ImsUtils.shouldTestImsCall()) {
             return;
@@ -2086,7 +2084,6 @@ public class ImsCallingTest extends ImsCallingBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_IMS_MMTEL_INTERFACE)
     public void testSendAnbrQuery() throws Exception {
         assumeTrue(ImsUtils.shouldTestImsCall());
         assumeTrue(sSupportsImsHal);
@@ -2121,7 +2118,6 @@ public class ImsCallingTest extends ImsCallingBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_IMS_MMTEL_INTERFACE)
     public void testNotifyAnbr() throws Exception {
         assumeTrue(ImsUtils.shouldTestImsCall());
         assumeTrue(sSupportsImsHal);
