@@ -46,6 +46,7 @@ android_test {
         "ravenwood-junit",
         "bedstead",
         "telecom_flags_core_java_lib",
+        "telecom_module_flags-export-java",
     ],
     srcs: [
         "src/**/*.java",

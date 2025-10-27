@@ -250,8 +250,7 @@ public class StatusBarManagerTest {
         mStatusBarManager.setNavBarMode(invalidInput);
     }
 
-    @RequiresFlagsEnabled(
-            com.android.server.telecom.flags.Flags.FLAG_RESOLVE_HIDDEN_DEPENDENCIES_TWO)
+    @RequiresFlagsEnabled(android.telecom.flags.Flags.FLAG_RELEASE_ICON_AS_API)
     @ApiTest(apis = {"android.app.StatusBarManager#setIcon"})
     @Test(expected = SecurityException.class)
     public void testSetIcon_withoutStatusBarPermission_throws() throws Exception {
@@ -261,8 +260,7 @@ public class StatusBarManagerTest {
         mStatusBarManager.setIcon(SLOT_MUTE, android.R.drawable.stat_notify_call_mute, 0, null);
     }
 
-    @RequiresFlagsEnabled(
-            com.android.server.telecom.flags.Flags.FLAG_RESOLVE_HIDDEN_DEPENDENCIES_TWO)
+    @RequiresFlagsEnabled(android.telecom.flags.Flags.FLAG_RELEASE_ICON_AS_API)
     @ApiTest(apis = {"android.app.StatusBarManager#setIcon"})
     @Test
     public void testSetIcon_withStatusBarPermission_doesNotThrow() throws Exception {
@@ -273,8 +271,7 @@ public class StatusBarManagerTest {
         // Nothing thrown, passed
     }
 
-    @RequiresFlagsEnabled(
-            com.android.server.telecom.flags.Flags.FLAG_RESOLVE_HIDDEN_DEPENDENCIES_TWO)
+    @RequiresFlagsEnabled(android.telecom.flags.Flags.FLAG_RELEASE_ICON_AS_API)
     @ApiTest(apis = {"android.app.StatusBarManager#removeIcon"})
     @Test(expected = SecurityException.class)
     public void testRemoveIcon_withoutStatusBarPermission_throws() throws Exception {
@@ -284,8 +281,7 @@ public class StatusBarManagerTest {
         mStatusBarManager.removeIcon(SLOT_MUTE);
     }
 
-    @RequiresFlagsEnabled(
-            com.android.server.telecom.flags.Flags.FLAG_RESOLVE_HIDDEN_DEPENDENCIES_TWO)
+    @RequiresFlagsEnabled(android.telecom.flags.Flags.FLAG_RELEASE_ICON_AS_API)
     @ApiTest(apis = {"android.app.StatusBarManager#removeIcon"})
     @Test
     public void testRemoveIcon_withStatusBarPermission_doesNotThrow() throws Exception {
@@ -295,8 +291,7 @@ public class StatusBarManagerTest {
         // Nothing thrown, passed
     }
 
-    @RequiresFlagsEnabled(
-            com.android.server.telecom.flags.Flags.FLAG_RESOLVE_HIDDEN_DEPENDENCIES_TWO)
+    @RequiresFlagsEnabled(android.telecom.flags.Flags.FLAG_RELEASE_ICON_AS_API)
     @ApiTest(
             apis = {
                 "android.app.StatusBarManager#setIcon",
