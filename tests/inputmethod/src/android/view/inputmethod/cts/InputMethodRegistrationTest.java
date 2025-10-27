@@ -43,7 +43,10 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 @AppModeFull(reason = "Instant apps cannot query the installed IMEs")
 public final class InputMethodRegistrationTest {
@@ -51,12 +54,32 @@ public final class InputMethodRegistrationTest {
     private static final String LARGE_RESOURCE_IME_APK_PATH =
             "/data/local/tmp/cts/inputmethod/CtsMockLargeResourceInputMethod.apk";
     private static final String LARGE_RESOURCE_IME_PACKAGE = "com.android.cts.mocklargeresourceime";
+
     private static final ComponentName INITIALLY_DISABLED_IME_1 =
             ComponentName.createRelative(LARGE_RESOURCE_IME_PACKAGE,
                     ".services.a_initially_disabled_ime1");
     private static final ComponentName INITIALLY_DISABLED_IME_2 =
             ComponentName.createRelative(LARGE_RESOURCE_IME_PACKAGE,
                     ".services.a_initially_disabled_ime2");
+
+    // IME with a subtype having long attributes. This is installable.
+    private static final ComponentName IME_WITH_LONG_SUBTYPE_ATTR =
+            ComponentName.createRelative(
+                    LARGE_RESOURCE_IME_PACKAGE, ".services.service_with_a_subtype_of_long_attrs");
+
+    // IME with 100 subtypes having long attributes. This is NOT installable.
+    private static final ComponentName IME_WITH_MANY_LONG_ATTR_SUBTYPES =
+            ComponentName.createRelative(
+                    LARGE_RESOURCE_IME_PACKAGE,
+                    ".services.service_with_100_subtypes_of_long_attrs");
+    // IME with 700 subtypes having small attributes, This is installable.
+    private static final ComponentName IME_WITH_MANY_SMALL_ATTR_SUBTYPES =
+            ComponentName.createRelative(
+                    LARGE_RESOURCE_IME_PACKAGE,
+                    ".services.service_with_700_subtypes_of_small_attrs");
+
+    // TODO(b/453929129): Reconsider this long timeout.
+    private static final long REGISTRATION_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(2);
 
     private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
 
@@ -182,11 +205,16 @@ public final class InputMethodRegistrationTest {
                     LARGE_RESOURCE_IME_PACKAGE, ".services.imeservice20");
 
             // Wait until 2 initially disabled IMEs are loaded
-            PollingCheck.waitFor(120000, () -> {
-                final List<ComponentName> imiIds = imm.getInputMethodList().stream().map(
-                        InputMethodInfo::getComponent).toList();
-                return imiIds.containsAll(List.of(enable_ime19, enable_ime20));
-            }, "Enabled IMIs were not loaded before timeout");
+            PollingCheck.waitFor(
+                    REGISTRATION_TIMEOUT_MS,
+                    () -> {
+                        final List<ComponentName> imiIds =
+                                imm.getInputMethodList().stream()
+                                        .map(InputMethodInfo::getComponent)
+                                        .toList();
+                        return imiIds.containsAll(List.of(enable_ime19, enable_ime20));
+                    },
+                    "Enabled IMIs were not loaded before timeout");
 
             enableImes(enable_ime19.flattenToShortString(), enable_ime20.flattenToShortString());
             setComponentEnabledSync(componentNamesToEnable,
@@ -194,12 +222,17 @@ public final class InputMethodRegistrationTest {
 
             runShellCommand("am wait-for-broadcast-barrier");
             // enable last two IMEs and make two IMEs at the beginning available
-            PollingCheck.waitFor(120000, () -> {
-                final List<ComponentName> imiIds = imm.getInputMethodList().stream().map(
-                        InputMethodInfo::getComponent).toList();
-                return imiIds.containsAll(List.of(INITIALLY_DISABLED_IME_1,
-                        INITIALLY_DISABLED_IME_2));
-            }, "Initially disabled IMIs were not loaded before timeout");
+            PollingCheck.waitFor(
+                    REGISTRATION_TIMEOUT_MS,
+                    () -> {
+                        final List<ComponentName> imiIds =
+                                imm.getInputMethodList().stream()
+                                        .map(InputMethodInfo::getComponent)
+                                        .toList();
+                        return imiIds.containsAll(
+                                List.of(INITIALLY_DISABLED_IME_1, INITIALLY_DISABLED_IME_2));
+                    },
+                    "Initially disabled IMIs were not loaded before timeout");
 
             // load all IMEs: the number of enabled IMEs should be more than MAX_IMES_PER_PACKAGE.
             List<InputMethodInfo> imis = imm.getInputMethodList();
@@ -218,6 +251,53 @@ public final class InputMethodRegistrationTest {
             // disable again, for other tests
             setComponentEnabledSync(componentNamesToEnable,
                     PackageManager.COMPONENT_ENABLED_STATE_DISABLED);
+
+            runShellCommand("am wait-for-broadcast-barrier");
+        }
+    }
+
+    /** We ignore IMEs that have too long string attribute or too many subtypes. */
+    @Test
+    public void testIgnoreInvalidSubtypeImes() {
+        // These large services are disabled by default.
+        // Enabling components are done one-by-one. The valid services are put the last so that the
+        // polling check finishes after enabling all.
+        final List<ComponentName> componentNamesToEnable =
+                List.of(
+                        IME_WITH_MANY_LONG_ATTR_SUBTYPES,
+                        IME_WITH_MANY_SMALL_ATTR_SUBTYPES, // Valid IME
+                        IME_WITH_LONG_SUBTYPE_ATTR // Valid IME
+                        );
+        final var imm = mContext.getSystemService(InputMethodManager.class);
+        try {
+            setComponentEnabledSync(
+                    componentNamesToEnable, PackageManager.COMPONENT_ENABLED_STATE_ENABLED);
+
+            runShellCommand("am wait-for-broadcast-barrier");
+
+            // Wait until the valid IMEs are loaded.
+            final Set<ComponentName> componentNames = new HashSet<>();
+            PollingCheck.waitFor(
+                    REGISTRATION_TIMEOUT_MS,
+                    () -> {
+                        componentNames.clear();
+                        componentNames.addAll(
+                                imm.getInputMethodList().stream()
+                                        .map(InputMethodInfo::getComponent)
+                                        .toList());
+                        return componentNames.contains(IME_WITH_MANY_SMALL_ATTR_SUBTYPES)
+                                && componentNames.contains(IME_WITH_LONG_SUBTYPE_ATTR);
+                    },
+                    "Valid IMEs (IME_WITH_LONG_SUBTYPE_ATTR and "
+                            + "IME_WITH_MANY_SMALL_ATTR_SUBTYPES) must be loaded");
+
+            assertWithMessage("Invalid IMEs must be filtered out")
+                    .that(componentNames)
+                    .doesNotContain(IME_WITH_MANY_LONG_ATTR_SUBTYPES);
+        } finally {
+            // disable again, for other tests
+            setComponentEnabledSync(
+                    componentNamesToEnable, PackageManager.COMPONENT_ENABLED_STATE_DISABLED);
 
             runShellCommand("am wait-for-broadcast-barrier");
         }
