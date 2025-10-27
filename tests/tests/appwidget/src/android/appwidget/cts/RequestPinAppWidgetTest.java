@@ -75,12 +75,7 @@ public class RequestPinAppWidgetTest extends AppWidgetTestCase {
         mWaitExecutor.shutdownNow();
 
         // Close the activities opened in the test.
-        SystemUtil.runWithShellPermissionIdentity(
-                () ->
-                        getInstrumentation()
-                                .getContext()
-                                .getSystemService(ActivityManager.class)
-                                .forceStopPackage(APPBAL_PACKAGE));
+        forceStopPackage(APPBAL_PACKAGE);
     }
 
     @CddTest(requirement = "3.8.2/C-2-2")
@@ -181,11 +176,14 @@ public class RequestPinAppWidgetTest extends AppWidgetTestCase {
     private void setLauncher(String component, boolean waitForLauncher) throws Exception {
         Log.i("BalActivity", "cmd package set-home-activity --user "
                 + getInstrumentation().getContext().getUserId() + " " + component);
+        final String previousLauncher = getDefaultLauncher();
         runShellCommand("cmd package set-home-activity --user "
                 + getInstrumentation().getContext().getUserId() + " " + component);
         if (waitForLauncher) {
             waitForLauncher(component);
         }
+        // Force restarting home activities so the new launcher takes effect
+        forceStopPackage(ComponentName.unflattenFromString(previousLauncher).getPackageName());
     }
 
     private void setLauncher(String component) throws Exception {
@@ -281,4 +279,12 @@ public class RequestPinAppWidgetTest extends AppWidgetTestCase {
         }
     }
 
+    private void forceStopPackage(String packageName) {
+        SystemUtil.runWithShellPermissionIdentity(
+                () ->
+                        getInstrumentation()
+                                .getContext()
+                                .getSystemService(ActivityManager.class)
+                                .forceStopPackage(packageName));
+    }
 }
