@@ -72,6 +72,7 @@ android_test_helper_app {
         "libopencameraapp_jni",
     ],
 
+    compile_multilib: "both",
     min_sdk_version: "30",
     target_sdk_version: "30",
     manifest: "AndroidManifestOpen.xml",
