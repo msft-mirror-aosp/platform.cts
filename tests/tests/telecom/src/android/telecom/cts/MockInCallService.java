@@ -79,6 +79,7 @@ public class MockInCallService extends InCallService {
         public void onCallEndpointChanged(CallEndpoint callEndpoint) {}
         public void onAvailableCallEndpointsChanged(List<CallEndpoint> availableEndpoints) {}
         public void onMuteStateChanged(boolean isMuted) {}
+        public void onCallEndpointRequested(CallEndpoint callEndpoint) {}
 
         final public MockInCallService getService() {
             return mService;
@@ -356,6 +357,14 @@ public class MockInCallService extends InCallService {
         mEndpointIsMute = isMuted;
         for (InCallServiceCallbacks callback : getCallbacks()) {
             callback.onMuteStateChanged(isMuted);
+        }
+    }
+
+    @Override
+    public void onCallEndpointRequested(CallEndpoint callEndpoint) {
+        super.onCallEndpointRequested(callEndpoint);
+        for (InCallServiceCallbacks callback : getCallbacks()) {
+            callback.onCallEndpointRequested(callEndpoint);
         }
     }
 

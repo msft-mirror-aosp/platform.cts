@@ -21,6 +21,7 @@ import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
+import android.telecom.CallEndpoint;
 import android.telecom.TelecomManager;
 import android.util.Log;
 
@@ -74,6 +75,17 @@ public class CtsThirdPartyInCallServiceControl extends Service {
                 @Override
                 public boolean waitUntilExpectedExtrasReceived() {
                     return CtsThirdPartyInCallService.getInstance().waitForExtrasChanged();
+                }
+
+                @Override
+                public void setExpectedCallEndpoint(CallEndpoint expectedEndpoint) {
+                    CtsThirdPartyInCallService.getInstance()
+                            .setExpectedCallEndpoint(expectedEndpoint);
+                }
+
+                @Override
+                public boolean waitUntilExpectedCallEndpointReceived() {
+                    return CtsThirdPartyInCallService.getInstance().waitForCallEndpointRequested();
                 }
             };
 
