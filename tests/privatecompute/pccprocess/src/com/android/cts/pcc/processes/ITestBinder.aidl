@@ -14,32 +14,8 @@
  * limitations under the License.
  */
 
-package {
-    default_applicable_licenses: ["Android-Apache-2.0"],
-}
+package com.android.cts.pcc.processes;
 
-android_test {
-    name: "CtsPccProcessTests",
-    team: "trendy_team_private_compute_core",
-    defaults: ["cts_defaults"],
-    sdk_version: "test_current",
-
-    srcs: [
-        "src/**/*.java",
-        "src/**/*.aidl",
-    ],
-
-    static_libs: [
-        "androidx.test.ext.junit",
-        "androidx.test.rules",
-        "flag-junit",
-        "android.app.privatecompute.flags-aconfig-java",
-    ],
-
-    test_suites: [
-        "cts",
-        "general-tests",
-    ],
-    test_config: "AndroidTest.xml",
-    manifest: "AndroidManifest.xml",
+interface ITestBinder {
+    void sendUid(int uid);
 }

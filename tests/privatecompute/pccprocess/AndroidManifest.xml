@@ -21,6 +21,18 @@
         <uses-library android:name="android.test.runner" />
         <private-compute>
             <service android:name="com.android.cts.pcc.processes.PccService" />
+            <receiver android:name=".PccBroadcastReceiver"
+                android:exported="true">
+                <intent-filter>
+                    <action android:name="com.android.cts.pcc.processes.ACTION_TEST_BROADCAST" />
+                </intent-filter>
+            </receiver>
+            <receiver android:name=".PccSecondProcessBroadcastReceiver"
+                android:process=":pcc_second" android:exported="true">
+                <intent-filter>
+                    <action android:name="com.android.cts.pcc.processes.ACTION_TEST_BROADCAST_SECOND_PROCESS" />
+                </intent-filter>
+            </receiver>
         </private-compute>
     </application>
 
