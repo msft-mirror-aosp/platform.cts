@@ -26,6 +26,7 @@ import android.location.cts.common.TestGnssMeasurementListener;
 import android.location.cts.common.TestLocationListener;
 import android.location.cts.common.TestLocationManager;
 import android.location.cts.common.TestMeasurementUtil;
+import android.location.cts.common.TestUtils;
 import android.location.cts.gnss.pseudorange.PseudorangePositionVelocityFromRealTimeEvents;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
@@ -282,6 +283,17 @@ public class GnssPseudorangeVerificationTest extends GnssTestCase {
                 return;
             }
         }
+
+        boolean isCnBuild = TestUtils.isCnBuild(getContext());
+        Log.i(TAG, "isCnBuild=" + isCnBuild);
+        if (isCnBuild) {
+            Log.i(
+                    TAG,
+                    "Skipping the test for CN build since the test requires receiving GPS "
+                            + "constellation signals");
+            return;
+        }
+
         mLocationListener = new TestLocationListener(LOCATION_TO_COLLECT_COUNT);
         mTestLocationManager.requestLocationUpdates(mLocationListener);
 

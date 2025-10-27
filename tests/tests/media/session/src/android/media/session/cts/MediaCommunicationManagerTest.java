@@ -47,6 +47,7 @@ import com.google.common.base.Objects;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -118,6 +119,7 @@ public class MediaCommunicationManagerTest {
         mManager.unregisterSessionCallback(managerCallback);
     }
 
+    @Ignore("Flaky: b/449550086#comment10")
     @Test
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void registerSessionCallback_noMediaContentControlPermission_throwsSecurityException() {

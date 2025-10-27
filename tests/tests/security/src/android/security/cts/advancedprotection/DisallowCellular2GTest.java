@@ -19,11 +19,8 @@ package android.security.cts.advancedprotection;
 import static android.os.UserManager.DISALLOW_CELLULAR_2G;
 import static android.security.advancedprotection.AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
@@ -31,17 +28,10 @@ import android.os.UserManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.security.Flags;
 
-import androidx.test.runner.AndroidJUnit4;
-
-import com.android.compatibility.common.util.ApiTest;
-
 import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 
-@RunWith(AndroidJUnit4.class)
 @RequiresFlagsEnabled(Flags.FLAG_AAPM_FEATURE_DISABLE_CELLULAR_2G)
-public class DisallowCellular2GTest extends BaseAdvancedProtectionTest {
+public class DisallowCellular2GTest extends BaseAdvancedProtectionFeatureTest {
     private UserManager mUserManager;
     private PackageManager mPackageManager;
 
@@ -61,75 +51,30 @@ public class DisallowCellular2GTest extends BaseAdvancedProtectionTest {
                         Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
     }
 
-    private boolean isAvailable() {
+    @Override
+    protected int getFeatureId() {
+        return FEATURE_ID_DISALLOW_CELLULAR_2G;
+    }
+
+    @Override
+    protected String getFeatureName() {
+        return "Disallow Cellular 2G";
+    }
+
+    @Override
+    protected boolean isSupportedOnDevice() {
         return mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY);
     }
 
-    private long getNumFeatures() {
-        return mManager.getAdvancedProtectionFeatures().stream()
-                .filter(feature -> feature.getId() == FEATURE_ID_DISALLOW_CELLULAR_2G)
-                .count();
-    }
-
-    @ApiTest(
-            apis = {
-                "android.security.advancedprotection.AdvancedProtectionManager"
-                        + "#getAdvancedProtectionFeatures",
-                "android.security.advancedprotection.AdvancedProtectionManager"
-                        + "#FEATURE_ID_DISALLOW_CELLULAR_2G"
-            })
-    @Test
-    public void testGetFeatures_cellularAvailable() {
-        assumeTrue(isAvailable());
-
-        assertEquals(
-                "The Disallow Cellular 2G feature is not in the feature list", 1, getNumFeatures());
-    }
-
-    @ApiTest(
-            apis = {
-                "android.security.advancedprotection.AdvancedProtectionManager"
-                        + "#getAdvancedProtectionFeatures",
-                "android.security.advancedprotection.AdvancedProtectionManager"
-                        + "#FEATURE_ID_DISALLOW_CELLULAR_2G"
-            })
-    @Test
-    public void testGetFeatures_cellularUnavailable() {
-        assumeFalse(isAvailable());
-
-        assertEquals(
-                "The Disallow Cellular 2G feature should not be in the feature list",
-                0,
-                getNumFeatures());
-    }
-
-    @ApiTest(
-            apis = {
-                "android.security.advancedprotection.AdvancedProtectionManager"
-                        + "#setAdvancedProtectionEnabled"
-            })
-    @Test
-    public void testEnableProtection() throws InterruptedException {
-        assumeTrue(isAvailable());
-
-        setAdvancedProtectionEnabled(true);
-
+    @Override
+    protected void assertFeatureEnabled() {
         assertTrue(
                 "The DISALLOW_CELLULAR_2G restriction is not set",
                 mUserManager.hasUserRestriction(DISALLOW_CELLULAR_2G));
     }
 
-    @ApiTest(
-            apis = {
-                "android.security.advancedprotection.AdvancedProtectionManager"
-                        + "#setAdvancedProtectionEnabled"
-            })
-    @Test
-    public void testDisableProtection() throws InterruptedException {
-        assumeTrue(isAvailable());
-
-        setAdvancedProtectionEnabled(false);
-
+    @Override
+    protected void assertFeatureDisabled() {
         assertFalse(
                 "The DISALLOW_CELLULAR_2G restriction is set",
                 mUserManager.hasUserRestriction(DISALLOW_CELLULAR_2G));

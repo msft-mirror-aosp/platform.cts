@@ -15,15 +15,22 @@
  */
 package com.android.cts.managedprofile;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
+
 /**
  * Test to check reporting the state of profile challenge.
  */
 public class IsUsingUnifiedPasswordTest extends BaseManagedProfileTest {
 
+    @Test
     public void testNotUsingUnifiedPassword() {
         assertFalse(mDevicePolicyManager.isUsingUnifiedPassword(ADMIN_RECEIVER_COMPONENT));
     }
 
+    @Test
     public void testUsingUnifiedPassword() {
         assertTrue(mDevicePolicyManager.isUsingUnifiedPassword(ADMIN_RECEIVER_COMPONENT));
     }

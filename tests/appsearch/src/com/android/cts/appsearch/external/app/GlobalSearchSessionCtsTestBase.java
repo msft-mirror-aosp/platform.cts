@@ -2439,7 +2439,7 @@ public abstract class GlobalSearchSessionCtsTestBase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
     public void testWriteAndReadBlob() throws Exception {
-        assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
+        assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.SCHEMA_BLOB_HANDLE));
         if (mDb1.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE)) {
             assumeTrue(Flags.enableAppSearchManageBlobFiles());
         }
@@ -2515,7 +2515,7 @@ public abstract class GlobalSearchSessionCtsTestBase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
     public void testWriteAndReadBlob_withoutCommit() throws Exception {
-        assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
+        assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.SCHEMA_BLOB_HANDLE));
         if (mDb1.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE)) {
             assumeTrue(Flags.enableAppSearchManageBlobFiles());
         }
@@ -2561,7 +2561,7 @@ public abstract class GlobalSearchSessionCtsTestBase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
     public void testReadBlob_notSupported() throws Exception {
-        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
+        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.SCHEMA_BLOB_HANDLE));
         mDb1.setSchemaAsync(new SetSchemaRequest.Builder().setForceOverride(true).build()).get();
         byte[] data = generateRandomBytes(10); // 10 Bytes
         byte[] digest = calculateDigest(data);
@@ -2576,7 +2576,7 @@ public abstract class GlobalSearchSessionCtsTestBase {
         assertThat(exception)
                 .hasMessageThat()
                 .contains(
-                        Features.BLOB_STORAGE
+                        Features.SCHEMA_BLOB_HANDLE
                                 + " is not available on this AppSearch implementation.");
     }
 }

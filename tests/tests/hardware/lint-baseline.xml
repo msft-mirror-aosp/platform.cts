@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 8.4.0-alpha08" type="baseline" client="" dependencies="true" name="" variant="all" version="8.4.0-alpha08">
+
+    <issue
+        id="MissingCheckFlagsRule"
+        message="Class `InputHidTestCase` uses @RequiresFlagsEnabled or @RequiresFlagsDisabled and must have a CheckFlagsRule."
+        errorLine1="public abstract class InputHidTestCase extends InputTestCase {"
+        errorLine2="                      ~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/tests/hardware/src/android/hardware/input/cts/tests/InputHidTestCase.java"
+            line="77"
+            column="23"/>
+    </issue>
+
+    <issue
+        id="MissingCheckFlagsRule"
+        message="Class `VirtualDeviceMirrorDisplayTest` uses @RequiresFlagsEnabled or @RequiresFlagsDisabled and must have a CheckFlagsRule."
+        errorLine1="class VirtualDeviceMirrorDisplayTest : InputTestCase() {"
+        errorLine2="      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/tests/hardware/src/android/hardware/input/cts/tests/virtualdevices/VirtualDeviceMirrorDisplayTest.kt"
+            line="59"
+            column="7"/>
+    </issue>
+
+    <issue
+        id="MissingCheckFlagsRule"
+        message="Class `VirtualKeyboardTest` uses @RequiresFlagsEnabled or @RequiresFlagsDisabled and must have a CheckFlagsRule."
+        errorLine1="class VirtualKeyboardTest : VirtualDeviceTestCase() {"
+        errorLine2="      ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/tests/hardware/src/android/hardware/input/cts/tests/virtualdevices/VirtualKeyboardTest.kt"
+            line="36"
+            column="7"/>
+    </issue>
+
+    <issue
+        id="MissingCheckFlagsRule"
+        message="Class `VirtualMouseTest` uses @RequiresFlagsEnabled or @RequiresFlagsDisabled and must have a CheckFlagsRule."
+        errorLine1="class VirtualMouseTest : VirtualDeviceTestCase() {"
+        errorLine2="      ~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/tests/hardware/src/android/hardware/input/cts/tests/virtualdevices/VirtualMouseTest.kt"
+            line="39"
+            column="7"/>
+    </issue>
+
+    <issue
+        id="MissingCheckFlagsRule"
+        message="Class `VirtualRotaryEncoderTest` uses @RequiresFlagsEnabled or @RequiresFlagsDisabled and must have a CheckFlagsRule."
+        errorLine1="class VirtualRotaryEncoderTest : VirtualDeviceTestCase() {"
+        errorLine2="      ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/tests/hardware/src/android/hardware/input/cts/tests/virtualdevices/VirtualRotaryEncoderTest.kt"
+            line="35"
+            column="7"/>
+    </issue>
+
+</issues>

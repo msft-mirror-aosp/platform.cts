@@ -41,6 +41,7 @@ import com.android.tradefed.testtype.junit4.BeforeClassWithInfo;
 import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
 import com.android.tradefed.util.FileUtil;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
@@ -501,6 +502,77 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                 "Lcom/android/sdksandbox/IComputeSdkStorageCallback;"
             );
 
+    // TODO: b/454188665
+    private static final ImmutableSet<String> PREBUILT_GMSCORE_APK_IN_APEX_BURNDOWN_LIST =
+            ImmutableSet.of(
+                // /apex/com.android.art/javalib/core-oj.jar
+                "Ljava/util/function/Function;",
+                "Ljava/util/function/IntFunction;",
+                "Ljava/io/UncheckedIOException;",
+                "Ljava/util/function/Supplier;",
+                "Ljava/util/function/BiConsumer;",
+                "Ljava/util/function/Predicate;",
+                "Ljava/util/function/Consumer;",
+                "Ljava/util/function/BiFunction;",
+                "Ljava/util/function/BinaryOperator;",
+                "Ljava/nio/channels/SeekableByteChannel;",
+                "Ljava/nio/file/FileSystemException;",
+                "Ljava/nio/file/AccessDeniedException;",
+                "Ljava/nio/file/AtomicMoveNotSupportedException;",
+                "Ljava/nio/file/ClosedDirectoryStreamException;",
+                "Ljava/nio/file/ClosedFileSystemException;",
+                "Ljava/nio/file/ClosedWatchServiceException;",
+                "Ljava/nio/file/DirectoryIteratorException;",
+                "Ljava/nio/file/DirectoryNotEmptyException;",
+                "Ljava/nio/file/DirectoryStream;",
+                "Ljava/nio/file/FileAlreadyExistsException;",
+                "Ljava/nio/file/FileSystemAlreadyExistsException;",
+                "Ljava/nio/file/FileSystemLoopException;",
+                "Ljava/nio/file/FileSystemNotFoundException;",
+                "Ljava/nio/file/InvalidPathException;",
+                "Ljava/nio/file/NoSuchFileException;",
+                "Ljava/nio/file/NotDirectoryException;",
+                "Ljava/nio/file/NotLinkException;",
+                "Ljava/nio/file/ProviderMismatchException;",
+                "Ljava/nio/file/ProviderNotFoundException;",
+                "Ljava/nio/file/ReadOnlyFileSystemException;",
+                "Ljava/util/function/LongFunction;",
+                "Ljava/util/function/IntConsumer;",
+                "Ljava/util/function/UnaryOperator;",
+                "Ljava/util/function/DoublePredicate;",
+                "Ljava/util/function/DoubleConsumer;",
+                "Ljava/util/function/LongConsumer;",
+                "Ljava/util/function/IntSupplier;",
+                "Ljava/util/function/BiPredicate;",
+                "Ljava/util/function/BooleanSupplier;",
+                "Ljava/util/function/DoubleBinaryOperator;",
+                "Ljava/util/function/DoubleFunction;",
+                "Ljava/util/function/DoubleSupplier;",
+                "Ljava/util/function/DoubleToIntFunction;",
+                "Ljava/util/function/DoubleToLongFunction;",
+                "Ljava/util/function/DoubleUnaryOperator;",
+                "Ljava/util/function/IntBinaryOperator;",
+                "Ljava/util/function/IntPredicate;",
+                "Ljava/util/function/IntToDoubleFunction;",
+                "Ljava/util/function/IntToLongFunction;",
+                "Ljava/util/function/IntUnaryOperator;",
+                "Ljava/util/function/LongBinaryOperator;",
+                "Ljava/util/function/LongPredicate;",
+                "Ljava/util/function/LongSupplier;",
+                "Ljava/util/function/LongToDoubleFunction;",
+                "Ljava/util/function/LongToIntFunction;",
+                "Ljava/util/function/LongUnaryOperator;",
+                "Ljava/util/function/ObjDoubleConsumer;",
+                "Ljava/util/function/ObjIntConsumer;",
+                "Ljava/util/function/ObjLongConsumer;",
+                "Ljava/util/function/ToDoubleBiFunction;",
+                "Ljava/util/function/ToDoubleFunction;",
+                "Ljava/util/function/ToIntBiFunction;",
+                "Ljava/util/function/ToIntFunction;",
+                "Ljava/util/function/ToLongBiFunction;",
+                "Ljava/util/function/ToLongFunction;"
+            );
+
     private static final ImmutableMap<String, ImmutableSet<String>> FULL_APK_IN_APEX_BURNDOWN =
             new ImmutableMap.Builder<String, ImmutableSet<String>>()
                     .put(
@@ -548,6 +620,12 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                     .put(
                             "/apex/com.android.adservices/app/SdkSandboxGoogle/SdkSandboxGoogle.apk",
                             ADSERVICES_SANDBOX_APK_IN_APEX_BURNDOWN_LIST)
+                    .put(
+                            "/apex/com.google.android.gmssystem/priv-app/PrebuiltGmsCoreNext/PrebuiltGmsCoreNext.apk",
+                            PREBUILT_GMSCORE_APK_IN_APEX_BURNDOWN_LIST)
+                    .put(
+                            "/apex/com.google.android.gmssystem/priv-app/PrebuiltGmsCoreVic/PrebuiltGmsCoreVic.apk",
+                            PREBUILT_GMSCORE_APK_IN_APEX_BURNDOWN_LIST)
                     .build();
 
     // Bluetooth has not been updated on pre-u device
@@ -879,10 +957,24 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
         jars.addAll(sBootclasspathJars);
         jars.addAll(sSharedLibJars);
         final Multimap<String, String> duplicates = getDuplicateClasses(jars.build());
-        final Multimap<String, String> filtered = Multimaps.filterKeys(duplicates,
+
+        // Due to problems with other tests that don't clean up after themselves,
+        // we end up finding duplicates here. However, these findings don't reflect
+        // real world scenarios that could cause problems.
+        // Discard test APKs from duplicated jars b/447082560
+        Predicate<String> isTestApk =
+                file -> file.contains("com.android.tests.") && file.endsWith(".apk");
+        final Multimap<String, String> duplicatesWithoutTestApks =
+                Multimaps.filterValues(duplicates, file -> !isTestApk.test(file));
+        final Multimap<String, String> cleanDuplicates =
+                Multimaps.filterKeys(
+                        duplicatesWithoutTestApks,
+                        key -> duplicatesWithoutTestApks.get(key).size() > 1);
+
+        final Multimap<String, String> filtered = Multimaps.filterKeys(cleanDuplicates,
                 dupeClass -> {
                     try {
-                        final Collection<String> dupeJars = duplicates.get(dupeClass);
+                        final Collection<String> dupeJars = cleanDuplicates.get(dupeClass);
                         // Duplicate is already known.
                         if (BCP_AND_SHARED_LIB_BURNDOWN_LIST.contains(dupeClass)
                                 || BOOTCLASSPATH_DUPLICATE_BURNDOWN_LIST.contains(dupeClass)) {

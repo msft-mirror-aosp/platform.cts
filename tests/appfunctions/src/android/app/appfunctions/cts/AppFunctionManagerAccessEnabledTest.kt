@@ -25,6 +25,8 @@ import android.app.appfunctions.ExecuteAppFunctionResponse
 import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunctionAndWait
 import android.app.appfunctions.cts.AppFunctionUtils.getAllRuntimeMetadataPackages
 import android.app.appfunctions.cts.AppFunctionUtils.getAllStaticMetadataPackages
+import android.app.appfunctions.cts.AppFunctionUtils.grantAppFunctionAccess
+import android.app.appfunctions.cts.AppFunctionUtils.revokeAppFunctionAccess
 import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabled
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
 import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
@@ -55,6 +57,8 @@ import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest
 import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnPrimaryUser
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSecondaryUser
 import com.android.bedstead.enterprise.dpc
 import com.android.bedstead.enterprise.policies.AppFunctionsPolicy
 import com.android.bedstead.enterprise.workProfile
@@ -64,8 +68,6 @@ import com.android.bedstead.multiuser.additionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasPrivateProfile
 import com.android.bedstead.multiuser.annotations.RequireRunOnPrivateProfile
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnPrimaryUser
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSecondaryUser
 import com.android.bedstead.multiuser.privateProfile
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.users.UserReference
@@ -1537,20 +1539,6 @@ class AppFunctionManagerAccessEnabledTest {
         } finally {
             revokeAppFunctionAccess(CURRENT_PKG, TEST_HELPER_PKG)
         }
-    }
-
-    private fun grantAppFunctionAccess(agentPackage: String, targetPackage: String) {
-        ShellCommand.builder("cmd app_function grant-app-function-access")
-            .addOption("--agent-package", agentPackage)
-            .addOption("--target-package", targetPackage)
-            .execute()
-    }
-
-    private fun revokeAppFunctionAccess(agentPackage: String, targetPackage: String) {
-        ShellCommand.builder("cmd app_function revoke-app-function-access")
-            .addOption("--agent-package", agentPackage)
-            .addOption("--target-package", targetPackage)
-            .execute()
     }
 
     @Test

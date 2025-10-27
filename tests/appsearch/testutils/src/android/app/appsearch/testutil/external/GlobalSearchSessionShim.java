@@ -76,7 +76,8 @@ public interface GlobalSearchSessionShim extends Closeable {
     default @NonNull ListenableFuture<OpenBlobForReadResponse> openBlobForReadAsync(
             @NonNull Set<AppSearchBlobHandle> handles) {
         throw new UnsupportedOperationException(
-                Features.BLOB_STORAGE + " is not available on this AppSearch implementation.");
+                Features.SCHEMA_BLOB_HANDLE
+                        + " is not available on this AppSearch implementation.");
     }
 
     /**

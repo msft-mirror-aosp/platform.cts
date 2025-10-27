@@ -77,7 +77,7 @@ class DynamicColorsTest(
         @JvmStatic
         @Parameterized.BeforeParam
         fun setup(color: String, style: String, contrast: String) {
-            assumeTrue(isSupportedDevice)
+            assumeTrue(isDynamicColorSupported)
 
             val contrastValue =
                 when (contrast) {

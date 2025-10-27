@@ -15,6 +15,11 @@
  */
 package com.android.cts.managedprofile;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import android.app.admin.DevicePolicyManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -22,6 +27,8 @@ import android.content.Intent;
 import android.os.UserManager;
 
 import com.android.compatibility.common.util.BlockingBroadcastReceiver;
+
+import org.junit.Test;
 
 public class ResetPasswordWithTokenTest extends BaseManagedProfileTest {
 
@@ -46,6 +53,7 @@ public class ResetPasswordWithTokenTest extends BaseManagedProfileTest {
      * step for {@link #testResetPasswordBeforeUnlock} and will be called by the hostside logic
      * before it is exercised.
      */
+    @Test
     public void testSetupWorkProfile() {
         testSetResetPasswordToken();
         // Reset password on the work profile will enable separate work challenge for it.
@@ -53,6 +61,7 @@ public class ResetPasswordWithTokenTest extends BaseManagedProfileTest {
                 token, 0));
     }
 
+    @Test
     public void testResetPasswordBeforeUnlock() {
         UserManager um = mContext.getSystemService(UserManager.class);
         assertFalse(um.isUserUnlocked());
@@ -69,6 +78,7 @@ public class ResetPasswordWithTokenTest extends BaseManagedProfileTest {
         } catch (IllegalStateException expected) {}
     }
 
+    @Test
     public void testClearPasswordBeforeUnlock() {
         UserManager um = mContext.getSystemService(UserManager.class);
         assertFalse(um.isUserUnlocked());
@@ -90,6 +100,7 @@ public class ResetPasswordWithTokenTest extends BaseManagedProfileTest {
         assertTrue(mDevicePolicyManager.isActivePasswordSufficient());
     }
 
+    @Test
     public void testSetResetPasswordToken() {
         assertTrue(mDevicePolicyManager.setResetPasswordToken(ADMIN_RECEIVER_COMPONENT, token));
         assertTrue(mDevicePolicyManager.isResetPasswordTokenActive(ADMIN_RECEIVER_COMPONENT));

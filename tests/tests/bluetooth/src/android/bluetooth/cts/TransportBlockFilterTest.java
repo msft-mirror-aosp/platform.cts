@@ -22,9 +22,9 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
 
-import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothAssignedNumbers.OrganizationId;
 import android.bluetooth.le.TransportBlockFilter;
+import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.content.Context;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -50,24 +50,18 @@ public class TransportBlockFilterTest {
     private static final byte[] TEST_TRANSPORT_DATA_MASK_LONG = {0x0, 0x1, 0xF, 0xF, 0xF, 0xF, 0xF};
     private static final byte[] TEST_VALID_WIFI_NAN_HASH = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8};
 
-    private Context mContext;
-    private BluetoothAdapter mAdapter;
+    private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
 
     @Before
     public void setUp() {
-        mContext = InstrumentationRegistry.getInstrumentation().getContext();
-
         Assume.assumeTrue(TestUtils.isBleSupported(mContext));
-
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
-        mAdapter = TestUtils.getBluetoothAdapterOrDie();
-        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.enable()).isTrue();
     }
 
     @After
     public void tearDown() {
         TestUtils.dropPermissionAsShellUid();
-        mAdapter = null;
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})

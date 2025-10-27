@@ -117,6 +117,7 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
         assertConnectionState(mConferenceObject.getConnections().get(0), Connection.STATE_ACTIVE);
         assertConnectionState(mConferenceObject.getConnections().get(1), Connection.STATE_ACTIVE);
         assertConferenceState(mConferenceObject, Connection.STATE_ACTIVE);
+        assertNotNull(connectionService.getAllConferences());
 
         LinkedBlockingQueue<Connection> queue = new LinkedBlockingQueue(1);
         runWithShellPermissionIdentity(() ->

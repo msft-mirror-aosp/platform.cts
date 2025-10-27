@@ -51,7 +51,7 @@ public class ContextHintTest {
         final BundleHint hint = new BundleHint();
         final ContextHint outputHint = bundleUnbundle(hint);
 
-        assertThat(hint.getHintType()).isEqualTo(outputHint.getHintType());
+        assertThat(outputHint).isInstanceOf(BundleHint.class);
         assertThat(hint.getHintId()).isEqualTo(outputHint.getHintId());
     }
 

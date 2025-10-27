@@ -44,6 +44,9 @@ android_test {
         ":CtsContactsProviderGalProvider",
     ],
     per_testcase_directory: true,
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
 
 filegroup {

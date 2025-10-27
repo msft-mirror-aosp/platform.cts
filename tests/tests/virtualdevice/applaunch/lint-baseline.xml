@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 8.4.0-alpha08" type="baseline" client="" dependencies="true" name="" variant="all" version="8.4.0-alpha08">
+
+    <issue
+        id="MissingCheckFlagsRule"
+        message="Class `ActivityBlockingTest` uses @RequiresFlagsEnabled or @RequiresFlagsDisabled and must have a CheckFlagsRule."
+        errorLine1="public class ActivityBlockingTest {"
+        errorLine2="             ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/tests/virtualdevice/applaunch/src/android/virtualdevice/cts/applaunch/ActivityBlockingTest.java"
+            line="78"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="MissingCheckFlagsRule"
+        message="Class `ActivityManagementTest` uses @RequiresFlagsEnabled or @RequiresFlagsDisabled and must have a CheckFlagsRule."
+        errorLine1="public class ActivityManagementTest {"
+        errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/tests/virtualdevice/applaunch/src/android/virtualdevice/cts/applaunch/ActivityManagementTest.java"
+            line="69"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="MissingCheckFlagsRule"
+        message="Class `DefaultCameraAccessTest` uses @RequiresFlagsEnabled or @RequiresFlagsDisabled and must have a CheckFlagsRule."
+        errorLine1="public class DefaultCameraAccessTest extends DefaultCameraAccessTestBase {"
+        errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/tests/virtualdevice/applaunch/src/android/virtualdevice/cts/applaunch/DefaultCameraAccessTest.java"
+            line="37"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="MissingCheckFlagsRule"
+        message="Class `RecentTasksTest` uses @RequiresFlagsEnabled or @RequiresFlagsDisabled and must have a CheckFlagsRule."
+        errorLine1="public class RecentTasksTest {"
+        errorLine2="             ~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/tests/virtualdevice/applaunch/src/android/virtualdevice/cts/applaunch/RecentTasksTest.java"
+            line="48"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="MissingCheckFlagsRule"
+        message="Class `VirtualDeviceUiModeTest` uses @RequiresFlagsEnabled or @RequiresFlagsDisabled and must have a CheckFlagsRule."
+        errorLine1="public class VirtualDeviceUiModeTest {"
+        errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/tests/virtualdevice/applaunch/src/android/virtualdevice/cts/applaunch/VirtualDeviceUiModeTest.java"
+            line="58"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="MissingCheckFlagsRule"
+        message="Class `VirtualDeviceViewConfigurationTest` uses @RequiresFlagsEnabled or @RequiresFlagsDisabled and must have a CheckFlagsRule."
+        errorLine1="public class VirtualDeviceViewConfigurationTest {"
+        errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/tests/virtualdevice/applaunch/src/android/virtualdevice/cts/applaunch/VirtualDeviceViewConfigurationTest.java"
+            line="54"
+            column="14"/>
+    </issue>
+
+</issues>

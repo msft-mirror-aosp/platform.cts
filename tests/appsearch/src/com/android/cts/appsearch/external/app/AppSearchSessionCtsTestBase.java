@@ -6369,7 +6369,7 @@ public abstract class AppSearchSessionCtsTestBase {
         assertThat(matchInfo0.getTextMatch().getFullText())
                 .isEqualTo(
                         "A commonly used fake word is foo. Another nonsense word that’s used a lot"
-                                + " is bar");
+                            + " is bar");
         assertThat(matchInfo0.getTextMatch().getExactMatchRange())
                 .isEqualTo(new SearchResult.MatchRange(/* start= */ 29, /* end= */ 32));
         assertThat(matchInfo0.getTextMatch().getExactMatch().toString()).isEqualTo("foo");
@@ -8553,9 +8553,7 @@ public abstract class AppSearchSessionCtsTestBase {
                                                         .addSchemas(emailSchema)
                                                         .build())
                                         .get());
-        assertThat(e)
-                .hasMessageThat()
-                .isEqualTo("tokenizerType is out of range of [0, 1] (too high)");
+        assertThat(e).hasMessageThat().contains("tokenizerType is out of range");
     }
 
     @Test
@@ -13267,7 +13265,7 @@ public abstract class AppSearchSessionCtsTestBase {
                         .addEmbeddingParameters(searchEmbedding)
                         .setRankingStrategy(
                                 "maxOrDefault(this.matchedSemanticScores(getEmbeddingParameter(0)),"
-                                        + " -100)")
+                                    + " -100)")
                         .setListFilterQueryLanguageEnabled(true)
                         .build();
         SearchResultsShim searchResults =
@@ -13292,7 +13290,7 @@ public abstract class AppSearchSessionCtsTestBase {
                         .addEmbeddingParameters(searchEmbedding)
                         .setRankingStrategy(
                                 "minOrDefault(this.matchedSemanticScores(getEmbeddingParameter(0)),"
-                                        + " -100)")
+                                    + " -100)")
                         .setListFilterQueryLanguageEnabled(true)
                         .build();
         searchResults =

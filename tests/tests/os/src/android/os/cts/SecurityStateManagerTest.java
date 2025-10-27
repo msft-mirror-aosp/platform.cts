@@ -19,10 +19,15 @@ package android.os.cts;
 import static android.os.SecurityStateManager.KEY_KERNEL_VERSION;
 import static android.os.SecurityStateManager.KEY_SYSTEM_SPL;
 import static android.os.SecurityStateManager.KEY_VENDOR_SPL;
+import static android.os.SecurityStateManager.KEY_SUPPLEMENTAL_PATCHES;
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
 import static org.testng.AssertJUnit.assertEquals;
+import static org.testng.AssertJUnit.assertTrue;
+import static org.testng.AssertJUnit.assertFalse;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
 import android.content.Context;
@@ -40,6 +45,8 @@ import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.security.patches.SecurityPatches;
+import android.security.patches.XmlParser;
 import android.util.Log;
 import android.webkit.WebViewUpdateService;
 
@@ -48,15 +55,22 @@ import com.android.bedstead.permissions.PermissionContext;
 
 import androidx.test.runner.AndroidJUnit4;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
@@ -64,10 +78,14 @@ import java.util.regex.Pattern;
 public class SecurityStateManagerTest {
 
     private static final String TAG = "SecurityStateManagerTest";
+    private static final String SUPPLEMENTAL_PATCH_CONFIG_FILE =
+            "/system/etc/security/supplemental_security_patches.xml";
+
     private Context mContext;
     private Resources mResources;
     private PackageManager mPackageManager;
     private SecurityStateManager mSecurityStateManager;
+    private PermissionContext mPermissionContext;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -79,36 +97,79 @@ public class SecurityStateManagerTest {
         mResources = mContext.getResources();
         mPackageManager = mContext.getPackageManager();
         mSecurityStateManager = mContext.getSystemService(SecurityStateManager.class);
+        mPermissionContext = TestApis.permissions().withPermission(
+                Manifest.permission.INTERACT_ACROSS_USERS_FULL);
+    }
+
+    @After
+    public void tearDown() {
+        if (mPermissionContext != null) {
+            mPermissionContext.close();
+        }
     }
 
     @Test
     @AppModeFull(reason = "Instant apps cannot restore binder identity")
     public void testGetGlobalSecurityState() throws Exception {
-        try (PermissionContext permissionContext = TestApis.permissions().withPermission(Manifest.permission.INTERACT_ACROSS_USERS_FULL)) {
-            Pattern pattern = Pattern.compile("(\\d+\\.\\d+\\.\\d+)(.*)");
-            Matcher matcher = pattern.matcher(VintfRuntimeInfo.getKernelVersion());
-            String kernelVersion = "";
-            if (matcher.matches()) {
-                kernelVersion = matcher.group(1);
-            }
-            String defaultModuleMetadata = mContext.getString(
-                    mResources.getIdentifier("config_defaultModuleMetadataProvider",
-                            "string", "android"));
-            List<String> webViewPackages = Arrays.stream(WebViewUpdateService.getAllWebViewPackages())
-                    .map(info -> info.packageName).toList();
-            List<String> securityStatePackages = Arrays.stream(mContext.getResources().getStringArray(
-                    mResources.getIdentifier("config_securityStatePackages",
-                            "array", "android"))).toList();
-            Bundle bundle = mSecurityStateManager.getGlobalSecurityState();
-
-            assertEquals(bundle.getString(KEY_SYSTEM_SPL), Build.VERSION.SECURITY_PATCH);
-            assertEquals(bundle.getString(KEY_VENDOR_SPL),
-                    SystemProperties.get("ro.vendor.build.security_patch", ""));
-            assertEquals(bundle.getString(KEY_KERNEL_VERSION), kernelVersion);
-            packageVersionNameCheck(bundle, defaultModuleMetadata);
-            webViewPackages.forEach(p -> packageVersionNameCheck(bundle, p));
-            securityStatePackages.forEach(p -> packageVersionNameCheck(bundle, p));
+        Pattern pattern = Pattern.compile("(\\d+\\.\\d+\\.\\d+)(.*)");
+        Matcher matcher = pattern.matcher(VintfRuntimeInfo.getKernelVersion());
+        String kernelVersion = "";
+        if (matcher.matches()) {
+            kernelVersion = matcher.group(1);
         }
+        String defaultModuleMetadata = mContext.getString(
+                mResources.getIdentifier("config_defaultModuleMetadataProvider",
+                        "string", "android"));
+        List<String> webViewPackages = Arrays.stream(WebViewUpdateService.getAllWebViewPackages())
+                .map(info -> info.packageName).toList();
+        List<String> securityStatePackages = Arrays.stream(mContext.getResources().getStringArray(
+                mResources.getIdentifier("config_securityStatePackages",
+                        "array", "android"))).toList();
+        Bundle bundle = mSecurityStateManager.getGlobalSecurityState();
+
+        assertEquals(bundle.getString(KEY_SYSTEM_SPL), Build.VERSION.SECURITY_PATCH);
+        assertEquals(bundle.getString(KEY_VENDOR_SPL),
+                SystemProperties.get("ro.vendor.build.security_patch", ""));
+        assertEquals(bundle.getString(KEY_KERNEL_VERSION), kernelVersion);
+        packageVersionNameCheck(bundle, defaultModuleMetadata);
+        webViewPackages.forEach(p -> packageVersionNameCheck(bundle, p));
+        securityStatePackages.forEach(p -> packageVersionNameCheck(bundle, p));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPLEMENTAL_SECURITY_PATCHES)
+    @AppModeFull(reason = "Instant apps cannot restore binder identity")
+    public void testGetGlobalSecurityState_checkCveIdsFormat() throws Exception {
+        String [] expectedCveIds = getExpectedCveIds();
+
+        Bundle bundle = mSecurityStateManager.getGlobalSecurityState();
+        String[] actualCveIds = bundle.getStringArray(KEY_SUPPLEMENTAL_PATCHES);
+
+        Arrays.sort(expectedCveIds);
+        Arrays.sort(actualCveIds);
+
+        assertArrayEquals(expectedCveIds, actualCveIds);
+    }
+
+    private String[] getExpectedCveIds() {
+        File file = new File(SUPPLEMENTAL_PATCH_CONFIG_FILE);
+        // skip the test if supplemental_security_patches.xml is not present.
+        assumeTrue(file.exists());
+
+        try (InputStream in = new FileInputStream(file)) {
+            try {
+                SecurityPatches securityPatches = XmlParser.read(in);
+
+                return securityPatches.getPatch().stream().map(SecurityPatches.Patch::getId)
+                        .collect(Collectors.toList()).toArray(new String[0]);
+            } catch (Exception e) {
+                Log.w(TAG, "Error parsing security patches configuration.", e);
+            }
+        } catch (IOException e) {
+            Log.w(TAG, "Error opening security patches configuration file.", e);
+        }
+
+        return new String[0];
     }
 
     private void packageVersionNameCheck(Bundle bundle, String packageName) {

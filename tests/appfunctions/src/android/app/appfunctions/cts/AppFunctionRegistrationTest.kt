@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,34 +16,87 @@
 package android.app.appfunctions.cts
 
 import android.app.appfunctions.AppFunction
+import android.app.appfunctions.AppFunctionException
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.AppFunctionRegistration
+import android.app.appfunctions.ExecuteAppFunctionRequest
+import android.app.appfunctions.ExecuteAppFunctionResponse
+import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunctionAndWait
+import android.app.appfunctions.cts.AppFunctionUtils.getAllRuntimeMetadataPackages
+import android.app.appfunctions.cts.AppFunctionUtils.grantAppFunctionAccess
+import android.app.appfunctions.cts.AppFunctionUtils.revokeAppFunctionAccess
+import android.app.appfunctions.testutils.ConcatStrings
+import android.app.appfunctions.testutils.ConcatStrings.Companion.CONCAT_STRINGS_FUNCTION_ID
+import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
+import android.app.appfunctions.testutils.FunctionType
 import android.app.appfunctions.testutils.ITestAppFunctionRegistrationService
-import android.app.appfunctions.testutils.TestAppFunctionConcatStrings
-import android.app.appfunctions.testutils.TestAppFunctionConcatStrings.Companion.CONCAT_STRINGS_FUNCTION_ID
+import android.app.appfunctions.testutils.LongRunning
+import android.app.appfunctions.testutils.LongRunning.Companion.LONG_RUNNING_FUNCTION_ID
+import android.app.appfunctions.testutils.OutputInvalidArgumentException
+import android.app.appfunctions.testutils.OutputInvalidArgumentException.Companion.OUTPUT_INVALID_ARGUMENT_EXCEPTION_FUNCTION_ID
 import android.app.appfunctions.testutils.TestAppFunctionRegistrationService
+import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver
+import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver.waitForCancelListenerSet
+import android.app.appfunctions.testutils.ThrowInvalidArgumentException
+import android.app.appfunctions.testutils.ThrowInvalidArgumentException.Companion.THROW_INVALID_ARGUMENT_FUNCTION_ID
+import android.app.appfunctions.testutils.ThrowUnknownException
+import android.app.appfunctions.testutils.ThrowUnknownException.Companion.THROW_UNKNOWN_EXCEPTION_FUNCTION_ID
+import android.app.appsearch.GenericDocument
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.os.CancellationSignal
 import android.os.IBinder
+import android.os.OutcomeReceiver
+import android.permission.flags.Flags.FLAG_APP_FUNCTION_ACCESS_API_ENABLED
+import android.permission.flags.Flags.FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.rule.ServiceTestRule
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnPrimaryUser
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSecondaryUser
 import com.android.bedstead.harrier.BedsteadJUnit4
+import com.android.bedstead.harrier.DeviceState
+import com.android.bedstead.nene.utils.ShellCommand
+import com.android.compatibility.common.util.DeviceConfigStateChangerRule
+import com.google.common.truth.Truth.assertThat
+import com.google.common.truth.Truth.assertWithMessage
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
 import kotlin.test.assertFailsWith
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assume.assumeNotNull
 import org.junit.Before
+import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
-@RequiresFlagsEnabled(android.app.appfunctions.flags.Flags.FLAG_ENABLE_CONTEXTUAL_APP_FUNCTIONS)
+@RequiresFlagsEnabled(
+    android.app.appfunctions.flags.Flags.FLAG_ENABLE_CONTEXTUAL_APP_FUNCTIONS,
+    FLAG_APP_FUNCTION_ACCESS_API_ENABLED,
+    FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED
+)
 class AppFunctionRegistrationTest {
     @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
     @get:Rule(order = 2) val serviceTestRule = ServiceTestRule()
+
+    @get:Rule
+    val setAgentAllowlistRule: DeviceConfigStateChangerRule =
+        DeviceConfigStateChangerRule(
+            context,
+            "machine_learning",
+            "allowlisted_app_functions_agents",
+            context.packageName,
+        )
 
     private val context: Context
         get() = ApplicationProvider.getApplicationContext()
@@ -52,11 +105,21 @@ class AppFunctionRegistrationTest {
 
     private val registrations = mutableListOf<AppFunctionRegistration>()
 
+    private val executionExecutor: Executor = Executors.newSingleThreadExecutor()
+
+    private val testRegistrationExecutor: Executor = Executors.newSingleThreadExecutor()
+
     @Before
-    fun setup() {
+    fun setup() = doBlocking {
         val manager = context.getSystemService(AppFunctionManager::class.java)
         assumeNotNull(manager)
         this@AppFunctionRegistrationTest.manager = manager
+        grantAppFunctionAccess(CURRENT_PKG, TEST_HELPER_PKG)
+
+        retryAssert {
+            assertThat(getAllRuntimeMetadataPackages())
+                .containsAtLeast(CURRENT_PKG, TEST_HELPER_PKG)
+        }
     }
 
     @After
@@ -65,26 +128,21 @@ class AppFunctionRegistrationTest {
             registration.unregister()
         }
         registrations.clear()
-    }
 
-    private fun registerConcatStringsAppFunction(
-        function: AppFunction = TestAppFunctionConcatStrings()
-    ) : AppFunctionRegistration {
-        val registration = manager.registerAppFunction(
-            CONCAT_STRINGS_FUNCTION_ID,
-            context.mainExecutor,
-            function
-        )
-        registrations.add(registration)
-        return registration
+        TestAppFunctionServiceLifecycleReceiver.reset()
+        revokeAppFunctionAccess(CURRENT_PKG, TEST_HELPER_PKG)
     }
 
     @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
     fun register_once_success() {
         registerConcatStringsAppFunction()
     }
 
     @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
     @Throws(Exception::class)
     fun register_theSameIdTwice_fail() {
         registerConcatStringsAppFunction()
@@ -94,13 +152,13 @@ class AppFunctionRegistrationTest {
     }
 
     @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
     @Throws(Exception::class)
     fun register_theSameIdTwiceDifferentProcesses_fail() {
-        val serviceIntent = Intent(context, TestAppFunctionRegistrationService::class.java)
-        val binder: IBinder = serviceTestRule.bindService(serviceIntent)
-        val service = ITestAppFunctionRegistrationService.Stub.asInterface(binder)
+        val service = bindToRegistrationService(true)
 
-        service.registerAppFunction()
+        service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())
 
         assertFailsWith<IllegalStateException>() {
             registerConcatStringsAppFunction()
@@ -108,6 +166,8 @@ class AppFunctionRegistrationTest {
     }
 
     @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
     @Throws(Exception::class)
     fun unregister_callTwice_shouldNotAffectActiveRegistrationWithSameId() {
         val staleRegistration = registerConcatStringsAppFunction()
@@ -116,7 +176,7 @@ class AppFunctionRegistrationTest {
 
         staleRegistration.unregister() // This call should be no-op
 
-        // TODO(b/438413084): switch to if appfunction enabled check
+        // TODO(b/438413084): switch to appfunction enabled check
         assertFailsWith<IllegalStateException>(
             "The second registration is expected to still be valid."
         ) {
@@ -125,16 +185,20 @@ class AppFunctionRegistrationTest {
     }
 
     @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
     @Throws(Exception::class)
     fun unregister_callTwice_shouldNotAffectActiveRegistrationWithSameIdAndFunction() {
-        val function = TestAppFunctionConcatStrings()
-        val staleRegistration = registerConcatStringsAppFunction(function)
+        val function = ConcatStrings()
+        val staleRegistration =
+            registerAppFunction(function = function, functionId = CONCAT_STRINGS_FUNCTION_ID)
         staleRegistration.unregister()
-        val activeRegistration = registerConcatStringsAppFunction(function)
+        val activeRegistration =
+            registerAppFunction(function = function, functionId = CONCAT_STRINGS_FUNCTION_ID)
 
         staleRegistration.unregister() // This call should be no-op
 
-        // TODO(b/438413084): switch to if appfunction enabled check
+        // TODO(b/438413084): switch to appfunction enabled check
         assertFailsWith<IllegalStateException>(
             "The second registration is expected to still be valid."
         ) {
@@ -143,22 +207,339 @@ class AppFunctionRegistrationTest {
     }
 
     @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
     @Throws(Exception::class)
     fun unregister_callTwice_shouldNotAffectActiveRegistrationInTheOtherProcess() {
         val staleRegistration = registerConcatStringsAppFunction()
         staleRegistration.unregister()
-        val serviceIntent = Intent(context, TestAppFunctionRegistrationService::class.java)
-        val binder: IBinder = serviceTestRule.bindService(serviceIntent)
-        val service = ITestAppFunctionRegistrationService.Stub.asInterface(binder)
-        service.registerAppFunction()
+        val service = bindToRegistrationService(true)
+        service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())
 
         staleRegistration.unregister() // This call should be no-op
 
-        // TODO(b/438413084): switch to if appfunction enabled check
+        // TODO(b/438413084): switch to appfunction enabled check
         assertFailsWith<IllegalStateException>(
             "The service registration is expected to still be valid."
         ) {
             registerConcatStringsAppFunction()
         }
+    }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    @Throws(Exception::class)
+    fun execute_unregisteredFunction_returnsError() = doBlocking {
+        val request = createConcatStringsRequest(CURRENT_PKG)
+
+        val response = executeAppFunctionAndWait(manager, request)
+
+        assertThat(response.isSuccess).isFalse()
+        assertThat(response.appFunctionException().errorCode).isEqualTo(
+            AppFunctionException.ERROR_DISABLED
+        )
+    }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    @Throws(Exception::class)
+    fun execute_functionFromTheSamePackageDifferentProcess_success() = doBlocking {
+        val service = bindToRegistrationService(true)
+        service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())
+        val request = createConcatStringsRequest(targetPackage = CURRENT_PKG)
+
+        val response = executeAppFunctionAndWait(manager, request)
+
+        assertConcatStringsResponseCorrect(response)
+    }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    @Throws(Exception::class)
+    fun execute_functionFromDifferentPackage_success() = doBlocking {
+        val service = bindToRegistrationService(false)
+        service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())
+        val request = createConcatStringsRequest(targetPackage = TEST_HELPER_PKG)
+
+        val response = executeAppFunctionAndWait(manager, request)
+
+        assertConcatStringsResponseCorrect(response)
+    }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    @Throws(Exception::class)
+    fun execute_outputsInvalidArgumentException_propagatesToCaller() = doBlocking {
+        val service = bindToRegistrationService(false)
+        service.registerAppFunction(FunctionType.OUTPUT_INVALID_ARGUMENT_EXCEPTION.toString())
+        val request = ExecuteAppFunctionRequest.Builder(
+            TEST_HELPER_PKG,
+            OUTPUT_INVALID_ARGUMENT_EXCEPTION_FUNCTION_ID
+        )
+            .build()
+
+        val response = executeAppFunctionAndWait(manager, request)
+
+        assertThat(response.isSuccess).isFalse()
+        assertThat(response.appFunctionException().errorCode).isEqualTo(
+            AppFunctionException.ERROR_INVALID_ARGUMENT
+        )
+        assertThat(response.appFunctionException().message).startsWith(
+            OutputInvalidArgumentException.INVALID_ARGUMENT_MESSAGE
+        )
+    }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    @Throws(Exception::class)
+    fun execute_throwsUnknownException_reportsAppError() = doBlocking {
+        val service = bindToRegistrationService(false)
+        service.registerAppFunction(FunctionType.THROW_UNKNOWN_EXCEPTION.toString())
+        val request = ExecuteAppFunctionRequest.Builder(
+            TEST_HELPER_PKG,
+            THROW_UNKNOWN_EXCEPTION_FUNCTION_ID
+        )
+            .build()
+
+        val response = executeAppFunctionAndWait(manager, request)
+
+        assertThat(response.isSuccess).isFalse()
+        assertThat(response.appFunctionException().errorCode).isEqualTo(
+            AppFunctionException.ERROR_APP_UNKNOWN_ERROR
+        )
+        assertThat(response.appFunctionException().message).startsWith(
+            ThrowUnknownException.UNKNOWN_EXCEPTION_MESSAGE
+        )
+    }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    @Throws(Exception::class)
+    fun execute_throwsInvalidArgument_convertsToAppFunctionException() = doBlocking {
+        val service = bindToRegistrationService(false)
+        service.registerAppFunction(FunctionType.THROW_INVALID_ARGUMENT_EXCEPTION.toString())
+        val request = ExecuteAppFunctionRequest.Builder(
+            TEST_HELPER_PKG,
+            THROW_INVALID_ARGUMENT_FUNCTION_ID
+        )
+            .build()
+
+        val response = executeAppFunctionAndWait(manager, request)
+
+        assertThat(response.isSuccess).isFalse()
+        assertThat(response.appFunctionException().errorCode).isEqualTo(
+            AppFunctionException.ERROR_INVALID_ARGUMENT
+        )
+        assertThat(response.appFunctionException().message).startsWith(
+            ThrowInvalidArgumentException.INVALID_ARGUMENT_MESSAGE
+        )
+    }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    @Throws(Exception::class)
+    fun execute_sendCancellationSignal_cancelled() {
+        val service = bindToRegistrationService(true)
+        service.registerAppFunction(FunctionType.LONG_RUNNING.toString())
+        val request =
+            ExecuteAppFunctionRequest.Builder(CURRENT_PKG, LONG_RUNNING_FUNCTION_ID)
+                .build()
+        val cancellationSignal = CancellationSignal()
+        val blockingQueue = LinkedBlockingQueue<ExecuteAppFunctionResponse>()
+        val exceptionQueue = LinkedBlockingQueue<AppFunctionException>()
+        val latch = CountDownLatch(1)
+
+        manager.executeAppFunction(
+            request,
+            executionExecutor,
+            cancellationSignal,
+            createOutcomeReceiver(blockingQueue, exceptionQueue, latch)
+        )
+
+        // Wait until cancellation listener is set to be able to call cancel
+        assertThat(waitForCancelListenerSet(SHORT_TIMEOUT_SECOND, TimeUnit.SECONDS)).isTrue()
+        cancellationSignal.cancel()
+
+        val callbackReceived = latch.await(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)
+        assertThat(callbackReceived).isTrue()
+        assertThat(blockingQueue).isEmpty()
+        assertThat(exceptionQueue).hasSize(1)
+        assertThat(exceptionQueue.first().errorCode).isEqualTo(
+            AppFunctionException.ERROR_CANCELLED
+        )
+    }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    @Throws(Exception::class)
+    fun unregisterAndReregister_duringExecution_doesNotBlockOrInterrupt() {
+        val executionStartedLatch = CountDownLatch(1)
+        val executionFinishLatch = CountDownLatch(1)
+        val emptyDocument = GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "").build()
+
+        val registration = registerAppFunction(
+            LONG_RUNNING_FUNCTION_ID,
+        ) { request, cancelSignal, outcomeReceiver ->
+            executionStartedLatch.countDown()
+            executionFinishLatch.await(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)
+            outcomeReceiver.onResult(ExecuteAppFunctionResponse(emptyDocument))
+        }
+        val request =
+            ExecuteAppFunctionRequest.Builder(CURRENT_PKG, LONG_RUNNING_FUNCTION_ID)
+                .build()
+        val blockingQueue = LinkedBlockingQueue<ExecuteAppFunctionResponse>()
+        val exceptionQueue = LinkedBlockingQueue<AppFunctionException>()
+        val onResultLatch = CountDownLatch(1)
+
+        manager.executeAppFunction(
+            request,
+            executionExecutor,
+            CancellationSignal(),
+            createOutcomeReceiver(blockingQueue, exceptionQueue, onResultLatch)
+        )
+
+        // Wait for the function to start executing.
+        assertWithMessage("Timed out waiting for execution to start").that(
+            executionStartedLatch.await(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)
+        ).isTrue()
+
+        // While the function is "running" (awaiting), unregister it and register a new one.
+        registration.unregister()
+        registerAppFunction(LONG_RUNNING_FUNCTION_ID, LongRunning(context))
+
+        // Allow the original function to complete.
+        executionFinishLatch.countDown()
+
+        // Assert that the original function completed successfully.
+        assertWithMessage("Timed out waiting for onResult callback").that(
+            onResultLatch.await(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)
+        ).isTrue()
+        assertThat(blockingQueue).hasSize(1)
+        assertThat(exceptionQueue).isEmpty()
+    }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    @Throws(Exception::class)
+    fun register_registrationProcessDied_functionIsDisabled() = doBlocking {
+        val service = bindToRegistrationService(false)
+        service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())
+        val request = createConcatStringsRequest(targetPackage = TEST_HELPER_PKG)
+        serviceTestRule.unbindService()
+        ShellCommand.builder("am force-stop $TEST_HELPER_PKG").execute()
+
+        val response = executeAppFunctionAndWait(manager, request)
+
+        assertThat(response.isSuccess).isFalse()
+        assertThat(response.appFunctionException().errorCode).isEqualTo(
+            AppFunctionException.ERROR_DISABLED
+        )
+    }
+
+    private fun registerAppFunction(
+        functionId: String,
+        function: AppFunction
+    ): AppFunctionRegistration {
+        val registration = manager.registerAppFunction(
+            functionId,
+            testRegistrationExecutor,
+            function
+        )
+        registrations.add(registration)
+        return registration
+    }
+
+    private fun registerConcatStringsAppFunction(): AppFunctionRegistration {
+        return registerAppFunction(
+            CONCAT_STRINGS_FUNCTION_ID,
+            ConcatStrings()
+        )
+    }
+
+    /** Creates an OutcomeReceiver for testing purposes. */
+    private fun createOutcomeReceiver(
+        resultQueue: LinkedBlockingQueue<ExecuteAppFunctionResponse>,
+        exceptionQueue: LinkedBlockingQueue<AppFunctionException>,
+        onResultLatch: CountDownLatch
+    ): OutcomeReceiver<ExecuteAppFunctionResponse, AppFunctionException> {
+        return object : OutcomeReceiver<ExecuteAppFunctionResponse, AppFunctionException> {
+            override fun onResult(result: ExecuteAppFunctionResponse) {
+                resultQueue.add(result)
+                onResultLatch.countDown()
+            }
+
+            override fun onError(error: AppFunctionException) {
+                exceptionQueue.add(error)
+                onResultLatch.countDown()
+            }
+        }
+    }
+
+    private fun <T> Result<T>.appFunctionException(): AppFunctionException =
+        exceptionOrNull() as AppFunctionException
+
+    /** Runs a suspend block in a blocking manner */
+    private fun doBlocking(block: suspend CoroutineScope.() -> Unit) = runBlocking(block = block)
+
+    private fun bindToRegistrationService(inTheCurrentApp: Boolean = false):
+            ITestAppFunctionRegistrationService {
+        val serviceIntent = if (inTheCurrentApp) {
+            Intent(context, TestAppFunctionRegistrationService::class.java)
+        } else {
+            Intent().apply {
+                component = ComponentName(
+                    TEST_HELPER_PKG,
+                    "android.app.appfunctions.testutils.TestAppFunctionRegistrationService"
+                )
+            }
+        }
+        val binder: IBinder = serviceTestRule.bindService(serviceIntent)
+        return ITestAppFunctionRegistrationService.Stub.asInterface(binder)
+    }
+
+    private fun createConcatStringsRequest(
+        targetPackage: String = CURRENT_PKG
+    ): ExecuteAppFunctionRequest {
+        val parameters: GenericDocument =
+            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                .setPropertyString("prefix", "A")
+                    .setPropertyString("suffix", "B")
+                    .build()
+        return ExecuteAppFunctionRequest.Builder(
+            targetPackage,
+            CONCAT_STRINGS_FUNCTION_ID
+        )
+            .setParameters(parameters)
+            .build()
+    }
+
+    private fun assertConcatStringsResponseCorrect(
+        response: Result<ExecuteAppFunctionResponse>,
+        expectedOutput: String = "AB"
+    ) {
+        assertThat(response.isSuccess).isTrue()
+        assertThat(
+            response
+                .getOrNull()!!
+                .resultDocument
+                .getPropertyString(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
+        ).isEqualTo(expectedOutput)
+    }
+
+    private companion object {
+        @JvmField @ClassRule @Rule val sDeviceState: DeviceState = DeviceState()
+        const val TEST_HELPER_PKG: String = "android.app.appfunctions.cts.helper"
+        const val CURRENT_PKG: String = "android.app.appfunctions.cts"
+        const val SHORT_TIMEOUT_SECOND: Long = 1
+        const val LONG_TIMEOUT_SECOND: Long = 10
     }
 }

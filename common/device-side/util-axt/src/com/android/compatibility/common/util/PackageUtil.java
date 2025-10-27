@@ -20,6 +20,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.os.Build;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
@@ -30,7 +31,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import android.os.Build;
 
 /**
  * Device-side utility class for PackageManager-related operations
@@ -242,13 +242,21 @@ public class PackageUtil {
     }
 
     /**
-     * Rotation support is indicated by explicitly having both landscape and portrait
-     * features or not listing either at all.
+     * Rotation support is indicated by explicitly having both landscape and portrait features or
+     * not listing either at all. Automotive devices explicitly do not support rotation.
      */
     public static boolean supportsRotation() {
         final boolean supportsLandscape = hasDeviceFeature(PackageManager.FEATURE_SCREEN_LANDSCAPE);
         final boolean supportsPortrait = hasDeviceFeature(PackageManager.FEATURE_SCREEN_PORTRAIT);
-        return (supportsLandscape && supportsPortrait)
-                || (!supportsLandscape && !supportsPortrait);
+        final boolean isAutomotive = isAutomotive();
+        boolean supportsRotation =
+                (supportsLandscape && supportsPortrait)
+                        || (!supportsLandscape && !supportsPortrait);
+        return supportsRotation && !isAutomotive;
+    }
+
+    /** Determines if the system has the automotive feature. */
+    public static boolean isAutomotive() {
+        return hasDeviceFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 }

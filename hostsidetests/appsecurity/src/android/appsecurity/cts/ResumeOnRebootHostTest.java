@@ -520,9 +520,6 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
         CLog.d("After reboot, current user is %d", currentUserBeforeReboot);
 
         waitForBootCompleted(device);
-
-        // TODO(b/420640007): remove call below once it's handled by tradefed
-        switchUser(currentUserBeforeReboot);
     }
 
     private void installTestPackages() throws Exception {

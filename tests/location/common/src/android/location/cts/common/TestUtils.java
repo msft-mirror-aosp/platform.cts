@@ -246,4 +246,16 @@ public class TestUtils {
             uiAnimation.grantRuntimePermission(packageToGivePermission, permission);
         }
     }
+
+    /**
+     * Checks if the device is a China build based on the presence of the "cn.google.services"
+     * feature.
+     *
+     * @param context The application context.
+     * @return true if the device has the "cn.google.services" feature, false otherwise.
+     */
+    public static boolean isCnBuild(Context context) {
+        PackageManager pm = context.getPackageManager();
+        return pm.hasSystemFeature("cn.google.services");
+    }
 }

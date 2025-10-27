@@ -82,6 +82,8 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
@@ -1190,26 +1192,30 @@ public class NotificationAssistantServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.service.personalcontext.Flags.FLAG_ENABLE_PERSONAL_CONTEXT_SERVICE)
+    @RequiresFlagsEnabled(
+            android.service.personalcontext.Flags.FLAG_ENABLE_PERSONAL_CONTEXT_SERVICE)
     public void testRequestSystemAdjustments_sendsToAssistant() throws Exception {
         setUpListeners();
 
         sendNotification(1, null, ICON_ID);
-        StatusBarNotification sbn = mHelper.findPostedNotification(
-                null, 1, NotificationHelper.SEARCH_TYPE.POSTED);
+        StatusBarNotification sbn =
+                mHelper.findPostedNotification(null, 1, NotificationHelper.SEARCH_TYPE.POSTED);
         assertNotNull(sbn);
 
         CountDownLatch latch = mAssistant.setSystemAdjustmentsLatch(1);
 
         Bundle signals = new Bundle();
-        signals.putInt(Adjustment.KEY_USER_SENTIMENT,
+        signals.putInt(
+                Adjustment.KEY_USER_SENTIMENT,
                 NotificationListenerService.Ranking.USER_SENTIMENT_NEGATIVE);
-        Adjustment adjustment = new Adjustment(sbn.getPackageName(), sbn.getKey(), signals, "",
-                sbn.getUser());
+        Adjustment adjustment =
+                new Adjustment(sbn.getPackageName(), sbn.getKey(), signals, "", sbn.getUser());
 
-        SystemUtil.runWithShellPermissionIdentity(() -> {
+        try (PermissionContext permission =
+                TestApis.permissions()
+                        .withPermission(android.Manifest.permission.STATUS_BAR_SERVICE)) {
             mNotificationManager.requestSystemAdjustments(List.of(adjustment));
-        });
+        }
 
         assertTrue("Latch timed out", latch.await(SLEEP_TIME, TimeUnit.MILLISECONDS));
 
@@ -1218,70 +1224,80 @@ public class NotificationAssistantServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.service.personalcontext.Flags.FLAG_ENABLE_PERSONAL_CONTEXT_SERVICE)
+    @RequiresFlagsEnabled(
+            android.service.personalcontext.Flags.FLAG_ENABLE_PERSONAL_CONTEXT_SERVICE)
     public void testRequestSystemAdjustments_multipleNotifications() throws Exception {
         setUpListeners();
 
         sendNotification(1, null, ICON_ID);
-        StatusBarNotification sbn1 = mHelper.findPostedNotification(
-                null, 1, NotificationHelper.SEARCH_TYPE.POSTED);
+        StatusBarNotification sbn1 =
+                mHelper.findPostedNotification(null, 1, NotificationHelper.SEARCH_TYPE.POSTED);
         assertNotNull(sbn1);
 
         sendNotification(2, null, ICON_ID);
-        StatusBarNotification sbn2 = mHelper.findPostedNotification(
-                null, 2, NotificationHelper.SEARCH_TYPE.POSTED);
+        StatusBarNotification sbn2 =
+                mHelper.findPostedNotification(null, 2, NotificationHelper.SEARCH_TYPE.POSTED);
         assertNotNull(sbn2);
 
         CountDownLatch latch = mAssistant.setSystemAdjustmentsLatch(2);
 
         Bundle signals1 = new Bundle();
-        signals1.putInt(Adjustment.KEY_USER_SENTIMENT,
+        signals1.putInt(
+                Adjustment.KEY_USER_SENTIMENT,
                 NotificationListenerService.Ranking.USER_SENTIMENT_NEGATIVE);
-        Adjustment adjustment1 = new Adjustment(sbn1.getPackageName(), sbn1.getKey(), signals1, "",
-                sbn1.getUser());
+        Adjustment adjustment1 =
+                new Adjustment(sbn1.getPackageName(), sbn1.getKey(), signals1, "", sbn1.getUser());
 
         Bundle signals2 = new Bundle();
         signals2.putInt(Adjustment.KEY_IMPORTANCE, NotificationManager.IMPORTANCE_LOW);
-        Adjustment adjustment2 = new Adjustment(sbn2.getPackageName(), sbn2.getKey(), signals2, "",
-                sbn2.getUser());
+        Adjustment adjustment2 =
+                new Adjustment(sbn2.getPackageName(), sbn2.getKey(), signals2, "", sbn2.getUser());
 
-        SystemUtil.runWithShellPermissionIdentity(() -> {
+        try (PermissionContext permission =
+                TestApis.permissions()
+                        .withPermission(android.Manifest.permission.STATUS_BAR_SERVICE)) {
             mNotificationManager.requestSystemAdjustments(List.of(adjustment1, adjustment2));
-        });
+        }
 
         assertTrue("Latch timed out", latch.await(SLEEP_TIME, TimeUnit.MILLISECONDS));
 
-
-        assertThat(mAssistant.mSystemAdjustments).hasSize(2);
-        assertThat(mAssistant.mSystemAdjustments.get(0).getKey()).isEqualTo(adjustment1.getKey());
-        assertThat(mAssistant.mSystemAdjustments.get(1).getKey()).isEqualTo(adjustment2.getKey());
+        // The adjustments may come in any order, so we'll just check that we received both.
+        List<String> adjustmentKeys =
+                mAssistant.mSystemAdjustments.stream()
+                        .map(Adjustment::getKey)
+                        .collect(Collectors.toList());
+        assertThat(adjustmentKeys).containsExactly(adjustment1.getKey(), adjustment2.getKey());
     }
 
     @Test
-    @RequiresFlagsEnabled(android.service.personalcontext.Flags.FLAG_ENABLE_PERSONAL_CONTEXT_SERVICE)
+    @RequiresFlagsEnabled(
+            android.service.personalcontext.Flags.FLAG_ENABLE_PERSONAL_CONTEXT_SERVICE)
     public void testRequestSystemAdjustments_noNotification() throws Exception {
         setUpListeners();
 
         sendNotification(1, null, ICON_ID);
-        StatusBarNotification sbn = mHelper.findPostedNotification(
-                null, 1, NotificationHelper.SEARCH_TYPE.POSTED);
+        StatusBarNotification sbn =
+                mHelper.findPostedNotification(null, 1, NotificationHelper.SEARCH_TYPE.POSTED);
         assertNotNull(sbn);
 
         CountDownLatch latch = mAssistant.setSystemAdjustmentsLatch(1);
 
         Bundle signals1 = new Bundle();
-        signals1.putInt(Adjustment.KEY_USER_SENTIMENT,
+        signals1.putInt(
+                Adjustment.KEY_USER_SENTIMENT,
                 NotificationListenerService.Ranking.USER_SENTIMENT_NEGATIVE);
-        Adjustment adjustment1 = new Adjustment(sbn.getPackageName(), sbn.getKey(), signals1, "",
-                sbn.getUser());
+        Adjustment adjustment1 =
+                new Adjustment(sbn.getPackageName(), sbn.getKey(), signals1, "", sbn.getUser());
 
         Bundle signals2 = new Bundle();
         signals2.putInt(Adjustment.KEY_IMPORTANCE, NotificationManager.IMPORTANCE_LOW);
         Adjustment adjustment2 = new Adjustment("a.b.c", "some key", signals2, "", sbn.getUser());
 
-        SystemUtil.runWithShellPermissionIdentity(() -> {
+        try (PermissionContext permission =
+                TestApis.permissions()
+                        .withPermission(android.Manifest.permission.STATUS_BAR_SERVICE)) {
             mNotificationManager.requestSystemAdjustments(List.of(adjustment1, adjustment2));
-        });
+        }
 
         assertTrue("Latch timed out", latch.await(SLEEP_TIME, TimeUnit.MILLISECONDS));
 
@@ -1290,22 +1306,25 @@ public class NotificationAssistantServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.service.personalcontext.Flags.FLAG_ENABLE_PERSONAL_CONTEXT_SERVICE)
+    @RequiresFlagsEnabled(
+            android.service.personalcontext.Flags.FLAG_ENABLE_PERSONAL_CONTEXT_SERVICE)
     public void testRequestSystemAdjustments_adjustmentNotAllowed() throws Exception {
         setUpListeners();
 
-        mUi.adoptShellPermissionIdentity("android.permission.STATUS_BAR_SERVICE");
-        CountDownLatch adjustmentLatch
-                = mAssistant.setAllowedAdjustmentCountdown(1);
-        mNotificationManager.disallowAssistantAdjustment(KEY_IMPORTANCE);
-        adjustmentLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
-        assertThat(mAssistant.mCurrentCapabilities).doesNotContain(KEY_IMPORTANCE);
-        mUi.dropShellPermissionIdentity();
+        CountDownLatch adjustmentLatch = mAssistant.setAllowedAdjustmentCountdown(1);
+
+        try (PermissionContext permission =
+                TestApis.permissions()
+                        .withPermission(android.Manifest.permission.STATUS_BAR_SERVICE)) {
+            mNotificationManager.disallowAssistantAdjustment(KEY_IMPORTANCE);
+            adjustmentLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
+            assertThat(mAssistant.mCurrentCapabilities).doesNotContain(KEY_IMPORTANCE);
+        }
 
         try {
             sendNotification(1, null, ICON_ID);
-            StatusBarNotification sbn = mHelper.findPostedNotification(
-                    null, 1, NotificationHelper.SEARCH_TYPE.POSTED);
+            StatusBarNotification sbn =
+                    mHelper.findPostedNotification(null, 1, NotificationHelper.SEARCH_TYPE.POSTED);
             NotificationListenerService.Ranking out = new NotificationListenerService.Ranking();
             mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
 
@@ -1314,12 +1333,14 @@ public class NotificationAssistantServiceTest {
 
             Bundle signals = new Bundle();
             signals.putInt(KEY_IMPORTANCE, originalImportance + 1);
-            Adjustment adjustment = new Adjustment(sbn.getPackageName(), sbn.getKey(), signals, "",
-                    sbn.getUser());
+            Adjustment adjustment =
+                    new Adjustment(sbn.getPackageName(), sbn.getKey(), signals, "", sbn.getUser());
 
-            SystemUtil.runWithShellPermissionIdentity(() -> {
+            try (PermissionContext permission =
+                    TestApis.permissions()
+                            .withPermission(android.Manifest.permission.STATUS_BAR_SERVICE)) {
                 mNotificationManager.requestSystemAdjustments(List.of(adjustment));
-            });
+            }
 
             assertTrue(systemAdjustmentLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS));
             assertThat(mAssistant.mSystemAdjustments).hasSize(1);
@@ -1333,9 +1354,11 @@ public class NotificationAssistantServiceTest {
             mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
             assertThat(out.getImportance()).isEqualTo(originalImportance);
         } finally {
-            mUi.adoptShellPermissionIdentity("android.permission.STATUS_BAR_SERVICE");
-            mNotificationManager.allowAssistantAdjustment(KEY_IMPORTANCE);
-            mUi.dropShellPermissionIdentity();
+            try (PermissionContext permission =
+                    TestApis.permissions()
+                            .withPermission(android.Manifest.permission.STATUS_BAR_SERVICE)) {
+                mNotificationManager.allowAssistantAdjustment(KEY_IMPORTANCE);
+            }
         }
     }
 }

@@ -34,6 +34,7 @@ import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_DECRYPT;
 import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_ENCRYPT;
 import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_SIGN;
 import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_VERIFY;
+import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_WRAP;
 import static android.security.keystore.KeyProperties.DIGEST_SHA256;
 import static android.security.keystore.KeyProperties.ENCRYPTION_PADDING_NONE;
 import static android.security.keystore.KeyProperties.ENCRYPTION_PADDING_RSA_OAEP;
@@ -45,6 +46,7 @@ import static android.security.keystore.KeyProperties.PURPOSE_DECRYPT;
 import static android.security.keystore.KeyProperties.PURPOSE_ENCRYPT;
 import static android.security.keystore.KeyProperties.PURPOSE_SIGN;
 import static android.security.keystore.KeyProperties.PURPOSE_VERIFY;
+import static android.security.keystore.KeyProperties.PURPOSE_WRAP_KEY;
 import static android.security.keystore.KeyProperties.SIGNATURE_PADDING_RSA_PKCS1;
 import static android.security.keystore.KeyProperties.SIGNATURE_PADDING_RSA_PSS;
 
@@ -719,21 +721,20 @@ public class KeyAttestationTest {
         }
 
         final @KeyProperties.PurposeEnum int[] purposes = {
-                PURPOSE_SIGN | PURPOSE_VERIFY,
-                PURPOSE_ENCRYPT | PURPOSE_DECRYPT,
+            PURPOSE_SIGN | PURPOSE_VERIFY, PURPOSE_ENCRYPT | PURPOSE_DECRYPT, PURPOSE_WRAP_KEY
         };
         final String[][] signaturePaddingModes = {
-                {
-                        SIGNATURE_PADDING_RSA_PKCS1,
-                },
-                {
-                        SIGNATURE_PADDING_RSA_PSS,
-                },
-                {
-                        SIGNATURE_PADDING_RSA_PKCS1,
-                        SIGNATURE_PADDING_RSA_PSS,
-                },
+            {
+                SIGNATURE_PADDING_RSA_PKCS1,
+            },
+            {
+                SIGNATURE_PADDING_RSA_PSS,
+            },
+            {
+                SIGNATURE_PADDING_RSA_PKCS1, SIGNATURE_PADDING_RSA_PSS,
+            },
         };
+        final String[][] wrappingPaddingModes = {{ENCRYPTION_PADDING_RSA_OAEP}};
         final boolean[] devicePropertiesAttestationValues = {true, false};
         final int[] keySizes;
         final byte[][] challenges;
@@ -791,6 +792,14 @@ public class KeyAttestationTest {
                         if (isEncryptionPurpose(purpose)) {
                             testRsaAttestations(keySize, challenge, purpose, encryptionPaddingModes,
                                     devicePropertiesAttestation, isStrongBox);
+                        } else if (isWrappingKeyPurpose(purpose)) {
+                            testRsaAttestations(
+                                    keySize,
+                                    challenge,
+                                    purpose,
+                                    wrappingPaddingModes,
+                                    devicePropertiesAttestation,
+                                    isStrongBox);
                         } else {
                             testRsaAttestations(keySize, challenge, purpose, signaturePaddingModes,
                                     devicePropertiesAttestation, isStrongBox);
@@ -1109,45 +1118,27 @@ public class KeyAttestationTest {
 
         for (boolean devicePropertiesAttestation : devicePropertiesAttestationValues) {
             for (byte[] challenge : challenges) {
-                testCurve25519Attestations(
-                        /* curve25519Algorithm= */ "ed25519",
-                        challenge,
-                        PURPOSE_SIGN | PURPOSE_VERIFY,
+                testCurve25519Attestations("ed25519", challenge, PURPOSE_SIGN | PURPOSE_VERIFY,
                         devicePropertiesAttestation);
-                testCurve25519Attestations(
-                        /* curve25519Algorithm= */ "x25519",
-                        challenge,
-                        PURPOSE_AGREE_KEY,
+                testCurve25519Attestations("x25519", challenge, PURPOSE_AGREE_KEY,
                         devicePropertiesAttestation);
             }
         }
     }
 
     @SuppressWarnings("deprecation")
-    private void testCurve25519Attestations(
-            String curve25519Algorithm,
-            byte[] challenge,
-            @KeyProperties.PurposeEnum int purpose,
-            boolean devicePropertiesAttestation)
+    private void testCurve25519Attestations(String curve, byte[] challenge,
+            @KeyProperties.PurposeEnum int purpose, boolean devicePropertiesAttestation)
             throws Exception {
-        Log.i(
-                TAG,
-                curve25519Algorithm
-                        + " key attestation with: / challenge "
-                        + Arrays.toString(challenge)
-                        + " / purposes "
-                        + purpose
-                        + " / devicePropertiesAttestation "
-                        + devicePropertiesAttestation);
+        Log.i(TAG, curve + " curve key attestation with: "
+                + " / challenge " + Arrays.toString(challenge)
+                + " / purposes " + purpose
+                + " / devicePropertiesAttestation " + devicePropertiesAttestation);
         String keystoreAlias = "test_key";
         Date startTime = new Date();
-        // Although "x25519" and "ed25519" (case in-sensitive) are not defined as standard names for
-        // EC parameter generation in the Java Secutity Standard Algorithm Names, the
-        // AndroidKeyStoreProvider's KeyPairGenerator SPI handles both of these algorithms names,
-        // which is why instantiating an ECGenParameterSpec like this works.
         KeyGenParameterSpec.Builder builder =
                 new KeyGenParameterSpec.Builder(keystoreAlias, purpose)
-                        .setAlgorithmParameterSpec(new ECGenParameterSpec(curve25519Algorithm))
+                        .setAlgorithmParameterSpec(new ECGenParameterSpec(curve))
                         .setDigests(KeyProperties.DIGEST_NONE)
                         .setAttestationChallenge(challenge)
                         .setDevicePropertiesAttestationIncluded(devicePropertiesAttestation);
@@ -1158,16 +1149,12 @@ public class KeyAttestationTest {
             if (devicePropertiesAttestation && isIgnorableIdAttestationFailure(e)) {
                 return;
             }
-            throw new Exception(
-                    "Failed for "
-                            + curve25519Algorithm
-                            + " challenge ["
-                            + new String(challenge)
-                            + "], purposes "
-                            + buildPurposeSet(purpose)
-                            + " and devicePropertiesAttestation "
-                            + devicePropertiesAttestation,
+            throw new Exception("Failed on curve " + curve + " challenge ["
+                    + new String(challenge) + "], purposes "
+                    + buildPurposeSet(purpose) + " and devicePropertiesAttestation "
+                    + devicePropertiesAttestation,
                     e);
+
         }
 
         KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
@@ -1180,15 +1167,7 @@ public class KeyAttestationTest {
             X509Certificate attestationCert = (X509Certificate) certificates[0];
             Attestation attestation = Attestation.loadFromCertificate(attestationCert);
 
-            // These are the algorithm names returned by Conscrypt.
-            String expectedPublicKeyAlgorithm =
-                    curve25519Algorithm.equals("x25519") ? "XDH" : "EdDSA";
-            checkEcKeyDetails(
-                    attestationCert,
-                    attestation,
-                    /* ecCurve= */ "CURVE_25519",
-                    /* keySize= */ 256,
-                    expectedPublicKeyAlgorithm);
+            checkEcKeyDetails(attestationCert, attestation, "CURVE_25519", 256);
             checkKeyUsage(attestationCert, purpose, /* isStrongBox= */ false);
             checkKeyIndependentAttestationInfo(challenge, purpose,
                     ImmutableSet.of(KM_DIGEST_NONE), startTime, false,
@@ -1224,7 +1203,7 @@ public class KeyAttestationTest {
                     .setKeyValidityForOriginationEnd(originationEnd)
                     .setKeyValidityForConsumptionEnd(consumptionEnd);
         }
-        if (isEncryptionPurpose(purposes)) {
+        if (isEncryptionPurpose(purposes) || isWrappingKeyPurpose(purposes)) {
             builder.setEncryptionPaddings(paddingModes);
             // Because we sometimes set "no padding", allow non-randomized encryption.
             builder.setRandomizedEncryptionRequired(false);
@@ -1258,10 +1237,10 @@ public class KeyAttestationTest {
 
     private void checkKeyUsage(
             X509Certificate attestationCert,
-            @KeyProperties.PurposeEnum int purposes,
+            @KeyProperties.PurposeEnum int purpose,
             boolean isStrongBox) {
         boolean[] actualKeyUsage = attestationCert.getKeyUsage();
-        if (purposes == PURPOSE_VERIFY && actualKeyUsage == null) {
+        if (purpose == PURPOSE_VERIFY && actualKeyUsage == null) {
             // A key with *just* verify purpose might have no `KeyUsage` extension,
             // because the private key can't be used by KeyMint.
             return;
@@ -1271,26 +1250,30 @@ public class KeyAttestationTest {
         // so allow more lax `KeyUsage` bits for earlier StrongBox implementations.
         boolean laxChecks = (isStrongBox && TestUtils.getVendorApiLevel() <= 34);
 
+        // Also allow lax `KeyUsage` bits for wrapping keys in older versions
+        laxChecks |= isWrappingKeyPurpose(purpose) && TestUtils.getVendorApiLevel() <= 36;
+
         boolean[] requiredKeyUsage = new boolean[KEY_USAGE_BITSTRING_LENGTH];
         boolean[] allowedKeyUsage = new boolean[KEY_USAGE_BITSTRING_LENGTH];
-        if (isVerifyPurpose(purposes)) {
+        if (isVerifyPurpose(purpose)) {
             // A PURPOSE_VERIFY key might have the digital signature bit set.
             allowedKeyUsage[KEY_USAGE_DIGITAL_SIGNATURE_BIT_OFFSET] = true;
         }
-        if (isSignaturePurpose(purposes)) {
+        if (isSignaturePurpose(purpose)) {
             // A PURPOSE_SIGN key must have the digital signature bit set.
             requiredKeyUsage[KEY_USAGE_DIGITAL_SIGNATURE_BIT_OFFSET] = true;
         }
-        if (isEncryptionPurpose(purposes)) {
+        if (isEncryptionPurpose(purpose)) {
             requiredKeyUsage[KEY_USAGE_DATA_ENCIPHERMENT_BIT_OFFSET] = true;
+        }
+        if (isEncryptionPurpose(purpose) || isWrappingKeyPurpose(purpose)) {
             if (laxChecks) {
-                // Allow the key encipherment bit to be missing on older StrongBox impls.
                 allowedKeyUsage[KEY_USAGE_KEY_ENCIPHERMENT_BIT_OFFSET] = true;
             } else {
                 requiredKeyUsage[KEY_USAGE_KEY_ENCIPHERMENT_BIT_OFFSET] = true;
             }
         }
-        if (isAgreeKeyPurpose(purposes)) {
+        if (isAgreeKeyPurpose(purpose)) {
             requiredKeyUsage[KEY_USAGE_KEY_AGREE_BIT_OFFSET] = true;
         }
 
@@ -1367,12 +1350,7 @@ public class KeyAttestationTest {
             X509Certificate attestationCert = (X509Certificate) certificates[0];
             Attestation attestation = Attestation.loadFromCertificate(attestationCert);
 
-            checkEcKeyDetails(
-                    attestationCert,
-                    attestation,
-                    ecCurve,
-                    keySize,
-                    /* expectedPublicKeyAlgorithm= */ KEY_ALGORITHM_EC);
+            checkEcKeyDetails(attestationCert, attestation, ecCurve, keySize);
             checkKeyUsage(attestationCert, purposes, isStrongBox);
             checkKeyIndependentAttestationInfo(challenge, purposes, startTime,
                     includeValidityDates, devicePropertiesAttestation, attestation);
@@ -2136,12 +2114,8 @@ public class KeyAttestationTest {
                 paddingModes, either(is(expectedPaddingModes)).or(is(km1PossiblePaddingModes)));
     }
 
-    private void checkEcKeyDetails(
-            X509Certificate attestationCert,
-            Attestation attestation,
-            String ecCurve,
-            int keySize,
-            String expectedPublicKeyAlgorithm) {
+    private void checkEcKeyDetails(X509Certificate attestationCert, Attestation attestation,
+            String ecCurve, int keySize) {
         AuthorizationList keyDetailsList;
         AuthorizationList nonKeyDetailsList;
         if (attestation.getKeymasterSecurityLevel() == KM_SECURITY_LEVEL_TRUSTED_ENVIRONMENT
@@ -2156,7 +2130,14 @@ public class KeyAttestationTest {
         assertEquals(keySize, sECKeySizes.get(ecCurve).intValue());
         assertNull(nonKeyDetailsList.getKeySize());
         assertEquals(KM_ALGORITHM_EC, keyDetailsList.getAlgorithm().intValue());
-        assertEquals(expectedPublicKeyAlgorithm, attestationCert.getPublicKey().getAlgorithm());
+        // Curve25519 Public key returns OID string for getAlgorithm
+        if (!ecCurve.equals("CURVE_25519")) {
+            assertEquals(KEY_ALGORITHM_EC, attestationCert.getPublicKey().getAlgorithm());
+        } else {
+            assertThat(attestationCert.getPublicKey().getAlgorithm(),
+                    /*Signing key algorithm "1.3.101.112" & Agreement Key algorithm "XDH"*/
+                    either(is("1.3.101.112")).or(is("XDH")).or(is("EdDSA")));
+        }
         assertNull(nonKeyDetailsList.getAlgorithm());
         assertEquals(ecCurve, keyDetailsList.ecCurveAsString());
         // We can't check the ECParameterSpec for X25519 and Ed25519 public keys since Conscrypt's
@@ -2203,6 +2184,10 @@ public class KeyAttestationTest {
         return (purposes & PURPOSE_AGREE_KEY) != 0;
     }
 
+    private boolean isWrappingKeyPurpose(@KeyProperties.PurposeEnum int purposes) {
+        return (purposes & PURPOSE_WRAP_KEY) != 0;
+    }
+
     private ImmutableSet<Integer> buildPurposeSet(@KeyProperties.PurposeEnum int purposes) {
         ImmutableSet.Builder<Integer> builder = ImmutableSet.builder();
         if ((purposes & PURPOSE_SIGN) != 0) {
@@ -2219,6 +2204,9 @@ public class KeyAttestationTest {
         }
         if ((purposes & PURPOSE_AGREE_KEY) != 0) {
             builder.add(KM_PURPOSE_AGREE_KEY);
+        }
+        if ((purposes & PURPOSE_WRAP_KEY) != 0) {
+            builder.add(KM_PURPOSE_WRAP);
         }
         return builder.build();
     }

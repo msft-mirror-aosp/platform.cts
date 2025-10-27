@@ -16,6 +16,7 @@
 
 package android.systemui.cts
 
+import android.app.Flags
 import android.app.Instrumentation
 import android.app.UiModeManager
 import android.content.BroadcastReceiver
@@ -28,6 +29,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.os.Environment
+import android.os.UserManager
 import android.provider.Settings
 import android.view.View
 import android.view.ViewGroup
@@ -56,7 +58,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.core.view.drawToBitmap
-import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import com.android.compatibility.common.util.FeatureUtil
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
@@ -77,7 +78,7 @@ import platform.test.screenshot.ScreenshotTestRule
 import platform.test.screenshot.matchers.PixelPerfectMatcher
 
 open class BasePaletteTest {
-    protected val mInstrumentation: Instrumentation = InstrumentationRegistry.getInstrumentation()
+    protected val mInstrumentation: Instrumentation = getInstrumentation()
     protected val mContext: Context = mInstrumentation.targetContext
     protected val outDir: File =
         File(Environment.getExternalStorageDirectory(), "android.graphics.cts")
@@ -155,8 +156,19 @@ open class BasePaletteTest {
         val context: Context = getInstrumentation().targetContext
         val uiModeManager = context.getSystemService(UiModeManager::class.java)
 
-        val isSupportedDevice =
-            !(FeatureUtil.isTV() || FeatureUtil.isWatch() || FeatureUtil.isAutomotive())
+        val isDynamicColorSupported =
+            !(FeatureUtil.isTV() || FeatureUtil.isWatch() || FeatureUtil.isAutomotive()) &&
+            // DynamicColor was broken on HSUM but got fixed.
+            // So we skip testing if Headless AND the fix is not applied.
+            !(UserManager.isHeadlessSystemUserMode() &&
+                    !Flags.fixContrastAndForceInvertStateForMultiUser())
+
+        fun isSupportedStyle(styleName: String): Boolean {
+            val style = ThemeStyle.valueOf(styleName)
+            return !(FeatureUtil.isWatch() &&
+                (style == ThemeStyle.MONOCHROMATIC || style == ThemeStyle.FRUIT_SALAD))
+        }
+
         val isOldSpec =
             context.resources.getIdentifier("system_primary_dim_light", "color", "android") == 0
 

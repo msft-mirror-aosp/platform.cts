@@ -21,6 +21,8 @@ import static android.app.AppOpsManager.MODE_DEFAULT;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.fail;
+
 import android.Manifest;
 import android.app.AppOpsManager;
 import android.app.UiAutomation;
@@ -30,11 +32,14 @@ import android.content.pm.PackageManager;
 import android.os.Process;
 import android.os.UserHandle;
 import android.os.UserManager;
-import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
 
 import com.google.common.collect.Sets;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -83,21 +88,21 @@ public class CrossProfileTest extends BaseManagedProfileTest {
     private PackageManager mPackageManager;
     private UserManager mUserManager;
 
-    @Override
-    protected void setUp() throws Exception {
+    @Before
+    public void setUp() throws Exception {
         super.setUp();
         mAppOpsManager = mContext.getSystemService(AppOpsManager.class);
         mPackageManager = mContext.getPackageManager();
         mUserManager = mContext.getSystemService(UserManager.class);
     }
 
-    @Override
+    @After
     protected void tearDown() throws Exception {
         explicitlyResetInteractAcrossProfilesAppOps();
         resetCrossProfilePackages();
-        super.tearDown();
     }
 
+    @Test
     public void testSetCrossProfilePackages_notProfileOwner_throwsSecurityException() {
         try {
             mDevicePolicyManager.setCrossProfilePackages(
@@ -106,6 +111,7 @@ public class CrossProfileTest extends BaseManagedProfileTest {
         } catch (SecurityException ignored) {}
     }
 
+    @Test
     public void testGetCrossProfilePackages_notProfileOwner_throwsSecurityException() {
         try {
             mDevicePolicyManager.getCrossProfilePackages(NON_ADMIN_RECEIVER);
@@ -113,11 +119,13 @@ public class CrossProfileTest extends BaseManagedProfileTest {
         } catch (SecurityException ignored) {}
     }
 
+    @Test
     public void testGetCrossProfilePackages_notSet_returnsEmpty() {
         assertThat(mDevicePolicyManager.getCrossProfilePackages(ADMIN_RECEIVER_COMPONENT))
                 .isEmpty();
     }
 
+    @Test
     public void testGetCrossProfilePackages_whenSet_returnsEqual() {
         mDevicePolicyManager.setCrossProfilePackages(
                 ADMIN_RECEIVER_COMPONENT, TEST_CROSS_PROFILE_PACKAGES);
@@ -125,6 +133,7 @@ public class CrossProfileTest extends BaseManagedProfileTest {
                 .isEqualTo(TEST_CROSS_PROFILE_PACKAGES);
     }
 
+    @Test
     public void testGetCrossProfilePackages_whenSetTwice_returnsLatestNotConcatenated() {
         final Set<String> packages1 = Collections.singleton("test.package.name.1");
         final Set<String> packages2 = Collections.singleton("test.package.name.2");
@@ -137,19 +146,19 @@ public class CrossProfileTest extends BaseManagedProfileTest {
     }
 
     /**
-     * Sets {@code com.android.cts.testapps.testapp1} as cross-profile. This can
-     * then be used for writing host-side tests. Note that the state is cleared after running any
-     * test in this class, so this method should not be used to attempt to perform a sequence of
-     * device-side calls.
-     * TODO (b/175017211): switch back to setting all packages in
-     * {@link #ALL_CROSS_PROFILE_PACKAGES} once the metric assertion logic in hostside can handle
-     * unordered metric entries.
+     * Sets {@code com.android.cts.testapps.testapp1} as cross-profile. This can then be used for
+     * writing host-side tests. Note that the state is cleared after running any test in this class,
+     * so this method should not be used to attempt to perform a sequence of device-side calls. TODO
+     * (b/175017211): switch back to setting all packages in {@link #ALL_CROSS_PROFILE_PACKAGES}
+     * once the metric assertion logic in hostside can handle unordered metric entries.
      */
+    @Test
     public void testSetCrossProfilePackages_noAsserts() throws Exception {
         mDevicePolicyManager.setCrossProfilePackages(
                 ADMIN_RECEIVER_COMPONENT, Sets.newHashSet("com.android.cts.testapps.testapp1"));
     }
 
+    @Test
     public void testSetCrossProfilePackages_firstTime_doesNotResetAnyAppOps() throws Exception {
         explicitlySetInteractAcrossProfilesAppOps(MODE_ALLOWED);
         mDevicePolicyManager.setCrossProfilePackages(
@@ -157,6 +166,7 @@ public class CrossProfileTest extends BaseManagedProfileTest {
         assertThatPackagesHaveAppOpMode(ALL_CROSS_PROFILE_PACKAGES, MODE_ALLOWED);
     }
 
+    @Test
     public void testSetCrossProfilePackages_unchanged_doesNotResetAnyAppOps() throws Exception {
         mDevicePolicyManager.setCrossProfilePackages(
                 ADMIN_RECEIVER_COMPONENT, ALL_CROSS_PROFILE_PACKAGES);
@@ -168,6 +178,7 @@ public class CrossProfileTest extends BaseManagedProfileTest {
         assertThatPackagesHaveAppOpMode(ALL_CROSS_PROFILE_PACKAGES, MODE_ALLOWED);
     }
 
+    @Test
     public void testSetCrossProfilePackages_noPackagesUnset_doesNotResetAnyAppOps()
             throws Exception {
         mDevicePolicyManager.setCrossProfilePackages(
@@ -180,6 +191,7 @@ public class CrossProfileTest extends BaseManagedProfileTest {
         assertThatPackagesHaveAppOpMode(ALL_CROSS_PROFILE_PACKAGES, MODE_ALLOWED);
     }
 
+    @Test
     public void testSetCrossProfilePackages_somePackagesUnset_doesNotResetAppOpsIfStillSet()
             throws Exception {
         mDevicePolicyManager.setCrossProfilePackages(
@@ -192,6 +204,7 @@ public class CrossProfileTest extends BaseManagedProfileTest {
         assertThatPackagesHaveAppOpMode(SUBLIST_CROSS_PROFILE_PACKAGES, MODE_ALLOWED);
     }
 
+    @Test
     public void testSetCrossProfilePackages_resetsAppOpOfUnsetPackages() throws Exception {
         mDevicePolicyManager.setCrossProfilePackages(
                 ADMIN_RECEIVER_COMPONENT, ALL_CROSS_PROFILE_PACKAGES);
@@ -203,6 +216,7 @@ public class CrossProfileTest extends BaseManagedProfileTest {
         assertThatPackagesHaveAppOpMode(DIFF_CROSS_PROFILE_PACKAGES, MODE_DEFAULT);
     }
 
+    @Test
     public void testSetCrossProfilePackages_resetsAppOpOfUnsetPackagesOnOtherProfile()
             throws Exception {
         mDevicePolicyManager.setCrossProfilePackages(
@@ -220,10 +234,11 @@ public class CrossProfileTest extends BaseManagedProfileTest {
      * Sets each of the packages in {@link #ALL_CROSS_PROFILE_PACKAGES} as cross-profile, then sets
      * them again to {@link #ALL_BUT_ONE_CROSS_PROFILE_PACKAGES}, with all app-ops explicitly set as
      * allowed before-hand. This should result in resetting package {@code
-     * com.android.cts.testapps.testapp4}. This can then be used for writing host-side tests.
-     * TODO (b/175017211): switch back to {@link #SUBLIST_CROSS_PROFILE_PACKAGES} once the metric
+     * com.android.cts.testapps.testapp4}. This can then be used for writing host-side tests. TODO
+     * (b/175017211): switch back to {@link #SUBLIST_CROSS_PROFILE_PACKAGES} once the metric
      * assertion logic in hostside can handle unordered metric entries.
      */
+    @Test
     public void testSetCrossProfilePackages_resetsAppOps_noAsserts() throws Exception {
         mDevicePolicyManager.setCrossProfilePackages(
                 ADMIN_RECEIVER_COMPONENT, ALL_CROSS_PROFILE_PACKAGES);

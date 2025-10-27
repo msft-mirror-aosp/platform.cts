@@ -28,16 +28,21 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.os.Messenger;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.DisabledOnRavenwood;
 
 import androidx.test.runner.AndroidJUnit4;
 
+import com.google.common.testing.GcFinalization;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.lang.ref.Reference;
+import java.lang.ref.WeakReference;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -203,18 +208,67 @@ public class MessageTest {
         assertTrue(mMessage.isAsynchronous());
     }
 
+    // Weak references to Message fields are returned via these helper functions so that the caller
+    // doesn't see the actual object, only the weak reference to it.
+    private static WeakReference<Object> objWeakRef(Message m) {
+        return new WeakReference<Object>(m.obj);
+    }
+
+    private static WeakReference<Messenger> replyToWeakRef(Message m) {
+        return new WeakReference<Messenger>(m.replyTo);
+    }
+
+    private static WeakReference<Handler> targetWeakRef(Message m) {
+        return new WeakReference<Handler>(m.getTarget());
+    }
+
+    private static WeakReference<Runnable> callbackWeakRef(Message m) {
+        return new WeakReference<Runnable>(m.getCallback());
+    }
+
+    private static WeakReference<Bundle> dataWeakRef(Message m) {
+        return new WeakReference<Bundle>(m.peekData());
+    }
+
+    // Returns a message without using the test's mHandler or OBJ, since we want to check if the
+    // target and obj references clear.
+    private static Message createMessage() {
+        return Message.obtain(new Handler(Looper.getMainLooper()), WHAT, ARG1, ARG2, new Object());
+    }
+
     @Test
     public void testRecycle() {
-        Message message = Message.obtain(mHandler, WHAT, ARG1, ARG2, OBJ);
-        message.recycle();
-        assertEquals(0, message.what);
-        assertEquals(0, message.arg1);
-        assertEquals(0, message.arg2);
-        assertNull(message.obj);
-        assertNull(message.replyTo);
-        assertNull(message.getTarget());
-        assertNull(message.getCallback());
-        assertNull(message.peekData());
+        Message oldMessage = createMessage();
+        try {
+            WeakReference<Object> obj = objWeakRef(oldMessage);
+            WeakReference<Messenger> replyTo = replyToWeakRef(oldMessage);
+            WeakReference<Runnable> callback = callbackWeakRef(oldMessage);
+            WeakReference<Bundle> data = dataWeakRef(oldMessage);
+            WeakReference<Handler> target = targetWeakRef(oldMessage);
+
+            oldMessage.recycle();
+
+            // Check that weak references to the recycled message's fields clear.
+            GcFinalization.awaitClear(obj);
+            GcFinalization.awaitClear(replyTo);
+            GcFinalization.awaitClear(callback);
+            GcFinalization.awaitClear(data);
+            GcFinalization.awaitClear(target);
+        } finally {
+            Reference.reachabilityFence(oldMessage);
+        }
+
+        // Check that a Message pulled from the pool doesn't have fields filled in already.
+        Message newMessage = Message.obtain();
+        assertEquals(0, newMessage.what);
+        assertEquals(0, newMessage.arg1);
+        assertEquals(0, newMessage.arg2);
+        assertNull(newMessage.obj);
+        assertNull(newMessage.replyTo);
+        assertNull(newMessage.replyTo);
+        assertNull(newMessage.getTarget());
+        assertNull(newMessage.getCallback());
+        assertNull(newMessage.peekData());
     }
 
     @Test

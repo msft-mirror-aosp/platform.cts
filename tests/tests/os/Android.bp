@@ -81,6 +81,7 @@ android_test {
         "src/android/os/cts/ISecondary.aidl",
         "src/android/os/cts/ISharedMemoryService.aidl",
         "src/android/os/cts/IParcelExceptionService.aidl",
+        "//frameworks/base:supplemental_security_patches_xsd",
     ],
     // Set its own test config to prevent sharing with cts-platform-version-check
     test_config: "CtsOsTestCases.xml",
@@ -96,6 +97,9 @@ android_test {
     aaptflags: ["-0 .policy"],
     min_sdk_version: "29",
     per_testcase_directory: true,
+    static_libs: [
+        "guava-android-testlib",
+    ],
 }
 
 android_ravenwood_test {
@@ -143,6 +147,9 @@ android_ravenwood_test {
     ravenizer: {
         strip_mockito: true,
     },
+    static_libs: [
+        "guava-android-testlib",
+    ],
 }
 
 test_module_config {

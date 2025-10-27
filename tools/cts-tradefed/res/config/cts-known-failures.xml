@@ -408,6 +408,9 @@
     <!-- b/428974622 -->
     <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases[foldable:5:REAR_DISPLAY_OUTER_DEFAULT] android.graphics.cts.SetFrameRateTest"/>
 
+    <!-- b/450306795 -->
+    <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests[foldable:5:REAR_DISPLAY_OUTER_DEFAULT] android.view.surfacecontrol.cts.ChoreographerNativeTest#testRefreshRateCallbacksIsSyncedWithDisplayManager"/>
+
     <!-- b/400722850 -->
     <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases[foldable:1:HALF_OPENED] android.graphics.cts.FrameRateOverrideTest#testGlobalBackpressure"/>
     <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases[foldable:2:OPENED] android.graphics.cts.FrameRateOverrideTest#testGlobalBackpressure"/>

@@ -146,6 +146,9 @@ android_test {
         ":CtsIntentResolutionTestApp",
     ],
     test_config: "CtsContentTest.xml",
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
 
 android_test {

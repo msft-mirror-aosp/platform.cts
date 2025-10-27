@@ -41,6 +41,7 @@ import android.os.OutcomeReceiver;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.server.wm.DumpOnFailure;
 import android.server.wm.WindowManagerTestBase;
 import android.view.Display;
 import android.view.View;
@@ -71,6 +72,8 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
+    @Rule public final DumpOnFailure mDumpOnFailure = new DumpOnFailure();
+
     @RequiresFlagsEnabled(FLAG_READBACK_SCREENSHOT)
     @ApiTest(
             apis = {
@@ -94,11 +97,7 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                     bitmap[0] = makeSoftwareBitmap(result);
                 });
 
-        int expectedMatchingPixels = contentBounds.width() * contentBounds.height();
-        int actualMatchingPixels =
-                new BitmapPixelChecker(Color.RED, contentBounds)
-                        .getNumMatchingPixels(bitmap[0], contentBounds);
-        assertEquals(expectedMatchingPixels, actualMatchingPixels);
+        verifyBitmap(Color.RED, bitmap[0], contentBounds);
     }
 
     @RequiresFlagsEnabled(FLAG_READBACK_SCREENSHOT)
@@ -149,11 +148,7 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                     bitmap[0] = makeSoftwareBitmap(result);
                 });
 
-        int expectedMatchingPixels = contentBounds.width() * contentBounds.height();
-        int actualMatchingPixels =
-                new BitmapPixelChecker(Color.RED, contentBounds)
-                        .getNumMatchingPixels(bitmap[0], contentBounds);
-        assertEquals(expectedMatchingPixels, actualMatchingPixels);
+        verifyBitmap(Color.RED, bitmap[0], contentBounds);
     }
 
     @RequiresFlagsEnabled(FLAG_READBACK_SCREENSHOT)
@@ -241,11 +236,7 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                     bitmap[0] = makeSoftwareBitmap(result);
                 });
 
-        int expectedMatchingPixels = contentBounds.width() * contentBounds.height();
-        int actualMatchingPixels =
-                new BitmapPixelChecker(Color.BLACK, contentBounds)
-                        .getNumMatchingPixels(bitmap[0], contentBounds);
-        assertEquals(expectedMatchingPixels, actualMatchingPixels);
+        verifyBitmap(Color.BLACK, bitmap[0], contentBounds);
     }
 
     @RequiresFlagsEnabled(FLAG_READBACK_SCREENSHOT)
@@ -346,6 +337,16 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
         }
     }
 
+    private void verifyBitmap(int expectedColor, Bitmap bitmap, Rect contentBounds)
+            throws AssertionError {
+        int expectedMatchingPixels = contentBounds.width() * contentBounds.height();
+        int actualMatchingPixels =
+                new BitmapPixelChecker(expectedColor, contentBounds)
+                        .getNumMatchingPixels(bitmap, contentBounds);
+        mDumpOnFailure.dumpOnFailure("ScreenCaptureResult", bitmap);
+        assertEquals(expectedMatchingPixels, actualMatchingPixels);
+    }
+
     public static class TestActivity extends FocusableActivity {
 
         CountDownLatch mContentBoundsLatch = new CountDownLatch(1);
@@ -366,11 +367,25 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                         WindowMetrics windowMetrics = getWindowManager().getCurrentWindowMetrics();
                         Rect windowBounds = windowMetrics.getBounds();
                         Insets systemBarInsets = insets.getInsets(WindowInsets.Type.systemBars());
-                        mContentBounds.set(
-                                windowBounds.left + systemBarInsets.left,
-                                windowBounds.top + systemBarInsets.top,
-                                windowBounds.right - systemBarInsets.right,
-                                windowBounds.bottom - systemBarInsets.bottom);
+                        boolean isDesktopMode = insets.isVisible(WindowInsets.Type.captionBar());
+                        if (isDesktopMode) {
+                            // TODO(b/454352473): Use {@link insets#getRoundedCorner()} when it's
+                            //  fully supported.
+                            int radius = 128;
+                            Insets captionBarInsets =
+                                    insets.getInsets(WindowInsets.Type.captionBar());
+                            mContentBounds.set(
+                                    windowBounds.left + systemBarInsets.left,
+                                    windowBounds.top + captionBarInsets.top + radius,
+                                    windowBounds.right - systemBarInsets.right,
+                                    windowBounds.bottom - systemBarInsets.bottom - radius);
+                        } else {
+                            mContentBounds.set(
+                                    windowBounds.left + systemBarInsets.left,
+                                    windowBounds.top + systemBarInsets.top,
+                                    windowBounds.right - systemBarInsets.right,
+                                    windowBounds.bottom - systemBarInsets.bottom);
+                        }
                         mContentBoundsLatch.countDown();
                         return insets;
                     });

@@ -139,7 +139,9 @@ public class DecoderPushBlankBufferOnStopTest extends CodecDecoderTestBase {
         queueEOS();
         waitForAllOutputs();
         mCodec.stop();
+        boolean gotImage = false;
         try (Image img = mImageSurface.getImage(WAIT_FOR_IMAGE_TIMEOUT_MS)) {
+            gotImage = img != null;
             if (!mPushBlankBuffersOnStop) {
                 assertNull("Blank buffers are received by image surface for format: "
                         + format + "\n" + mTestConfig + mTestEnv, img);
@@ -149,6 +151,8 @@ public class DecoderPushBlankBufferOnStopTest extends CodecDecoderTestBase {
                 assertTrue("received image is not a blank buffer \n" + mTestConfig + mTestEnv,
                         isBlankFrame(new ImageSurface.ImageAndAttributes(img, 0)));
             }
+        } finally {
+            if (gotImage) mImageSurface.pop();
         }
         mCodec.release();
         mExtractor.release();

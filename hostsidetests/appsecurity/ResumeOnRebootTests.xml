@@ -20,10 +20,6 @@
     <option name="config-descriptor:metadata" key="parameter" value="multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
 
-    <!-- TODO(b/420640007): remove preparer if it's fixed at tradefed level -->
-    <target_preparer class="com.android.tradefed.targetprep.SwitchUserTargetPreparer">
-        <option name="user-type" value="full" />
-    </target_preparer>
     <target_preparer class="android.appsecurity.cts.AppSecurityPreparer" />
     <!-- disable DeprecatedAbi warning -->
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">

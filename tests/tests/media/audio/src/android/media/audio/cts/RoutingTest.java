@@ -16,6 +16,11 @@
 
 package android.media.audio.cts;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.media.AudioAttributes;
@@ -29,17 +34,26 @@ import android.media.MediaFormat;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.media.audio.Flags;
-import android.media.audio.cts.R;
 import android.media.cts.DeviceUtils;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.test.AndroidTestCase;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
+import androidx.test.InstrumentationRegistry;
+import androidx.test.runner.AndroidJUnit4;
+
 import com.android.compatibility.common.util.MediaUtils;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.Rule;
 
 import java.io.File;
 import java.util.Arrays;
@@ -48,17 +62,21 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 /**
- * AudioTrack / AudioRecord / MediaPlayer / MediaRecorder preferred device
- * and routing listener tests.
- * The routing tests are mostly here to exercise the routing code, as an actual test would require
- * adding / removing an audio device for the listeners to be called.
- * The routing listener code is designed to run for two versions of the routing code:
- *  - the deprecated AudioTrack.OnRoutingChangedListener and AudioRecord.OnRoutingChangedListener
- *  - the N AudioRouting.OnRoutingChangedListener
+ * AudioTrack / AudioRecord / MediaPlayer / MediaRecorder preferred device and routing listener
+ * tests. The routing tests are mostly here to exercise the routing code, as an actual test would
+ * require adding / removing an audio device for the listeners to be called. The routing listener
+ * code is designed to run for two versions of the routing code: - the deprecated
+ * AudioTrack.OnRoutingChangedListener and AudioRecord.OnRoutingChangedListener - the N
+ * AudioRouting.OnRoutingChangedListener
  */
 @AppModeFull(reason = "TODO: evaluate and port to instant")
-public class RoutingTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public class RoutingTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String TAG = "RoutingTest";
     private static final long WAIT_ROUTING_CHANGE_TIME_MS = 3000;
     private static final int AUDIO_BIT_RATE_IN_BPS = 12200;
@@ -72,21 +90,18 @@ public class RoutingTest extends AndroidTestCase {
     private AudioManager mAudioManager;
     private File mOutFile;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-
+    @Before
+    public void setUp() throws Exception {
         // get the AudioManager
-        mAudioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
+        mAudioManager = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
         assertNotNull(mAudioManager);
     }
 
-    @Override
-    protected void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         if (mOutFile != null && mOutFile.exists()) {
             mOutFile.delete();
         }
-        super.tearDown();
     }
 
     private AudioTrack allocAudioTrack() {
@@ -106,8 +121,11 @@ public class RoutingTest extends AndroidTestCase {
         return audioTrack;
     }
 
+    @Test
     public void test_audioTrack_preferredDevice() {
-        if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUDIO_OUTPUT)) {
+        if (!getContext()
+                .getPackageManager()
+                .hasSystemFeature(PackageManager.FEATURE_AUDIO_OUTPUT)) {
             // Can't do it so skip this test
             return;
         }
@@ -135,8 +153,11 @@ public class RoutingTest extends AndroidTestCase {
         audioTrack.release();
     }
 
+    @Test
     public void test_audioTrack_incallMusicRoutingPermissions() {
-        if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUDIO_OUTPUT)) {
+        if (!getContext()
+                .getPackageManager()
+                .hasSystemFeature(PackageManager.FEATURE_AUDIO_OUTPUT)) {
             // Can't do it so skip this test
             return;
         }
@@ -219,11 +240,12 @@ public class RoutingTest extends AndroidTestCase {
         public void onRoutingChanged(AudioRouting audioRouting) {}
     }
 
-
+    @Test
     public void test_audioTrack_RoutingListener() {
         test_audioTrack_RoutingListener(false /*usesAudioRouting*/);
     }
 
+    @Test
     public void test_audioTrack_audioRouting_RoutingListener() {
         test_audioTrack_RoutingListener(true /*usesAudioRouting*/);
     }
@@ -310,16 +332,18 @@ public class RoutingTest extends AndroidTestCase {
         public void onRoutingChanged(AudioRouting audioRouting) {}
     }
 
+    @Test
     public void test_audioRecord_RoutingListener() {
         test_audioRecord_RoutingListener(false /*usesAudioRouting*/);
     }
 
+    @Test
     public void test_audioRecord_audioRouting_RoutingListener() {
         test_audioRecord_RoutingListener(true /*usesAudioRouting*/);
     }
 
     private void test_audioRecord_RoutingListener(boolean usesAudioRouting) {
-        if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_MICROPHONE)) {
+        if (!getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_MICROPHONE)) {
             // Can't do it so skip this test
             return;
         }
@@ -382,8 +406,9 @@ public class RoutingTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void test_audioRecord_preferredDevice() {
-        if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_MICROPHONE)) {
+        if (!getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_MICROPHONE)) {
             // Can't do it so skip this test
             return;
         }
@@ -477,11 +502,13 @@ public class RoutingTest extends AndroidTestCase {
         audioTrack.release();
     }
 
+    @Test
     public void test_audioTrack_getRoutedDevice() throws Exception {
         testAudioTrackGetRoutedDevice(false /*enableRoutedDeviceIdsFlag*/);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ROUTED_DEVICE_IDS)
+    @Test
     public void test_audioTrack_getRoutedDevices() throws Exception {
         testAudioTrackGetRoutedDevice(true /*enableRoutedDeviceIdsFlag*/);
     }
@@ -536,7 +563,7 @@ public class RoutingTest extends AndroidTestCase {
 
     private void testAudioRecordGetRoutedDevice(boolean enableRoutedDeviceIdsFlag)
             throws Exception {
-        if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_MICROPHONE)) {
+        if (!getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_MICROPHONE)) {
             return;
         }
 
@@ -572,11 +599,13 @@ public class RoutingTest extends AndroidTestCase {
         audioRecord.release();
     }
 
+    @Test
     public void test_audioRecord_getRoutedDevice() throws Exception {
         testAudioRecordGetRoutedDevice(false /*enableRoutedDeviceIdsFlag*/);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ROUTED_DEVICE_IDS)
+    @Test
     public void test_audioRecord_getRoutedDevices() throws Exception {
         testAudioRecordGetRoutedDevice(true /*enableRoutedDeviceIdsFlag*/);
     }
@@ -628,7 +657,7 @@ public class RoutingTest extends AndroidTestCase {
 
     private MediaPlayer allocMediaPlayer(AudioDeviceInfo device, boolean start) {
         final int resid = R.raw.testmp3_2;
-        MediaPlayer mediaPlayer = MediaPlayer.create(mContext, resid);
+        MediaPlayer mediaPlayer = MediaPlayer.create(getContext(), resid);
         mediaPlayer.setAudioAttributes(
                 new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).build());
         if (device != null) {
@@ -640,8 +669,11 @@ public class RoutingTest extends AndroidTestCase {
         return mediaPlayer;
     }
 
+    @Test
     public void test_mediaPlayer_preferredDevice() {
-        if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUDIO_OUTPUT)) {
+        if (!getContext()
+                .getPackageManager()
+                .hasSystemFeature(PackageManager.FEATURE_AUDIO_OUTPUT)) {
             // Can't do it so skip this test
             return;
         }
@@ -687,7 +719,9 @@ public class RoutingTest extends AndroidTestCase {
 
     private void testMediaPlayerGetRoutedDevice(boolean enableRoutedDeviceIdsFlag)
             throws Exception {
-        if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUDIO_OUTPUT)) {
+        if (!getContext()
+                .getPackageManager()
+                .hasSystemFeature(PackageManager.FEATURE_AUDIO_OUTPUT)) {
             // Can't do it so skip this test
             return;
         }
@@ -701,17 +735,22 @@ public class RoutingTest extends AndroidTestCase {
         mediaPlayer.release();
     }
 
+    @Test
     public void test_mediaPlayer_getRoutedDevice() throws Exception {
         testMediaPlayerGetRoutedDevice(false /*enableRoutedDeviceIdsFlag*/);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ROUTED_DEVICE_IDS)
+    @Test
     public void test_mediaPlayer_getRoutedDevices() throws Exception {
         testMediaPlayerGetRoutedDevice(true /*enableRoutedDeviceIdsFlag*/);
     }
 
+    @Test
     public void test_MediaPlayer_RoutingListener() {
-        if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUDIO_OUTPUT)) {
+        if (!getContext()
+                .getPackageManager()
+                .hasSystemFeature(PackageManager.FEATURE_AUDIO_OUTPUT)) {
             // Can't do it so skip this test
             return;
         }
@@ -745,8 +784,11 @@ public class RoutingTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void test_MediaPlayer_RoutingChangedCallback() throws Exception {
-        if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUDIO_OUTPUT)) {
+        if (!getContext()
+                .getPackageManager()
+                .hasSystemFeature(PackageManager.FEATURE_AUDIO_OUTPUT)) {
             // Can't do it so skip this test
             return;
         }
@@ -802,8 +844,11 @@ public class RoutingTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void test_mediaPlayer_incallMusicRoutingPermissions() {
-        if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUDIO_OUTPUT)) {
+        if (!getContext()
+                .getPackageManager()
+                .hasSystemFeature(PackageManager.FEATURE_AUDIO_OUTPUT)) {
             // Can't do it so skip this test
             return;
         }
@@ -822,7 +867,8 @@ public class RoutingTest extends AndroidTestCase {
 
         try {
             mediaPlayer = allocMediaPlayer(telephonyDevice, false);
-            assertEquals(AudioDeviceInfo.TYPE_TELEPHONY, mediaPlayer.getPreferredDevice().getType());
+            assertEquals(
+                    AudioDeviceInfo.TYPE_TELEPHONY, mediaPlayer.getPreferredDevice().getType());
             mediaPlayer.start();
             // Sleep for 1s to ensure the underlying AudioTrack is created and started
             SystemClock.sleep(1000);
@@ -844,8 +890,8 @@ public class RoutingTest extends AndroidTestCase {
     }
 
     private MediaRecorder allocMediaRecorder() throws Exception {
-        final String outputPath = new File(mContext.getExternalFilesDir(null),
-            "record.out").getAbsolutePath();
+        final String outputPath =
+                new File(getContext().getExternalFilesDir(null), "record.out").getAbsolutePath();
         mOutFile = new File(outputPath);
         MediaRecorder mediaRecorder = new MediaRecorder();
         mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
@@ -864,8 +910,9 @@ public class RoutingTest extends AndroidTestCase {
         return mediaRecorder;
     }
 
+    @Test
     public void test_mediaRecorder_preferredDevice() throws Exception {
-        if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_MICROPHONE)
+        if (!getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_MICROPHONE)
                 || !MediaUtils.hasEncoder(MediaFormat.MIMETYPE_AUDIO_AAC)) {
             MediaUtils.skipTest("no audio codecs or microphone");
             return;
@@ -902,8 +949,8 @@ public class RoutingTest extends AndroidTestCase {
 
     private void testMediaRecorderGetRoutedDevice(boolean enableRoutedDeviceIdsFlag)
             throws Exception {
-        if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_MICROPHONE)
-            || !MediaUtils.hasEncoder(MediaFormat.MIMETYPE_AUDIO_AAC)) {
+        if (!getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_MICROPHONE)
+                || !MediaUtils.hasEncoder(MediaFormat.MIMETYPE_AUDIO_AAC)) {
             MediaUtils.skipTest("no audio codecs or microphone");
             return;
         }
@@ -925,18 +972,21 @@ public class RoutingTest extends AndroidTestCase {
         mediaRecorder.release();
     }
 
+    @Test
     public void test_mediaRecorder_getRoutedDevice() throws Exception {
         testMediaRecorderGetRoutedDevice(false /*enableRoutedDeviceIdsFlag*/);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ROUTED_DEVICE_IDS)
+    @Test
     public void test_mediaRecorder_getRoutedDevices() throws Exception {
         testMediaRecorderGetRoutedDevice(true /*enableRoutedDeviceIdsFlag*/);
     }
 
+    @Test
     public void test_mediaRecorder_RoutingListener() throws Exception {
-        if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_MICROPHONE)
-            || !MediaUtils.hasEncoder(MediaFormat.MIMETYPE_AUDIO_AAC)) {
+        if (!getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_MICROPHONE)
+                || !MediaUtils.hasEncoder(MediaFormat.MIMETYPE_AUDIO_AAC)) {
             MediaUtils.skipTest("no audio codecs or microphone");
             return;
         }
@@ -968,5 +1018,9 @@ public class RoutingTest extends AndroidTestCase {
         if (myLooper != null) {
             myLooper.quit();
         }
+    }
+
+    private static Context getContext() {
+        return InstrumentationRegistry.getInstrumentation().getTargetContext();
     }
 }

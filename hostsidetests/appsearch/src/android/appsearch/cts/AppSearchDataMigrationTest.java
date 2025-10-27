@@ -78,8 +78,8 @@ public class AppSearchDataMigrationTest extends AppSearchHostTestBase {
                 getDevice().getApiLevel() > 35);
 
         try {
-            runDeviceTestAsUserInPkgA("clearStressTestDbs", mPrimaryUserId);
-            runDeviceTestAsUserInPkgA("setUpStressTestDbs", mPrimaryUserId);
+            runDeviceTestAsUserInPkgA("clearTestDb", mPrimaryUserId);
+            runDeviceTestAsUserInPkgA("setUpTestDb", mPrimaryUserId);
 
             getDevice()
                     .executeShellCommand(
@@ -96,9 +96,9 @@ public class AppSearchDataMigrationTest extends AppSearchHostTestBase {
                 Thread.sleep(1_000); // 1 second
             }
 
-            runDeviceTestAsUserInPkgA("verifyStressTestDbs", mPrimaryUserId);
+            runDeviceTestAsUserInPkgA("verifyTestDb", mPrimaryUserId);
         } finally {
-            runDeviceTestAsUserInPkgA("clearStressTestDbs", mPrimaryUserId);
+            runDeviceTestAsUserInPkgA("clearTestDb", mPrimaryUserId);
         }
     }
 }

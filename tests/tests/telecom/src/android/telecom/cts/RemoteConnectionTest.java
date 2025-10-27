@@ -197,7 +197,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
                     ConnectionRequest remoteRequest = new ConnectionRequest(
                             TEST_REMOTE_PHONE_ACCOUNT_HANDLE,
                             request.getAddress(),
-                            request.getExtras());
+                            request.getExtras(), VideoProfile.STATE_AUDIO_ONLY);
                     RemoteConference remoteConference = CtsConnectionService
                             .createRemoteIncomingConferenceToTelecom(
                                     TEST_REMOTE_PHONE_ACCOUNT_HANDLE, remoteRequest);

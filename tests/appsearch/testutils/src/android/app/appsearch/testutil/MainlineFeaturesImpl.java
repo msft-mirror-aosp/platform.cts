@@ -98,7 +98,7 @@ public class MainlineFeaturesImpl implements Features {
                 // fall through
             case Features.SCHEMA_STRING_PROPERTY_CONFIG_DELETE_PROPAGATION_TYPE_PROPAGATE_FROM:
                 // fall through
-            case Features.BLOB_STORAGE:
+            case Features.SCHEMA_BLOB_HANDLE:
                 // fall through
             case Features.SEARCH_SPEC_RANKING_FUNCTION_FILTER_BY_RANGE:
                 // fall through

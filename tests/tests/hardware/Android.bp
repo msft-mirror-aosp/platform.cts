@@ -96,6 +96,9 @@ android_test {
         ":TestIme",
     ],
     sdk_version: "test_current",
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
 
 test_module_config {

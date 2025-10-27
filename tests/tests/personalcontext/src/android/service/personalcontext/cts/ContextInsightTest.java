@@ -20,6 +20,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import android.os.Bundle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.personalcontext.Flags;
 import android.service.personalcontext.hint.BundleHint;
 import android.service.personalcontext.insight.BundleInsight;
@@ -29,6 +31,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -36,6 +39,9 @@ import org.junit.runner.RunWith;
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PERSONAL_CONTEXT_SERVICE)
 @RunWith(AndroidJUnit4.class)
 public class ContextInsightTest {
+    @Rule
+    public final CheckFlagsRule checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     // Tests bundling and unbundling fields on the base ContextInsight.
     @ApiTest(
             apis = {
@@ -53,7 +59,7 @@ public class ContextInsightTest {
         final BundleInsight insight = new BundleInsight.Builder().addOriginHint(hint).build();
         ContextInsight outputInsight = bundleUnbundle(insight);
 
-        assertThat(insight.getInsightType()).isEqualTo(outputInsight.getInsightType());
+        assertThat(outputInsight).isInstanceOf(BundleInsight.class);
         assertThat(insight.getInsightId()).isEqualTo(outputInsight.getInsightId());
 
         assertThat(outputInsight.getOriginHints().size()).isEqualTo(1);

@@ -16,16 +16,20 @@
 
 package com.android.cts.managedprofile;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+
 import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
 import android.os.PersistableBundle;
 import android.test.MoreAsserts;
 
+import org.junit.After;
+import org.junit.Test;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import static com.android.cts.managedprofile.TrustAgentInfoTest.AssertConfigMode.*;
 
 public class TrustAgentInfoTest extends BaseManagedProfileTest {
     private static final String BUNDLE_KEY = "testing";
@@ -45,23 +49,25 @@ public class TrustAgentInfoTest extends BaseManagedProfileTest {
         ASSERT_PARENT_CONFIG, ASSERT_CHILD_CONFIG, ASSERT_BOTH
     }
 
-    @Override
-    protected void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         clearTrustAgentConfiguration(true /* isParent */);
         clearTrustAgentConfiguration(false /* isParent */);
         enableTrustAgents(true /* isParent */);
         enableTrustAgents(false /* isParent */);
-        super.tearDown();
     }
 
+    @Test
     public void testSetAndGetTrustAgentConfiguration_child() {
         setAndGetTrustAgentConfigurationInternal(false /* isParent */);
     }
 
+    @Test
     public void testSetAndGetTrustAgentConfiguration_parent() {
         setAndGetTrustAgentConfigurationInternal(true /* isParent */);
     }
 
+    @Test
     public void testSetTrustAgentConfiguration_bothHaveTrustAgentConfigAndUnified() {
         // Set both trust agents.
         setTrustAgentConfiguration(false /* isParent */);
@@ -84,10 +90,11 @@ public class TrustAgentInfoTest extends BaseManagedProfileTest {
                 null, TRUST_AGENT_COMPONENT);
         childConfig = mDevicePolicyManager.getTrustAgentConfiguration(
                 null, TRUST_AGENT_COMPONENT);
-        assertPersistableBundleListEquals(ASSERT_BOTH, parentConfig);
-        assertPersistableBundleListEquals(ASSERT_BOTH, childConfig);
+        assertPersistableBundleListEquals(AssertConfigMode.ASSERT_BOTH, parentConfig);
+        assertPersistableBundleListEquals(AssertConfigMode.ASSERT_BOTH, childConfig);
     }
 
+    @Test
     public void testSetTrustAgentConfiguration_bothHaveTrustAgentConfigAndNonUnified() {
         // Precondition: separate challenge for the managed profile should have been enabled.
 
@@ -104,8 +111,8 @@ public class TrustAgentInfoTest extends BaseManagedProfileTest {
                 mDevicePolicyManager.getTrustAgentConfiguration(
                         null, TRUST_AGENT_COMPONENT);
         // Separate credential in managed profile, should only get its own config.
-        assertPersistableBundleListEquals(ASSERT_PARENT_CONFIG, parentConfig);
-        assertPersistableBundleListEquals(ASSERT_CHILD_CONFIG, childConfig);
+        assertPersistableBundleListEquals(AssertConfigMode.ASSERT_PARENT_CONFIG, parentConfig);
+        assertPersistableBundleListEquals(AssertConfigMode.ASSERT_CHILD_CONFIG, childConfig);
     }
 
     private void setAndGetTrustAgentConfigurationInternal(boolean isParent) {
@@ -119,8 +126,11 @@ public class TrustAgentInfoTest extends BaseManagedProfileTest {
         disableTrustAgents(isParent);
         configs = getDevicePolicyManager(isParent)
                 .getTrustAgentConfiguration(null, TRUST_AGENT_COMPONENT);
-        assertPersistableBundleListEquals(isParent ?
-                ASSERT_PARENT_CONFIG : ASSERT_CHILD_CONFIG, configs);
+        assertPersistableBundleListEquals(
+                isParent
+                        ? AssertConfigMode.ASSERT_PARENT_CONFIG
+                        : AssertConfigMode.ASSERT_CHILD_CONFIG,
+                configs);
     }
 
     private void disableTrustAgents(boolean isParent) {
@@ -147,9 +157,11 @@ public class TrustAgentInfoTest extends BaseManagedProfileTest {
         List<PersistableBundle> configs =
                 getDevicePolicyManager(isParent).getTrustAgentConfiguration(
                         ADMIN_RECEIVER_COMPONENT, TRUST_AGENT_COMPONENT);
-        assertPersistableBundleListEquals(isParent ?
-                ASSERT_PARENT_CONFIG :
-                ASSERT_CHILD_CONFIG, configs);
+        assertPersistableBundleListEquals(
+                isParent
+                        ? AssertConfigMode.ASSERT_PARENT_CONFIG
+                        : AssertConfigMode.ASSERT_CHILD_CONFIG,
+                configs);
         return expected;
     }
 

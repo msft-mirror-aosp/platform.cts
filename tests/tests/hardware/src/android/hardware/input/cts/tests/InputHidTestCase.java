@@ -43,6 +43,8 @@ import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.os.Vibrator.OnVibratorStateChangedListener;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.view.InputDevice;
 import android.view.KeyEvent;
@@ -91,6 +93,9 @@ public abstract class InputHidTestCase extends InputTestCase {
     private InputJsonParser mParser;
     private int mVid;
     private int mPid;
+
+    @Rule
+    public final CheckFlagsRule checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Rule
     public MockitoRule rule = MockitoJUnit.rule();

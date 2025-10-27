@@ -98,7 +98,6 @@ public class ActivityManagementTest {
     @Mock
     private VirtualDeviceManager.ActivityListener mActivityListener;
 
-
     @Before
     public void setUp() {
         MockitoAnnotations.initMocks(this);
@@ -116,6 +115,11 @@ public class ActivityManagementTest {
         EmptyActivity activity =
                 mRule.startActivityOnDisplaySync(mVirtualDisplayId, EmptyActivity.class);
 
+        verify(mActivityListener, timeout(TIMEOUT_MILLIS).times(1))
+                .onActivityLaunchRequested(
+                        eq(mVirtualDisplayId),
+                        eq(mEmptyActivityComponent),
+                        eq(mContext.getUserId()));
         verify(mActivityListener, timeout(TIMEOUT_MILLIS).times(1)).onTopActivityChanged(
                 eq(mVirtualDisplayId), eq(mEmptyActivityComponent));
         assertActivityOnVirtualDisplay(mEmptyActivityComponent);
@@ -128,10 +132,15 @@ public class ActivityManagementTest {
     }
 
     @Test
-    public void activityListener_shouldCallOnTopActivityChange() {
+    public void activityListener_shouldCallOnActivityLaunchRequestedAndOnTopActivityChange() {
         EmptyActivity activity =
                 mRule.startActivityOnDisplaySync(mVirtualDisplayId, EmptyActivity.class);
 
+        verify(mActivityListener, timeout(TIMEOUT_MILLIS).times(1))
+                .onActivityLaunchRequested(
+                        eq(mVirtualDisplayId),
+                        eq(mEmptyActivityComponent),
+                        eq(mContext.getUserId()));
         verify(mActivityListener, timeout(TIMEOUT_MILLIS).times(1)).onTopActivityChanged(
                 eq(mVirtualDisplayId), eq(mEmptyActivityComponent));
         assertActivityOnVirtualDisplay(mEmptyActivityComponent);
@@ -144,12 +153,18 @@ public class ActivityManagementTest {
 
     @RequiresFlagsEnabled({Flags.FLAG_ACTIVITY_CONTROL_API})
     @Test
-    public void activityListener_shouldCallOnActivityLaunchBlocked() {
+    public void activityListener_shouldCallOnActivityLaunchRequestedAndOnActivityLaunchBlocked() {
         mVirtualDevice.addActivityPolicyExemption(mEmptyActivityComponent);
 
         Intent intent = new Intent(mContext, EmptyActivity.class)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         mRule.sendIntentToDisplay(intent, mVirtualDisplayId);
+
+        verify(mActivityListener, timeout(TIMEOUT_MILLIS).times(1))
+                .onActivityLaunchRequested(
+                        eq(mVirtualDisplayId),
+                        eq(mEmptyActivityComponent),
+                        eq(mContext.getUserId()));
         verify(mActivityListener, timeout(TIMEOUT_MILLIS).times(1)).onActivityLaunchBlocked(
                 eq(mVirtualDisplayId), eq(mEmptyActivityComponent), eq(mContext.getUser()),
                 any());

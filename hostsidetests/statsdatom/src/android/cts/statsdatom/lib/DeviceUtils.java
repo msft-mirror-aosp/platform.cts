@@ -170,7 +170,7 @@ public final class DeviceUtils {
      */
     public static void installStatsdTestApp(ITestDevice device, IBuildInfo ctsBuildInfo)
             throws FileNotFoundException, DeviceNotAvailableException {
-        installTestApp(device, STATSD_ATOM_TEST_APK, STATSD_ATOM_TEST_PKG, ctsBuildInfo);
+        installTestAppWithAdb(device, STATSD_ATOM_TEST_APK, STATSD_ATOM_TEST_PKG, ctsBuildInfo);
     }
 
     /**
@@ -182,6 +182,22 @@ public final class DeviceUtils {
         CompatibilityBuildHelper buildHelper = new CompatibilityBuildHelper(ctsBuildInfo);
         final String result = device.installPackage(
                 buildHelper.getTestFile(apkName), /*reinstall=*/true, /*grantPermissions=*/true);
+        assertWithMessage("Failed to install " + apkName + ": " + result).that(result).isNull();
+        allowBackgroundServices(device, pkgName);
+    }
+
+    /** Install a test app to the device. */
+    public static void installTestAppWithAdb(
+            ITestDevice device, String apkName, String pkgName, IBuildInfo ctsBuildInfo)
+            throws FileNotFoundException, DeviceNotAvailableException {
+        CLog.d("Installing app " + apkName);
+        CompatibilityBuildHelper buildHelper = new CompatibilityBuildHelper(ctsBuildInfo);
+        final String result =
+                device.adbInstallPackage(
+                        buildHelper.getTestFile(apkName),
+                        /* reinstall= */ true,
+                        /* grantPermissions= */ true,
+                        "--no-streaming");
         assertWithMessage("Failed to install " + apkName + ": " + result).that(result).isNull();
         allowBackgroundServices(device, pkgName);
     }

@@ -268,13 +268,15 @@ public interface Features {
             "SEARCH_SPEC_ADD_INFORMATIONAL_RANKING_EXPRESSIONS";
 
     /**
-     * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
-     * AppSearchBlobHandle}.
+     * Feature for {@link #isFeatureSupported(String)}.
+     *
+     * <p>This feature covers {@link AppSearchBlobHandle}, {@link
+     * AppSearchSchema.BlobHandlePropertyConfig}, {@link GenericDocument#getPropertyBlobHandle},
+     * {@link AppSearchSession#openBlobForWrite}, {@link AppSearchSession#commitBlob}, {@link
+     * AppSearchSession#removeBlob}, {@link AppSearchSession#openBlobForRead}, {@link
+     * AppSearchSession#setBlobVisibility}, {@link GlobalSearchSession#openBlobForReadAsync(Set)},
      */
-    // TODO(b/273591938) improve the java doc when we support set blob property in GenericDocument
-    // TODO(b/273591938) unhide the API once it read for API review.
-
-    String BLOB_STORAGE = "BLOB_STORAGE";
+    String SCHEMA_BLOB_HANDLE = "SCHEMA_BLOB_HANDLE";
 
     /**
      * Feature for {@link #isFeatureSupported(String)}. This feature indicates whether or not the
