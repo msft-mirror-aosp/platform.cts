@@ -1240,6 +1240,9 @@ public class SubscriptionManagerTest {
             mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_UICC);
             mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_CARRIER);
             mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_IMS);
+            if (Flags.getPhoneNumberTs43Api()) {
+                mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
+            }
         } finally {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();
@@ -1253,6 +1256,9 @@ public class SubscriptionManagerTest {
             mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_UICC);
             mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_CARRIER);
             mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_IMS);
+            if (Flags.getPhoneNumberTs43Api()) {
+                mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
+            }
         } finally {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();
@@ -1267,6 +1273,9 @@ public class SubscriptionManagerTest {
                     mSm.getPhoneNumber(mSubId);
                     mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_UICC);
                     mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_IMS);
+                    if (Flags.getPhoneNumberTs43Api()) {
+                        mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
+                    }
 
                     String originalPhoneNumber =
                             mSm.getPhoneNumber(
@@ -1299,6 +1308,14 @@ public class SubscriptionManagerTest {
         } catch (SecurityException e) {
             // expected
         }
+        if (Flags.getPhoneNumberTs43Api()) {
+            try {
+                mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
+                fail("Expect SecurityException from getPhoneNumber()");
+            } catch (SecurityException e) {
+                // expected
+            }
+        }
         try {
             mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_CARRIER);
             fail("Expect SecurityException from getPhoneNumber()");
@@ -1310,6 +1327,57 @@ public class SubscriptionManagerTest {
             fail("Expect SecurityException from setCarrierPhoneNumber()");
         } catch (SecurityException e) {
             // expected
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_GET_PHONE_NUMBER_TS43_API)
+    @AppModeNonSdkSandbox(
+            reason = "SDK sandboxes do not have READ_PRIVILEGED_PHONE_STATE permission")
+    public void testSetTs43PhoneNumber() throws Exception {
+        // The phone number may be anything depends on the state of SIM and device.
+        // Simply call the getter and make sure no exception.
+
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        android.Manifest.permission.MODIFY_PHONE_STATE,
+                        android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+
+        String originalPhoneNumber = null;
+        try {
+            originalPhoneNumber =
+                    mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
+            final String testNumber = "1234567890";
+            mSm.setTs43PhoneNumber(mSubId, testNumber);
+
+            String retrievedNumber =
+                    mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
+            assertEquals(
+                    "The retrieved phone number should match the one that was set.",
+                    testNumber,
+                    retrievedNumber);
+
+            // Drop permissions for the security exception test
+            InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation()
+                    .dropShellPermissionIdentity();
+
+            try {
+                mSm.setTs43PhoneNumber(mSubId, "987");
+                fail("Expect SecurityException from setTs43PhoneNumber()");
+            } catch (SecurityException e) {
+                // expected
+            }
+        } finally {
+            // Restore original phone number and drop permissions.
+            InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation()
+                    .adoptShellPermissionIdentity(android.Manifest.permission.MODIFY_PHONE_STATE);
+            mSm.setTs43PhoneNumber(mSubId, originalPhoneNumber);
+            InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation()
+                    .dropShellPermissionIdentity();
         }
     }
 

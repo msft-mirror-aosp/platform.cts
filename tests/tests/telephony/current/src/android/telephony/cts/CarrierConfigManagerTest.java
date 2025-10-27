@@ -43,6 +43,7 @@ import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ROAMING_P2P_S
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ROAMING_P2P_SMS_SUPPORTED_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ROAMING_SCREEN_OFF_INACTIVITY_TIMEOUT_SEC_INT;
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_SOS_MAX_DATAGRAM_SIZE_BYTES_INT;
+import static android.telephony.CarrierConfigManager.KEY_SUPPORT_PHONE_NUMBER_SOURCE_TS43_BOOL;
 import static android.telephony.ServiceState.STATE_IN_SERVICE;
 
 import static androidx.test.InstrumentationRegistry.getContext;
@@ -362,6 +363,11 @@ public class CarrierConfigManagerTest {
                         "KEY_LOW_BATTERY_ALERT_THRESHOLD_INT doesn't match static default.",
                         config.getInt(KEY_LOW_BATTERY_ALERT_THRESHOLD_INT),
                         -1);
+            }
+            if (Flags.getPhoneNumberTs43Api()) {
+                assertFalse(
+                        "KEY_SUPPORT_PHONE_NUMBER_SOURCE_TS43_BOOL doesn't match static default.",
+                        config.getBoolean(KEY_SUPPORT_PHONE_NUMBER_SOURCE_TS43_BOOL));
             }
         }
 
