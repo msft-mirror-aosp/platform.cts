@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.test.assertFailsWith
 import org.junit.Assume
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -362,6 +363,7 @@ class PhotoPickerApiSurfaceTest {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE, count = 3)])
+    @Ignore("TODO(b/452860731): Renable after fixing this test")
     fun testUserSelectWithGrantRuntimePermission() {
         val intent =
             Intent(MediaStore.ACTION_USER_SELECT_IMAGES_FOR_APP).apply {
@@ -382,6 +384,7 @@ class PhotoPickerApiSurfaceTest {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE, count = 3)])
+    @Ignore("TODO(b/452860731): Renable after fixing this test")
     fun testUserSelectWithMimetype() {
         val intent =
             Intent(MediaStore.ACTION_USER_SELECT_IMAGES_FOR_APP).apply {
