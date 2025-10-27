@@ -53,11 +53,13 @@ import androidx.annotation.Nullable;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.harrier.DeviceState;
 import com.android.cts.mockime.ImeEvent;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -70,6 +72,10 @@ import java.util.concurrent.atomic.AtomicReference;
 @MediumTest
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class EditTextImeSupportTest extends EndToEndImeTestBase {
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     private static final long NOT_EXPECT_TIMEOUT = 10;  // msec
 

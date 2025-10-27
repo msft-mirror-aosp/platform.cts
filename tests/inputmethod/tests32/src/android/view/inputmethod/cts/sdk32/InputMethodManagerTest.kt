@@ -25,6 +25,7 @@ import android.view.inputmethod.cts.util.MockTestActivityUtil.EXTRA_KEY_PRIVATE_
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.AndroidJUnit4
+import com.android.bedstead.harrier.DeviceState
 import com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher
 import com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent
 import com.android.cts.mockime.ImeSettings
@@ -32,6 +33,8 @@ import com.android.cts.mockime.MockImeSession
 import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertEquals
 import org.junit.AssumptionViolatedException
+import org.junit.ClassRule
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -76,6 +79,11 @@ class InputMethodManagerTest : EndToEndImeTestBase() {
         }
 
     companion object {
+        @JvmField
+        @ClassRule
+        @Rule
+        val deviceState = DeviceState()
+
         val TIMEOUT = TimeUnit.SECONDS.toMillis(5)
     }
 }

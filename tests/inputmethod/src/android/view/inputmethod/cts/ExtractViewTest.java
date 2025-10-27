@@ -37,6 +37,7 @@ import androidx.test.uiautomator.BySelector;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.Until;
 
+import com.android.bedstead.harrier.DeviceState;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.mockime.ImeEventStream;
@@ -46,6 +47,8 @@ import com.android.cts.mockime.MockImeSession;
 
 import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -53,6 +56,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @SmallTest
 public final class ExtractViewTest extends EndToEndImeTestBase {
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     private static final long START_INPUT_TIMEOUT = TimeUnit.SECONDS.toMillis(10);
 

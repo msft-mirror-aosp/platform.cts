@@ -44,10 +44,13 @@ import androidx.annotation.NonNull;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.harrier.DeviceState;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -58,6 +61,10 @@ import java.util.concurrent.atomic.AtomicReference;
 @SmallTest
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class InProcessImeTest extends EndToEndImeTestBase {
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
     private static final long TIMEOUT = TimeUnit.MINUTES.toMillis(1);
 
     private void enableInProcIme() {

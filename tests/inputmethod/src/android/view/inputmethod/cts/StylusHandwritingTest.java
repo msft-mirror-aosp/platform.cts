@@ -102,6 +102,7 @@ import androidx.annotation.Nullable;
 import androidx.test.filters.FlakyTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.harrier.DeviceState;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CommonTestUtils;
 import com.android.compatibility.common.util.GestureNavSwitchHelper;
@@ -119,6 +120,7 @@ import com.android.cts.mockime.MockImeSession;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -136,6 +138,11 @@ import java.util.function.Predicate;
  */
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class StylusHandwritingTest extends EndToEndImeTestBase {
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
     private static final long TIMEOUT_IN_SECONDS = 5;
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(TIMEOUT_IN_SECONDS);
     private static final long TIMEOUT_6_S = TimeUnit.SECONDS.toMillis(6);

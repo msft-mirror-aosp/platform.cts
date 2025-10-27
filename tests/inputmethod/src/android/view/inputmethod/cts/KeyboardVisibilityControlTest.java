@@ -126,6 +126,7 @@ import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
 
+import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.bedstead.harrier.annotations.RequireNotWatch;
 import com.android.bedstead.harrier.annotations.RequireSdkVersion;
@@ -142,6 +143,7 @@ import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -162,6 +164,11 @@ import java.util.function.Predicate;
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RequireSdkVersion(min = 36)
 public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
     private static final String TAG = KeyboardVisibilityControlTest.class.getSimpleName();

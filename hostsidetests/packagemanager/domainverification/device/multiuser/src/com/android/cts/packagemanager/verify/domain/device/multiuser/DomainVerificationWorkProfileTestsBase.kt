@@ -20,16 +20,14 @@ import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
+import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile
+import com.android.bedstead.enterprise.workProfile
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
-import com.android.bedstead.harrier.annotations.AfterClass
-import com.android.bedstead.harrier.annotations.BeforeClass
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
-import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile
-import com.android.bedstead.enterprise.workProfile
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.packages.Packages
 import com.android.bedstead.nene.users.UserReference
@@ -38,6 +36,11 @@ import com.android.compatibility.common.util.ShellUtils
 import com.android.cts.packagemanager.verify.domain.android.DomainUtils.DECLARING_PKG_1_COMPONENT
 import com.android.cts.packagemanager.verify.domain.android.DomainUtils.DECLARING_PKG_2_COMPONENT
 import com.android.cts.packagemanager.verify.domain.android.SharedVerifications
+import com.android.cts.packagemanager.verify.domain.device.multiuser.DomainVerificationWorkProfileTestsBase.DomainVerificationWorkProfileTestsHelper.Companion.FORWARD_TO_PARENT
+import com.android.cts.packagemanager.verify.domain.device.multiuser.DomainVerificationWorkProfileTestsBase.DomainVerificationWorkProfileTestsHelper.Companion.PERSONAL_APP
+import com.android.cts.packagemanager.verify.domain.device.multiuser.DomainVerificationWorkProfileTestsBase.DomainVerificationWorkProfileTestsHelper.Companion.PERSONAL_COMPONENT
+import com.android.cts.packagemanager.verify.domain.device.multiuser.DomainVerificationWorkProfileTestsBase.DomainVerificationWorkProfileTestsHelper.Companion.WORK_APP
+import com.android.cts.packagemanager.verify.domain.device.multiuser.DomainVerificationWorkProfileTestsBase.DomainVerificationWorkProfileTestsHelper.Companion.WORK_COMPONENT
 import com.android.cts.packagemanager.verify.domain.java.DomainUtils
 import com.android.cts.packagemanager.verify.domain.java.DomainUtils.DECLARING_PKG_APK_1
 import com.android.cts.packagemanager.verify.domain.java.DomainUtils.DECLARING_PKG_APK_2
@@ -50,57 +53,44 @@ import com.google.common.truth.Truth.assertWithMessage
 import org.junit.After
 import org.junit.Assume.assumeTrue
 import org.junit.Before
-import org.junit.ClassRule
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @EnsureHasWorkProfile(forUser = UserType.INITIAL_USER)
 @RunWith(BedsteadJUnit4::class)
-abstract class DomainVerificationWorkProfileTestsBase {
+abstract class DomainVerificationWorkProfileTestsBase(
+    private val helper: DomainVerificationWorkProfileTestsHelper
+) {
 
-    companion object {
+    class DomainVerificationWorkProfileTestsHelper(private val deviceState: DeviceState) {
 
-        @JvmField
-        @ClassRule
-        @Rule
-        val deviceState = DeviceState()
+        companion object {
+            private val TARGET_INTENT = Intent(Intent.ACTION_VIEW, Uri.parse("https://$DOMAIN_1"))
+            private val BROWSER_INTENT =
+                Intent(Intent.ACTION_VIEW, Uri.parse("https://$DOMAIN_UNHANDLED"))
 
-        private val TARGET_INTENT = Intent(Intent.ACTION_VIEW, Uri.parse("https://$DOMAIN_1"))
-        private val BROWSER_INTENT =
-            Intent(Intent.ACTION_VIEW, Uri.parse("https://$DOMAIN_UNHANDLED"))
+            val FORWARD_TO_PARENT =
+                ComponentName("android", "com.android.internal.app.ForwardIntentToParent")
 
-        @JvmStatic
-        protected val FORWARD_TO_PARENT =
-            ComponentName("android", "com.android.internal.app.ForwardIntentToParent")
+            val FORWARD_TO_MANAGED =
+                ComponentName("android", "com.android.internal.app.ForwardIntentToManagedProfile")
 
-        @JvmStatic
-        protected val FORWARD_TO_MANAGED =
-            ComponentName("android", "com.android.internal.app.ForwardIntentToManagedProfile")
+            const val PERSONAL_APP = DECLARING_PKG_NAME_1
 
-        @JvmStatic
-        protected val PERSONAL_APP = DECLARING_PKG_NAME_1
+            const val WORK_APP = DECLARING_PKG_NAME_2
 
-        @JvmStatic
-        protected val WORK_APP = DECLARING_PKG_NAME_2
+            val PERSONAL_COMPONENT = DECLARING_PKG_1_COMPONENT
 
-        @JvmStatic
-        protected val PERSONAL_COMPONENT = DECLARING_PKG_1_COMPONENT
+            val WORK_COMPONENT = DECLARING_PKG_2_COMPONENT
+        }
 
-        @JvmStatic
-        protected val WORK_COMPONENT = DECLARING_PKG_2_COMPONENT
+        lateinit var personalBrowsers: Collection<ComponentName>
 
-        @JvmStatic
-        protected lateinit var personalBrowsers: Collection<ComponentName>
+        lateinit var workBrowsers: Collection<ComponentName>
 
-        @JvmStatic
-        protected lateinit var workBrowsers: Collection<ComponentName>
+        lateinit var personalUser: UserReference
+        lateinit var workUser: UserReference
 
-        private lateinit var personalUser: UserReference
-        private lateinit var workUser: UserReference
-
-        @JvmStatic
-        @BeforeClass
         fun installApks() {
             personalUser = deviceState.initialUser()
             workUser = deviceState.workProfile(UserType.INITIAL_USER)
@@ -112,8 +102,6 @@ abstract class DomainVerificationWorkProfileTestsBase {
             }
         }
 
-        @JvmStatic
-        @AfterClass
         fun uninstallApks() {
             TestApis.packages().run {
                 find(PERSONAL_APP).uninstallFromAllUsers()
@@ -130,12 +118,10 @@ abstract class DomainVerificationWorkProfileTestsBase {
                     .also { assumeTrue(it.isNotEmpty()) }
             }
 
-        @JvmStatic
-        protected fun assertResolvesTo(vararg components: ComponentName) =
+        fun assertResolvesTo(vararg components: ComponentName) =
             assertResolvesTo(components.toList())
 
-        @JvmStatic
-        protected fun assertResolvesTo(components: Collection<ComponentName>) {
+        fun assertResolvesTo(components: Collection<ComponentName>) {
             val results = TestApis.context()
                 .instrumentedContext()
                 .packageManager
@@ -145,8 +131,7 @@ abstract class DomainVerificationWorkProfileTestsBase {
             assertThat(results).containsExactlyElementsIn(components)
         }
 
-        @JvmStatic
-        protected fun verify(vararg packageNames: String) = packageNames.forEach {
+        fun verify(vararg packageNames: String) = packageNames.forEach {
             assertWithMessage("pm set-app-links should be empty on success").that(
                 ShellUtils.runShellCommand(DomainUtils.setAppLinks(it, "STATE_APPROVED", DOMAIN_1))
             ).isEmpty()
@@ -156,7 +141,7 @@ abstract class DomainVerificationWorkProfileTestsBase {
     @Before
     @After
     fun resetState() {
-        listOf(personalUser, workUser).forEach {
+        listOf(helper.personalUser, helper.workUser).forEach {
             withUserContext(it) {
                 SharedVerifications.reset(it, resetEnable = true)
             }
@@ -167,144 +152,141 @@ abstract class DomainVerificationWorkProfileTestsBase {
     @Postsubmit(reason = "New test")
     @Test
     fun inPersonal_unverified() {
-        assertResolvesTo(personalBrowsers)
+        helper.assertResolvesTo(helper.personalBrowsers)
     }
 
     @RequireRunOnInitialUser
     @Postsubmit(reason = "New test")
     @Test
     fun inPersonal_verifiedInCurrentProfile() {
-        verify(PERSONAL_APP)
+        helper.verify(PERSONAL_APP)
 
-        assertResolvesTo(PERSONAL_COMPONENT)
+        helper.assertResolvesTo(PERSONAL_COMPONENT)
     }
-
-    // The assertion for this method varies based on general versus specific cross profile config
-    abstract fun inPersonal_verifiedInOtherProfile()
 
     @RequireRunOnInitialUser
     @Postsubmit(reason = "New test")
     @Test
     fun inPersonal_verifiedInBothProfiles() {
-        verify(PERSONAL_APP, WORK_APP)
+        helper.verify(PERSONAL_APP, WORK_APP)
 
-        assertResolvesTo(PERSONAL_COMPONENT)
+        helper.assertResolvesTo(PERSONAL_COMPONENT)
     }
 
     @RequireRunOnWorkProfile
     @Postsubmit(reason = "New test")
     @Test
     fun inWork_unverified() {
-        assertResolvesTo(workBrowsers)
+        helper.assertResolvesTo(helper.workBrowsers)
     }
 
     @RequireRunOnWorkProfile
     @Postsubmit(reason = "New test")
     @Test
     fun inWork_verifiedInCurrentProfile() {
-        verify(WORK_APP)
+        helper.verify(WORK_APP)
 
-        assertResolvesTo(WORK_COMPONENT)
+        helper.assertResolvesTo(WORK_COMPONENT)
     }
 
     @RequireRunOnWorkProfile
     @Postsubmit(reason = "New test")
     @Test
     fun inWork_verifiedInOtherProfile() {
-        verify(PERSONAL_APP)
+        helper.verify(PERSONAL_APP)
 
-        assertResolvesTo(workBrowsers + FORWARD_TO_PARENT)
+        helper.assertResolvesTo(helper.workBrowsers + FORWARD_TO_PARENT)
     }
 
     @RequireRunOnWorkProfile
     @Postsubmit(reason = "New test")
     @Test
     fun inWork_verifiedInOtherProfileDisabledApp() {
-        verify(PERSONAL_APP)
-        disableApp(personalUser, PERSONAL_APP)
+        helper.verify(PERSONAL_APP)
+        disableApp(helper.personalUser, PERSONAL_APP)
 
-        assertResolvesTo(workBrowsers)
+        helper.assertResolvesTo(helper.workBrowsers)
     }
 
     @RequireRunOnWorkProfile
     @Postsubmit(reason = "New test")
     @Test
     fun inWork_verifiedInOtherProfileDisabledComponent() {
-        verify(PERSONAL_APP)
-        disableComponent(personalUser, PERSONAL_COMPONENT)
+        helper.verify(PERSONAL_APP)
+        disableComponent(helper.personalUser, PERSONAL_COMPONENT)
 
-        assertResolvesTo(workBrowsers)
+        helper.assertResolvesTo(helper.workBrowsers)
     }
 
     @RequireRunOnWorkProfile
     @Postsubmit(reason = "New test")
     @Test
     fun inWork_verifiedInBothProfiles() {
-        verify(PERSONAL_APP, WORK_APP)
+        helper.verify(PERSONAL_APP, WORK_APP)
 
-        assertResolvesTo(WORK_COMPONENT)
+        helper.assertResolvesTo(WORK_COMPONENT)
     }
 
     @RequireRunOnWorkProfile
     @Postsubmit(reason = "New test")
     @Test
     fun inWork_verifiedInBothProfilesDisabledAppInOther() {
-        verify(PERSONAL_APP, WORK_APP)
-        disableApp(personalUser, PERSONAL_APP)
+        helper.verify(PERSONAL_APP, WORK_APP)
+        disableApp(helper.personalUser, PERSONAL_APP)
 
-        assertResolvesTo(WORK_COMPONENT)
+        helper.assertResolvesTo(WORK_COMPONENT)
     }
 
     @RequireRunOnWorkProfile
     @Postsubmit(reason = "New test")
     @Test
     fun inWork_verifiedInBothProfilesDisabledComponentInOther() {
-        verify(PERSONAL_APP, WORK_APP)
-        disableComponent(personalUser, PERSONAL_COMPONENT)
+        helper.verify(PERSONAL_APP, WORK_APP)
+        disableComponent(helper.personalUser, PERSONAL_COMPONENT)
 
-        assertResolvesTo(WORK_COMPONENT)
+        helper.assertResolvesTo(WORK_COMPONENT)
     }
 
     @RequireRunOnWorkProfile
     @Postsubmit(reason = "New test")
     @Test
     fun inWork_verifiedInBothProfilesDisabledAppInCurrent() {
-        verify(PERSONAL_APP, WORK_APP)
-        disableApp(workUser, WORK_APP)
+        helper.verify(PERSONAL_APP, WORK_APP)
+        disableApp(helper.workUser, WORK_APP)
 
-        assertResolvesTo(workBrowsers + FORWARD_TO_PARENT)
+        helper.assertResolvesTo(helper.workBrowsers + FORWARD_TO_PARENT)
     }
 
     @RequireRunOnWorkProfile
     @Postsubmit(reason = "New test")
     @Test
     fun inWork_verifiedInBothProfilesDisabledComponentInCurrent() {
-        verify(PERSONAL_APP, WORK_APP)
-        disableComponent(workUser, WORK_COMPONENT)
+        helper.verify(PERSONAL_APP, WORK_APP)
+        disableComponent(helper.workUser, WORK_COMPONENT)
 
-        assertResolvesTo(workBrowsers + FORWARD_TO_PARENT)
+        helper.assertResolvesTo(helper.workBrowsers + FORWARD_TO_PARENT)
     }
 
     @RequireRunOnWorkProfile
     @Postsubmit(reason = "New test")
     @Test
     fun inWork_verifiedInBothProfilesDisabledAppInBoth() {
-        verify(PERSONAL_APP, WORK_APP)
-        disableApp(personalUser, PERSONAL_APP)
-        disableApp(workUser, WORK_APP)
+        helper.verify(PERSONAL_APP, WORK_APP)
+        disableApp(helper.personalUser, PERSONAL_APP)
+        disableApp(helper.workUser, WORK_APP)
 
-        assertResolvesTo(workBrowsers)
+        helper.assertResolvesTo(helper.workBrowsers)
     }
 
     @RequireRunOnWorkProfile
     @Postsubmit(reason = "New test")
     @Test
     fun inWork_verifiedInBothProfilesDisabledComponentInBoth() {
-        verify(PERSONAL_APP, WORK_APP)
-        disableComponent(personalUser, PERSONAL_COMPONENT)
-        disableComponent(workUser, WORK_COMPONENT)
+        helper.verify(PERSONAL_APP, WORK_APP)
+        disableComponent(helper.personalUser, PERSONAL_COMPONENT)
+        disableComponent(helper.workUser, WORK_COMPONENT)
 
-        assertResolvesTo(workBrowsers)
+        helper.assertResolvesTo(helper.workBrowsers)
     }
 
     private fun disableApp(user: UserReference, packageName: String) {

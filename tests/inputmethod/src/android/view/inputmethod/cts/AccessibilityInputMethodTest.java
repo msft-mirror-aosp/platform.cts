@@ -58,6 +58,7 @@ import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.harrier.DeviceState;
 import com.android.cts.mocka11yime.MockA11yImeEventStream;
 import com.android.cts.mocka11yime.MockA11yImeSession;
 import com.android.cts.mocka11yime.MockA11yImeSettings;
@@ -66,6 +67,8 @@ import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -76,6 +79,10 @@ import java.util.function.BiFunction;
 @MediumTest
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class AccessibilityInputMethodTest extends EndToEndImeTestBase {
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(10);
     private static final long NOT_EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(1);
 
