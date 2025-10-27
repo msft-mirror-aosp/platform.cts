@@ -3540,8 +3540,10 @@ public class DecoderTest extends MediaTestBase {
         // Requires vendor support of the TUNNEL_PEEK feature
         Assume.assumeTrue("Vendor API level is not Android 12 or later.",
                 IS_VENDOR_AT_LEAST_S);
-        testTunneledVideoPeekOn(MediaFormat.MIMETYPE_VIDEO_HEVC,
-                "video_1280x720_mkv_h265_500kbps_25fps_aac_stereo_128kbps_44100hz.mkv", 25);
+        testTunneledVideoPeekOn(
+                MediaFormat.MIMETYPE_VIDEO_HEVC,
+                "video_480x360_mp4_hevc_650kbps_30fps_aac_stereo_128kbps_48000hz.mp4",
+                30);
     }
 
     /**
@@ -3641,8 +3643,10 @@ public class DecoderTest extends MediaTestBase {
         // Requires vendor support of the TUNNEL_PEEK feature
         Assume.assumeTrue("Vendor API level is not Android 12 or later.",
                 IS_VENDOR_AT_LEAST_S);
-        testTunneledVideoPeekOff(MediaFormat.MIMETYPE_VIDEO_HEVC,
-                "video_1280x720_mkv_h265_500kbps_25fps_aac_stereo_128kbps_44100hz.mkv", 25);
+        testTunneledVideoPeekOff(
+                MediaFormat.MIMETYPE_VIDEO_HEVC,
+                "video_480x360_mp4_hevc_650kbps_30fps_aac_stereo_128kbps_48000hz.mp4",
+                30);
     }
 
     /**
