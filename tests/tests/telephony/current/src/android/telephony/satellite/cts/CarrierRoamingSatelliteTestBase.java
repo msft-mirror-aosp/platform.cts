@@ -703,6 +703,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
                 CarrierConfigManager.KEY_CARRIER_ROAMING_SATELLITE_DEFAULT_SERVICES_INT_ARRAY,
                 supportedServices);
         bundle.putString(CarrierConfigManager.KEY_SATELLITE_NIDD_APN_NAME_STRING, NIDD_APN_NAME);
+        bundle.putBoolean(
+                CarrierConfigManager.KEY_OVERRIDE_WFC_ROAMING_MODE_WHILE_USING_NTN_BOOL, true);
 
         PersistableBundle plmnBundle = new PersistableBundle();
         plmnBundle.putIntArray(satellitePlmn, supportedServices);
