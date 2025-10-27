@@ -16,7 +16,6 @@
 
 package android.cts.statsdatom.permissionstate;
 
-import com.android.tradefed.util.RunUtil;
 import static com.google.common.truth.Truth.assertThat;
 
 import android.cts.statsdatom.lib.AtomTestUtils;
@@ -28,6 +27,7 @@ import com.android.os.AtomsProto;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.testtype.DeviceTestCase;
 import com.android.tradefed.testtype.IBuildReceiver;
+import com.android.tradefed.util.RunUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -82,9 +82,9 @@ public class DangerousPermissionStateTests extends DeviceTestCase implements IBu
         for (AtomsProto.Atom atom : ReportUtils.getGaugeMetricAtoms(getDevice())) {
             AtomsProto.DangerousPermissionState permissionState = atom.getDangerousPermissionState();
 
-            assertThat(permissionState.getPermissionName()).isNotNull();
+            assertThat(permissionState.hasPermissionName()).isTrue();
             assertThat(permissionState.getUid()).isAtLeast(0);
-            assertThat(permissionState.getPackageName()).isNotNull();
+            assertThat(permissionState.hasPackageName()).isTrue();
 
             if (getAppId(permissionState.getUid()) == testAppId) {
 

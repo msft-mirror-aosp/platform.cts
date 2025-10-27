@@ -16,12 +16,12 @@
 
 package android.cts.statsdatom.media;
 
+import static android.media.drm.Enums.DrmApi.DRM_API_INIT_CHECK;
 import static android.media.drm.Enums.DrmScheme.CLEAR_KEY_DASH_IF;
 import static android.media.drm.Enums.IDrmFrontend.IDRM_JNI;
 import static android.media.drm.Enums.SecurityLevel.SECURITY_LEVEL_MAX;
 import static android.media.drm.Enums.SecurityLevel.SECURITY_LEVEL_SW_SECURE_CRYPTO;
 import static android.media.drm.Enums.Status.ERROR_INVALID_STATE;
-import static android.media.drm.Enums.DrmApi.DRM_API_INIT_CHECK;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -100,16 +100,15 @@ public class MediaDrmAtomTests extends DeviceTestCase implements IBuildReceiver 
             MediaDrmAtoms.MediaDrmSessionOpened opened = event.getAtom().getMediaDrmSessionOpened();
             MediaDrmAtoms.MediaDrmErrored errored = event.getAtom().getMediaDrmErrored();
 
-            if (created != null && created.getUid() == testAppUid) {
+            if (created.getUid() == testAppUid) {
                 createdList.add(created);
             }
 
-            if (opened != null && opened.getUid() == testAppUid) {
+            if (opened.getUid() == testAppUid) {
                 openedList.add(opened);
             }
 
-            if (errored != null && errored.getUid() == testAppUid
-                    && errored.getApi() != DRM_API_INIT_CHECK) {
+            if (errored.getUid() == testAppUid && errored.getApi() != DRM_API_INIT_CHECK) {
                 erroredList.add(errored);
             }
         }

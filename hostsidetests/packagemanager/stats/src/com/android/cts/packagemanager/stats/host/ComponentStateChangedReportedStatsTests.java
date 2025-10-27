@@ -338,8 +338,8 @@ public class ComponentStateChangedReportedStatsTests extends BaseHostJUnit4Test 
         for (int i = 0; i < eventMetricData.size(); i++) {
             ComponentStateChangedReported atom = eventMetricData.get(i).getAtom().getExtension(
                     PackagemanagerExtensionAtoms.componentStateChangedReported);
-            if (atom != null && atom.getUid() == PackageManagerStatsTestsBase.getAppUid(getDevice(),
-                    TEST_INSTALL_PACKAGE)) {
+            if (atom.getUid()
+                    == PackageManagerStatsTestsBase.getAppUid(getDevice(), TEST_INSTALL_PACKAGE)) {
                 dataList.add(eventMetricData.get(i));
             }
         }

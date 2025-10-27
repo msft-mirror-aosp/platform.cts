@@ -23,15 +23,15 @@ import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.CommandResult;
 import com.android.tradefed.util.CommandStatus;
 
-import perfetto.protos.PerfettoConfig.TracingServiceState;
-import perfetto.protos.PerfettoConfig.DataSourceDescriptor;
-
-import java.util.Base64;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import perfetto.protos.PerfettoConfig.DataSourceDescriptor;
+import perfetto.protos.PerfettoConfig.TracingServiceState;
+
+import java.util.Base64;
 
 /**
  * Test that ensures the device registers android.surfaceflinger.frame perfetto producer
@@ -63,7 +63,8 @@ public class CtsFrameTracerDataSourceTest extends BaseHostJUnit4Test {
 
     @Test
     public void testFrameTracerProducerAvailable() throws Exception {
-        CommandResult queryResult = getDevice().executeShellV2Command("perfetto --query-raw | base64");
+        CommandResult queryResult =
+                getDevice().executeShellV2Command("perfetto --query-raw | base64");
         Assert.assertEquals(CommandStatus.SUCCESS, queryResult.getStatus());
         byte[] decodedBytes = Base64.getMimeDecoder().decode(queryResult.getStdout());
         TracingServiceState state = TracingServiceState.parseFrom(decodedBytes);
@@ -72,11 +73,9 @@ public class CtsFrameTracerDataSourceTest extends BaseHostJUnit4Test {
         boolean sourceFound = false;
         for (int i = 0; i < dataSourcesCount; i++) {
             DataSourceDescriptor descriptor = state.getDataSources(i).getDsDescriptor();
-            if (descriptor != null) {
-                if (descriptor.getName().equals(FRAME_TRACER_SOURCE_NAME)) {
-                    sourceFound = true;
-                    break;
-                }
+            if (descriptor.getName().equals(FRAME_TRACER_SOURCE_NAME)) {
+                sourceFound = true;
+                break;
             }
         }
         Assert.assertTrue("Producer " + FRAME_TRACER_SOURCE_NAME + " not found", sourceFound);

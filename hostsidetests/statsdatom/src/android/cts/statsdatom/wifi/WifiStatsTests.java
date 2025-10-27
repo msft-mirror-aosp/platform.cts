@@ -296,13 +296,13 @@ public class WifiStatsTests extends DeviceTestCase implements IBuildReceiver {
                         data.stream().map(AbstractMessage::toString).reduce((acc, i) -> acc + i)
         ).that(data.size()).isIn(Range.closed(2, 3));
 
+        assertThat(data.get(data.size() - 2).getAtom().hasWifiDisconnectReported()).isTrue();
+        assertThat(data.get(data.size() - 1).getAtom().hasWifiConnectionResultReported()).isTrue();
+
         AtomsProto.WifiDisconnectReported a0 =
                 data.get(data.size() - 2).getAtom().getWifiDisconnectReported();
         AtomsProto.WifiConnectionResultReported a1 =
                 data.get(data.size() - 1).getAtom().getWifiConnectionResultReported();
-
-        assertThat(a0).isNotNull();
-        assertThat(a1).isNotNull();
 
         assertThat(a0.getConnectedDurationSeconds()).isGreaterThan(0);
         int maxLinkSpeedMbps = 1_000_000; /* 640K ought to be enough for anybody. */
