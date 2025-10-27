@@ -589,14 +589,14 @@ public class MediaStore_FilesTest {
         MediaProviderTestUtils.stageFile(R.raw.test_motion_photo, file);
         Uri imageUri = MediaStore.scanFile(mResolver, file);
 
-        String[] projection = new String[] {FileColumns.MIME_TYPE, FileColumns._SPECIAL_FORMAT};
+        String[] projection = new String[] {FileColumns.MIME_TYPE, FileColumns.SPECIAL_FORMAT};
         String selection = FileColumns.DATA + " LIKE ?";
         String[] selectionArgs = new String[] {file.getAbsolutePath()};
 
         try (Cursor c = mResolver.query(uri, projection, selection, selectionArgs, null)) {
             assertTrue(c.moveToFirst());
             assertEquals("image/jpeg", c.getString(0));
-            assertEquals(FileColumns._SPECIAL_FORMAT_MOTION_PHOTO, c.getLong(1));
+            assertEquals(FileColumns.SPECIAL_FORMAT_MOTION_PHOTO, c.getLong(1));
         } finally {
             mResolver.delete(imageUri, null);
         }
@@ -614,14 +614,14 @@ public class MediaStore_FilesTest {
         MediaProviderTestUtils.stageFile(R.raw.iso88591_11, file);
         Uri imageUri = MediaStore.scanFile(mResolver, file);
 
-        String[] projection = new String[] {FileColumns.MIME_TYPE, FileColumns._SPECIAL_FORMAT};
+        String[] projection = new String[] {FileColumns.MIME_TYPE, FileColumns.SPECIAL_FORMAT};
         String selection = FileColumns.DATA + " LIKE ?";
         String[] selectionArgs = new String[] {file.getAbsolutePath()};
 
         try (Cursor c = mResolver.query(uri, projection, selection, selectionArgs, null)) {
             assertTrue(c.moveToFirst());
             assertEquals("audio/mpeg", c.getString(0));
-            assertEquals(FileColumns._SPECIAL_FORMAT_NONE, c.getLong(1));
+            assertEquals(FileColumns.SPECIAL_FORMAT_NONE, c.getLong(1));
         } finally {
             mResolver.delete(imageUri, null);
         }
