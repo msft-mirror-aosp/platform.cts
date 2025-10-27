@@ -41,7 +41,7 @@ public class UsesPermissionPurposeInfoTest {
         Parcel p = Parcel.obtain();
         // Test constructor
         UsesPermissionPurposeInfo usesPermissionPurposeInfo =
-                new UsesPermissionPurposeInfo(MOCK_PERMISSION_NAME, MOCK_GENERAL_PURPOSES);
+                new UsesPermissionPurposeInfo(MOCK_PERMISSION_NAME, MOCK_GENERAL_PURPOSES, 1);
 
         // Test toString, describeContents
         assertNotNull(usesPermissionPurposeInfo.toString());
@@ -59,5 +59,6 @@ public class UsesPermissionPurposeInfoTest {
             UsesPermissionPurposeInfo expected, UsesPermissionPurposeInfo actual) {
         assertEquals(expected.getPermissionName(), actual.getPermissionName());
         assertEquals(expected.getGeneralPurposes(), actual.getGeneralPurposes());
+        assertEquals(expected.getPurposeStringResource(), actual.getPurposeStringResource());
     }
 }
