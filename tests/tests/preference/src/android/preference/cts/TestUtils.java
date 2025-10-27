@@ -184,16 +184,26 @@ public class TestUtils {
         for (UiObject2 scrollableView : scrollableViewList) {
             // Swipe far away from the edges to avoid triggering navigation gestures
             scrollableView.setGestureMarginPercentage(0.25f);
-            // Scroll from the top to the bottom until the text object is found.
-            scrollableView.scroll(Direction.UP, 1, /* pixels per second to scroll */ 1000);
-            boolean moreToScroll = true;
-            while (moreToScroll) {
+
+            // Scroll will not go all the way to the top if there is less scrollable space remaining
+            // than the scroll value
+            while (scrollableView.fling(Direction.UP)) {
+                mDevice.waitForIdle();
+            }
+
+            if (scrollableView.findObject(By.text(text)) != null) {
+                return true;
+            }
+
+            // Now scroll down incrementally to find the text object.
+            boolean moreToScrollDown = true;
+            while (moreToScrollDown) {
                 if (scrollableView.findObject(By.text(text)) != null) {
                     return true;
                 }
 
                 // Scroll down incrementally to avoid skipping the view on slower systems
-                moreToScroll =
+                moreToScrollDown =
                         scrollableView.scroll(
                                 Direction.DOWN, 0.2f, /* pixels per second to scroll */ 1000);
                 mDevice.waitForIdle();
