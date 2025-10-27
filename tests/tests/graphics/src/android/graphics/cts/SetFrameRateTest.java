@@ -123,9 +123,6 @@ public class SetFrameRateTest {
 
     @Test
     public void testAtLeast_Seamless() throws InterruptedException {
-        // Could not get CheckFlagsRule to work with AdoptShellPermissionsRule, so assumeTrue on the
-        // flag instead.
-        assumeTrue(com.android.graphics.surfaceflinger.flags.Flags.arrSetframerateGteEnum());
         FrameRateCtsActivity activity = mActivityRule.getActivity();
         activity.testFrameRateMatch(
                 Surface.FRAME_RATE_COMPATIBILITY_AT_LEAST,
@@ -135,9 +132,6 @@ public class SetFrameRateTest {
 
     @Test
     public void testAtLeast_NonSeamless() throws InterruptedException {
-        // Could not get CheckFlagsRule to work with AdoptShellPermissionsRule, so assumeTrue on the
-        // flag instead.
-        assumeTrue(com.android.graphics.surfaceflinger.flags.Flags.arrSetframerateGteEnum());
         FrameRateCtsActivity activity = mActivityRule.getActivity();
         activity.testFrameRateMatch(
                 Surface.FRAME_RATE_COMPATIBILITY_AT_LEAST, Surface.CHANGE_FRAME_RATE_ALWAYS, false);
