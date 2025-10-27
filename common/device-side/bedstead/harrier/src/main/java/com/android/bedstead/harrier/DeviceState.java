@@ -18,6 +18,7 @@ package com.android.bedstead.harrier;
 
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.content.pm.PackageManager.FEATURE_MANAGED_USERS;
+import static android.content.pm.PackageManager.FEATURE_DEVICE_ADMIN;
 import static android.os.Build.VERSION.SDK_INT;
 
 import static com.android.bedstead.harrier.AnnotationExecutorUtil.checkFailOrSkip;
@@ -2462,6 +2463,12 @@ public final class DeviceState extends HarrierRule {
     }
 
     private boolean tryClearUserRestrictionWithDeviceOwner(String restriction) {
+        // (b/395545564): must check if the device has device_admin feature before
+        // performing any device owner related action
+        if (!TestApis.packages().features().contains(FEATURE_DEVICE_ADMIN)) {
+            return false;
+        }
+
         mDeviceOwnerComponent.ensureHasDeviceOwner(FailureMode.FAIL,
                 /* isPrimary= */ false, EnsureHasDeviceOwner.HeadlessDeviceOwnerType.NONE,
                 /* affiliationIds= */ new HashSet<>(), /* type= */ DeviceOwnerType.DEFAULT,
@@ -2481,6 +2488,12 @@ public final class DeviceState extends HarrierRule {
 
     private boolean tryClearUserRestrictionWithProfileOwner(UserReference onUser,
                                                             String restriction) {
+        // (b/395545564): must check if the device has device_admin feature before
+        // performing any profile owner related action
+        if (!TestApis.packages().features().contains(FEATURE_DEVICE_ADMIN)) {
+            return false;
+        }
+
         mProfileOwnersComponent.ensureHasProfileOwner(onUser,
                 /* isPrimary= */ false, /* isParentInstance= */ false,
                 /* affiliationIds= */ new HashSet<>(), EnsureHasProfileOwnerKt.DEFAULT_KEY,
