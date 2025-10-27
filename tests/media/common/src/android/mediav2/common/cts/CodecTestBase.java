@@ -129,24 +129,21 @@ public abstract class CodecTestBase {
             ApiLevelUtil.isFirstApiAtLeast(Build.VERSION_CODES.TIRAMISU);
     public static final boolean FIRST_SDK_IS_AT_LEAST_V =
             ApiLevelUtil.isFirstApiAtLeast(Build.VERSION_CODES.VANILLA_ICE_CREAM);
-    public static final boolean VNDK_IS_AT_LEAST_T =
-            SystemProperties.getInt("ro.vndk.version", Build.VERSION_CODES.CUR_DEVELOPMENT)
-                    >= Build.VERSION_CODES.TIRAMISU;
+    public static final int BOARD_API_LEVEL =
+            SystemProperties.getInt("ro.board.api_level", Build.VERSION_CODES.CUR_DEVELOPMENT);
+    public static final int VNDK_VERSION =
+            SystemProperties.getInt("ro.vndk.version", BOARD_API_LEVEL);
+    public static final boolean VNDK_IS_AT_LEAST_T = VNDK_VERSION >= Build.VERSION_CODES.TIRAMISU;
     public static final boolean VNDK_IS_AT_LEAST_U =
-            SystemProperties.getInt("ro.vndk.version", Build.VERSION_CODES.CUR_DEVELOPMENT)
-                    >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+            VNDK_VERSION >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
     public static final boolean VNDK_IS_BEFORE_U =
-            SystemProperties.getInt("ro.vndk.version", Build.VERSION_CODES.CUR_DEVELOPMENT)
-                    < Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+            VNDK_VERSION < Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
     public static final boolean VNDK_IS_AT_MOST_U =
-            SystemProperties.getInt("ro.vndk.version", Build.VERSION_CODES.CUR_DEVELOPMENT)
-                    <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+            VNDK_VERSION <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
     public static final boolean BOARD_SDK_IS_AT_LEAST_T =
-            SystemProperties.getInt("ro.board.api_level", Build.VERSION_CODES.CUR_DEVELOPMENT)
-                    >= Build.VERSION_CODES.TIRAMISU;
+            BOARD_API_LEVEL >= Build.VERSION_CODES.TIRAMISU;
     public static final boolean BOARD_SDK_IS_BEFORE_U =
-            SystemProperties.getInt("ro.board.api_level", Build.VERSION_CODES.CUR_DEVELOPMENT)
-                    < Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+            BOARD_API_LEVEL < Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
     public static final int ANDROID_VENDOR_API_202404 = 202404;
     // ro.vendor.api_level is guaranteed to be set on devices running in Android T and above,
     // so using a default of 0 when not defined is safe to detect devices launching with 202404.
