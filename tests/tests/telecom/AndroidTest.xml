@@ -45,18 +45,6 @@
         <option name="test-file-name" value="NonUiInCallServiceWoExport.apk" />
     </target_preparer>
 
-    <!-- TODO:: remove FeatureFlagTargetPreparer once cache_call_audio_callbacks is released-->
-    <target_preparer class="com.android.tradefed.targetprep.FeatureFlagTargetPreparer">
-        <option name="flag-value"
-                value="telecom/com.android.server.telecom.flags.cache_call_audio_callbacks=true"/>
-        <option name="flag-value"
-                value="telecom/com.android.server.telecom.flags.unregister_unresolvable_accounts=true"/>
-        <option name="flag-value"
-                value="telecom/com.android.server.telecom.flags.telecom_main_user_in_block_check=true"/>
-        <option name="flag-value"
-                value="telecom/com.android.server.telecom.flags.telecom_main_user_in_get_respond_message_app=true"/>
-    </target_preparer>
-
     <!-- Enabling change id ALLOW_TEST_API_ACCESS allows that package to access @TestApi methods -->
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <option name="run-command" value="rm -rf /data/system/dropbox/ecall*" />
