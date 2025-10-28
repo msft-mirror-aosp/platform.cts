@@ -907,6 +907,96 @@ public class NotificationAssistantServiceTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(
+            Flags.FLAG_NOTIFICATION_CONVERSATION_CHANNEL_DELETION)
+    public void testDeleteConversationNotificationChannel() throws Exception {
+        setUpListeners(); // also enables assistant
+
+        // --- Scenario 1: Successful Deletion ---
+        // Send a conversation notification to create a base channel.
+        sendConversationNotification(mAssistant.mNotificationId);
+        StatusBarNotification sbn =
+                mHelper.findPostedNotification(
+                        null, mAssistant.mNotificationId, NotificationHelper.SEARCH_TYPE.POSTED);
+        assertNotNull("SBN should not be null", sbn);
+        String parentChannelId = sbn.getNotification().getChannelId();
+        String conversationId = sbn.getNotification().getShortcutId();
+
+        // Create the conversation notification channel using the API.
+        NotificationChannel createdChannel =
+                mAssistant.createConversationNotificationChannelForPackage(
+                        mContext.getPackageName(), Process.myUserHandle(), parentChannelId, conversationId);
+        assertNotNull("Created channel should not be null", createdChannel);
+        String conversationChannelId = createdChannel.getId();
+
+        // Verify the conversation channel now exists.
+        List<NotificationChannel> channels = mAssistant.getNotificationChannels(sbn.getPackageName(), sbn.getUser());
+        assertTrue("Conversation channel should exist after creation",
+                channels.stream().anyMatch(c -> c.getId().equals(conversationChannelId)));
+
+        // --- Send an additional notification specifically to the created conversation channel ---
+        int convoNotificationId = mAssistant.mNotificationId + 1;
+        Person person = new Person.Builder().setName("test").build();
+        Notification convoNotification = new Notification.Builder(mContext, conversationChannelId) // Use the new channel ID
+                .setContentTitle("Convo Test")
+                .setSmallIcon(ICON_ID)
+                .setStyle(new Notification.MessagingStyle(person)
+                        .addMessage("Test message in conversation channel", SystemClock.currentThreadTimeMillis(), person))
+                .build();
+        mNotificationManager.notify(convoNotificationId, convoNotification);
+        StatusBarNotification sbnConvo =
+                mHelper.findPostedNotification(
+                        null, convoNotificationId, NotificationHelper.SEARCH_TYPE.POSTED);
+        assertNotNull("Notification in conversation channel should exist", sbnConvo);
+        assertEquals(conversationChannelId, sbnConvo.getNotification().getChannelId());
+
+        // Delete the conversation notification channel.
+        mAssistant.deleteConversationNotificationChannel(mContext.getPackageName(), Process.myUserHandle(), conversationChannelId);
+
+        // Verify the conversation channel no longer exists.
+        channels = mAssistant.getNotificationChannels(sbn.getPackageName(), sbn.getUser());
+        assertFalse("Conversation channel should not exist after deletion",
+                channels.stream().anyMatch(c -> c.getId().equals(conversationChannelId)));
+
+        // --- Verify the notification in the conversation channel was canceled ---
+        StatusBarNotification sbnConvoAfterDelete =
+                mHelper.findPostedNotification(
+                        null, convoNotificationId, NotificationHelper.SEARCH_TYPE.POSTED);
+        assertNull("Notification in channel should be canceled after channel deletion", sbnConvoAfterDelete);
+
+        // Verify parent channel still exists.
+        assertTrue("Parent channel should still exist",
+                channels.stream().anyMatch(c -> c.getId().equals(parentChannelId)));
+
+        // --- Scenario 2: Deleting Non-Existent Channel ---
+        // Attempt to delete the same channel ID again, which is now non-existent.
+        // This should not throw any exception, demonstrating idempotency.
+        try {
+            mAssistant.deleteConversationNotificationChannel(mContext.getPackageName(), Process.myUserHandle(), conversationChannelId);
+        } catch (Exception e) {
+            fail("Deleting an already deleted channel ID should not throw an exception: " + e.getMessage());
+        }
+
+        // --- Scenario 3: Deleting Non-Conversation Channel ---
+        // Attempt to delete a non-conversation channel using the conversation delete API.
+        int initialChannelCount = mAssistant.getNotificationChannels(mContext.getPackageName(), Process.myUserHandle()).size();
+        try {
+            mAssistant.deleteConversationNotificationChannel(mContext.getPackageName(), Process.myUserHandle(), NOTIFICATION_CHANNEL_ID);
+        } catch (Exception e) {
+            fail("Deleting a non-conversation channel with this API should not throw an exception: " + e.getMessage());
+        }
+
+        // Verify the non-conversation channel still exists.
+        channels = mAssistant.getNotificationChannels(mContext.getPackageName(), Process.myUserHandle());
+        assertTrue("Non-conversation channel should still exist",
+                channels.stream().anyMatch(c -> c.getId().equals(NOTIFICATION_CHANNEL_ID)));
+        // Verify no other channels were accidentally deleted.
+        assertEquals("Channel count should not change when attempting to delete non-conversation channel",
+                initialChannelCount, channels.size());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NOTIFICATION_CLASSIFICATION)
     public void testSetAdjustmentTypeSupportedState_false() throws Exception {
         setUpListeners(); // also enables assistant
         mAssistant.setAdjustmentTypeSupportedState(KEY_IMPORTANCE, false);
