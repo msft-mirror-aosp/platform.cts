@@ -90,7 +90,7 @@ class ControllerButtonRemappingTest {
     fun testControllerRemapping() {
         UinputGamepad(instrumentation).use { gamepadDevice ->
             val inputDevice = inputManager.getInputDevice(gamepadDevice.deviceId)!!
-            for (testData in keyRemapping) {
+            for (testData in keyRemappingData) {
                 // Add remapping
                 remapControllerButton(
                     inputDevice.identifier,
@@ -105,7 +105,7 @@ class ControllerButtonRemappingTest {
                 verifyKeyPress(gamepadDevice, testData.fromScanCode, testData.toKey)
 
                 // Get remapping
-                val remapping = getControllerButtonRemapping(inputDevice.identifier)
+                val remapping = getControllerButtonRemappings(inputDevice.identifier)
                 assertEquals(remapping, mapOf(testData.fromKey to testData.toKey))
 
                 // Remove remapping
@@ -125,10 +125,10 @@ class ControllerButtonRemappingTest {
     }
 
     @Test
-    fun testClearAllRemapping() {
+    fun testClearAllControllerButtonRemappings() {
         UinputGamepad(instrumentation).use { gamepadDevice ->
             val inputDevice = inputManager.getInputDevice(gamepadDevice.deviceId)!!
-            for (testData in keyRemapping) {
+            for (testData in keyRemappingData) {
                 // Add remapping
                 remapControllerButton(
                     inputDevice.identifier,
@@ -136,7 +136,7 @@ class ControllerButtonRemappingTest {
                     testData.toKey
                 )
             }
-            for (testData in keyRemapping) {
+            for (testData in keyRemappingData) {
                 // Wait for remapping at KL level
                 PollingCheck.waitFor {
                     testData.toKey == inputDevice.getKeyCodeForKeyLocation(testData.fromKey)
@@ -144,9 +144,9 @@ class ControllerButtonRemappingTest {
             }
 
             // Clear all remapping
-            clearAllControllerButtonRemapping(inputDevice.identifier)
+            clearAllControllerButtonRemappings(inputDevice.identifier)
 
-            for (testData in keyRemapping) {
+            for (testData in keyRemappingData) {
                 PollingCheck.waitFor {
                     // Assuming there is no default KL mapping defined otherwise removing the custom
                     // remapping will fallback to default KL remapping for the device, which can be
@@ -197,16 +197,16 @@ class ControllerButtonRemappingTest {
         )
     }
 
-    private fun clearAllControllerButtonRemapping(identifier: InputDeviceIdentifier) {
+    private fun clearAllControllerButtonRemappings(identifier: InputDeviceIdentifier) {
         SystemUtil.runWithShellPermissionIdentity(
-            { inputManager.clearAllControllerButtonRemapping(identifier) },
+            { inputManager.clearAllControllerButtonRemappings(identifier) },
             "android.permission.CONTROLLER_REMAPPING"
         )
     }
 
-    private fun getControllerButtonRemapping(identifier: InputDeviceIdentifier): Map<Int, Int> {
+    private fun getControllerButtonRemappings(identifier: InputDeviceIdentifier): Map<Int, Int> {
         return SystemUtil.runWithShellPermissionIdentity(
-            ThrowingSupplier { inputManager.getControllerButtonRemapping(identifier) },
+            ThrowingSupplier { inputManager.getControllerButtonRemappings(identifier) },
             "android.permission.CONTROLLER_REMAPPING"
         )
     }
@@ -219,7 +219,7 @@ class ControllerButtonRemappingTest {
     )
 
     companion object {
-        val keyRemapping =
+        val keyRemappingData =
             listOf(
                 TestData(
                     KeyEvent.KEYCODE_BUTTON_A,
