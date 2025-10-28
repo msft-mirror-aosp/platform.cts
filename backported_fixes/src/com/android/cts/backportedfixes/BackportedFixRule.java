@@ -80,7 +80,7 @@ public class BackportedFixRule implements TestRule {
                 try {
                     statement.evaluate();
                 } catch (AssertionError e) {
-                    if (mVerifier.getStatus(issue.value()) == Status.Fixed) {
+                    if (mVerifier.getStatus(issue.value()).isResolved()) {
                         throw e;
                     }
                     String msg =
