@@ -6910,7 +6910,7 @@ public class TelephonyManagerTest {
 
     @Test
     @ApiTest(apis = {"android.telephony.TelephonyManager#getLastKnownCellIdentity"})
-    @RequiresFlagsEnabled(com.android.server.telecom.flags.Flags.FLAG_GET_LAST_KNOWN_CELL_IDENTITY)
+    @RequiresFlagsEnabled(android.telecom.flags.Flags.FLAG_GET_LAST_KNOWN_CELL_IDENTITY)
     public void testGetLastKnownCellIdentity() {
         mLocationHelper.enable();
 
