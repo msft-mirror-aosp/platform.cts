@@ -98,8 +98,8 @@ _WAIT_FOR_CONFIG_COMPLETION = 0.2
 _ARDUINO_STR = 'Arduino'
 _LIGHTS_STR = 'lights'
 _ROTATOR_STR = 'rotator'
-_STR_340 = '340'
-_MEGA_STR = 'Mega'
+STR_340 = '340'
+MEGA_STR = 'Mega'
 DEFAULT_GEN2_ROTATOR_NAME = 'gen2_rotator'
 DEFAULT_GEN2_LIGHTS_NAME = 'gen2_lights'
 
@@ -164,16 +164,20 @@ def get_usb_devices_connected():
       logging.exception(error)
 
 
-def find_serial_port(name):
+def find_serial_port(name, port=None):
   """Determine the serial port for gen2 rig controllers and open.
 
   serial port details: udevadm info -q property --name=<port-name>
 
   Args:
     name: str; string of device to locate (ie. 'gen2_motor', 'gen2_lights')
+    port: str; port name to use (ie. 'ttyUSB0'). If None, will use the first
+      matching port found.
   Returns:
     serial port object
   """
+  if port is not None:
+    logging.debug('Searching for port: %s', port)
   port_name = None
   devices = pyudev.Context()
   for device in devices.list_devices(subsystem='tty', ID_BUS='usb'):
@@ -181,19 +185,23 @@ def find_serial_port(name):
     if _LIGHTS_STR in name:
       logging.debug('Finding serial port for lights')
       if _ARDUINO_STR in device['ID_VENDOR_FROM_DATABASE']:
-        if _MEGA_STR in  device['ID_MODEL_FROM_DATABASE']:
-          port_name = device['DEVNAME']
-          logging.debug('Lighting controller port_name: %s', port_name)
-          return serial.Serial(port_name, _ARDUINO_BAUDRATE, timeout=1)
+        if MEGA_STR in  device['ID_MODEL_FROM_DATABASE']:
+          if port is None or port in device['DEVNAME']:
+            port_name = device['DEVNAME']
+            logging.debug('Lighting controller port_name: %s', port_name)
+            return serial.Serial(port_name, _ARDUINO_BAUDRATE, timeout=1)
 
     if _ROTATOR_STR in name:
       logging.debug('Finding serial port for rotator')
-      if _STR_340 in device['ID_MODEL_FROM_DATABASE']:
-        port_name = device['DEVNAME']
-        logging.debug('Rotator controller port_name: %s', port_name)
-        return serial.Serial(port_name, _ROTATOR_BAUDRATE, timeout=1)
+      if STR_340 in device['ID_MODEL_FROM_DATABASE']:
+        if port is None or port in device['DEVNAME']:
+          port_name = device['DEVNAME']
+          logging.debug('Rotator controller port_name: %s', port_name)
+          return serial.Serial(port_name, _ROTATOR_BAUDRATE, timeout=1)
 
   if port_name is None:
+    if port is not None:
+      raise ValueError(f'Port {port} requested, but not found.')
     logging.debug('Failed to find the serial port.')
     return None
 
@@ -454,7 +462,8 @@ def _reset_params_to_default(serial_port, channel):
   time.sleep(_WAIT_FOR_CONFIG_COMPLETION)
 
 
-def rotation_rig(rotate_cntl, rotate_ch, num_rotations, angles):
+def rotation_rig(
+    rotate_cntl, rotate_ch, num_rotations, angles, port=None):
   """Rotate the phone n times using rotate_cntl and rotate_ch defined.
 
   rotate_ch is hard wired and must be determined from physical setup.
@@ -470,6 +479,8 @@ def rotation_rig(rotate_cntl, rotate_ch, num_rotations, angles):
     rotate_ch: str to identify rotation channel number.
     num_rotations: int number of rotations.
     angles: list of ints; servo angle to move to.
+    port: str; port name to use (ie. 'ttyUSB0'). If None, will use the first
+      matching port found.
   """
 
   logging.debug('Controller: %s, ch: %s', rotate_cntl, rotate_ch)
@@ -477,7 +488,7 @@ def rotation_rig(rotate_cntl, rotate_ch, num_rotations, angles):
     raise ValueError(
         f'angles should contain 2 values, but it contains {len(angles)}')
   try:
-    serial_port = find_serial_port(rotate_cntl)
+    serial_port = find_serial_port(rotate_cntl, port=port)
     logging.debug('found serial port')
     channel = int(rotate_ch)
     _check_channel(channel)

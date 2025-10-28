@@ -152,6 +152,7 @@ def collect_data_with_surfaces(cam, tablet_device, output_surfaces,
             _NUM_ROTATIONS,
             sensor_fusion_utils.ARDUINO_ANGLES_STABILIZATION,
         ),
+        kwargs={'port': rot_rig.get('port')}
     )
   else:
     logging.debug('using sensor_fusion rotator')

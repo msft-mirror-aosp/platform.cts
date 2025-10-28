@@ -1262,7 +1262,9 @@ def main():
   lighting_cntl = test_params_content.get('lighting_cntl', 'None')
   lighting_ch = test_params_content.get('lighting_ch', 'None')
   if lighting_cntl == gen2_rig_controller_utils.DEFAULT_GEN2_LIGHTS_NAME:
-    lights_port = gen2_rig_controller_utils.find_serial_port(lighting_cntl)
+    lights_port = gen2_rig_controller_utils.find_serial_port(
+        lighting_cntl, port=test_params_content.get('lights_port')
+    )
     if lights_port:
       lights_port.close()
   else:

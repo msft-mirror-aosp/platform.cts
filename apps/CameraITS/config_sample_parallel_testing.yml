@@ -87,3 +87,53 @@ TestBeds:
       lighting_cntl: <controller-type>  # can be arduino or "None"
       lighting_ch: <controller-channel>
       scene: "sensor_fusion"
+
+# TEST_BED_GEN2_INDEX_0 and TEST_BED_GEN2_INDEX_1 are for parallel testing on gen2 rig
+# Note: No tablet scenes testbeds can be present when running parallel testing on gen2 rigs
+TestBeds:
+  - Name: TEST_BED_GEN2_INDEX_0
+    # Test configuration for scene_ip and scene_gen2_chart
+    Controllers:
+        AndroidDevice:
+          - serial: <device-id>  # quotes needed if serial id entirely numeric
+            label: dut
+    TestParams:
+      chart_distance: 30
+      rotator_cntl: gen2_rotator   # gen2 rig specific. "None" if gen2 rig not available
+      rotator_ch: <controller-channel>
+      camera: <camera-id>
+      foldable_device: "False"  # "True" if testing foldable device
+      tablet_device: "False"  # "True" if testing tablet device
+      lighting_cntl: gen2_lights  # gen2 rig specific. "None" if gen2 rig not available
+      lighting_ch: <controller-channel>
+      scene: scene_ip  # or scene_gen2_chart
+      rotator_port: /dev/ttyUSB0  # run tools/find_gen2_boards.py to find ports
+      lights_port: /dev/ttyACM0
+      # For sensor fusion tests
+      fps: 30
+      img_size: 640,480  # width, height
+      test_length: 7
+      debug_mode: "False"  # quotes are needed here
+
+  - Name: TEST_BED_GEN2_INDEX_1
+    Controllers:
+        AndroidDevice:
+          - serial: <device-id>  # quotes needed if serial id entirely numeric
+            label: dut
+    TestParams:
+      chart_distance: 30
+      rotator_cntl: gen2_rotator   # gen2 rig specific. "None" if gen2 rig not available
+      rotator_ch: <controller-channel>
+      camera: <camera-id>
+      foldable_device: "False"  # "True" if testing foldable device
+      tablet_device: "False"  # "True" if testing tablet device
+      lighting_cntl: gen2_lights  # gen2 rig specific. "None" if gen2 rig not available
+      lighting_ch: <controller-channel>
+      scene: scene_ip  # or scene_gen2_chart
+      rotator_port: /dev/ttyUSB1
+      lights_port: /dev/ttyACM1
+      # For sensor fusion tests
+      fps: 30
+      img_size: 640,480  # width, height
+      test_length: 7
+      debug_mode: "False"  # quotes are needed here
