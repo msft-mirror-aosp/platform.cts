@@ -34,6 +34,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import android.content.DialogInterface;
+import android.hardware.biometrics.BiometricManager;
 import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.biometrics.BiometricTestSession;
 import android.hardware.biometrics.FallbackOption;
@@ -58,6 +59,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.regex.Pattern;
 
@@ -490,6 +492,44 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
             // Verify listener
             verify(listeners[0]).onClick(any(), anyInt());
         }
+    }
+
+    @ApiTest(
+            apis = {
+                "android.hardware.biometrics.BiometricPrompt.Builder#addFallbackOption",
+                "android.hardware.biometrics.FallbackOption#getIconType"
+            })
+    @RequiresFlagsEnabled({
+        Flags.FLAG_BP_FALLBACK_OPTIONS,
+        Flags.FLAG_ADD_FALLBACK,
+        Flags.FLAG_ADD_FALLBACK_ICONS
+    })
+    @Test
+    public void testFallbackOptions_icons() {
+        final String resetText = "Reset Password";
+        final String messageText = "Message";
+        final String supervisedText = "Supervised Account";
+        final int resetIcon = BiometricManager.ICON_TYPE_RESET;
+        final int messageIcon = BiometricManager.ICON_TYPE_MESSAGE;
+        final int supervisedIcon = BiometricManager.ICON_TYPE_SUPERVISED;
+        final Executor executor = mHandler::post;
+        final BiometricPrompt.Builder builder =
+                new BiometricPrompt.Builder(mContext)
+                        .setTitle("Title")
+                        .addFallbackOption(resetText, resetIcon, executor, (dialog, which) -> {})
+                        .addFallbackOption(
+                                messageText, messageIcon, executor, (dialog, which) -> {})
+                        .addFallbackOption(
+                                supervisedText, supervisedIcon, executor, (dialog, which) -> {});
+
+        final BiometricPrompt prompt = builder.build();
+        final List<FallbackOption> fallbackOptions = prompt.getFallbackOptions();
+        assertThat(fallbackOptions.get(0).getText().toString()).isEqualTo(resetText);
+        assertThat(fallbackOptions.get(0).getIconType()).isEqualTo(resetIcon);
+        assertThat(fallbackOptions.get(1).getText().toString()).isEqualTo(messageText);
+        assertThat(fallbackOptions.get(1).getIconType()).isEqualTo(messageIcon);
+        assertThat(fallbackOptions.get(2).getText().toString()).isEqualTo(supervisedText);
+        assertThat(fallbackOptions.get(2).getIconType()).isEqualTo(supervisedIcon);
     }
 
     @ApiTest(
