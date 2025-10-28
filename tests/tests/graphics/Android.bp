@@ -131,8 +131,6 @@ android_ravenwood_test {
         // Deprecated class
         "src/android/graphics/cts/MovieTest.java",
     ],
-    // Graphics on Ravenwood is still experimental, so the ravenwood team owns it for now.
-    team: "trendy_team_ravenwood",
     auto_gen_config: true,
     build_resources: true,
     sdk_version: "test_current",
