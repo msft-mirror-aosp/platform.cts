@@ -587,6 +587,11 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
                 mCountDownLatch.countDown();
             }
         }
+
+        @Override
+        public void onL3DataStallSuspected(int sessionId) {
+            super.onL3DataStallSuspected(sessionId);
+        }
     }
 
     private static class TestConnectedNetworkScorerWithSessionInfo extends
