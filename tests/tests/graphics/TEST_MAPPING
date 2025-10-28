@@ -8,5 +8,11 @@
           }
       ]
     }
+  ],
+  "ravenwood-presubmit": [
+    {
+      "name": "CtsGraphicsTestCasesRavenwood",
+      "host": true
+    }
   ]
 }
