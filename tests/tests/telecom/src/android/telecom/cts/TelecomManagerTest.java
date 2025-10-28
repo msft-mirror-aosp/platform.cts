@@ -193,7 +193,7 @@ public class TelecomManagerTest extends BaseTelecomTestWithMockServices {
      */
     @ApiTest(apis = {"android.telecom.TelecomManager#getVoipCallLogIntegrationStatus"})
     public void testGetVoipCallLogIntegrationStatus_NoPermission() {
-        if (!mShouldTestTelecom || !Flags.integratedCallLogsStage2()) {
+        if (!mShouldTestTelecom || !android.telecom.flags.Flags.integratedCallLogsStage2()) {
             return;
         }
         try {
@@ -210,7 +210,7 @@ public class TelecomManagerTest extends BaseTelecomTestWithMockServices {
      */
     @ApiTest(apis = {"android.telecom.TelecomManager#setVoipCallLogIntegrationEnabled"})
     public void testSetVoipCallLogIntegrationEnabled_NoPermission() {
-        if (!mShouldTestTelecom || !Flags.integratedCallLogsStage2()) {
+        if (!mShouldTestTelecom || !android.telecom.flags.Flags.integratedCallLogsStage2()) {
             return;
         }
         try {
@@ -227,7 +227,7 @@ public class TelecomManagerTest extends BaseTelecomTestWithMockServices {
      */
     @ApiTest(apis = {"android.telecom.TelecomManager#getVoipCallLogIntegrationStatus"})
     public void testGetVoipCallLogIntegrationStatus() {
-        if (!mShouldTestTelecom || !Flags.integratedCallLogsStage2()) {
+        if (!mShouldTestTelecom || !android.telecom.flags.Flags.integratedCallLogsStage2()) {
             return;
         }
         try {
@@ -254,7 +254,7 @@ public class TelecomManagerTest extends BaseTelecomTestWithMockServices {
      */
     @ApiTest(apis = {"android.telecom.TelecomManager#setVoipCallLogIntegrationEnabled"})
     public void testSetVoipCallLogIntegrationEnabled() {
-        if (!mShouldTestTelecom || !Flags.integratedCallLogsStage2()) {
+        if (!mShouldTestTelecom || !android.telecom.flags.Flags.integratedCallLogsStage2()) {
             return;
         }
         try {
