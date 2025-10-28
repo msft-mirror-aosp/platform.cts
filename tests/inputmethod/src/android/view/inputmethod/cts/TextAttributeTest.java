@@ -21,10 +21,15 @@ import static com.google.common.truth.Truth.assertThat;
 import android.os.Parcel;
 import android.os.PersistableBundle;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.view.accessibility.Flags;
 import android.view.inputmethod.TextAttribute;
 
 import androidx.test.filters.SmallTest;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -36,6 +41,8 @@ public final class TextAttributeTest {
     private static final String SUGGESTION = "suggestion";
     private static final String EXTRAS_KEY = "extras_key";
     private static final String EXTRAS_VALUE = "extras_value";
+    private static final Boolean SUGGESTION_SELECTED = true;
+    private static final Boolean SUGGESTION_NOT_SELECTED = false;
 
     private static final List<String> SUGGESTIONS = Collections.singletonList(SUGGESTION);
     private static final PersistableBundle EXTRA_BUNDLE;
@@ -45,6 +52,19 @@ public final class TextAttributeTest {
         EXTRA_BUNDLE = bundle;
     }
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Test
+    public void testTextAttributeDefaultValues() {
+        final TextAttribute textAttribute = new TextAttribute.Builder().build();
+        assertThat(textAttribute.getTextConversionSuggestions()).isEmpty();
+        assertThat(textAttribute.getExtras().getString(EXTRAS_KEY)).isNull();
+        if (Flags.a11yTextChangeTypesApi()) {
+            assertTextSuggestionSelected(textAttribute, SUGGESTION_NOT_SELECTED);
+        }
+    }
+
     @Test
     public void testTextAttribute() {
         final TextAttribute textAttribute = new TextAttribute.Builder()
@@ -52,6 +72,23 @@ public final class TextAttributeTest {
                 .setExtras(EXTRA_BUNDLE)
                 .build();
         assertTextAttribute(textAttribute);
+        if (Flags.a11yTextChangeTypesApi()) {
+            assertTextSuggestionSelected(textAttribute, SUGGESTION_NOT_SELECTED);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_A11Y_TEXT_CHANGE_TYPES_API)
+    public void testTextAttributeSuggestionSelected() {
+        TextAttribute textAttribute =
+                new TextAttribute.Builder().setTextSuggestionSelected(SUGGESTION_SELECTED).build();
+        assertTextSuggestionSelected(textAttribute, SUGGESTION_SELECTED);
+
+        textAttribute =
+                new TextAttribute.Builder()
+                        .setTextSuggestionSelected(SUGGESTION_NOT_SELECTED)
+                        .build();
+        assertTextSuggestionSelected(textAttribute, SUGGESTION_NOT_SELECTED);
     }
 
     @Test
@@ -64,9 +101,27 @@ public final class TextAttributeTest {
         assertTextAttribute(cloneViaParcel(textAttribute));
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_A11Y_TEXT_CHANGE_TYPES_API)
+    public void testWriteToParcelTextSuggestionSelected() {
+        final TextAttribute textAttribute =
+                new TextAttribute.Builder()
+                        .setTextConversionSuggestions(SUGGESTIONS)
+                        .setExtras(EXTRA_BUNDLE)
+                        .setTextSuggestionSelected(SUGGESTION_SELECTED)
+                        .build();
+
+        assertTextSuggestionSelected(cloneViaParcel(textAttribute), SUGGESTION_SELECTED);
+    }
+
     private static void assertTextAttribute(TextAttribute info) {
         assertThat(info.getTextConversionSuggestions()).containsExactlyElementsIn(SUGGESTIONS);
         assertThat(info.getExtras().getString(EXTRAS_KEY)).isEqualTo(EXTRAS_VALUE);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_A11Y_TEXT_CHANGE_TYPES_API)
+    private static void assertTextSuggestionSelected(TextAttribute info, boolean expectedValue) {
+        assertThat(info.isTextSuggestionSelected()).isEqualTo(expectedValue);
     }
 
     private static TextAttribute cloneViaParcel(TextAttribute src) {
