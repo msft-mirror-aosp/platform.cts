@@ -1304,6 +1304,10 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                             c.get(CameraCharacteristics.COLOR_CORRECTION_AVAILABLE_MODES));
                 }
             }
+
+            if (Flags.cameraDeviceTypeApi()) {
+                expectKeyAvailable(c, CameraCharacteristics.INFO_DEVICE_TYPE                                , OPT      ,   BC                   );
+            }
         }
     }
 

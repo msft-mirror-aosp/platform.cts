@@ -33,6 +33,7 @@ import android.hardware.camera2.cts.testcases.Camera2AndroidTestCase;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.os.Build;
 import android.platform.test.annotations.DesktopTest;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
@@ -580,6 +581,40 @@ public class StaticMetadataTest extends Camera2AndroidTestCase {
                         " and RAW format output",
                         mCameraId, capabilityName));
             }
+        }
+    }
+
+    /**
+     * Test device type.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_TYPE_API)
+    @Test
+    public void testDeviceType() throws Exception {
+        for (String id : getAllCameraIds()) {
+            initStaticMetadata(id);
+
+            Integer deviceType = mStaticInfo.getValueFromKeyNonNull(
+                    CameraCharacteristics.INFO_DEVICE_TYPE);
+
+            List<Integer> validDeviceTypes = Arrays.asList(
+                    CameraMetadata.INFO_DEVICE_TYPE_BUILT_IN,
+                    CameraMetadata.INFO_DEVICE_TYPE_EXTERNAL,
+                    CameraMetadata.INFO_DEVICE_TYPE_VIRTUAL
+                    // UNKNOWN is not valid yet since it's for future backcompat
+            );
+
+            mCollector.expectTrue("Invalid device type: " + deviceType,
+                    validDeviceTypes.contains(deviceType));
+            if (mStaticInfo.isExternalCamera()) {
+                mCollector.expectTrue(
+                        "Devices with external hardware level have to have an external device type",
+                        deviceType == CameraMetadata.INFO_DEVICE_TYPE_EXTERNAL);
+            }
+
+            List<CaptureResult.Key<?>> resultKeys =
+                    mStaticInfo.getCharacteristics().getAvailableCaptureResultKeys();
+            mCollector.expectContains(resultKeys, CaptureResult.INFO_DEVICE_TYPE);
+
         }
     }
 

@@ -258,6 +258,7 @@
       {"android.info.supportedHardwareLevel", ACAMERA_INFO_SUPPORTED_HARDWARE_LEVEL},
       {"android.info.version", ACAMERA_INFO_VERSION},
       {"android.info.deviceStateOrientations", ACAMERA_INFO_DEVICE_STATE_ORIENTATIONS},
+      {"android.info.deviceType", ACAMERA_INFO_DEVICE_TYPE},
       {"android.blackLevel.lock", ACAMERA_BLACK_LEVEL_LOCK},
       {"android.sync.frameNumber", ACAMERA_SYNC_FRAME_NUMBER},
       {"android.sync.maxLatency", ACAMERA_SYNC_MAX_LATENCY},

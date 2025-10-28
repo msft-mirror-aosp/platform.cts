@@ -24,12 +24,16 @@ import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
+import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.params.BlackLevelPattern;
 import android.hardware.camera2.TotalCaptureResult;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Build;
 import android.os.SystemClock;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Pair;
 import android.util.Size;
 import android.hardware.camera2.cts.helpers.CameraErrorCollector;
@@ -44,6 +48,8 @@ import static junit.framework.Assert.*;
 import android.util.Log;
 import android.view.Surface;
 
+import com.android.internal.camera.flags.Flags;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -56,6 +62,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.runners.Parameterized;
 import org.junit.runner.RunWith;
+import org.junit.Rule;
 import org.junit.Test;
 
 @RunWith(Parameterized.class)
@@ -65,6 +72,9 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
     private static final int MAX_NUM_IMAGES = MAX_READER_IMAGES;
     private static final int NUM_FRAMES_VERIFIED = 30;
     private static final long WAIT_FOR_RESULT_TIMEOUT_MS = 3000;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     /** Load validation jni on initialization. */
     static {
@@ -127,6 +137,68 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
                 // Verify results
                 validateCaptureResult(mCollector, captureListener, mStaticInfo, mAllStaticInfo,
                         null/*requestedPhysicalIds*/, requestBuilder, NUM_FRAMES_VERIFIED);
+
+                stopCapture(/*fast*/false);
+            } finally {
+                closeDevice(id);
+                closeDefaultImageReader();
+            }
+        }
+    }
+
+    /**
+     * Test that the {@link CaptureResult#INFO_DEVICE_TYPE} key is present in all results, and is a
+     * valid value.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_TYPE_API)
+    @Test
+    public void testDeviceType() throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            try {
+                openDevice(id);
+                if (mStaticInfo.isColorOutputSupported()) {
+                    // Create image reader and surface.
+                    Size size = mOrderedPreviewSizes.get(0);
+                    createDefaultImageReader(size, ImageFormat.YUV_420_888, MAX_NUM_IMAGES,
+                            new ImageDropperListener());
+                } else {
+                    Size size = getMaxDepthSize(id, mCameraManager);
+                    createDefaultImageReader(size, ImageFormat.DEPTH16, MAX_NUM_IMAGES,
+                            new ImageDropperListener());
+                }
+
+                // Configure output streams.
+                List<Surface> outputSurfaces = new ArrayList<Surface>(1);
+                outputSurfaces.add(mReaderSurface);
+                createSession(outputSurfaces);
+
+                CaptureRequest.Builder requestBuilder =
+                        mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+                assertNotNull("Failed to create capture request", requestBuilder);
+                requestBuilder.addTarget(mReaderSurface);
+
+                // Start capture
+                SimpleCaptureCallback captureListener = new SimpleCaptureCallback();
+                startCapture(requestBuilder.build(), /*repeating*/true, captureListener, mHandler);
+
+                for (int i = 0; i < NUM_FRAMES_VERIFIED; i++) {
+                    TotalCaptureResult result =
+                            captureListener.getTotalCaptureResult(WAIT_FOR_RESULT_TIMEOUT_MS);
+                    Integer deviceType = result.get(CaptureResult.INFO_DEVICE_TYPE);
+                    mCollector.expectKeyValueNotNull(
+                            "Device type must not be null in capture result",
+                            result, CaptureResult.INFO_DEVICE_TYPE);
+                    if (deviceType != null) {
+                        List<Integer> validDeviceTypes = Arrays.asList(
+                                CameraMetadata.INFO_DEVICE_TYPE_BUILT_IN,
+                                CameraMetadata.INFO_DEVICE_TYPE_EXTERNAL,
+                                CameraMetadata.INFO_DEVICE_TYPE_VIRTUAL
+                                // UNKNOWN isn't valid yet since it'll be for future backcompat
+                        );
+                        mCollector.expectTrue("Invalid device type: " + deviceType,
+                                validDeviceTypes.contains(deviceType));
+                    }
+                }
 
                 stopCapture(/*fast*/false);
             } finally {
@@ -1125,6 +1197,9 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
         resultKeys.add(CaptureResult.TONEMAP_MODE);
         resultKeys.add(CaptureResult.TONEMAP_GAMMA);
         resultKeys.add(CaptureResult.TONEMAP_PRESET_CURVE);
+        if (Flags.cameraDeviceTypeApi()) {
+            resultKeys.add(CaptureResult.INFO_DEVICE_TYPE);
+        }
         resultKeys.add(CaptureResult.BLACK_LEVEL_LOCK);
         resultKeys.add(CaptureResult.REPROCESS_EFFECTIVE_EXPOSURE_FACTOR);
         resultKeys.add(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID);
