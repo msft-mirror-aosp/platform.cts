@@ -53,12 +53,9 @@ def _get_regions_of_interest(props, cam, test_name_with_log_path):
   # Define format
   largest_yuv = capture_request_utils.get_largest_format('yuv', props)
   match_ar = (largest_yuv['width'], largest_yuv['height'])
-  fmt = capture_request_utils.get_near_vga_yuv_format(
-      props, match_ar=match_ar)
-
   sens, exp, _, _, f_dist = cam.do_3a(get_results=True)
   req = capture_request_utils.auto_capture_request()
-  cap = cam.do_capture(req, fmt)
+  cap = cam.do_capture(req, largest_yuv)
 
   # Save image and convert to numpy array
   img = image_processing_utils.convert_capture_to_rgb_image(
@@ -210,10 +207,8 @@ class ColorCorrectionModeCct(its_base_test.ItsBaseTest):
       # Define format
       largest_yuv = capture_request_utils.get_largest_format('yuv', props)
       match_ar = (largest_yuv['width'], largest_yuv['height'])
-      fmt = capture_request_utils.get_near_vga_yuv_format(
-          props, match_ar=match_ar)
 
-      caps = cam.do_capture(capture_requests, fmt, reuse_session=True)
+      caps = cam.do_capture(capture_requests, largest_yuv, reuse_session=True)
 
       blue_ratios = []  # Ratios from blue region
       yellow_ratios = []  # Ratio from yellow region
