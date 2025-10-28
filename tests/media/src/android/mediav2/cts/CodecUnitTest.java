@@ -39,6 +39,8 @@ import android.mediav2.common.cts.CodecTestBase;
 import android.os.Build;
 import android.os.Bundle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.util.Pair;
 
@@ -81,6 +83,10 @@ public class CodecUnitTest {
 
         @Rule
         public Timeout timeout = new Timeout(PER_TEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+
+        @Rule
+        public final CheckFlagsRule mCheckFlagsRule =
+                DeviceFlagsValueProvider.createCheckFlagsRule();
 
         @After
         public void hasSeenError() {

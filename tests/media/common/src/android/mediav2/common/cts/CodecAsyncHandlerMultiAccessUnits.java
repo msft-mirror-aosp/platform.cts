@@ -16,38 +16,28 @@
 
 package android.mediav2.common.cts;
 
-import static android.media.codec.Flags.FLAG_LARGE_AUDIO_FRAME_FINISH;
-
-import static com.android.media.codec.flags.Flags.FLAG_LARGE_AUDIO_FRAME;
-
 import static org.junit.Assert.assertTrue;
 
 import android.media.MediaCodec;
 import android.os.Build;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Pair;
 
 import androidx.annotation.NonNull;
 import androidx.test.filters.SdkSuppress;
-
-import org.junit.Rule;
 
 import java.util.ArrayDeque;
 import java.util.LinkedList;
 
 /**
  * Helper class for running mediacodec in asynchronous mode in large buffer mode. All mediacodec
- * callback events are registered in this object so that the client can take appropriate action
- * in time.
+ * callback events are registered in this object so that the client can take appropriate action in
+ * time.
+ *
+ * <p>NOTE: If a JUnit TestCLass or JUnit Test is making use of this class, it needs to be annotated
+ * with @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
  */
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
-@RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
 public class CodecAsyncHandlerMultiAccessUnits extends CodecAsyncHandler {
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
     private final LinkedList<Pair<Integer, ArrayDeque<MediaCodec.BufferInfo>>> mCbOutputQueue;
 
     public CodecAsyncHandlerMultiAccessUnits() {
