@@ -37,7 +37,6 @@ import android.os.FileUtils;
 import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -50,7 +49,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(BroadcastsTestRunner.class)
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class BroadcastReceiverTest extends BaseBroadcastTest {
     private static final int RESULT_INITIAL_CODE = 1;
     private static final String RESULT_INITIAL_DATA = "initial data";
