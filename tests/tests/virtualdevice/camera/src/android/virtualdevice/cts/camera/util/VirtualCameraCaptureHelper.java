@@ -89,7 +89,8 @@ public class VirtualCameraCaptureHelper {
     public static final int CAMERA_INPUT_FORMAT = PixelFormat.RGBA_8888;
     public static final int CAMERA_MAX_FPS = 30;
 
-    private static final long FAILURE_TIMEOUT = 10000L;
+    // This needs to be bigger than kMaxWaitFirstFrame from VirtualCameraRenderThread.cc
+    private static final long FAILURE_TIMEOUT = 20000L;
     private static final int IMAGE_READER_MAX_IMAGES = 2;
 
     private final Handler mImageReaderHandler = VirtualCameraUtils.createHandler(
