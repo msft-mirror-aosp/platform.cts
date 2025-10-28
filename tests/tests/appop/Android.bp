@@ -92,6 +92,8 @@ android_test {
         ":AppThatExploitsAttributionTags",
         ":AppForHistoricalRegistryTest",
         ":CtsAppThatUsesAppOpApi29",
+        ":SdkSandboxAppOpsProvider",
+        ":CtsAppThatLoadsSdkSandbox",
     ],
     per_testcase_directory: true,
 }

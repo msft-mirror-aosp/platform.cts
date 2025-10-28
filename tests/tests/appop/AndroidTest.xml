@@ -34,6 +34,8 @@
         <option name="test-file-name" value="AppForDiscreteTest.apk" />
         <option name="test-file-name" value="AppForHistoricalRegistryTest.apk" />
         <option name="test-file-name" value="CtsAppThatUsesAppOpApi29.apk" />
+        <option name="test-file-name" value="SdkSandboxAppOpsProvider.apk"/>
+        <option name="test-file-name" value="CtsAppThatLoadsSdkSandbox.apk" />
     </target_preparer>
 
     <!-- Create place to store apks -->
@@ -43,6 +45,9 @@
         <option name="run-command" value="appops set --user %TEST_USER% android.app.appops.cts OP_RESERVED_FOR_TESTING allow" />
         <option name="run-command" value="appops set --user %TEST_USER% com.google.android.packageinstaller OP_RESERVED_FOR_TESTING allow" />
         <option name="teardown-command" value="rm -rf /data/local/tmp/cts" />
+                <!-- Enable sdk sandbox throughout the test duration -->
+        <option name="run-command" value="cmd sdk_sandbox set-state --enabled" />
+        <option name="teardown-command" value="cmd sdk_sandbox set-state --reset" />
     </target_preparer>
 
     <!-- Load additional APKs onto device -->
