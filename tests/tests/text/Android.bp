@@ -108,7 +108,6 @@ android_ravenwood_test {
     ],
     auto_gen_config: true,
     build_resources: true,
-    team: "trendy_team_ravenwood",
 }
 
 test_module_config {

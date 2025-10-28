@@ -1,0 +1,8 @@
+{
+  "ravenwood-presubmit": [
+    {
+      "name": "CtsIcuTestCasesRavenwood",
+      "host": true
+    }
+  ]
+}
