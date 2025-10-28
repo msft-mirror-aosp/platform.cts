@@ -141,6 +141,7 @@ android_test {
         "libctsnativemidi_jni",
         "libaudioloopback_jni",
         "libmegaaudio_jni",
+        "libaudio_workload_jni",
     ],
 
     // Disable coverage since it pushes us over the dex limit and we

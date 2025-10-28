@@ -450,4 +450,15 @@ public final class AudioTest extends CtsVerifierTest {
     public void AudioMicrophoneMuteToggleTest() throws Exception {
         runTest(".audio.AudioMicrophoneMuteToggleActivity", "config_has_mic_toggle");
     }
+
+    @Interactive
+    @Test
+    @SupportMultiDisplayMode
+    // MultiDisplayMode
+    @CddTest(requirements = "2.2.7.1")
+    public void AudioWorkloadTest() throws Exception {
+        requireFeatures("android.hardware.audio.output");
+
+        runTest(".audio.AudioWorkloadTestActivity");
+    }
 }
