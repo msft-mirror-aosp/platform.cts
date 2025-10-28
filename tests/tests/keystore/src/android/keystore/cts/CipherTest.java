@@ -16,9 +16,6 @@
 
 package android.keystore.cts;
 
-import static android.os.UserHandle.USER_ALL;
-import static android.server.wm.ShellCommandHelper.executeShellCommand;
-
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -316,12 +313,6 @@ public class CipherTest {
     }
 
     private class DeviceLockSession implements AutoCloseable {
-        protected static final String AM_START_HOME_ACTIVITY_COMMAND =
-                "am start -W -a android.intent.action.MAIN -c android.intent.category.HOME --user "
-                        + Process.myUserHandle().getIdentifier();
-        private static final String AM_BROADCAST_CLOSE_SYSTEM_DIALOGS =
-                "am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS --user " + USER_ALL;
-
         @NonNull
         private final LockScreenSession mLockCredential;
 
@@ -329,7 +320,6 @@ public class CipherTest {
             final Instrumentation instrumentation = getInstrumentation();
             final Context context = instrumentation.getContext();
             UiDeviceUtils.wakeUpAndUnlock(context);
-            launchHomeActivity();
             assumeFalseOnVisibleBackgroundUser(context,
                     "Keyguard not supported for visible background users");
 
@@ -350,7 +340,6 @@ public class CipherTest {
             mLockCredential.gotoKeyguard();
             UiDeviceUtils.pressUnlockButton();
             mLockCredential.enterAndConfirmLockCredential();
-            launchHomeActivity();
             KeyguardManager keyguardManager = (KeyguardManager)getContext().getSystemService(
                     Context.KEYGUARD_SERVICE);
             for (int i = 0; i < 25 && keyguardManager.isDeviceLocked(); i++) {
@@ -362,17 +351,6 @@ public class CipherTest {
         @Override
         public void close() throws Exception {
             mLockCredential.close();
-        }
-
-        /** Launches the home activity directly with waiting for it to be visible. */
-        private void launchHomeActivity() {
-            // dismiss all system dialogs before launch home.
-            closeSystemDialogs();
-            executeShellCommand(AM_START_HOME_ACTIVITY_COMMAND);
-        }
-
-        private static void closeSystemDialogs() {
-            executeShellCommand(AM_BROADCAST_CLOSE_SYSTEM_DIALOGS);
         }
 
         /** Skips the test on visible background users. */
