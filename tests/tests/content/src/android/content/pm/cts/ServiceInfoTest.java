@@ -27,21 +27,17 @@ import android.content.pm.ServiceInfo;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.DisabledOnRavenwood;
-import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.StringBuilderPrinter;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
 @AppModeFull // TODO(Instant) Figure out which APIs should work.
 public class ServiceInfoTest {
-    @Rule
-    public final RavenwoodRule mRavenwood = new RavenwoodRule();
 
     private static final String PACKAGE_NAME = "android.content.cts";
     private static final String SERVICE_NAME = "android.content.pm.cts.TestPmService";

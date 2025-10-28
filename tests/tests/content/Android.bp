@@ -420,7 +420,12 @@ test_module_config {
 
 android_ravenwood_test {
     name: "CtsContentTestCasesRavenwood",
-    defaults: ["cts_defaults"],
+    defaults: [
+        "cts_defaults",
+        "cts_content_resources_defaults",
+    ],
+    build_resources: true,
+    dont_merge_manifests: true,
     libs: [
         "android.test.mock.stubs.system",
     ],

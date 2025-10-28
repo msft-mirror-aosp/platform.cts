@@ -20,21 +20,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.cts.R;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
-import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.content.res.Resources.NotFoundException;
 import android.content.res.TypedArray;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.platform.test.annotations.DisabledOnRavenwood;
 import android.util.DisplayMetrics;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -265,15 +260,7 @@ public class ConfigTest {
     }
 
     private int getTargetSdkVersion() {
-        final PackageManager pm = mContext.getPackageManager();
-        try {
-            ApplicationInfo appInfo = pm.getApplicationInfo(TEST_PACKAGE,
-                    PackageManager.ApplicationInfoFlags.of(0));
-            return appInfo.targetSdkVersion;
-        } catch (NameNotFoundException e) {
-            fail("Should be able to find application info for this package");
-            return -1;
-        }
+        return mContext.getApplicationInfo().targetSdkVersion;
     }
 
     @Test
@@ -1235,7 +1222,6 @@ public class ConfigTest {
     }
 
     @Test
-    @DisabledOnRavenwood(reason = "Concept of SDK_INT, etc is unclear?")
     public void testVersions() {
         final boolean isReleaseBuild = "REL".equals(android.os.Build.VERSION.CODENAME);
         final int targetSdkVersion = getTargetSdkVersion();
