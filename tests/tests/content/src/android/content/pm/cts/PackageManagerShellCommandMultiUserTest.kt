@@ -1130,6 +1130,7 @@ class PackageManagerShellCommandMultiUserTest {
                         contextSecondaryUser.unregisterReceiver(
                                 changedBroadcastReceiverForSecondaryUser
                         )
+                        contextPrimaryUser.packageManager.setMimeGroup(MIME_GROUP, emptySet())
                         backgroundThread.interrupt()
                     }
                 },
@@ -1242,6 +1243,7 @@ class PackageManagerShellCommandMultiUserTest {
                         contextSecondaryUser.unregisterReceiver(
                                 changedBroadcastReceiverForSecondaryUser
                         )
+                        contextPrimaryUser.packageManager.setMimeGroup(MIME_GROUP, emptySet())
                         backgroundThread.interrupt()
                     }
                 },
