@@ -245,6 +245,9 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
      * called by the platform, so we call it here to satisfy coverage requirements.  Yeah.
      */
     public void testUnusedCallback() {
+        if (!mShouldTestTelecom) {
+            return;
+        }
         mInCallService.onConnectionEvent(null, null, null);
     }
 
