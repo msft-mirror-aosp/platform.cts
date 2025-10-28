@@ -172,7 +172,6 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
 
         assertTrue(sMockSatelliteServiceManager
                 .overrideSatelliteEntilementQueryConditions(true, true));
-        assertTrue(sMockSatelliteServiceManager.setSatelliteIgnorePlmnListFromStorage(true));
         try {
             logd(TAG, "testConfigureEmergencyAndDisasterPlmns: test entitlement disabled");
             int subId = SubscriptionManager.getSubscriptionId(SLOT_ID_0);
@@ -219,7 +218,6 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
                 .overrideSatelliteEntilementQueryConditions(false, false);
             sMockSatelliteServiceManager
                 .overrideSatelliteEntilementStatusResponseForCtsTest(null, false);
-            sMockSatelliteServiceManager.setSatelliteIgnorePlmnListFromStorage(false);
         }
     }
 }
