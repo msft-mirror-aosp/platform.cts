@@ -41,6 +41,9 @@ android_test_helper_app {
     ],
     manifest: "sharingapp1/AndroidManifest.xml",
     sdk_version: "test_current",
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
 
 android_test_helper_app {
@@ -68,4 +71,7 @@ android_test_helper_app {
     ],
     manifest: "sharingapp2/AndroidManifest.xml",
     sdk_version: "test_current",
+    lint: {
+        baseline_filename: "lint-baseline2.xml",
+    },
 }

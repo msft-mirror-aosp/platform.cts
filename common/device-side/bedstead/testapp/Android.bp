@@ -71,6 +71,9 @@ android_library {
         "TestApp_Processor",
         "auto_annotation_plugin",
     ],
+    lint: {
+        baseline_filename: "lint-baseline2.xml",
+    },
 }
 
 android_test {

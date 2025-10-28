@@ -30,4 +30,7 @@ android_library {
     libs: [
         "android.test.runner.stubs.system",
     ],
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }

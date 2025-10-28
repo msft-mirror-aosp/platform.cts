@@ -36,4 +36,7 @@ java_library {
     visibility: [
         "//cts/tests:__subpackages__",
     ],
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }

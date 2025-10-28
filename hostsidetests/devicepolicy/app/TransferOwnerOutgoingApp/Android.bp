@@ -40,4 +40,7 @@ android_test_helper_app {
         "general-tests",
         "mts-permission",
     ],
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
