@@ -13,7 +13,6 @@
 // limitations under the License.
 
 package {
-    default_team: "trendy_team_framework_android_packages",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -85,6 +84,7 @@ java_defaults {
 // Unit tests for utilities used by the CTS tests - not CTS itself
 java_test_host {
     name: "AppSecurityHostUnitTestCases",
+    team: "trendy_team_framework_android_multiuser",
     srcs: [
         "src/**/Utils.java",
         "src/**/UtilsTest.java",
@@ -101,6 +101,7 @@ java_test_host {
 
 java_test_host {
     name: "CtsAppSecurityHostTestCases",
+    team: "trendy_team_platform_security",
     defaults: ["appsecurity_cts_defaults"],
 
     srcs: [
@@ -233,6 +234,7 @@ java_test_host {
 
 java_test_host {
     name: "CtsPermissionsHostTestCases",
+    team: "trendy_team_android_permissions",
     defaults: ["appsecurity_cts_defaults"],
 
     test_suites: CTS_TEST_SUITES_DEFAULT + ["sts"],
@@ -258,6 +260,7 @@ java_test_host {
 
 java_test_host {
     name: "CtsAppDataIsolationHostTestCases",
+    team: "trendy_team_android_storage",
     defaults: ["appsecurity_cts_defaults"],
 
     test_suites: CTS_TEST_SUITES_DEFAULT,
@@ -278,6 +281,7 @@ java_test_host {
 
 java_test_host {
     name: "CtsUseEmbeddedDexHostTestCases",
+    team: "trendy_team_art_performance",
     defaults: ["appsecurity_cts_defaults"],
 
     test_suites: CTS_TEST_SUITES_DEFAULT,
@@ -299,6 +303,7 @@ java_test_host {
 
 java_test_host {
     name: "CtsPackageManagerHostTestCases",
+    team: "trendy_team_framework_android_packages",
     defaults: ["appsecurity_cts_defaults"],
 
     test_suites: CTS_TEST_SUITES_DEFAULT,
@@ -365,6 +370,7 @@ java_test_host {
 
 java_test_host {
     name: "CtsPackageManagerIsolatedSplitHostTestCases",
+    team: "trendy_team_framework_android_packages",
     defaults: ["appsecurity_cts_defaults"],
 
     test_suites: CTS_TEST_SUITES_DEFAULT,
@@ -394,6 +400,7 @@ java_test_host {
 
 java_test_host {
     name: "CtsPackageManagerSplitHostTestCases",
+    team: "trendy_team_framework_android_packages",
     defaults: ["appsecurity_cts_defaults"],
 
     test_suites: CTS_TEST_SUITES_DEFAULT,
@@ -451,6 +458,7 @@ java_test_host {
 
 java_test_host {
     name: "CtsInstantAppsHostTestCases",
+    team: "trendy_team_framework_android_packages",
     defaults: ["appsecurity_cts_defaults"],
     test_suites: CTS_TEST_SUITES_DEFAULT + ["sts"],
     srcs: [
@@ -477,6 +485,7 @@ java_test_host {
 
 java_test_host {
     name: "CtsAdoptableHostTestCases",
+    team: "trendy_team_android_storage",
     defaults: ["appsecurity_cts_defaults"],
 
     test_suites: CTS_TEST_SUITES_DEFAULT,
@@ -489,6 +498,7 @@ java_test_host {
 
 java_test_host {
     name: "CtsDirectBootHostTestCases",
+    team: "trendy_team_android_storage",
     defaults: ["appsecurity_cts_defaults"],
 
     test_suites: CTS_TEST_SUITES_DEFAULT,
@@ -505,6 +515,7 @@ java_test_host {
 
 java_test_host {
     name: "CtsStorageHostTestCases",
+    team: "trendy_team_android_storage",
     defaults: ["appsecurity_cts_defaults"],
 
     test_suites: CTS_TEST_SUITES_DEFAULT,
@@ -557,6 +568,7 @@ java_genrule {
 
 java_test_host {
     name: "CtsResumeOnRebootHostTestCases",
+    team: "trendy_team_android_sudo",
     defaults: ["appsecurity_cts_defaults"],
 
     test_suites: CTS_TEST_SUITES_DEFAULT,
@@ -578,6 +590,7 @@ java_test_host {
 
 java_test_host {
     name: "CtsCorruptApkHostTestCases",
+    team: "trendy_team_android_resources",
     defaults: ["appsecurity_cts_defaults"],
 
     test_suites: CTS_TEST_SUITES_DEFAULT,
@@ -599,6 +612,7 @@ java_test_host {
 
 java_test_host {
     name: "CtsOverlayHostTestCases",
+    team: "trendy_team_android_resources",
     defaults: ["appsecurity_cts_defaults"],
 
     test_suites: CTS_TEST_SUITES_DEFAULT,
