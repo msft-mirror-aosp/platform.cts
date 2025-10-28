@@ -33,7 +33,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.app.PendingIntent;
-import android.app.compat.CompatChanges;
 import android.content.ClipData;
 import android.content.ClipDescription;
 import android.content.ComponentName;
@@ -177,7 +176,6 @@ public class IntentTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = CompatChanges.class)
     public void testReadFromParcel() {
         mIntent.setAction(TEST_ACTION);
         mIntent.setData(TEST_URI);
@@ -213,7 +211,6 @@ public class IntentTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = CompatChanges.class)
     public void testGetParcelableArrayListExtraTypeSafe_withMismatchingType_returnsNull() {
         final ArrayList<TestParcelable> original = new ArrayList<>();
         original.add(new TestParcelable(0));
@@ -223,7 +220,6 @@ public class IntentTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = CompatChanges.class)
     public void testGetParcelableArrayListExtraTypeSafe_withMatchingType_returnsObject() {
         final ArrayList<TestParcelable> original = new ArrayList<>();
         original.add(new TestParcelable(0));
@@ -235,7 +231,6 @@ public class IntentTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = CompatChanges.class)
     public void testGetParcelableArrayListExtraTypeSafe_withBaseType_returnsObject() {
         final ArrayList<TestParcelable> original = new ArrayList<>();
         original.add(new TestParcelable(0));
@@ -944,7 +939,6 @@ public class IntentTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = CompatChanges.class)
     public void testGetParcelableArrayExtraTypeSafe_withMismatchingType_returnsNull() {
         mIntent.putExtra(TEST_EXTRA_NAME, new TestParcelable[] {new TestParcelable(42)});
         roundtrip();
@@ -952,7 +946,6 @@ public class IntentTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = CompatChanges.class)
     public void testGetParcelableArrayExtraTypeSafe_withMatchingType_returnsObject() {
         final TestParcelable[] original = { new TestParcelable(1), new TestParcelable(2) };
         mIntent.putExtra(TEST_EXTRA_NAME, original);
@@ -962,7 +955,6 @@ public class IntentTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = CompatChanges.class)
     public void testGetParcelableArrayExtraTypeSafe_withBaseType_returnsObject() {
         final TestParcelable[] original = { new TestParcelable(1), new TestParcelable(2) };
         mIntent.putExtra(TEST_EXTRA_NAME, original);
@@ -2158,7 +2150,6 @@ public class IntentTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = CompatChanges.class)
     public void testGetSerializableExtraTypeSafe_withMismatchingType_returnsNull() {
         mIntent.putExtra(TEST_EXTRA_NAME, new TestSerializable());
         roundtrip();
@@ -2166,7 +2157,6 @@ public class IntentTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = CompatChanges.class)
     public void testGetSerializableExtraTypeSafe_withMatchingType_returnsObject() {
         String original = "Hello, World!";
         mIntent.putExtra(TEST_EXTRA_NAME, original);
@@ -2175,7 +2165,6 @@ public class IntentTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = CompatChanges.class)
     public void testGetSerializableExtraTypeSafe_withBaseType_returnsObject() {
         String original = "Hello, World!";
         mIntent.putExtra(TEST_EXTRA_NAME, original);

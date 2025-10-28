@@ -39,12 +39,10 @@ import android.content.pm.UsesPermissionPurposeInfo;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.DisabledOnRavenwood;
-import android.platform.test.ravenwood.RavenwoodRule;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -54,8 +52,6 @@ import java.util.Map;
 @RunWith(AndroidJUnit4.class)
 @AppModeFull // TODO(Instant) Figure out which APIs should work.
 public class PackageInfoTest {
-    @Rule
-    public final RavenwoodRule mRavenwood = new RavenwoodRule();
 
     private static final String PACKAGE_NAME = "android.content.cts";
 
