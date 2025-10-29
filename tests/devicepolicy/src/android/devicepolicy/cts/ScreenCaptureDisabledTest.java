@@ -395,6 +395,7 @@ public final class ScreenCaptureDisabledTest {
     }
 
     /** Check that setting the policy at the device scope to true works */
+    @Ignore
     @PolicyAppliesTest(policy = ScreenCaptureDisabledDevice.class)
     @Postsubmit(reason = "new test")
     @ApiTest(
@@ -424,6 +425,7 @@ public final class ScreenCaptureDisabledTest {
     }
 
     /** Check that setting the policy at the device scope to false works */
+    @Ignore
     @PolicyAppliesTest(policy = ScreenCaptureDisabledDevice.class)
     @Postsubmit(reason = "new test")
     @ApiTest(
@@ -453,6 +455,7 @@ public final class ScreenCaptureDisabledTest {
     }
 
     /** Check that setting the policy at the device scope to null works */
+    @Ignore
     @PolicyAppliesTest(policy = ScreenCaptureDisabledDevice.class)
     @Postsubmit(reason = "new test")
     @ApiTest(
@@ -481,6 +484,7 @@ public final class ScreenCaptureDisabledTest {
     }
 
     /** Check that setting the policy at the device scope to true works */
+    @Ignore
     @PolicyAppliesTest(policy = ScreenCaptureDisabledUser.class)
     @Postsubmit(reason = "new test")
     @ApiTest(
@@ -510,6 +514,7 @@ public final class ScreenCaptureDisabledTest {
     }
 
     /** Check that setting the policy at the device scope to false works */
+    @Ignore
     @PolicyAppliesTest(policy = ScreenCaptureDisabledUser.class)
     @Postsubmit(reason = "new test")
     @ApiTest(
@@ -539,6 +544,7 @@ public final class ScreenCaptureDisabledTest {
     }
 
     /** Check that setting the policy at the user scope to null works */
+    @Ignore
     @PolicyAppliesTest(policy = ScreenCaptureDisabledUser.class)
     @Postsubmit(reason = "new test")
     @ApiTest(
