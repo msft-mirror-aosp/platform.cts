@@ -502,6 +502,24 @@ class ItsSession(object):
       self.props = props
     return props
 
+  def is_backported_issue_resolved(self, known_issue):
+    """Check if the backported issue is resolved or not.
+
+    Args:
+      known_issue: The known issue id.
+
+    Returns:
+      True if the backported issue is resolved. False otherwise.
+    """
+    cmd = {}
+    cmd[_CMD_NAME_STR] = 'isBackportedIssueResolved'
+    cmd['knownIssueId'] = known_issue
+    self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
+    data, _ = self.__read_response_from_socket()
+    if data[_TAG_STR] != 'resolved':
+      raise error_util.CameraItsError('Invalid command response')
+    return data[_OBJ_VALUE_STR]['resolved'] == 'true'
+
   def get_camera_properties(self):
     """Get the camera properties object for the device.
 
