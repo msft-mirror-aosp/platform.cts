@@ -19,6 +19,7 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
 import android.os.Process;
+import android.os.SELinux;
 
 public class PccService extends Service {
     private final IPccService.Stub mBinder =
@@ -31,6 +32,11 @@ public class PccService extends Service {
                 @Override
                 public int getUid() {
                     return Process.myUid();
+                }
+
+                @Override
+                public String getSeLinuxContext() {
+                    return SELinux.getContext();
                 }
             };
 

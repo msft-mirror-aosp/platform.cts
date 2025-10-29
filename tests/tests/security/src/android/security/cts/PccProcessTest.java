@@ -15,6 +15,8 @@
  */
 package android.security.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import android.app.Instrumentation;
 import android.content.ComponentName;
 import android.content.Context;
@@ -90,6 +92,13 @@ public class PccProcessTest {
     @RequiresFlagsEnabled(android.app.privatecompute.flags.Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT)
     public void testPccServiceUidRange() throws RemoteException {
         Assert.assertTrue(Process.isPccUid(mService.getUid()));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.privatecompute.flags.Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT)
+    public void testCorrectSelinuxDomain() throws RemoteException {
+        final String selinuxContext = mService.getSeLinuxContext();
+        assertThat(selinuxContext).contains("u:r:pcc_component");
     }
 
     @After
