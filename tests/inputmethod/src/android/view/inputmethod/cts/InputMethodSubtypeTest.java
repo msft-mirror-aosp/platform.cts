@@ -26,7 +26,6 @@ import android.content.Context;
 import android.graphics.Color;
 import android.icu.util.ULocale;
 import android.os.Parcel;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
@@ -44,7 +43,6 @@ import org.junit.Test;
 import java.util.Objects;
 
 @MediumTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class InputMethodSubtypeTest {
 
     private static final CharSequence SUBTYPE_UNTRANSLATABLE_NAME = "my_new_subtype";

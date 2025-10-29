@@ -22,7 +22,6 @@ import static org.junit.Assert.assertNull;
 import android.content.ClipDescription;
 import android.net.Uri;
 import android.os.Parcel;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.view.inputmethod.InputContentInfo;
 
 import androidx.test.filters.SmallTest;
@@ -32,7 +31,6 @@ import org.junit.Test;
 import java.security.InvalidParameterException;
 
 @SmallTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class InputContentInfoTest {
     @Test
     public void testInputContentInfo() {

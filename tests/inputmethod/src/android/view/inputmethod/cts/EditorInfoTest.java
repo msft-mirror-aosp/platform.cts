@@ -27,7 +27,6 @@ import static org.junit.Assert.fail;
 import android.os.Bundle;
 import android.os.LocaleList;
 import android.os.Parcel;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -63,7 +62,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @SmallTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class EditorInfoTest {
 
     @Rule

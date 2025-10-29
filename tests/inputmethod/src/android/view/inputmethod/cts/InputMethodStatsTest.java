@@ -30,7 +30,6 @@ import static org.junit.Assert.fail;
 
 import android.app.Activity;
 import android.app.Instrumentation;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.view.MotionEvent;
@@ -69,7 +68,6 @@ import java.util.concurrent.TimeUnit;
 /**
  * Test suite to ensure IME stats get tracked and logged correctly.
  */
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class InputMethodStatsTest extends EndToEndImeTestBase {
 
     @Rule

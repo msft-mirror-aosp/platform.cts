@@ -22,7 +22,6 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.google.common.truth.Truth.assertThat;
 
 import android.os.SystemClock;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.view.inputmethod.cts.util.TestActivity;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -45,7 +44,6 @@ import java.util.concurrent.TimeUnit;
 
 /** Test for 'dumpsys input_method'. */
 @SmallTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 // TODO(b/356239178): Add tests for concurrent multi-user
 public final class DumpTest {
 

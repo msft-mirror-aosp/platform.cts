@@ -23,7 +23,6 @@ import static org.testng.Assert.assertThrows;
 import android.os.Bundle;
 import android.os.LocaleList;
 import android.os.Parcel;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Size;
 import android.view.inputmethod.InlineSuggestionsRequest;
 import android.widget.inline.InlinePresentationSpec;
@@ -35,7 +34,6 @@ import org.junit.Test;
 import java.util.ArrayList;
 
 @SmallTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class InlineSuggestionsRequestTest {
 
     @Test

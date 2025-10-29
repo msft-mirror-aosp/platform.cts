@@ -29,7 +29,6 @@ import android.Manifest;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.text.TextUtils;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -60,7 +59,6 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 @MediumTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class InputMethodSubtypeEndToEndTest extends EndToEndImeTestBase {
     static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
 

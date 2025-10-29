@@ -67,7 +67,6 @@ import android.inputmethodservice.InputMethodService;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.os.UserHandle;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -139,7 +138,6 @@ import java.util.function.Function;
  * atest CtsInputMethodTestCases:InputMethodServiceTest
  */
 @MediumTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class InputMethodServiceTest extends EndToEndImeTestBase {
     private static final String TAG = "InputMethodServiceTest";
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(20);

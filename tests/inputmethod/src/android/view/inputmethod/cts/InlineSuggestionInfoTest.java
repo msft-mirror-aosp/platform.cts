@@ -22,7 +22,6 @@ import static org.testng.Assert.assertThrows;
 import static org.testng.Assert.assertTrue;
 
 import android.os.Parcel;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Size;
 import android.view.inputmethod.InlineSuggestionInfo;
 import android.widget.inline.InlinePresentationSpec;
@@ -32,7 +31,6 @@ import androidx.test.filters.SmallTest;
 import org.junit.Test;
 
 @SmallTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class InlineSuggestionInfoTest {
 
     private InlinePresentationSpec mInlinePresentationSpec = new InlinePresentationSpec.Builder(

@@ -22,7 +22,6 @@
     <option name="config-descriptor:metadata" key="parameter" value="instant_app" />
     <option name="config-descriptor:metadata" key="parameter" value="not_secondary_user" />
     <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
-    <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
 
     <object class="com.android.tradefed.testtype.suite.module.DeviceFeatureModuleController"
             type="module_controller">
