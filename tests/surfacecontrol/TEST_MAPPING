@@ -10,5 +10,11 @@
     {
       "name": "CtsSurfaceControlTests"
     }
+  ],
+  "ravenwood-presubmit": [
+    {
+      "name": "CtsSurfaceControlTestsRavenwood",
+      "host": true
+    }
   ]
 }
