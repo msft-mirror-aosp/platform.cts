@@ -18,6 +18,7 @@ package android.telecom.cts;
 
 import android.net.Uri;
 import android.os.Bundle;
+import android.telecom.CallAudioState;
 import android.telecom.CallEndpoint;
 import android.telecom.Conference;
 import android.telecom.Connection;
@@ -207,6 +208,11 @@ public class MockConference extends Conference {
         super.onAnswer(videoState);
         mVideoState = videoState;
         mLock.complete(null);
+    }
+
+    @Override
+    public void onCallAudioStateChanged(CallAudioState state) {
+        super.onCallAudioStateChanged(state);
     }
 
     public void setRemoteConference(RemoteConference remoteConference) {

@@ -22,6 +22,7 @@ import static android.telecom.cts.TestUtils.WAIT_FOR_STATE_CHANGE_TIMEOUT_MS;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Looper;
 import android.telecom.Call;
 import android.telecom.Connection;
 import android.telecom.ConnectionRequest;
@@ -33,6 +34,8 @@ import android.telecom.TelecomManager;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Extended suite of tests that use {@link CtsConnectionService} and {@link MockInCallService} to
@@ -58,6 +61,7 @@ public class RemoteConferenceTest extends BaseRemoteTelecomTest {
     Call mCall1, mCall2;
     MockConference mConference, mRemoteConference;
     RemoteConference mRemoteConferenceObject;
+    Handler mHandler = getHandler();
 
     @Override
     public void tearDown() throws Exception {
@@ -281,7 +285,7 @@ public class RemoteConferenceTest extends BaseRemoteTelecomTest {
         mRemoteConferenceObject.unregisterCallback(callback);
     }
 
-    public void testRemoteConferenceCallbacks_ConnectionAdd() {
+    public void testRemoteConferenceCallbacks_ConnectionAdd() throws Exception {
         if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
@@ -350,6 +354,11 @@ public class RemoteConferenceTest extends BaseRemoteTelecomTest {
         //assertEquals(newRemoteConnectionObject, callbackInvoker.getArgs(0)[1]);
         // No "equals" method in RemoteConnection
         mRemoteConferenceObject.unregisterCallback(callback);
+
+        // Call method with no handler; it does the same thing, but we need coverage.
+        Looper.prepare();
+        mRemoteConferenceObject.registerCallback(callback);
+        mRemoteConferenceObject.unregisterCallback(callback);
     }
 
     public void testRemoteConferenceCallbacks_ConnectionCapabilities() {
@@ -414,6 +423,7 @@ public class RemoteConferenceTest extends BaseRemoteTelecomTest {
         callbackInvoker.waitForCount(1, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
         assertEquals(mRemoteConferenceObject, callbackInvoker.getArgs(0)[0]);
         assertEquals(properties, callbackInvoker.getArgs(0)[1]);
+        assertEquals(properties, mRemoteConference.getConnectionProperties());
         mRemoteConferenceObject.unregisterCallback(callback);
     }
 
@@ -664,14 +674,35 @@ public class RemoteConferenceTest extends BaseRemoteTelecomTest {
     private void addRemoteConferenceCall() {
         addRemoteConnectionOutgoingCalls();
         /**
-         * We've 2 connections on the local connectionService which have 2 corresponding
-         * connections on the remoteConnectionService controlled via 2 RemoteConnection objects
-         * on the connectionService. We now create a conference on the local two connections
-         * which triggers a creation of conference on the remoteConnectionService via the
-         * RemoteConference object.
+         * We've 2 connections on the local connectionService which have 2 corresponding connections
+         * on the remoteConnectionService controlled via 2 RemoteConnection objects on the
+         * connectionService. We now create a conference on the local two connections which triggers
+         * a creation of conference on the remoteConnectionService via the RemoteConference object.
          */
+        LinkedBlockingQueue<Boolean> conferences = new LinkedBlockingQueue<>();
+        RemoteConnection.Callback remoteConnectionCallback =
+                new RemoteConnection.Callback() {
+                    @Override
+                    public void onConferenceChanged(
+                            RemoteConnection connection, RemoteConference conference) {
+                        super.onConferenceChanged(connection, conference);
+                        // Offer up whether we are added or removed from a conf.
+                        conferences.offer(conference != null);
+                    }
+                };
+
+        mConnection1.getRemoteConnection().registerCallback(remoteConnectionCallback, mHandler);
 
         addConferenceCall(mCall1, mCall2);
+
+        try {
+            Boolean wasConferenced =
+                    conferences.poll(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            assertNotNull(wasConferenced);
+            assertEquals(Boolean.TRUE, wasConferenced);
+        } catch (InterruptedException e) {
+            fail("Expected onConferenceChanged callback");
+        }
         mConference = verifyConferenceForOutgoingCall();
         mRemoteConference = verifyConferenceForOutgoingCallOnRemoteCS();
         mRemoteConferenceObject = mConference.getRemoteConference();
@@ -683,6 +714,10 @@ public class RemoteConferenceTest extends BaseRemoteTelecomTest {
         final Call confCall = mInCallCallbacks.getService().getLastConferenceCall();
         assertCallState(confCall, Call.STATE_ACTIVE);
 
+        return mHandler;
+    }
+
+    private static Handler getHandler() {
         // Create a looper thread for the callbacks.
         HandlerThread workerThread = new HandlerThread("CallbackThread");
         workerThread.start();
