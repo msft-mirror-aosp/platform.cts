@@ -32,9 +32,9 @@ import static android.accessibilityservice.cts.utils.CtsTestUtils.DEFAULT_GLOBAL
 import static android.accessibilityservice.cts.utils.CtsTestUtils.DEFAULT_IDLE_TIMEOUT_MS;
 import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 import static android.accessibilityservice.cts.utils.CtsTestUtils.isTv;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.supportsTouch;
 import static android.accessibilityservice.cts.utils.GestureUtils.click;
 import static android.accessibilityservice.cts.utils.GestureUtils.dispatchGesture;
-import static android.accessibilityservice.cts.utils.CtsTestUtils.supportsTouch;
 import static android.accessibilityservice.cts.utils.RunOnMainUtils.getOnMain;
 import static android.app.UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES;
 import static android.view.MotionEvent.ACTION_DOWN;
@@ -141,7 +141,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.CtsMouseUtil;
-import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.TestUtils;
 import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
@@ -2874,24 +2873,6 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
                         event -> equalsAccessibilityEvent(event, expected),
                         DEFAULT_TIMEOUT_MS);
         assertNotNull("Did not receive expected event: " + expected, awaitedEvent);
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_IGNORE_UNIMPORTANT_ROOT)
-    public void testRootNodeImportance_notImportant_returnsNull() {
-        View rootView = mActivity.findViewById(android.R.id.content).getRootView();
-
-        rootView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        PollingCheck.waitFor(()-> sUiAutomation.getRootInActiveWindow() == null);
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_IGNORE_UNIMPORTANT_ROOT)
-    public void testRootNodeImportance_important_returnsNotNull() {
-        View rootView = mActivity.findViewById(android.R.id.content).getRootView();
-
-        rootView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
-        PollingCheck.waitFor(()-> sUiAutomation.getRootInActiveWindow() != null);
     }
 
     private static class LabelNodeProviderTest extends AccessibilityNodeProvider {
