@@ -24,11 +24,26 @@ import com.android.sts.common.tradefed.testtype.NonRootSecurityTestCase;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class CVE_2025_26428 extends NonRootSecurityTestCase {
+
+    @Before
+    public void setUp() throws Exception {
+        // The test cycles the screen at the end which can put devices (desktop
+        // in particular) into sleep. Hold a wakelock to prevent that.
+        getDevice().executeShellCommand("cmd power set-wakelock acquire PARTIAL_WAKE_LOCK");
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        // Clean up the wakelock held in {@link #setUp}.
+        getDevice().executeShellCommand("cmd power set-wakelock release PARTIAL_WAKE_LOCK");
+    }
 
     @Test
     @AsbSecurityTest(cveBugId = 378514614)
