@@ -1,2 +1,4 @@
-brufino@google.com
-rickywai@google.com
+# Bug component: 315013
+
+file:platform/frameworks/base:/BAL_OWNERS
+
