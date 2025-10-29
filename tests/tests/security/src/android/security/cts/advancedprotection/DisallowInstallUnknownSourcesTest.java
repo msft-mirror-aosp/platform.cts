@@ -23,12 +23,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.os.UserManager;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.security.Flags;
 
 import org.junit.Before;
 
-@RequiresFlagsEnabled(Flags.FLAG_AAPM_FEATURE_DISABLE_INSTALL_UNKNOWN_SOURCES)
 public class DisallowInstallUnknownSourcesTest extends BaseAdvancedProtectionFeatureTest {
     private UserManager mUserManager;
 

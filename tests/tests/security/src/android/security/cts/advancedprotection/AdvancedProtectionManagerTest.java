@@ -23,10 +23,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.Manifest;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.security.Flags;
 import android.security.advancedprotection.AdvancedProtectionManager;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
@@ -47,7 +45,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(BedsteadJUnit4.class)
-@RequiresFlagsEnabled(Flags.FLAG_AAPM_API)
 public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
     @ClassRule @Rule
     public static final DeviceState sDeviceState = new DeviceState();
