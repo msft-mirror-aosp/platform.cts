@@ -28,28 +28,41 @@ import static androidx.test.core.app.ActivityScenario.launch;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
 import android.app.Activity;
+import android.app.Presentation;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorSpace;
 import android.graphics.Insets;
 import android.graphics.Rect;
+import android.hardware.HardwareBuffer;
+import android.hardware.display.DisplayManager;
+import android.media.Image;
+import android.media.ImageReader;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.server.wm.ActivityManagerTestBase.DisableImmersiveModeConfirmationRule;
 import android.server.wm.IgnoreOrientationRequestSession;
+import android.server.wm.VirtualDisplayHelper;
 import android.server.wm.WindowManagerStateHelper;
 import android.server.wm.settings.SettingsSession;
 import android.util.Log;
 import android.view.AttachedSurfaceControl;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.Surface;
 import android.view.SurfaceControl;
@@ -121,6 +134,7 @@ public class AttachedSurfaceControlTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
+    final HandlerThread mWorkerThread = new HandlerThread("AttachedSurfaceControlTest");
 
     private static class TransformHintListener implements
             AttachedSurfaceControl.OnBufferTransformHintChangedListener {
@@ -179,6 +193,7 @@ public class AttachedSurfaceControlTest {
         if (mOrientationSession != null) {
             mOrientationSession.close();
         }
+        mWorkerThread.quitSafely();
     }
 
     @Test
@@ -579,6 +594,110 @@ public class AttachedSurfaceControlTest {
                     .that(jankCount[0])
                     .isGreaterThan(0);
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MIRROR_SURFACE_API)
+    public void testCreateMirror() throws Throwable {
+        mWorkerThread.start();
+        VirtualDisplayHelper vdHelper = new VirtualDisplayHelper();
+        try (ActivityScenario<TestActivity> scenario = launch(TestActivity.class)) {
+            TestActivity activity = awaitActivityStart(scenario);
+
+            // Create a mirror of the root surface control.
+            final AttachedSurfaceControl asc = activity.getParentLayout().getRootSurfaceControl();
+            assertNotNull(asc);
+            SurfaceControl mirror = asc.createMirror();
+            assertTrue(mirror.isValid());
+
+            // Create a virtual display and present the mirror.
+            int displayId = vdHelper.createAndWaitForDisplay();
+            vdHelper.turnDisplayOn();
+            DisplayManager dm =
+                    InstrumentationRegistry.getInstrumentation()
+                            .getContext()
+                            .getSystemService(DisplayManager.class);
+            Display display = dm.getDisplay(displayId);
+            InstrumentationRegistry.getInstrumentation()
+                    .runOnMainSync(
+                            () -> {
+                                MirrorPresentation presentation =
+                                        new MirrorPresentation(
+                                                InstrumentationRegistry.getInstrumentation()
+                                                        .getContext(),
+                                                display,
+                                                mirror);
+                                presentation.show();
+                            });
+
+            // Read the buffer from virtual display. Verify it's the same as the source surface.
+            ImageReader imageReader = vdHelper.getImageReader();
+            CountDownLatch latch = new CountDownLatch(1);
+            imageReader.setOnImageAvailableListener(
+                    reader -> {
+                        if (verifyImage(reader, Color.YELLOW)) {
+                            latch.countDown();
+                            vdHelper.releaseDisplay();
+                        }
+                    },
+                    new Handler(mWorkerThread.getLooper()));
+            assertTrue(latch.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));
+        }
+    }
+
+    private boolean verifyImage(ImageReader reader, int color) {
+        Bitmap bitmap;
+        try (Image image = reader.acquireLatestImage()) {
+            HardwareBuffer hardwareBuffer = image.getHardwareBuffer();
+            Bitmap hardwareBitmap =
+                    Bitmap.wrapHardwareBuffer(
+                            hardwareBuffer, ColorSpace.get(ColorSpace.Named.SRGB));
+            bitmap = hardwareBitmap.copy(Bitmap.Config.ARGB_8888, false);
+        } catch (NullPointerException e) {
+            return false;
+        }
+        // The color of the source surface is yellow.
+        BitmapPixelChecker checker = new BitmapPixelChecker(color);
+        int numMatchedPixels =
+                checker.getNumMatchingPixels(
+                        bitmap, new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight()));
+        return bitmap.getWidth() * bitmap.getHeight() == numMatchedPixels;
+    }
+
+    private static class MirrorPresentation extends Presentation implements SurfaceHolder.Callback {
+        private SurfaceView mSurfaceView;
+        private SurfaceControl mMirrorSurfaceControl;
+
+        MirrorPresentation(
+                Context outerContext, Display display, SurfaceControl mirrorSurfaceControl) {
+            super(outerContext, display);
+            mMirrorSurfaceControl = mirrorSurfaceControl;
+        }
+
+        @Override
+        protected void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+            mSurfaceView = new SurfaceView(getContext());
+            setContentView(mSurfaceView);
+            mSurfaceView.getHolder().addCallback(this);
+        }
+
+        @Override
+        public void surfaceCreated(@NonNull SurfaceHolder holder) {
+            SurfaceControl parent = mSurfaceView.getSurfaceControl();
+            assertTrue(parent.isValid());
+            SurfaceControl.Transaction transaction = new SurfaceControl.Transaction();
+            transaction.reparent(mMirrorSurfaceControl, parent);
+            transaction.setVisibility(mMirrorSurfaceControl, true);
+            transaction.apply();
+        }
+
+        @Override
+        public void surfaceChanged(
+                @NonNull SurfaceHolder holder, int format, int width, int height) {}
+
+        @Override
+        public void surfaceDestroyed(@NonNull SurfaceHolder holder) {}
     }
 
     private static <A extends Activity> A awaitActivityStart(ActivityScenario<A> scenario)
