@@ -36,6 +36,7 @@ import android.accessibilityservice.AccessibilityServiceInfo;
 import android.app.Instrumentation;
 import android.app.Service;
 import android.app.UiAutomation;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
@@ -61,8 +62,12 @@ import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SettingsStateChangerRule;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.TestUtils;
+import com.android.cts.install.lib.Install;
+import com.android.cts.install.lib.TestApp;
+import com.android.cts.install.lib.Uninstall;
 import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
 
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -74,7 +79,10 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 /**
  * Class for testing {@link AccessibilityManager}.
@@ -244,6 +252,78 @@ public class AccessibilityManagerTest extends StsExtraBusinessLogicTestCase {
                         MotionEvent.obtain(0, 0, 0, 0, 0, 0)));
         assertThat(exception).hasCauseThat().isInstanceOf(SecurityException.class);
         assertThat(exception).hasCauseThat().hasMessageThat().contains("INJECT_EVENTS");
+    }
+
+    @AsbSecurityTest(cveBugId = {449392803})
+    @Test
+    public void getA11yFeatureToTileMap_returnsValidTilesOnly() throws Exception {
+        final UiAutomation uiAutomation =
+                sInstrumentation.getUiAutomation(
+                        UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
+        final String packageName = "foo.bar.cve449392803";
+        final ComponentName nonExistentTileService =
+                new ComponentName(packageName, packageName + ".ServiceWithNonExistentTileService");
+        final ComponentName multipleTileService =
+                new ComponentName(packageName, packageName + ".ServiceWithMultipleTileServices");
+        final ComponentName validTileService =
+                new ComponentName(packageName, packageName + ".ServiceWithValidTileService");
+        final TestApp app =
+                new TestApp(
+                        /* name= */ "CVE-449392803-A11yServiceInvalidTiles",
+                        packageName,
+                        /* versionCode= */ 1,
+                        /* isApex= */ false,
+                        /* resourceNames= */ "CVE-449392803-A11yServiceInvalidTiles.apk");
+        final Set<ComponentName> targetServices =
+                Set.of(nonExistentTileService, multipleTileService, validTileService);
+        try {
+            // Install an app where it contains 3 Accessibility services with various tile
+            // service specified
+            // 1. AccessibilityService with a single, valid, existent tile service name
+            // 2. AccessibilityService with a single, non existent tile service name
+            // 3. AccessibilityService with a tile service name with concatenated tiles
+            SystemUtil.runWithShellPermissionIdentity(
+                    uiAutomation,
+                    () -> Install.single(app).commit(),
+                    Manifest.permission.INSTALL_PACKAGES);
+
+            // Wait for the AccessibilityManager to recognize the a11y service in the installed app
+            TestUtils.waitUntil(
+                    "Waiting for AccessibilityManager to recognize the services",
+                    () -> {
+                        Set<ComponentName> installedServices =
+                                mAccessibilityManager
+                                        .getInstalledAccessibilityServiceList()
+                                        .stream()
+                                        .map(AccessibilityServiceInfo::getComponentName)
+                                        .collect(Collectors.toUnmodifiableSet());
+                        return installedServices.containsAll(targetServices);
+                    });
+
+            // Get the a11y feature to tile map by using reflection to call the hidden method
+            uiAutomation.adoptShellPermissionIdentity(MANAGE_ACCESSIBILITY);
+            Method getA11yFeatureToTileMapMethod =
+                    AccessibilityManager.class.getDeclaredMethod(
+                            "getA11yFeatureToTileMap", int.class);
+            getA11yFeatureToTileMapMethod.setAccessible(true);
+            final Map<ComponentName, ComponentName> a11yFeatureToTileMap =
+                    (Map<ComponentName, ComponentName>)
+                            getA11yFeatureToTileMapMethod.invoke(
+                                    mAccessibilityManager, mTargetContext.getUserId());
+            assertThat(a11yFeatureToTileMap.getOrDefault(validTileService, null)).isNotNull();
+            assertThat(a11yFeatureToTileMap.getOrDefault(nonExistentTileService, null)).isNull();
+            assertThat(a11yFeatureToTileMap.getOrDefault(multipleTileService, null)).isNull();
+
+        } catch (NoSuchMethodException e) {
+            Assume.assumeNoException(
+                    "The test is valid if getA11yFeatureToTileMap method exists", e);
+        } finally {
+            SystemUtil.runWithShellPermissionIdentity(
+                    uiAutomation,
+                    () -> Uninstall.packages(packageName),
+                    Manifest.permission.DELETE_PACKAGES);
+            uiAutomation.dropShellPermissionIdentity();
+        }
     }
 
     @Test

@@ -34,10 +34,14 @@ android_test {
     static_libs: [
         "android.view.accessibility.flags-aconfig-java",
         "ctstestrunner-axt",
+        "cts-install-lib",
         "androidx.test.core",
         "hamcrest-library",
         "CtsAccessibilityCommon",
         "CtsAccessibilityServiceUtils",
+    ],
+    java_resources: [
+        ":CVE-449392803-A11yServiceInvalidTiles",
     ],
     libs: ["android.test.base.stubs.test"],
     // Tag this module as a cts test artifact
