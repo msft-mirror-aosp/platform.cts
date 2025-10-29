@@ -29,6 +29,7 @@ import static com.android.server.display.feature.flags.Flags.FLAG_DISPLAY_TOPOLO
 import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_GET_SUGGESTED_FRAME_RATE;
 import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_GET_SUPPORTED_REFRESH_RATES;
 import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_HAS_ARR_SUPPORT;
+import static com.android.server.display.feature.flags.Flags.FLAG_FRAME_RATE_MAPPING_API;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -1431,10 +1432,29 @@ public class DisplayTest extends TestBase {
         }
     }
 
+    /** Tests that getFrameRateVelocityThreshold() returns a List of FrameRateVelocityPoint. */
+    @Test
+    @RequiresFlagsEnabled(FLAG_FRAME_RATE_MAPPING_API)
+    public void testGetFrameRateVelocityMappingWithDisplay() throws Throwable {
+        Display[] displays = mDisplayManager.getDisplays();
+        assertNotNull(displays);
+        for (Display display : displays) {
+            if (isSecondaryDisplay(display)) {
+                continue;
+            }
+
+            var mapping = display.getFrameRateVelocityMapping();
+            for (var point : mapping) {
+                assertTrue(point.getFramePerSecond() > 0);
+                assertTrue(point.getPixelPerSecond() >= 0);
+            }
+        }
+    }
+
     /**
      * Used to force mode changes on a display.
-     * <p>
-     * Note that due to limitations of the Presentation class, the modes must have the same size
+     *
+     * <p>Note that due to limitations of the Presentation class, the modes must have the same size
      * otherwise the presentation will be automatically dismissed.
      */
     private static final class TestPresentation extends Presentation {
@@ -1451,8 +1471,10 @@ public class DisplayTest extends TestBase {
             super.onCreate(savedInstanceState);
 
             View content = new View(getContext());
-            content.setLayoutParams(new ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            content.setLayoutParams(
+                    new ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT));
             content.setBackgroundColor(Color.RED);
             setContentView(content);
 

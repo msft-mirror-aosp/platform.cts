@@ -55,6 +55,7 @@ java_defaults {
         "hwui_flags_java_lib",
         "framework_graphics_flags_java_lib",
         "bedstead",
+        "display_flags_lib",
     ],
 
     srcs: [
