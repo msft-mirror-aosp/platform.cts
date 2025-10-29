@@ -487,6 +487,7 @@ android_ravenwood_test {
         "android.content.res.flags-aconfig-java",
         "services.core",
         "CtsContentUtils",
+        "flag-junit",
     ],
     platform_apis: true,
     auto_gen_config: true,
