@@ -2,6 +2,7 @@ package android.location.cts.gnss;
 
 import android.location.cts.common.GnssTestCase;
 import android.location.cts.common.SoftAssert;
+import android.location.cts.common.TestGnssMeasurementListener;
 import android.location.cts.common.TestGnssStatusCallback;
 import android.location.cts.common.TestLocationListener;
 import android.location.cts.common.TestLocationManager;
@@ -61,6 +62,10 @@ public class GnssTtffTests extends GnssTestCase {
             return;
         }
 
+        verifyTtff();
+    }
+
+    private void verifyTtff() throws Exception {
         // Turn on assisted_gps_enabled if it's not enabled
         int oldAssistedGpsEnabled = TestUtils.getAssistedGpsEnabled(getContext());
         TestUtils.setAssistedGpsEnabled(getContext(), 1);
@@ -75,6 +80,33 @@ public class GnssTtffTests extends GnssTestCase {
             checkTtffHotWithWifiOn(TTFF_HOT_TH_SECS);
         } finally {
             TestUtils.setAssistedGpsEnabled(getContext(), oldAssistedGpsEnabled);
+        }
+    }
+
+    /**
+     * Test the TTFF when GnssMeasurement is registered.
+     *
+     * <p>First registers GnssMeasurement and run the same test as in {@link #testTtffWithNetwork()}
+     */
+    @CddTest(requirement = "7.3.3")
+    @AppModeFull(reason = "permission ACCESS_LOCATION_EXTRA_COMMANDS not available to instant apps")
+    public void testTtffWithNetwork_registerGnssMeasurementFirst() throws Exception {
+        if (!TestUtils.deviceHasGpsFeature(getContext())) {
+            return;
+        }
+
+        // Network connection isn't required for automotive devices.
+        if (TestMeasurementUtil.isAutomotiveDevice(getContext())) {
+            return;
+        }
+
+        TestGnssMeasurementListener measurementListener =
+                new TestGnssMeasurementListener(TAG, LOCATION_TO_COLLECT_COUNT);
+        mTestLocationManager.registerGnssMeasurementCallback(measurementListener);
+        try {
+            verifyTtff();
+        } finally {
+            mTestLocationManager.unregisterGnssMeasurementCallback(measurementListener);
         }
     }
 
