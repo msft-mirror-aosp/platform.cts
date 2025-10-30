@@ -18,11 +18,10 @@ package android.location.cts.gnss.suplClient;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
-
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.SSLSocketFactory;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A TCP client that is used to send and receive SUPL request and responses by the SUPL client. The
@@ -30,24 +29,23 @@ import javax.net.ssl.SSLSocketFactory;
  */
 public class SuplTcpClient {
 
+  private static final int READ_TIMEOUT_MILLIS = (int) TimeUnit.SECONDS.toMillis(10);
   private static final short HEADER_SIZE = 2;
   /** BUFFER_SIZE data size that is enough to hold SUPL responses */
   private static final int SUPL_RESPONSE_BUFFER_SIZE = 16384;
   private static final byte[] SUPL_RESPONSE_BUFFER = new byte[SUPL_RESPONSE_BUFFER_SIZE];
 
-  private SSLSocket socket;
+  private Socket socket;
   private BufferedInputStream bufferedInputStream;
 
   public SuplTcpClient(String suplServerName, int suplServerPort)
       throws UnknownHostException, IOException {
     System.out.println("Connecting to " + suplServerName + " on port " + suplServerPort);
-
-    SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
-    socket = (SSLSocket) factory.createSocket(suplServerName, suplServerPort);
-    socket.startHandshake();
-
-    System.out.println("Connection established to " + socket.toString());
+    socket = new Socket(suplServerName, suplServerPort);
+    socket.setSoTimeout(READ_TIMEOUT_MILLIS);
+    System.out.println("Connection established to " + socket.getOutputStream());
     bufferedInputStream = new BufferedInputStream(socket.getInputStream());
+
   }
 
   /** Sends a byte array of SUPL data to the server */
