@@ -16,6 +16,8 @@
 
 package android.providerui.cts;
 
+import static android.Manifest.permission.MANAGE_DOCUMENTS;
+import static android.provider.cts.media.MediaProviderTestUtils.clearOwner;
 import static android.provider.cts.media.MediaProviderTestUtils.resolveVolumeName;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -93,6 +95,8 @@ public class MediaStoreUiTest {
     private static final long TIMEOUT_MILLIS = 30 * DateUtils.SECOND_IN_MILLIS;
     private static final String MEDIA_DOCUMENTS_PROVIDER_AUTHORITY =
             "com.android.providers.media.documents";
+    protected static final String EXTERNAL_STORAGE_PROVIDER_AUTHORITY =
+            "com.android.externalstorage.documents";
 
     private Instrumentation mInstrumentation;
     private Context mContext;
@@ -180,10 +184,37 @@ public class MediaStoreUiTest {
     }
 
     @Test
-    public void testGetDocumentUri_throwsWithoutPermission() throws Exception {
+    public void testGetDocumentUri_noPermissionOnDocumentUri() throws Exception {
         assumeTrue(supportsHardware());
 
         prepareFile();
+        clearDocumentsUi();
+        mDevice.waitForIdle();
+
+        final Uri docUri = MediaStore.getDocumentUri(mActivity, mMediaStoreUri);
+        assertNotNull(docUri);
+        assertEquals(EXTERNAL_STORAGE_PROVIDER_AUTHORITY, docUri.getAuthority());
+
+        // Open should fail
+        final ContentResolver resolver = mActivity.getContentResolver();
+        try (ParcelFileDescriptor fd = resolver.openFileDescriptor(docUri, "r")) {
+            fail("Expected open for read to fail with SecurityException");
+        } catch (SecurityException e) {
+            // Expected
+        }
+        try (ParcelFileDescriptor fd = resolver.openFileDescriptor(docUri, "wt")) {
+            fail("Expected open for write to fail with SecurityException");
+        } catch (SecurityException e) {
+            // Expected
+        }
+    }
+
+    @Test
+    public void testGetDocumentUri_throwsWithoutPermissionOnMediaUri() throws Exception {
+        assumeTrue(supportsHardware());
+
+        prepareFile();
+        clearOwner(mMediaStoreUri);
         clearDocumentsUi();
         mDevice.waitForIdle();
 
@@ -192,6 +223,42 @@ public class MediaStoreUiTest {
             fail("Expecting SecurityException.");
         } catch (SecurityException e) {
             // Expected
+        }
+    }
+
+    @Test
+    public void testGetDocumentUri_asDocumentsManager() throws Exception {
+        assumeTrue(supportsHardware());
+
+        prepareFile();
+        clearOwner(mMediaStoreUri);
+        clearDocumentsUi();
+        mDevice.waitForIdle();
+
+        final UiAutomation uiAutomation =
+                InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity(MANAGE_DOCUMENTS);
+            final Uri docUri = MediaStore.getDocumentUri(mActivity, mMediaStoreUri);
+            assertNotNull(docUri);
+            assertEquals(EXTERNAL_STORAGE_PROVIDER_AUTHORITY, docUri.getAuthority());
+
+            final ContentResolver resolver = mActivity.getContentResolver();
+
+            // Test reading
+            final byte[] expected = "TEST".getBytes();
+            final byte[] actual = new byte[4];
+            try (ParcelFileDescriptor fd = resolver.openFileDescriptor(docUri, "r")) {
+                Os.read(fd.getFileDescriptor(), actual, 0, actual.length);
+                assertArrayEquals(expected, actual);
+            }
+
+            // Test writing
+            try (ParcelFileDescriptor fd = resolver.openFileDescriptor(docUri, "wt")) {
+                Os.write(fd.getFileDescriptor(), expected, 0, expected.length);
+            }
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
         }
     }
 
