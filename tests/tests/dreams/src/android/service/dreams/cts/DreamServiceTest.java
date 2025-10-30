@@ -242,14 +242,18 @@ public class DreamServiceTest extends ActivityManagerTestBase {
         waitAndAssertResumedAndFocusedActivityOnDisplay(dreamActivity, Display.DEFAULT_DISPLAY,
                 "Dream activity should be the top resumed activity");
 
-        removeRootTasksWithDreamTypeActivity();
-
         // Listen for the dream to end
         final CountDownLatch countDownLatch = new CountDownLatch(1);
+        final BroadcastReceiver receiver = new DreamBroadcastReceiver(countDownLatch);
         mContext.registerReceiver(
-                new DreamBroadcastReceiver(countDownLatch),
+                receiver,
                 new IntentFilter(Intent.ACTION_DREAMING_STOPPED));
-        assertThat(countDownLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)).isTrue();
+        try {
+            removeRootTasksWithDreamTypeActivity();
+            assertThat(countDownLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)).isTrue();
+        } finally {
+            mContext.unregisterReceiver(receiver);
+        }
 
         assertFalse("DreamService is still dreaming", mDreamCoordinator.isDreaming());
         mDreamCoordinator.stopDream();
