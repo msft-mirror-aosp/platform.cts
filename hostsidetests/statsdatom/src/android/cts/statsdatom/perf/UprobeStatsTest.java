@@ -16,8 +16,6 @@
 
 package android.cts.statsdatom.perf;
 
-import static android.uprobestats.mainline.flags.Flags.FLAG_ENABLE_UPROBESTATS;
-
 import static com.google.common.truth.Truth.assertThat;
 
 import android.cts.statsdatom.lib.AtomTestUtils;
@@ -106,7 +104,6 @@ public class UprobeStatsTest extends BaseHostJUnit4Test implements IBuildReceive
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_UPROBESTATS)
     public void testUpdateDeviceIdleTempAllowlist() throws Exception {
         if (!CpuFeatures.isArm64(getDevice())) {
             return;
