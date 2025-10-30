@@ -25,6 +25,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.inOrder;
 
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.print.PrintAttributes;
 import android.print.PrintAttributes.Margins;
 import android.print.PrintAttributes.MediaSize;
@@ -45,11 +48,13 @@ import android.printservice.PrinterDiscoverySession;
 import androidx.annotation.NonNull;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.printspooler.flags.Flags;
+
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InOrder;
-import org.mockito.exceptions.verification.VerificationInOrderFailure;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -65,6 +70,9 @@ public class PrinterDiscoverySessionLifecycleTest extends BasePrintTest {
     private static final String SECOND_PRINTER_LOCAL_ID = "second_printer";
 
     private static StubbablePrinterDiscoverySession sSession;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void clearPrintSpoolerState() throws Exception {
@@ -354,6 +362,7 @@ public class PrinterDiscoverySessionLifecycleTest extends BasePrintTest {
         inOrder.verify(firstSessionCallbacks).onDestroy();
     }
 
+    @RequiresFlagsDisabled({Flags.FLAG_SKIP_SERVICE_WARNING})
     @Test
     public void cancelPrintServicesAlertDialog() throws Throwable {
         // Create the session callbacks that we will be checking.

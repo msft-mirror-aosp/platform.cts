@@ -25,7 +25,11 @@ android_test {
         "general-tests",
     ],
     srcs: ["src/**/*.java"],
-    static_libs: ["print-test-util-lib"],
+    static_libs: [
+        "print-test-util-lib",
+        "flag-junit",
+        "printspooler_aconfig_flags_java_lib",
+    ],
     sdk_version: "test_current",
     data: [
         ":CtsExternalPrintService",
