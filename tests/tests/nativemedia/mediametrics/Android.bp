@@ -48,6 +48,7 @@ cc_test {
     test_suites: [
         "cts",
         "general-tests",
+        "dts",
     ],
 
     cflags: [

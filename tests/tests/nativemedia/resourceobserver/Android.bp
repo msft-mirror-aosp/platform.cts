@@ -30,13 +30,14 @@ cc_test {
         "resourceobserver_aidl_interface-V1-ndk",
     ],
     whole_static_libs: [
-        "libnativetesthelper_jni"
+        "libnativetesthelper_jni",
     ],
 
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",
         "general-tests",
+        "dts",
     ],
 
     cflags: [

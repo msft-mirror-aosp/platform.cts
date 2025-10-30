@@ -52,6 +52,7 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
+        "dts",
     ],
 }
 
@@ -63,5 +64,6 @@ android_test {
     test_suites: [
         // b/344653352: drop from cts, mcts-media, and mts-media for now
         "general-tests",
+        "dts",
     ],
 }

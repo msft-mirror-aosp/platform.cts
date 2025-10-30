@@ -42,6 +42,7 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
+        "dts",
     ],
     host_required: ["cts-dynamic-config"],
     host_common_data: [":cts-dynamic-config"],

@@ -10,6 +10,7 @@ android_test {
         "cts",
         "mts-mediaprovider",
         "mcts-mediaprovider",
+        "dts",
     ],
     compile_multilib: "both",
 
