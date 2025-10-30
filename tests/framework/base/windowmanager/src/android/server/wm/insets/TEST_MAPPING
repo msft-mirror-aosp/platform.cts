@@ -3,5 +3,10 @@
     {
       "name": "CtsWindowManagerDeviceInsets"
     }
+  ],
+  "desktop-presubmit": [
+    {
+      "name": "CtsWindowManagerDeviceInsets"
+    }
   ]
 }
