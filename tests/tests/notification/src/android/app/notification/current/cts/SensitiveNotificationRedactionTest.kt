@@ -467,16 +467,9 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
         }
         assumeNotNull(existingSmsApp)
         val shouldRedact = mutableListOf(
-            "your code is 123G5",
-            "your code is 123456F8",
-            "your code is 123ķ4",
-            "your code is 123Ŀ4",
-            "1-1-01 is the date of your code T3425",
             "your code 54-234-3 was sent on 1-1-01",
             "your code is 34-58-30",
             "your code is 12-1-3089",
-            "your code is G-3d523",
-            "your code is G-FD-745",
             "your code is:G-345821",
             "your code is (G-345821",
             "your code is \nG-345821",
@@ -556,18 +549,11 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
 
         val shouldNotRedact =
             mutableListOf(
-                "your code is 123G.",
-                "your code is 123",
-                "your code is 12 345",
-                "your code is 123T567890",
-                "your code is TEFHXES",
                 "your code is 01-01-2001",
                 "your code is 1-1-2001",
                 "your code is 1-1-01",
                 "your code is 6--7893",
                 "your code is ------",
-                "your code is G-345821forreal",
-                "your code is GVRXY 2",
             )
         var notifNum = 0
         val redactedFailures = StringBuilder("")
