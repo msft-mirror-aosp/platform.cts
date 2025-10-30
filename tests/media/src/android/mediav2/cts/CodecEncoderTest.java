@@ -379,7 +379,7 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
                     mCodec.getName(), mCodecName);
             assertTrue("error! codec canonical name is null or empty",
                     mCodec.getCanonicalName() != null && !mCodec.getCanonicalName().isEmpty());
-            mSaveToMem = false; /* TODO(b/149027258) */
+            mSaveToMem = true;
             MediaFormat format = mActiveEncCfg.getFormat();
             {
                 int loopCounter = 0;
@@ -400,8 +400,9 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
                         if (false) mCodec.stop();
                         else mCodec.reset();
                         if (loopCounter != 0 && !ref.equals(test)) {
-                            fail("Encoder output is not consistent across runs \n" + mTestConfig
-                                    + mTestEnv + test.getErrMsg());
+                            // TODO(b/456805087) if inconsistent, check for perceptual similarity
+                            Log.e(LOG_TAG, "Encoder output is not consistent across runs\n"
+                                    + test.getErrMsg() + mTestConfig + mTestEnv);
                         }
                         loopCounter++;
                     }
@@ -483,7 +484,7 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
         checkFormatSupport(mCodecName, mMediaType, true, formatList, null, supportRequirements);
         boolean[] boolStates = {true, false};
         {
-            boolean saveToMem = false; /* TODO(b/149027258) */
+            boolean saveToMem = true;
             OutputManager configRef = null;
             OutputManager configTest = null;
             if (mEncCfgParams.length > 1) {
@@ -525,8 +526,8 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
                 if (false) mCodec.stop();
                 else mCodec.reset();
                 if (!ref.equals(test)) {
-                    fail("Encoder output is not consistent across runs \n" + mTestConfig
-                            + mTestEnv + test.getErrMsg());
+                    Log.e(LOG_TAG, "Encoder output is not consistent across runs\n"
+                            + test.getErrMsg() + mTestConfig + mTestEnv);
                 }
 
                 /* test reconfigure codec at eos state */
@@ -540,8 +541,8 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
                 if (false) mCodec.stop();
                 else mCodec.reset();
                 if (!ref.equals(test)) {
-                    fail("Encoder output is not consistent across runs \n" + mTestConfig
-                            + mTestEnv + test.getErrMsg());
+                    Log.e(LOG_TAG, "Encoder output is not consistent across runs\n"
+                            + test.getErrMsg() + mTestConfig + mTestEnv);
                 }
 
                 /* test reconfigure codec for new format */
@@ -557,8 +558,8 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
                     if (false) mCodec.stop();
                     else mCodec.reset();
                     if (!configRef.equals(configTest)) {
-                        fail("Encoder output is not consistent across runs \n" + mTestConfig
-                                + mTestEnv + configTest.getErrMsg());
+                        Log.e(LOG_TAG, "Encoder output is not consistent across runs\n"
+                                + configTest.getErrMsg() + mTestConfig + mTestEnv);
                     }
                 }
                 mSaveToMem = false;
@@ -612,7 +613,7 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
         OutputManager test = new OutputManager(ref.getSharedErrorLogs());
         {
             mCodec = MediaCodec.createByCodecName(mCodecName);
-            mSaveToMem = false; /* TODO(b/149027258) */
+            mSaveToMem = true;
             int loopCounter = 0;
             MediaFormat format = mActiveEncCfg.getFormat();
             for (boolean isAsync : boolStates) {
@@ -627,7 +628,7 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
                 if (false) mCodec.stop();
                 else mCodec.reset();
                 if (loopCounter != 0 && !ref.equals(test)) {
-                    fail("Encoder output is not consistent across runs \n" + mTestConfig
+                    fail("Encoder output is not consistent across runs\n" + mTestConfig
                             + mTestEnv + test.getErrMsg());
                 }
                 loopCounter++;

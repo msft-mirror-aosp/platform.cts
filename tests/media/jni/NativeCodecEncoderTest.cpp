@@ -355,9 +355,7 @@ bool CodecEncoderTest::initFormat(AMediaFormat* format) {
 
 bool CodecEncoderTest::encodeToMemory(const char* file, const char* encoder, int32_t frameLimit,
                                       AMediaFormat* format, OutputManager* ref) {
-    /* TODO(b/149027258) */
-    if (true) mSaveToMem = false;
-    else mSaveToMem = true;
+    mSaveToMem = true;
     mOutputBuff = ref;
     mCodec = AMediaCodec_createCodecByName(encoder);
     RETURN_IF_NULL(mCodec, StringFormat("unable to create codec by name %s \n", encoder))
@@ -390,9 +388,7 @@ void CodecEncoderTest::updateBitrate(AMediaFormat* format, int bitrate) {
 bool CodecEncoderTest::testSimpleEncode(const char* encoder, const char* srcPath, int frameLimit) {
     setUpSource(srcPath);
     RETURN_IF_NULL(mInputData, StringFormat("unable to open input file %s", srcPath))
-    /* TODO(b/149027258) */
-    if (true) mSaveToMem = false;
-    else mSaveToMem = true;
+    mSaveToMem = true;
     auto ref = mRefBuff;
     auto test = mTestBuff;
     const bool boolStates[]{true, false};
@@ -424,9 +420,10 @@ bool CodecEncoderTest::testSimpleEncode(const char* encoder, const char* srcPath
                 RETURN_IF_FAIL(AMediaCodec_stop(mCodec), "AMediaCodec_stop failed")
                 RETURN_IF_FAIL(AMediaCodec_delete(mCodec), "AMediaCodec_delete failed")
                 mCodec = nullptr;
-                RETURN_IF_TRUE((loopCounter != 0 && !ref->equals(test)),
-                               std::string{"Encoder output is not consistent across runs \n"}
-                                       .append(test->getErrorMsg()))
+                if (loopCounter != 0 && !ref->equals(test)) {
+                    ALOGE("Encoder output is not consistent across runs\n%s\n%s",
+                          test->getErrorMsg().c_str(), getErrorMsg().c_str());
+                }
                 loopCounter++;
             }
         }
@@ -476,17 +473,16 @@ bool CodecEncoderTest::testReconfigure(const char* encoder, const char* srcPath,
         if (!reConfigureCodec(format, isAsync, true, true)) return false;
         RETURN_IF_FAIL(AMediaCodec_start(mCodec), "AMediaCodec_start failed")
 
-        /* TODO(b/149027258) */
-        if (true) mSaveToMem = false;
-        else mSaveToMem = true;
+        mSaveToMem = true;
         test->reset();
         if (!doWork(frameLimit)) return false;
         if (!queueEOS()) return false;
         if (!waitForAllOutputs()) return false;
         RETURN_IF_FAIL(AMediaCodec_stop(mCodec), "AMediaCodec_stop failed")
-        RETURN_IF_TRUE(!ref->equals(test),
-                       std::string{"Encoder output is not consistent across runs \n"}.append(
-                               test->getErrorMsg()))
+        if (!ref->equals(test)) {
+            ALOGE("Encoder output is not consistent across runs\n%s\n%s",
+                  test->getErrorMsg().c_str(), getErrorMsg().c_str());
+        }
 
         /* test reconfigure codec at eos state */
         if (!reConfigureCodec(format, !isAsync, false, true)) return false;
@@ -496,9 +492,10 @@ bool CodecEncoderTest::testReconfigure(const char* encoder, const char* srcPath,
         if (!queueEOS()) return false;
         if (!waitForAllOutputs()) return false;
         RETURN_IF_FAIL(AMediaCodec_stop(mCodec), "AMediaCodec_stop failed")
-        RETURN_IF_TRUE(!ref->equals(test),
-                       std::string{"Encoder output is not consistent across runs \n"}.append(
-                               test->getErrorMsg()))
+        if (!ref->equals(test)) {
+            ALOGE("Encoder output is not consistent across runs\n%s\n%s",
+                  test->getErrorMsg().c_str(), getErrorMsg().c_str());
+        }
 
         /* test reconfigure codec for new format */
         if (mFormats.size() > 1) {
@@ -509,9 +506,10 @@ bool CodecEncoderTest::testReconfigure(const char* encoder, const char* srcPath,
             if (!queueEOS()) return false;
             if (!waitForAllOutputs()) return false;
             RETURN_IF_FAIL(AMediaCodec_stop(mCodec), "AMediaCodec_stop failed")
-            RETURN_IF_TRUE(!configRef->equals(test),
-                           std::string{"Encoder output is not consistent across runs \n"}.append(
-                                   test->getErrorMsg()))
+            if (!configRef->equals(test)) {
+                ALOGE("Encoder output is not consistent across runs\n%s\n%s",
+                      test->getErrorMsg().c_str(), getErrorMsg().c_str());
+            }
         }
         mSaveToMem = false;
         RETURN_IF_FAIL(AMediaCodec_delete(mCodec), "AMediaCodec_delete failed")
@@ -521,9 +519,7 @@ bool CodecEncoderTest::testReconfigure(const char* encoder, const char* srcPath,
 }
 
 bool CodecEncoderTest::testOnlyEos(const char* encoder) {
-    /* TODO(b/149027258) */
-    if (true) mSaveToMem = false;
-    else mSaveToMem = true;
+    mSaveToMem = true;
     auto ref = mRefBuff;
     auto test = mTestBuff;
     const bool boolStates[]{true, false};

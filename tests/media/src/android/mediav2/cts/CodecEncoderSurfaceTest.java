@@ -27,7 +27,6 @@ import static android.mediav2.common.cts.MuxerUtils.getTempFilePath;
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
 import android.media.MediaFormat;
@@ -37,6 +36,7 @@ import android.mediav2.common.cts.CodecTestBase;
 import android.mediav2.common.cts.CodecTestBase.SupportClass;
 import android.mediav2.common.cts.EncoderConfigParams;
 import android.mediav2.common.cts.OutputManager;
+import android.util.Log;
 
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -208,7 +208,7 @@ public class CodecEncoderSurfaceTest extends CodecEncoderSurfaceTestBase {
         boolean[] boolStates = {true, false};
         int count = 0;
         String tmpPath = null;
-        boolean saveToMem = false; /* TODO(b/149027258) */
+        boolean saveToMem = true;
         for (boolean isAsync : boolStates) {
             if (count == 0) {
                 tmpPath = getTempFilePath(mEncCfgParams.mInputBitDepth > 8 ? "10bit" : "");
@@ -216,12 +216,9 @@ public class CodecEncoderSurfaceTest extends CodecEncoderSurfaceTestBase {
             }
             encodeToMemory(isAsync, false, saveToMem, (count == 0 ? ref : test), muxOutput,
                     tmpPath, mFrameLimit);
-            // TODO:(b/149027258) Remove false once output is validated across runs
-            if (false) {
-                if (count != 0 && !ref.equals(test)) {
-                    fail("Encoder output is not consistent across runs \n" + mTestConfig + mTestEnv
-                            + test.getErrMsg());
-                }
+            if (count != 0 && !ref.equals(test)) {
+                Log.e(LOG_TAG, "Encoder output is not consistent across runs\n"
+                        + test.getErrMsg() + mTestConfig + mTestEnv);
             }
             count++;
         }

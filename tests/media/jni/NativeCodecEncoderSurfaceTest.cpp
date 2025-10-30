@@ -341,7 +341,7 @@ bool CodecEncoderSurfaceTest::dequeueEncoderOutput(size_t bufferIndex,
             }
             if ((info->flags & AMEDIACODEC_BUFFER_FLAG_CODEC_CONFIG) == 0) {
                 RETURN_IF_FAIL(AMediaMuxer_writeSampleData(mMuxer, mMuxTrackID, buf, info),
-                                "AMediaMuxer_writeSampleData failed")
+                               "AMediaMuxer_writeSampleData failed")
             }
         }
         if ((info->flags & AMEDIACODEC_BUFFER_FLAG_CODEC_CONFIG) == 0) {
@@ -557,16 +557,14 @@ bool CodecEncoderSurfaceTest::doWork(int frameLimit) {
 }
 
 bool CodecEncoderSurfaceTest::testSimpleEncode(const char* encoder, const char* decoder,
-                                               const char* srcPath, const char *srcMediaType,
+                                               const char* srcPath, const char* srcMediaType,
                                                const char* muxOutPath, int colorFormat,
                                                bool usePersistentSurface, int frameLimit) {
     RETURN_IF_FALSE(setUpExtractor(srcPath, srcMediaType, colorFormat),
                     std::string{"setUpExtractor failed"})
     bool muxOutput = muxOutPath != nullptr;
 
-    /* TODO(b/149027258) */
-    if (true) mSaveToMem = false;
-    else mSaveToMem = true;
+    mSaveToMem = true;
     auto ref = mRefBuff;
     auto test = mTestBuff;
     int loopCounter = 0;
@@ -635,11 +633,9 @@ bool CodecEncoderSurfaceTest::testSimpleEncode(const char* encoder, const char* 
         RETURN_IF_TRUE(!mOutputBuff->isOutPtsListIdenticalToInpPtsList(mMaxBFrames != 0),
                        std::string{"Input pts list and Output pts list are not identical \n"}
                                .append(ref->getErrorMsg()))
-        // TODO:(b/149027258) Remove false once output is validated across runs
-        if (false) {
-            RETURN_IF_TRUE((loopCounter != 0 && !ref->equals(test)),
-                           std::string{"Encoder output is not consistent across runs \n"}.append(
-                                   test->getErrorMsg()))
+        if (loopCounter != 0 && !ref->equals(test)) {
+            ALOGE("Encoder output is not consistent across runs\n%s\n%s",
+                  test->getErrorMsg().c_str(), getErrorMsg().c_str());
         }
         loopCounter++;
         ANativeWindow_release(mWindow);
