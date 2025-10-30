@@ -254,6 +254,9 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                     "Landroid/app/sdksandbox/ISharedPreferencesSyncCallback;",
                     "Landroid/app/sdksandbox/ISdkToServiceCallback;",
                     "Landroid/app/sdksandbox/IUnloadSdkCallback;",
+                    "Landroid/app/sdksandbox/flags/Flags;",
+                    "Landroid/app/sdksandbox/flags/FeatureFlags;",
+                    "Landroid/app/sdksandbox/flags/FeatureFlagsImpl;",
                     // b/325060980 : Remove duplication between telephony-common.jar and
                     // services.jar
                     "Lcom/android/server/updates/ConfigUpdateInstallReceiver;"
