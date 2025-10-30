@@ -18,12 +18,15 @@ package com.android.cts.pcc.processes;
 
 import static android.app.privatecompute.flags.Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Process;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -148,5 +151,31 @@ public class PccProcessTest {
         assertTrue(
                 "Received UID from separate process should be a PCC UID",
                 Process.isPccUid(receivedUid.get()));
+    }
+
+    @Test
+    public void testContentProviderInPccProcess() {
+        Uri uri = Uri.parse("content://" + PccContentProvider.AUTHORITY);
+        Bundle result =
+                mContext.getContentResolver()
+                        .call(uri, PccContentProvider.METHOD_GET_UID, null, null);
+        assertNotNull("Result from content provider should not be null", result);
+        int providerUid = result.getInt(PccContentProvider.KEY_UID);
+        assertTrue("Provider UID should be a PCC UID", Process.isPccUid(providerUid));
+        assertEquals(
+                "Provider should run in the same process as the test",
+                Process.myUid(),
+                providerUid);
+    }
+
+    @Test
+    public void testContentProviderInSecondPccProcess() {
+        Uri uri = Uri.parse("content://" + PccSecondProcessContentProvider.AUTHORITY_SECOND);
+        Bundle result =
+                mContext.getContentResolver()
+                        .call(uri, PccContentProvider.METHOD_GET_UID, null, null);
+        assertNotNull("Result from second content provider should not be null", result);
+        int providerUid = result.getInt(PccContentProvider.KEY_UID);
+        assertTrue("Second provider UID should be a PCC UID", Process.isPccUid(providerUid));
     }
 }
