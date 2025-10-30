@@ -19,6 +19,7 @@ package android.telecom.cts.thirdptyincallservice;
 import android.content.Intent;
 import android.os.Bundle;
 import android.telecom.Call;
+import android.telecom.CallEndpoint;
 import android.telecom.cts.MockInCallService;
 import android.util.Log;
 
@@ -39,6 +40,8 @@ public class CtsThirdPartyInCallService extends MockInCallService {
     private CountDownLatch mExtrasChangedLatch = new CountDownLatch(1);
     private String mExpectedKey;
     private String mExpectedValue;
+    private CountDownLatch mCallEndpointRequestedLatch = new CountDownLatch(1);
+    private CallEndpoint mExpectedCallEndpoint;
 
     private static Set<Call> sCalls = new HashSet<>();
 
@@ -65,6 +68,7 @@ public class CtsThirdPartyInCallService extends MockInCallService {
         sServiceBoundLatch.countDown();
         Log.d(TAG, "In Call Service on bind, " + olderState + " -> " + sServiceBoundLatch);
         mExtrasChangedLatch = new CountDownLatch(1);
+        mExpectedCallEndpoint = null;
         return super.onBind(intent);
     }
 
@@ -93,6 +97,15 @@ public class CtsThirdPartyInCallService extends MockInCallService {
         Log.i(TAG, "onCallRemoved");
         super.onCallRemoved(call);
         sCalls.add(call);
+    }
+
+    @Override
+    public void onCallEndpointRequested(CallEndpoint callEndpoint) {
+        Log.i(TAG, "onCallEndpointRequested");
+        super.onCallEndpointRequested(callEndpoint);
+        if (mExpectedCallEndpoint != null && mExpectedCallEndpoint.equals(callEndpoint)) {
+            mCallEndpointRequestedLatch.countDown();
+        }
     }
 
     private static boolean checkLatch(CountDownLatch latch) {
@@ -164,5 +177,18 @@ public class CtsThirdPartyInCallService extends MockInCallService {
                 && c.getDetails().getExtras().containsKey(mExpectedKey)
                 && c.getDetails().getExtras().getString(mExpectedKey).equals(mExpectedValue))
                 .count() > 0;
+    }
+
+    public void setExpectedCallEndpoint(CallEndpoint expectedEndpoint) {
+        mExpectedCallEndpoint = expectedEndpoint;
+        mCallEndpointRequestedLatch = new CountDownLatch(1);
+    }
+
+    public boolean waitForCallEndpointRequested() {
+        try {
+            return mCallEndpointRequestedLatch.await(5000, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            return false;
+        }
     }
 }
