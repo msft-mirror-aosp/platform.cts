@@ -46,6 +46,9 @@ public class ExcessiveBroadcastsTest extends BaseBroadcastTest {
      */
     private static final int BROADCAST_RECEIVER_WAIT_MS = 10_000;
 
+    /** The number of initial broadcasts to send to ensure the receiver stays busy. */
+    private static final int BLOCKING_BROADCASTS_COUNT = 10;
+
     /** Constant for querying process exit reasons for any PID. */
     private static final int ANY_PID = 0;
 
@@ -70,22 +73,34 @@ public class ExcessiveBroadcastsTest extends BaseBroadcastTest {
                     new Intent(Common.ACTION_WAIT_BROADCAST)
                             .setPackage(HELPER_PKG2)
                             .putExtra(Common.EXTRA_WAIT_PERIOD_MS, BROADCAST_RECEIVER_WAIT_MS);
-            cmdReceiver1.sendBroadcast(intent, null /* options */);
+            for (int i = 0; i < BLOCKING_BROADCASTS_COUNT; ++i) {
+                cmdReceiver1.sendBroadcast(intent, null /* options */);
+            }
 
             final int maxPendingBroadcastsPerSenderUid =
                     Integer.parseInt(
                             getBroadcastConstant(KEY_MAX_PENDING_BROADCASTS_PER_SENDER_UID));
             // Fill the broadcast queue up to the limit.
-            for (int i = 0; i < maxPendingBroadcastsPerSenderUid - 1; ++i) {
-                cmdReceiver1.sendBroadcast(new Intent(TEST_ACTION1), null /* options */);
+            for (int i = 0; i <= maxPendingBroadcastsPerSenderUid; ++i) {
+                // Once the pending broadcasts hit the limit, it will cause the sender app
+                // (HELPER_PKG1) to be killed, resulting in a DeadObjectException.
+                try {
+                    cmdReceiver1.sendBroadcast(new Intent(TEST_ACTION1), null /* options */);
+                } catch (DeadObjectException e) {
+                    // Expected; ignore
+                }
             }
-            // Send one more broadcast to exceed the limit. This should cause the sender app
-            // (HELPER_PKG1) to be killed, resulting in a DeadObjectException.
-            try {
-                cmdReceiver1.sendBroadcast(new Intent(TEST_ACTION1), null /* options */);
-            } catch (DeadObjectException e) {
-                // Expected; ignore
-            }
+
+            final List<ApplicationExitInfo> appExitInfos =
+                    SystemUtil.runWithShellPermissionIdentity(
+                            () ->
+                                    mAm.getHistoricalProcessExitReasons(
+                                            HELPER_PKG1, ANY_PID, 1 /* maxNum */));
+            assertThat(appExitInfos).hasSize(1);
+            assertThat(appExitInfos.get(0).getReason())
+                    .isEqualTo(ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE);
+            assertThat(appExitInfos.get(0).getSubReason())
+                    .isEqualTo(ApplicationExitInfo.SUBREASON_EXCESSIVE_ENQUEUED_BROADCASTS_COUNT);
 
             // Verify that none of the enqueued broadcasts after the initial "wait" broadcast
             // were delivered, as they should be discarded as part of the treatment of the app
@@ -95,15 +110,5 @@ public class ExcessiveBroadcastsTest extends BaseBroadcastTest {
             connection1.unbind();
             connection2.unbind();
         }
-        final List<ApplicationExitInfo> appExitInfos =
-                SystemUtil.runWithShellPermissionIdentity(
-                        () ->
-                                mAm.getHistoricalProcessExitReasons(
-                                        HELPER_PKG1, ANY_PID, 1 /* maxNum */));
-        assertThat(appExitInfos).hasSize(1);
-        assertThat(appExitInfos.get(0).getReason())
-                .isEqualTo(ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE);
-        assertThat(appExitInfos.get(0).getSubReason())
-                .isEqualTo(ApplicationExitInfo.SUBREASON_EXCESSIVE_ENQUEUED_BROADCASTS_COUNT);
     }
 }
