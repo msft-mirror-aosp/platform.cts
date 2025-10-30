@@ -235,11 +235,22 @@ class JcaJpegRImageParityClassTest(its_base_test.ItsBaseTest):
       if abs(mean_white_balance_diff) > _AWB_DIFF_THRESHOLD:
         e_msg.append('Device fails the white balance difference criteria.')
       if e_msg:
-        if first_api_level < its_session_utils.ANDROID17_API_LEVEL:
+        # Known Issue b/398591036 - [Instagram] Bad color optimization in the
+        # Instagram camera
+        #
+        # This test is only required for Android 17 or if known issue is listed as
+        # fix applied in
+        # platform/build/backported_fixes/applied_fixes/ki398591036.txtpb
+        ki = 398591036
+        if (
+            first_api_level < its_session_utils.ANDROID17_API_LEVEL
+            and not its_session_utils.get_backported_issue_is_fixed(ki)
+        ):
           raise AssertionError(
-              f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}\n\n{e_msg}')
-        else:
-          raise AssertionError(e_msg)  # Checks mandated starting Android 17
+              f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}\n'
+              f'https://issuetracker.google.com/issues/{ki} is'
+              f' not marked fixed on this device.\n\n{e_msg}'
+          )
       else:  # Check for marginal pass
         if marginal_while_balance_pass:
           logging.warning('its_session_utils.MARGINAL_PASSING_MESSAGE\n %s',
@@ -248,4 +259,3 @@ class JcaJpegRImageParityClassTest(its_base_test.ItsBaseTest):
 
 if __name__ == '__main__':
   test_runner.main()
-
