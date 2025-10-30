@@ -32,6 +32,7 @@ import com.android.compatibility.common.util.ProtoUtils;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -94,6 +95,7 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     }
 
     @Test
+    @Ignore("b/447227540") // TODO(447227540) - this test depends on privileged permissions
     @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testSetListenerWithoutCompletion_suspendToRam_protoDump() throws Exception {
         // TODO(b/328617252): remove emulator check once ADB reconnection from suspend is stable
@@ -112,6 +114,7 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     }
 
     @Test
+    @Ignore("b/447227540") // TODO(447227540) - this test depends on privileged permissions
     @RequiresFlagsDisabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testSetListenerWithoutCompletion_suspendToRam_textDump() throws Exception {
         // TODO(b/328617252): remove emulator check once ADB reconnection from suspend is stable
@@ -130,6 +133,7 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     }
 
     @Test
+    @Ignore("b/447227540") // TODO(447227540) - this test depends on privileged permissions
     @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testSetListenerWithoutCompletion_suspendToDisk_protoDump() throws Exception {
         // TODO(b/328617252): remove emulator check once ADB reconnection from suspend is stable
@@ -148,6 +152,7 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     }
 
     @Test
+    @Ignore("b/447227540") // TODO(447227540) - this test depends on privileged permissions
     @RequiresFlagsDisabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testSetListenerWithoutCompletion_suspendToDisk_textDump() throws Exception {
         // TODO(b/328617252): remove emulator check once ADB reconnection from suspend is stable
@@ -166,6 +171,7 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     }
 
     @Test
+    @Ignore("b/447227540") // TODO(447227540) - this test depends on privileged permissions
     @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testSetListenerWithCompletion_suspendToRam_protoDump() throws Exception {
         // TODO(b/328617252): remove emulator check once ADB reconnection from suspend is stable
@@ -184,6 +190,7 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     }
 
     @Test
+    @Ignore("b/447227540") // TODO(447227540) - this test depends on privileged permissions
     @RequiresFlagsDisabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testSetListenerWithCompletion_suspendToRam_textDump() throws Exception {
         assumeEmulatorBuild();
@@ -201,6 +208,7 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     }
 
     @Test
+    @Ignore("b/447227540") // TODO(447227540) - this test depends on privileged permissions
     @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testSetListenerWithCompletion_suspendToDisk_protoDump() throws Exception {
         // TODO(b/328617252): remove emulator check once ADB reconnection from suspend is stable
@@ -219,6 +227,7 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     }
 
     @Test
+    @Ignore("b/447227540") // TODO(447227540) - this test depends on privileged permissions
     @RequiresFlagsDisabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testSetListenerWithCompletion_suspendToDisk_textDump() throws Exception {
         // TODO(b/328617252): remove emulator check once ADB reconnection from suspend is stable
