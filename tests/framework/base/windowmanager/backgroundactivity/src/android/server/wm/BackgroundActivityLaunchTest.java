@@ -36,8 +36,6 @@ import static android.server.wm.backgroundactivity.appa.Components.ForegroundAct
 import static android.server.wm.backgroundactivity.appa.Components.ForegroundActivity.LAUNCH_INTENTS_EXTRA;
 import static android.server.wm.backgroundactivity.appa.Components.ForegroundActivity.LAUNCH_SECOND_BACKGROUND_ACTIVITY_EXTRA;
 import static android.server.wm.backgroundactivity.appa.Components.ForegroundActivity.RELAUNCH_FOREGROUND_ACTIVITY_EXTRA;
-import static android.server.wm.backgroundactivity.appa.Components.ForegroundActivity.START_ACTIVITY_FROM_FG_ACTIVITY_DELAY_MS_EXTRA;
-import static android.server.wm.backgroundactivity.appa.Components.ForegroundActivity.START_ACTIVITY_FROM_FG_ACTIVITY_NEW_TASK_EXTRA;
 import static android.server.wm.backgroundactivity.appa.Components.SendPendingIntentReceiver.IS_BROADCAST_EXTRA;
 import static android.server.wm.backgroundactivity.appa.Components.StartBackgroundActivityReceiver.START_ACTIVITY_DELAY_MS_EXTRA;
 import static android.server.wm.backgroundactivity.appa.Components.VirtualDisplayActivityExtra.USE_PUBLIC_PRESENTATION;
@@ -642,6 +640,28 @@ public class BackgroundActivityLaunchTest extends ActivityManagerTestBase {
         // activity to be started after pressing home button.
         pressHomeAndWaitHomeResumed();
 
+        assertActivityNotResumed();
+    }
+
+    @Test
+    @AsbSecurityTest(cveBugId = 406880479)
+    public void testPipCannotStartAfterHomeButton10s() throws Exception {
+
+        Intent intent = new Intent();
+        intent.setComponent(APP_A_PIP_ACTIVITY);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        mContext.startActivity(intent);
+
+        assertTrue("Pip activity not started", waitUntilForegroundChanged(
+                TEST_PACKAGE_APP_A, true, ACTIVITY_START_TIMEOUT_MS));
+
+        // Click home button, and test app activity onPause() will trigger pip window,
+        // test will will try to start background activity, but we expect the background activity
+        // will be blocked even the app has a visible pip window, as we do not allow background
+        // activity to be started after pressing home button.
+        pressHomeAndWaitHomeResumed();
+
+        assertActivityNotResumed();
         assertActivityNotResumed();
     }
 
