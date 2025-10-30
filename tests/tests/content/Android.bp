@@ -13,7 +13,6 @@
 // limitations under the License.
 
 package {
-    default_team: "trendy_team_framework_android_packages",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -112,6 +111,7 @@ java_defaults {
 
 android_test {
     name: "CtsContentTestCases",
+    team: "trendy_team_framework_bpm",
     defaults: ["cts_content_defaults"],
 
     // Tag this module as a cts test artifact
@@ -153,6 +153,7 @@ android_test {
 
 android_test {
     name: "CtsDocumentContentTestCases",
+    team: "trendy_team_android_storage",
     defaults: ["cts_content_defaults"],
 
     srcs: [
@@ -172,6 +173,7 @@ android_test {
 
 android_test {
     name: "CtsResourcesTestCases",
+    team: "trendy_team_android_resources",
     defaults: ["cts_content_defaults"],
 
     test_suites: [
@@ -195,6 +197,7 @@ android_test {
 
 android_test {
     name: "CtsWindowManagerTestCases",
+    team: "trendy_team_windowing_sdk",
     defaults: ["cts_content_defaults"],
 
     test_suites: [
@@ -209,6 +212,7 @@ android_test {
 
 android_test {
     name: "CtsPackageManagerTestCases",
+    team: "trendy_team_framework_android_packages",
     defaults: ["cts_content_defaults"],
 
     test_suites: [
@@ -346,6 +350,7 @@ android_test {
 
 android_test {
     name: "CtsPackageManagerBroadcastTestCases",
+    team: "trendy_team_framework_android_packages",
     defaults: ["cts_content_defaults"],
 
     test_suites: [
