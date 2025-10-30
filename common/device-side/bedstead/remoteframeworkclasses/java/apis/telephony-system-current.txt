@@ -91,6 +91,11 @@ package android.telecom {
     field public static final int MESSAGE_DEVICE_NETWORK_COVERAGE = 4; // 0x4
   }
 
+  public abstract class CallScreeningService extends android.app.Service {
+    method @FlaggedApi("android.telecom.flags.enable_oem_outgoing_call_screening") public void onScreenOutgoingCall(@NonNull android.telecom.Call.Details);
+    field @FlaggedApi("android.telecom.flags.enable_oem_outgoing_call_screening") public static final String METADATA_SCREEN_OUTGOING_CALLS = "android.telecom.METADATA_SCREEN_OUTGOING_CALLS";
+  }
+
   public static class CallScreeningService.CallResponse.Builder {
     method @NonNull @RequiresPermission(android.Manifest.permission.CAPTURE_AUDIO_OUTPUT) public android.telecom.CallScreeningService.CallResponse.Builder setShouldScreenCallViaAudioProcessing(boolean);
   }
@@ -198,6 +203,7 @@ package android.telecom {
     method @NonNull public java.util.concurrent.Executor getExecutor();
     method @Nullable public android.os.IBinder onBind(@Nullable android.content.Intent);
     method @RequiresPermission(allOf={android.Manifest.permission.CALL_AUDIO_INTERCEPTION, android.Manifest.permission.MODIFY_AUDIO_ROUTING, android.Manifest.permission.RECORD_AUDIO}) public abstract void onVoicemailRequested(@NonNull android.telecom.Call.Details);
+    method public abstract void onVoicemailStopped(@NonNull android.telecom.Call.Details);
     field public static final String SERVICE_INTERFACE = "android.telecom.LocalVoicemailService";
   }
 
@@ -424,7 +430,9 @@ package android.telecom {
     method @Deprecated public void clearAccounts();
     method public void clearPhoneAccounts();
     method @NonNull public android.content.Intent createLaunchEmergencyDialerIntent(@Nullable String);
+    method @FlaggedApi("com.android.server.telecom.flags.local_voicemail") @RequiresPermission(android.Manifest.permission.MODIFY_PHONE_STATE) public void disableLocalVoicemail(@NonNull android.telecom.PhoneAccountHandle);
     method @RequiresPermission(android.Manifest.permission.DUMP) public android.telecom.TelecomAnalytics dumpAnalytics();
+    method @FlaggedApi("com.android.server.telecom.flags.local_voicemail") @RequiresPermission(android.Manifest.permission.MODIFY_PHONE_STATE) public void enableLocalVoicemail(@NonNull android.telecom.PhoneAccountHandle, @NonNull java.time.Duration);
     method @RequiresPermission(android.Manifest.permission.MODIFY_PHONE_STATE) public void enablePhoneAccount(android.telecom.PhoneAccountHandle, boolean);
     method public java.util.List<android.telecom.PhoneAccountHandle> getAllPhoneAccountHandles();
     method public java.util.List<android.telecom.PhoneAccount> getAllPhoneAccounts();
@@ -443,10 +451,10 @@ package android.telecom {
     method @FlaggedApi("com.android.server.telecom.flags.integrated_call_logs_stage2") @NonNull @RequiresPermission(android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE) public java.util.Map<java.lang.String,java.lang.Boolean> getVoipCallLogIntegrationStatus();
     method @RequiresPermission(android.Manifest.permission.MODIFY_PHONE_STATE) public boolean isInEmergencyCall();
     method @FlaggedApi("com.android.server.telecom.flags.telecom_resolve_hidden_dependencies") @RequiresPermission(allOf={android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE, android.Manifest.permission.INTERACT_ACROSS_USERS}, conditional=true) public boolean isInSelfManagedCall(@NonNull String, @NonNull android.os.UserHandle);
+    method @FlaggedApi("com.android.server.telecom.flags.local_voicemail") @RequiresPermission(android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE) public boolean isLocalVoicemailEnabled(@NonNull android.telecom.PhoneAccountHandle);
     method @FlaggedApi("com.android.server.telecom.flags.local_voicemail") @RequiresPermission(android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE) public boolean isLocalVoicemailSupported();
     method @RequiresPermission(anyOf={android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE, android.Manifest.permission.READ_PHONE_STATE}) public boolean isRinging();
     method @FlaggedApi("com.android.server.telecom.flags.call_connected_indicator_preference") @RequiresPermission(android.Manifest.permission.MODIFY_PHONE_STATE) public void setCallConnectedIndicatorPreference(int);
-    method @FlaggedApi("com.android.server.telecom.flags.local_voicemail") @RequiresPermission(android.Manifest.permission.MODIFY_PHONE_STATE) public void setLocalVoicemailTimeout(@NonNull android.telecom.PhoneAccountHandle, @NonNull java.time.Duration);
     method @RequiresPermission(android.Manifest.permission.MODIFY_PHONE_STATE) public void setUserSelectedOutgoingPhoneAccount(@Nullable android.telecom.PhoneAccountHandle);
     method @FlaggedApi("com.android.server.telecom.flags.integrated_call_logs_stage2") @RequiresPermission(android.Manifest.permission.MODIFY_PHONE_STATE) public void setVoipCallLogIntegrationEnabled(@NonNull String, boolean);
     field public static final String ACTION_CURRENT_TTY_MODE_CHANGED = "android.telecom.action.CURRENT_TTY_MODE_CHANGED";
@@ -468,7 +476,6 @@ package android.telecom {
     field public static final String EXTRA_IS_USER_INTENT_EMERGENCY_CALL = "android.telecom.extra.IS_USER_INTENT_EMERGENCY_CALL";
     field public static final String EXTRA_TTY_PREFERRED_MODE = "android.telecom.extra.TTY_PREFERRED_MODE";
     field public static final String EXTRA_UNKNOWN_CALL_HANDLE = "android.telecom.extra.UNKNOWN_CALL_HANDLE";
-    field @FlaggedApi("com.android.server.telecom.flags.local_voicemail") @NonNull public static final java.time.Duration LOCAL_VOICEMAIL_DISABLED;
     field @Deprecated @FlaggedApi("com.android.server.telecom.flags.move_get_tty_mode_to_telephony_manager") public static final int TTY_MODE_FULL = 1; // 0x1
     field @Deprecated @FlaggedApi("com.android.server.telecom.flags.move_get_tty_mode_to_telephony_manager") public static final int TTY_MODE_HCO = 2; // 0x2
     field @Deprecated @FlaggedApi("com.android.server.telecom.flags.move_get_tty_mode_to_telephony_manager") public static final int TTY_MODE_OFF = 0; // 0x0
