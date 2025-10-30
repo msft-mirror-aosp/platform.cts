@@ -133,6 +133,7 @@ public class CommonConfigLoadingTest {
 
     static {
         ALLOWED_PERFORMANCE_TEST.add("AptsHostSideTestCases");
+        ALLOWED_PERFORMANCE_TEST.add("GtsAppStartupHostSideTestCases");
     }
 
     /**
