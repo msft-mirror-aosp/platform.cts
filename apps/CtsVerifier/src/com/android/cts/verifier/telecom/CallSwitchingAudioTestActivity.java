@@ -220,6 +220,10 @@ public class CallSwitchingAudioTestActivity extends PassFailButtons.Activity {
                 getApplicationContext());
         final PhoneAccount account = PhoneAccountUtils.getSpecificPhoneAccount(
                 getApplicationContext(), handle);
+        if (account == null) {
+            Log.i(TAG, "No default outgoing phone account");
+            return false;
+        }
 
         Log.i(TAG, String.format("default phoneAccount=[%s]", account.toString()));
 
