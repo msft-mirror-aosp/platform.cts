@@ -194,9 +194,7 @@ public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
     public void afterTest() {
         super.afterTest();
         // unregister the network call back
-        if (sNetworkCallback != null) {
-            unregisterNetworkCallback();
-        }
+        unregisterNetworkCallback();
     }
 
     private int getRegState(int domain) {
@@ -250,6 +248,8 @@ public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
     }
 
     private static void unregisterNetworkCallback() {
+        if (sNetworkCallback == null) return;
+        if (sConnectivityManager == null) return;
         try {
             sConnectivityManager.unregisterNetworkCallback(sNetworkCallback);
             Log.d(TAG, "unregisterNetworkCallback");
