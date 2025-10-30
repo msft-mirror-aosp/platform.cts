@@ -19,6 +19,7 @@ package android.view.surfacecontrol.cts;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
@@ -244,6 +245,10 @@ public class ChoreographerNativeTest {
     @SmallTest
     @Test
     public void testRefreshRateCallbacksIsSyncedWithDisplayManager() {
+        // TODO(b/456533082): Ideally we should run this test on ARR devices too, to make sure
+        // display manager
+        //  still sends the event currently for the synthetic mode.
+        assumeFalse(mDefaultDisplay.hasArrSupport());
         assumeTrue(mSupportedPeriods.length >= 2);
         assumeTrue(findModeForSeamlessSwitch().isPresent());
 
