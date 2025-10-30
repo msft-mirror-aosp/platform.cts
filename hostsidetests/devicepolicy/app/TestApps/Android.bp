@@ -41,6 +41,9 @@ android_test_helper_app {
     ],
     manifest: "testapp1/AndroidManifest.xml",
     sdk_version: "test_current",
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
 
 android_test_helper_app {
@@ -68,6 +71,9 @@ android_test_helper_app {
     ],
     manifest: "testapp2/AndroidManifest.xml",
     sdk_version: "test_current",
+    lint: {
+        baseline_filename: "lint-baseline2.xml",
+    },
 }
 
 android_test_helper_app {
@@ -95,6 +101,9 @@ android_test_helper_app {
     ],
     manifest: "testapp3/AndroidManifest.xml",
     sdk_version: "test_current",
+    lint: {
+        baseline_filename: "lint-baseline3.xml",
+    },
 }
 
 android_test_helper_app {
@@ -122,6 +131,9 @@ android_test_helper_app {
     ],
     manifest: "testapp4/AndroidManifest.xml",
     sdk_version: "test_current",
+    lint: {
+        baseline_filename: "lint-baseline4.xml",
+    },
 }
 
 android_test_helper_app {

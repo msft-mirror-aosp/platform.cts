@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<issues format="6" by="lint 8.4.0-alpha01" type="baseline" client="" dependencies="true" name="" variant="all" version="8.4.0-alpha01">
+<issues format="6" by="lint 8.4.0-alpha08" type="baseline" client="" dependencies="true" name="" variant="all" version="8.4.0-alpha08">
 
     <issue
         id="NewApi"
-        message="Call requires API level 24 (current min is 20): `new java.util.concurrent.CompletableFuture`"
+        message="Call requires API level 24 (current min is 23): `new java.util.concurrent.CompletableFuture`"
         errorLine1="            new CompletableFuture&lt;&gt;();"
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
         <location
@@ -14,18 +14,7 @@
 
     <issue
         id="NewApi"
-        message="Call requires API level 23 (current min is 20): `android.content.Context#getSystemService`"
-        errorLine1="        mWindowManager = getSystemService(WindowManager.class);"
-        errorLine2="                         ~~~~~~~~~~~~~~~~">
-        <location
-            file="cts/tests/app/shared/src/android/app/stubs/shared/AppAccessibilityService.java"
-            line="54"
-            column="26"/>
-    </issue>
-
-    <issue
-        id="NewApi"
-        message="Call requires API level 24 (current min is 20): `java.util.concurrent.CompletableFuture#obtrudeValue`"
+        message="Call requires API level 24 (current min is 23): `java.util.concurrent.CompletableFuture#obtrudeValue`"
         errorLine1="        sServiceFuture.obtrudeValue(this);"
         errorLine2="                       ~~~~~~~~~~~~">
         <location
@@ -36,7 +25,7 @@
 
     <issue
         id="NewApi"
-        message="Call requires API level 24 (current min is 20): `new java.util.concurrent.CompletableFuture`"
+        message="Call requires API level 24 (current min is 23): `new java.util.concurrent.CompletableFuture`"
         errorLine1="        sServiceFuture = new CompletableFuture&lt;&gt;();"
         errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~">
         <location
@@ -47,18 +36,7 @@
 
     <issue
         id="NewApi"
-        message="Call requires API level 23 (current min is 20): `android.content.Context#getSystemService`"
-        errorLine1="        mNotificationManager = getSystemService(NotificationManager.class);"
-        errorLine2="                               ~~~~~~~~~~~~~~~~">
-        <location
-            file="cts/tests/app/shared/src/android/app/stubs/shared/CloseSystemDialogsTestService.java"
-            line="64"
-            column="32"/>
-    </issue>
-
-    <issue
-        id="NewApi"
-        message="Call requires API level 26 (current min is 20): `new android.app.Notification.Builder`"
+        message="Call requires API level 26 (current min is 23): `new android.app.Notification.Builder`"
         errorLine1="                new Notification.Builder(this, NOTIFICATION_CHANNEL_ID)"
         errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
@@ -69,7 +47,7 @@
 
     <issue
         id="NewApi"
-        message="Call requires API level 26 (current min is 20): `new android.app.NotificationChannel`"
+        message="Call requires API level 26 (current min is 23): `new android.app.NotificationChannel`"
         errorLine1="        NotificationChannel notificationChannel = new NotificationChannel(NOTIFICATION_CHANNEL_ID,"
         errorLine2="                                                  ~~~~~~~~~~~~~~~~~~~~~~~">
         <location
@@ -80,7 +58,7 @@
 
     <issue
         id="NewApi"
-        message="Call requires API level 26 (current min is 20): `android.app.NotificationManager#createNotificationChannel`"
+        message="Call requires API level 26 (current min is 23): `android.app.NotificationManager#createNotificationChannel`"
         errorLine1="        mNotificationManager.createNotificationChannel(notificationChannel);"
         errorLine2="                             ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
@@ -91,7 +69,436 @@
 
     <issue
         id="NewApi"
-        message="Call requires API level 24 (current min is 20): `new java.util.concurrent.CompletableFuture`"
+        message="Call requires API level 33 (current min is 23): `android.content.Intent#getParcelableExtra`"
+        errorLine1="                        intent.getParcelableExtra("
+        errorLine2="                               ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="242"
+            column="32"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 33 (current min is 23): `android.content.Intent#getParcelableExtra`"
+        errorLine1="                        intent.getParcelableExtra("
+        errorLine2="                               ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="248"
+            column="32"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 33 (current min is 23): `android.content.Intent#getParcelableExtra`"
+        errorLine1="                        intent.getParcelableExtra("
+        errorLine2="                               ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="254"
+            column="32"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 33 (current min is 23): `android.content.Intent#getParcelableExtra`"
+        errorLine1="                        intent.getParcelableExtra("
+        errorLine2="                               ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="260"
+            column="32"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 33 (current min is 23): `android.content.Intent#getParcelableExtra`"
+        errorLine1="                        intent.getParcelableExtra("
+        errorLine2="                               ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="265"
+            column="32"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 33 (current min is 23): `android.content.Intent#getParcelableExtra`"
+        errorLine1="                        intent.getParcelableExtra("
+        errorLine2="                               ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="271"
+            column="32"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 33 (current min is 23): `android.content.Intent#getParcelableExtra`"
+        errorLine1="                        intent.getParcelableExtra("
+        errorLine2="                               ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="277"
+            column="32"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 33 (current min is 23): `android.content.Intent#getParcelableExtra`"
+        errorLine1="                        intent.getParcelableExtra("
+        errorLine2="                               ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="283"
+            column="32"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 33 (current min is 23): `android.content.Intent#getParcelableExtra`"
+        errorLine1="                        intent.getParcelableExtra("
+        errorLine2="                               ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="289"
+            column="32"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 23): `android.content.Context#startForegroundService`"
+        errorLine1="            context.startForegroundService(fgsIntent);"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="336"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Exception requires API level 31 (current min is 23): `android.app.ForegroundServiceStartNotAllowedException`"
+        errorLine1="        } catch (ForegroundServiceStartNotAllowedException e) {"
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="337"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Implicit cast from `ForegroundServiceStartNotAllowedException` to `Throwable` requires API level 31 (current min is 23)"
+        errorLine1="                    e);"
+        errorLine2="                    ~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="342"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 23): `android.content.Context#startForegroundService`"
+        errorLine1="            context.startForegroundService(fgsIntent);"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="362"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Exception requires API level 31 (current min is 23): `android.app.ForegroundServiceStartNotAllowedException`"
+        errorLine1="        } catch (ForegroundServiceStartNotAllowedException e) {"
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="363"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Implicit cast from `ForegroundServiceStartNotAllowedException` to `Throwable` requires API level 31 (current min is 23)"
+        errorLine1="                    e);"
+        errorLine2="                    ~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="367"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 23): `android.content.Context#startForegroundService`"
+        errorLine1="            context.startForegroundService(fgsIntent);"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="387"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Exception requires API level 31 (current min is 23): `android.app.ForegroundServiceStartNotAllowedException`"
+        errorLine1="        } catch (ForegroundServiceStartNotAllowedException e) {"
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="388"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Implicit cast from `ForegroundServiceStartNotAllowedException` to `Throwable` requires API level 31 (current min is 23)"
+        errorLine1="                    e);"
+        errorLine2="                    ~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="392"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 23): `android.content.Context#startForegroundService`"
+        errorLine1="            context.startForegroundService(fgsIntent);"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="404"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Exception requires API level 31 (current min is 23): `android.app.ForegroundServiceStartNotAllowedException`"
+        errorLine1="        } catch (ForegroundServiceStartNotAllowedException e) {"
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="405"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Implicit cast from `ForegroundServiceStartNotAllowedException` to `Throwable` requires API level 31 (current min is 23)"
+        errorLine1="                    e);"
+        errorLine2="                    ~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="409"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 30 (current min is 23): `android.app.ActivityManager#appNotResponding`"
+        errorLine1='        am.appNotResponding("CTS - self induced");'
+        errorLine2="           ~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="434"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 23): `android.app.PendingIntent#getForegroundService`"
+        errorLine1="                PendingIntent.getForegroundService("
+        errorLine2="                              ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="463"
+            column="31"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 23): `java.lang.Process#isAlive`"
+        errorLine1="                                if (sChildProcess != null &amp;&amp; sChildProcess.isAlive()) {"
+        errorLine2="                                                                           ~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="527"
+            column="76"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 23): `java.lang.Process#waitFor`"
+        errorLine1="                                            sChildProcess.waitFor(timeout, TimeUnit.MILLISECONDS);"
+        errorLine2="                                                          ~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="529"
+            column="59"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Exception requires API level 31 (current min is 23): `android.app.ForegroundServiceStartNotAllowedException`"
+        errorLine1="        } catch (ForegroundServiceStartNotAllowedException e) {"
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="595"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Implicit cast from `ForegroundServiceStartNotAllowedException` to `Throwable` requires API level 31 (current min is 23)"
+        errorLine1="                    e);"
+        errorLine2="                    ~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="604"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 23): `android.content.Context#startForegroundService`"
+        errorLine1="                            context.startForegroundService(fgsIntent);"
+        errorLine2="                                    ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="626"
+            column="37"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Exception requires API level 31 (current min is 23): `android.app.ForegroundServiceStartNotAllowedException`"
+        errorLine1="                        } catch (ForegroundServiceStartNotAllowedException e) {"
+        errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="627"
+            column="34"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Implicit cast from `ForegroundServiceStartNotAllowedException` to `Throwable` requires API level 31 (current min is 23)"
+        errorLine1='                            Log.e(TAG, "Error while trying to start an FGS", e);'
+        errorLine2="                                                                             ~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="628"
+            column="78"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 23): `new android.app.Notification.Builder`"
+        errorLine1="                new Notification.Builder(context, mNotificationChannelId)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="718"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 23): `new android.app.NotificationChannel`"
+        errorLine1="                new NotificationChannel(mNotificationChannelId, name.toString(), importance);"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="743"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 23): `android.app.NotificationChannel#setDescription`"
+        errorLine1="        channel.setDescription(description);"
+        errorLine2="                ~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="744"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 23): `android.app.NotificationManager#createNotificationChannel`"
+        errorLine1="        notificationManager.createNotificationChannel(channel);"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="748"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 33 (current min is 23): `android.os.Bundle#getParcelable`"
+        errorLine1="        final Uri uri = extras.getParcelable(EXTRA_URI, Uri.class);"
+        errorLine2="                               ~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="753"
+            column="32"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 33 (current min is 23): `android.os.Bundle#getParcelable`"
+        errorLine1="        final Uri uri = extras.getParcelable(EXTRA_URI, Uri.class);"
+        errorLine2="                               ~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="760"
+            column="32"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 34 (current min is 23): `android.app.BroadcastOptions#makeBasic`"
+        errorLine1="                broadcastOptions == null ? BroadcastOptions.makeBasic() : broadcastOptions;"
+        errorLine2="                                                            ~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="845"
+            column="61"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 34 (current min is 23): `android.app.BroadcastOptions#setDebugLogEnabled`"
+        errorLine1="        effectiveOptions.setDebugLogEnabled(true);"
+        errorLine2="                         ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="846"
+            column="26"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 34 (current min is 23): `android.content.Context#sendOrderedBroadcast`"
+        errorLine1="        context.sendOrderedBroadcast("
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/CommandReceiver.java"
+            line="847"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 24 (current min is 23): `new java.util.concurrent.CompletableFuture`"
         errorLine1="    private volatile CompletableFuture&lt;IBinder&gt; mFuture = new CompletableFuture&lt;&gt;();"
         errorLine2="                                                          ~~~~~~~~~~~~~~~~~~~~~~~">
         <location
@@ -102,7 +509,7 @@
 
     <issue
         id="NewApi"
-        message="Call requires API level 24 (current min is 20): `java.util.concurrent.CompletableFuture#get`"
+        message="Call requires API level 24 (current min is 23): `java.util.concurrent.CompletableFuture#get`"
         errorLine1="        return mFuture.get(timeoutMs, TimeUnit.MILLISECONDS);"
         errorLine2="                       ~~~">
         <location
@@ -113,7 +520,7 @@
 
     <issue
         id="NewApi"
-        message="Call requires API level 24 (current min is 20): `java.util.concurrent.CompletableFuture#complete`"
+        message="Call requires API level 24 (current min is 23): `java.util.concurrent.CompletableFuture#complete`"
         errorLine1="        mFuture.complete(service);"
         errorLine2="                ~~~~~~~~">
         <location
@@ -124,7 +531,7 @@
 
     <issue
         id="NewApi"
-        message="Call requires API level 24 (current min is 20): `new java.util.concurrent.CompletableFuture`"
+        message="Call requires API level 24 (current min is 23): `new java.util.concurrent.CompletableFuture`"
         errorLine1="        mFuture = new CompletableFuture&lt;&gt;();"
         errorLine2="                  ~~~~~~~~~~~~~~~~~~~~~~~">
         <location
@@ -135,117 +542,359 @@
 
     <issue
         id="NewApi"
-        message="Call requires API level 23 (current min is 20): `android.content.Context#getSystemService`"
-        errorLine1="        mNotificationManager = mContext.getSystemService(NotificationManager.class);"
-        errorLine2="                                        ~~~~~~~~~~~~~~~~">
+        message="Call requires API level 26 (current min is 23): `android.content.ContextWrapper#registerReceiver`"
+        errorLine1="        registerReceiver(mReceiver, filter, Context.RECEIVER_NOT_EXPORTED);"
+        errorLine2="        ~~~~~~~~~~~~~~~~">
         <location
-            file="cts/tests/app/shared/src/android/app/stubs/shared/NotificationHelper.java"
-            line="86"
-            column="41"/>
+            file="cts/tests/app/shared/src/android/app/stubs/shared/LaunchpadActivity.java"
+            line="513"
+            column="9"/>
     </issue>
 
     <issue
         id="NewApi"
-        message="Call requires API level 23 (current min is 20): `android.app.NotificationManager#getActiveNotifications`"
-        errorLine1="                        Arrays.asList(mNotificationManager.getActiveNotifications()));"
-        errorLine2="                                                           ~~~~~~~~~~~~~~~~~~~~~~">
+        message="Call requires API level 30 (current min is 23): `android.content.Context#createWindowContext`"
+        errorLine1="        return displayContext.createWindowContext(TYPE_APPLICATION_OVERLAY, null);"
+        errorLine2="                              ~~~~~~~~~~~~~~~~~~~">
         <location
-            file="cts/tests/app/shared/src/android/app/stubs/shared/NotificationHelper.java"
-            line="173"
-            column="60"/>
+            file="cts/tests/app/shared/src/android/app/stubs/shared/LocalAlertService.java"
+            line="99"
+            column="31"/>
     </issue>
 
     <issue
         id="NewApi"
-        message="Call requires API level 26 (current min is 20): `android.service.notification.NotificationListenerService#getSnoozedNotifications`"
+        message="Call requires API level 26 (current min is 23): `android.app.NotificationManager#createNotificationChannel`"
+        errorLine1="        notificationManager.createNotificationChannel("
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/LocalForegroundService.java"
+            line="81"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 23): `new android.app.NotificationChannel`"
+        errorLine1="                new NotificationChannel("
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/LocalForegroundService.java"
+            line="82"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 23): `new android.app.Notification.Builder`"
+        errorLine1="                            new Notification.Builder(context, NOTIFICATION_CHANNEL_ID)"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/LocalForegroundService.java"
+            line="101"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 31 (current min is 23): `android.app.Notification.Builder#setForegroundServiceBehavior`"
+        errorLine1="                        builder.setForegroundServiceBehavior("
+        errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/LocalForegroundService.java"
+            line="105"
+            column="33"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 29 (current min is 23): `android.app.Service#startForeground`"
+        errorLine1="                        startForeground(mNotificationId, builder.build(), fgsType);"
+        errorLine2="                        ~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/LocalForegroundService.java"
+            line="111"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Exception requires API level 31 (current min is 23): `android.app.ForegroundServiceStartNotAllowedException`"
+        errorLine1="                    } catch (ForegroundServiceStartNotAllowedException e) {"
+        errorLine2="                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/LocalForegroundService.java"
+            line="112"
+            column="30"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Implicit cast from `ForegroundServiceStartNotAllowedException` to `Throwable` requires API level 31 (current min is 23)"
+        errorLine1="                                e);"
+        errorLine2="                                ~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/LocalForegroundService.java"
+            line="117"
+            column="33"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 24 (current min is 23): `android.app.Service#stopForeground`"
+        errorLine1="                stopForeground(Service.STOP_FOREGROUND_REMOVE | Service.STOP_FOREGROUND_DETACH);"
+        errorLine2="                ~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/LocalForegroundService.java"
+            line="131"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 24 (current min is 23): `android.app.Service#stopForeground`"
+        errorLine1="                stopForeground(Service.STOP_FOREGROUND_DETACH);"
+        errorLine2="                ~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/LocalForegroundService.java"
+            line="135"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 23): `android.app.NotificationManager#createNotificationChannel`"
+        errorLine1="        notificationManager.createNotificationChannel("
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/LocalForegroundServiceLocation.java"
+            line="48"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 23): `new android.app.NotificationChannel`"
+        errorLine1="                new NotificationChannel("
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/LocalForegroundServiceLocation.java"
+            line="49"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 23): `new android.app.Notification.Builder`"
+        errorLine1="                        new Notification.Builder(context, NOTIFICATION_CHANNEL_ID)"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/LocalForegroundServiceLocation.java"
+            line="64"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 29 (current min is 23): `android.app.Service#startForeground`"
+        errorLine1="                    startForeground(mNotificationId, notification, type);"
+        errorLine2="                    ~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/LocalForegroundServiceLocation.java"
+            line="69"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Exception requires API level 31 (current min is 23): `android.app.ForegroundServiceStartNotAllowedException`"
+        errorLine1="                } catch (ForegroundServiceStartNotAllowedException e) {"
+        errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/LocalForegroundServiceLocation.java"
+            line="70"
+            column="26"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Implicit cast from `ForegroundServiceStartNotAllowedException` to `Throwable` requires API level 31 (current min is 23)"
+        errorLine1="                            e);"
+        errorLine2="                            ~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/LocalForegroundServiceLocation.java"
+            line="75"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 23): `android.app.NotificationManager#createNotificationChannel`"
+        errorLine1="        notificationManager.createNotificationChannel("
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/LocalForegroundServiceMedia.java"
+            line="124"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 23): `new android.app.NotificationChannel`"
+        errorLine1="                new NotificationChannel("
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/LocalForegroundServiceMedia.java"
+            line="125"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 23): `new android.app.Notification.Builder`"
+        errorLine1="                        new Notification.Builder(context, NOTIFICATION_CHANNEL_ID)"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/LocalForegroundServiceMedia.java"
+            line="142"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 29 (current min is 23): `android.app.Service#startForeground`"
+        errorLine1="                    startForeground(mNotificationId, notification, type);"
+        errorLine2="                    ~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/LocalForegroundServiceMedia.java"
+            line="150"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Exception requires API level 31 (current min is 23): `android.app.ForegroundServiceStartNotAllowedException`"
+        errorLine1="                } catch (ForegroundServiceStartNotAllowedException e) {"
+        errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/LocalForegroundServiceMedia.java"
+            line="152"
+            column="26"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Implicit cast from `ForegroundServiceStartNotAllowedException` to `Throwable` requires API level 31 (current min is 23)"
+        errorLine1="                            e);"
+        errorLine2="                            ~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/LocalForegroundServiceMedia.java"
+            line="157"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 23): `new android.app.Notification.Builder`"
+        errorLine1="                        new Notification.Builder(context, NOTIFICATION_CHANNEL_ID)"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/LocalForegroundServiceMedia.java"
+            line="170"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 29 (current min is 23): `android.os.Parcel#writeBoolean`"
+        errorLine1="                            reply.writeBoolean(ZygotePreload.preloadCalled());"
+        errorLine2="                                  ~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/LocalService.java"
+            line="104"
+            column="35"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 30 (current min is 23): `android.content.ContextWrapper#getAttributionTag`"
+        errorLine1="        sLastAttributionTag.set(getAttributionTag());"
+        errorLine2="                                ~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/LocalService.java"
+            line="131"
+            column="33"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 23): `android.service.notification.NotificationListenerService#getSnoozedNotifications`"
         errorLine1="                        Arrays.asList(mNotificationListener.getSnoozedNotifications()));"
         errorLine2="                                                            ~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="cts/tests/app/shared/src/android/app/stubs/shared/NotificationHelper.java"
-            line="180"
+            line="182"
             column="61"/>
     </issue>
 
     <issue
         id="NewApi"
-        message="Call requires API level 23 (current min is 20): `android.content.Context#getSystemService`"
-        errorLine1="        final NotificationManager nm = mContext.getSystemService(NotificationManager.class);"
-        errorLine2="                                                ~~~~~~~~~~~~~~~~">
-        <location
-            file="cts/tests/app/shared/src/android/app/stubs/shared/NotificationHelper.java"
-            line="206"
-            column="49"/>
-    </issue>
-
-    <issue
-        id="NewApi"
-        message="Call requires API level 27 (current min is 20): `android.app.NotificationManager#isNotificationListenerAccessGranted`"
+        message="Call requires API level 27 (current min is 23): `android.app.NotificationManager#isNotificationListenerAccessGranted`"
         errorLine1="                false, nm.isNotificationListenerAccessGranted(component));"
         errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="cts/tests/app/shared/src/android/app/stubs/shared/NotificationHelper.java"
-            line="208"
+            line="211"
             column="27"/>
     </issue>
 
     <issue
         id="NewApi"
-        message="Call requires API level 29 (current min is 20): `android.app.UiAutomation#adoptShellPermissionIdentity`"
+        message="Call requires API level 29 (current min is 23): `android.app.UiAutomation#adoptShellPermissionIdentity`"
         errorLine1='                .adoptShellPermissionIdentity("android.permission.STATUS_BAR_SERVICE",'
         errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="cts/tests/app/shared/src/android/app/stubs/shared/NotificationHelper.java"
-            line="216"
+            line="219"
             column="18"/>
     </issue>
 
     <issue
         id="NewApi"
-        message="Call requires API level 29 (current min is 20): `android.app.UiAutomation#dropShellPermissionIdentity`"
+        message="Call requires API level 29 (current min is 23): `android.app.UiAutomation#dropShellPermissionIdentity`"
         errorLine1="                .getUiAutomation().dropShellPermissionIdentity();"
         errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="cts/tests/app/shared/src/android/app/stubs/shared/NotificationHelper.java"
-            line="227"
+            line="230"
             column="36"/>
     </issue>
 
     <issue
         id="NewApi"
-        message="Call requires API level 29 (current min is 20): `android.app.UiAutomation#adoptShellPermissionIdentity`"
+        message="Call requires API level 29 (current min is 23): `android.app.UiAutomation#adoptShellPermissionIdentity`"
         errorLine1='                .adoptShellPermissionIdentity("android.permission.STATUS_BAR_SERVICE",'
         errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="cts/tests/app/shared/src/android/app/stubs/shared/NotificationHelper.java"
-            line="236"
-            column="18"/>
-    </issue>
-
-    <issue
-        id="NewApi"
-        message="Call requires API level 29 (current min is 20): `android.app.UiAutomation#dropShellPermissionIdentity`"
-        errorLine1="                .getUiAutomation().dropShellPermissionIdentity();"
-        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="cts/tests/app/shared/src/android/app/stubs/shared/NotificationHelper.java"
-            line="245"
-            column="36"/>
-    </issue>
-
-    <issue
-        id="NewApi"
-        message="Call requires API level 21 (current min is 20): `android.app.UiAutomation#executeShellCommand`"
-        errorLine1="        try (ParcelFileDescriptor fd = uiAutomation.executeShellCommand(command)) {"
-        errorLine2="                                                    ~~~~~~~~~~~~~~~~~~~">
         <location
             file="cts/tests/app/shared/src/android/app/stubs/shared/NotificationHelper.java"
             line="253"
-            column="53"/>
+            column="18"/>
     </issue>
 
     <issue
         id="NewApi"
-        message="Call requires API level 28 (current min is 20): `android.app.Activity#requireViewById`"
+        message="Call requires API level 29 (current min is 23): `android.app.UiAutomation#dropShellPermissionIdentity`"
+        errorLine1="                .getUiAutomation().dropShellPermissionIdentity();"
+        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/app/shared/src/android/app/stubs/shared/NotificationHelper.java"
+            line="262"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 28 (current min is 23): `android.app.Activity#requireViewById`"
         errorLine1="        get() = requireViewById&lt;FrameLayout&gt;(R.id.content).getChildAt(0)"
         errorLine2="                ~~~~~~~~~~~~~~~">
         <location
@@ -256,101 +905,35 @@
 
     <issue
         id="NewApi"
-        message="Call requires API level 23 (current min is 20): `android.content.Context#getSystemService`"
-        errorLine1="        mNotificationManager = getSystemService(NotificationManager.class);"
-        errorLine2="                               ~~~~~~~~~~~~~~~~">
+        message="Call requires API level 26 (current min is 23): `android.content.Context#registerReceiver`"
+        errorLine1="        mContext.registerReceiver(mReceiver, filter, Context.RECEIVER_EXPORTED_UNAUDITED);"
+        errorLine2="                 ~~~~~~~~~~~~~~~~">
         <location
-            file="cts/tests/app/shared/src/android/app/stubs/shared/TestNotificationAssistant.java"
-            line="73"
-            column="32"/>
+            file="cts/tests/app/shared/src/android/app/tools/WaitForBroadcast.java"
+            line="62"
+            column="18"/>
     </issue>
 
     <issue
         id="NewApi"
-        message="Call requires API level 21 (current min is 20): `new android.service.notification.NotificationListenerService.Ranking`"
-        errorLine1="        Ranking ranking = new Ranking();"
-        errorLine2="                          ~~~~~~~~~~~">
+        message="Call requires API level 31 (current min is 23): `android.app.UiAutomation#executeShellCommandRw`"
+        errorLine1='                        .executeShellCommandRw("am watch-uids --oom " + uid + maskString);'
+        errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="cts/tests/app/shared/src/android/app/stubs/shared/TestNotificationAssistant.java"
-            line="130"
-            column="27"/>
+            file="cts/tests/app/shared/src/android/app/tools/WatchUidRunner.java"
+            line="124"
+            column="26"/>
     </issue>
 
     <issue
         id="NewApi"
-        message="Call requires API level 21 (current min is 20): `android.service.notification.NotificationListenerService.RankingMap#getRanking`"
-        errorLine1="        rankingMap.getRanking(sbn.getKey(), ranking);"
-        errorLine2="                   ~~~~~~~~~~">
+        message="Class requires API level 29 (current min is 23): `android.app.ZygotePreload`"
+        errorLine1="public class ZygotePreload implements android.app.ZygotePreload {"
+        errorLine2="                                      ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="cts/tests/app/shared/src/android/app/stubs/shared/TestNotificationAssistant.java"
-            line="131"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="NewApi"
-        message="Call requires API level 21 (current min is 20): `android.service.notification.NotificationListenerService.Ranking#getRank`"
-        errorLine1="        mNotificationRank = ranking.getRank();"
-        errorLine2="                                    ~~~~~~~">
-        <location
-            file="cts/tests/app/shared/src/android/app/stubs/shared/TestNotificationAssistant.java"
-            line="132"
-            column="37"/>
-    </issue>
-
-    <issue
-        id="NewApi"
-        message="Call requires API level 21 (current min is 20): `android.service.notification.StatusBarNotification#getUser`"
-        errorLine1="                sbn.getUser());"
-        errorLine2="                    ~~~~~~~">
-        <location
-            file="cts/tests/app/shared/src/android/app/stubs/shared/TestNotificationAssistant.java"
-            line="144"
-            column="21"/>
-    </issue>
-
-    <issue
-        id="NewApi"
-        message="Call requires API level 21 (current min is 20): `android.service.notification.NotificationListenerService.RankingMap#getOrderedKeys`"
-        errorLine1="        for (String key : rankingMap.getOrderedKeys()) {"
-        errorLine2="                                     ~~~~~~~~~~~~~~">
-        <location
-            file="cts/tests/app/shared/src/android/app/stubs/shared/TestNotificationListener.java"
-            line="188"
-            column="38"/>
-    </issue>
-
-    <issue
-        id="NewApi"
-        message="Call requires API level 21 (current min is 20): `new android.service.notification.NotificationListenerService.Ranking`"
-        errorLine1="            Ranking rank = new Ranking();"
-        errorLine2="                           ~~~~~~~~~~~">
-        <location
-            file="cts/tests/app/shared/src/android/app/stubs/shared/TestNotificationListener.java"
-            line="189"
-            column="28"/>
-    </issue>
-
-    <issue
-        id="NewApi"
-        message="Call requires API level 21 (current min is 20): `android.service.notification.NotificationListenerService.RankingMap#getRanking`"
-        errorLine1="            if (rankingMap.getRanking(key, rank)) {"
-        errorLine2="                           ~~~~~~~~~~">
-        <location
-            file="cts/tests/app/shared/src/android/app/stubs/shared/TestNotificationListener.java"
-            line="190"
-            column="28"/>
-    </issue>
-
-    <issue
-        id="NewApi"
-        message="Call requires API level 21 (current min is 20): `android.service.notification.NotificationListenerService.Ranking#matchesInterruptionFilter`"
-        errorLine1="                mIntercepted.put(key, !rank.matchesInterruptionFilter());"
-        errorLine2="                                            ~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="cts/tests/app/shared/src/android/app/stubs/shared/TestNotificationListener.java"
-            line="193"
-            column="45"/>
+            file="cts/tests/app/shared/src/android/app/stubs/shared/ZygotePreload.java"
+            line="21"
+            column="39"/>
     </issue>
 
 </issues>

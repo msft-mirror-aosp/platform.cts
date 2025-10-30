@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<issues format="6" by="lint 8.4.0-alpha01" type="baseline" client="" dependencies="true" name="" variant="all" version="8.4.0-alpha01">
+<issues format="6" by="lint 8.4.0-alpha08" type="baseline" client="" dependencies="true" name="" variant="all" version="8.4.0-alpha08">
 
     <issue
         id="NewApi"
@@ -30,7 +30,7 @@
         errorLine2="                                                                              ~~~~~~~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/GenericDeviceInfo.java"
-            line="80"
+            line="74"
             column="79"/>
     </issue>
 
@@ -41,7 +41,7 @@
         errorLine2="                                                ~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/GenericDeviceInfo.java"
-            line="82"
+            line="76"
             column="49"/>
     </issue>
 
@@ -52,8 +52,19 @@
         errorLine2="                                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/GenericDeviceInfo.java"
-            line="87"
+            line="81"
             column="52"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 21): `android.os.Build#getMinorSdkVersion`"
+        errorLine1="                    String.valueOf(Build.getMinorSdkVersion(Build.VERSION.SDK_INT_FULL)));"
+        errorLine2="                                         ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/GenericDeviceInfo.java"
+            line="90"
+            column="42"/>
     </issue>
 
     <issue
@@ -283,7 +294,7 @@
         errorLine2="                             ~~~~~~~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/HapticsDeviceInfo.java"
-            line="46"
+            line="45"
             column="30"/>
     </issue>
 
@@ -294,7 +305,7 @@
         errorLine2="                                                 ~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/HapticsDeviceInfo.java"
-            line="98"
+            line="97"
             column="50"/>
     </issue>
 
@@ -305,7 +316,7 @@
         errorLine2="                                                           ~~~~~~~~~~~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/HapticsDeviceInfo.java"
-            line="99"
+            line="98"
             column="60"/>
     </issue>
 
@@ -316,7 +327,7 @@
         errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/HapticsDeviceInfo.java"
-            line="118"
+            line="106"
             column="26"/>
     </issue>
 
@@ -327,7 +338,7 @@
         errorLine2="                                 ~~~~~~~~~~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/HapticsDeviceInfo.java"
-            line="124"
+            line="112"
             column="34"/>
     </issue>
 
@@ -338,7 +349,7 @@
         errorLine2="                                     ~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/HapticsDeviceInfo.java"
-            line="142"
+            line="130"
             column="38"/>
     </issue>
 
@@ -349,29 +360,18 @@
         errorLine2="                                            ~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/HapticsDeviceInfo.java"
-            line="197"
+            line="187"
             column="45"/>
     </issue>
 
     <issue
         id="NewApi"
-        message="Cast from `KeyGenParameterSpec` to `AlgorithmParameterSpec` requires API level 23 (current min is 21)"
-        errorLine1="        keyPairGenerator.initialize(spec);"
-        errorLine2="                                    ~~~~">
-        <location
-            file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/KeystoreAttestationDeviceInfo.java"
-            line="85"
-            column="37"/>
-    </issue>
-
-    <issue
-        id="NewApi"
         message="Call requires API level 23 (current min is 21): `new android.security.keystore.KeyGenParameterSpec.Builder`"
-        errorLine1="                new KeyGenParameterSpec.Builder(testAlias, PURPOSE_SIGN | PURPOSE_VERIFY)"
+        errorLine1="                new KeyGenParameterSpec.Builder(keyAlias, PURPOSE_SIGN)"
         errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/KeystoreAttestationDeviceInfo.java"
-            line="122"
+            line="87"
             column="17"/>
     </issue>
 
@@ -382,7 +382,7 @@
         errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/KeystoreAttestationDeviceInfo.java"
-            line="123"
+            line="88"
             column="26"/>
     </issue>
 
@@ -393,7 +393,7 @@
         errorLine2="                         ~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/KeystoreAttestationDeviceInfo.java"
-            line="124"
+            line="89"
             column="26"/>
     </issue>
 
@@ -404,29 +404,29 @@
         errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/KeystoreAttestationDeviceInfo.java"
-            line="125"
+            line="90"
             column="26"/>
     </issue>
 
     <issue
         id="NewApi"
         message="Call requires API level 24 (current min is 21): `android.security.keystore.KeyGenParameterSpec.Builder#setAttestationChallenge`"
-        errorLine1="                        .setAttestationChallenge(CHALLENGE)"
+        errorLine1="                        .setAttestationChallenge(TEST_CHALLENGE)"
         errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/KeystoreAttestationDeviceInfo.java"
-            line="129"
+            line="94"
             column="26"/>
     </issue>
 
     <issue
         id="NewApi"
         message="Call requires API level 28 (current min is 21): `android.security.keystore.KeyGenParameterSpec.Builder#setIsStrongBoxBacked`"
-        errorLine1="                        .setIsStrongBoxBacked(isStrongBoxBacked)"
+        errorLine1="                        .setIsStrongBoxBacked(strongBoxBacked)"
         errorLine2="                         ~~~~~~~~~~~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/KeystoreAttestationDeviceInfo.java"
-            line="130"
+            line="95"
             column="26"/>
     </issue>
 
@@ -437,52 +437,19 @@
         errorLine2="                         ~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/KeystoreAttestationDeviceInfo.java"
-            line="131"
+            line="96"
             column="26"/>
     </issue>
 
     <issue
         id="NewApi"
-        message="Call requires API level 26 (current min is 21): `java.util.Base64#getEncoder`"
-        errorLine1="                    Base64.getEncoder().encodeToString(rootOfTrust.get().verifiedBootKey));"
-        errorLine2="                           ~~~~~~~~~~">
+        message="Implicit cast from `KeyGenParameterSpec` to `AlgorithmParameterSpec` requires API level 23 (current min is 21)"
+        errorLine1="        keyPairGenerator.initialize(spec);"
+        errorLine2="                                    ~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/KeystoreAttestationDeviceInfo.java"
-            line="207"
-            column="28"/>
-    </issue>
-
-    <issue
-        id="NewApi"
-        message="Call requires API level 26 (current min is 21): `java.util.Base64.Encoder#encodeToString`"
-        errorLine1="                    Base64.getEncoder().encodeToString(rootOfTrust.get().verifiedBootKey));"
-        errorLine2="                                        ~~~~~~~~~~~~~~">
-        <location
-            file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/KeystoreAttestationDeviceInfo.java"
-            line="207"
-            column="41"/>
-    </issue>
-
-    <issue
-        id="NewApi"
-        message="Call requires API level 26 (current min is 21): `java.util.Base64#getEncoder`"
-        errorLine1="                    Base64.getEncoder().encodeToString(rootOfTrust.get().verifiedBootHash));"
-        errorLine2="                           ~~~~~~~~~~">
-        <location
-            file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/KeystoreAttestationDeviceInfo.java"
-            line="212"
-            column="28"/>
-    </issue>
-
-    <issue
-        id="NewApi"
-        message="Call requires API level 26 (current min is 21): `java.util.Base64.Encoder#encodeToString`"
-        errorLine1="                    Base64.getEncoder().encodeToString(rootOfTrust.get().verifiedBootHash));"
-        errorLine2="                                        ~~~~~~~~~~~~~~">
-        <location
-            file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/KeystoreAttestationDeviceInfo.java"
-            line="212"
-            column="41"/>
+            line="100"
+            column="37"/>
     </issue>
 
     <issue
@@ -492,19 +459,19 @@
         errorLine2="                                                        ~~~~~~~~~~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/LocaleDeviceInfo.java"
-            line="62"
+            line="65"
             column="57"/>
     </issue>
 
     <issue
         id="NewApi"
         message="Call requires API level 24 (current min is 21): `android.icu.util.ULocale#toLanguageTag`"
-        errorLine1="            .map((uLocale -&gt; uLocale.toLanguageTag()))"
-        errorLine2="                                     ~~~~~~~~~~~~~">
+        errorLine1="                .map((uLocale -&gt; uLocale.toLanguageTag()))"
+        errorLine2="                                         ~~~~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/LocaleDeviceInfo.java"
-            line="63"
-            column="38"/>
+            line="66"
+            column="42"/>
     </issue>
 
     <issue
@@ -514,7 +481,7 @@
         errorLine2="                                      ~~~~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/LocaleDeviceInfo.java"
-            line="67"
+            line="70"
             column="39"/>
     </issue>
 
@@ -525,63 +492,8 @@
         errorLine2="                           ~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/LocaleDeviceInfo.java"
-            line="67"
+            line="70"
             column="28"/>
-    </issue>
-
-    <issue
-        id="NewApi"
-        message="Call requires API level 26 (current min is 21): `java.nio.file.Files#walk`"
-        errorLine1="        try (Stream&lt;Path&gt; stream = Files.walk(Paths.get(HYPHEN_BINARY_LOCATION))) {"
-        errorLine2="                                         ~~~~">
-        <location
-            file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/LocaleDeviceInfo.java"
-            line="74"
-            column="42"/>
-    </issue>
-
-    <issue
-        id="NewApi"
-        message="Call requires API level 26 (current min is 21): `java.nio.file.Paths#get`"
-        errorLine1="        try (Stream&lt;Path&gt; stream = Files.walk(Paths.get(HYPHEN_BINARY_LOCATION))) {"
-        errorLine2="                                                    ~~~">
-        <location
-            file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/LocaleDeviceInfo.java"
-            line="74"
-            column="53"/>
-    </issue>
-
-    <issue
-        id="NewApi"
-        message="Call requires API level 26 (current min is 21): `java.nio.file.Files#isDirectory`"
-        errorLine1="                    .filter(file -&gt; !Files.isDirectory(file))"
-        errorLine2="                                           ~~~~~~~~~~~">
-        <location
-            file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/LocaleDeviceInfo.java"
-            line="76"
-            column="44"/>
-    </issue>
-
-    <issue
-        id="NewApi"
-        message="Method reference requires API level 26 (current min is 21): `Path::getFileName`"
-        errorLine1="                    .map(Path::getFileName)"
-        errorLine2="                         ~~~~~~~~~~~~~~~~~">
-        <location
-            file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/LocaleDeviceInfo.java"
-            line="77"
-            column="26"/>
-    </issue>
-
-    <issue
-        id="NewApi"
-        message="Method reference requires API level 26 (current min is 21): `Path::toString`"
-        errorLine1="                    .map(Path::toString)"
-        errorLine2="                         ~~~~~~~~~~~~~~">
-        <location
-            file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/LocaleDeviceInfo.java"
-            line="78"
-            column="26"/>
     </issue>
 
     <issue
@@ -591,7 +503,7 @@
         errorLine2="                                                  ~~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/LocaleDeviceInfo.java"
-            line="79"
+            line="82"
             column="51"/>
     </issue>
 
@@ -602,7 +514,7 @@
         errorLine2="                                                 ~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/LocaleDeviceInfo.java"
-            line="100"
+            line="103"
             column="50"/>
     </issue>
 
@@ -613,7 +525,7 @@
         errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/LocaleDeviceInfo.java"
-            line="100"
+            line="103"
             column="26"/>
     </issue>
 
@@ -624,7 +536,7 @@
         errorLine2="                                                                      ~~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/PackageDeviceInfo.java"
-            line="387"
+            line="404"
             column="71"/>
     </issue>
 
@@ -635,7 +547,7 @@
         errorLine2="                                  ~~~~~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/PackageDeviceInfo.java"
-            line="403"
+            line="420"
             column="35"/>
     </issue>
 
@@ -646,7 +558,7 @@
         errorLine2="                                          ~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/ScreenDeviceInfo.java"
-            line="124"
+            line="186"
             column="43"/>
     </issue>
 
@@ -657,7 +569,7 @@
         errorLine2="                                                ~~~~~~~~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/ScreenDeviceInfo.java"
-            line="128"
+            line="190"
             column="49"/>
     </issue>
 
@@ -668,7 +580,7 @@
         errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/ScreenDeviceInfo.java"
-            line="130"
+            line="192"
             column="17"/>
     </issue>
 
@@ -679,7 +591,7 @@
         errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/ScreenDeviceInfo.java"
-            line="131"
+            line="193"
             column="17"/>
     </issue>
 
@@ -690,7 +602,7 @@
         errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/ScreenDeviceInfo.java"
-            line="132"
+            line="194"
             column="17"/>
     </issue>
 
@@ -701,7 +613,7 @@
         errorLine2="                                                                       ~~~~~~~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/ScreenDeviceInfo.java"
-            line="141"
+            line="203"
             column="72"/>
     </issue>
 
@@ -712,7 +624,7 @@
         errorLine2="                                                                        ~~~~~~~~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/ScreenDeviceInfo.java"
-            line="142"
+            line="204"
             column="73"/>
     </issue>
 
@@ -723,7 +635,7 @@
         errorLine2="                                                              ~~~~~~~~~~~~~~">
         <location
             file="cts/common/device-side/device-info/src/com/android/compatibility/common/deviceinfo/ScreenDeviceInfo.java"
-            line="143"
+            line="205"
             column="63"/>
     </issue>
 

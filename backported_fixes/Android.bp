@@ -72,6 +72,9 @@ java_library {
         "cts_backported_fixes_bitset",
         "cts_backported_fixes_support",
     ],
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
 
 // TODO b/382721475 - use androidx libarary when available.

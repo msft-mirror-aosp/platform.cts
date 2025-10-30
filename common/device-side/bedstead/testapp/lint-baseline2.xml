@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 8.4.0-alpha08" type="baseline" client="" dependencies="true" name="" variant="all" version="8.4.0-alpha08">
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 34 (current min is 29): `java.util.stream.Stream#toList`"
+        errorLine1="        return mProvider.testApps().stream().filter(this::matches).map(TestApp::new).toList();"
+        errorLine2="                                                                                     ~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/testapp/src/library/main/java/com/android/bedstead/testapp/TestAppQueryBuilder.java"
+            line="261"
+            column="86"/>
+    </issue>
+
+</issues>

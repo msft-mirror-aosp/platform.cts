@@ -45,6 +45,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorld5.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -57,6 +60,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorld5NonDefaultFlags.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -69,6 +75,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorld5DifferentSigner.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -81,6 +90,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorld5Profileable.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -92,6 +104,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorld7.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -104,6 +119,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorldSystemUserOnly.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -139,6 +157,9 @@ android_test {
     min_sdk_version: "26",
     v4_signature: true,
     platform_apis: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorldResHardening.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -151,6 +172,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorldSystem.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -163,6 +187,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorldSharedUid.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -176,6 +203,9 @@ android_test {
     ],
     v4_signature: true,
     certificate: "platform",
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorldSettings.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -189,6 +219,9 @@ android_test {
     ],
     v4_signature: true,
     certificate: "platform",
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorldSettings2.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -228,6 +261,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorldSdk1MajorVersion2.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -255,6 +291,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorldSdk2.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -268,6 +307,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorldSdk2Updated.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -281,6 +323,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorldSdk3UsingSdk1.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -294,6 +339,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorldSdk3UsingSdk1And2.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -307,6 +355,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorldUsingSdk1OptionalSdk2.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -320,6 +371,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorldUsingSdk1Optional.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -333,6 +387,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorldUsingSdk1.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -346,6 +403,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorldUsingSdk1AndSdk1.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -359,6 +419,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorldUsingSdk1And2.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -372,6 +435,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorldUsingSdk3.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -385,6 +451,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorldUsingSdkMalformedNegativeVersion.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -398,6 +467,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorldNoAppStorage.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -410,6 +482,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorldLotsOfFlags.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -422,6 +497,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorldWithSufficient.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -434,6 +512,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorldNonUpdatableSystem.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -447,6 +528,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloSufficientVerifierReject.xml",
+    },
 }
 
 android_app_certificate {
@@ -464,6 +548,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloVerifierAllow.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -476,6 +563,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloVerifierReject.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -488,6 +578,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloVerifierDelayedReject.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -500,6 +593,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloVerifierDisabled.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -512,6 +608,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloInstallerApp.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -524,6 +623,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloInstallerAppUpdated.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -536,6 +638,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloInstallerAppAbsent.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -548,6 +653,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloInstallerAppAbsentUpdated.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -560,6 +668,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorldMimeGroup.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -572,6 +683,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorldAppV1.xml",
+    },
 }
 
 //-----------------------------------------------------------
@@ -584,6 +698,9 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorldAppV2.xml",
+    },
 }
 
 android_test {
@@ -595,4 +712,7 @@ android_test {
         "general-tests",
     ],
     v4_signature: true,
+    lint: {
+        baseline_filename: "lint-baseline-HelloWorldPcc.xml",
+    },
 }

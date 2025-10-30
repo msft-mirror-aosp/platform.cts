@@ -224,6 +224,9 @@ android_test_helper_app {
     min_sdk_version: "25",
     manifest: "throttling/AndroidManifest.xml",
     static_libs: ["androidx.test.rules"],
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
 
 java_library {

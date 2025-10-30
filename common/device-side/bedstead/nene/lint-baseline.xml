@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<issues format="6" by="lint 8.4.0-alpha01" type="baseline" client="" dependencies="true" name="" variant="all" version="8.4.0-alpha01">
+<issues format="6" by="lint 8.4.0-alpha08" type="baseline" client="" dependencies="true" name="" variant="all" version="8.4.0-alpha08">
 
     <issue
         id="NewApi"
@@ -30,7 +30,7 @@
         errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="cts/common/device-side/bedstead/nene/src/main/java/com/android/bedstead/nene/devicepolicy/DevicePolicy.kt"
-            line="603"
+            line="687"
             column="36"/>
     </issue>
 
@@ -239,7 +239,7 @@
         errorLine2="                                        ~~~~~~~~~~~~~~~~">
         <location
             file="cts/common/device-side/bedstead/nene/src/main/java/com/android/bedstead/nene/users/UserReference.java"
-            line="506"
+            line="520"
             column="41"/>
     </issue>
 
@@ -250,7 +250,7 @@
         errorLine2="                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="cts/common/device-side/bedstead/nene/src/main/java/com/android/bedstead/nene/utils/Versions.java"
-            line="56"
+            line="59"
             column="23"/>
     </issue>
 
@@ -285,6 +285,17 @@
             file="cts/common/device-side/bedstead/nene/src/main/java/com/android/bedstead/nene/packages/Package.java"
             line="778"
             column="23"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 35 (current min is 29): `android.content.pm.PackageManager#isPackageStopped`"
+        errorLine1="                return pm.isPackageStopped(mPackageName);"
+        errorLine2="                          ~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/nene/src/main/java/com/android/bedstead/nene/packages/Package.java"
+            line="780"
+            column="27"/>
     </issue>
 
 </issues>

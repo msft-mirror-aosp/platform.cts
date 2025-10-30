@@ -33,4 +33,7 @@ android_test_helper_app {
         "cts",
         "general-tests",
     ],
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
