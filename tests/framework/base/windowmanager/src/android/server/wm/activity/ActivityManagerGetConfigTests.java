@@ -18,6 +18,8 @@ package android.server.wm.activity;
 
 import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
 import static android.server.wm.activity.CarDisplayCompatConfig.FEATURE_CAR_DISPLAY_COMPATIBILITY;
+import static android.server.wm.activity.CarDisplayCompatConfig.FEATURE_CAR_DISPLAY_COMPAT_SAFE_APP_AREA;
+import static android.server.wm.activity.CarDisplayCompatConfig.FEATURE_CAR_DISPLAY_COMPAT_SAFE_APP_AREA_VERSION;
 import static android.server.wm.activity.CarDisplayCompatConfig.getAutomotiveDisplayCompatScalingFactor;
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
@@ -289,13 +291,17 @@ public class ActivityManagerGetConfigTests {
 
         // Automotive may have a compatibility layer that automatically dpi scales any
         // non-automotive application. To account for this the config density should be scaled by
-        // the compatibility scaling factor.
-        if (mPm.hasSystemFeature(FEATURE_AUTOMOTIVE)
-                && mPm.hasSystemFeature(FEATURE_CAR_DISPLAY_COMPATIBILITY)) {
+        // the compatibility scaling factor. Devices with Safe App Area 1.0 has a compat layer
+        // that only applies to apps installed through a platform-approved installer source.
+        final boolean hasAutomotiveCompatibilityLayer = mPm.hasSystemFeature(FEATURE_AUTOMOTIVE)
+                        && mPm.hasSystemFeature(FEATURE_CAR_DISPLAY_COMPATIBILITY)
+                        && !mPm.hasSystemFeature(FEATURE_CAR_DISPLAY_COMPAT_SAFE_APP_AREA,
+                                FEATURE_CAR_DISPLAY_COMPAT_SAFE_APP_AREA_VERSION);
+        if (hasAutomotiveCompatibilityLayer) {
             float scalingFactor = getAutomotiveDisplayCompatScalingFactor(mContext);
             int automotiveDensity =
                     (int) (resConfig.configuration.densityDpi * (1f / scalingFactor) + 0.5f);
-            assertEquals("Expected density dpi does not match",
+            assertEquals("Expected density dpi does not match (hasAutomotiveCompatibilityLayer)",
                     config.densityDpi, automotiveDensity);
         } else {
             assertEquals("Expected density dpi does not match",
