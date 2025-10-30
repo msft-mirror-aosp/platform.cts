@@ -23,6 +23,7 @@ import android.telephony.TelephonyCallback;
 import android.telephony.TelephonyManager;
 import android.telephony.TelephonyManager.CarrierPrivilegesCallback;
 import android.telephony.TelephonyRegistryManager;
+import android.telephony.cts.util.LocationHelper;
 import android.telephony.emergency.EmergencyNumber;
 import android.telephony.ims.ImsCallProfile;
 import android.text.TextUtils;
@@ -54,7 +55,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class TelephonyRegistryManagerTest {
     private TelephonyRegistryManager mTelephonyRegistryMgr;
-    private Boolean mWasLocationEnabled;
+    private LocationHelper mLocationHelper;
     private static final long TIMEOUT_MILLIS = 1000;
 
     @Rule
@@ -63,18 +64,17 @@ public class TelephonyRegistryManagerTest {
 
     @Before
     public void setUp() throws Exception {
-        assumeTrue(InstrumentationRegistry.getContext().getPackageManager()
-                .hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
+        Context context = InstrumentationRegistry.getContext();
+        assumeTrue(context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
 
-        mTelephonyRegistryMgr = (TelephonyRegistryManager) InstrumentationRegistry.getContext()
-                .getSystemService(Context.TELEPHONY_REGISTRY_SERVICE);
+        mTelephonyRegistryMgr = context.getSystemService(TelephonyRegistryManager.class);
+        mLocationHelper = new LocationHelper(context);
     }
 
     @After
     public void tearDown() {
-        if (mWasLocationEnabled != null) {
-            TelephonyManagerTest.setLocationEnabled(mWasLocationEnabled);
-            mWasLocationEnabled = null;
+        if (mLocationHelper != null) {
+            mLocationHelper.tearDown();
         }
     }
 
@@ -164,8 +164,7 @@ public class TelephonyRegistryManagerTest {
 
     @Test
     public void testNotifyServiceStateChanged() throws Exception {
-        TelephonyManagerTest.grantLocationPermissions();
-        mWasLocationEnabled = TelephonyManagerTest.setLocationEnabled(true);
+        mLocationHelper.enable();
 
         Context context = InstrumentationRegistry.getContext();
 

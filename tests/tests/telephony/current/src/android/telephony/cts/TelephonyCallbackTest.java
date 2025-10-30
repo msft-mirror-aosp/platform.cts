@@ -29,7 +29,6 @@ import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeTrue;
 
 import android.annotation.NonNull;
-import android.content.Context;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.os.Looper;
@@ -58,6 +57,7 @@ import android.telephony.TelephonyManager;
 import android.telephony.TelephonyManager.DataEnabledReason;
 import android.telephony.TelephonyManager.EmergencyCallbackModeStopReason;
 import android.telephony.TelephonyManager.EmergencyCallbackModeType;
+import android.telephony.cts.util.LocationHelper;
 import android.telephony.cts.util.TelephonyUtils;
 import android.telephony.emergency.EmergencyNumber;
 import android.telephony.ims.ImsReasonInfo;
@@ -131,8 +131,8 @@ public class TelephonyCallbackTest {
     private PreciseCallState mPreciseCallState;
     private List<CallState> mCallStateList;
     private SignalStrength mSignalStrength;
-    private Boolean mWasLocationEnabled;
     private TelephonyManager mTelephonyManager;
+    private LocationHelper mLocationHelper;
     private final Object mLock = new Object();
     private static final String TAG = "TelephonyCallbackTest";
     private static ConnectivityManager mCm;
@@ -185,21 +185,20 @@ public class TelephonyCallbackTest {
         assumeTrue("Skipping test that requires FEATURE_TELEPHONY",
                 mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
 
-        mTelephonyManager =
-                (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
+        mTelephonyManager = getContext().getSystemService(TelephonyManager.class);
         try {
             mTelephonyManager.getHalVersion(TelephonyManager.HAL_SERVICE_RADIO);
         } catch (IllegalStateException e) {
             assumeNoException("Skipping tests because Telephony service is null", e);
         }
-        mCm = (ConnectivityManager) getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        mCm = getContext().getSystemService(ConnectivityManager.class);
+        mLocationHelper = new LocationHelper(getContext());
     }
 
     @After
     public void tearDown() throws Exception {
-        if (mWasLocationEnabled != null) {
-            TelephonyManagerTest.setLocationEnabled(mWasLocationEnabled);
-            mWasLocationEnabled = null;
+        if (mLocationHelper != null) {
+            mLocationHelper.tearDown();
         }
     }
 
@@ -976,8 +975,7 @@ public class TelephonyCallbackTest {
 
         assertFalse(mOnCellLocationChangedCalled);
 
-        TelephonyManagerTest.grantLocationPermissions();
-        mWasLocationEnabled = TelephonyManagerTest.setLocationEnabled(true);
+        mLocationHelper.enable();
 
         mCellLocationCallback = new CellLocationListener();
         registerTelephonyCallback(mCellLocationCallback);
@@ -1132,8 +1130,7 @@ public class TelephonyCallbackTest {
 
         assertFalse(mOnDataActivityCalled);
 
-        TelephonyManagerTest.grantLocationPermissions();
-        mWasLocationEnabled = TelephonyManagerTest.setLocationEnabled(true);
+        mLocationHelper.enable();
 
         mCellInfoCallback = new CellInfoListener();
         registerTelephonyCallback(mCellInfoCallback);
