@@ -94,8 +94,11 @@ class AppFunctionMetadataTest {
     fun assumeValidAgent() = doBlocking {
         val manager = context.getSystemService(AppFunctionManager::class.java)
         assumeNotNull(manager)
-        runWithShellPermission(Manifest.permission.MANAGE_APP_FUNCTION_ACCESS) {
-            assumeTrue(manager.validAgents.contains(context.packageName))
+
+        if (checkAppFunctionAccessEnabled()) {
+            runWithShellPermission(Manifest.permission.MANAGE_APP_FUNCTION_ACCESS) {
+                assumeTrue(manager.validAgents.contains(context.packageName))
+            }
         }
     }
 
@@ -120,7 +123,7 @@ class AppFunctionMetadataTest {
                     GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
                         .setPropertyString("exampleProperty", "exampleValue")
                         .build()
-                )
+                ),
             )
 
         retryAssert {
@@ -130,27 +133,14 @@ class AppFunctionMetadataTest {
                     it.id == String.format("%s/%s", packageName, functionId)
                 }
             val appFunctionMetadata =
-                AppFunctionMetadata.create(
-                    afStaticMetadataGd,
-                    afRuntimeMetadataGd,
-                    packageMetadata
-                )
+                AppFunctionMetadata.create(afStaticMetadataGd, afRuntimeMetadataGd, packageMetadata)
 
-            assertThat(appFunctionMetadata.name)
-                .isEqualTo(AppFunctionName(packageName, functionId))
+            assertThat(appFunctionMetadata.name).isEqualTo(AppFunctionName(packageName, functionId))
             assertThat(appFunctionMetadata.getSchemaMetadata())
-                .isEqualTo(
-                    AppFunctionSchemaMetadata(
-                        "utils",
-                        "print",
-                        1L
-                    )
-                )
+                .isEqualTo(AppFunctionSchemaMetadata("utils", "print", 1L))
             assertThat(appFunctionMetadata.isEnabled()).isFalse()
-            assertThat(appFunctionMetadata.getMetadataDocument())
-                .isEqualTo(afStaticMetadataGd)
-            assertThat(appFunctionMetadata.getPackageMetadata())
-                .isEqualTo(packageMetadata)
+            assertThat(appFunctionMetadata.getMetadataDocument()).isEqualTo(afStaticMetadataGd)
+            assertThat(appFunctionMetadata.getPackageMetadata()).isEqualTo(packageMetadata)
         }
     }
 
@@ -298,6 +288,7 @@ class AppFunctionMetadataTest {
             "device_config delete machine_learning allowlisted_app_functions_agents"
         )
     }
+
     private fun queryAppFunctionStaticMetadata(functionId: String): GenericDocument {
         val globalSearchSession: GlobalSearchSessionShim =
             GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync().get()
@@ -331,6 +322,11 @@ class AppFunctionMetadataTest {
                     .build(),
             )
         return collectAllSearchResults(searchResults)
+    }
+
+    private fun checkAppFunctionAccessEnabled(): Boolean {
+        return android.permission.flags.Flags.appFunctionAccessApiEnabled() &&
+            android.permission.flags.Flags.appFunctionAccessServiceEnabled()
     }
 
     private fun queryAppFunctionInfos(packageName: String): List<AppFunctionInfo> {
