@@ -87,27 +87,35 @@ public class DisplayEngagementModeTests extends WindowContextTestBase {
                 createManagedVirtualDisplaySession().setSimulateDisplay(true).createDisplay();
         final Context windowContext = createWindowContext(display.mId);
         final WindowManager wm = windowContext.getSystemService(WindowManager.class);
-        final CountDownLatch latch = new CountDownLatch(1);
+        final CountDownLatch initialStateReportedLatch = new CountDownLatch(1);
+        final CountDownLatch expectedStateReportedLatch = new CountDownLatch(1);
         final int expectedMode = WindowManager.ENGAGEMENT_MODE_FLAG_AUDIO_ON;
+        final int defaultMode = wm.getDisplayEngagementMode(display.mId);
 
         final Consumer<WindowManager.DisplayEngagementModeState> callback =
                 state -> {
-                    if (state.getDisplayId() == display.mId
-                            && state.getEngagementModeFlags() == expectedMode) {
-                        latch.countDown();
+                    if (state.getDisplayId() == display.mId) {
+                        if (state.getEngagementModeFlags() == defaultMode) {
+                            initialStateReportedLatch.countDown();
+                        } else if (state.getEngagementModeFlags() == expectedMode) {
+                            expectedStateReportedLatch.countDown();
+                        }
                     }
                 };
 
         wm.registerDisplayEngagementModeCallback(Runnable::run, callback);
 
         try {
+            assertTrue(
+                    "Initial callback was not invoked within the timeout",
+                    initialStateReportedLatch.await(5, TimeUnit.SECONDS));
             SystemUtil.runWithShellPermissionIdentity(
                     () -> {
                         wm.setDisplayEngagementMode(display.mId, expectedMode);
                     });
             assertTrue(
                     "Callback was not invoked within the timeout",
-                    latch.await(5, TimeUnit.SECONDS));
+                    expectedStateReportedLatch.await(5, TimeUnit.SECONDS));
         } finally {
             wm.unregisterDisplayEngagementModeCallback(callback);
         }
@@ -125,14 +133,19 @@ public class DisplayEngagementModeTests extends WindowContextTestBase {
                 createManagedVirtualDisplaySession().setSimulateDisplay(true).createDisplay();
         final Context windowContext = createWindowContext(display.mId);
         final WindowManager wm = windowContext.getSystemService(WindowManager.class);
-        final CountDownLatch latch = new CountDownLatch(1);
+        final CountDownLatch initialStateReportedLatch = new CountDownLatch(1);
+        final CountDownLatch expectedStateReportedLatch = new CountDownLatch(1);
         final int expectedMode = WindowManager.ENGAGEMENT_MODE_FLAG_AUDIO_ON;
+        final int defaultMode = wm.getDisplayEngagementMode(display.mId);
 
         final Consumer<WindowManager.DisplayEngagementModeState> callback =
                 state -> {
-                    if (state.getDisplayId() == display.mId
-                            && state.getEngagementModeFlags() == expectedMode) {
-                        latch.countDown();
+                    if (state.getDisplayId() == display.mId) {
+                        if (state.getEngagementModeFlags() == defaultMode) {
+                            initialStateReportedLatch.countDown();
+                        } else if (state.getEngagementModeFlags() == expectedMode) {
+                            expectedStateReportedLatch.countDown();
+                        }
                     }
                 };
 
@@ -141,13 +154,16 @@ public class DisplayEngagementModeTests extends WindowContextTestBase {
         wm.registerDisplayEngagementModeCallback(Runnable::run, callback);
 
         try {
+            assertTrue(
+                    "Initial callback was not invoked within the timeout",
+                    initialStateReportedLatch.await(5, TimeUnit.SECONDS));
             SystemUtil.runWithShellPermissionIdentity(
                     () -> {
                         wm.setDisplayEngagementMode(display.mId, expectedMode);
                     });
             assertTrue(
                     "Callback was not invoked within the timeout",
-                    latch.await(5, TimeUnit.SECONDS));
+                    expectedStateReportedLatch.await(5, TimeUnit.SECONDS));
         } finally {
             wm.unregisterDisplayEngagementModeCallback(callback);
         }
@@ -166,18 +182,23 @@ public class DisplayEngagementModeTests extends WindowContextTestBase {
                 createManagedVirtualDisplaySession().setSimulateDisplay(true).createDisplay();
         final Context windowContext = createWindowContext(display.mId);
         final WindowManager wm = windowContext.getSystemService(WindowManager.class);
-        final CountDownLatch latch = new CountDownLatch(1);
+        final CountDownLatch initialStateReportedLatch = new CountDownLatch(1);
+        final CountDownLatch expectedStateReportedLatch = new CountDownLatch(1);
         final int firstExpectedMode = WindowManager.ENGAGEMENT_MODE_FLAG_AUDIO_ON;
         final int secondExpectedMode = WindowManager.ENGAGEMENT_MODE_FLAG_VISUALS_ON;
+        final int defaultMode = wm.getDisplayEngagementMode(display.mId);
 
         final Consumer<WindowManager.DisplayEngagementModeState> callback =
                 new Consumer<WindowManager.DisplayEngagementModeState>() {
                     @Override
                     public void accept(WindowManager.DisplayEngagementModeState state) {
-                        if (state.getDisplayId() == display.mId
-                                && state.getEngagementModeFlags() == firstExpectedMode) {
-                            latch.countDown();
-                            wm.unregisterDisplayEngagementModeCallback(this);
+                        if (state.getDisplayId() == display.mId) {
+                            if (state.getEngagementModeFlags() == defaultMode) {
+                                initialStateReportedLatch.countDown();
+                            } else if (state.getEngagementModeFlags() == firstExpectedMode) {
+                                expectedStateReportedLatch.countDown();
+                                wm.unregisterDisplayEngagementModeCallback(this);
+                            }
                         }
                     }
                 };
@@ -185,19 +206,16 @@ public class DisplayEngagementModeTests extends WindowContextTestBase {
         wm.registerDisplayEngagementModeCallback(Runnable::run, callback);
 
         try {
+            assertTrue(
+                    "Initial callback was not invoked within the timeout",
+                    initialStateReportedLatch.await(5, TimeUnit.SECONDS));
             SystemUtil.runWithShellPermissionIdentity(
                     () -> {
                         wm.setDisplayEngagementMode(display.mId, firstExpectedMode);
                     });
             assertTrue(
                     "Callback was not invoked within the timeout",
-                    latch.await(5, TimeUnit.SECONDS));
-
-            // This second change should not trigger the callback.
-            SystemUtil.runWithShellPermissionIdentity(
-                    () -> {
-                        wm.setDisplayEngagementMode(display.mId, secondExpectedMode);
-                    });
+                    expectedStateReportedLatch.await(5, TimeUnit.SECONDS));
         } finally {
             // The callback should already be unregistered, but we try to unregister again here to
             // ensure that unregistering a non-existent callback doesn't cause a crash.
