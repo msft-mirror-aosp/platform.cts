@@ -56,6 +56,9 @@ final class CarDisplayCompatConfig {
     /** see {@code PackageManager#FEATURE_CAR_DISPLAY_COMPATIBILITY} */
     static final String FEATURE_CAR_DISPLAY_COMPATIBILITY =
             "android.software.car.display_compatibility";
+    static final String FEATURE_CAR_DISPLAY_COMPAT_SAFE_APP_AREA =
+        "com.android.software.car.display_compatibility.safe_app_area";
+    static final int FEATURE_CAR_DISPLAY_COMPAT_SAFE_APP_AREA_VERSION = 1;
 
     /**
      * Maps a combination of package name, user id, display id to a scale factor.
