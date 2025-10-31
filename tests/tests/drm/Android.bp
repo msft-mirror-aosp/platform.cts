@@ -32,6 +32,7 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
+        "dts",
     ],
     jni_libs: [
         "libctsdrm_jni",

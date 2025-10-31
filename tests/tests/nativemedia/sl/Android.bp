@@ -49,6 +49,7 @@ cc_test {
     test_suites: [
         "cts",
         "general-tests",
+        "dts",
     ],
     cflags: [
         "-Wno-deprecated-declarations",

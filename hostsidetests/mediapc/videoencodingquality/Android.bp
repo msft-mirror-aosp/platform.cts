@@ -33,6 +33,7 @@ java_test_host {
     test_suites: [
         "cts",
         "general-tests",
+        "dts",
     ],
     device_common_data: [
         ":VideoEncodingApp",

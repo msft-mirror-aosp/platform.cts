@@ -49,6 +49,7 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
+        "dts",
     ],
 }
 
@@ -58,5 +59,6 @@ android_test {
     test_config: "AndroidTest-mcts.xml",
     test_suites: [
         "general-tests",
+        "dts",
     ],
 }
