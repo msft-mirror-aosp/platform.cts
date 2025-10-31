@@ -114,6 +114,8 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
         }
         assertTrue(mConferenceObject.getConnections().contains(mConnection1));
 
+        assertNotNull(mConferenceObject.getTelecomCallId());
+
         assertConnectionState(mConferenceObject.getConnections().get(0), Connection.STATE_ACTIVE);
         assertConnectionState(mConferenceObject.getConnections().get(1), Connection.STATE_ACTIVE);
         assertConferenceState(mConferenceObject, Connection.STATE_ACTIVE);
@@ -268,6 +270,8 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
             conferenceables.add(newConference);
             mConferenceObject.setConferenceables(conferenceables);
             assertEquals(conferenceables, mConferenceObject.getConferenceables());
+            // Just a conference, so should be 0.
+            assertEquals(0, mConferenceObject.getConferenceableConnections().size());
 
             // Verify this propagated up to the InCallService as expected.
             ArrayList<Call> expectedCalls = new ArrayList();
@@ -328,6 +332,9 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
         // through public APIs.
         mConferenceObject.setConnectionTime(0);
         mConferenceObject.setConnectionStartElapsedRealtimeMillis(0);
+        assertEquals(0, mConferenceObject.getConnectionTime());
+        assertEquals(0, mConferenceObject.getConnectTimeMillis());
+        assertEquals(0, mConferenceObject.getConnectionStartElapsedRealtimeMillis());
 
         Bundle extras = new Bundle();
         extras.putString(TelecomManager.EXTRA_CALL_DISCONNECT_MESSAGE, "Test");
@@ -366,6 +373,8 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
 
         mConferenceObject.setActive();
         assertCallState(conf, Call.STATE_ACTIVE);
+
+        mConferenceObject.getAudioState();
 
         mConferenceObject.setAddress(CONF_HANDLE, TelecomManager.PRESENTATION_ALLOWED);
         assertCallHandle(conf, CONF_HANDLE);
@@ -692,6 +701,7 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
     private void verifyConferenceObject(Conference mConferenceObject, MockConnection connection1,
             MockConnection connection2) {
         assertTrue(mConferenceObject.getConferenceables().isEmpty());
+        assertTrue(mConferenceObject.getConferenceableConnections().isEmpty());
         assertEquals(connection1.getConnectionCapabilities(),
                 mConferenceObject.getConnectionCapabilities());
         assertEquals(connection1.getState(), mConferenceObject.getState());

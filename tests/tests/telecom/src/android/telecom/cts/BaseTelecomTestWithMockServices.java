@@ -54,6 +54,7 @@ import android.telecom.Call;
 import android.telecom.CallAudioState;
 import android.telecom.CallEndpoint;
 import android.telecom.Conference;
+import android.telecom.Conferenceable;
 import android.telecom.Connection;
 import android.telecom.ConnectionRequest;
 import android.telecom.InCallService;
@@ -1167,6 +1168,11 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         }
         connection.setConferenceableConnections(confConnections);
         assertEquals(connection.getConferenceables(), confConnections);
+
+        List<Conferenceable> conferenceables = new ArrayList<>();
+        conferenceables.addAll(confConnections);
+        connection.setConferenceables(conferenceables);
+        assertEquals(connection.getConferenceables(), conferenceables);
     }
 
     void addConferenceCall(Call call1, Call call2) {
