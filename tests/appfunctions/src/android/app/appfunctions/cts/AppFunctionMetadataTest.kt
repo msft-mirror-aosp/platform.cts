@@ -33,6 +33,7 @@ import android.app.appsearch.SearchResultsShim
 import android.app.appsearch.SearchSpec
 import android.app.appsearch.testutil.GlobalSearchSessionShimImpl
 import android.content.Context
+import android.os.Parcel
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -109,6 +110,7 @@ class AppFunctionMetadataTest {
         uninstallPackage(TEST_APP_B_PKG)
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONTEXTUAL_APP_FUNCTIONS)
     @Test
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
@@ -127,7 +129,7 @@ class AppFunctionMetadataTest {
             )
 
         retryAssert {
-            val afStaticMetadataGd = queryAppFunctionStaticMetadata(functionId)
+            val afStaticMetadataGd = queryAppFunctionStaticMetadata(packageName, functionId)
             val afRuntimeMetadataGd =
                 queryAppFunctionRuntimeMetadata(packageName).single { it ->
                     it.id == String.format("%s/%s", packageName, functionId)
@@ -136,11 +138,92 @@ class AppFunctionMetadataTest {
                 AppFunctionMetadata.create(afStaticMetadataGd, afRuntimeMetadataGd, packageMetadata)
 
             assertThat(appFunctionMetadata.name).isEqualTo(AppFunctionName(packageName, functionId))
-            assertThat(appFunctionMetadata.getSchemaMetadata())
+            assertThat(appFunctionMetadata.schemaMetadata)
                 .isEqualTo(AppFunctionSchemaMetadata("utils", "print", 1L))
-            assertThat(appFunctionMetadata.isEnabled()).isFalse()
-            assertThat(appFunctionMetadata.getMetadataDocument()).isEqualTo(afStaticMetadataGd)
-            assertThat(appFunctionMetadata.getPackageMetadata()).isEqualTo(packageMetadata)
+            assertThat(appFunctionMetadata.isEnabled).isFalse()
+            assertThat(appFunctionMetadata.metadataDocument).isEqualTo(afStaticMetadataGd)
+            assertThat(appFunctionMetadata.packageMetadata).isEqualTo(packageMetadata)
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONTEXTUAL_APP_FUNCTIONS)
+    @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    fun parcelAndUnparcelMetadata_allFieldsSet() = doBlocking {
+        installPackage(TEST_APP_A_V2_PATH)
+        val packageName = TEST_APP_A_PKG
+        val functionId = "com.example.utils#print1"
+        val packageMetadata =
+            AppFunctionPackageMetadata.create(
+                TEST_APP_A_PKG,
+                listOf(
+                    GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                        .setPropertyString("exampleProperty", "exampleValue")
+                        .build()
+                )
+            )
+
+        retryAssert {
+            val afStaticMetadataGd = queryAppFunctionStaticMetadata(packageName, functionId)
+            val afRuntimeMetadataGd =
+                queryAppFunctionRuntimeMetadata(packageName).single {
+                    it.id == String.format("%s/%s", packageName, functionId)
+                }
+            val originalMetadata =
+                AppFunctionMetadata.create(
+                    afStaticMetadataGd,
+                    afRuntimeMetadataGd,
+                    packageMetadata
+                )
+
+            val restoredMetadata = parcelAndUnparcelAppFunctionMetadata(originalMetadata)
+
+            assertThat(restoredMetadata.name).isEqualTo(originalMetadata.name)
+            assertThat(restoredMetadata.schemaMetadata)
+                .isEqualTo(originalMetadata.schemaMetadata)
+            assertThat(restoredMetadata.isEnabled).isEqualTo(originalMetadata.isEnabled)
+            assertThat(restoredMetadata.metadataDocument)
+                .isEqualTo(originalMetadata.metadataDocument)
+            assertThat(restoredMetadata.packageMetadata)
+                .isEqualTo(originalMetadata.packageMetadata)
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONTEXTUAL_APP_FUNCTIONS)
+    @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    fun parcelAndUnparcelMetadata_nullSchema() = doBlocking {
+        val packageName = "android.app.appfunctions.cts"
+        val functionId = "noSchema"
+        val packageMetadata =
+            AppFunctionPackageMetadata.create(
+                packageName,
+                listOf()
+            )
+
+        retryAssert {
+            val afStaticMetadataGd = queryAppFunctionStaticMetadata(packageName, functionId)
+            val afRuntimeMetadataGd =
+                queryAppFunctionRuntimeMetadata(packageName).single {
+                    it.id == String.format("%s/%s", packageName, functionId)
+                }
+            val originalMetadata =
+                AppFunctionMetadata.create(
+                    afStaticMetadataGd,
+                    afRuntimeMetadataGd,
+                    packageMetadata
+                )
+            val restoredMetadata = parcelAndUnparcelAppFunctionMetadata(originalMetadata)
+
+            assertThat(restoredMetadata.name).isEqualTo(originalMetadata.name)
+            assertThat(restoredMetadata.schemaMetadata).isNull()
+            assertThat(restoredMetadata.isEnabled).isEqualTo(originalMetadata.isEnabled)
+            assertThat(restoredMetadata.metadataDocument)
+                .isEqualTo(originalMetadata.metadataDocument)
+            assertThat(restoredMetadata.packageMetadata)
+                .isEqualTo(originalMetadata.packageMetadata)
         }
     }
 
@@ -289,13 +372,22 @@ class AppFunctionMetadataTest {
         )
     }
 
-    private fun queryAppFunctionStaticMetadata(functionId: String): GenericDocument {
+    private fun queryAppFunctionStaticMetadata(
+        packageName: String,
+        functionId: String
+    ): GenericDocument {
         val globalSearchSession: GlobalSearchSessionShim =
             GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync().get()
 
         val searchResults: SearchResultsShim =
             globalSearchSession.search(
-                String.format("%s:\"%s\"", PROPERTY_FUNCTION_ID, functionId),
+                String.format(
+                    "%s:\"%s\"  %s:\"%s\"",
+                    PROPERTY_PACKAGE_NAME,
+                    packageName,
+                    PROPERTY_FUNCTION_ID,
+                    functionId
+                ),
                 SearchSpec.Builder()
                     .addFilterNamespaces(
                         AppFunctionStaticMetadataHelper.APP_FUNCTION_STATIC_NAMESPACE
@@ -355,6 +447,18 @@ class AppFunctionMetadataTest {
         const val PROPERTY_FUNCTION_ID: String = "functionId"
         const val PROPERTY_PACKAGE_NAME: String = "packageName"
     }
-}
 
-private fun doBlocking(block: suspend CoroutineScope.() -> Unit) = runBlocking(block = block)
+    private fun doBlocking(block: suspend CoroutineScope.() -> Unit) = runBlocking(block = block)
+
+    private fun parcelAndUnparcelAppFunctionMetadata(original: AppFunctionMetadata):
+            AppFunctionMetadata {
+        val parcel = Parcel.obtain()
+        try {
+            original.writeToParcel(parcel, 0)
+            parcel.setDataPosition(0)
+            return AppFunctionMetadata.CREATOR.createFromParcel(parcel)
+        } finally {
+            parcel.recycle()
+        }
+    }
+}
