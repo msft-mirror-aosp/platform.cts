@@ -280,6 +280,14 @@ public class MediaExtractorTest {
 
         final String mimeType = trackFormat.getString(MediaFormat.KEY_MIME);
         assertEquals("Unexpected Mime type value", "video/vvc", mimeType);
+
+        int profile = trackFormat.getInteger(MediaFormat.KEY_PROFILE);
+        assertEquals(
+                "Mismatched profile", MediaCodecInfo.CodecProfileLevel.VVCProfileMain10, profile);
+
+        int level = trackFormat.getInteger(MediaFormat.KEY_LEVEL);
+        assertEquals(
+                "Mismatched level", MediaCodecInfo.CodecProfileLevel.VVCMainTierLevel20, level);
     }
 
     private boolean advertisesDolbyVision() {
