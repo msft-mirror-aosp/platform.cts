@@ -41,6 +41,7 @@ import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.TimeUnit
 import org.junit.Assume
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -56,6 +57,7 @@ import org.junit.runner.RunWith
  * Picker.
  */
 @RunWith(AndroidJUnit4::class)
+@Ignore("TODO(b/452860731): Disabled for convergance between 25Q4 and M-11")
 class PhotoPickerFileAccessTest {
 
     @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
