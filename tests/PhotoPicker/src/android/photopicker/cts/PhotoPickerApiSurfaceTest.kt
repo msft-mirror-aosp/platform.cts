@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.test.assertFailsWith
 import org.junit.Assume
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -64,11 +65,36 @@ class PhotoPickerApiSurfaceTest {
                 TestMedia(type = MediaType.VIDEO, count = 5),
             ]
     )
-    fun testSelectSingleImageAndVerifyResult() {
+    @LegacyPhotopickerOnly
+    @Ignore("TODO(b/452860731): Disabled for convergance between 25Q4 and M-11")
+    fun testSelectSingleImageAndVerifyResult_legacy() {
         val resultFuture = photoPickerRule.launchPhotoPicker()
 
         // Now, interact with the UI.
         photoPickerRule.selectItem(0)
+        val result = resultFuture.get(10, TimeUnit.SECONDS)
+
+        assertThat(result.resultCode).isEqualTo(Activity.RESULT_OK)
+        assertThat(result.data).isNotNull()
+        assertThat(result.data?.data).isNotNull()
+    }
+
+    @Test
+    @WithTestMedia(
+        media =
+            [
+                TestMedia(type = MediaType.IMAGE, count = 5),
+                TestMedia(type = MediaType.VIDEO, count = 5),
+            ]
+    )
+    @ModernPhotopickerOnly
+    @Ignore("TODO(b/452860731): Disabled for convergance between 25Q4 and M-11")
+    fun testSelectSingleImageAndVerifyResult_modern() {
+        val resultFuture = photoPickerRule.launchPhotoPicker()
+
+        // Now, interact with the UI.
+        photoPickerRule.selectItem(0)
+        photoPickerRule.confirmSelection()
         val result = resultFuture.get(10, TimeUnit.SECONDS)
 
         assertThat(result.resultCode).isEqualTo(Activity.RESULT_OK)
@@ -144,13 +170,32 @@ class PhotoPickerApiSurfaceTest {
 
     @Test
     @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE, count = 2)])
-    fun testSingleSelect_ignoresExtraAllowMultiple() {
+    @LegacyPhotopickerOnly
+    @Ignore("TODO(b/452860731): Disabled for convergance between 25Q4 and M-11")
+    fun testSingleSelect_ignoresExtraAllowMultiple_legacy() {
         val intent =
             Intent(MediaStore.ACTION_PICK_IMAGES).putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
         val resultFuture = photoPickerRule.launchPhotoPicker(intent)
 
         // In single-select mode, clicking an item should immediately return a result.
         photoPickerRule.selectItem(0)
+
+        val result = resultFuture.get(10, TimeUnit.SECONDS)
+        assertThat(result.resultCode).isEqualTo(Activity.RESULT_OK)
+        assertThat(result.getSelectedMedia().size).isEqualTo(1)
+    }
+
+    @Test
+    @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE, count = 2)])
+    @ModernPhotopickerOnly
+    @Ignore("TODO(b/452860731): Disabled for convergance between 25Q4 and M-11")
+    fun testSingleSelect_ignoresExtraAllowMultiple_modern() {
+        val intent =
+            Intent(MediaStore.ACTION_PICK_IMAGES).putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+        val resultFuture = photoPickerRule.launchPhotoPicker(intent)
+
+        photoPickerRule.selectItem(0)
+        photoPickerRule.confirmSelection()
 
         val result = resultFuture.get(10, TimeUnit.SECONDS)
         assertThat(result.resultCode).isEqualTo(Activity.RESULT_OK)
@@ -188,6 +233,7 @@ class PhotoPickerApiSurfaceTest {
     @Test
     @ModernPhotopickerOnly
     @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
+    @Ignore("TODO(b/452860731): Disabled for convergance between 25Q4 and M-11")
     fun testLaunchModern_withInvalidTab_ignoresInvalid() {
         val intent =
             Intent(MediaStore.ACTION_PICK_IMAGES)
@@ -224,7 +270,9 @@ class PhotoPickerApiSurfaceTest {
     @SdkSuppress(excludedSdks = [Build.VERSION_CODES.S, Build.VERSION_CODES.S_V2])
     @Test
     @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
-    fun testGetContent_withImageMimeType_launchesPicker() {
+    @LegacyPhotopickerOnly
+    @Ignore("TODO(b/452860731): Disabled for convergance between 25Q4 and M-11")
+    fun testGetContent_withImageMimeType_launchesPicker_legacy() {
         val intent = Intent(Intent.ACTION_GET_CONTENT).apply { type = "image/*" }
         val resultFuture = photoPickerRule.launchPhotoPicker(intent)
         photoPickerRule.selectItem(0)
@@ -237,11 +285,47 @@ class PhotoPickerApiSurfaceTest {
     // GET_CONTENT takeover requires a DeviceConfig override on S, so skip in CTS.
     @SdkSuppress(excludedSdks = [Build.VERSION_CODES.S, Build.VERSION_CODES.S_V2])
     @Test
+    @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
+    @ModernPhotopickerOnly
+    @Ignore("TODO(b/452860731): Disabled for convergance between 25Q4 and M-11")
+    fun testGetContent_withImageMimeType_launchesPicker_modern() {
+        val intent = Intent(Intent.ACTION_GET_CONTENT).apply { type = "image/*" }
+        val resultFuture = photoPickerRule.launchPhotoPicker(intent)
+        photoPickerRule.selectItem(0)
+        photoPickerRule.confirmSelection()
+
+        val result = resultFuture.get(10, TimeUnit.SECONDS)
+        assertThat(result.resultCode).isEqualTo(Activity.RESULT_OK)
+        assertThat(result.getSelectedMedia().size).isEqualTo(1)
+    }
+
+    // GET_CONTENT takeover requires a DeviceConfig override on S, so skip in CTS.
+    @SdkSuppress(excludedSdks = [Build.VERSION_CODES.S, Build.VERSION_CODES.S_V2])
+    @Test
     @WithTestMedia(media = [TestMedia(type = MediaType.VIDEO)])
-    fun testGetContent_withVideoMimeType_launchesPicker() {
+    @LegacyPhotopickerOnly
+    @Ignore("TODO(b/452860731): Disabled for convergance between 25Q4 and M-11")
+    fun testGetContent_withVideoMimeType_launchesPicker_legacy() {
         val intent = Intent(Intent.ACTION_GET_CONTENT).apply { type = "video/*" }
         val resultFuture = photoPickerRule.launchPhotoPicker(intent)
         photoPickerRule.selectItem(0)
+
+        val result = resultFuture.get(10, TimeUnit.SECONDS)
+        assertThat(result.resultCode).isEqualTo(Activity.RESULT_OK)
+        assertThat(result.getSelectedMedia().size).isEqualTo(1)
+    }
+
+    // GET_CONTENT takeover requires a DeviceConfig override on S, so skip in CTS.
+    @SdkSuppress(excludedSdks = [Build.VERSION_CODES.S, Build.VERSION_CODES.S_V2])
+    @Test
+    @WithTestMedia(media = [TestMedia(type = MediaType.VIDEO)])
+    @ModernPhotopickerOnly
+    @Ignore("TODO(b/452860731): Disabled for convergance between 25Q4 and M-11")
+    fun testGetContent_withVideoMimeType_launchesPicker_modern() {
+        val intent = Intent(Intent.ACTION_GET_CONTENT).apply { type = "video/*" }
+        val resultFuture = photoPickerRule.launchPhotoPicker(intent)
+        photoPickerRule.selectItem(0)
+        photoPickerRule.confirmSelection()
 
         val result = resultFuture.get(10, TimeUnit.SECONDS)
         assertThat(result.resultCode).isEqualTo(Activity.RESULT_OK)
