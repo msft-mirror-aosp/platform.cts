@@ -81,6 +81,90 @@ public class EmbeddedPhotoPickerFeatureInfoTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EMBEDDED_PICKER_EXPANDED_HIGHLIGHT_TYPE_API)
+    public void testEmbeddedFeatureInfoParameterisedConstructor() {
+        String albumId = "albumId";
+        List<String> mimeTypes = Arrays.asList("image/*", "video/*");
+        long accentColor = 0xFF4285F4; // Google Blue
+        boolean orderedSelection = true;
+        int maxSelectionLimit = 10;
+        List<Uri> preSelectedUris =
+                Arrays.asList(
+                        Uri.parse("content://media/external/images/media/1"),
+                        Uri.parse("content://media/external/video/media/2"));
+        int themeNightMode = Configuration.UI_MODE_NIGHT_YES;
+        String highlightSearchMediaQuery = "Holidays";
+        int highlightType = MediaStore.PICK_IMAGES_HIGHLIGHT_TYPE_EXPANDED;
+        boolean launchedPickerInExpandedState = true;
+
+        // Create an object and set some properties
+        EmbeddedPhotoPickerFeatureInfo featureInfo =
+                new EmbeddedPhotoPickerFeatureInfo.Builder()
+                        .setHighlightAlbumId(albumId)
+                        .setMimeTypes(mimeTypes)
+                        .setAccentColor(accentColor)
+                        .setOrderedSelection(orderedSelection)
+                        .setMaxSelectionLimit(maxSelectionLimit)
+                        .setPreSelectedUris(preSelectedUris)
+                        .setThemeNightMode(themeNightMode)
+                        .setHighlightSearchMediaTextQuery(highlightSearchMediaQuery)
+                        .setHighlightType(highlightType)
+                        .setPickerLaunchedInExpandedState(launchedPickerInExpandedState)
+                        .build();
+
+        // Create a new object with the parametrised constructor
+        EmbeddedPhotoPickerFeatureInfo parameterisedFeatureInfoObject =
+                new EmbeddedPhotoPickerFeatureInfo.Builder(featureInfo).build();
+
+        // Assert the properties of the new object
+        assertWithMessage("Expected highlight album id should be equal to previously set album id")
+                .that(parameterisedFeatureInfoObject.getHighlightAlbumId())
+                .isEqualTo(albumId);
+
+        assertWithMessage("Expected mime types should be equal to previously set mime types")
+                .that(parameterisedFeatureInfoObject.getMimeTypes())
+                .isEqualTo(mimeTypes);
+        assertWithMessage("Mime types list instance should be different (deep copy)")
+                .that(parameterisedFeatureInfoObject.getMimeTypes())
+                .isNotSameInstanceAs(featureInfo.getMimeTypes());
+
+        assertWithMessage("Expected accent color should be equal")
+                .that(parameterisedFeatureInfoObject.getAccentColor())
+                .isEqualTo(accentColor);
+
+        assertWithMessage("Expected ordered selection should be equal")
+                .that(parameterisedFeatureInfoObject.isOrderedSelection())
+                .isEqualTo(orderedSelection);
+
+        assertWithMessage("Expected max selection limit should be equal")
+                .that(parameterisedFeatureInfoObject.getMaxSelectionLimit())
+                .isEqualTo(maxSelectionLimit);
+
+        assertWithMessage("Expected pre-selected URIs should be equal")
+                .that(parameterisedFeatureInfoObject.getPreSelectedUris())
+                .isEqualTo(preSelectedUris);
+        assertWithMessage("Pre-selected URIs list instance should be different (deep copy)")
+                .that(parameterisedFeatureInfoObject.getPreSelectedUris())
+                .isNotSameInstanceAs(featureInfo.getPreSelectedUris());
+
+        assertWithMessage("Expected theme night mode should be equal")
+                .that(parameterisedFeatureInfoObject.getThemeNightMode())
+                .isEqualTo(themeNightMode);
+
+        assertWithMessage("Expected highlight search media query should be equal")
+                .that(parameterisedFeatureInfoObject.getHighlightSearchMediaTextQuery())
+                .isEqualTo(highlightSearchMediaQuery);
+
+        assertWithMessage("Expected highlight type should be equal")
+                .that(parameterisedFeatureInfoObject.getHighlightType())
+                .isEqualTo(highlightType);
+
+        assertWithMessage("Expected launched picker in expanded state should be equal")
+                .that(parameterisedFeatureInfoObject.isPickerLaunchedInExpandedState())
+                .isEqualTo(launchedPickerInExpandedState);
+    }
+
+    @Test
     public void testSetMimeTypes_default_returnsAllMediaMimeTypes() {
         final List<String> defaultMimeTypes = Arrays.asList("image/*", "video/*");
         final EmbeddedPhotoPickerFeatureInfo info =
