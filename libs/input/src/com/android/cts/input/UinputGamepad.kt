@@ -47,14 +47,18 @@ private fun createGamepadRegisterCommand(): UinputRegisterCommand {
                 "BTN_THUMBR",
             )
         ),
-        ConfigurationItem("UI_SET_ABSBIT", listOf("ABS_X", "ABS_Y", "ABS_Z", "ABS_RZ"))
+        ConfigurationItem(
+            "UI_SET_ABSBIT",
+            listOf("ABS_X", "ABS_Y", "ABS_Z", "ABS_RZ", "ABS_THROTTLE")
+        )
     )
 
     val absInfo = mapOf(
         "ABS_X" to AbsInfo(0, -127, 127, 0, 0, 0),
         "ABS_Y" to AbsInfo(0, -127, 127, 0, 0, 0),
         "ABS_Z" to AbsInfo(0, -127, 127, 0, 0, 0),
-        "ABS_RZ" to AbsInfo(0, -127, 127, 0, 0, 0)
+        "ABS_RZ" to AbsInfo(0, -127, 127, 0, 0, 0),
+        "ABS_THROTTLE" to AbsInfo(0, 0, 255, 0, 0, 0),
     )
 
     return UinputRegisterCommand(
