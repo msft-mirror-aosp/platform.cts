@@ -51,7 +51,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.os.PersistableBundle;
-import android.os.Process;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.util.Log;
@@ -64,7 +63,6 @@ import com.android.compatibility.common.util.DeviceReportLog;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
-import com.android.compatibility.common.util.SystemUtil;
 
 import com.google.common.collect.Range;
 
@@ -1174,11 +1172,18 @@ public class AudioRecordTest {
 
             // at the start, there is no timestamp.
             AudioTimestamp startTs = new AudioTimestamp();
+            AudioTimestamp startTsBoot = new AudioTimestamp();
             assertWithMessage("getTimestamp without startRecording() is ERROR_INVALID_OPERATION")
                     .that(record.getTimestamp(startTs, AudioTimestamp.TIMEBASE_MONOTONIC))
                     .isEqualTo(AudioRecord.ERROR_INVALID_OPERATION);
             assertWithMessage("invalid getTimestamp doesn't affect nanoTime")
                     .that(startTs.nanoTime)
+                    .isEqualTo(0);
+            assertWithMessage("getTimestamp without startRecording() is ERROR_INVALID_OPERATION")
+                    .that(record.getTimestamp(startTsBoot, AudioTimestamp.TIMEBASE_BOOTTIME))
+                    .isEqualTo(AudioRecord.ERROR_INVALID_OPERATION);
+            assertWithMessage("invalid getTimestamp doesn't affect nanoTime")
+                    .that(startTsBoot.nanoTime)
                     .isEqualTo(0);
 
             listener.start(TEST_SR);
@@ -1207,7 +1212,9 @@ public class AudioRecordTest {
             final int runningTimestampStart = targetSamples * 1 / 6;
             final int runningTimestampStop = targetSamples * 5 / 6;
             AudioTimestamp running1Ts = new AudioTimestamp();
+            AudioTimestamp running1TsBoot = new AudioTimestamp();
             AudioTimestamp running2Ts = new AudioTimestamp();
+            AudioTimestamp running2TsBoot = new AudioTimestamp();
 
             int samplesRead = 0;
             // abstract out the buffer type used with lambda.
@@ -1284,14 +1291,38 @@ public class AudioRecordTest {
                     assertWithMessage("expecting valid timestamp with nonzero nanoTime")
                             .that(startTs.nanoTime)
                             .isGreaterThan(0);
+                    assertWithMessage("expecting valid timestamp with nonzero nanoTime")
+                            .that(
+                                    record.getTimestamp(
+                                            startTsBoot, AudioTimestamp.TIMEBASE_BOOTTIME))
+                            .isEqualTo(AudioRecord.SUCCESS);
+                    assertWithMessage("expecting valid timestamp with nonzero nanoTime")
+                            .that(startTsBoot.nanoTime)
+                            .isGreaterThan(0);
+                    assertWithMessage(
+                                    "start timestamp monotonic and boottime have same frame"
+                                            + " position")
+                            .that(startTs.framePosition)
+                            .isEqualTo(startTsBoot.framePosition);
                 }
                 if (samplesRead > runningTimestampStart
                         && running1Ts.nanoTime == 0 && ret > 0) {
                     record.getTimestamp(running1Ts, AudioTimestamp.TIMEBASE_MONOTONIC);
+                    record.getTimestamp(running1TsBoot, AudioTimestamp.TIMEBASE_BOOTTIME);
+                    assertWithMessage("running1Ts monotonic and boottime have same frame position")
+                            .that(running1Ts.framePosition)
+                            .isEqualTo(running1TsBoot.framePosition);
                 }
                 if (samplesRead > runningTimestampStop
                         && running2Ts.nanoTime == 0 && ret > 0) {
                     record.getTimestamp(running2Ts, AudioTimestamp.TIMEBASE_MONOTONIC);
+                    record.getTimestamp(running2TsBoot, AudioTimestamp.TIMEBASE_BOOTTIME);
+                    assertWithMessage("running2Ts monotonic and boottime have same frame position")
+                            .that(running2Ts.framePosition)
+                            .isEqualTo(running2TsBoot.framePosition);
+                    assertWithMessage("running2Ts monotonic time <= boottime")
+                            .that(running2Ts.nanoTime <= running2TsBoot.nanoTime)
+                            .isTrue();
                 }
             }
 
@@ -1387,10 +1418,17 @@ public class AudioRecordTest {
 
             // we allow more timestamp inaccuacy for the entire recording run,
             // including start and stop.
-            verifyContinuousTimestamps(startTs, stopTs, TEST_SR, true /* coarse */);
+            verifyContinuousTimestamps(
+                    startTs, stopTs, startTsBoot, stopTsBoot, TEST_SR, true /* coarse */);
 
             // during the middle 2/3 of the run, we expect stable timestamps.
-            verifyContinuousTimestamps(running1Ts, running2Ts, TEST_SR, false /* coarse */);
+            verifyContinuousTimestamps(
+                    running1Ts,
+                    running2Ts,
+                    running1TsBoot,
+                    running2TsBoot,
+                    TEST_SR,
+                    false /* coarse */);
 
             // clean up
             if (makeSomething != null) {
@@ -1621,7 +1659,12 @@ public class AudioRecordTest {
     }
 
     private void verifyContinuousTimestamps(
-            AudioTimestamp startTs, AudioTimestamp stopTs, int sampleRate, boolean coarse)
+            AudioTimestamp startTs,
+            AudioTimestamp stopTs,
+            AudioTimestamp startTsBoot,
+            AudioTimestamp stopTsBoot,
+            int sampleRate,
+            boolean coarse)
             throws Exception {
         final long timeDiff = stopTs.nanoTime - startTs.nanoTime;
         final long frameDiff = stopTs.framePosition - startTs.framePosition;
@@ -1635,6 +1678,16 @@ public class AudioRecordTest {
         //        ", timeByFrames=" + timeByFrames + ", sampleRate=" + sampleRate);
         assertWithMessage("Timestamp rate must match sample rate by ratio")
                 .that(ratio)
+                .isWithin(tolerance)
+                .of(1.);
+
+        final long timeDiffBoot = stopTsBoot.nanoTime - startTsBoot.nanoTime;
+        final long frameDiffBoot = stopTsBoot.framePosition - startTsBoot.framePosition;
+        final long timeByFramesBoot = frameDiffBoot * NANOS_PER_SECOND / sampleRate;
+        final double ratioBoot = (double) timeDiffBoot / timeByFramesBoot;
+
+        assertWithMessage("Boottime timestamp rate must match sample rate by ratio")
+                .that(ratioBoot)
                 .isWithin(tolerance)
                 .of(1.);
     }
