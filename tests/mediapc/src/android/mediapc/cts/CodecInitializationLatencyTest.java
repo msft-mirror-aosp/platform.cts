@@ -174,7 +174,7 @@ public class CodecInitializationLatencyTest {
         if (listOfAvcHwEncoders.isEmpty()) {
             return false;
         }
-        AVC_ENCODER_NAME = listOfAvcHwEncoders.getFirst();
+        AVC_ENCODER_NAME = listOfAvcHwEncoders.get(0);
         return true;
     }
 
@@ -183,7 +183,7 @@ public class CodecInitializationLatencyTest {
         if (listOfAvcHwDecoders.isEmpty()) {
             return false;
         }
-        AVC_DECODER_NAME = listOfAvcHwDecoders.getFirst();
+        AVC_DECODER_NAME = listOfAvcHwDecoders.get(0);
         return true;
     }
 
