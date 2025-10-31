@@ -21,6 +21,7 @@ import threading
 import types
 
 import camera_properties_utils
+import image_processing_utils
 import gen2_rig_controller_utils
 import ip_chart_extraction_utils as ce
 import ip_chart_pattern_detector as pd
@@ -302,6 +303,24 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
           f'{jca_capture_path.stem}_jca{jca_capture_path.suffix}'
       )
       os.rename(jca_path, jca_capture_path)
+
+      # Decompress UltraHDR image to RGB image
+      if gainmap_present:
+        default_capture_rgb_path = default_capture_path.with_name(
+            f'{default_capture_path.stem}_rgb{default_capture_path.suffix}'
+        )
+        image_processing_utils.decompress_ultrahdr_image(
+            default_capture_path, default_capture_rgb_path
+        )
+        jca_capture_rgb_path = jca_capture_path.with_name(
+            f'{jca_capture_path.stem}_rgb{jca_capture_path.suffix}'
+        )
+        image_processing_utils.decompress_ultrahdr_image(
+            jca_capture_path, jca_capture_rgb_path
+        )
+        default_capture_path = default_capture_rgb_path
+        jca_capture_path = jca_capture_rgb_path
+        logging.debug('Decompressed UltraHDR image to RGB image')
 
       # Extract FULL_CHART from the captured image.
       _, _ = (
