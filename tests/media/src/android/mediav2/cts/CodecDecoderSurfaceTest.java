@@ -37,6 +37,8 @@ import android.mediav2.common.cts.CodecTestActivity;
 import android.mediav2.common.cts.OutputManager;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.view.Surface;
 
@@ -84,6 +86,9 @@ public class CodecDecoderSurfaceTest extends CodecDecoderTestBase {
     static {
         System.loadLibrary("ctsmediav2codecdecsurface_jni");
     }
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     public CodecDecoderSurfaceTest(String decoder, String mediaType, String testFile,
             SupportClass supportRequirements, String allTestParams) {

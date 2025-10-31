@@ -42,6 +42,8 @@ import android.mediav2.common.cts.CodecDynamicTestActivity;
 import android.mediav2.common.cts.OutputManager;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.util.Pair;
 import android.util.Range;
@@ -130,6 +132,9 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
     private final String[] mSrcFiles;
 
     private CodecDynamicTestActivity mDynamicActivity;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Rule
     public ActivityScenarioRule<CodecDynamicTestActivity> mActivityRule =
