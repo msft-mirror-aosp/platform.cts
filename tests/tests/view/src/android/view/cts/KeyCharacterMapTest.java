@@ -384,6 +384,18 @@ public class KeyCharacterMapTest {
         assertEquals('\u00C0', KeyCharacterMap.getDeadChar('`', 'A'));
         assertEquals('\u00E8', KeyCharacterMap.getDeadChar('`', 'e'));
         assertEquals('\u00C8', KeyCharacterMap.getDeadChar('`', 'E'));
+
+        // Test fallbacks
+        assertEquals('`', KeyCharacterMap.getDeadChar('\u02CB', ' '));
+        assertEquals('`', KeyCharacterMap.getDeadChar('\u02CB', '\u02CB'));
+        assertEquals('^', KeyCharacterMap.getDeadChar('\u02C6', ' '));
+        assertEquals('^', KeyCharacterMap.getDeadChar('\u02C6', '\u02C6'));
+        assertEquals('~', KeyCharacterMap.getDeadChar('\u02DC', ' '));
+        assertEquals('~', KeyCharacterMap.getDeadChar('\u02DC', '\u02DC'));
+        assertEquals('\'', KeyCharacterMap.getDeadChar('\u00B4', ' '));
+        assertEquals('\'', KeyCharacterMap.getDeadChar('\u00B4', '\u00B4'));
+        assertEquals('"', KeyCharacterMap.getDeadChar('\u00A8', ' '));
+        assertEquals('"', KeyCharacterMap.getDeadChar('\u00A8', '\u00A8'));
     }
 
 }
