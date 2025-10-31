@@ -701,7 +701,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
                 FeatureUtil.isXrHeadset());
 
         addAnimatedActivityOverlay(
-                SECOND_OVERLAY_ACTIVITY, false /* touchable */, R.anim.alpha_0_7, R.anim.alpha_1);
+                SECOND_OVERLAY_ACTIVITY, false /* touchable */, R.anim.alpha_0_7, R.anim.alpha_0_7);
 
         mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
 
@@ -717,7 +717,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
                 FeatureUtil.isXrHeadset());
 
         addAnimatedActivityOverlay(
-                SECOND_OVERLAY_ACTIVITY, true /* touchable */, R.anim.alpha_0_7, R.anim.alpha_1);
+                SECOND_OVERLAY_ACTIVITY, true /* touchable */, R.anim.alpha_0_7, R.anim.alpha_0_7);
 
         mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
 
