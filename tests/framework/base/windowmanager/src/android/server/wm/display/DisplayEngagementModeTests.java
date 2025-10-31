@@ -23,6 +23,8 @@ import static org.junit.Assert.assertTrue;
 import android.content.Context;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.WindowManagerState;
 import android.view.WindowManager;
 
@@ -30,6 +32,7 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.window.flags.Flags;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -43,6 +46,9 @@ import java.util.function.Consumer;
  */
 @Presubmit
 public class DisplayEngagementModeTests extends WindowContextTestBase {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @RequiresFlagsEnabled(Flags.FLAG_DEVICE_ENGAGEMENT_MODE)
     @ApiTest(
             apis = {
