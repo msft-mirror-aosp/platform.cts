@@ -17,7 +17,8 @@
 package android.media.muxer.cts;
 
 import static android.mediav2.common.cts.CodecTestBase.isExtractorFormatSimilar;
-import static android.mediav2.common.cts.MuxerUtils.isMediaTypeContainerPairValid;
+import static android.mediav2.common.cts.MuxerUtils.isMediaTypeContainerPairSupported;
+import static android.mediav2.common.cts.MuxerUtils.muxerFormatToString;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -57,7 +58,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 
 /**
  * MuxerTestHelper breaks a media file to elements that a muxer can use to rebuild its clone.
@@ -367,27 +367,17 @@ public class MuxerTest {
     private static String selector;
     private static boolean[] muxSelector =
             new boolean[MediaMuxer.OutputFormat.MUXER_OUTPUT_LAST + 1];
-    private static HashMap<Integer, String> formatStringPair = new HashMap<>();
 
     static {
         android.os.Bundle args = InstrumentationRegistry.getArguments();
-        final String defSel = "mp4;webm;3gp;ogg";
+        final String defSel = "mp4;webm;3gp;heif;ogg;";
         selector = (null == args.getString(MUX_SEL_KEY)) ? defSel : args.getString(MUX_SEL_KEY);
 
-        createFormatStringPair();
         for (int format = MediaMuxer.OutputFormat.MUXER_OUTPUT_FIRST;
                 format <= MediaMuxer.OutputFormat.MUXER_OUTPUT_LAST;
                 format++) {
-            muxSelector[format] = selector.contains(formatStringPair.get(format));
+            muxSelector[format] = selector.contains(muxerFormatToString(format));
         }
-    }
-
-    static private void createFormatStringPair() {
-        formatStringPair.put(MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4, "mp4");
-        formatStringPair.put(MediaMuxer.OutputFormat.MUXER_OUTPUT_WEBM, "webm");
-        formatStringPair.put(MediaMuxer.OutputFormat.MUXER_OUTPUT_3GPP, "3gp");
-        formatStringPair.put(MediaMuxer.OutputFormat.MUXER_OUTPUT_HEIF, "heif");
-        formatStringPair.put(MediaMuxer.OutputFormat.MUXER_OUTPUT_OGG, "ogg");
     }
 
     static private boolean shouldRunTest(int format) {
@@ -419,13 +409,16 @@ public class MuxerTest {
 
         @Before
         public void prologue() throws IOException {
+            Assume.assumeTrue(shouldRunTest(mOutFormat));
             mInpPath = WorkDir.getMediaDirString() + mSrcFile;
             mOutPath = File.createTempFile("tmp", ".out").getAbsolutePath();
         }
 
         @After
         public void epilogue() {
-            new File(mOutPath).delete();
+            if (mOutPath != null) {
+                new File(mOutPath).delete();
+            }
         }
 
         @Parameterized.Parameters(name = "{index}_{3}")
@@ -511,7 +504,6 @@ public class MuxerTest {
         @ApiTest(apis = "android.media.MediaMuxer#setLocation")
         @Test
         public void testSetLocation() throws IOException {
-            Assume.assumeTrue(shouldRunTest(mOutFormat));
             MediaMuxer muxer = new MediaMuxer(mOutPath, mOutFormat);
             try {
                 boolean isGeoDataSupported = false;
@@ -611,7 +603,6 @@ public class MuxerTest {
         @ApiTest(apis = "android.media.MediaMuxer#setOrientationHint")
         @Test
         public void testSetOrientationHint() throws IOException {
-            Assume.assumeTrue(shouldRunTest(mOutFormat));
             MediaMuxer muxer = new MediaMuxer(mOutPath, mOutFormat);
             try {
                 boolean isOrientationSupported = false;
@@ -679,7 +670,6 @@ public class MuxerTest {
         @ApiTest(apis = "AMediaMuxer_setLocation")
         @Test
         public void testSetLocationNative() throws IOException {
-            Assume.assumeTrue(shouldRunTest(mOutFormat));
             assertTrue(nativeTestSetLocation(mOutFormat, mInpPath, mOutPath));
             verifyLocationInFile(mOutPath);
         }
@@ -687,7 +677,6 @@ public class MuxerTest {
         @ApiTest(apis = "AMediaMuxer_setOrientationHint")
         @Test
         public void testSetOrientationHintNative() throws IOException {
-            Assume.assumeTrue(shouldRunTest(mOutFormat));
             assertTrue(nativeTestSetOrientationHint(mOutFormat, mInpPath, mOutPath));
             verifyOrientation(mOutPath);
         }
@@ -728,6 +717,7 @@ public class MuxerTest {
 
         @Before
         public void prologue() throws IOException {
+            Assume.assumeTrue(shouldRunTest(mOutFormat));
             mInpPathA = WorkDir.getMediaDirString() + mSrcFileA;
             mInpPathB = WorkDir.getMediaDirString() + mSrcFileB;
             mRefPath = File.createTempFile("ref", ".out").getAbsolutePath();
@@ -736,8 +726,12 @@ public class MuxerTest {
 
         @After
         public void epilogue() {
-            new File(mRefPath).delete();
-            new File(mOutPath).delete();
+            if (mRefPath != null) {
+                new File(mRefPath).delete();
+            }
+            if (mOutPath != null) {
+                new File(mOutPath).delete();
+            }
         }
 
         @Parameterized.Parameters(name = "{index}_{3}")
@@ -783,7 +777,6 @@ public class MuxerTest {
                 "android.media.MediaMuxer#stop", "android.media.MediaMuxer#release"})
         @Test
         public void testMultiTrack() throws IOException {
-            Assume.assumeTrue(shouldRunTest(mOutFormat));
             Assume.assumeTrue("TODO(b/146423022)",
                     mOutFormat != MediaMuxer.OutputFormat.MUXER_OUTPUT_WEBM);
             // number of times to repeat {mSrcFileA, mSrcFileB} in Output
@@ -843,7 +836,6 @@ public class MuxerTest {
                 "AMediaMuxer_writeSampleData", "AMediaMuxer_stop", "AMediaMuxer_delete"})
         @Test
         public void testMultiTrackNative() {
-            Assume.assumeTrue(shouldRunTest(mOutFormat));
             Assume.assumeTrue("TODO(b/146423022)",
                     mOutFormat != MediaMuxer.OutputFormat.MUXER_OUTPUT_WEBM);
             assertTrue(nativeTestMultiTrack(mOutFormat, mInpPathA, mInpPathB, mRefPath, mOutPath));
@@ -870,13 +862,16 @@ public class MuxerTest {
 
         @Before
         public void prologue() throws IOException {
+            Assume.assumeTrue(shouldRunTest(mOutFormat));
             mInpPath = WorkDir.getMediaDirString() + mSrcFile;
             mOutPath = File.createTempFile("tmp", ".out").getAbsolutePath();
         }
 
         @After
         public void epilogue() {
-            new File(mOutPath).delete();
+            if (mOutPath != null) {
+                new File(mOutPath).delete();
+            }
         }
 
         @Parameterized.Parameters(name = "{index}_{3}")
@@ -915,7 +910,6 @@ public class MuxerTest {
             // values sohuld be in sync with nativeTestOffsetPts
             final long[] OFFSET_TS_AUDIO_US = {-23220L, 0L, 200000L, 400000L};
             final long[] OFFSET_TS_VIDEO_US = {0L, 200000L, 400000L};
-            Assume.assumeTrue(shouldRunTest(mOutFormat));
             Assume.assumeTrue("TODO(b/148978457)",
                     mOutFormat != MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
             Assume.assumeTrue("TODO(b/148978457)",
@@ -952,7 +946,6 @@ public class MuxerTest {
         @ApiTest(apis = "AMediaMuxer_writeSampleData")
         @Test
         public void testOffsetPresentationTimeNative() {
-            Assume.assumeTrue(shouldRunTest(mOutFormat));
             Assume.assumeTrue("TODO(b/148978457)",
                     mOutFormat != MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
             Assume.assumeTrue("TODO(b/148978457)",
@@ -988,13 +981,17 @@ public class MuxerTest {
 
         @Before
         public void prologue() throws IOException {
+            Assume.assumeTrue(shouldRunTest(mOutFormat));
+            Assume.assumeTrue(Build.VERSION.SDK_INT > Build.VERSION_CODES.R);
             mInpPath = WorkDir.getMediaDirString() + mSrcFile;
             mOutPath = File.createTempFile("tmp", ".out").getAbsolutePath();
         }
 
         @After
         public void epilogue() {
-            new File(mOutPath).delete();
+            if (mOutPath != null) {
+                new File(mOutPath).delete();
+            }
         }
 
         @Parameterized.Parameters(name = "{index}_{3}")
@@ -1031,31 +1028,26 @@ public class MuxerTest {
 
         @Test
         public void testSimpleAppendNative() {
-            Assume.assumeTrue(Build.VERSION.SDK_INT > Build.VERSION_CODES.R);
             assertTrue(nativeTestSimpleAppend(mOutFormat, mInpPath, mOutPath));
         }
 
         @Test
         public void testAppendGetTrackCountNative() {
-            Assume.assumeTrue(Build.VERSION.SDK_INT > Build.VERSION_CODES.R);
             assertTrue(nativeTestAppendGetTrackCount(mInpPath, mTrackCount));
         }
 
         @Test
         public void testAppendNoSamplesNative() {
-            Assume.assumeTrue(Build.VERSION.SDK_INT > Build.VERSION_CODES.R);
             assertTrue(nativeTestNoSamples(mOutFormat, mInpPath, mOutPath));
         }
 
         @Test
         public void testIgnoreLastGOPAppend() {
-            Assume.assumeTrue(Build.VERSION.SDK_INT > Build.VERSION_CODES.R);
             assertTrue(nativeTestIgnoreLastGOPAppend(mOutFormat, mInpPath, mOutPath));
         }
 
         @Test
         public void testAppendGetTrackFormatNative() {
-            Assume.assumeTrue(Build.VERSION.SDK_INT > Build.VERSION_CODES.R);
             assertTrue(nativeTestAppendGetTrackFormat(mInpPath));
         }
     }
@@ -1161,8 +1153,9 @@ public class MuxerTest {
                 if (!shouldRunTest(format)) continue;
                 // TODO(b/146923551)
                 if (format == MediaMuxer.OutputFormat.MUXER_OUTPUT_WEBM) continue;
-                String msg = String.format("testSimpleMux: inp: %s, mediaType: %s, fmt: %d ",
-                        mSrcFile, mMediaType, format);
+                if (!isMediaTypeContainerPairSupported(mMediaType, format)) continue;
+                String msg = String.format("testSimpleMux: inp: %s, mediaType: %s, fmt: %s ",
+                        mSrcFile, mMediaType, muxerFormatToString(format));
                 MediaMuxer muxer = new MediaMuxer(mOutPath, format);
                 try {
                     mediaInfo.muxMedia(muxer);
@@ -1171,9 +1164,7 @@ public class MuxerTest {
                         fail(msg + "error! output != clone(input)");
                     }
                 } catch (Exception e) {
-                    if (isMediaTypeContainerPairValid(mMediaType, format)) {
-                        fail(msg + "error! incompatible mediaType and output format");
-                    }
+                    fail(msg + "error! incompatible mediaType and output format");
                 } finally {
                     muxer.release();
                 }
@@ -1206,12 +1197,13 @@ public class MuxerTest {
             for (int format = MediaMuxer.OutputFormat.MUXER_OUTPUT_FIRST;
                     format <= MediaMuxer.OutputFormat.MUXER_OUTPUT_LAST;
                     format++) {
+                if (!shouldRunTest(format)) continue;
                 // TODO(b/156767190)
-                if(format != MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4) continue;
+                if (format != MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4) continue;
                 MediaMuxer muxer = new MediaMuxer(mOutPath, format);
                 Exception expected = null;
                 String msg = String.format("testNoCSDMux: inp: %s, mediaType %s, fmt: %s", mSrcFile,
-                        mMediaType, formatStringPair.get(format));
+                        mMediaType, muxerFormatToString(format));
                 try {
                     mediaInfo.muxMedia(muxer);
                 } catch (IllegalStateException e) {
@@ -1231,20 +1223,6 @@ public class MuxerTest {
     @LargeTest
     @RunWith(Parameterized.class)
     public static class TestAddEmptyTracks {
-        private final List<String> mMediaTypeListforTypeMp4 =
-                Arrays.asList(MediaFormat.MIMETYPE_VIDEO_MPEG4, MediaFormat.MIMETYPE_VIDEO_H263,
-                        MediaFormat.MIMETYPE_VIDEO_AVC, MediaFormat.MIMETYPE_VIDEO_HEVC,
-                        MediaFormat.MIMETYPE_AUDIO_AAC, MediaFormat.MIMETYPE_IMAGE_ANDROID_HEIC,
-                        MediaFormat.MIMETYPE_TEXT_SUBRIP);
-        private final List<String> mMediaTypeListforTypeWebm =
-                Arrays.asList(MediaFormat.MIMETYPE_VIDEO_VP8, MediaFormat.MIMETYPE_VIDEO_VP9,
-                        MediaFormat.MIMETYPE_AUDIO_VORBIS, MediaFormat.MIMETYPE_AUDIO_OPUS);
-        private final List<String> mMediaTypeListforType3gp =
-                Arrays.asList(MediaFormat.MIMETYPE_VIDEO_MPEG4, MediaFormat.MIMETYPE_VIDEO_H263,
-                        MediaFormat.MIMETYPE_VIDEO_AVC, MediaFormat.MIMETYPE_AUDIO_AAC,
-                        MediaFormat.MIMETYPE_AUDIO_AMR_NB, MediaFormat.MIMETYPE_AUDIO_AMR_WB);
-        private final List<String> mMediaTypeListforTypeOgg =
-                Arrays.asList(MediaFormat.MIMETYPE_AUDIO_OPUS);
         private String mMediaType;
         private String mOutPath;
 
@@ -1260,20 +1238,6 @@ public class MuxerTest {
         @After
         public void epilogue() {
             new File(mOutPath).delete();
-        }
-
-        private boolean isMediaTypeContainerPairValid(int format) {
-            boolean result = false;
-            if (format == MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
-                result = mMediaTypeListforTypeMp4.contains(mMediaType);
-            else if (format == MediaMuxer.OutputFormat.MUXER_OUTPUT_WEBM) {
-                return mMediaTypeListforTypeWebm.contains(mMediaType);
-            } else if (format == MediaMuxer.OutputFormat.MUXER_OUTPUT_3GPP) {
-                result = mMediaTypeListforType3gp.contains(mMediaType);
-            } else if (format == MediaMuxer.OutputFormat.MUXER_OUTPUT_OGG) {
-                result = mMediaTypeListforTypeOgg.contains(mMediaType);
-            }
-            return result;
         }
 
         @Parameterized.Parameters(name = "{index}_{0}")
@@ -1300,13 +1264,14 @@ public class MuxerTest {
         }
 
         @Test
-        public void testEmptyVideoTrack() {
+        public void testEmptyVideoTrack() throws IOException {
             assumeTrue("Skipping test: requires video mediaType", mMediaType.startsWith("video/"));
             for (int format = MediaMuxer.OutputFormat.MUXER_OUTPUT_FIRST;
                     format <= MediaMuxer.OutputFormat.MUXER_OUTPUT_LAST;
                     ++format) {
-                if (!isMediaTypeContainerPairValid(format)) continue;
+                if (!shouldRunTest(format)) continue;
                 if (format != MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4) continue;
+                if (!isMediaTypeContainerPairSupported(mMediaType, format)) continue;
                 try {
                     MediaMuxer mediaMuxer = new MediaMuxer(mOutPath, format);
                     MediaFormat mediaFormat = new MediaFormat();
@@ -1324,13 +1289,14 @@ public class MuxerTest {
         }
 
         @Test
-        public void testEmptyAudioTrack() {
+        public void testEmptyAudioTrack() throws IOException {
             assumeTrue("Skipping test: requires audio mediaType", mMediaType.startsWith("audio/"));
             for (int format = MediaMuxer.OutputFormat.MUXER_OUTPUT_FIRST;
                     format <= MediaMuxer.OutputFormat.MUXER_OUTPUT_LAST;
                     ++format) {
+                if (!shouldRunTest(format)) continue;
                 if (format != MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4) continue;
-                if (!isMediaTypeContainerPairValid(format)) continue;
+                if (!isMediaTypeContainerPairSupported(mMediaType, format)) continue;
                 try {
                     MediaMuxer mediaMuxer = new MediaMuxer(mOutPath, format);
                     MediaFormat mediaFormat = new MediaFormat();
@@ -1352,13 +1318,14 @@ public class MuxerTest {
         }
 
         @Test
-        public void testEmptyMetaDataTrack() {
+        public void testEmptyMetaDataTrack() throws IOException {
             assumeTrue("Skipping test: requires application mediaType",
                     mMediaType.startsWith("application/"));
             for (int format = MediaMuxer.OutputFormat.MUXER_OUTPUT_FIRST;
                     format <= MediaMuxer.OutputFormat.MUXER_OUTPUT_LAST;
                     ++format) {
-                if (!isMediaTypeContainerPairValid(format)) continue;
+                if (!shouldRunTest(format)) continue;
+                if (!isMediaTypeContainerPairSupported(mMediaType, format)) continue;
                 try {
                     MediaMuxer mediaMuxer = new MediaMuxer(mOutPath, format);
                     MediaFormat mediaFormat = new MediaFormat();
@@ -1374,12 +1341,13 @@ public class MuxerTest {
         }
 
         @Test
-        public void testEmptyImageTrack() {
+        public void testEmptyImageTrack() throws IOException {
             assumeTrue("Skipping test: requires image mediatype", mMediaType.startsWith("image/"));
             for (int format = MediaMuxer.OutputFormat.MUXER_OUTPUT_FIRST;
                     format <= MediaMuxer.OutputFormat.MUXER_OUTPUT_LAST;
                     ++format) {
-                if (!isMediaTypeContainerPairValid(format)) continue;
+                if (!shouldRunTest(format)) continue;
+                if (!isMediaTypeContainerPairSupported(mMediaType, format)) continue;
                 try {
                     MediaMuxer mediaMuxer = new MediaMuxer(mOutPath, format);
                     MediaFormat mediaFormat = new MediaFormat();
