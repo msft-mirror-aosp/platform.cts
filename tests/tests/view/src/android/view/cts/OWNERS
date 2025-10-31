@@ -9,12 +9,13 @@ per-file SurfaceViewSyncTest.java = file:platform/frameworks/base:/services/core
 per-file *ScrollCapture*.java = file:platform/frameworks/base:/packages/SystemUI/src/com/android/systemui/screenshot/OWNERS
 
 # Input
-# Bug component: 25699 = per-file ContentInfoTest.java,KeyboardShortcutInfoTest.java,AutoHandwritingTest.java,HandwritingBoundsOffsetTest.java,KeyboardShortcutGroupTest.java,KeyEventInterceptTest.java,KeyEventTest.java,KeyEventInjectionTest.java,KeyCharacterMapTest.java
-# Bug component: 136048 = per-file InputDeviceMultiDeviceKeyEventTest.java,InputDeviceEnabledTest.java,InputDeviceVibratorTest.java,InputDeviceSensorManagerTest.java,InputDeviceKeyLayoutMapTest.java,InputDeviceVibratorManagerTest.java,HoverTest.java,ViewUnbufferedTest.java,PointerCaptureTest.java,ContentPaneFocusTest.java,TouchDelegateTest.java,InputQueueTest.java,MotionEvent_PointerPropertiesTest.java,MotionEventTest.java,VerifyInputEventTest.java
+# Bug component: 25699 = per-file ContentInfoTest.java,*Handwriting*,*Keyboard*,*KeyEvent*,*KeyCharacter*
+# Bug component: 136048 = per-file ContentPaneFocusTest.java,HoverTest.java,ViewUnbufferedTest.java,*GestureDetector*,*InputDevice*,*InputEvent*,*InputQueue*,*MotionEvent*,*PointerCapture*,*Touch*
 per-file ContentInfoTest.java = file:platform/frameworks/base:/INPUT_OWNERS
 per-file ContentPaneFocusTest.java = file:platform/frameworks/base:/INPUT_OWNERS
 per-file HoverTest.java = file:platform/frameworks/base:/INPUT_OWNERS
 per-file ViewUnbufferedTest.java = file:platform/frameworks/base:/INPUT_OWNERS
+per-file *GestureDetector* = file:platform/frameworks/base:/INPUT_OWNERS
 per-file *Handwriting* = file:platform/frameworks/base:/INPUT_OWNERS
 per-file *InputDevice* = file:platform/frameworks/base:/INPUT_OWNERS
 per-file *InputEvent* = file:platform/frameworks/base:/INPUT_OWNERS

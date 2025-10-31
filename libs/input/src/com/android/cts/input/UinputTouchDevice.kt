@@ -60,7 +60,7 @@ private fun transformFromScreenToTouchDeviceSpace(x: Int, y: Int, display: Displ
     if (displayTransform == null) {
         throw IllegalStateException(
             "failed to find display transform for display ${display.displayId}"
-            )
+        )
     }
 
     // The display transform is the transform from physical display space to
@@ -87,8 +87,8 @@ private fun transformFromScreenToTouchDeviceSpace(x: Int, y: Int, display: Displ
 }
 
 /**
- * Helper class for configuring and interacting with a [UinputDevice] that uses the evdev
- * multitouch protocol.
+ * Helper class for configuring and interacting with a [UinputDevice] that uses the evdev multitouch
+ * protocol.
  */
 open class UinputTouchDevice(
     instrumentation: Instrumentation,
@@ -111,10 +111,9 @@ open class UinputTouchDevice(
     /**
      * Send events signifying a new pointer is being tracked.
      *
-     * Note: The [physicalLocation] parameter is specified in the touch device's
-     * raw coordinate space, and does not factor display rotation or scaling. Use
-     * [touchDown] to start tracking a pointer in screen (a.k.a. logical display)
-     * coordinate space.
+     * Note: The [physicalLocation] parameter is specified in the touch device's raw coordinate
+     * space, and does not factor display rotation or scaling. Use [touchDown] to start tracking a
+     * pointer in screen (a.k.a. logical display) coordinate space.
      */
     fun sendDown(slot: Int, physicalLocation: Point) {
         uinputDevice.injectEvents(EV_ABS, ABS_MT_SLOT, slot)
@@ -127,9 +126,9 @@ open class UinputTouchDevice(
     /**
      * Send events signifying a tracked pointer is being moved.
      *
-     * Note: The [physicalLocation] parameter is specified in the touch device's
-     * raw coordinate space, and does not factor display rotation or scaling.
-    */
+     * Note: The [physicalLocation] parameter is specified in the touch device's raw coordinate
+     * space, and does not factor display rotation or scaling.
+     */
     fun sendMove(slot: Int, physicalLocation: Point) {
         uinputDevice.injectEvents(EV_ABS, ABS_MT_SLOT, slot)
         uinputDevice.injectEvents(EV_ABS, ABS_MT_POSITION_X, physicalLocation.x)
@@ -192,6 +191,7 @@ open class UinputTouchDevice(
     /**
      * Send a new pointer to the screen, generating an ACTION_DOWN if there aren't any other
      * pointers currently down, or an ACTION_POINTER_DOWN otherwise.
+     *
      * @param x The x coordinate in screen (logical display) space.
      * @param y The y coordinate in screen (logical display) space.
      * @param pressure The pressure value to be used, default not sending pressure.
@@ -202,6 +202,8 @@ open class UinputTouchDevice(
         pointerIds.add(pointerId)
         return Pointer(pointerId, pressure, x, y)
     }
+
+    fun touchDown(point: Point): Pointer = touchDown(point.x, point.y)
 
     private fun firstUnusedPointerId(): Int {
         var id = 0
@@ -215,19 +217,16 @@ open class UinputTouchDevice(
         pointerIds.remove(id)
     }
 
-    private val pointerCount get() = pointerIds.size
+    private val pointerCount
+        get() = pointerIds.size
 
     /**
      * A single pointer interacting with the screen. This class simplifies the interactions by
-     * removing the need to separately manage the pointer id.
-     * Works in the screen (logical display) coordinate space.
+     * removing the need to separately manage the pointer id. Works in the screen (logical display)
+     * coordinate space.
      */
-    inner class Pointer(
-        private val id: Int,
-        private val pressure: Int?,
-        x: Int,
-        y: Int,
-    ) : AutoCloseable {
+    inner class Pointer(private val id: Int, private val pressure: Int?, x: Int, y: Int) :
+        AutoCloseable {
         private var active = true
 
         init {
@@ -239,7 +238,8 @@ open class UinputTouchDevice(
         }
 
         /**
-         * Send ACTION_MOVE
+         * Send ACTION_MOVE.
+         *
          * The coordinates provided here should be relative to the screen edge, rather than the
          * window corner. That is, the location should be in the same coordinate space as that
          * returned by View::getLocationOnScreen API rather than View::getLocationInWindow.
@@ -251,6 +251,8 @@ open class UinputTouchDevice(
             sendMove(id, transformFromScreenToTouchDeviceSpace(x, y, display))
             sync()
         }
+
+        fun moveTo(point: Point) = moveTo(point.x, point.y)
 
         fun lift() {
             if (!active) {
@@ -266,9 +268,7 @@ open class UinputTouchDevice(
             removePointer(id)
         }
 
-        /**
-         * Send a cancel if this pointer hasn't yet been lifted
-         */
+        /** Send a cancel if this pointer hasn't yet been lifted */
         override fun close() {
             if (!active) {
                 return
@@ -283,10 +283,10 @@ open class UinputTouchDevice(
         /**
          * The allowed error when making assertions on touch coordinates.
          *
-         * Coordinates are transformed from logical display space to physical display space and
-         * then rounded to the nearest integer, introducing error. The epsilon value effectively
-         * sets the maximum allowed scaling factor for a display. This value allows a maximum scale
-         * factor of 2.
+         * Coordinates are transformed from logical display space to physical display space and then
+         * rounded to the nearest integer, introducing error. The epsilon value effectively sets the
+         * maximum allowed scaling factor for a display. This value allows a maximum scale factor
+         * of 2.
          */
         const val TOUCH_COORDINATE_EPSILON = 1.001f
 
