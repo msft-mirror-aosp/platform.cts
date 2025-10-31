@@ -34,8 +34,9 @@ public final class TelephonyTest extends CtsVerifierTest {
     @ApiTest(apis = "android.telephony.TelephonyManager#ACTION_SHOW_VOICEMAIL_NOTIFICATION")
     public void VoicemailBroadcastTest() throws Exception {
         requireFeatures("android.hardware.telephony");
+        requireFeatures("android.hardware.telephony.calling");
 
-        runTest(".voicemail.VoicemailBroadcastActivity", "config_voice_capable");
+        runTest(".voicemail.VoicemailBroadcastActivity");
     }
 
     @Interactive
@@ -45,8 +46,9 @@ public final class TelephonyTest extends CtsVerifierTest {
     @ApiTest(apis = "android.telephony.TelephonyManager#ACTION_SHOW_VOICEMAIL_NOTIFICATION")
     public void VisualVoicemailServiceTest() throws Exception {
         requireFeatures("android.hardware.telephony");
+        requireFeatures("android.hardware.telephony.calling");
 
-        runTest(".voicemail.VisualVoicemailServiceActivity", "config_voice_capable");
+        runTest(".voicemail.VisualVoicemailServiceActivity");
     }
 
     @Interactive
@@ -55,8 +57,9 @@ public final class TelephonyTest extends CtsVerifierTest {
     // MultiDisplayMode
     public void DialerIncomingCallTest() throws Exception { // Needs to receive a call
         requireFeatures("android.hardware.telephony");
+        requireFeatures("android.hardware.telephony.calling");
 
-        runTest(".dialer.DialerIncomingCallTestActivity", "config_voice_capable");
+        runTest(".dialer.DialerIncomingCallTestActivity");
     }
 
     @Interactive
@@ -65,8 +68,9 @@ public final class TelephonyTest extends CtsVerifierTest {
     // MultiDisplayMode
     public void DialerShowsHunOnIncomingCallTest() throws Exception {
         requireFeatures("android.hardware.telephony");
+        requireFeatures("android.hardware.telephony.calling");
 
-        runTest(".dialer.DialerShowsHunOnIncomingCallActivity", "config_voice_capable");
+        runTest(".dialer.DialerShowsHunOnIncomingCallActivity");
     }
 
     @Interactive
@@ -76,8 +80,9 @@ public final class TelephonyTest extends CtsVerifierTest {
     @ApiTest(apis = "android.telephony.TelephonyManager#METADATA_HIDE_VOICEMAIL_SETTINGS_MENU")
     public void CallSettingsCheckTest() throws Exception {
         requireFeatures("android.hardware.telephony");
+        requireFeatures("android.hardware.telephony.calling");
 
-        runTest(".voicemail.CallSettingsCheckActivity", "config_voice_capable");
+        runTest(".voicemail.CallSettingsCheckActivity");
     }
 
     @Interactive
@@ -87,8 +92,9 @@ public final class TelephonyTest extends CtsVerifierTest {
     @ApiTest(apis = "android.telephony.TelephonyManager#EXTRA_HIDE_PUBLIC_SETTINGS")
     public void VoicemailSettingsCheckTest() throws Exception {
         requireFeatures("android.hardware.telephony");
+        requireFeatures("android.hardware.telephony.calling");
 
-        runTest(".voicemail.VoicemailSettingsCheckActivity", "config_voice_capable");
+        runTest(".voicemail.VoicemailSettingsCheckActivity");
     }
 
     @Interactive
@@ -97,8 +103,9 @@ public final class TelephonyTest extends CtsVerifierTest {
     // MultiDisplayMode
     public void DialerImplementsTelecomIntentsTest() throws Exception {
         requireFeatures("android.hardware.telephony");
+        requireFeatures("android.hardware.telephony.calling");
         excludeFeatures("android.hardware.type.watch");
 
-        runTest(".dialer.DialerImplementsTelecomIntentsActivity", "config_voice_capable");
+        runTest(".dialer.DialerImplementsTelecomIntentsActivity");
     }
 }
