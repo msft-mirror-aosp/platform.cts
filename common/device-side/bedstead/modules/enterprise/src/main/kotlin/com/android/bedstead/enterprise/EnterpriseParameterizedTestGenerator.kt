@@ -24,40 +24,38 @@ import com.android.bedstead.harrier.ParameterizedTestGenerator
 import com.google.common.collect.ImmutableSet
 import kotlin.reflect.KClass
 
-/**
- * [ParameterizedTestGenerator] for Enterprise
- */
+/** [ParameterizedTestGenerator] for Enterprise */
 @Suppress("unused")
 class EnterpriseParameterizedTestGenerator : ParameterizedTestGenerator {
 
-    override fun generateReplacementAnnotations(
-        annotation: Annotation
-    ): List<Annotation> = when (annotation) {
-        is PolicyAppliesTest -> Policy.policyAppliesStates(unionPolicies(annotation.policy))
-        is PolicyDoesNotApplyTest -> Policy.policyDoesNotApplyStates(
-            unionPolicies(annotation.policy)
-        )
+    override fun generateReplacementAnnotations(annotation: Annotation): List<Annotation> =
+        when (annotation) {
+            is PolicyAppliesTest -> Policy.policyAppliesStates(unionPolicies(annotation.policy))
+            is PolicyDoesNotApplyTest ->
+                Policy.policyDoesNotApplyStates(unionPolicies(annotation.policy))
 
-        is CannotSetPolicyTest -> Policy.cannotSetPolicyStates(
-            unionPolicies(annotation.policy),
-            annotation.includeDeviceAdminStates,
-            annotation.includeNonDeviceAdminStates
-        )
+            is CannotSetPolicyTest ->
+                Policy.cannotSetPolicyStates(
+                    unionPolicies(annotation.policy),
+                    annotation.includeDeviceAdminStates,
+                    annotation.includeNonDeviceAdminStates,
+                )
 
-        is CanSetPolicyTest -> annotation.logic()
-        else -> emptyList()
-    }
+            is CanSetPolicyTest -> annotation.logic()
+            else -> emptyList()
+        }
 
     private fun CanSetPolicyTest.logic(): List<Annotation> {
         validate()
 
-        val enterprisePolicy = if (policy.isNotEmpty()) {
-            unionPolicies(policy)
-        } else if (policyUnion.isNotEmpty()) {
-            unionPolicies(policyUnion)
-        } else {
-            intersectPolicies(policyIntersection.map { it.java }.toTypedArray())
-        }
+        val enterprisePolicy =
+            if (policy.isNotEmpty()) {
+                unionPolicies(policy)
+            } else if (policyUnion.isNotEmpty()) {
+                unionPolicies(policyUnion)
+            } else {
+                intersectPolicies(policyIntersection.map { it.java }.toTypedArray())
+            }
 
         return Policy.canSetPolicyStates(enterprisePolicy, singleTestOnly)
     }
@@ -81,16 +79,18 @@ class EnterpriseParameterizedTestGenerator : ParameterizedTestGenerator {
      *
      * Example usage:
      *
-     * Policy 1: APPLIED_BY_DEVICE_OWNER | APPLIES_GLOBALLY, APPLIED_BY_PROFILE_OWNER | APPLIES_TO_OWN_USER
+     * Policy 1: APPLIED_BY_DEVICE_OWNER | APPLIES_GLOBALLY, APPLIED_BY_PROFILE_OWNER |
+     * APPLIES_TO_OWN_USER
      *
      * Policy 2: APPLIED_BY_DEVICE_OWNER | APPLIES_TO_OWN_USER
      *
-     * EnterprisePolicy.dpc(): APPLIED_BY_DEVICE_OWNER | APPLIES_GLOBALLY, APPLIED_BY_PROFILE_OWNER | APPLIES_TO_OWN_USER
+     * EnterprisePolicy.dpc(): APPLIED_BY_DEVICE_OWNER | APPLIES_GLOBALLY, APPLIED_BY_PROFILE_OWNER
+     * | APPLIES_TO_OWN_USER
      *
      * Each policy will have flags validated.
      *
-     * If policies support different delegation scopes, then they cannot be merged and an
-     * exception will be thrown. These policies require separate tests.
+     * If policies support different delegation scopes, then they cannot be merged and an exception
+     * will be thrown. These policies require separate tests.
      */
     private fun unionPolicies(policies: Array<Class<*>>): EnterprisePolicy {
         check(policies.isNotEmpty()) { "Cannot union 0 policies" }
@@ -118,7 +118,7 @@ class EnterpriseParameterizedTestGenerator : ParameterizedTestGenerator {
                     delegatedScopes.isEmpty() || delegatedScopes.containsAll(newDelegatedScopes)
                 ) {
                     "Cannot merge multiple policies which define different delegated scopes. " +
-                            "You should separate this into multiple tests."
+                        "You should separate this into multiple tests."
                 }
 
                 delegatedScopes = newDelegatedScopes
@@ -129,7 +129,7 @@ class EnterpriseParameterizedTestGenerator : ParameterizedTestGenerator {
             dpc.toIntArray(),
             permissions.toTypedArray(),
             appOps.toTypedArray(),
-            delegatedScopes.toTypedArray()
+            delegatedScopes.toTypedArray(),
         )
     }
 
@@ -181,7 +181,7 @@ class EnterpriseParameterizedTestGenerator : ParameterizedTestGenerator {
                     delegatedScopes.isEmpty() || delegatedScopes.containsAll(newDelegatedScopes)
                 ) {
                     ("Cannot intersect multiple policies which define different delegated scopes." +
-                            " You should separate this into multiple tests.")
+                        " You should separate this into multiple tests.")
                 }
 
                 delegatedScopes = newDelegatedScopes
@@ -192,7 +192,7 @@ class EnterpriseParameterizedTestGenerator : ParameterizedTestGenerator {
             intArrayOf(intersectDpc),
             permissions.toTypedArray(),
             appOps.toTypedArray(),
-            delegatedScopes.toTypedArray()
+            delegatedScopes.toTypedArray(),
         )
     }
 }
