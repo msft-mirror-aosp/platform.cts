@@ -36,6 +36,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.stream.Collectors;
+
 /**
  * Verify Vulkan MPC requirements.
  */
@@ -86,7 +88,8 @@ public class VulkanTest {
         PerformanceClassEvaluator pce = pcRule.getPerformanceClassEvaluator();
         VulkanRequirement req = Requirements.addR7_1_4_1__H_1_3().to(pce);
 
-        var filteredDevices = mVulkanDevices.stream().filter(this::notCpuDevice).toList();
+        var filteredDevices =
+                mVulkanDevices.stream().filter(this::notCpuDevice).collect(Collectors.toList());
         final boolean extGlobalPriority = filteredDevices.stream().allMatch(
                 device -> hasExtension(device, VK_EXT_GLOBAL_PRIORITY_EXTENSION_NAME,
                         VK_EXT_GLOBAL_PRIORITY_SPEC_VERSION));
@@ -103,7 +106,7 @@ public class VulkanTest {
             return device.getJSONObject("properties").getInt("deviceType")
                     != VK_PHYSICAL_DEVICE_TYPE_CPU;
         } catch (JSONException e) {
-            Log.e(LOG_TAG, "Failed to get device type of %s".formatted(device), e);
+            Log.e(LOG_TAG, String.format("Failed to get device type of %s ", device), e);
             return false;
         }
     }
@@ -121,8 +124,8 @@ public class VulkanTest {
             }
         } catch (Exception e) {
             Log.e(LOG_TAG,
-                    "Failed to get extension %s v%s from %s".formatted(name, minVersion, device),
-                    e);
+                String.format("Failed to get extension %s v%s from %s ", name, minVersion, device),
+                e);
         }
         return false;
     }
@@ -132,7 +135,7 @@ public class VulkanTest {
             return device.getJSONObject("protectedMemoryFeatures")
                     .getInt("protectedMemory") == 1;
         } catch (Exception e) {
-            Log.e(LOG_TAG, "Failed to test for protect memory of  %s".formatted(device), e);
+            Log.e(LOG_TAG, String.format("Failed to test for protect memory of %s ", device), e);
         }
         return false;
     }

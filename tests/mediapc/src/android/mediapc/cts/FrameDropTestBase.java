@@ -131,7 +131,7 @@ public class FrameDropTestBase {
         if (listOfAacDecoders.isEmpty()) {
             return false;
         }
-        AAC_DECODER_NAME = listOfAacDecoders.getFirst();
+        AAC_DECODER_NAME = listOfAacDecoders.get(0);
         return true;
     }
 
@@ -140,7 +140,7 @@ public class FrameDropTestBase {
         if (listOfAvcHwEncoders.isEmpty()) {
             return false;
         }
-        AVC_ENCODER_NAME = listOfAvcHwEncoders.getFirst();
+        AVC_ENCODER_NAME = listOfAvcHwEncoders.get(0);
         return true;
     }
 
@@ -149,7 +149,7 @@ public class FrameDropTestBase {
         if (listOfAvcHwDecoders.isEmpty()) {
             return false;
         }
-        AVC_DECODER_NAME = listOfAvcHwDecoders.getFirst();
+        AVC_DECODER_NAME = listOfAvcHwDecoders.get(0);
         return true;
     }
 
