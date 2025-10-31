@@ -72,7 +72,9 @@ import static android.view.Surface.ROTATION_0;
 import static android.view.Surface.ROTATION_180;
 import static android.view.Surface.ROTATION_270;
 import static android.view.Surface.ROTATION_90;
+
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -85,19 +87,23 @@ import android.content.pm.ActivityInfo;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.LaunchActivityBuilder;
 import android.server.wm.RotationSession;
+
 import androidx.test.filters.MediumTest;
+
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.compatibility.common.util.AmUtils;
-import java.lang.ref.WeakReference;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.lang.ref.WeakReference;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Build/Install/Run:
@@ -182,6 +188,7 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
 
     @Test
     public void testTranslucentMovedIntoStack() throws Exception {
+        createManagedRotationSession();
         // Launch a translucent activity and a regular activity in separate stacks
         final Activity translucentActivity = new Launcher(TranslucentActivity.class)
                 .setOptions(getLaunchOptionsForFullscreen())
@@ -1052,6 +1059,7 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
 
     @Test
     public void testFinishBelowTranslucentActivityAfterDelay() throws Exception {
+        createManagedRotationSession();
         final Activity bottomActivity = launchActivityAndWait(CallbackTrackingActivity.class);
 
         launchActivityAndWait(TranslucentCallbackTrackingActivity.class);
