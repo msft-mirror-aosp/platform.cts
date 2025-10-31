@@ -119,6 +119,7 @@ android_test {
         ":TestIntrusionDetectionApp",
         ":CtsMultiuserCPInitial",
         ":CtsMultiuserCPOther",
+        ":LargeInputMethodTestApp",
     ],
     assets: [":all_apex_certs{.der}"],
     use_embedded_native_libs: false,
