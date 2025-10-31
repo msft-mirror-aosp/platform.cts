@@ -194,7 +194,7 @@ class TransportsListenerTest : CoreTestBase() {
         listener.clearRecordedInvocations()
     }
 
-    private class BlockedInputStream : FilterInputStream(ByteArrayInputStream(byteArrayOf(0))) {
+    class BlockedInputStream : FilterInputStream(ByteArrayInputStream(byteArrayOf(0))) {
 
         @Throws(IOException::class)
         override fun read(b: ByteArray?, off: Int, len: Int): Int {
