@@ -45,36 +45,35 @@ import org.junit.runners.Parameterized
 
 @RunWith(Parameterized::class)
 @DisabledOnRavenwood(reason = "Cannot instantiate Parameterized runner")
-class SystemPaletteTest(
-    private val color: String,
-    private val style: String,
-    private val mode: String,
-) : BasePaletteTest() {
+class SystemPaletteTest(private val params: PaletteParams) : BasePaletteTest() {
 
-    @OptIn(ExperimentalStdlibApi::class)
+    data class PaletteParams(
+        val color: String,
+        val style: Int,
+        val modeName: String,
+        val modeInt: Int
+    ) : Serializable {
+        override fun toString(): String = "${modeName}_${color}_${ThemeStyle.name(style)}"
+    }
+
     companion object {
         @JvmStatic
         @Parameterized.BeforeParam
-        fun setup(color: String, style: String, mode: String) {
-            // applies to all tests cases.
-            assumeTrue(isSupportedStyle(style))
-
-            val isTestingNightMode = mode == "dark"
-            val expectedMode = if (isTestingNightMode) MODE_NIGHT_YES else MODE_NIGHT_NO
-
-            applyTheme(color, style, 0.0f, expectedMode)
+        fun setup(params: PaletteParams) {
+            if (isSupportedStyle(params.style)) {
+                applyTheme(params.color, params.style, 0.0f, params.modeInt)
+            }
         }
 
-        @Parameterized.Parameters(name = "{2}_{0}_{1}")
         @JvmStatic
-        fun testData(): List<Array<Serializable>> {
-            val dataList: MutableList<Array<Serializable>> = mutableListOf()
+        @Parameterized.Parameters(name = "{0}")
+        fun testData(): Collection<PaletteParams> {
+            val dataList = mutableListOf<PaletteParams>()
 
-            listOf("dark", "light").forEach { mode ->
-                COLORS.forEach { color ->
-                    STYLES.forEach { style ->
-                        dataList.add(arrayOf(color, ThemeStyle.name(style), mode))
-                    }
+            COLORS.forEach { color ->
+                STYLES.forEach { style ->
+                    dataList.add(PaletteParams(color, style, "dark", MODE_NIGHT_YES))
+                    dataList.add(PaletteParams(color, style, "light", MODE_NIGHT_NO))
                 }
             }
             return dataList
@@ -84,8 +83,9 @@ class SystemPaletteTest(
     @Test
     @CddTest(requirements = ["3.8.6/C-1-4,C-1-5,C-1-6"])
     fun testSystemPalette() {
+        assumeTrue(isSupportedStyle(params.style))
         assumeTrue(isDynamicColorSupported)
-        val goldenName = "Palette_${mode}_${color}_$style".replace("#", "")
+        val goldenName = "Palette_$params"
         val bitmap = generatePaletteBitmap()
         assertGoldenImage(bitmap, goldenName)
     }
@@ -93,6 +93,7 @@ class SystemPaletteTest(
     @Test
     @CddTest(requirements = ["3.8.6/C-1-4,C-1-5,C-1-6"])
     fun testShades0and1000() {
+        assumeTrue(isSupportedStyle(params.style))
         fun assertColor(@ColorInt observed: Int, @ColorInt expected: Int) {
             Assert.assertEquals(
                 "Color = ${Integer.toHexString(observed)}, " +
@@ -111,6 +112,7 @@ class SystemPaletteTest(
     @Test
     @CddTest(requirements = ["3.8.6/C-1-4,C-1-5,C-1-6"])
     fun testColorsMatchExpectedLuminance() {
+        assumeTrue(isSupportedStyle(params.style))
         val labColor = doubleArrayOf(0.0, 0.0, 0.0)
         val expectedL =
             arrayOf(100.0, 99.0, 95.0, 90.0, 80.0, 70.0, 60.0, 49.0, 40.0, 30.0, 20.0, 10.0, 0.0)
@@ -133,6 +135,7 @@ class SystemPaletteTest(
     @Test
     @CddTest(requirements = ["3.8.6/C-1-4,C-1-5,C-1-6"])
     fun testContrastRatio() {
+        assumeTrue(isSupportedStyle(params.style))
         val atLeast4dot45 =
             listOf(
                 Pair(0, 500),
@@ -195,6 +198,7 @@ class SystemPaletteTest(
 
     @Test
     fun testDynamicColorContrast() {
+        assumeTrue(isSupportedStyle(params.style))
         // Ideally this should be 3.0, but there's colorspace conversion that causes rounding
         // errors.
         val foregroundContrast = 2.9f
@@ -328,7 +332,7 @@ class SystemPaletteTest(
     // Helper methods
 
     private fun generatePaletteBitmap(): Bitmap {
-        val isDark = mode == "dark"
+        val isDark = params.modeInt == MODE_NIGHT_YES
         val textSize = 20
         val swatchWidth = 150
 
@@ -454,7 +458,6 @@ class SystemPaletteTest(
             mBgGroups.forEach { background ->
                 newFailMessages.addAll(background.checkContrast(mForegrounds))
             }
-
             return newFailMessages
         }
 
@@ -479,13 +482,11 @@ class SystemPaletteTest(
                             val contrast = ColorUtils.calculateContrast(foreground, background)
                             val msg =
                                 "Background Color '${res.getResourceName(bgRes)}'" +
-                                    "(#${
-                                            Integer.toHexString(mContext.getColor(bgRes))
-                                        }) " +
+                                    "(#${Integer.toHexString(background)}) " +
                                     "should have at least $mContrasLevel " +
                                     "contrast ratio against Foreground Color '" +
                                     res.getResourceName(fgRes) +
-                                    "' (#${Integer.toHexString(mContext.getColor(fgRes))}) " +
+                                    "' (#${Integer.toHexString(foreground)}) " +
                                     " but had $contrast"
 
                             newFailMessages.add(msg)

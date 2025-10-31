@@ -50,49 +50,51 @@ import org.junit.runners.Parameterized
 
 @RunWith(Parameterized::class)
 @DisabledOnRavenwood(reason = "Cannot instantiate Parameterized runner")
-class DynamicColorsTest(
-    private val color: String,
-    private val style: String,
-    private val contrast: String,
-) : BasePaletteTest() {
+class DynamicColorsTest(private val params: DynamicColorParams) : BasePaletteTest() {
+
+    data class DynamicColorParams(
+        val color: String,
+        val style: Int,
+        val contrastName: String,
+        val contrastValue: Float
+    ) : Serializable {
+        override fun toString(): String =
+            "${contrastName}_${color}_${ThemeStyle.name(style)}"
+    }
 
     companion object {
         @JvmStatic
-        @Parameterized.Parameters(name = "{2}_{0}_{1}")
-        fun testData(): List<Array<Serializable>> {
-            val dataList: MutableList<Array<Serializable>> = mutableListOf()
-            val contrastModes = listOf("low", "medium", "high")
+        @Parameterized.Parameters(name = "{0}")
+        fun testData(): Collection<DynamicColorParams> {
+            val dataList = mutableListOf<DynamicColorParams>()
+            val contrastModes = mapOf("low" to 0.0f, "medium" to 0.5f, "high" to 1.0f)
 
-            contrastModes.forEach { mode ->
+            contrastModes.forEach { (contrastName, contrastValue) ->
                 COLORS.forEach { color ->
                     STYLES.forEach { style ->
-                        dataList.add(arrayOf(color, ThemeStyle.name(style), mode))
+                        dataList.add(
+                            DynamicColorParams(color, style, contrastName, contrastValue)
+                        )
                     }
                 }
             }
             return dataList
         }
 
-        @OptIn(ExperimentalStdlibApi::class)
         @JvmStatic
         @Parameterized.BeforeParam
-        fun setup(color: String, style: String, contrast: String) {
-            assumeTrue(isDynamicColorSupported)
-
-            val contrastValue =
-                when (contrast) {
-                    "low" -> 0.0f
-                    "medium" -> 0.5f
-                    else -> 1.0f
-                }
-            applyTheme(color, style, contrastValue, MODE_NIGHT_YES)
+        fun setup(params: DynamicColorParams) {
+            if (isDynamicColorSupported) {
+                applyTheme(params.color, params.style, params.contrastValue, MODE_NIGHT_YES)
+            }
         }
     }
 
     @Test
     fun testDynamicColors() {
-        val goldenName = "Dynamic_${contrast}_${color}_$style".replace("#", "")
-        val bitmap = generateBitmap { DynamicColorsTable(color, style, contrast) }
+        assumeTrue(isDynamicColorSupported)
+        val goldenName = "Dynamic_$params"
+        val bitmap = generateBitmap { DynamicColorsTable(params) }
         assertGoldenImage(bitmap, goldenName)
     }
 }
@@ -112,7 +114,7 @@ enum class GroupType {
 }
 
 @Composable
-private fun DynamicColorsTable(color: String, style: String, contrast: String) {
+private fun DynamicColorsTable(params: DynamicColorsTest.DynamicColorParams) {
     val allSwatches = arrayListOf<SwatchData>()
     val allTokenNames = if (BasePaletteTest.isOldSpec) TOKEN_NAMES_2021 else TOKENS_NAMES_2025
 
@@ -142,7 +144,7 @@ private fun DynamicColorsTable(color: String, style: String, contrast: String) {
     }
 
     val groupedSwatches = allSwatches.groupBy { it.type }
-    val seedColor = ComposeColor(Color.parseColor("#$color"))
+    val seedColor = ComposeColor(Color.parseColor("#${params.color}"))
     val titleTextColor =
         if (Hct.fromInt(seedColor.toArgb()).tone > 50) ComposeColor.Black else ComposeColor.White
 
@@ -176,9 +178,9 @@ private fun DynamicColorsTable(color: String, style: String, contrast: String) {
             text =
                 "${DynamicColorsTest::class.simpleName} - " +
                     "spec: ${if (BasePaletteTest.isOldSpec) "2021" else "2025"} | " +
-                    "seed: $color | " +
-                    "style: $style | " +
-                    "contrast: $contrast",
+                    "seed: ${params.color} | " +
+                    "style: ${ThemeStyle.name(params.style)} | " +
+                    "contrast: ${params.contrastName}",
             color = titleTextColor,
             style = titleTextStyle,
             modifier = Modifier.fillMaxWidth(),
