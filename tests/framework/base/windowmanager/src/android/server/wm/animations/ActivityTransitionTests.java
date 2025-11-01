@@ -63,6 +63,7 @@ import android.server.wm.WindowManagerState;
 import android.server.wm.app.Components;
 import android.server.wm.cts.R;
 import android.server.wm.settings.SettingsSession;
+import android.server.wm.settings.TransitionAnimationScaleSession;
 import android.util.Range;
 import android.view.RoundedCorner;
 import android.view.View;
@@ -174,14 +175,7 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         if (ANIMATION_MULTIPLIER == 1) {
             return;
         }
-        mObjectTracker
-                .manage(
-                        new SettingsSession<>(
-                                Settings.Global.getUriFor(
-                                        Settings.Global.TRANSITION_ANIMATION_SCALE),
-                                Settings.Global::getFloat,
-                                Settings.Global::putFloat))
-                .set(ANIMATION_MULTIPLIER);
+        mObjectTracker.manage(new TransitionAnimationScaleSession(ANIMATION_MULTIPLIER));
     }
 
     @Test
@@ -513,9 +507,7 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
                 transitionBounds.left + (transitionBounds.right - transitionBounds.left) / 4;
         // Extending default transition animation duration, to ensure here can be more reliably to
         // capture the transition state.
-        mObjectTracker.manage(new SettingsSession<>(
-                Settings.Global.getUriFor(Settings.Global.TRANSITION_ANIMATION_SCALE),
-                Settings.Global::getFloat, Settings.Global::putFloat)).set(10f);
+        mObjectTracker.manage(new TransitionAnimationScaleSession(10f));
 
         final Intent update = new Intent(ACTION_UPDATE);
         update.putExtra(TEST_METHOD_KEY, TEST_METHOD_CLEAR_OVERRIDE_ACTIVITY_TRANSITION);
