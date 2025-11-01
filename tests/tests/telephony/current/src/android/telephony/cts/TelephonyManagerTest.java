@@ -60,7 +60,6 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
-import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
@@ -125,6 +124,7 @@ import android.telephony.UiccCardInfo;
 import android.telephony.UiccPortInfo;
 import android.telephony.UiccSlotInfo;
 import android.telephony.UiccSlotMapping;
+import android.telephony.cts.util.LocationHelper;
 import android.telephony.cts.util.TelephonyUtils;
 import android.telephony.data.ApnSetting;
 import android.telephony.data.NetworkSlicingConfig;
@@ -203,13 +203,13 @@ public class TelephonyManagerTest {
     private TelephonyManager mTelephonyManager;
     private SubscriptionManager mSubscriptionManager;
     private PackageManager mPackageManager;
+    private LocationHelper mLocationHelper;
     private boolean mOnCellLocationChangedCalled = false;
     private boolean mOnCellInfoChanged = false;
     private boolean mOnSignalStrengthsChanged = false;
     private boolean mServiceStateChangedCalled = false;
     private boolean mRadioRebootTriggered = false;
     private boolean mHasRadioPowerOff = false;
-    private Boolean mWasLocationEnabled;
     private ServiceState mServiceState;
     private PhoneCapability mPhoneCapability;
     private boolean mOnPhoneCapabilityChanged = false;
@@ -222,6 +222,7 @@ public class TelephonyManagerTest {
     private static final int WAIT_FOR_CONDITION = 3000;
     private static final int TOLERANCE = 1000;
     private static final int TIMEOUT_FOR_NETWORK_OPS = TOLERANCE * 180;
+    private static final int LOCATION_SETTING_CHANGE_WAIT_MS = 1000;
 
     private static final int TIMEOUT_FOR_CARRIER_STATUS_FILE_CHECK = TOLERANCE * 180;
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
@@ -262,6 +263,8 @@ public class TelephonyManagerTest {
     private static final String ALLOW_PACKAGE_SUBCOMMAND = "allow-package ";
     private static final String DISALLOW_PACKAGE_SUBCOMMAND = "disallow-package ";
     private static final String TELEPHONY_CTS_PACKAGE = "android.telephony.cts";
+
+    private static final String STATUS_CHANNEL_NOT_SUPPORTED = "6881";
 
     private static final String TEST_FORWARD_NUMBER = "54321";
     private static final String TESTING_PLMN = "12345";
@@ -395,21 +398,48 @@ public class TelephonyManagerTest {
     private boolean mIsAllowedNetworkTypeChanged;
     private Map<Integer, Long> mAllowedNetworkTypesList = new HashMap<>();
 
-    private static final String CARRIER_RESTRICTION_OPERATOR_DETAILS = "{\"com.vzw.hss.myverizon\":"
-        + "{\"carrierIds\":[1839], \"callerSHA256Ids\":"
-        + "[\"AE23A03436DF07B0CD70FE881CDA2EC1D21215D7B7B0CC68E67B67F5DF89526A\"]},"
-        + "\"com.google.android.apps.tycho\":{\"carrierIds\":[1989],\"callerSHA256Ids\":"
-        + "[\"B9CFCE1C47A6AC713442718F15EF55B00B3A6D1A6D48CB46249FA8EB51465350\","
-        + "\"4C36AF4A5BDAD97C1F3D8B283416D244496C2AC5EAFE8226079EF6F676FD1859\"]},"
-        + "\"com.comcast.mobile.mxs\":{\"carrierIds\":[2032,2532,2556],\"callerSHA256Ids\":"
-        + "[\"914C26403B57D2D482359FC235CC825AD00D52B0121C18EF2B2B9D4DDA4B8996\"]},"
-        + "\"com.xfinity.digitalhome\":{\"carrierIds\":[2032,2532,2556],\"callerSHA256Ids\":"
-        + "[\"31b4c17315c2269040d535f7b6a79cf4d11517c664d9de8f1ddf4f8a785aad47\"]},"
-        + "\"com.xfinity.digitalhome.debug\":{\"carrierIds\":[2032,2532,2556],\"callerSHA256Ids\":"
-        + "[\"c9133e8168f97573c8c567f46777dff74ade0c015ecf2c5e91be3e4e76ddcae2\"]},"
-        + "\"com.xfinity.dh.xm.app\":{\"carrierIds\":[2032,2532,2556],\"callerSHA256Ids\":"
-        + "[\"c9133e8168f97573c8c567f46777dff74ade0c015ecf2c5e91be3e4e76ddcae2\"]}"
-        + "}";
+    private static final String CARRIER_RESTRICTION_OPERATOR_DETAILS =
+            buildCarrierRestrictionOperatorDetails();
+
+    private static String buildCarrierRestrictionOperatorDetails() {
+        StringBuilder cr = new StringBuilder();
+        cr.append('{');
+        cr.append(
+                "\"com.vzw.hss.myverizon\":{\"carrierIds\":[1839], \"callerSHA256Ids\":"
+                    + "[\"AE23A03436DF07B0CD70FE881CDA2EC1D21215D7B7B0CC68E67B67F5DF89526A\"]},");
+        cr.append(
+                "\"com.google.android.apps.tycho\":{\"carrierIds\":[1989],\"callerSHA256Ids\":"
+                    + "[\"B9CFCE1C47A6AC713442718F15EF55B00B3A6D1A6D48CB46249FA8EB51465350\","
+                    + "\"4C36AF4A5BDAD97C1F3D8B283416D244496C2AC5EAFE8226079EF6F676FD1859\"]},");
+        cr.append(
+                "\"com.comcast.mobile.mxs\":{\"carrierIds\":[2032,2532,2556],\"callerSHA256Ids\":"
+                    + "[\"914C26403B57D2D482359FC235CC825AD00D52B0121C18EF2B2B9D4DDA4B8996\"]},");
+        cr.append(
+                "\"com.xfinity.digitalhome\":{\"carrierIds\":[2032,2532,2556],\"callerSHA256Ids\""
+                    + ":[\"31b4c17315c2269040d535f7b6a79cf4d11517c664d9de8f1ddf4f8a785aad47\"]},");
+        cr.append(
+                "\"com.xfinity.digitalhome.debug\":{\"carrierIds\":[2032,2532,2556],"
+                    + "\"callerSHA256Ids\":"
+                    + "[\"c9133e8168f97573c8c567f46777dff74ade0c015ecf2c5e91be3e4e76ddcae2\"]},");
+        cr.append(
+                "\"com.xfinity.dh.xm.app\":{\"carrierIds\":[2032,2532,2556],\"callerSHA256Ids\":"
+                    + "[\"c9133e8168f97573c8c567f46777dff74ade0c015ecf2c5e91be3e4e76ddcae2\"]},");
+        cr.append(
+                "\"com.tmobile.tmte\": {\"carrierIds\": [1],\"callerSHA256Ids\":"
+                    + "[\"3D:1A:4B:EF:6E:E7:AF:7D:34:D1:20:E7:B1:AA:C0:DD:24:55:85:DE:62:37:CF:10:"
+                    + "0F:68:33:3A:FA:CF:F5:62\"]},");
+        cr.append(
+                "\"com.tmobile.tuesdays\": {\"carrierIds\": [1],\"callerSHA256Ids\":"
+                    + "[\"3D:1A:4B:EF:6E:E7:AF:7D:34:D1:20:E7:B1:AA:C0:DD:24:55:85:DE:62:37:CF:10:"
+                    + "0F:68:33:3A:FA:CF:F5:62\",\"92:B5:F8:11:7F:BD:9B:D5:73:8F:F1:68:A4:FA:12:CB:"
+                    + "E2:84:BE:83:4E:DE:1A:7B:B4:4D:D8:45:5B:A1:59:20\"]},");
+        cr.append(
+                "\"com.tmobile.pr.mytmobile\": {\"carrierIds\": [1],\"callerSHA256Ids\":[\"92:B5:"
+                    + "F8:11:7F:BD:9B:D5:73:8F:F1:68:A4:FA:12:CB:E2:84:BE:83:4E:DE:1A:7B:B4:4D:D8:"
+                    + "45:5B:A1:59:20\"]}");
+        cr.append('}');
+        return cr.toString();
+    }
 
     private class CarrierPrivilegeChangeMonitor implements AutoCloseable {
         // CarrierPrivilegesCallback will be triggered upon registration. Filter the first callback
@@ -507,13 +537,13 @@ public class TelephonyManagerTest {
                 try {
                     mThermalDataOnSemaphore.release();
                 } catch (Exception e) {
-                    Log.e(TAG, "releaseThermalDataSemaphores: Got Exception, ex=" + e);
+                    Log.e(TAG, "releaseThermalDataSemaphores: Got Exception", e);
                 }
             } else {
                 try {
                     mThermalDataOffSemaphore.release();
                 } catch (Exception e) {
-                    Log.e(TAG, "releaseThermalDataSemaphores: Got Exception, ex=" + e);
+                    Log.e(TAG, "releaseThermalDataSemaphores: Got Exception", e);
                 }
             }
         }
@@ -531,7 +561,7 @@ public class TelephonyManagerTest {
                 }
             } catch (Exception ex) {
                 Log.e(TAG, "DataEnabledListenerTest waitForThermalDataOn: "
-                        + "Got exception=" + ex);
+                        + "Got exception", ex);
                 return false;
             }
             return true;
@@ -550,7 +580,7 @@ public class TelephonyManagerTest {
                 }
             } catch (Exception ex) {
                 Log.e(TAG, "DataEnabledListenerTest waitForThermalDataOff: "
-                        + "Got exception=" + ex);
+                        + "Got exception", ex);
                 return false;
             }
             return true;
@@ -570,6 +600,7 @@ public class TelephonyManagerTest {
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
 
         mSubscriptionManager = getContext().getSystemService(SubscriptionManager.class);
+        mLocationHelper = new LocationHelper(getContext());
         mCarrierConfigManager = getContext().getSystemService(CarrierConfigManager.class);
         mSelfPackageName = getContext().getPackageName();
         mSelfCertHash = getCertHash(mSelfPackageName);
@@ -605,16 +636,15 @@ public class TelephonyManagerTest {
 
     @After
     public void tearDown() throws Exception {
+        if (mLocationHelper != null) {
+            mLocationHelper.tearDown();
+        }
         if (mListener != null) {
             // unregister the listener
             mTelephonyManager.listen(mListener, PhoneStateListener.LISTEN_NONE);
         }
         if (mIsAllowedNetworkTypeChanged) {
             recoverAllowedNetworkType();
-        }
-        if (mWasLocationEnabled != null) {
-            setLocationEnabled(mWasLocationEnabled);
-            mWasLocationEnabled = null;
         }
 
         StringBuilder cmdBuilder = new StringBuilder();
@@ -713,12 +743,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testDeviceVoiceCapable() {
-        boolean isVoiceCapable = mTelephonyManager.isVoiceCapable();
         boolean isDeviceVoiceCapable = mTelephonyManager.isDeviceVoiceCapable();
         boolean hasCallingFeature = hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING);
 
-        assertEquals("isVoiceCapable should return the same as isDeviceVoiceCapable",
-                isDeviceVoiceCapable, isVoiceCapable);
         assertEquals("isDeviceVoiceCapable is not aligned with FEATURE_TELEPHONY_CALLING",
                 hasCallingFeature, isDeviceVoiceCapable);
     }
@@ -776,31 +803,6 @@ public class TelephonyManagerTest {
                 (cm) -> cm.overrideConfig(mTestSub, bundle));
     }
 
-    public static void grantLocationPermissions() {
-        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
-        String packageName = getContext().getPackageName();
-        uiAutomation.grantRuntimePermission(packageName, permission.ACCESS_COARSE_LOCATION);
-        uiAutomation.grantRuntimePermission(packageName, permission.ACCESS_FINE_LOCATION);
-        uiAutomation.grantRuntimePermission(packageName, permission.ACCESS_BACKGROUND_LOCATION);
-        uiAutomation.grantRuntimePermission(packageName, permission.WRITE_SECURE_SETTINGS);
-    }
-
-    /**
-     * Enable/disable location for current user.
-     *
-     * @return true if location was previously enabled, false if disabled. The return value should
-     *         be used in @After function of the test to restore this setting
-     */
-    public static boolean setLocationEnabled(boolean setEnabled) {
-        Context ctx = getContext();
-        LocationManager locationManager = ctx.getSystemService(LocationManager.class);
-        boolean wasEnabled = locationManager.isLocationEnabled();
-        if (wasEnabled != setEnabled) {
-            locationManager.setLocationEnabledForUser(setEnabled, ctx.getUser());
-        }
-        return wasEnabled;
-    }
-
     @Test
     public void testDevicePolicyApn() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_DATA));
@@ -841,82 +843,6 @@ public class TelephonyManagerTest {
             fail("SecurityException expected");
         } catch (SecurityException e) {
             // expected
-        }
-    }
-
-    @Test
-    public void testListen() throws Throwable {
-        if (mTelephonyManager.getPhoneType() == TelephonyManager.PHONE_TYPE_CDMA) {
-            // TODO: temp workaround, need to adjust test to for CDMA
-            return;
-        }
-
-        grantLocationPermissions();
-        mWasLocationEnabled = setLocationEnabled(true);
-
-        TestThread t = new TestThread(() -> {
-            Looper.prepare();
-            mListener = new PhoneStateListener() {
-                @Override
-                public void onCellLocationChanged(CellLocation location) {
-                    Log.i(TAG, "onCellLocationChanged: " + location);
-                    if (!mOnCellLocationChangedCalled) {
-                        synchronized (mLock) {
-                            mOnCellLocationChangedCalled = true;
-                            mLock.notify();
-                        }
-                    }
-                }
-            };
-
-            synchronized (mLock) {
-                mLock.notify(); // mListener is ready
-            }
-
-            Looper.loop();
-        });
-
-        synchronized (mLock) {
-            t.start();
-            mLock.wait(TOLERANCE); // wait for mListener
-        }
-
-        // Test register
-        synchronized (mLock) {
-            // .listen generates an onCellLocationChanged event
-            Log.d(TAG, "testListen: requesting LISTEN_CELL_LOCATION");
-            mTelephonyManager.listen(mListener, PhoneStateListener.LISTEN_CELL_LOCATION);
-            mLock.wait(TOLERANCE);
-
-            assertTrue("Test register, mOnCellLocationChangedCalled should be true.",
-                    mOnCellLocationChangedCalled);
-        }
-
-        synchronized (mLock) {
-            mOnCellLocationChangedCalled = false;
-            CellLocation.requestLocationUpdate();
-            mLock.wait(TOLERANCE);
-
-            // Starting with Android S, this API will silently drop all requests from apps
-            // targeting Android S due to unfixable limitations with the API.
-            assertFalse("Test register, mOnCellLocationChangedCalled should be false.",
-                    mOnCellLocationChangedCalled);
-        }
-
-        // unregister the listener
-        mTelephonyManager.listen(mListener, PhoneStateListener.LISTEN_NONE);
-        Thread.sleep(TOLERANCE);
-
-        // Test unregister
-        synchronized (mLock) {
-            mOnCellLocationChangedCalled = false;
-            // unregister again, to make sure doing so does not call the listener
-            mTelephonyManager.listen(mListener, PhoneStateListener.LISTEN_NONE);
-            CellLocation.requestLocationUpdate();
-            mLock.wait(TOLERANCE);
-
-            assertFalse("Test unregister, mOnCellLocationChangedCalled should be false.",
-                    mOnCellLocationChangedCalled);
         }
     }
 
@@ -1119,6 +1045,7 @@ public class TelephonyManagerTest {
         mTelephonyManager.getLine1Number();
         mTelephonyManager.getPhoneCount();
         mTelephonyManager.isVoiceCapable();
+        mTelephonyManager.isDeviceVoiceCapable();
         mTelephonyManager.isSmsCapable();
         mTelephonyManager.getDeviceSoftwareVersion();
 
@@ -1183,17 +1110,14 @@ public class TelephonyManagerTest {
                     (tm) -> tm.resetIms(tm.getSlotIndex()));
         }
 
-        //FEATURE_TELEPHONY_GSM required
-        if (hasFeature(PackageManager.FEATURE_TELEPHONY_GSM)) {
-            ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                    (tm) -> tm.getImei());
-            if (mModemHalVersion >= RADIO_HAL_VERSION_2_1) {
-                ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                        (tm) -> tm.getPrimaryImei());
-            }
-            ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                    (tm) -> tm.getImei(mTelephonyManager.getSlotIndex()));
+        ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mTelephonyManager, (tm) -> tm.getImei());
+        if (mModemHalVersion >= RADIO_HAL_VERSION_2_1) {
+            ShellIdentityUtils.invokeMethodWithShellPermissions(
+                    mTelephonyManager, (tm) -> tm.getPrimaryImei());
         }
+        ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mTelephonyManager, (tm) -> tm.getImei(mTelephonyManager.getSlotIndex()));
 
         TelecomManager telecomManager = getContext().getSystemService(TelecomManager.class);
         PhoneAccountHandle defaultAccount = telecomManager
@@ -1258,16 +1182,16 @@ public class TelephonyManagerTest {
             try {
                 setAppOpsPermissionAllowed(true, OPSTR_USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER);
 
-                if (hasFeature(PackageManager.FEATURE_TELEPHONY_GSM)) {
-                    mTelephonyManager.getImei();
-                    if (mModemHalVersion >= RADIO_HAL_VERSION_2_1) {
-                        mTelephonyManager.getPrimaryImei();
-                    }
+                mTelephonyManager.getImei();
+                if (mModemHalVersion >= RADIO_HAL_VERSION_2_1) {
+                    mTelephonyManager.getPrimaryImei();
                 }
 
                 mTelephonyManager.getSubscriberId();
                 mTelephonyManager.getIccAuthentication(
                         TelephonyManager.APPTYPE_USIM, TelephonyManager.AUTHTYPE_EAP_AKA, "");
+            } catch (UnsupportedOperationException ex) {
+                // EAP-AKA not supported on this device
             } finally {
                 setAppOpsPermissionAllowed(false, OPSTR_USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER);
             }
@@ -1280,6 +1204,8 @@ public class TelephonyManagerTest {
 
                 mTelephonyManager.getIccAuthentication(
                         TelephonyManager.APPTYPE_USIM, TelephonyManager.AUTHTYPE_GBA_BOOTSTRAP, "");
+            } catch (UnsupportedOperationException ex) {
+                // GBA not supported on this device
             } finally {
                 setAppOpsPermissionAllowed(false, OPSTR_USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER);
             }
@@ -1294,6 +1220,8 @@ public class TelephonyManagerTest {
                         TelephonyManager.APPTYPE_USIM,
                         TelephonyManager.AUTHTYPE_GBA_NAF_KEY_EXTERNAL,
                         "");
+            } catch (UnsupportedOperationException ex) {
+                // GBA not supported on this device
             } finally {
                 setAppOpsPermissionAllowed(false, OPSTR_USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER);
             }
@@ -1505,7 +1433,7 @@ public class TelephonyManagerTest {
 
     @Test
     public void testCreateForPhoneAccountHandle() {
-        if (!mTelephonyManager.isVoiceCapable()) {
+        if (!mTelephonyManager.isDeviceVoiceCapable()) {
             Log.d(TAG, "Skipping test that requires device to be voice capable");
             return;
         }
@@ -1548,8 +1476,6 @@ public class TelephonyManagerTest {
                         android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
             PhoneAccountHandle phoneAccountHandle = mTelephonyManager.getPhoneAccountHandle();
             assertTrue(callCapableAccounts.contains(phoneAccountHandle));
-        } catch (SecurityException e) {
-            fail("TelephonyManager#getPhoneAccountHandle requires READ_PRIVILEGED_PHONE_STATE");
         } finally {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();
@@ -1617,12 +1543,7 @@ public class TelephonyManagerTest {
 
     private void verifyDeviceId(String deviceId) {
         if (mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            // Either IMEI or MEID need to be valid.
-            try {
-                assertImei(deviceId);
-            } catch (AssertionError e) {
-                assertMeidEsn(deviceId);
-            }
+            assertImei(deviceId);
         } else if (mPackageManager.hasSystemFeature(PackageManager.FEATURE_WIFI)) {
             assertSerialNumber();
             assertMacAddress(getWifiMacAddress());
@@ -1959,15 +1880,10 @@ public class TelephonyManagerTest {
             //expected
         }
         // and then do a reset to move data to default.
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                    TelephonyManager::resetSettings,
-                    android.Manifest.permission.NETWORK_SETTINGS,
-                    android.Manifest.permission.MODIFY_PHONE_STATE);
-        } catch (SecurityException e) {
-            e.printStackTrace();
-            fail(e.toString());
-        }
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                TelephonyManager::resetSettings,
+                android.Manifest.permission.NETWORK_SETTINGS,
+                android.Manifest.permission.MODIFY_PHONE_STATE);
         // This may timeout because the default is equal to the initial data setting, but there is
         // no way to definitively check what the default should be, so assume the default will be
         // set within TOLERANCE time.
@@ -1984,15 +1900,10 @@ public class TelephonyManagerTest {
                         5 /*times*/, TOLERANCE/5 /*timeout per poll*/));
 
         // and then do a reset to move data to default again.
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                    TelephonyManager::resetSettings,
-                    android.Manifest.permission.NETWORK_SETTINGS,
-                    android.Manifest.permission.MODIFY_PHONE_STATE);
-        } catch (SecurityException e) {
-            e.printStackTrace();
-            fail(e.toString());
-        }
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                TelephonyManager::resetSettings,
+                android.Manifest.permission.NETWORK_SETTINGS,
+                android.Manifest.permission.MODIFY_PHONE_STATE);
 
         assertTrue("resetSettings did not reset default data",
                 TelephonyUtils.pollUntilTrue(() -> defaultDataSetting == isDataEnabled(),
@@ -2013,8 +1924,7 @@ public class TelephonyManagerTest {
     public void testNetworkTypeMatchesCellIdentity() throws Exception {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
-        grantLocationPermissions();
-        mWasLocationEnabled = setLocationEnabled(true);
+        mLocationHelper.enable();
 
         ServiceState ss = mTelephonyManager.getServiceState();
         assertNotNull(ss);
@@ -2309,10 +2219,6 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testGetTac() {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_GSM));
-        }
-
         String tac = mTelephonyManager.getTypeAllocationCode();
         String imei = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                 (tm) -> tm.getImei());
@@ -2363,10 +2269,6 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testGetImei() {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_GSM));
-        }
-
         String imei = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                 (tm) -> tm.getImei());
 
@@ -2382,10 +2284,6 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testGetPrimaryImei() {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_GSM));
-        }
-
         // make sure the modem supports primaryImei feature
         assumeTrue(mModemHalVersion >= RADIO_HAL_VERSION_2_1);
         String primaryImei = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
@@ -2403,10 +2301,6 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testGetImeiForSlot() {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_GSM));
-        }
-
         for (int i = 0; i < mTelephonyManager.getPhoneCount(); i++) {
             // The compiler error 'local variables referenced from a lambda expression must be final
             // or effectively final' is reported when using i, so assign it to a final variable.
@@ -2939,7 +2833,7 @@ public class TelephonyManagerTest {
      * Tests that UiccCardsInfo methods don't crash.
      */
     @Test
-    public void testGetUiccCardsInfo() {
+    public void testGetUiccCardsInfo() throws Exception {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         // The API requires either READ_PRIVILEGED_PHONE_STATE or carrier privileges
@@ -2967,17 +2861,10 @@ public class TelephonyManagerTest {
         }
 
         // With carrier privileges only, it should also work
-        try {
-            CarrierPrivilegeUtils.withCarrierPrivileges(
-                    getContext(),
-                    SubscriptionManager.getDefaultSubscriptionId(),
-                    () -> mTelephonyManager.getUiccCardsInfo());
-        } catch (SecurityException se) {
-            fail("TelephonyManager.getUiccCardsInfo should not throw SecurityException with "
-                    + "carrier privileges");
-        } catch (Exception e) {
-            fail("Exception thrown when try to get carrier privileges.");
-        }
+        CarrierPrivilegeUtils.withCarrierPrivileges(
+                getContext(),
+                SubscriptionManager.getDefaultSubscriptionId(),
+                () -> mTelephonyManager.getUiccCardsInfo());
     }
 
     private static Context getContext() {
@@ -3552,15 +3439,10 @@ public class TelephonyManagerTest {
         } catch (SecurityException e) {
             // expected
         }
-        try {
-            // This should result in no-op.
-            ShellIdentityUtils.invokeThrowableMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                    (tm) -> tm.switchMultiSimConfig(mTelephonyManager.getActiveModemCount()),
-                    SecurityException.class, android.Manifest.permission.MODIFY_PHONE_STATE);
-        } catch (SecurityException e) {
-            fail("TelephonyManager#switchMultiSimConfig should require MODIFY_PHONE_STATE"
-                    + "permission to access.");
-        }
+        // This should result in no-op.
+        ShellIdentityUtils.invokeThrowableMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                (tm) -> tm.switchMultiSimConfig(mTelephonyManager.getActiveModemCount()),
+                SecurityException.class, android.Manifest.permission.MODIFY_PHONE_STATE);
     }
 
     @Test
@@ -3586,13 +3468,8 @@ public class TelephonyManagerTest {
             }
         }
         // just verify no crash
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> tm.iccOpenLogicalChannelByPort(0, 0, null, 0));
-        } catch (SecurityException e) {
-            // IllegalArgumentException is okay, just not SecurityException
-            fail("iccCloseLogicalChannelByPort: SecurityException not expected");
-        }
+        ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mTelephonyManager, (tm) -> tm.iccOpenLogicalChannelByPort(0, 0, null, 0));
     }
 
     @Test
@@ -3617,8 +3494,9 @@ public class TelephonyManagerTest {
             }
         }
 
-        int slotIndex = getValidSlotIndexAndPort().getKey();
-        int portIndex = getValidSlotIndexAndPort().getValue();
+        var slotAndPort = getValidSlotIndexAndPort();
+        int slotIndex = slotAndPort.getKey();
+        int portIndex = slotAndPort.getValue();
         // just verify no crash
         try {
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
@@ -3627,9 +3505,6 @@ public class TelephonyManagerTest {
         } catch (IllegalArgumentException | IllegalStateException e) {
             // IllegalArgumentException and IllegalStateException is okay, just not
             // SecurityException
-        } catch (SecurityException e) {
-            // IllegalArgumentException is okay, just not SecurityException
-            fail("iccCloseLogicalChannelByPort: SecurityException not expected");
         }
         try {
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
@@ -3653,6 +3528,7 @@ public class TelephonyManagerTest {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         int slotIndex = getValidSlotIndexAndPort().getKey();
+        // just verify no crash
         String result = ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mTelephonyManager, (tm) -> tm.iccTransmitApduLogicalChannelBySlot(
                         slotIndex,
@@ -3663,7 +3539,12 @@ public class TelephonyManagerTest {
                         0 /* p2 */,
                         0 /* p3 */,
                         null /* data */));
-        assertTrue(TextUtils.isEmpty(result));
+
+        if (!result.isEmpty()) {  // allow old behavior
+            // Channel 0 is not supported for IccTransmitApduLogicalChannel (note: we might have
+            // tested this with some actually opened channel instead).
+            assertEquals(STATUS_CHANNEL_NOT_SUPPORTED, result);
+        }
     }
 
     @Test
@@ -3676,26 +3557,29 @@ public class TelephonyManagerTest {
             }
         }
 
-        int slotIndex = getValidSlotIndexAndPort().getKey();
-        int portIndex = getValidSlotIndexAndPort().getValue();
-        try {
-            String result = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> tm.iccTransmitApduLogicalChannelByPort(
-                            slotIndex,
-                            portIndex /* portIndex */,
-                            0 /* channel */,
-                            0 /* cla */,
-                            0 /* instruction */,
-                            0 /* p1 */,
-                            0 /* p2 */,
-                            0 /* p3 */,
-                            null /* data */));
-            assertTrue(TextUtils.isEmpty(result));
-        } catch (SecurityException e) {
-            // IllegalArgumentException is okay, just not SecurityException
-            fail("iccTransmitApduLogicalChannelByPort: SecurityException not expected");
+        var slotAndPort = getValidSlotIndexAndPort();
+        int slotIndex = slotAndPort.getKey();
+        int portIndex = slotAndPort.getValue();
+        // just verify no crash
+        String result = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mTelephonyManager, (tm) -> tm.iccTransmitApduLogicalChannelByPort(
+                        slotIndex,
+                        portIndex /* portIndex */,
+                        0 /* channel */,
+                        0 /* cla */,
+                        0 /* instruction */,
+                        0 /* p1 */,
+                        0 /* p2 */,
+                        0 /* p3 */,
+                        null /* data */));
+
+        if (!result.isEmpty()) {  // allow old behavior
+            // Channel 0 is not supported for IccTransmitApduLogicalChannel (note: we might have
+            // tested this with some actually opened channel instead).
+            assertEquals(STATUS_CHANNEL_NOT_SUPPORTED, result);
         }
     }
+
     @Test
     public void testIccTransmitApduBasicChannelBySlot() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
@@ -3728,23 +3612,19 @@ public class TelephonyManagerTest {
         }
 
         // just verify no crash
-        int slotIndex = getValidSlotIndexAndPort().getKey();
-        int portIndex = getValidSlotIndexAndPort().getValue();
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> tm.iccTransmitApduBasicChannelByPort(
-                            slotIndex,
-                            portIndex /*portIndex */,
-                            0 /* cla */,
-                            0 /* instruction */,
-                            0 /* p1 */,
-                            0 /* p2 */,
-                            0 /* p3 */,
-                            null /* data */));
-        } catch (SecurityException e) {
-            // IllegalArgumentException is okay, just not SecurityException
-            fail("iccTransmitApduBasicChannelByPort: SecurityException not expected");
-        }
+        var slotAndPort = getValidSlotIndexAndPort();
+        int slotIndex = slotAndPort.getKey();
+        int portIndex = slotAndPort.getValue();
+        ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mTelephonyManager, (tm) -> tm.iccTransmitApduBasicChannelByPort(
+                        slotIndex,
+                        portIndex /*portIndex */,
+                        0 /* cla */,
+                        0 /* instruction */,
+                        0 /* p1 */,
+                        0 /* p2 */,
+                        0 /* p3 */,
+                        null /* data */));
     }
 
     @Test
@@ -3760,12 +3640,8 @@ public class TelephonyManagerTest {
         }
 
         // test with permission
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> tm.isIccLockEnabled());
-        } catch (SecurityException se) {
-            fail("testIsIccLockEnabled: SecurityException not expected");
-        }
+        ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mTelephonyManager, (tm) -> tm.isIccLockEnabled());
     }
 
     @Test
@@ -3781,12 +3657,8 @@ public class TelephonyManagerTest {
         }
 
         // test with permission
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> tm.isDataEnabledForApn(ApnSetting.TYPE_MMS));
-        } catch (SecurityException se) {
-            fail("testIsDataEnabledForApn: SecurityException not expected");
-        }
+        ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mTelephonyManager, (tm) -> tm.isDataEnabledForApn(ApnSetting.TYPE_MMS));
     }
 
     @Test
@@ -3803,16 +3675,12 @@ public class TelephonyManagerTest {
         }
 
         // test with permission
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> tm.isTetheringApnRequired());
-        } catch (SecurityException se) {
-            fail("testIsIccLockEnabled: SecurityException not expected");
-        }
+        ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mTelephonyManager, (tm) -> tm.isTetheringApnRequired());
     }
 
     @Test
-    public void testGetCarrierInfoForImsiEncryption() {
+    public void testGetCarrierInfoForImsiEncryption() throws Exception {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         // test without permission: verify SecurityException
@@ -3833,13 +3701,12 @@ public class TelephonyManagerTest {
         // test with permission
         PublicKey epdgKey = null;
         PublicKey wlanKey = null;
-        try {
-            PersistableBundle carrierConfig = mCarrierConfigManager.getConfigForSubId(mTestSub);
+        PersistableBundle carrierConfig = mCarrierConfigManager.getConfigForSubId(mTestSub);
 
-            assertNotNull("CarrierConfigManager#getConfigForSubId() returned null",
-                    carrierConfig);
-            assertFalse("CarrierConfigManager#getConfigForSubId() returned empty bundle",
-                    carrierConfig.isEmpty());
+        assertNotNull("CarrierConfigManager#getConfigForSubId() returned null",
+                carrierConfig);
+        assertFalse("CarrierConfigManager#getConfigForSubId() returned empty bundle",
+                carrierConfig.isEmpty());
 
             // purge the certs in carrierConfigs first
             carrierConfig.putInt(
@@ -3853,25 +3720,18 @@ public class TelephonyManagerTest {
                     CarrierConfigManager.IMSI_CARRIER_PUBLIC_KEY_WLAN_STRING,
                     IMSI_CERT_STRING_WLAN);
             overrideCarrierConfig(carrierConfig);
-        } catch (Exception e) {
-            fail("Could not override carrier config. e=" + e.toString());
-        }
 
-        try {
-            // It appears that the two certs actually have the same public key. Ideally we would
-            // want these to be different for testing, but it's challenging to create a valid
-            // certificate string for testing and these are the only two examples available
-            InputStream inStream = new ByteArrayInputStream(IMSI_CERT_STRING_WLAN.getBytes());
-            CertificateFactory cf = CertificateFactory.getInstance("X.509");
-            X509Certificate cert = (X509Certificate) cf.generateCertificate(inStream);
-            wlanKey = cert.getPublicKey();
+        // It appears that the two certs actually have the same public key. Ideally we would
+        // want these to be different for testing, but it's challenging to create a valid
+        // certificate string for testing and these are the only two examples available
+        InputStream inStream = new ByteArrayInputStream(IMSI_CERT_STRING_WLAN.getBytes());
+        CertificateFactory cf = CertificateFactory.getInstance("X.509");
+        X509Certificate cert = (X509Certificate) cf.generateCertificate(inStream);
+        wlanKey = cert.getPublicKey();
 
-            inStream = new ByteArrayInputStream(IMSI_CERT_STRING_EPDG.getBytes());
-            cert = (X509Certificate) cf.generateCertificate(inStream);
-            epdgKey = cert.getPublicKey();
-        } catch (CertificateException e) {
-            fail("Could not create certs. e=" + e.toString());
-        }
+        inStream = new ByteArrayInputStream(IMSI_CERT_STRING_EPDG.getBytes());
+        cert = (X509Certificate) cf.generateCertificate(inStream);
+        epdgKey = cert.getPublicKey();
 
         try {
             ImsiEncryptionInfo info = ShellIdentityUtils.invokeMethodWithShellPermissions(
@@ -3882,8 +3742,6 @@ public class TelephonyManagerTest {
             assertNotNull("Encryption info returned null", info);
             assertEquals(epdgKey, info.getPublicKey());
             assertEquals(TelephonyManager.KEY_TYPE_EPDG, info.getKeyType());
-        } catch (SecurityException se) {
-            fail("testGetCarrierInfoForImsiEncryption: SecurityException not expected");
         } catch (IllegalArgumentException iae) {
             // IllegalArgumentException is okay, just not SecurityException
         }
@@ -3896,8 +3754,6 @@ public class TelephonyManagerTest {
             assertNotNull("Encryption info returned null", info);
             assertEquals(wlanKey, info.getPublicKey());
             assertEquals(TelephonyManager.KEY_TYPE_WLAN, info.getKeyType());
-        } catch (SecurityException se) {
-            fail("testGetCarrierInfoForImsiEncryption: SecurityException not expected");
         } catch (IllegalArgumentException iae) {
             // IllegalArgumentException is okay, just not SecurityException
         }
@@ -3915,13 +3771,9 @@ public class TelephonyManagerTest {
             // expected
         }
         // test with permission
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                    mTelephonyManager,
-                    (tm) -> tm.resetCarrierKeysForImsiEncryption());
-        } catch (SecurityException se) {
-            fail("testResetCarrierKeysForImsiEncryption: SecurityException not expected");
-        }
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                mTelephonyManager,
+                (tm) -> tm.resetCarrierKeysForImsiEncryption());
     }
 
     @Test
@@ -3936,13 +3788,9 @@ public class TelephonyManagerTest {
             // expected
         }
         // test with permission
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                    mTelephonyManager,
-                    (tm) -> tm.isInEmergencySmsMode());
-        } catch (SecurityException se) {
-            fail("testIsInEmergencySmsMode: SecurityException not expected");
-        }
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                mTelephonyManager,
+                (tm) -> tm.isInEmergencySmsMode());
     }
 
     @Test
@@ -3968,20 +3816,16 @@ public class TelephonyManagerTest {
         }
 
         // test with permission
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                    mTelephonyManager,
-                    (tm) -> tm.setAllowedNetworkTypes(allowedNetworkTypes));
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                mTelephonyManager,
+                (tm) -> tm.setAllowedNetworkTypes(allowedNetworkTypes));
 
-            long deviceAllowedNetworkTypes = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> {
-                        return tm.getAllowedNetworkTypes();
-                    }
-            );
-            assertEquals(allowedNetworkTypes, deviceAllowedNetworkTypes);
-        } catch (SecurityException se) {
-            fail("testSetAllowedNetworkTypes: SecurityException not expected");
-        }
+        long deviceAllowedNetworkTypes = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mTelephonyManager, (tm) -> {
+                    return tm.getAllowedNetworkTypes();
+                }
+        );
+        assertEquals(allowedNetworkTypes, deviceAllowedNetworkTypes);
     }
 
     @Test
@@ -3992,44 +3836,40 @@ public class TelephonyManagerTest {
         long networkTypeBitmask = TelephonyManager.NETWORK_TYPE_BITMASK_LTE
                 | TelephonyManager.NETWORK_TYPE_BITMASK_LTE_CA;
 
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                    mTelephonyManager,
-                    (tm) -> tm.setAllowedNetworkTypesForReason(
-                            TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_CARRIER,
-                            allowedNetworkTypes));
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                mTelephonyManager,
+                (tm) -> tm.setAllowedNetworkTypesForReason(
+                        TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_CARRIER,
+                        allowedNetworkTypes));
 
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                    mTelephonyManager,
-                    (tm) -> tm.setAllowedNetworkTypesForReason(
-                            TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_USER,
-                            networkTypeBitmask));
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                mTelephonyManager,
+                (tm) -> tm.setAllowedNetworkTypesForReason(
+                        TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_USER,
+                        networkTypeBitmask));
 
-            long modemNetworkTypeBitmask = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> {
-                        return tm.getAllowedNetworkTypesBitmask();
-                    }
-            );
-            long radioAccessFamily = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> {
-                        return tm.getSupportedRadioAccessFamily();
-                    }
-            );
+        long modemNetworkTypeBitmask = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mTelephonyManager, (tm) -> {
+                    return tm.getAllowedNetworkTypesBitmask();
+                }
+        );
+        long radioAccessFamily = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mTelephonyManager, (tm) -> {
+                    return tm.getSupportedRadioAccessFamily();
+                }
+        );
 
-            // RadioAccessFamily won't include all bits of RAFs group, so transfer to preferred
-            // network type instead of using bitmask directly
-            int modemPreferredNetworkType = RadioAccessFamily.getNetworkTypeFromRaf(
-                    (int) modemNetworkTypeBitmask);
-            int preferredNetworkType = RadioAccessFamily.getNetworkTypeFromRaf(
-                    (int) (networkTypeBitmask & allowedNetworkTypes & radioAccessFamily));
-            assertEquals(preferredNetworkType, modemPreferredNetworkType);
-        } catch (SecurityException se) {
-            fail("testDisAllowedNetworkTypes: SecurityException not expected");
-        }
+        // RadioAccessFamily won't include all bits of RAFs group, so transfer to preferred
+        // network type instead of using bitmask directly
+        int modemPreferredNetworkType = RadioAccessFamily.getNetworkTypeFromRaf(
+                (int) modemNetworkTypeBitmask);
+        int preferredNetworkType = RadioAccessFamily.getNetworkTypeFromRaf(
+                (int) (networkTypeBitmask & allowedNetworkTypes & radioAccessFamily));
+        assertEquals(preferredNetworkType, modemPreferredNetworkType);
     }
 
     @Test
-    public void testSetAllowedNetworkTypesForReason() {
+    public void testSetAllowedNetworkTypesForReason() throws Exception {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         // test without permission: verify SecurityException
@@ -4044,40 +3884,25 @@ public class TelephonyManagerTest {
         }
 
         // test with permission
-        try {
-            // Register telephony callback for AllowedNetworkTypesListener
-            AllowedNetworkTypesListener listener = new AllowedNetworkTypesListener();
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                    (tm) -> tm.registerTelephonyCallback(mSimpleExecutor, listener));
-            verifySetAndGetAllowedNetworkTypesForReason(listener,
-                    TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_POWER, allowedNetworkTypes);
-        } catch (Exception e) {
-            fail("testSetAllowedNetworkTypes: Exception is not expected e:" + e);
-        }
+        // Register telephony callback for AllowedNetworkTypesListener
+        AllowedNetworkTypesListener listener = new AllowedNetworkTypesListener();
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                (tm) -> tm.registerTelephonyCallback(mSimpleExecutor, listener));
+        verifySetAndGetAllowedNetworkTypesForReason(listener,
+                TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_POWER, allowedNetworkTypes);
     }
 
     @Test
-    public void testSetAllowedNetworkTypesForReason_carrierPrivileges() {
+    public void testSetAllowedNetworkTypesForReason_carrierPrivileges() throws Exception {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-        try {
-            CarrierPrivilegeUtils.withCarrierPrivileges(getContext(),
-                    SubscriptionManager.getDefaultSubscriptionId(),
-                    () -> {
-                        mTelephonyManager.setAllowedNetworkTypesForReason(
-                                TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_CARRIER,
-                                TelephonyManager.NETWORK_TYPE_BITMASK_LTE);
-                    }
-            );
-        } catch (SecurityException se) {
-            fail("setAllowedNetworkTypesForReason: SecurityException not expected: "
-                    + se.getMessage());
-        } catch (Exception e) {
-            // withCarrierPrivileges declares a checked Exception, so we must handle it. We don't
-            // expect any exceptions so this is still a failure.
-            Log.e(TAG, "Exception not expected. failing test.", e);
-            fail("CarrierPrivilegeUtils.withCarrierPrivileges: Exception not expected. "
-                    + "See error log.");
-        }
+        CarrierPrivilegeUtils.withCarrierPrivileges(getContext(),
+                SubscriptionManager.getDefaultSubscriptionId(),
+                () -> {
+                    mTelephonyManager.setAllowedNetworkTypesForReason(
+                            TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_CARRIER,
+                            TelephonyManager.NETWORK_TYPE_BITMASK_LTE);
+                }
+        );
 
         assertThrows(SecurityException.class, () -> {
             CarrierPrivilegeUtils.withCarrierPrivileges(getContext(),
@@ -4214,8 +4039,6 @@ public class TelephonyManagerTest {
                         android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
         try {
             mTelephonyManager.isApplicationOnUicc(TelephonyManager.APPTYPE_SIM);
-        } catch (SecurityException se) {
-            fail("Caller with READ_PRIVILEGED_PHONE_STATE should be able to call API");
         } finally {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();
@@ -4362,30 +4185,26 @@ public class TelephonyManagerTest {
     public void testGetSimApplicationStateWithPhysicalSlotIndexAndPortIndex() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
-        try {
-            List<UiccCardInfo> cardInfoList =
-                    ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                            (tm) -> tm.getUiccCardsInfo());
-            for (UiccCardInfo cardInfo : cardInfoList) {
-                int physicalSlotIndex = cardInfo.getPhysicalSlotIndex();
-                List<UiccPortInfo> portInfoList = (List<UiccPortInfo>) cardInfo.getPorts();
-                for (UiccPortInfo uiccPortInfo : portInfoList) {
-                    int portIndex = uiccPortInfo.getPortIndex();
-                    int simApplicationState =
-                            ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                                    (tm) -> tm.getSimApplicationState(physicalSlotIndex,
-                                            portIndex));
-                    assertTrue(Arrays.asList(TelephonyManager.SIM_STATE_UNKNOWN,
-                            TelephonyManager.SIM_STATE_PIN_REQUIRED,
-                            TelephonyManager.SIM_STATE_PUK_REQUIRED,
-                            TelephonyManager.SIM_STATE_NETWORK_LOCKED,
-                            TelephonyManager.SIM_STATE_NOT_READY,
-                            TelephonyManager.SIM_STATE_PERM_DISABLED,
-                            TelephonyManager.SIM_STATE_LOADED).contains(simApplicationState));
-                }
+        List<UiccCardInfo> cardInfoList =
+                ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                        (tm) -> tm.getUiccCardsInfo());
+        for (UiccCardInfo cardInfo : cardInfoList) {
+            int physicalSlotIndex = cardInfo.getPhysicalSlotIndex();
+            List<UiccPortInfo> portInfoList = (List<UiccPortInfo>) cardInfo.getPorts();
+            for (UiccPortInfo uiccPortInfo : portInfoList) {
+                int portIndex = uiccPortInfo.getPortIndex();
+                int simApplicationState =
+                        ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                                (tm) -> tm.getSimApplicationState(physicalSlotIndex,
+                                        portIndex));
+                assertTrue(Arrays.asList(TelephonyManager.SIM_STATE_UNKNOWN,
+                        TelephonyManager.SIM_STATE_PIN_REQUIRED,
+                        TelephonyManager.SIM_STATE_PUK_REQUIRED,
+                        TelephonyManager.SIM_STATE_NETWORK_LOCKED,
+                        TelephonyManager.SIM_STATE_NOT_READY,
+                        TelephonyManager.SIM_STATE_PERM_DISABLED,
+                        TelephonyManager.SIM_STATE_LOADED).contains(simApplicationState));
             }
-        } catch (SecurityException e) {
-            fail("Caller with READ_PRIVILEGED_PHONE_STATE should be able to call API");
         }
     }
 
@@ -5385,8 +5204,7 @@ public class TelephonyManagerTest {
     public void testGetAllCellInfo() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
-        grantLocationPermissions();
-        mWasLocationEnabled = setLocationEnabled(true);
+        mLocationHelper.enable();
 
         // For INetworkRadio <1.5, just verify that calling the method doesn't throw an error.
         if (mNetworkHalVersion < RADIO_HAL_VERSION_1_5) {
@@ -5460,8 +5278,14 @@ public class TelephonyManagerTest {
                     .getUiAutomation()
                     .adoptShellPermissionIdentity(
                             android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
-            PollingCheck.waitFor(5000, () -> !mTelephonyManager.isApnMetered(ApnSetting.TYPE_DUN),
+            PollingCheck.waitFor(
+                    5000,
+                    () -> !mTelephonyManager.isApnMetered(ApnSetting.TYPE_DUN),
                     "Timeout when waiting for DUN APN to become unmetered");
+            PollingCheck.waitFor(
+                    5000,
+                    () -> mTelephonyManager.isApnMetered(ApnSetting.TYPE_MMS),
+                    "Timeout when waiting for MMS APN to become metered");
 
             assertTrue(mTelephonyManager.isApnMetered(ApnSetting.TYPE_MMS));
             assertFalse(mTelephonyManager.isApnMetered(ApnSetting.TYPE_DUN));
@@ -5703,7 +5527,7 @@ public class TelephonyManagerTest {
         try {
             Thread.sleep(ms);
         } catch (InterruptedException e) {
-            Log.d(TAG, "InterruptedException while waiting: " + e);
+            Log.d(TAG, "InterruptedException while waiting", e);
         }
     }
 
@@ -5792,8 +5616,7 @@ public class TelephonyManagerTest {
             }
         }
 
-        grantLocationPermissions();
-        mWasLocationEnabled = setLocationEnabled(true);
+        mLocationHelper.enable();
 
         TestThread t = new TestThread(() -> {
             Looper.prepare();
@@ -5895,9 +5718,6 @@ public class TelephonyManagerTest {
                     .adoptShellPermissionIdentity(
                             android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
             mTelephonyManager.checkCarrierPrivilegesForPackage(mSelfPackageName);
-        } catch (SecurityException e) {
-            fail("TelephonyManager#checkCarrierPrivilegesForPackage requires "
-                    + "READ_PRIVILEGED_PHONE_STATE");
         } finally {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .dropShellPermissionIdentity();
@@ -5934,9 +5754,6 @@ public class TelephonyManagerTest {
                     .adoptShellPermissionIdentity(
                         android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
             mTelephonyManager.checkCarrierPrivilegesForPackageAnyPhone(mSelfPackageName);
-        } catch (SecurityException e) {
-            fail("TelephonyManager#checkCarrierPrivilegesForPackageAnyPhone should not throw "
-                    + "SecurityException with READ_PRIVILEGED_PHONE_STATE permission");
         } finally {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();
@@ -5956,9 +5773,6 @@ public class TelephonyManagerTest {
             Intent intent = new Intent();
             int phoneId = 1;
             mTelephonyManager.getCarrierPackageNamesForIntentAndPhone(intent, phoneId);
-        } catch (SecurityException e) {
-            fail("TelephonyManager#getCarrierPackageNamesForIntentAndPhone requires "
-                    + "READ_PRIVILEGED_PHONE_STATE");
         } finally {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .dropShellPermissionIdentity();
@@ -5994,9 +5808,6 @@ public class TelephonyManagerTest {
                     .adoptShellPermissionIdentity(
                             android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
             mTelephonyManager.getPackagesWithCarrierPrivileges();
-        } catch (SecurityException e) {
-            fail("TelephonyManager#getPackagesWithCarrierPrivileges requires "
-                    + "READ_PRIVILEGED_PHONE_STATE");
         } finally {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .dropShellPermissionIdentity();
@@ -6035,7 +5846,8 @@ public class TelephonyManagerTest {
             // if HAL version is less than 2.0, vendors may not have implemented API,
             // skipping the failure.
             if (mConfigHalVersion >= RADIO_HAL_VERSION_2_0) {
-                fail("Not Expected Fail, Error in setSimSlotMapping :" + e);
+                throw new AssertionError(
+                        "Not Expected Fail, Error in setSimSlotMapping", e);
             }
         }
 
@@ -6204,24 +6016,20 @@ public class TelephonyManagerTest {
         long invalidAllowedNetworkTypes = TelephonyManager.NETWORK_TYPE_BITMASK_LTE
                 | TelephonyManager.NETWORK_TYPE_BITMASK_LTE_CA;
         long expectedAllowedNetworkTypes = TelephonyManager.NETWORK_TYPE_BITMASK_LTE;
-        try {
-            mIsAllowedNetworkTypeChanged = true;
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                    mTelephonyManager,
-                    (tm) -> tm.setAllowedNetworkTypesForReason(
-                            TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_POWER,
-                            invalidAllowedNetworkTypes));
+        mIsAllowedNetworkTypeChanged = true;
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                mTelephonyManager,
+                (tm) -> tm.setAllowedNetworkTypesForReason(
+                        TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_POWER,
+                        invalidAllowedNetworkTypes));
 
-            long deviceAllowedNetworkTypes = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> {
-                        return tm.getAllowedNetworkTypesForReason(
-                                TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_POWER);
-                    }
-            );
-            assertEquals(expectedAllowedNetworkTypes, deviceAllowedNetworkTypes);
-        } catch (SecurityException se) {
-            fail("testIgnoreInvalidNetworkType: SecurityException not expected");
-        }
+        long deviceAllowedNetworkTypes = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mTelephonyManager, (tm) -> {
+                    return tm.getAllowedNetworkTypesForReason(
+                            TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_POWER);
+                }
+        );
+        assertEquals(expectedAllowedNetworkTypes, deviceAllowedNetworkTypes);
     }
 
     @Test
@@ -6236,8 +6044,6 @@ public class TelephonyManagerTest {
         try {
             Collection<UiccSlotMapping> simSlotMapping = mTelephonyManager.getSimSlotMapping();
             assertTrue(isSlotMappingValid(simSlotMapping));
-        } catch (IllegalArgumentException e) {
-            fail("IllegalArgumentException, Duplicate UiccSlotMapping data found");
         } finally {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();
@@ -6331,9 +6137,9 @@ public class TelephonyManagerTest {
                         lock.wait(TIMEOUT_TO_WAIT_FOR_DESIRED_STATE);
                     } catch (Exception e) {
                         if (failOnTimeOut) {
-                            fail(e.getMessage());
+                            throw new AssertionError("failOnTimeOut", e);
                         } else {
-                            Log.w(TAG, "waitForDesiredState: e=" + e);
+                            Log.w(TAG, "waitForDesiredState", e);
                         }
                     }
                     now = SystemClock.elapsedRealtime();
@@ -6634,8 +6440,6 @@ public class TelephonyManagerTest {
             mTelephonyManager.getImsPrivateUserIdentity();
         } catch (IllegalStateException e) {
             // expected in case SIM do not support ISIM
-        } catch (SecurityException secExp) {
-            fail();
         } finally {
             setAppOpsPermissionAllowed(false, OPSTR_USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER);
         }
@@ -6733,7 +6537,7 @@ public class TelephonyManagerTest {
     }
 
     @Test
-    public void testLastKnownCountryIso() {
+    public void testLastKnownCountryIso() throws Exception {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         CountryChangedReceiver countryChangedReceiver = new CountryChangedReceiver();
@@ -6766,17 +6570,13 @@ public class TelephonyManagerTest {
             Log.i(TAG, "testLastKnownCountryIso:"
                     + "turning radio off due to testing last known country ...");
             turnRadioOff(callback, TelephonyManager.RADIO_POWER_REASON_USER);
-            try {
-                countryChangedReceiver.waitForIntent();
-                assertThat(countryChangedReceiver.getExtras().getString(
-                        TelephonyManager.EXTRA_NETWORK_COUNTRY)).isEmpty();
-                assertThat(countryChangedReceiver.getExtras().getString(
-                        TelephonyManager.EXTRA_LAST_KNOWN_NETWORK_COUNTRY)).isEqualTo(countryCode);
-                Log.i(TAG, "testLastKnownCountryIso: country code \"" + countryCode
-                        + "\" matched.");
-            } catch (Exception e) {
-                fail(e.getMessage());
-            }
+            countryChangedReceiver.waitForIntent();
+            assertThat(countryChangedReceiver.getExtras().getString(
+                    TelephonyManager.EXTRA_NETWORK_COUNTRY)).isEmpty();
+            assertThat(countryChangedReceiver.getExtras().getString(
+                    TelephonyManager.EXTRA_LAST_KNOWN_NETWORK_COUNTRY)).isEqualTo(countryCode);
+            Log.i(TAG, "testLastKnownCountryIso: country code \"" + countryCode
+                    + "\" matched.");
         } finally {
             if (initialRadioState == TelephonyManager.RADIO_POWER_OFF
                     && mTelephonyManager.getRadioPowerState() != TelephonyManager.RADIO_POWER_OFF) {
@@ -6830,7 +6630,7 @@ public class TelephonyManagerTest {
                 return new CarrierInfo(carrierIds, appSignatures);
             }
         } catch (JSONException ex) {
-            Log.e(TAG, "getCallerSignatureInfo: JSONException = " + ex);
+            Log.e(TAG, "getCallerSignatureInfo error", ex);
         }
         return null;
     }
@@ -6847,8 +6647,7 @@ public class TelephonyManagerTest {
                         mTelephonyManager, (tm) -> tm.getShaIdFromAllowList(srcPkg, cid));
 
                 if (shaIdList == null || shaIdList.isEmpty()) {
-                    Log.d(TAG, "shaIdList is empty");
-                    fail();
+                    fail("shaIdList is empty");
                 }
                 assertTrue(shaIdList.equals(testCarrierInfo.getSHAIdList()));
             }
@@ -6934,10 +6733,13 @@ public class TelephonyManagerTest {
     }
 
     @Test
-    @ApiTest(apis = {
-            "android.telephony.TelephonyManager#isCellularIdentifierDisclosureNotificationsEnabled",
-            "android.telephony.TelephonyManager#setEnableCellularIdentifierDisclosureNotifications"})
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_IDENTIFIER_DISCLOSURE_TRANSPARENCY)
+    @ApiTest(
+            apis = {
+                "android.telephony.TelephonyManager"
+                        + "#isCellularIdentifierDisclosureNotificationsEnabled",
+                "android.telephony.TelephonyManager"
+                        + "#setEnableCellularIdentifierDisclosureNotifications"
+            })
     public void testSetEnableCellularIdentifierDisclosureNotifications() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         if (mNetworkHalVersion < RADIO_HAL_VERSION_2_2) {
@@ -6953,10 +6755,13 @@ public class TelephonyManagerTest {
                     (tm) -> tm.isCellularIdentifierDisclosureNotificationsEnabled());
             assertTrue(enabled);
 
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mTelephonyManager,
                     (tm) -> tm.setEnableCellularIdentifierDisclosureNotifications(false));
-            enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                    (tm) -> tm.isCellularIdentifierDisclosureNotificationsEnabled());
+            enabled =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            mTelephonyManager,
+                            (tm) -> tm.isCellularIdentifierDisclosureNotificationsEnabled());
             assertFalse(enabled);
         } catch (UnsupportedOperationException e) {
             Log.d(TAG,
@@ -6966,15 +6771,17 @@ public class TelephonyManagerTest {
     }
 
     @Test
-    @ApiTest(apis = {
-            "android.telephony.TelephonyManager#isCellularIdentifierDisclosureNotificationsEnabled",
-            "android.telephony.TelephonyManager#setEnableCellularIdentifierDisclosureNotifications"})
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_IDENTIFIER_DISCLOSURE_TRANSPARENCY)
+    @ApiTest(
+            apis = {
+                "android.telephony.TelephonyManager"
+                        + "#isCellularIdentifierDisclosureNotificationsEnabled",
+                "android.telephony.TelephonyManager"
+                        + "#setEnableCellularIdentifierDisclosureNotifications"
+            })
     public void testCellularIdentifierDisclosureNotificationsPermissions() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         if (mNetworkHalVersion < RADIO_HAL_VERSION_2_2) {
-            Log.d(TAG,
-                    "Skipping test since modem does not support IRadioNetwork HAL v2.2");
+            Log.d(TAG, "Skipping test since modem does not support IRadioNetwork HAL v2.2");
             return;
         }
 
@@ -6984,26 +6791,22 @@ public class TelephonyManagerTest {
                     }
             );
 
-            assertThrows(SecurityException.class, () -> {
+            assertThrows(
+                    SecurityException.class,
+                    () -> {
                         mTelephonyManager.isCellularIdentifierDisclosureNotificationsEnabled();
-                    }
-            );
+                    });
         } catch (UnsupportedOperationException e) {
-            Log.d(TAG,
-                    "Skipping test since modem does not support optional IRadioNetwork APIs");
+            Log.d(TAG, "Skipping test since modem does not support optional IRadioNetwork APIs");
             return;
         }
     }
 
     @Test
-    @ApiTest(apis = {
-            "android.telephony.TelephonyManager#getLastKnownCellIdentity"})
-    @RequiresFlagsEnabled(
-            com.android.server.telecom.flags.Flags.FLAG_GET_LAST_KNOWN_CELL_IDENTITY)
+    @ApiTest(apis = {"android.telephony.TelephonyManager#getLastKnownCellIdentity"})
+    @RequiresFlagsEnabled(com.android.server.telecom.flags.Flags.FLAG_GET_LAST_KNOWN_CELL_IDENTITY)
     public void testGetLastKnownCellIdentity() {
-        grantLocationPermissions();
-        mWasLocationEnabled = setLocationEnabled(true);
-
+        mLocationHelper.enable();
 
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         // Revoking ACCESS_FINE_LOCATION will cause test to crash. Verify that security exception
@@ -7011,52 +6814,58 @@ public class TelephonyManagerTest {
         // not granted.
         try {
             mTelephonyManager.getLastKnownCellIdentity();
-            fail("TelephonyManager#resetSettings requires the"
-                    + " permission.ACCESS_LAST_KNOWN_CELL_ID.");
+            fail(
+                    "TelephonyManager#resetSettings requires the"
+                            + " permission.ACCESS_LAST_KNOWN_CELL_ID.");
         } catch (SecurityException e) {
             //expected
         }
 
         // Obtain the primary cell identity from the NetworkRegistration info list.
         ServiceState ss = mTelephonyManager.getServiceState();
-        List<NetworkRegistrationInfo> regInfos = ss != null
-                ? ss.getNetworkRegistrationInfoList()
-                : new ArrayList();
+        List<NetworkRegistrationInfo> regInfos =
+                ss != null ? ss.getNetworkRegistrationInfoList() : new ArrayList();
 
-        Optional<CellIdentity> primaryCellIdentity = regInfos.stream()
-                .filter(nri -> nri.getCellIdentity() != null)
-                .filter(nri -> nri.getTransportType() == AccessNetworkConstants.TRANSPORT_TYPE_WWAN)
-                .sorted(Comparator.comparing(NetworkRegistrationInfo::isRegistered)
-                        .thenComparing((nri) -> nri.getDomain() & NetworkRegistrationInfo.DOMAIN_CS)
-                        .reversed())
-                .map(nri -> nri.getCellIdentity())
-                .distinct()
-                .findFirst();
+        Optional<CellIdentity> primaryCellIdentity =
+                regInfos.stream()
+                        .filter(nri -> nri.getCellIdentity() != null)
+                        .filter(
+                                nri ->
+                                        nri.getTransportType()
+                                                == AccessNetworkConstants.TRANSPORT_TYPE_WWAN)
+                        .sorted(
+                                Comparator.comparing(NetworkRegistrationInfo::isRegistered)
+                                        .thenComparing(
+                                                (nri) ->
+                                                        nri.getDomain()
+                                                                & NetworkRegistrationInfo.DOMAIN_CS)
+                                        .reversed())
+                        .map(nri -> nri.getCellIdentity())
+                        .distinct()
+                        .findFirst();
 
-        try {
-            CellIdentity cellIdentity = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> tm.getLastKnownCellIdentity(),
-                    permission.ACCESS_LAST_KNOWN_CELL_ID,
-                    permission.ACCESS_FINE_LOCATION);
-            assertEquals(
-                    cellIdentity,
-                    primaryCellIdentity.isPresent() ? primaryCellIdentity.get() : null);
-        } catch (SecurityException e) {
-            e.printStackTrace();
-            fail(e.toString());
-        }
+        CellIdentity cellIdentity =
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        mTelephonyManager,
+                        (tm) -> tm.getLastKnownCellIdentity(),
+                        permission.ACCESS_LAST_KNOWN_CELL_ID,
+                        permission.ACCESS_FINE_LOCATION);
+        assertEquals(
+                cellIdentity,
+                primaryCellIdentity.isPresent() ? primaryCellIdentity.get() : null);
+
     }
 
     @Test
-    @ApiTest(apis = {
-            "android.telephony.TelephonyManager#isNullCipherNotificationsEnabled",
-            "android.telephony.TelephonyManager#setNullCipherNotificationsEnabled"})
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_MODEM_CIPHER_TRANSPARENCY)
+    @ApiTest(
+            apis = {
+                "android.telephony.TelephonyManager#isNullCipherNotificationsEnabled",
+                "android.telephony.TelephonyManager#setNullCipherNotificationsEnabled"
+            })
     public void testsetNullCipherNotificationsEnabled() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         if (mNetworkHalVersion < RADIO_HAL_VERSION_2_2) {
-            Log.d(TAG,
-                    "Skipping test since modem does not support IRadioNetwork HAL v2.2");
+            Log.d(TAG, "Skipping test since modem does not support IRadioNetwork HAL v2.2");
             return;
         }
         try {
@@ -7066,14 +6875,14 @@ public class TelephonyManagerTest {
                     (tm) -> tm.isNullCipherNotificationsEnabled());
             assertTrue(enabled);
 
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                    (tm) -> tm.setNullCipherNotificationsEnabled(false));
-            enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                    (tm) -> tm.isNullCipherNotificationsEnabled());
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mTelephonyManager, (tm) -> tm.setNullCipherNotificationsEnabled(false));
+            enabled =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            mTelephonyManager, (tm) -> tm.isNullCipherNotificationsEnabled());
             assertFalse(enabled);
         } catch (UnsupportedOperationException e) {
-            Log.d(TAG,
-                    "Skipping test since modem does not support optional IRadioNetwork APIs");
+            Log.d(TAG, "Skipping test since modem does not support optional IRadioNetwork APIs");
             return;
         }
     }
@@ -7086,16 +6895,16 @@ public class TelephonyManagerTest {
     public void testNullCipherNotificationsPermissions() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         if (mNetworkHalVersion < RADIO_HAL_VERSION_2_2) {
-            Log.d(TAG,
-                    "Skipping test since modem does not support IRadioNetwork HAL v2.2");
+            Log.d(TAG, "Skipping test since modem does not support IRadioNetwork HAL v2.2");
             return;
         }
 
         try {
-            assertThrows(SecurityException.class, () -> {
+            assertThrows(
+                    SecurityException.class,
+                    () -> {
                         mTelephonyManager.setNullCipherNotificationsEnabled(true);
-                    }
-            );
+                    });
             assertThrows(SecurityException.class, () -> {
                         mTelephonyManager.isNullCipherNotificationsEnabled();
                     }
@@ -7115,11 +6924,12 @@ public class TelephonyManagerTest {
         long startTime = SystemClock.elapsedRealtime();
         TelephonyManager.EmergencyCallDiagnosticData.Builder callDiagnosticBuilder =
                 new TelephonyManager.EmergencyCallDiagnosticData.Builder();
-        TelephonyManager.EmergencyCallDiagnosticData data = callDiagnosticBuilder
-                .setTelecomDumpsysCollectionEnabled(true)
-                .setTelephonyDumpsysCollectionEnabled(true)
-                .setLogcatCollectionStartTimeMillis(startTime)
-                .build();
+        TelephonyManager.EmergencyCallDiagnosticData data =
+                callDiagnosticBuilder
+                        .setTelecomDumpsysCollectionEnabled(true)
+                        .setTelephonyDumpsysCollectionEnabled(true)
+                        .setLogcatCollectionStartTimeMillis(startTime)
+                        .build();
         assertTrue(data.isTelecomDumpsysCollectionEnabled());
         assertTrue(data.isTelephonyDumpsysCollectionEnabled());
         assertTrue(data.isLogcatCollectionEnabled());
@@ -7182,14 +6992,9 @@ public class TelephonyManagerTest {
                         setLogcatDump ? SystemClock.elapsedRealtime() : -1L)
                 .build();
 
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                    (tm) -> tm.persistEmergencyCallDiagnosticData(DROPBOX_TAG, data),
-                    permission.DUMP);
-        } catch (SecurityException e) {
-            e.printStackTrace();
-            fail(e.toString());
-        }
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                (tm) -> tm.persistEmergencyCallDiagnosticData(DROPBOX_TAG, data),
+                permission.DUMP);
         assertTrue(mLatchForDropBox.await(DROP_BOX_LATCH_TIMEOUT, TimeUnit.MILLISECONDS));
         mLatchForDropBox = new CountDownLatch(1);
     }
@@ -7217,15 +7022,7 @@ public class TelephonyManagerTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_DATA_ONLY_CELLULAR_SERVICE)
     @ApiTest(apis = {
-            "android.telephony.TelephonyManager#isDeviceVoiceCapable",
-            "android.telephony.TelephonyManager#isVoiceCapable"})
-    public void testIsDeviceVoiceCapable_isIdenticalToIsVoiceCapable() {
-        assertEquals(mTelephonyManager.isDeviceVoiceCapable(), mTelephonyManager.isVoiceCapable());
-    }
 
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DATA_ONLY_CELLULAR_SERVICE)
-    @ApiTest(apis = {
             "android.telephony.TelephonyManager#isDeviceSmsCapable",
             "android.telephony.TelephonyManager#isSmsCapable"})
     public void testIsDeviceSmsCapable_isIdenticalToIsSmsCapable() {
@@ -7329,9 +7126,6 @@ public class TelephonyManagerTest {
                     return subId;
                 }
             }
-        } catch (SecurityException e) {
-            fail("SubscriptionManager#getActiveSubscriptionIdList requires "
-                    + "READ_PRIVILEGED_PHONE_STATE");
         } finally {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();

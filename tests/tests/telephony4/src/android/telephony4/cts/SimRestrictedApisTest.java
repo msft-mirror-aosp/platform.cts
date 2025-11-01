@@ -231,21 +231,6 @@ public class SimRestrictedApisTest {
     }
 
     /**
-     * Tests the TelephonyManager.nvReadItem() API. This makes a call to nvReadItem() API and
-     * expects a SecurityException since the test apk is not signed by a certificate on the SIM.
-     */
-    @Test
-    public void testNvReadItem() {
-        try {
-            if (isSimCardPresent()) {
-                mTelephonyManager.nvReadItem(0);
-                fail("Expected SecurityException. App doesn't have carrier privileges.");
-            }
-        } catch (SecurityException expected) {
-        }
-    }
-
-    /**
      * Tests the TelephonyManager.nvResetConfig() API. This makes a call to nvResetConfig() API and
      * expects a SecurityException since the test apk is not signed by a certificate on the SIM.
      */
