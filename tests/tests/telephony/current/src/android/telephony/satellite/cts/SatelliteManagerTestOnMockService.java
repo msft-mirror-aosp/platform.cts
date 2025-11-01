@@ -263,7 +263,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     @Before
     public void setUp() throws Exception {
         logd("setUp");
-        if (!shouldTestSatelliteWithMockService()) return;
+        assumeTrue(shouldTestSatelliteWithMockService());
         assumeTrue(sMockSatelliteServiceManager != null);
 
         sMockSatelliteServiceManager.setErrorCode(SatelliteResult.SATELLITE_RESULT_SUCCESS);
@@ -346,8 +346,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testProvisionSatelliteService() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testProvisionSatelliteService: start");
         grantSatellitePermission();
 
@@ -404,8 +402,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testProvisioningApiNotSupportedByVendorService() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testProvisioningApiNotSupportedByVendorService: start");
         grantSatellitePermission();
 
@@ -450,8 +446,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testPointingUICrashHandling() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         grantSatellitePermission();
 
         assertTrue(isSatelliteProvisioned());
@@ -486,8 +480,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSatelliteModemStateChanged() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         grantSatellitePermission();
 
         assertTrue(isSatelliteProvisioned());
@@ -583,7 +575,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSatelliteModemStateChangedForNbIot() {
-        if (!shouldTestSatelliteWithMockService() || !Flags.oemEnabledSatelliteFlag()) return;
+        if (!Flags.oemEnabledSatelliteFlag()) return;
 
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
 
@@ -761,7 +753,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSendKeepAliveDatagramInNotConnectedState() {
-        if (!shouldTestSatelliteWithMockService() || !Flags.oemEnabledSatelliteFlag()) return;
+        if (!Flags.oemEnabledSatelliteFlag()) return;
 
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
 
@@ -1303,7 +1295,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSatelliteEnableErrorHandling() {
-        if (!shouldTestSatelliteWithMockService()) return;
         assumeTrue(sTelephonyManager != null);
 
         grantSatellitePermission();
@@ -1391,8 +1382,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSatelliteDatagramReceivedAck() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         grantSatellitePermission();
 
         assertTrue(isSatelliteProvisioned());
@@ -1425,8 +1414,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void  testRequestSatelliteCapabilities() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testRequestSatelliteCapabilities");
         grantSatellitePermission();
 
@@ -1469,8 +1456,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSendSatelliteDatagram_success() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSendSatelliteDatagram_success");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -1521,8 +1506,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSendSatelliteDatagram_failure() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSendSatelliteDatagram_failure");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -1591,8 +1574,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSendMultipleSatelliteDatagrams_success() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSendMultipleSatelliteDatagrams_success");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -1734,8 +1715,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSendMultipleSatelliteDatagrams_failure() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSendMultipleSatelliteDatagrams_failure");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -1860,8 +1839,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testReceiveSatelliteDatagram() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testReceiveSatelliteDatagram");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -1914,8 +1891,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testReceiveMultipleSatelliteDatagrams() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testReceiveMultipleSatelliteDatagrams");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -2016,8 +1991,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testReceiveSatellitePositionUpdate() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testReceiveSatellitePositionUpdate");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -2059,8 +2032,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testReceiveMultipleSatellitePositionUpdates() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testReceiveMultipleSatellitePositionUpdates");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -2115,8 +2086,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSendAndReceiveSatelliteDatagram_DemoMode_success() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSendSatelliteDatagram_DemoMode_success");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -2217,8 +2186,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSendAndReceiveMultipleSatelliteDatagrams_DemoMode_success() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSendAndReceiveMultipleSatelliteDatagrams_DemoMode_success");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -2299,8 +2266,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSendSatelliteDatagram_DemoMode_failure() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSendSatelliteDatagram_DemoMode_failure");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -2388,8 +2353,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSatelliteModeRadios() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSatelliteModeRadios: start");
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.SATELLITE_COMMUNICATION,
@@ -2449,8 +2412,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSatelliteModeRadios_noRadiosSensitiveToSatelliteMode() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSatelliteModeRadios_noRadiosSensitiveToSatelliteMode: start");
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.SATELLITE_COMMUNICATION,
@@ -2512,8 +2473,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSatelliteModeRadiosWithAirplaneMode() throws Exception {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSatelliteModeRadiosWithAirplaneMode: start");
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.SATELLITE_COMMUNICATION,
@@ -2599,8 +2558,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSendSatelliteDatagram_DemoMode_not_Aligned() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSendSatelliteDatagram_DemoMode_not_Aligned");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -2816,8 +2773,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testReceiveSatelliteDatagram_DemoMode_not_Aligned() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testReceiveSatelliteDatagram_DemoMode_not_Aligned");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -2902,8 +2857,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSatelliteModemBusy_modemSendingDatagram_pollingFailure() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSatelliteModemBusy_modemSendingDatagram_pollingFailure");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -2947,8 +2900,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSatelliteModemBusy_modemPollingDatagrams_pollingFailure() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSatelliteModemBusy_modemPollingDatagrams_pollingFailure");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -2985,8 +2936,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSatelliteModemBusy_modemPollingDatagram_sendingDelayed() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSatelliteModemBusy_modemPollingDatagram_sendingDelayed");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -3083,8 +3032,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testRebindToSatelliteService() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         grantSatellitePermission();
         assertTrue(isSatelliteSupported());
 
@@ -3131,8 +3078,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testRebindToSatelliteGatewayService() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
 
@@ -3182,7 +3127,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSatelliteAttachEnabledForCarrier() {
-        if (!shouldTestSatelliteWithMockService() || !Flags.carrierEnabledSatelliteFlag()) return;
+        if (!Flags.carrierEnabledSatelliteFlag()) return;
 
         logd("testSatelliteAttachEnabledForCarrier");
         grantSatellitePermission();
@@ -3278,7 +3223,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSatelliteAttachRestrictionForCarrier() {
-        if (!shouldTestSatelliteWithMockService() || !Flags.carrierEnabledSatelliteFlag()) return;
+        if (!Flags.carrierEnabledSatelliteFlag()) return;
 
         logd("testSatelliteAttachRestrictionForCarrier");
         grantSatellitePermission();
@@ -3347,8 +3292,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testNtnSignalStrength() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testNtnSignalStrength: start");
         grantSatellitePermission();
 
@@ -3426,8 +3369,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testRegisterForCapabilitiesChanged() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testRegisterForCapabilitiesChanged: start");
         grantSatellitePermission();
 
@@ -3500,8 +3441,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testSendSatelliteDatagram_DemoMode_WithDeviceConfig() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSendSatelliteDatagram_DemoMode_WithDeviceConfig");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -3597,8 +3536,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testSatelliteAccessControl() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         grantSatellitePermission();
         assertTrue(sMockSatelliteServiceManager
                 .setIsSatelliteCommunicationAllowedForCurrentLocationCache(
@@ -3680,7 +3617,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     @Test
     @FlaggedApi(Flags.FLAG_CARRIER_ENABLED_SATELLITE_FLAG)
     public void testGetSatellitePlmnsForCarrier() {
-        if (!shouldTestSatelliteWithMockService() || !Flags.carrierEnabledSatelliteFlag()) return;
+        if (!Flags.carrierEnabledSatelliteFlag()) return;
 
         logd("testGetAggregateSatellitePlmnListForCarrier");
         grantSatellitePermission();
@@ -3729,8 +3666,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSendSatelliteDatagrams_timeout() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSendSatelliteDatagrams_timeout");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -3802,10 +3737,9 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         sMockSatelliteServiceManager.setDatagramControllerTimeoutDuration(true,
                 DatagramController.TIMEOUT_TYPE_WAIT_FOR_DATAGRAM_SENDING_RESPONSE, 0);
     }
+
     @Test
     public void testRequestSatelliteEnabled_timeout() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
 
@@ -3893,8 +3827,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testRegisterForSupportedStateChanged() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testRegisterForSupportedStateChanged: start");
         grantSatellitePermission();
 
@@ -3953,8 +3885,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testDemoSimulator() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testDemoSimulator: start");
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
 
@@ -4031,8 +3961,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testRequestSessionStats() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testRequestSessionStats: start");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());

@@ -59,6 +59,7 @@ import android.telephony.NetworkRegistrationInfo;
 import android.telephony.PhoneStateListener;
 import android.telephony.ServiceState;
 import android.telephony.TelephonyManager;
+import android.telephony.cts.util.LocationHelper;
 import android.text.TextUtils;
 import android.util.Pair;
 
@@ -66,6 +67,7 @@ import androidx.test.InstrumentationRegistry;
 
 import com.android.internal.telephony.flags.Flags;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -197,6 +199,7 @@ public class CellInfoTest {
 
     private PackageManager mPm;
     private TelephonyManager mTm;
+    private LocationHelper mLocationHelper;
 
     private int mNetworkHalVersion;
 
@@ -273,10 +276,18 @@ public class CellInfoTest {
         }
 
         mTm = (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
+        mLocationHelper = new LocationHelper(getContext());
         Pair<Integer, Integer> verPair =
                 mTm.getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK);
         mNetworkHalVersion = makeRadioVersion(verPair.first, verPair.second);
-        TelephonyManagerTest.grantLocationPermissions();
+        mLocationHelper.enable();
+    }
+
+    @After
+    public void tearDown() {
+        if (mLocationHelper != null) {
+            mLocationHelper.tearDown();
+        }
     }
 
     /**

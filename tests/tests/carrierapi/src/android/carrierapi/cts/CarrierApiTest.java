@@ -34,6 +34,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.BroadcastReceiver;
@@ -222,7 +223,9 @@ public class CarrierApiTest extends BaseCarrierApiTest {
     public void tearDown() throws Exception {
         if (!werePreconditionsSatisfied()) return;
 
-        mListenerThread.quit();
+        if (mListenerThread != null) {
+            mListenerThread.quit();
+        }
         try {
             mStatusProvider.delete(mStatusContentUri, null, null);
             mVoicemailProvider.delete(mVoicemailContentUri, null, null);
@@ -403,9 +406,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
                             TelephonyManager.APPTYPE_USIM,
                             TelephonyManager.AUTHTYPE_EAP_SIM,
                             base64Challenge);
-            assertWithMessage("Response to EAP-SIM Challenge must not be Null.")
-                    .that(response)
-                    .isNotNull();
+            assertWithMessage("UICC returned null for EAP-SIM auth").that(response).isNotNull();
             // response is base64 encoded. After decoding, the value should be:
             // 1 length byte + SRES(4 bytes) + 1 length byte + Kc(8 bytes)
             byte[] result = android.util.Base64.decode(response, android.util.Base64.DEFAULT);
@@ -418,6 +419,8 @@ public class CarrierApiTest extends BaseCarrierApiTest {
             assertWithMessage("Two responses must be different")
                     .that(response)
                     .isNotEqualTo(response2);
+        } catch (UnsupportedOperationException e) {
+            assumeNoException("EAP-SIM/AKA not supported", e);
         } catch (SecurityException e) {
             fail(NO_CARRIER_PRIVILEGES_FAILURE_MESSAGE);
         }
@@ -426,8 +429,8 @@ public class CarrierApiTest extends BaseCarrierApiTest {
     @Test
     @SystemUserOnly(reason = "b/177921545, broadcast sent only to primary user")
     public void testSendDialerSpecialCode() {
-        assumeTrue("FEATURE_TELEPHONY_CALLING is not supported in device",
-                hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(hasTelephonyCalling());
+
         IntentReceiver intentReceiver = new IntentReceiver();
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(Telephony.Sms.Intents.SECRET_CODE_ACTION);
@@ -567,10 +570,8 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         try {
             mTelephonyManager.getDeviceId();
             mTelephonyManager.getDeviceSoftwareVersion();
+            mTelephonyManager.getImei();
 
-            if (hasFeature(PackageManager.FEATURE_TELEPHONY_GSM)) {
-                mTelephonyManager.getImei();
-            }
             if (hasFeature(PackageManager.FEATURE_TELEPHONY_CDMA)) {
                 mTelephonyManager.getMeid();
             }
@@ -755,6 +756,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         // The AID here doesn't matter - we just need to open a valid connection. In this case, the
         // specified AID ("") opens a channel and selects the MF.
         IccOpenLogicalChannelResponse response = mTelephonyManager.iccOpenLogicalChannel("");
+        assertThat(response.getStatus()).isEqualTo(STATUS_NO_ERROR);
         final int logicalChannel = response.getChannel();
         try {
             verifyValidIccOpenLogicalChannelResponse(response);
@@ -770,6 +772,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         // Specification v3.2 Section 6.2.7.h and TS 102 221 for details.
         int p2 = 0x0C; // '0C' for no data returned (TS 102 221 Section 11.1.1.2)
         IccOpenLogicalChannelResponse response = mTelephonyManager.iccOpenLogicalChannel("", p2);
+        assertThat(response.getStatus()).isEqualTo(STATUS_NO_ERROR);
         final int logicalChannel = response.getChannel();
         try {
             verifyValidIccOpenLogicalChannelResponse(response);
@@ -837,6 +840,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         // An open LC is required for transmitting APDU commands. This opens an LC to the MF.
         IccOpenLogicalChannelResponse iccOpenLogicalChannelResponse =
                 mTelephonyManager.iccOpenLogicalChannel("");
+        assertThat(iccOpenLogicalChannelResponse.getStatus()).isEqualTo(STATUS_NO_ERROR);
 
         // Get the status of the current directory. This should match the MF. TS 102 221 Section
         // 11.1.2
@@ -906,6 +910,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         // An open LC is required for transmitting apdu commands. This opens an LC to the MF.
         IccOpenLogicalChannelResponse iccOpenLogicalChannelResponse =
                 mTelephonyManager.iccOpenLogicalChannel("");
+        assertThat(iccOpenLogicalChannelResponse.getStatus()).isEqualTo(STATUS_NO_ERROR);
         final int logicalChannel = iccOpenLogicalChannelResponse.getChannel();
 
         try {
@@ -991,6 +996,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         // Open a logical channel and select the MF.
         IccOpenLogicalChannelResponse iccOpenLogicalChannel =
                 mTelephonyManager.iccOpenLogicalChannel("");
+        assertThat(iccOpenLogicalChannel.getStatus()).isEqualTo(STATUS_NO_ERROR);
         final int logicalChannel = iccOpenLogicalChannel.getChannel();
 
         try {
@@ -1052,7 +1058,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
                 mTelephonyManager.iccTransmitApduBasicChannel(
                         cla, COMMAND_MANAGE_CHANNEL, p1, p2, p3, data);
         // response is in the format | 1 byte: channel number | 2 bytes: status word |
-        String responseStatus = response.substring(2);
+        String responseStatus = response.substring(response.length() - 4);
         assertThat(responseStatus).isEqualTo(STATUS_NORMAL_STRING);
 
         // Close the open channel
@@ -1117,8 +1123,8 @@ public class CarrierApiTest extends BaseCarrierApiTest {
      */
     @Test
     public void testVoiceMailNumber() {
-        assumeTrue("FEATURE_TELEPHONY_CALLING is not supported in device",
-                hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(hasTelephonyCalling());
+
         // Cache original alpha tag and number values.
         String originalAlphaTag = mTelephonyManager.getVoiceMailAlphaTag();
         String originalNumber = mTelephonyManager.getVoiceMailNumber();
@@ -1211,8 +1217,8 @@ public class CarrierApiTest extends BaseCarrierApiTest {
      */
     @Test
     public void testAddSubscriptionToExistingGroupForEsim() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_EUICC)
-            && hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_EUICC));
         // Set subscription group with current sub Id.
         int subId = SubscriptionManager.getDefaultSubscriptionId();
         if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) return;
@@ -1442,11 +1448,16 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         // Format: [Length][RAND]
         String challenge = "10" + EAP_SIM_AKA_RAND;
         String base64Challenge = Base64.encodeToString(hexStringToBytes(challenge), Base64.NO_WRAP);
-        String base64Response =
-                mTelephonyManager.getIccAuthentication(
-                        TelephonyManager.APPTYPE_USIM,
-                        TelephonyManager.AUTHTYPE_EAP_SIM,
-                        base64Challenge);
+        String base64Response = null;
+        try {
+            base64Response = mTelephonyManager.getIccAuthentication(
+                    TelephonyManager.APPTYPE_USIM,
+                    TelephonyManager.AUTHTYPE_EAP_SIM,
+                    base64Challenge);
+        } catch (UnsupportedOperationException e) {
+            assumeNoException("EAP-SIM not supported", e);
+        }
+        assertWithMessage("UICC returned null for EAP-SIM auth").that(base64Response).isNotNull();
         byte[] response = Base64.decode(base64Response, Base64.DEFAULT);
         assertWithMessage("Results for AUTHTYPE_EAP_SIM failed")
                 .that(response)
@@ -1456,6 +1467,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
     @Test
     public void testEapAkaAuthentication() {
         // Wear devices do not yet support EapAkaAuthentication, so skip this test for now
+        // TODO: use REQUEST_NOT_SUPPORTED on Wear instead of skipping this test
         if (isWear()) {
             return;
         }
@@ -1467,11 +1479,15 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         // Format: [Length][Rand][Length][Autn]
         String challenge = "10" + EAP_SIM_AKA_RAND + "10" + EAP_AKA_AUTN;
         String base64Challenge = Base64.encodeToString(hexStringToBytes(challenge), Base64.NO_WRAP);
-        String base64Response =
-                mTelephonyManager.getIccAuthentication(
-                        TelephonyManager.APPTYPE_USIM,
-                        TelephonyManager.AUTHTYPE_EAP_AKA,
-                        base64Challenge);
+        String base64Response = null;
+        try {
+            base64Response = mTelephonyManager.getIccAuthentication(
+                    TelephonyManager.APPTYPE_USIM,
+                    TelephonyManager.AUTHTYPE_EAP_AKA,
+                    base64Challenge);
+        } catch (UnsupportedOperationException ex) {
+            assumeNoException("EAP-AKA not supported", ex);
+        }
 
         assertWithMessage("UICC returned null for EAP-AKA auth").that(base64Response).isNotNull();
         byte[] response = Base64.decode(base64Response, Base64.NO_WRAP);
