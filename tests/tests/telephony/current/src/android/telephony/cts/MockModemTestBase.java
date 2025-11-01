@@ -24,6 +24,7 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -49,6 +50,7 @@ public class MockModemTestBase {
 
     private static final String TAG = "MockModemTestBase";
     private static final String RESOURCE_PACKAGE_NAME = "android";
+    private static final boolean DEBUG_BUILD = !"user".equals(Build.TYPE);
 
     protected static final boolean VDBG = true;
 
@@ -63,7 +65,15 @@ public class MockModemTestBase {
             Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
             return false;
         }
-        MockModemManager.enforceMockModemDeveloperSetting();
+        try {
+            MockModemManager.enforceMockModemDeveloperSetting();
+        } catch (IllegalStateException ex) {
+            if (!DEBUG_BUILD) {
+                Log.d(TAG, "Skipping test on user build");
+                return false;
+            }
+            throw ex;
+        }
         sTelephonyManager =
                 (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
         sIsMultiSimDevice = isMultiSim(sTelephonyManager);
@@ -80,7 +90,7 @@ public class MockModemTestBase {
     protected static boolean afterAllTestsBase() throws Exception {
         if (VDBG) Log.d(TAG, "afterAllTestsBase()");
 
-        if (!hasTelephonyFeature()) {
+        if (!hasTelephonyFeature() || sTelephonyManager == null) {
             return false;
         }
 

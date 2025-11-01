@@ -49,12 +49,11 @@ public class DeviceIdentifiersTest extends BaseDeviceAdminTest {
             assertEquals(String.format(DEVICE_ID_WITH_PERMISSION_ERROR_MESSAGE, "getDeviceId"),
                     ShellIdentityUtils.invokeMethodWithShellPermissions(telephonyManager,
                             TelephonyManager::getDeviceId), telephonyManager.getDeviceId());
-            if (mContext.getPackageManager().hasSystemFeature(
-                    PackageManager.FEATURE_TELEPHONY_GSM)) {
-                assertEquals(String.format(DEVICE_ID_WITH_PERMISSION_ERROR_MESSAGE, "getImei"),
-                        ShellIdentityUtils.invokeMethodWithShellPermissions(telephonyManager,
-                                TelephonyManager::getImei), telephonyManager.getImei());
-            }
+            assertEquals(
+                    String.format(DEVICE_ID_WITH_PERMISSION_ERROR_MESSAGE, "getImei"),
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            telephonyManager, TelephonyManager::getImei),
+                    telephonyManager.getImei());
             if (mContext.getPackageManager().hasSystemFeature(
                     PackageManager.FEATURE_TELEPHONY_CDMA)) {
                 assertEquals(String.format(DEVICE_ID_WITH_PERMISSION_ERROR_MESSAGE, "getMeid"),

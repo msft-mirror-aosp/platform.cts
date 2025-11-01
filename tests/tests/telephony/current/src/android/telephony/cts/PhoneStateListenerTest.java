@@ -50,6 +50,7 @@ import android.telephony.SmsManager;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyDisplayInfo;
 import android.telephony.TelephonyManager;
+import android.telephony.cts.util.LocationHelper;
 import android.telephony.cts.util.TelephonyUtils;
 import android.telephony.emergency.EmergencyNumber;
 import android.telephony.ims.ImsReasonInfo;
@@ -113,6 +114,7 @@ public class PhoneStateListenerTest {
     private PreciseCallState mPreciseCallState;
     private SignalStrength mSignalStrength;
     private TelephonyManager mTelephonyManager;
+    private LocationHelper mLocationHelper;
     private PhoneStateListener mListener;
     private final Object mLock = new Object();
     private static final String TAG = "android.telephony.cts.PhoneStateListenerTest";
@@ -156,6 +158,7 @@ public class PhoneStateListenerTest {
         mTelephonyManager =
                 (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
         mCm = (ConnectivityManager) getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        mLocationHelper = new LocationHelper(getContext());
         mHandlerThread = new HandlerThread("PhoneStateListenerTest");
         mHandlerThread.start();
         mHandler = new Handler(mHandlerThread.getLooper());
@@ -163,6 +166,9 @@ public class PhoneStateListenerTest {
 
     @After
     public void tearDown() throws Exception {
+        if (mLocationHelper != null) {
+            mLocationHelper.tearDown();
+        }
         if (mListener != null) {
             // unregister the listener
             mTelephonyManager.listen(mListener, PhoneStateListener.LISTEN_NONE);
@@ -776,7 +782,7 @@ public class PhoneStateListenerTest {
 
         assertFalse(mOnCellLocationChangedCalled);
 
-        TelephonyManagerTest.grantLocationPermissions();
+        mLocationHelper.enable();
         mHandler.post(() -> {
             mListener = new PhoneStateListener() {
                 @Override
@@ -914,7 +920,7 @@ public class PhoneStateListenerTest {
 
         assertFalse(mOnDataActivityCalled);
 
-        TelephonyManagerTest.grantLocationPermissions();
+        mLocationHelper.enable();
         mHandler.post(() -> {
             mListener = new PhoneStateListener() {
                 @Override

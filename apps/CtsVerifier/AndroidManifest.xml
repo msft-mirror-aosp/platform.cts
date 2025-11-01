@@ -6248,7 +6248,7 @@
             <meta-data android:name="test_category" android:value="@string/test_category_telephony"/>
             <meta-data
                 android:name="test_required_features"
-                android:value="android.hardware.telephony"/>
+                android:value="android.hardware.telephony.calling"/>
             <meta-data
                 android:name="test_required_configs"
                 android:value="config_voice_capable"/>
@@ -6303,12 +6303,14 @@
                 android:value="@string/test_category_telephony"/>
             <meta-data
                 android:name="test_required_features"
-                android:value="android.hardware.telephony"/>
+                android:value="android.hardware.telephony.calling"/>
             <meta-data
                 android:name="test_required_configs"
                 android:value="config_voice_capable"/>
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="NonApiTest"
+                android:value="Helper class." />
         </activity>
 
         <service android:name=".dialer.DialerCallTestService"
@@ -6334,12 +6336,14 @@
                 android:value="@string/test_category_telephony"/>
             <meta-data
                 android:name="test_required_features"
-                android:value="android.hardware.telephony"/>
+                android:value="android.hardware.telephony.calling"/>
             <meta-data
                 android:name="test_required_configs"
                 android:value="config_voice_capable"/>
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="NonApiTest"
+                android:value="Helper class." />
         </activity>
 
         <activity
@@ -6531,7 +6535,7 @@
                 android:value="@string/test_category_telecom"/>
             <meta-data
                 android:name="test_required_features"
-                android:value="android.hardware.telephony"/>
+                android:value="android.hardware.telephony.calling"/>
             <meta-data
                 android:name="test_required_configs"
                 android:value="config_voice_capable"/>
