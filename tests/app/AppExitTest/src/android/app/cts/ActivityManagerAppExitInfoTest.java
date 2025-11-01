@@ -49,7 +49,6 @@ import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.DropBoxManager;
-import android.os.Flags;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -233,9 +232,12 @@ public final class ActivityManagerAppExitInfoTest {
         mHiddenApiSettings.set("*");
         mFreezerTimeout = executeShellCmd(
                 "device_config get activity_manager_native_boot freeze_debounce_timeout");
-        mIsProfilingPss = !Flags.removeAppProfilerPssCollection()
-                || (Settings.Global.getInt(mContext.getContentResolver(),
-                        Settings.Global.FORCE_ENABLE_PSS_PROFILING, 0) == 1);
+        mIsProfilingPss =
+                (Settings.Global.getInt(
+                                mContext.getContentResolver(),
+                                Settings.Global.FORCE_ENABLE_PSS_PROFILING,
+                                0)
+                        == 1);
 
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
                 android.Manifest.permission.CHANGE_COMPONENT_ENABLED_STATE);
