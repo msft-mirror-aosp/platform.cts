@@ -275,4 +275,20 @@ public class WifiConfigurationTest extends WifiJUnit4TestBase {
         assertThrows(
                 IllegalArgumentException.class, () -> config.setAllowedToUpdateByOtherUsers(true));
     }
+
+    @Test
+    @SdkSuppress(minSdkVersion = 37)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_AAPM_FEATURE_DISABLE_INSECURE_WIFI_AUTOJOIN)
+    @ApiTest(
+            apis = {
+                "android.net.wifi.WifiConfiguration#setAutoJoinInAdvancedProtectionModeEnabled",
+                "android.net.wifi.WifiConfiguration#isAutoJoinInAdvancedProtectionModeEnabled"
+            })
+    public void testSetAndGetAllowedAutoJoinInAdvancedProtection() {
+        WifiConfiguration config = new WifiConfiguration();
+        // Default should be allowed
+        assertTrue(config.isAutoJoinInAdvancedProtectionModeEnabled());
+        config.setAutoJoinInAdvancedProtectionModeEnabled(false);
+        assertFalse(config.isAutoJoinInAdvancedProtectionModeEnabled());
+    }
 }
