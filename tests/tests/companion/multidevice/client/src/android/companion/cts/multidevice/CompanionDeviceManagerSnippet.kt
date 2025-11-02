@@ -264,7 +264,7 @@ class CompanionDeviceManagerSnippet : Snippet {
         val latestRemoteTasks
             = remoteTaskCallback.waitForCompletion() ?: error("Remote task listener timed out.")
 
-        return latestRemoteTasks.any { it.id == taskId }
+        return latestRemoteTasks.any { it.taskId == taskId }
     }
 
     companion object {
