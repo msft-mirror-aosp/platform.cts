@@ -28,13 +28,15 @@ import android.util.Log
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
+import kotlin.system.exitProcess
 
 enum class FunctionType {
     CONCAT_STRINGS,
     LONG_RUNNING,
     OUTPUT_INVALID_ARGUMENT_EXCEPTION,
     THROW_UNKNOWN_EXCEPTION,
-    THROW_INVALID_ARGUMENT_EXCEPTION
+    THROW_INVALID_ARGUMENT_EXCEPTION,
+    STOP_PROCESS
 }
 
 object TestAppFunctionFactory {
@@ -45,6 +47,7 @@ object TestAppFunctionFactory {
             FunctionType.OUTPUT_INVALID_ARGUMENT_EXCEPTION -> OutputInvalidArgumentException()
             FunctionType.THROW_UNKNOWN_EXCEPTION -> ThrowUnknownException()
             FunctionType.THROW_INVALID_ARGUMENT_EXCEPTION -> ThrowInvalidArgumentException()
+            FunctionType.STOP_PROCESS -> StopProcess()
         }
     }
 
@@ -58,6 +61,8 @@ object TestAppFunctionFactory {
                 ThrowUnknownException.THROW_UNKNOWN_EXCEPTION_FUNCTION_ID
             FunctionType.THROW_INVALID_ARGUMENT_EXCEPTION ->
                 ThrowInvalidArgumentException.THROW_INVALID_ARGUMENT_FUNCTION_ID
+            FunctionType.STOP_PROCESS ->
+                StopProcess.STOP_PROCESS_FUNCTION_ID
         }
     }
 }
@@ -174,5 +179,19 @@ class ThrowInvalidArgumentException() : AppFunction {
     companion object {
         const val THROW_INVALID_ARGUMENT_FUNCTION_ID = "contextThrowInvalidArgument"
         const val INVALID_ARGUMENT_MESSAGE = "Wrong argument"
+    }
+}
+
+class StopProcess() : AppFunction {
+    override fun onExecuteAppFunction(
+        request: ExecuteAppFunctionRequest,
+        cancellationSignal: CancellationSignal,
+        callback: OutcomeReceiver<ExecuteAppFunctionResponse?, AppFunctionException?>
+    ) {
+        exitProcess(0)
+    }
+
+    companion object {
+        const val STOP_PROCESS_FUNCTION_ID = "contextStopProcess"
     }
 }
