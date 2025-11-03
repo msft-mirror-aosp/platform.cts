@@ -1938,6 +1938,23 @@ public class PackageManagerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(android.app.privatecompute.flags.Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT)
+    public void testGetAppUidForPccUid() throws Exception {
+        installPackage(HELLO_WORLD_PCC);
+        try {
+            final ApplicationInfo appInfo =
+                    mPackageManager.getApplicationInfo(
+                            HELLO_WORLD_PACKAGE_NAME, PackageManager.ApplicationInfoFlags.of(0));
+            final int appUid = appInfo.uid;
+            final int pccUid = appInfo.pccUid;
+
+            assertEquals(appUid, mPackageManager.getAppUidForPccUid(pccUid));
+        } finally {
+            uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
+        }
+    }
+
+    @Test
     public void testInstall_withLongUsesPermissionName_fail() {
         String expectedErrorCode = "INSTALL_PARSE_FAILED";
         String installResult = installPackageWithResult(LONG_USES_PERMISSION_NAME_APK);
