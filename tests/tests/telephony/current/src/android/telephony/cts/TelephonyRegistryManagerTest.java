@@ -11,9 +11,6 @@ import static org.junit.Assume.assumeTrue;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.AccessNetworkConstants;
 import android.telephony.CallAttributes;
 import android.telephony.CallState;
@@ -40,7 +37,6 @@ import androidx.annotation.Nullable;
 import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
-import com.android.internal.telephony.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -67,10 +63,6 @@ public class TelephonyRegistryManagerTest {
     private LocationHelper mLocationHelper;
     private static final long TIMEOUT_MILLIS = 1000;
     private static final String TAG = "TelephonyRegistryManagerTest";
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
@@ -495,7 +487,6 @@ public class TelephonyRegistryManagerTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SIMULTANEOUS_CALLING_INDICATIONS)
     @Test
     public void testSimultaneousCellularCallingNotifications() throws Exception {
         LinkedBlockingQueue<Set<Integer>> queue = new LinkedBlockingQueue<>(2);

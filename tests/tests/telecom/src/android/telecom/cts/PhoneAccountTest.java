@@ -43,9 +43,6 @@ public class PhoneAccountTest extends AndroidTestCase {
     }
 
     public void testPhoneAccountSetCallingRestriction() {
-        if (!Flags.simultaneousCallingIndications()) {
-            return;
-        }
         PhoneAccountHandle handle1 = new PhoneAccountHandle(
                 ComponentName.createRelative("pkg", "cls"), "123");
         PhoneAccountHandle handle2 = new PhoneAccountHandle(
@@ -74,9 +71,6 @@ public class PhoneAccountTest extends AndroidTestCase {
     }
 
     public void testPhoneAccountClearCallingRestriction() {
-        if (!Flags.simultaneousCallingIndications()) {
-            return;
-        }
         PhoneAccountHandle handle1 = new PhoneAccountHandle(
                 ComponentName.createRelative("pkg", "cls"), "123");
         PhoneAccountHandle handle2 = new PhoneAccountHandle(
