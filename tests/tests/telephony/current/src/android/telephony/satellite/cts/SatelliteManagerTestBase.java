@@ -182,6 +182,7 @@ public class SatelliteManagerTestBase {
         sEsosSubIdsToBeRestored.clear();
         sNtnOnlySubIdsToBeRestored.clear();
         sOriginalSupportedMsgAppsPerSubId.clear();
+        assertTrue(sMockSatelliteServiceManager.setSatelliteIgnorePlmnListFromStorage(true));
 
         sCarrierConfigReceiver = new CarrierConfigReceiver();
         IntentFilter filter = new IntentFilter(CarrierConfigManager.ACTION_CARRIER_CONFIG_CHANGED);
@@ -192,6 +193,9 @@ public class SatelliteManagerTestBase {
     }
 
     protected static void afterAllTestsBase() {
+        if (sMockSatelliteServiceManager != null) {
+            assertTrue(sMockSatelliteServiceManager.setSatelliteIgnorePlmnListFromStorage(false));
+        }
         sPackageManager = null;
         sSatelliteManager = null;
         sTelephonyManager = null;

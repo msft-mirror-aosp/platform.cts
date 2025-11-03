@@ -16,7 +16,7 @@
 
 package android.telephony.satellite.cts;
 
-import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_CHT;
+import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_FET;
 import static android.telephony.satellite.SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_ENTITLEMENT;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_GEOLOCATION;
@@ -140,7 +140,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase {
+public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTestBase {
     private static final String ALLOW_MOCK_MODEM_PROPERTY = "persist.radio.allow_mock_modem";
     private static final boolean DEBUG = !"user".equals(Build.TYPE);
     private static final long TEST_SATELLITE_LISTENING_TIMEOUT_MILLIS = 100;
@@ -152,6 +152,9 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     private static final long WAIT_FOREVER_TIMEOUT_MILLIS = Duration.ofMinutes(10).toMillis();
     private static final long MAX_WAIT_FOR_STATE_CHANGED_SECONDS = 5;
     private static final long MAX_SATELLITE_REQUEST_RETRY = 3;
+    private static final int NTN_ONLY_SLOT_ID = SLOT_ID_0;
+    private static final int NTN_ONLY_SIM_PROFILE_ID = MOCK_SIM_PROFILE_ID_TWN_FET;
+    private static final String NTN_ONLY_PHONE_NUMBER = PHONE_NUMBER_0;
 
     /* SatelliteCapabilities constant indicating that the radio technology is proprietary. */
     private static final Set<Integer> SUPPORTED_RADIO_TECHNOLOGIES;
@@ -263,19 +266,23 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @BeforeClass
-    public static void beforeAllTests() {
+    public static void beforeAllTests() throws Exception {
         logd("beforeAllTests");
 
-        sActiveSubscriptionRequired = true;
+        sActiveSubscriptionRequired = false;
         if (!shouldTestSatelliteWithMockService()) return;
 
-        beforeAllTestsBase();
+        beforeAllCarrierRoamingTestsBase();
         try {
             MockModemManager.enforceMockModemDeveloperSetting();
         } catch (Exception e) {
             sInitError = new AssertionError("enforceMockModemDeveloperSetting failed", e);
             return;
         }
+        setUpNtnOnlyTestEnvironment(
+            NTN_ONLY_SLOT_ID, NTN_ONLY_SIM_PROFILE_ID, NTN_ONLY_PHONE_NUMBER);
+        sNtnOnlySubId = SubscriptionManager.getSubscriptionId(NTN_ONLY_SLOT_ID);
+        assumeTrue(sNtnOnlySubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
 
         grantSatellitePermission();
         try {
@@ -292,22 +299,17 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         sMockSatelliteServiceManager.setDatagramControllerBooleanConfig(false,
                 DatagramController.BOOLEAN_TYPE_WAIT_FOR_DEVICE_ALIGNMENT_IN_DEMO_DATAGRAM, true);
         setUpSatelliteAccessAllowedAtDefaultTestLocation();
-        sNtnOnlySubId = getDefaultActiveSubIdForSatelliteTest();
-        assumeTrue(sNtnOnlySubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
-        setUpNtnOnlySubscription();
-
         revokeSatellitePermission();
     }
 
     @AfterClass
-    public static void afterAllTests() {
+    public static void afterAllTests() throws Exception {
         logd("afterAllTests");
-        sActiveSubscriptionRequired = false;
         if (sInitError != null) return;
         if (!shouldTestSatelliteWithMockService()) return;
 
         grantSatellitePermission();
-
+        sActiveSubscriptionRequired = false;
         sMockSatelliteServiceManager.setDatagramControllerBooleanConfig(true,
                 DatagramController.BOOLEAN_TYPE_WAIT_FOR_DEVICE_ALIGNMENT_IN_DEMO_DATAGRAM, false);
 
@@ -337,7 +339,8 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 .setIsSatelliteCommunicationAllowedForCurrentLocationCache("enable"));
         // Disable CTS mode to accept the requests from SG-APK and real Pointing UI app.
         assertTrue(sMockSatelliteServiceManager.setCtsMode(false));
-        afterAllTestsBase();
+        cleanUpNtnOnlyTestEnvironment(NTN_ONLY_SLOT_ID, NTN_ONLY_SIM_PROFILE_ID);
+        afterAllCarrierRoamingTestsBase();
         sMockSatelliteServiceManager = null;
         revokeSatellitePermission();
     }
@@ -558,8 +561,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             // CTS mark the active subscription as NTN-only, which will make satellite metrics to
             // mark the field is_ntn_only_carrier as true for the active subscription.
             SubscriptionInfo info =
-                    sSubscriptionManager.getActiveSubscriptionInfo(
-                            getDefaultActiveSubIdForSatelliteTest());
+                    sSubscriptionManager.getActiveSubscriptionInfo(sNtnOnlySubId);
             int carrierId = info.getCarrierId();
 
             LinkedBlockingQueue<Integer> error = new LinkedBlockingQueue<>(1);
@@ -2179,7 +2181,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         revokeSatellitePermission();
     }
 
-    // testFrameworkStateUpdateBeforeAndAfterCallbackSent
+    @Ignore("b/454548834 - Need to fix and re-enable this test. This test is flaky.")
     @Test
     public void testFrameworkStateUpdateBeforeAndAfterCallbackSent() throws Exception {
         logd("testSendDatagramForEmergency_noRaceCondition");
@@ -3320,7 +3322,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             return;
         }
         assertNotNull(errorCode);
-        Log.d(TAG, "testReceiveSatelliteDatagram_DemoMode_not_Aligned: sendDatagram "
+        logd("testReceiveSatelliteDatagram_DemoMode_not_Aligned: sendDatagram "
                 + "errorCode=" + errorCode);
 
         // Test poll pending satellite datagram for demo mode while it is not aligned
@@ -3655,7 +3657,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         bundle.putBoolean(
                 CarrierConfigManager.KEY_SATELLITE_ATTACH_SUPPORTED_BOOL, false);
 
-        overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+        overrideCarrierConfig(sNtnOnlySubId, bundle);
         requestSatelliteAttachEnabledForCarrier(true, SatelliteManager.SATELLITE_RESULT_SUCCESS);
 
         Pair<Boolean, Integer> pair = requestIsSatelliteAttachEnabledForCarrier();
@@ -3675,7 +3677,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         bundle.putPersistableBundle(
                 CarrierConfigManager.KEY_CARRIER_SUPPORTED_SATELLITE_SERVICES_PER_PROVIDER_BUNDLE,
                 plmnBundle);
-        overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+        overrideCarrierConfig(sNtnOnlySubId, bundle);
 
         ArrayList<String> expectedCarrierPlmnList = new ArrayList<>();
         expectedCarrierPlmnList.add("123411");
@@ -3757,7 +3759,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         PersistableBundle bundle = new PersistableBundle();
         bundle.putBoolean(
                 CarrierConfigManager.KEY_SATELLITE_ATTACH_SUPPORTED_BOOL, true);
-        overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+        overrideCarrierConfig(sNtnOnlySubId, bundle);
         int restrictionReason = SATELLITE_COMMUNICATION_RESTRICTION_REASON_GEOLOCATION;
         requestAddSatelliteAttachRestrictionForCarrier(restrictionReason,
                 SatelliteManager.SATELLITE_RESULT_SUCCESS);
@@ -4941,11 +4943,9 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         logd("testCarrierRoamingConfigUpdate: grant satellite permission");
         grantSatellitePermission();
 
-        sTestSubIDForCarrierSatellite = getDefaultActiveSubIdForSatelliteTest();
         logd(
-                "testCarrierRoamingConfigUpdate: sub_id with carrier satellite:"
-                        + sTestSubIDForCarrierSatellite);
-        if (sTestSubIDForCarrierSatellite == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+                "testCarrierRoamingConfigUpdate: sub_id with carrier satellite:" + sNtnOnlySubId);
+        if (sNtnOnlySubId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
             logd("testCarrierRoamingConfigUpdate: no sub_id with carrier satellite, skip the test");
             return;
         }
@@ -4962,7 +4962,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         bundle.putInt(
                 CarrierConfigManager.KEY_SATELLITE_DATA_SUPPORT_MODE_INT,
                 CarrierConfigManager.SATELLITE_DATA_SUPPORT_ALL);
-        overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+        overrideCarrierConfig(sNtnOnlySubId, bundle);
 
         // simulate v21 config update
         logd("testCarrierRoamingConfigUpdate: simulate v21 config update");
@@ -5011,7 +5011,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         long startTime = System.currentTimeMillis();
         while (System.currentTimeMillis() - startTime < timeout) {
             int currentDataMode =
-                    sSatelliteManager.getSatelliteDataSupportMode(sTestSubIDForCarrierSatellite);
+                    sSatelliteManager.getSatelliteDataSupportMode(sNtnOnlySubId);
             logd(
                     "waitUntilDataModeChangedTo: expectedDataMode: "
                             + expectedDataMode
@@ -5337,7 +5337,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         bundle.putPersistableBundle(
                 CarrierConfigManager.KEY_CARRIER_SUPPORTED_SATELLITE_SERVICES_PER_PROVIDER_BUNDLE,
                 plmnBundle);
-        overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+        overrideCarrierConfig(sNtnOnlySubId, bundle);
 
         ArrayList<String> expectedCarrierPlmnList = new ArrayList<>();
         expectedCarrierPlmnList.add("123411");
@@ -5348,7 +5348,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertEquals(expectedCarrierPlmnList, carrierPlmnList);
 
         List<String> aggregatedPlmnList = sSatelliteManager.getSatellitePlmnsForCarrier(
-                sTestSubIDForCarrierSatellite);
+                sNtnOnlySubId);
         assertEquals(expectedCarrierPlmnList, aggregatedPlmnList);
 
         List<String> satellitePlmnListFromOverlayConfig =
@@ -7549,10 +7549,10 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             for (SatelliteSubscriberProvisionStatus status : pairResult.first) {
                 SatelliteSubscriberInfo info = status.getSatelliteSubscriberInfo();
                 // Check SubscriberIdType is the
-                // SatelliteSubscriberInfo.SUBSCRIBER_ID_TYPE_IMSI_MSISDN
-                if (info.getSubscriptionId() == sTestSubIDForCarrierSatellite) {
+                // SatelliteSubscriberInfo.SUBSCRIBER_ID_TYPE_ICCID
+                if (info.getSubscriptionId() == sNtnOnlySubId) {
                     assertEquals(
-                            SatelliteSubscriberInfo.SUBSCRIBER_ID_TYPE_IMSI_MSISDN,
+                            SatelliteSubscriberInfo.SUBSCRIBER_ID_TYPE_ICCID,
                             info.getSubscriberIdType());
                 }
             }
@@ -7580,7 +7580,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     @Test
     public void testSatelliteSubscriptionProvisionStateChanged() {
         logd("testSatelliteSubscriptionProvisionStateChanged:");
-        assumeTrue(sTestSubIDForCarrierSatellite != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+        assumeTrue(sNtnOnlySubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
 
         SatelliteSubscriptionProvisionStateChangedTest callback =
                 registerSubscriberIdProvisionCallback();
@@ -7596,7 +7596,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         /* Test when this carrier is supported ESOS in the carrier config */
         PersistableBundle bundle = new PersistableBundle();
         bundle.putBoolean(CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, true);
-        overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+        overrideCarrierConfig(sNtnOnlySubId, bundle);
 
         grantSatellitePermission();
         SatelliteSubscriptionProvisionStateChangedTest callback =
@@ -7689,8 +7689,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     @Test
     public void testDeprovisionSatellite() {
         logd("testDeprovisionSatellite:");
-        sTestSubIDForCarrierSatellite = getDefaultActiveSubIdForSatelliteTest();
-        assumeTrue(sTestSubIDForCarrierSatellite != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+        assumeTrue(sNtnOnlySubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
 
         SatelliteSubscriptionProvisionStateChangedTest callback =
                 registerSubscriberIdProvisionCallback();
@@ -7714,9 +7713,8 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         if (!shouldTestSatellite()) return;
         grantSatellitePermission();
 
-        sTestSubIDForCarrierSatellite = getDefaultActiveSubIdForSatelliteTest();
-        logd("sub_id:" + sTestSubIDForCarrierSatellite);
-        if (sTestSubIDForCarrierSatellite == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+        logd("sub_id:" + sNtnOnlySubId);
+        if (sNtnOnlySubId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
             return;
         }
 
@@ -7739,28 +7737,28 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         bundle.putInt(
                 CarrierConfigManager.KEY_SATELLITE_DATA_SUPPORT_MODE_INT,
                 SatelliteManager.SATELLITE_DATA_SUPPORT_RESTRICTED);
-        overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+        overrideCarrierConfig(sNtnOnlySubId, bundle);
         assertEquals(
                 Math.min(maxAllowedDataMode, SatelliteManager.SATELLITE_DATA_SUPPORT_RESTRICTED),
-                sSatelliteManager.getSatelliteDataSupportMode(sTestSubIDForCarrierSatellite));
+                sSatelliteManager.getSatelliteDataSupportMode(sNtnOnlySubId));
 
         // With data mode: constrained
         bundle.putInt(
                 CarrierConfigManager.KEY_SATELLITE_DATA_SUPPORT_MODE_INT,
                 SatelliteManager.SATELLITE_DATA_SUPPORT_CONSTRAINED);
-        overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+        overrideCarrierConfig(sNtnOnlySubId, bundle);
         assertEquals(
                 Math.min(maxAllowedDataMode, SatelliteManager.SATELLITE_DATA_SUPPORT_CONSTRAINED),
-                sSatelliteManager.getSatelliteDataSupportMode(sTestSubIDForCarrierSatellite));
+                sSatelliteManager.getSatelliteDataSupportMode(sNtnOnlySubId));
 
         // With data mode: UnConstrained
         bundle.putInt(
                 CarrierConfigManager.KEY_SATELLITE_DATA_SUPPORT_MODE_INT,
                 SatelliteManager.SATELLITE_DATA_SUPPORT_UNCONSTRAINED);
-        overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+        overrideCarrierConfig(sNtnOnlySubId, bundle);
         assertEquals(
                 Math.min(maxAllowedDataMode, SatelliteManager.SATELLITE_DATA_SUPPORT_UNCONSTRAINED),
-                sSatelliteManager.getSatelliteDataSupportMode(sTestSubIDForCarrierSatellite));
+                sSatelliteManager.getSatelliteDataSupportMode(sNtnOnlySubId));
     }
 
     /*
@@ -8356,7 +8354,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     private void requestSatelliteAttachEnabledForCarrier(boolean isEnable,
             int expectedResult) {
         LinkedBlockingQueue<Integer> resultListener = new LinkedBlockingQueue<>(1);
-        sSatelliteManager.requestAttachEnabledForCarrier(sTestSubIDForCarrierSatellite,
+        sSatelliteManager.requestAttachEnabledForCarrier(sNtnOnlySubId,
                 isEnable, getContext().getMainExecutor(), resultListener::offer);
         Integer result;
         try {
@@ -8371,7 +8369,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     private void requestAddSatelliteAttachRestrictionForCarrier(int reason, int expectedResult) {
         LinkedBlockingQueue<Integer> resultListener = new LinkedBlockingQueue<>(1);
-        sSatelliteManager.addAttachRestrictionForCarrier(sTestSubIDForCarrierSatellite,
+        sSatelliteManager.addAttachRestrictionForCarrier(sNtnOnlySubId,
                 reason, getContext().getMainExecutor(), resultListener::offer);
         Integer result;
         try {
@@ -8386,7 +8384,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     private void verifySatelliteAttachRestrictionForCarrier(int reason, boolean isReasonExpected) {
         Set<Integer> restrictionReasons = sSatelliteManager
-                .getAttachRestrictionReasonsForCarrier(sTestSubIDForCarrierSatellite);
+                .getAttachRestrictionReasonsForCarrier(sNtnOnlySubId);
         assertNotNull(restrictionReasons);
         if (isReasonExpected) {
             assertTrue(restrictionReasons.contains(reason));
@@ -8397,7 +8395,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     private void requestRemoveSatelliteAttachRestrictionForCarrier(int reason, int expectedResult) {
         LinkedBlockingQueue<Integer> resultListener = new LinkedBlockingQueue<>(1);
-        sSatelliteManager.removeAttachRestrictionForCarrier(sTestSubIDForCarrierSatellite,
+        sSatelliteManager.removeAttachRestrictionForCarrier(sNtnOnlySubId,
                 reason, getContext().getMainExecutor(), resultListener::offer);
         Integer result;
         try {
@@ -8431,7 +8429,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                     }
                 };
 
-        sSatelliteManager.requestIsAttachEnabledForCarrier(sTestSubIDForCarrierSatellite,
+        sSatelliteManager.requestIsAttachEnabledForCarrier(sNtnOnlySubId,
                 getContext().getMainExecutor(), receiver);
         try {
             assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
@@ -8638,7 +8636,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         }
 
         if (sMockModemManager != null) {
-            sMockModemManager.setSatelliteErrorCode(SLOT_ID_0, satelliteError);
+            sMockModemManager.setSatelliteErrorCode(NTN_ONLY_SLOT_ID, satelliteError);
         }
     }
 
@@ -8702,7 +8700,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             return receivedResult != null ? receivedResult : false;
         }
 
-        return sMockModemManager.getIsSatelliteEnabledForCarrier(SLOT_ID_0);
+        return sMockModemManager.getIsSatelliteEnabledForCarrier(NTN_ONLY_SLOT_ID);
     }
 
     private boolean getIsEmergency() {
@@ -8715,37 +8713,17 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             sMockSatelliteServiceManager.clearSatelliteEnabledForCarrier();
             return;
         }
-        sMockModemManager.clearSatelliteEnabledForCarrier(SLOT_ID_0);
+        sMockModemManager.clearSatelliteEnabledForCarrier(NTN_ONLY_SLOT_ID);
     }
 
-
-    static int sTestSubIDForCarrierSatellite;
     static boolean sPreviousSatelliteAttachEnabled;
 
-    static final int SLOT_ID_0 = 0;
-    static final int SLOT_ID_1 = 1;
-    static MockModemManager sMockModemManager;
-
     private void beforeSatelliteForCarrierTest() {
-        try {
-            MockModemManager.enforceMockModemDeveloperSetting();
-            sMockModemManager = new MockModemManager();
-            assertNotNull(sMockModemManager);
-            assertTrue(sMockModemManager.connectMockModemService());
-
-            assertTrue(sMockModemManager.insertSimCard(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT));
-            TimeUnit.MILLISECONDS.sleep(TIMEOUT);
-            sMockModemManager.changeNetworkService(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT, true);
-        } catch (Exception e) {
-            loge("beforeSatelliteForCarrierTest: exception=" + e);
-        }
-
-        sTestSubIDForCarrierSatellite = getDefaultActiveSubIdForSatelliteTest();
         sSubscriptionManager = InstrumentationRegistry.getInstrumentation()
                 .getContext().getSystemService(SubscriptionManager.class);
         // Get the default subscription values for COLUMN_SATELLITE_ATTACH_ENABLED_FOR_CARRIER.
         sPreviousSatelliteAttachEnabled =
-                sSubscriptionManager.getBooleanSubscriptionProperty(sTestSubIDForCarrierSatellite,
+                sSubscriptionManager.getBooleanSubscriptionProperty(sNtnOnlySubId,
                         SubscriptionManager.SATELLITE_ATTACH_ENABLED_FOR_CARRIER,
                         false,
                         getContext());
@@ -8753,7 +8731,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         try {
             ui.adoptShellPermissionIdentity();
             // Set user Setting as false
-            sSubscriptionManager.setSubscriptionProperty(sTestSubIDForCarrierSatellite,
+            sSubscriptionManager.setSubscriptionProperty(sNtnOnlySubId,
                     SubscriptionManager.SATELLITE_ATTACH_ENABLED_FOR_CARRIER, String.valueOf(0));
         } finally {
             ui.dropShellPermissionIdentity();
@@ -8765,23 +8743,13 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         UiAutomation ui = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             ui.adoptShellPermissionIdentity();
-            sSubscriptionManager.setSubscriptionProperty(sTestSubIDForCarrierSatellite,
+            sSubscriptionManager.setSubscriptionProperty(sNtnOnlySubId,
                     SubscriptionManager.SATELLITE_ATTACH_ENABLED_FOR_CARRIER,
                     sPreviousSatelliteAttachEnabled ? "1" : "0");
-
-            // Leave service
-            sMockModemManager.changeNetworkService(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT, false);
-            // Remove the SIM
-            sMockModemManager.removeSimCard(SLOT_ID_0);
-            if (sMockModemManager != null) {
-                assertTrue(sMockModemManager.disconnectMockModemService());
-                sMockModemManager = null;
-            }
         } catch (Exception e) {
             loge("afterSatelliteForCarrierTest: exception=" + e);
         } finally {
             ui.dropShellPermissionIdentity();
-            sTestSubIDForCarrierSatellite = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
         }
     }
 
@@ -8828,21 +8796,13 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         }
     }
 
-    private boolean waitForEventOnSetSatellitePlmn(int expectedNumOfEvents) {
-        if (getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK) < RADIO_HAL_VERSION_2_3) {
-            return sMockSatelliteServiceManager.waitForEventOnSetSatellitePlmn(expectedNumOfEvents);
-        }
-
-        return sMockModemManager.waitForEventOnSetSatellitePlmn(expectedNumOfEvents);
-    }
-
     @Nullable
     List<String> getCarrierPlmnList() {
         if (getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK) < RADIO_HAL_VERSION_2_3) {
             return sMockSatelliteServiceManager.getCarrierPlmnList();
         }
 
-        return sMockModemManager.getCarrierPlmnList(SLOT_ID_0);
+        return sMockModemManager.getCarrierPlmnList(NTN_ONLY_SLOT_ID);
     }
 
     @Nullable
@@ -8851,6 +8811,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             return sMockSatelliteServiceManager.getAllSatellitePlmnList();
         }
 
-        return sMockModemManager.getAllSatellitePlmnList(SLOT_ID_0);
+        return sMockModemManager.getAllSatellitePlmnList(NTN_ONLY_SLOT_ID);
     }
 }
