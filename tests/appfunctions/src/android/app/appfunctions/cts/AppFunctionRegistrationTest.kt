@@ -15,6 +15,7 @@
  */
 package android.app.appfunctions.cts
 
+import android.Manifest
 import android.app.appfunctions.AppFunction
 import android.app.appfunctions.AppFunctionException
 import android.app.appfunctions.AppFunctionManager
@@ -22,12 +23,9 @@ import android.app.appfunctions.AppFunctionRegistration
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
 import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunctionAndWait
-import android.app.appfunctions.cts.AppFunctionUtils.getAllRuntimeMetadataPackages
-import android.app.appfunctions.cts.AppFunctionUtils.grantAppFunctionAccess
-import android.app.appfunctions.cts.AppFunctionUtils.revokeAppFunctionAccess
 import android.app.appfunctions.testutils.ConcatStrings
 import android.app.appfunctions.testutils.ConcatStrings.Companion.CONCAT_STRINGS_FUNCTION_ID
-import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
+import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
 import android.app.appfunctions.testutils.FunctionType
 import android.app.appfunctions.testutils.ITestAppFunctionRegistrationService
 import android.app.appfunctions.testutils.LongRunning
@@ -48,8 +46,6 @@ import android.content.Intent
 import android.os.CancellationSignal
 import android.os.IBinder
 import android.os.OutcomeReceiver
-import android.permission.flags.Flags.FLAG_APP_FUNCTION_ACCESS_API_ENABLED
-import android.permission.flags.Flags.FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -60,7 +56,6 @@ import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSec
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.nene.utils.ShellCommand
-import com.android.compatibility.common.util.DeviceConfigStateChangerRule
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
 import java.util.concurrent.CountDownLatch
@@ -81,22 +76,11 @@ import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
 @RequiresFlagsEnabled(
-    android.app.appfunctions.flags.Flags.FLAG_ENABLE_CONTEXTUAL_APP_FUNCTIONS,
-    FLAG_APP_FUNCTION_ACCESS_API_ENABLED,
-    FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED
+    android.app.appfunctions.flags.Flags.FLAG_ENABLE_CONTEXTUAL_APP_FUNCTIONS
 )
 class AppFunctionRegistrationTest {
     @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
-    @get:Rule(order = 2) val serviceTestRule = ServiceTestRule()
-
-    @get:Rule
-    val setAgentAllowlistRule: DeviceConfigStateChangerRule =
-        DeviceConfigStateChangerRule(
-            context,
-            "machine_learning",
-            "allowlisted_app_functions_agents",
-            context.packageName,
-        )
+    @get:Rule val serviceTestRule = ServiceTestRule()
 
     private val context: Context
         get() = ApplicationProvider.getApplicationContext()
@@ -114,12 +98,6 @@ class AppFunctionRegistrationTest {
         val manager = context.getSystemService(AppFunctionManager::class.java)
         assumeNotNull(manager)
         this@AppFunctionRegistrationTest.manager = manager
-        grantAppFunctionAccess(CURRENT_PKG, TEST_HELPER_PKG)
-
-        retryAssert {
-            assertThat(getAllRuntimeMetadataPackages())
-                .containsAtLeast(CURRENT_PKG, TEST_HELPER_PKG)
-        }
     }
 
     @After
@@ -130,7 +108,6 @@ class AppFunctionRegistrationTest {
         registrations.clear()
 
         TestAppFunctionServiceLifecycleReceiver.reset()
-        revokeAppFunctionAccess(CURRENT_PKG, TEST_HELPER_PKG)
     }
 
     @Test
@@ -262,11 +239,13 @@ class AppFunctionRegistrationTest {
     fun execute_functionFromDifferentPackage_success() = doBlocking {
         val service = bindToRegistrationService(false)
         service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())
-        val request = createConcatStringsRequest(targetPackage = TEST_HELPER_PKG)
 
-        val response = executeAppFunctionAndWait(manager, request)
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            val request = createConcatStringsRequest(targetPackage = TEST_HELPER_PKG)
 
-        assertConcatStringsResponseCorrect(response)
+            val response = executeAppFunctionAndWait(manager, request)
+            assertConcatStringsResponseCorrect(response)
+        }
     }
 
     @Test
@@ -276,21 +255,22 @@ class AppFunctionRegistrationTest {
     fun execute_outputsInvalidArgumentException_propagatesToCaller() = doBlocking {
         val service = bindToRegistrationService(false)
         service.registerAppFunction(FunctionType.OUTPUT_INVALID_ARGUMENT_EXCEPTION.toString())
-        val request = ExecuteAppFunctionRequest.Builder(
-            TEST_HELPER_PKG,
-            OUTPUT_INVALID_ARGUMENT_EXCEPTION_FUNCTION_ID
-        )
-            .build()
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            val request = ExecuteAppFunctionRequest.Builder(
+                TEST_HELPER_PKG,
+                OUTPUT_INVALID_ARGUMENT_EXCEPTION_FUNCTION_ID
+            )
+                .build()
 
-        val response = executeAppFunctionAndWait(manager, request)
-
-        assertThat(response.isSuccess).isFalse()
-        assertThat(response.appFunctionException().errorCode).isEqualTo(
-            AppFunctionException.ERROR_INVALID_ARGUMENT
-        )
-        assertThat(response.appFunctionException().message).startsWith(
-            OutputInvalidArgumentException.INVALID_ARGUMENT_MESSAGE
-        )
+            val response = executeAppFunctionAndWait(manager, request)
+            assertThat(response.isSuccess).isFalse()
+            assertThat(response.appFunctionException().errorCode).isEqualTo(
+                AppFunctionException.ERROR_INVALID_ARGUMENT
+            )
+            assertThat(response.appFunctionException().message).startsWith(
+                OutputInvalidArgumentException.INVALID_ARGUMENT_MESSAGE
+            )
+        }
     }
 
     @Test
@@ -306,15 +286,17 @@ class AppFunctionRegistrationTest {
         )
             .build()
 
-        val response = executeAppFunctionAndWait(manager, request)
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            val response = executeAppFunctionAndWait(manager, request)
 
-        assertThat(response.isSuccess).isFalse()
-        assertThat(response.appFunctionException().errorCode).isEqualTo(
-            AppFunctionException.ERROR_APP_UNKNOWN_ERROR
-        )
-        assertThat(response.appFunctionException().message).startsWith(
-            ThrowUnknownException.UNKNOWN_EXCEPTION_MESSAGE
-        )
+            assertThat(response.isSuccess).isFalse()
+            assertThat(response.appFunctionException().errorCode).isEqualTo(
+                AppFunctionException.ERROR_APP_UNKNOWN_ERROR
+            )
+            assertThat(response.appFunctionException().message).startsWith(
+                ThrowUnknownException.UNKNOWN_EXCEPTION_MESSAGE
+            )
+        }
     }
 
     @Test
@@ -330,15 +312,17 @@ class AppFunctionRegistrationTest {
         )
             .build()
 
-        val response = executeAppFunctionAndWait(manager, request)
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            val response = executeAppFunctionAndWait(manager, request)
 
-        assertThat(response.isSuccess).isFalse()
-        assertThat(response.appFunctionException().errorCode).isEqualTo(
-            AppFunctionException.ERROR_INVALID_ARGUMENT
-        )
-        assertThat(response.appFunctionException().message).startsWith(
-            ThrowInvalidArgumentException.INVALID_ARGUMENT_MESSAGE
-        )
+            assertThat(response.isSuccess).isFalse()
+            assertThat(response.appFunctionException().errorCode).isEqualTo(
+                AppFunctionException.ERROR_INVALID_ARGUMENT
+            )
+            assertThat(response.appFunctionException().message).startsWith(
+                ThrowInvalidArgumentException.INVALID_ARGUMENT_MESSAGE
+            )
+        }
     }
 
     @Test
@@ -433,16 +417,19 @@ class AppFunctionRegistrationTest {
     fun register_registrationProcessDied_functionIsDisabled() = doBlocking {
         val service = bindToRegistrationService(false)
         service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())
-        val request = createConcatStringsRequest(targetPackage = TEST_HELPER_PKG)
-        serviceTestRule.unbindService()
-        ShellCommand.builder("am force-stop $TEST_HELPER_PKG").execute()
 
-        val response = executeAppFunctionAndWait(manager, request)
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            val request = createConcatStringsRequest(targetPackage = TEST_HELPER_PKG)
+            serviceTestRule.unbindService()
+            ShellCommand.builder("am force-stop $TEST_HELPER_PKG").execute()
 
-        assertThat(response.isSuccess).isFalse()
-        assertThat(response.appFunctionException().errorCode).isEqualTo(
-            AppFunctionException.ERROR_DISABLED
-        )
+            val response = executeAppFunctionAndWait(manager, request)
+
+            assertThat(response.isSuccess).isFalse()
+            assertThat(response.appFunctionException().errorCode).isEqualTo(
+                AppFunctionException.ERROR_DISABLED
+            )
+        }
     }
 
     private fun registerAppFunction(
@@ -541,5 +528,7 @@ class AppFunctionRegistrationTest {
         const val CURRENT_PKG: String = "android.app.appfunctions.cts"
         const val SHORT_TIMEOUT_SECOND: Long = 1
         const val LONG_TIMEOUT_SECOND: Long = 10
+
+        const val EXECUTE_APP_FUNCTIONS_PERMISSION = Manifest.permission.EXECUTE_APP_FUNCTIONS
     }
 }
