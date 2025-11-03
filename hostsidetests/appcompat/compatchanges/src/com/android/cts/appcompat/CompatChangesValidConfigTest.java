@@ -51,6 +51,7 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
             ImmutableSet.of(
                     // keep-sorted start
                     "ALWAYS_SANDBOX_DISPLAY_APIS",
+                    "ASM_RESTRICTIONS",
                     "BLOCK_MUTABLE_IMPLICIT_PENDING_INTENT",
                     "BLOCK_NULL_ACTION_INTENTS",
                     "CTS_SYSTEM_API_OVERRIDABLE_CHANGEID",
