@@ -17,6 +17,7 @@
 package com.android.bedstead.multiuser.annotations
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.ENSURE_HAS_SPECIFIED_USER_PRIORITY
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
 
 /**
@@ -45,7 +46,9 @@ annotation class EnsureOnlySpecifiedUsersExist (
      * annotation which must be resolved first is lower than the one which must be resolved later.
      *
      * <p>Priority can be set to a [AnnotationPriorityRunPrecedence] constant, or to any [int].
+     *
+     * <p>This annotation runs after any annotation that might create specified users, to ensure that
+     * only the specified users exist.
      */
-    // TODO(b/273474964): Create constant for annotations that create users and use here.
-    val priority: Int = AnnotationPriorityRunPrecedence.LATE
+    val priority: Int = ENSURE_HAS_SPECIFIED_USER_PRIORITY + 1
 )
