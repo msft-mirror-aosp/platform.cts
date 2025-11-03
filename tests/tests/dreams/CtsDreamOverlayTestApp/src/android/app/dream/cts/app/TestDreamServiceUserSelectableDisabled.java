@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -7,16 +7,19 @@
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law of or agreed to in writing, software
+ * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
 
-package android.security.cts.BUG_406243581;
+package android.app.dream.cts.app;
 
-import android.app.Activity;
+import android.service.dreams.DreamService;
 
-public class EmptyActivity extends Activity {
+/**
+ * Dream service implementation for unit testing, where the userSelectable metadata is disabled.
+ */
+public class TestDreamServiceUserSelectableDisabled extends DreamService {
 }

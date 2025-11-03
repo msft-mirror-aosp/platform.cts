@@ -130,8 +130,7 @@ public class NotificationHintTest {
         final NotificationEvent.NotificationEnqueuedEvent enqueuedEvent =
                 new NotificationEvent.NotificationEnqueuedEvent(
                         notification, NOTIFICATION_CHANNEL, rankingMap);
-        final NotificationHint hint =
-                new NotificationHint.NotificationHintBuilder(enqueuedEvent).build();
+        final NotificationHint hint = new NotificationHint.Builder(enqueuedEvent).build();
 
         final ContextHint outputHint = bundleUnbundle(hint);
         assertThat(outputHint).isInstanceOf(NotificationHint.class);

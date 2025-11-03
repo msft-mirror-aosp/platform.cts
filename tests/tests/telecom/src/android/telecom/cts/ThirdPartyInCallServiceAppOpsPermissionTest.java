@@ -20,6 +20,8 @@ import static android.telecom.cts.TestUtils.WAIT_FOR_STATE_CHANGE_TIMEOUT_MS;
 
 import static com.android.compatibility.common.util.ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn;
 
+import static org.junit.Assume.assumeTrue;
+
 import android.app.AppOpsManager;
 import android.content.ComponentName;
 import android.content.Context;
@@ -29,17 +31,27 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.OutcomeReceiver;
+import android.os.ParcelUuid;
 import android.os.RemoteException;
 import android.telecom.Call;
+import android.telecom.CallAudioState;
+import android.telecom.CallEndpoint;
+import android.telecom.CallEndpointException;
+import android.telecom.InCallService;
 import android.telecom.TelecomManager;
 import android.telecom.cts.thirdptyincallservice.CtsThirdPartyInCallService;
 import android.telecom.cts.thirdptyincallservice.CtsThirdPartyInCallServiceControl;
 import android.telecom.cts.thirdptyincallservice.ICtsThirdPartyInCallServiceControl;
+import android.telecom.flags.Flags;
 import android.util.Log;
 
 import com.android.compatibility.common.util.ApiTest;
 
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 public class ThirdPartyInCallServiceAppOpsPermissionTest extends BaseTelecomTestWithMockServices {
@@ -116,6 +128,185 @@ public class ThirdPartyInCallServiceAppOpsPermissionTest extends BaseTelecomTest
 
         // Revoke App Ops Permission
         setInCallServiceAppOpsPermission(false);
+    }
+
+    @ApiTest(apis = {"android.telecom.InCallService#onCallEndpointRequested"})
+    public void testSetAudioRouteOnCallEndpointRequestedPropagation() throws Exception {
+        if (!mShouldTestTelecom || !Flags.callEndpointRequestedApi()) {
+            return;
+        }
+        // Grant App Ops Permission
+        setInCallServiceAppOpsPermission(true);
+
+        placeAndVerifyCall();
+        final MockConnection connection = verifyConnectionForOutgoingCall();
+        final MockInCallService inCallService = mInCallCallbacks.getService();
+        final Call call = inCallService.getLastCall();
+        assertCallState(call, Call.STATE_DIALING);
+
+        final int currentInvokeCount = mOnCallAudioStateChangedCounter.getInvokeCount();
+        mOnCallAudioStateChangedCounter.waitForCount(1);
+
+        CallAudioState callAudioState =
+                (CallAudioState) mOnCallAudioStateChangedCounter.getArgs(0)[0];
+        // Store the initial audio state:
+        final int initialRoute = callAudioState.getRoute();
+
+        try {
+            mOnAvailableEndpointsChangedCounter.waitForCount(1);
+            List<CallEndpoint> availableEndpoints =
+                    (List<CallEndpoint>) mOnAvailableEndpointsChangedCounter.getArgs(0)[0];
+            if (availableEndpoints.size() < 2) {
+                Log.i(TAG, "testSetAudioRouteOnCallEndpointRequestedPropagation: There are "
+                        + "less than 2 available CallEndpoints; available endpoints: "
+                        + availableEndpoints);
+                return;
+            }
+
+            CallEndpoint expectedEndpoint = null;
+            for (CallEndpoint endpoint : availableEndpoints) {
+                if (endpoint.getEndpointType() == CallEndpoint.TYPE_SPEAKER) {
+                    expectedEndpoint = endpoint;
+                    break;
+                }
+            }
+            if (expectedEndpoint == null) {
+                Log.w(TAG, "testSetAudioRouteOnCallEndpointRequestedPropagation: SPEAKER "
+                        + "endpoint is not an available CallEndpoint");
+                return;
+            }
+
+            // We need to check what audio routes are available. If speaker and either headset or
+            // earpiece aren't available, then we should skip this test.
+            int availableRoutes = callAudioState.getSupportedRouteMask();
+            if ((availableRoutes & CallAudioState.ROUTE_SPEAKER) == 0) {
+                return;
+            }
+            if ((availableRoutes & CallAudioState.ROUTE_WIRED_OR_EARPIECE) == 0) {
+                return;
+            }
+
+            // Prime the controlled other ICS to expect the SPEAKER CallEndpoint request.
+            mICtsThirdPartyInCallServiceControl.setExpectedCallEndpoint(expectedEndpoint);
+
+            // From the main ICS in the CTS test runner, this will send the call endpoint requested
+            // update:
+            // Explicitly call super implementation to enable detection of CTS coverage
+            ((InCallService) inCallService).setAudioRoute(CallAudioState.ROUTE_SPEAKER);
+            mOnCallAudioStateChangedCounter.waitForCount(currentInvokeCount + 1,
+                    WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+            assertAudioRoute(connection, CallAudioState.ROUTE_SPEAKER);
+            assertAudioRoute(inCallService, CallAudioState.ROUTE_SPEAKER);
+
+            // Wait for the other ICS to have received the call endpoint requested signal.
+            assertTrue(mICtsThirdPartyInCallServiceControl.waitUntilExpectedCallEndpointReceived());
+        } finally {
+            // Restore the original audio route to prevent contamination:
+            ((InCallService) inCallService).setAudioRoute(initialRoute);
+            mOnCallAudioStateChangedCounter.waitForCount(currentInvokeCount + 2,
+                    WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+
+            mICtsThirdPartyInCallServiceControl.resetLatchForServiceBound(true);
+            // Revoke App Ops Permission
+            setInCallServiceAppOpsPermission(false);
+        }
+    }
+
+    @ApiTest(apis = {"android.telecom.InCallService#onCallEndpointRequested"})
+    public void testSwitchCallEndpointOnCallEndpointRequestedPropagation() throws Exception {
+        if (!mShouldTestTelecom || !Flags.callEndpointRequestedApi()) {
+            return;
+        }
+        // Grant App Ops Permission
+        setInCallServiceAppOpsPermission(true);
+
+        placeAndVerifyCall();
+        final MockConnection connection = verifyConnectionForOutgoingCall();
+        TestUtils.InvokeCounter connectionOnCallEndpointChangedCounter =
+                connection.getConnectionOnCallEndpointChangedCounter();
+        final MockInCallService inCallService = mInCallCallbacks.getService();
+
+        final Call call = inCallService.getLastCall();
+        assertCallState(call, Call.STATE_DIALING);
+
+        mOnCallEndpointChangedCounter.waitForCount(1);
+        CallEndpoint currentEndpoint =
+                (CallEndpoint) mOnCallEndpointChangedCounter.getArgs(0)[0];
+        int currentEndpointType = currentEndpoint.getEndpointType();
+        Executor executor = mContext.getMainExecutor();
+
+        try {
+            mOnAvailableEndpointsChangedCounter.waitForCount(1);
+            List<CallEndpoint> availableEndpoints =
+                    (List<CallEndpoint>) mOnAvailableEndpointsChangedCounter.getArgs(0)[0];
+            CallEndpoint anotherEndpoint = null;
+            for (CallEndpoint endpoint : availableEndpoints) {
+                if (endpoint.getEndpointType() != currentEndpointType) {
+                    anotherEndpoint = endpoint;
+                    break;
+                }
+            }
+
+            if (anotherEndpoint != null) {
+                // Prime the controlled other ICS to expect the anotherEndpoint requested signal.
+                mICtsThirdPartyInCallServiceControl.setExpectedCallEndpoint(anotherEndpoint);
+                final int anotherEndpointType = anotherEndpoint.getEndpointType();
+                final int currentInvokeCount = mOnCallEndpointChangedCounter.getInvokeCount();
+                ((InCallService) inCallService).requestCallEndpointChange(anotherEndpoint, executor,
+                        new OutcomeReceiver<>() {
+                            @Override
+                            public void onResult(Void result) {}
+                            @Override
+                            public void onError(CallEndpointException exception) {}
+                        });
+                // Wait for connection onCallEndpointChanged.
+                connectionOnCallEndpointChangedCounter.waitForCount(currentInvokeCount + 1,
+                        WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+                // Wait for ICS connection onCallEndpointChanged.
+                mOnCallEndpointChangedCounter.waitForCount(currentInvokeCount + 1,
+                        WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+                assertEndpointType(connection, anotherEndpointType);
+                assertEndpointType(inCallService, anotherEndpointType);
+                // Wait for the other ICS to have received the call endpoint requested signal.
+                assertTrue(mICtsThirdPartyInCallServiceControl
+                        .waitUntilExpectedCallEndpointReceived());
+
+                // Prime the controlled other ICS to expect the currentEndpoint requested signal.
+                mICtsThirdPartyInCallServiceControl.setExpectedCallEndpoint(currentEndpoint);
+                inCallService.requestCallEndpointChange(currentEndpoint, executor,
+                        new OutcomeReceiver<>() {
+                            @Override
+                            public void onResult(Void result) {}
+                            @Override
+                            public void onError(CallEndpointException exception) {}
+                        });
+                // Wait for connection onCallEndpointChanged.
+                connectionOnCallEndpointChangedCounter.waitForCount(currentInvokeCount + 2,
+                        WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+                // Wait for ICS connection onCallEndpointChanged.
+                mOnCallEndpointChangedCounter.waitForCount(currentInvokeCount + 2,
+                        WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+                assertEndpointType(connection, currentEndpointType);
+                assertEndpointType(inCallService, currentEndpointType);
+                // Wait for the other ICS to have received the call endpoint requested signal.
+                assertTrue(mICtsThirdPartyInCallServiceControl
+                        .waitUntilExpectedCallEndpointReceived());
+            }
+        } finally {
+            // Restore the original endpoint to prevent test contamination:
+            mICtsThirdPartyInCallServiceControl.setExpectedCallEndpoint(currentEndpoint);
+            ((InCallService) inCallService).requestCallEndpointChange(currentEndpoint, executor,
+                    new OutcomeReceiver<>() {
+                        @Override public void onResult(Void result) {}
+                        @Override public void onError(CallEndpointException exception) {}
+                    });
+            assertTrue(mICtsThirdPartyInCallServiceControl
+                    .waitUntilExpectedCallEndpointReceived());
+
+            mICtsThirdPartyInCallServiceControl.resetLatchForServiceBound(true);
+            // Revoke App Ops Permission
+            setInCallServiceAppOpsPermission(false);
+        }
     }
 
     /**

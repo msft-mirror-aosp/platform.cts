@@ -70,6 +70,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Telephony;
 import android.service.notification.Adjustment;
+import android.service.notification.DynamicBundle;
 import android.service.notification.Flags;
 import android.service.notification.NotificationAssistantService;
 import android.service.notification.NotificationListenerService;
@@ -1189,6 +1190,92 @@ public class NotificationAssistantServiceTest {
         out = new NotificationListenerService.Ranking();
         mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
         assertNull(out.getSummarization());
+    }
+
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_NM_CONTEXTUAL_DISPLAY)
+    @Test
+    public void testDynamicBundles() throws Exception {
+        int dynamicBundleId = 100;
+        setUpListeners();
+
+        mAssistant.createDynamicBundle(dynamicBundleId, "name");
+
+        assertThat(mAssistant.getDynamicBundles())
+                .contains(new DynamicBundle(dynamicBundleId, "name"));
+
+        mAssistant.deleteDynamicBundle(dynamicBundleId);
+
+        assertThat(mAssistant.getDynamicBundles()).isEmpty();
+    }
+
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_NM_CONTEXTUAL_DISPLAY)
+    @Test
+    public void testDynamicBundles_classifyToDynamicBundle() throws Exception {
+        int dynamicBundleId = 100;
+
+        setUpListeners();
+
+        try {
+            mAssistant.createDynamicBundle(dynamicBundleId, "name");
+
+            sendNotification(1, null, ICON_ID);
+            StatusBarNotification sbn = mHelper.findPostedNotification(
+                    null, 1, NotificationHelper.SEARCH_TYPE.POSTED);
+            NotificationListenerService.Ranking out = new NotificationListenerService.Ranking();
+            mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+
+            Bundle signals = new Bundle();
+            signals.putInt(KEY_TYPE, dynamicBundleId);
+            Adjustment adjustment = new Adjustment(sbn.getPackageName(), sbn.getKey(), signals, "",
+                    sbn.getUser());
+            CountDownLatch rankingUpdateLatch =
+                    mNotificationListenerService.setRankingUpdateCountDown(1);
+            mAssistant.adjustNotification(adjustment);
+            rankingUpdateLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
+            mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+
+            assertThat(out.getChannel().getId()).isEqualTo(String.valueOf(dynamicBundleId));
+        } finally {
+            mAssistant.deleteDynamicBundle(dynamicBundleId);
+        }
+    }
+
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_NM_CONTEXTUAL_DISPLAY)
+    @Test
+    public void testDynamicBundles_classifyToDynamicBundle_thenDeleteBundle() throws Exception {
+        int dynamicBundleId = 100;
+
+        setUpListeners();
+
+        mAssistant.createDynamicBundle(dynamicBundleId, "name");
+
+        sendNotification(1, null, ICON_ID);
+        StatusBarNotification sbn = mHelper.findPostedNotification(
+                null, 1, NotificationHelper.SEARCH_TYPE.POSTED);
+        NotificationListenerService.Ranking out = new NotificationListenerService.Ranking();
+        mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+
+        Bundle signals = new Bundle();
+        signals.putInt(KEY_TYPE, dynamicBundleId);
+        Adjustment adjustment = new Adjustment(sbn.getPackageName(), sbn.getKey(), signals, "",
+                sbn.getUser());
+        CountDownLatch rankingUpdateLatch =
+                mNotificationListenerService.setRankingUpdateCountDown(1);
+        mAssistant.adjustNotification(adjustment);
+        rankingUpdateLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
+        mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+
+        assertThat(out.getChannel().getId()).isEqualTo(String.valueOf(dynamicBundleId));
+
+        // deleting bundle returns the notification to its original channel
+        rankingUpdateLatch =
+                mNotificationListenerService.setRankingUpdateCountDown(1);
+        mAssistant.deleteDynamicBundle(dynamicBundleId);
+        rankingUpdateLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
+
+        mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+
+        assertThat(out.getChannel().getId()).isEqualTo(sbn.getNotification().getChannelId());
     }
 
     @Test

@@ -22,6 +22,8 @@ import android.util.Log
 import com.android.bedstead.harrier.AnnotationExecutorUtil.checkFailOrSkip
 import com.android.bedstead.harrier.AnnotationExecutorUtil.failOrSkip
 import com.android.bedstead.harrier.annotations.FailureMode
+import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
+import com.android.bedstead.multiuser.annotations.RequireHasMainUser
 import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode
 import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport
 import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode
@@ -34,8 +36,6 @@ import com.android.bedstead.multiuser.annotations.RequireRunOnVisibleBackgroundN
 import com.android.bedstead.multiuser.annotations.RequireUserSupported
 import com.android.bedstead.multiuser.annotations.RequireVisibleBackgroundUsers
 import com.android.bedstead.multiuser.annotations.RequireVisibleBackgroundUsersOnDefaultDisplay
-import com.android.bedstead.multiuser.annotations.EnsureCanAddSecondaryUser
-import com.android.bedstead.multiuser.annotations.RequireHasMainUser
 import com.android.bedstead.multiuser.annotations.meta.EnsureHasNoUserAnnotation
 import com.android.bedstead.nene.TestApis.users
 import com.android.bedstead.nene.users.UserReference
@@ -144,21 +144,21 @@ fun RequireRunNotOnVisibleBackgroundNonProfileUser.logic() {
 }
 
 /**
- * See [EnsureCanAddSecondaryUser]
+ * See [EnsureCanAddUser]
  */
-fun EnsureCanAddSecondaryUser.logic() {
-    val secondaryUserType = users().supportedType(UserType.SECONDARY_USER_TYPE_NAME)
-    if (secondaryUserType == null) {
-        failOrSkip("Secondary users are not supported.", failureMode)
+fun EnsureCanAddUser.logic() {
+    val resolvedUserType = users().supportedType(value)
+    if (resolvedUserType == null) {
+        failOrSkip("Users of type $value are not supported.", failureMode)
         return
     }
 
     // TODO(scottjonathan): Try to remove users until we have space - this will have to take
     // into account other users which have been added during the setup of this test.
 
-    val remainingCount = users().getRemainingCreatableUserCount(secondaryUserType)
+    val remainingCount = users().getRemainingCreatableUserCount(resolvedUserType)
     checkFailOrSkip(
-        "The device does not have space for $number additional secondary user(s). " +
+        "The device does not have space for $number additional $value user(s). " +
                 "Remaining: $remainingCount",
         remainingCount >= number,
         failureMode

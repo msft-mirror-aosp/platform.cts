@@ -33,6 +33,7 @@ import androidx.test.uiautomator.UiSelector;
 import androidx.test.uiautomator.Until;
 
 import com.android.cts.helpers.ICtsPrintHelper;
+import com.android.printspooler.flags.Flags;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -142,6 +143,9 @@ public class DefaultCtsPrintHelper implements ICtsPrintHelper {
     public void answerPrintServicesWarning(boolean confirm) throws TestHelperException {
         try {
             mDevice.waitForIdle();
+            if (Flags.skipServiceWarning()) {
+                return;
+            }
             UiObject button;
             if (confirm) {
                 button = mDevice.findObject(new UiSelector().resourceId("android:id/button1"));

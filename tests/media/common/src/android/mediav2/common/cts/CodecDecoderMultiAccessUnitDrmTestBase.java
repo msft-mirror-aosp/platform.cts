@@ -16,10 +16,7 @@
 
 package android.mediav2.common.cts;
 
-import static android.media.codec.Flags.FLAG_LARGE_AUDIO_FRAME_FINISH;
 import static android.mediav2.common.cts.CodecDecoderDrmTestBase.setUpMediaDrmAndCrypto;
-
-import static com.android.media.codec.flags.Flags.FLAG_LARGE_AUDIO_FRAME;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -34,7 +31,6 @@ import android.media.NotProvisionedException;
 import android.media.ResourceBusyException;
 import android.media.UnsupportedSchemeException;
 import android.os.Build;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 import android.util.Pair;
 
@@ -50,9 +46,11 @@ import java.util.UUID;
 
 /**
  * Wrapper class for trying and testing mediacodec secure decoder components in large buffer mode
+ *
+ * <p>NOTE: If a JUnit TestCLass or JUnit Test is making use of this class, it needs to be annotated
+ * with @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
  */
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
-@RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
 public class CodecDecoderMultiAccessUnitDrmTestBase extends CodecDecoderMultiAccessUnitTestBase {
     private static final String LOG_TAG =
             CodecDecoderMultiAccessUnitDrmTestBase.class.getSimpleName();

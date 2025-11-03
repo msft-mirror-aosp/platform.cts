@@ -28,6 +28,7 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
+        "dts",
     ],
     static_libs: [
         "compatibility-device-util-axt",
@@ -51,6 +52,7 @@ android_test {
         "mts-media",
         "mcts-media",
         "mts",
+        "dts",
     ],
     static_libs: [
         "compatibility-device-util-axt",

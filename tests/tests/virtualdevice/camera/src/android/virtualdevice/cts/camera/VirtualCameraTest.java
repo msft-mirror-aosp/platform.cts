@@ -66,6 +66,7 @@ import android.companion.virtual.camera.VirtualCameraSessionConfig;
 import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
 import android.content.res.CameraCompatibilityInfo;
+import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
@@ -125,6 +126,10 @@ public class VirtualCameraTest {
     private static final int CAMERA_LENS_FACING = LENS_FACING_FRONT;
     private static final int IMAGE_READER_MAX_IMAGES = 2;
     private static final Range<Integer> CAMERA_FPS_RANGE = new Range<>(10, 20);
+    private static final int ACTIVE_SENSOR_WIDTH = 1920;
+    private static final int ACTIVE_SENSOR_HEIGHT = 1080;
+    private static final int PIXEL_SENSOR_WIDTH = 2400;
+    private static final int PIXEL_SENSOR_HEIGHT = 1200;
 
     @Rule
     public VirtualDeviceRule mRule =
@@ -1026,6 +1031,33 @@ public class VirtualCameraTest {
         cameraDevice.close();
 
         verify(mVirtualCameraCallback, timeout(TIMEOUT_MILLIS)).onStreamClosed(anyInt());
+    }
+
+    @Parameters(method = "getAllLensFacingDirections")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
+    public void createVirtualCamera_withSensorInfo_succeeds(int lensFacing) throws Exception {
+        setupVirtualDeviceCameraManager();
+
+        final Rect activeArraySize = new Rect(0, 0, ACTIVE_SENSOR_WIDTH, ACTIVE_SENSOR_HEIGHT);
+        final Size pixelArraySize = new Size(PIXEL_SENSOR_WIDTH, PIXEL_SENSOR_HEIGHT);
+
+        CameraCharacteristics characteristics =
+                new CameraCharacteristics.Builder(createDefaultCameraCharacteristics(lensFacing))
+                        .set(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE, activeArraySize)
+                        .set(CameraCharacteristics.SENSOR_INFO_PIXEL_ARRAY_SIZE, pixelArraySize)
+                        .build();
+
+        createVirtualCameraWithCharacteristics(characteristics);
+
+        CameraCharacteristics retrievedCharacteristics =
+                mCameraManager.getCameraCharacteristics(getCameraIdForLensFacing(lensFacing));
+
+        assertThat(
+                retrievedCharacteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE))
+                .isEqualTo(activeArraySize);
+        assertThat(retrievedCharacteristics.get(CameraCharacteristics.SENSOR_INFO_PIXEL_ARRAY_SIZE))
+                .isEqualTo(pixelArraySize);
     }
 
     @Test

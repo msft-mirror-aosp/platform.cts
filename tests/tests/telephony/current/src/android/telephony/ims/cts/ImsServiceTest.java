@@ -6234,6 +6234,7 @@ public class ImsServiceTest {
         PersistableBundle bundle = new PersistableBundle();
         bundle.putBoolean(
                 CarrierConfigManager.Ims.KEY_ALLOW_NON_GLOBAL_PHONE_NUMBER_FORMAT_BOOL, true);
+        bundle.putString(CarrierConfigManager.KEY_SIM_COUNTRY_ISO_OVERRIDE_STRING, "gb");
         overrideCarrierConfig(bundle);
 
         // bind TestImsService
@@ -6295,7 +6296,7 @@ public class ImsServiceTest {
                     SubscriptionManager.PHONE_NUMBER_SOURCE_IMS);
 
             // verify Ims phone number
-            assertEquals("447539447777", phoneNumber);
+            assertTrue("447539447777".equals(phoneNumber) || "+447539447777".equals(phoneNumber));
         } finally {
             automan.dropShellPermissionIdentity();
         }

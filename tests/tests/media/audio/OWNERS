@@ -23,7 +23,6 @@ per-file src/android/media/audio/cts/AudioPlaybackConfigurationTest.java = jmtri
 per-file src/android/media/audio/cts/AudioRecordingConfigurationTest.java = jmtrivi@google.com
 per-file src/android/media/audio/cts/LoudnessEnhancerTest.java = jmtrivi@google.com
 per-file src/android/media/audio/cts/*Ringtone*.java = jmtrivi@google.com
-per-file src/android/media/audio/cts/*Ringtone*.java = file:platform/frameworks/base:/services/core/java/com/android/server/vibrator/OWNERS
 
 per-file src/android/media/audio/cts/AudioPlayRoutingNative.java = jiabin@google.com
 per-file src/android/media/audio/cts/AudioRecordRoutingNative.java = jiabin@google.com

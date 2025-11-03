@@ -150,7 +150,7 @@ public class PerformanceClassEvaluator {
 
         if (!perfClassMet && mIsPerfClass) {
             String msg = "Declared performance class %s but requirement [%s] grades as %s";
-            grades.forEach((r, grade) -> Log.w(TAG, msg.formatted(mDeclaredPc, r, grade)));
+            grades.forEach((r, grade) -> Log.w(TAG, String.format(msg, mDeclaredPc, r, grade)));
         }
     }
 
@@ -165,9 +165,9 @@ public class PerformanceClassEvaluator {
         if (mRequirements.isEmpty()) {
             Log.w(
                     TAG,
-                    ("No requirements added to PerformanceClassEvaluator for test %s. Submission "
-                                    + "skipped.")
-                            .formatted(mTestName));
+                    String.format(
+                            "No requirements added to PerformanceClassEvaluator for test %s."
+                                    + " Submission skipped.", mTestName));
             return true;
         }
         boolean perfClassMet = true;

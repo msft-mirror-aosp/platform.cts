@@ -53,6 +53,7 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
+        "dts",
     ],
 }
 
@@ -65,6 +66,7 @@ android_test {
         "general-tests",
         "mcts-media",
         "mts-media",
+        "dts",
     ],
 }
 

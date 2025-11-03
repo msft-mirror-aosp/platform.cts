@@ -574,3 +574,26 @@ def setup_gen2_rig(rotator_ch, lighting_ch):
     configure_rotator(motor_port, motor_channel)
     rotate(motor_port, motor_channel)
   return motor_port, lights_port
+
+
+def setup_gen2_rig(self, cam):
+  """Set up the gen2 rig and establish communication with ports.
+
+  Args:
+    self: ItsBaseTest object; used for lighting and motor control.
+    cam: its_session_utils.ItsSession camera object.
+  """
+  logging.debug('Setting up gen2 rig')
+  self.motor_channel = int(self.rotator_ch)
+  lights_channel = int(self.lighting_ch)
+  lights_port = find_serial_port(self.lighting_cntl)
+  if lights_port:
+    sensor_fusion_utils.establish_serial_comm(lights_port)
+    set_lighting_state(lights_port, lights_channel, 'ON')
+  self.motor_port = find_serial_port(self.rotator_cntl)
+  if self.motor_port:
+    configure_rotator(self.motor_port, self.motor_channel)
+    rotate(self.motor_port, self.motor_channel)
+    rotate_to_orthogonal_position(
+        cam, self.log_path, self.motor_port, self.motor_channel)
+

@@ -27,29 +27,25 @@ import com.android.tradefed.testtype.IDeviceTest;
 import com.android.tradefed.testtype.ISetOptionReceiver;
 import com.android.tradefed.testtype.ITestInformationReceiver;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import org.junit.Ignore;
-import org.junit.runner.Description;
 import org.junit.runner.Runner;
-import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.parameterized.BlockJUnit4ClassRunnerWithParameters;
 import org.junit.runners.parameterized.ParametersRunnerFactory;
 import org.junit.runners.parameterized.TestWithParameters;
 
-/**
- * Custom JUnit4 parameterized test runner that also accommodate {@link IDeviceTest}.
- */
-public class DeviceJUnit4ClassRunnerWithParameters extends BlockJUnit4ClassRunnerWithParameters
-        implements IDeviceTest, IBuildReceiver, IAbiReceiver, ISetOptionReceiver, ITestInformationReceiver {
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
-    @Option(
-        name = HostTest.SET_OPTION_NAME,
-        description = HostTest.SET_OPTION_DESC
-    )
+/** Custom JUnit4 parameterized test runner that also accommodate {@link IDeviceTest}. */
+public class DeviceJUnit4ClassRunnerWithParameters extends BlockJUnit4ClassRunnerWithParameters
+        implements IDeviceTest,
+                IBuildReceiver,
+                IAbiReceiver,
+                ISetOptionReceiver,
+                ITestInformationReceiver {
+
+    @Option(name = HostTest.SET_OPTION_NAME, description = HostTest.SET_OPTION_DESC)
     private Set<String> mKeyValueOptions = new HashSet<>();
 
     private TestInformation mTestInformation;
@@ -57,7 +53,8 @@ public class DeviceJUnit4ClassRunnerWithParameters extends BlockJUnit4ClassRunne
     private IBuildInfo mBuildInfo;
     private IAbi mAbi;
 
-    public DeviceJUnit4ClassRunnerWithParameters(TestWithParameters test) throws InitializationError {
+    public DeviceJUnit4ClassRunnerWithParameters(TestWithParameters test)
+            throws InitializationError {
         super(test);
     }
 
@@ -65,7 +62,6 @@ public class DeviceJUnit4ClassRunnerWithParameters extends BlockJUnit4ClassRunne
     public void setBuild(IBuildInfo buildInfo) {
         mBuildInfo = buildInfo;
     }
-
 
     @Override
     public void setAbi(IAbi abi) {
@@ -92,30 +88,7 @@ public class DeviceJUnit4ClassRunnerWithParameters extends BlockJUnit4ClassRunne
         return mTestInformation;
     }
 
-    @Override
-    public Description getDescription() {
-        Description desc = Description.createSuiteDescription(getTestClass().getJavaClass());
-        for (FrameworkMethod method : getChildren()) {
-            desc.addChild(describeChild(method));
-        }
-        return desc;
-    }
-
-    @Override
-    protected List<FrameworkMethod> getChildren() {
-        List<FrameworkMethod> methods = super.getChildren();
-        List<FrameworkMethod> filteredMethods = new ArrayList<>();
-        for (FrameworkMethod method : methods) {
-            Description desc = describeChild(method);
-            if (desc.getAnnotation(Ignore.class) == null) {
-                filteredMethods.add(method);
-            }
-        }
-        return filteredMethods;
-    }
-    /**
-     * We override createTest in order to set the device.
-     */
+    /** We override createTest in order to set the device. */
     @Override
     public Object createTest() throws Exception {
         Object testObj = super.createTest();
@@ -149,5 +122,4 @@ public class DeviceJUnit4ClassRunnerWithParameters extends BlockJUnit4ClassRunne
             return new DeviceJUnit4ClassRunnerWithParameters(test);
         }
     }
-
 }

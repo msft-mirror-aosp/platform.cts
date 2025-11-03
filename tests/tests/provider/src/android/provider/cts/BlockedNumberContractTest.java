@@ -39,6 +39,9 @@ import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.PermissionContext;
+
 import junit.framework.Assert;
 
 import java.util.ArrayList;
@@ -66,17 +69,43 @@ public class BlockedNumberContractTest extends TestCaseThatRunsIfTelephonyIsEnab
             BlockedNumbers.COLUMN_ORIGINAL_NUMBER,
             BlockedNumbers.COLUMN_E164_NUMBER};
 
+    private HashMap<String, Boolean> mOriginalEnhancedSettings;
+    private static final String[] ENHANCED_SETTING_KEYS = {
+            SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNREGISTERED,
+            SystemContract.ENHANCED_SETTING_KEY_BLOCK_PRIVATE,
+            SystemContract.ENHANCED_SETTING_KEY_BLOCK_PAYPHONE,
+            SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNKNOWN,
+            SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNAVAILABLE,
+            SystemContract.ENHANCED_SETTING_KEY_SHOW_EMERGENCY_CALL_NOTIFICATION
+    };
+
     @Override
     protected void setUp() throws Exception {
         super.setUp();
         mContext = getInstrumentation().getContext();
         mContentResolver = mContext.getContentResolver();
         mAddedUris = new ArrayList<>();
+        mOriginalEnhancedSettings = null;
         mIsSystemUser = isSystemUser(mContext);
     }
 
     @Override
     protected void tearDown() throws Exception {
+        if (mIsSystemUser) {
+            // Restore the original state of all settings after the test is complete.
+            // This runs even if the test fails.
+            try (PermissionContext w = TestApis.permissions().withPermission(
+                    Manifest.permission.WRITE_BLOCKED_NUMBERS)) {
+                if (mOriginalEnhancedSettings != null) {
+                    for (String key : ENHANCED_SETTING_KEYS) {
+                        if (mOriginalEnhancedSettings.containsKey(key)) {
+                            SystemContract.setEnhancedBlockSetting(mContext, key,
+                                    mOriginalEnhancedSettings.get(key));
+                        }
+                    }
+                }
+            }
+        }
         for (Uri row : mAddedUris) {
             mContentResolver.delete(row, null, null);
         }
@@ -84,6 +113,41 @@ public class BlockedNumberContractTest extends TestCaseThatRunsIfTelephonyIsEnab
         setDefaultSmsApp(false);
 
         super.tearDown();
+    }
+
+    private void setUp_EnhancedBlockSetting() throws Exception {
+        mOriginalEnhancedSettings = new HashMap<>();
+        // Save the original state of all enhanced block settings.
+        try (PermissionContext w = TestApis.permissions().withPermission(
+                Manifest.permission.READ_BLOCKED_NUMBERS)) {
+            for (String key : ENHANCED_SETTING_KEYS) {
+                mOriginalEnhancedSettings.put(key,
+                        SystemContract.getEnhancedBlockSetting(mContext, key));
+            }
+        }
+        // Reset enhanced block settings to a known clean state (false) for the test.
+        resetEnhancedBlockSettings();
+    }
+
+    private void resetEnhancedBlockSettings() throws Exception {
+        try (PermissionContext permissionContext = TestApis.permissions().withPermission(
+                Manifest.permission.WRITE_BLOCKED_NUMBERS,
+                Manifest.permission.READ_BLOCKED_NUMBERS)) {
+            // Reset all settings to false before each test
+            SystemContract.setEnhancedBlockSetting(mContext,
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNREGISTERED, false);
+            SystemContract.setEnhancedBlockSetting(mContext,
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_PRIVATE, false);
+            SystemContract.setEnhancedBlockSetting(mContext,
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_PAYPHONE, false);
+            SystemContract.setEnhancedBlockSetting(mContext,
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNKNOWN, false);
+            SystemContract.setEnhancedBlockSetting(mContext,
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNAVAILABLE, false);
+            SystemContract.setEnhancedBlockSetting(mContext,
+                    SystemContract.ENHANCED_SETTING_KEY_SHOW_EMERGENCY_CALL_NOTIFICATION,
+                    false);
+        }
     }
 
     public void testProviderInteractionsAsRegularApp_fails() {
@@ -711,5 +775,85 @@ public class BlockedNumberContractTest extends TestCaseThatRunsIfTelephonyIsEnab
 
     private static boolean isSystemUser(Context context) {
         return context.getSystemService(UserManager.class).isSystemUser();
+    }
+
+    /**
+     * Verifies that a given enhanced blocking setting can be enabled and disabled correctly.
+     * <p>
+     * This helper method first sets the specified setting to {@code true} while asserting that
+     * {@link SystemContract#getEnhancedBlockSetting(Context, String)} returns {@code true}. It then
+     * sets the setting to {@code false}, asserting that the getter returns {@code false}.
+     * <p>
+     * This test requires shell permissions for reading and writing to the blocked number provider
+     * and is skipped if run by a non-system user.
+     *
+     * @param settingKey The key of the enhanced blocking setting to be verified, as defined in
+     *                   {@link SystemContract}.
+     * @throws Exception if any underlying operations fail.
+     */
+    private void verifyEnhancedBlockSetting(String settingKey) throws Exception {
+        if (!mIsSystemUser) {
+            Log.i(TAG, "skipping verifyEnhancedBlockSetting for non-system user");
+            return;
+        }
+        setUp_EnhancedBlockSetting();
+        try (PermissionContext permissionContext = TestApis.permissions().withPermission(
+                Manifest.permission.WRITE_BLOCKED_NUMBERS,
+                Manifest.permission.READ_BLOCKED_NUMBERS)) {
+
+            // Set to true and verify
+            SystemContract.setEnhancedBlockSetting(mContext, settingKey, true);
+            assertTrue("Setting " + settingKey + " should be true",
+                    SystemContract.getEnhancedBlockSetting(mContext, settingKey));
+
+            // Set to false and verify
+            SystemContract.setEnhancedBlockSetting(mContext, settingKey, false);
+            assertFalse("Setting " + settingKey + " should be false",
+                    SystemContract.getEnhancedBlockSetting(mContext, settingKey));
+        }
+    }
+
+    /**
+     * Verifying that the enhanced block setting for unregistered numbers can be set and retrieved.
+     */
+    public void testEnhancedBlockSetting_Unregistered() throws Exception {
+        verifyEnhancedBlockSetting(SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNREGISTERED);
+    }
+
+    /**
+     * Verifying that the enhanced block setting for private numbers can be set and retrieved.
+     */
+    public void testEnhancedBlockSetting_Private() throws Exception {
+        verifyEnhancedBlockSetting(SystemContract.ENHANCED_SETTING_KEY_BLOCK_PRIVATE);
+    }
+
+    /**
+     * Verifying that the enhanced block setting for payphone numbers can be set and retrieved.
+     */
+    public void testEnhancedBlockSetting_Payphone() throws Exception {
+        verifyEnhancedBlockSetting(SystemContract.ENHANCED_SETTING_KEY_BLOCK_PAYPHONE);
+    }
+
+    /**
+     * Verifying that the enhanced block setting for unknown numbers can be set and retrieved.
+     */
+    public void testEnhancedBlockSetting_Unknown() throws Exception {
+        verifyEnhancedBlockSetting(SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNKNOWN);
+    }
+
+    /**
+     * Verifying that the enhanced block setting for unavailable numbers can be set and retrieved.
+     */
+    public void testEnhancedBlockSetting_Unavailable() throws Exception {
+        verifyEnhancedBlockSetting(SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNAVAILABLE);
+    }
+
+    /**
+     * Verifying that the enhanced block setting for showing emergency call notifications
+     * can be set and retrieved.
+     */
+    public void testEnhancedBlockSetting_ShowEmergencyCallNotification() throws Exception {
+        verifyEnhancedBlockSetting(
+                SystemContract.ENHANCED_SETTING_KEY_SHOW_EMERGENCY_CALL_NOTIFICATION);
     }
 }

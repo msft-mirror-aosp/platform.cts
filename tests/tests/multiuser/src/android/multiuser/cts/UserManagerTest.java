@@ -165,6 +165,18 @@ public final class UserManagerTest {
         assertWithMessage("isUserAGoat()").that(mUserManager.isUserAGoat()).isFalse();
     }
 
+    /** Verify that the SYSTEM user is an Admin if and only if it is not a headless system user. */
+    @Test
+    @ApiTest(apis = {"android.os.UserManager#isAdminUser"})
+    @EnsureHasPermission({QUERY_USERS})
+    @RequiresFlagsEnabled(android.multiuser.Flags.FLAG_HSU_NOT_ADMIN)
+    public void testSystemUserAdminStatus() throws Exception {
+        final UserManager sysUm = sContext
+                .createPackageContextAsUser("android", 0, UserHandle.SYSTEM)
+                .getSystemService(UserManager.class);
+        assertThat(sysUm.isAdminUser()).isNotEqualTo(UserManager.isHeadlessSystemUserMode());
+    }
+
     /**
      * Verify that isAdminUser() can be called without any permissions and returns true for the
      * initial user which is an admin user.

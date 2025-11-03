@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<issues format="6" by="lint 8.4.0-alpha01" type="baseline" client="" dependencies="true" name="" variant="all" version="8.4.0-alpha01">
+<issues format="6" by="lint 8.4.0-alpha08" type="baseline" client="" dependencies="true" name="" variant="all" version="8.4.0-alpha08">
 
     <issue
         id="NewApi"
@@ -135,17 +135,6 @@
 
     <issue
         id="NewApi"
-        message="Cast from `Account` to `Parcelable` requires API level 5 (current min is 1)"
-        errorLine1="        out.writeParcelable(account, flags);"
-        errorLine2="                            ~~~~~~~">
-        <location
-            file="cts/tests/tests/accounts/common/src/android/accounts/cts/common/tx/ConfirmCredentialsTx.java"
-            line="50"
-            column="29"/>
-    </issue>
-
-    <issue
-        id="NewApi"
         message="Call requires API level 5 (current min is 1): `new android.accounts.Account`"
         errorLine1="    public static final Account ACCOUNT_UNAFFILIATED_FIXTURE_SUCCESS = new Account("
         errorLine2="                                                                       ~~~~~~~~~~~">
@@ -164,50 +153,6 @@
             file="cts/tests/tests/accounts/common/src/android/accounts/cts/common/Fixtures.java"
             line="57"
             column="51"/>
-    </issue>
-
-    <issue
-        id="NewApi"
-        message="Cast from `Account` to `Parcelable` requires API level 5 (current min is 1)"
-        errorLine1="        out.writeParcelable(account, flags);"
-        errorLine2="                            ~~~~~~~">
-        <location
-            file="cts/tests/tests/accounts/common/src/android/accounts/cts/common/tx/GetAccountRemovalAllowedTx.java"
-            line="46"
-            column="29"/>
-    </issue>
-
-    <issue
-        id="NewApi"
-        message="Cast from `Account` to `Parcelable` requires API level 5 (current min is 1)"
-        errorLine1="        out.writeParcelable(account, flags);"
-        errorLine2="                            ~~~~~~~">
-        <location
-            file="cts/tests/tests/accounts/common/src/android/accounts/cts/common/tx/GetAuthTokenTx.java"
-            line="54"
-            column="29"/>
-    </issue>
-
-    <issue
-        id="NewApi"
-        message="Cast from `Account` to `Parcelable` requires API level 5 (current min is 1)"
-        errorLine1="        out.writeParcelable(account, flags);"
-        errorLine2="                            ~~~~~~~">
-        <location
-            file="cts/tests/tests/accounts/common/src/android/accounts/cts/common/tx/HasFeaturesTx.java"
-            line="57"
-            column="29"/>
-    </issue>
-
-    <issue
-        id="NewApi"
-        message="Cast from `Account` to `Parcelable` requires API level 5 (current min is 1)"
-        errorLine1="        out.writeParcelable(account, flags);"
-        errorLine2="                            ~~~~~~~">
-        <location
-            file="cts/tests/tests/accounts/common/src/android/accounts/cts/common/tx/StartUpdateCredentialsSessionTx.java"
-            line="50"
-            column="29"/>
     </issue>
 
     <issue
@@ -234,7 +179,7 @@
 
     <issue
         id="NewApi"
-        message="Cast from `AccountAuthenticatorResponse` to `Parcelable` requires API level 5 (current min is 1)"
+        message="Implicit cast from `AccountAuthenticatorResponse` to `Parcelable` requires API level 5 (current min is 1)"
         errorLine1="            intent.putExtra(Fixtures.KEY_CALLBACK, response);"
         errorLine2="                                                   ~~~~~~~~">
         <location
@@ -333,7 +278,7 @@
 
     <issue
         id="NewApi"
-        message="Cast from `AccountAuthenticatorResponse` to `Parcelable` requires API level 5 (current min is 1)"
+        message="Implicit cast from `AccountAuthenticatorResponse` to `Parcelable` requires API level 5 (current min is 1)"
         errorLine1="            intent.putExtra(Fixtures.KEY_CALLBACK, response);"
         errorLine2="                                                   ~~~~~~~~">
         <location
@@ -432,7 +377,7 @@
 
     <issue
         id="NewApi"
-        message="Cast from `AccountAuthenticatorResponse` to `Parcelable` requires API level 5 (current min is 1)"
+        message="Implicit cast from `AccountAuthenticatorResponse` to `Parcelable` requires API level 5 (current min is 1)"
         errorLine1="            intent.putExtra(Fixtures.KEY_CALLBACK, response);"
         errorLine2="                                                   ~~~~~~~~">
         <location
@@ -531,7 +476,7 @@
 
     <issue
         id="NewApi"
-        message="Cast from `AccountAuthenticatorResponse` to `Parcelable` requires API level 5 (current min is 1)"
+        message="Implicit cast from `AccountAuthenticatorResponse` to `Parcelable` requires API level 5 (current min is 1)"
         errorLine1="            intent.putExtra(Fixtures.KEY_CALLBACK, response);"
         errorLine2="                                                   ~~~~~~~~">
         <location
@@ -586,7 +531,7 @@
 
     <issue
         id="NewApi"
-        message="Cast from `AccountAuthenticatorResponse` to `Parcelable` requires API level 5 (current min is 1)"
+        message="Implicit cast from `AccountAuthenticatorResponse` to `Parcelable` requires API level 5 (current min is 1)"
         errorLine1="            intent.putExtra(Fixtures.KEY_CALLBACK, response);"
         errorLine2="                                                   ~~~~~~~~">
         <location
@@ -681,17 +626,6 @@
             file="cts/tests/tests/accounts/common/src/android/accounts/cts/common/TestDefaultAuthenticator.java"
             line="113"
             column="59"/>
-    </issue>
-
-    <issue
-        id="NewApi"
-        message="Cast from `Account` to `Parcelable` requires API level 5 (current min is 1)"
-        errorLine1="        out.writeParcelable(account, flags);"
-        errorLine2="                            ~~~~~~~">
-        <location
-            file="cts/tests/tests/accounts/common/src/android/accounts/cts/common/tx/UpdateCredentialsTx.java"
-            line="54"
-            column="29"/>
     </issue>
 
 </issues>

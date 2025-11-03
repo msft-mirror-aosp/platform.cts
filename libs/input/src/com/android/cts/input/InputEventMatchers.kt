@@ -390,7 +390,7 @@ fun withModifierState(modifierState: Int): Matcher<KeyEvent> =
 
 fun withKeyAction(keyAction: Int): Matcher<KeyEvent> = object : TypeSafeMatcher<KeyEvent>() {
     override fun describeTo(description: Description) {
-        description.appendText("With key action = $keyAction")
+        description.appendText("With key action = ${KeyEvent.actionToString(keyAction)}")
     }
 
     override fun matchesSafely(event: KeyEvent): Boolean {

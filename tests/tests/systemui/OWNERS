@@ -3,9 +3,13 @@ evanlaird@google.com
 felkachang@google.com
 # Owners of the pip tests on atv:
 rgl@google.com
-galinap@google.com
 # Owners of sysui/wmshell/insets tests:
 lbill@google.com
 shawnlin@google.com
 sanryhuang@google.com
 tigerhuang@google.com
+
+# Owners of Color/Theming
+per-file SystemPaletteTest.kt.java = file:platform/frameworks/base:/core/java/android/content/theming/OWNERS
+per-file DynamicColorsTest.kt.java = file:platform/frameworks/base:/core/java/android/content/theming/OWNERS
+per-file BasePaletteTest.kt = file:platform/frameworks/base:/core/java/android/content/theming/OWNERS

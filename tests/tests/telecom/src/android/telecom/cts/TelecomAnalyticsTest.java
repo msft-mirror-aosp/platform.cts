@@ -34,7 +34,7 @@ import java.util.List;
 public class TelecomAnalyticsTest {
 
     @Test
-    public void testParcelable() {
+    public void testTelecomAnalytics() {
         List<TelecomAnalytics.SessionTiming> sessionTimings = new ArrayList<>();
         List<ParcelableCallAnalytics.AnalyticsEvent> analyticsEvents = new ArrayList<>();
         List<ParcelableCallAnalytics.EventTiming> eventTimings = new ArrayList<>();
@@ -44,5 +44,14 @@ public class TelecomAnalyticsTest {
         callAnalyticsList.add(callAnalytics);
 
         TelecomAnalytics analytics = new TelecomAnalytics(sessionTimings, callAnalyticsList);
+        analytics.getCallAnalytics();
+        analytics.getSessionTimings();
+    }
+
+    @Test
+    public void testSessionTiming() {
+        TelecomAnalytics.SessionTiming sessionTiming = new TelecomAnalytics.SessionTiming(0, 0);
+        sessionTiming.getKey();
+        sessionTiming.getTime();
     }
 }

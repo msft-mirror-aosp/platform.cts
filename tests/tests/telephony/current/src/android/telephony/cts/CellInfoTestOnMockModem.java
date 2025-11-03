@@ -20,6 +20,7 @@ import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN
 import static org.junit.Assert.assertTrue;
 
 import android.telephony.mockmodem.MockModemManager;
+import android.util.Log;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -29,12 +30,17 @@ import org.junit.BeforeClass;
 /** Perform test cases of CellInfoTest on MockModem. */
 public class CellInfoTestOnMockModem extends CellInfoTest {
 
+    private static final String LOG_TAG = "CellInfoTestOnMockModem";
+
     private static final int TEST_SIM_SLOT_ID = 0;
     private static MockModemManager sMockModemManager;
 
     @BeforeClass
     public static void beforeAllTests() throws Exception {
-        MockModemTestBase.beforeAllTestsCheck();
+        if (!MockModemTestBase.beforeAllTestsCheck()) {
+            Log.e(LOG_TAG, "MockModem is not supported!");
+            return;
+        }
         MockModemTestBase.createMockModemAndConnectToService();
         sMockModemManager = MockModemTestBase.getMockModemManager();
     }

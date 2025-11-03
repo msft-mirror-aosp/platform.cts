@@ -41,4 +41,7 @@ android_library {
     plugins: ["auto_value_plugin"],
     platform_apis: true,
     min_sdk_version: "30",
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }

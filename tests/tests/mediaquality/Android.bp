@@ -51,6 +51,7 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
+        "dts",
     ],
     static_libs: [
         "CtsMediaQualityTestCases_lib",

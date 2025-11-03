@@ -25,6 +25,7 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
+        "dts",
     ],
 
     compile_multilib: "both",

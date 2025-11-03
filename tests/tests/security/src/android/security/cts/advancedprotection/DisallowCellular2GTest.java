@@ -25,12 +25,9 @@ import static org.junit.Assert.assertTrue;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.UserManager;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.security.Flags;
 
 import org.junit.Before;
 
-@RequiresFlagsEnabled(Flags.FLAG_AAPM_FEATURE_DISABLE_CELLULAR_2G)
 public class DisallowCellular2GTest extends BaseAdvancedProtectionFeatureTest {
     private UserManager mUserManager;
     private PackageManager mPackageManager;

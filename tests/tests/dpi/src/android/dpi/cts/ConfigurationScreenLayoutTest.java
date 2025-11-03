@@ -164,10 +164,12 @@ public class ConfigurationScreenLayoutTest
      * features or not listing either at all.
      */
     private boolean supportsRotation() {
-        final boolean supportsLandscape = hasDeviceFeature(PackageManager.FEATURE_SCREEN_LANDSCAPE);
-        final boolean supportsPortrait = hasDeviceFeature(PackageManager.FEATURE_SCREEN_PORTRAIT);
-        return (supportsLandscape && supportsPortrait)
-                || (!supportsLandscape && !supportsPortrait);
+        boolean supportsLandscape = hasDeviceFeature(PackageManager.FEATURE_SCREEN_LANDSCAPE);
+        boolean supportsPortrait = hasDeviceFeature(PackageManager.FEATURE_SCREEN_PORTRAIT);
+        boolean isAutomotive = hasDeviceFeature(PackageManager.FEATURE_AUTOMOTIVE);
+        return ((supportsLandscape && supportsPortrait)
+                || (!supportsLandscape && !supportsPortrait))
+                && !isAutomotive;
     }
 
     /** Checks if it is a PC device */

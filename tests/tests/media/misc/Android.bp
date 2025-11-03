@@ -132,6 +132,7 @@ android_test {
         "general-tests",
         "mcts-media",
         "mts-media",
+        "dts",
     ],
     host_required: ["cts-dynamic-config"],
     host_common_data: [":cts-dynamic-config"],

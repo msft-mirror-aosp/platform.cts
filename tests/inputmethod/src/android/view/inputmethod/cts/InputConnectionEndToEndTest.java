@@ -51,12 +51,16 @@ import android.os.Handler;
 import android.os.Process;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.Annotation;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.util.Pair;
 import android.view.KeyEvent;
+import android.view.accessibility.Flags;
 import android.view.inputmethod.CompletionInfo;
 import android.view.inputmethod.CorrectionInfo;
 import android.view.inputmethod.DeleteGesture;
@@ -142,6 +146,9 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
     @Rule
     public final ErrorCollector mErrorCollector = new ErrorCollector();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     /**
      * A utility method to verify a method is called within a certain timeout period then block
@@ -3115,6 +3122,121 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
     }
 
     /**
+     * Test {@link InputConnection#setComposingText(CharSequence, int, TextAttribute)} works as
+     * expected with {@link TextAttribute.Builder#setTextSuggestionSelected(boolean)}.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_A11Y_TEXT_CHANGE_TYPES_API)
+    public void testSetComposingTextSuggestionSelectedTextAttribute() throws Exception {
+        final Annotation expectedSpan = new Annotation("expectedKey", "expectedValue");
+        final CharSequence expectedText = createTestCharSequence("expectedText", expectedSpan);
+        final int expectedNewCursorPosition = 123;
+        final TextAttribute expectedTextAttribute =
+                new TextAttribute.Builder().setTextSuggestionSelected(true).build();
+        // Intentionally let the app return "false" to confirm that IME still receives "true".
+        final boolean returnedResult = false;
+
+        final MethodCallVerifier methodCallVerifier = new MethodCallVerifier();
+
+        final class Wrapper extends InputConnectionWrapper {
+            private Wrapper(InputConnection target) {
+                super(target, false);
+            }
+
+            @Override
+            public boolean setComposingText(
+                    CharSequence text, int newCursorPosition, TextAttribute textAttribute) {
+                methodCallVerifier.onMethodCalled(
+                        args -> {
+                            args.putCharSequence("text", text);
+                            args.putInt("newCursorPosition", newCursorPosition);
+                            args.putParcelable("textAttribute", textAttribute);
+                        });
+                return returnedResult;
+            }
+        }
+
+        testInputConnection(
+                Wrapper::new,
+                (session, stream) -> {
+                    session.callSetComposingText(
+                            expectedText, expectedNewCursorPosition, expectedTextAttribute);
+                    methodCallVerifier.expectCalledOnce(
+                            args -> {
+                                assertEqualsForTestCharSequence(
+                                        expectedText, args.getCharSequence("text"));
+                                assertEquals(
+                                        expectedNewCursorPosition,
+                                        args.getInt("newCursorPosition"));
+                                final var textAttribute =
+                                        args.getParcelable("textAttribute", TextAttribute.class);
+                                assertThat(textAttribute).isNotNull();
+                                assertThat(textAttribute.isTextSuggestionSelected()).isTrue();
+                            },
+                            TIMEOUT);
+                });
+    }
+
+    /**
+     * Test {@link InputConnection#setComposingRegion(int, int, TextAttribute)} works as expected
+     * with {@link TextAttribute.Builder#setTextSuggestionSelected(boolean)}.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_A11Y_TEXT_CHANGE_TYPES_API)
+    public void testSetComposingRegionTextSuggestionSelectedTextAttribute() throws Exception {
+        final int expectedStart = 3;
+        final int expectedEnd = 17;
+        final boolean expectedSuggestionSelected = true;
+        final TextAttribute expectedTextAttribute =
+                new TextAttribute.Builder()
+                        .setTextSuggestionSelected(expectedSuggestionSelected)
+                        .build();
+        // Intentionally let the app return "false" to confirm that IME still receives "true".
+        final boolean returnedResult = false;
+
+        final MethodCallVerifier methodCallVerifier = new MethodCallVerifier();
+
+        final class Wrapper extends InputConnectionWrapper {
+            private Wrapper(InputConnection target) {
+                super(target, false);
+            }
+
+            @Override
+            public boolean setComposingRegion(int start, int end, TextAttribute textAttribute) {
+                methodCallVerifier.onMethodCalled(
+                        args -> {
+                            args.putInt("start", start);
+                            args.putInt("end", end);
+                            args.putParcelable("textAttribute", textAttribute);
+                        });
+                return returnedResult;
+            }
+        }
+
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command =
+                            session.callSetComposingRegion(
+                                    expectedStart, expectedEnd, expectedTextAttribute);
+                    assertTrue(
+                            "setComposingRegion() always returns true unless RemoteException is"
+                                    + " thrown",
+                            expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
+                    methodCallVerifier.expectCalledOnce(
+                            args -> {
+                                assertEquals(expectedStart, args.getInt("start"));
+                                assertEquals(expectedEnd, args.getInt("end"));
+                                final TextAttribute textAttribute =
+                                        args.getParcelable("textAttribute");
+                                assertThat(textAttribute).isNotNull();
+                                assertThat(textAttribute.isTextSuggestionSelected()).isTrue();
+                            },
+                            TIMEOUT);
+                });
+    }
+
+    /**
      * Test {@link InputConnection#commitText(CharSequence, int, TextAttribute)} works as expected
      * for {@link android.accessibilityservice.InputMethod}.
      */
@@ -3163,6 +3285,64 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
                         .containsExactlyElementsIn(expectedSuggestions);
             }, TIMEOUT);
         });
+    }
+
+    /**
+     * Test {@link InputConnection#commitText(CharSequence, int, TextAttribute)} works as expected
+     * with {@link TextAttribute.Builder#setTextSuggestionSelected(boolean)}.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_A11Y_TEXT_CHANGE_TYPES_API)
+    public void testCommitTextWithTextSuggestionSelectedTextAttribute() throws Exception {
+        final Annotation expectedSpan = new Annotation("expectedKey", "expectedValue");
+        final CharSequence expectedText = createTestCharSequence("expectedText", expectedSpan);
+        final int expectedNewCursorPosition = 123;
+        final TextAttribute expectedTextAttribute =
+                new TextAttribute.Builder().setTextSuggestionSelected(true).build();
+        // Intentionally let the app return "false" to confirm that IME still receives "true".
+        final boolean returnedResult = false;
+
+        final MethodCallVerifier methodCallVerifier = new MethodCallVerifier();
+
+        final class Wrapper extends InputConnectionWrapper {
+            private Wrapper(InputConnection target) {
+                super(target, false);
+            }
+
+            @Override
+            public boolean commitText(
+                    CharSequence text, int newCursorPosition, TextAttribute textAttribute) {
+                methodCallVerifier.onMethodCalled(
+                        args -> {
+                            args.putCharSequence("text", text);
+                            args.putInt("newCursorPosition", newCursorPosition);
+                            args.putParcelable("textAttribute", textAttribute);
+                        });
+                return returnedResult;
+            }
+        }
+
+        testA11yInputConnection(
+                Wrapper::new,
+                (session, stream) -> {
+                    final var command =
+                            session.callCommitText(
+                                    expectedText, expectedNewCursorPosition, expectedTextAttribute);
+                    expectA11yImeCommand(stream, command, TIMEOUT);
+                    methodCallVerifier.expectCalledOnce(
+                            args -> {
+                                assertEqualsForTestCharSequence(
+                                        expectedText, args.getCharSequence("text"));
+                                assertEquals(
+                                        expectedNewCursorPosition,
+                                        args.getInt("newCursorPosition"));
+                                final var textAttribute =
+                                        args.getParcelable("textAttribute", TextAttribute.class);
+                                assertThat(textAttribute).isNotNull();
+                                assertThat(textAttribute.isTextSuggestionSelected()).isTrue();
+                            },
+                            TIMEOUT);
+                });
     }
 
     /**

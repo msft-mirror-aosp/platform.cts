@@ -18,6 +18,11 @@ package android.content.cts;
 
 import static com.android.compatibility.common.util.RequiredServiceRule.hasService;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import android.Manifest;
 import android.app.DownloadManager;
 import android.app.SearchManager;
@@ -43,8 +48,10 @@ import android.provider.Settings;
 import android.provider.Telephony;
 import android.telecom.TelecomManager;
 import android.telephony.TelephonyManager;
-import android.test.AndroidTestCase;
 import android.util.Log;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
@@ -56,11 +63,15 @@ import com.android.cts.install.lib.TestApp;
 import com.android.cts.install.lib.Uninstall;
 import com.android.media.flags.Flags;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.io.IOException;
 import java.util.List;
 
+@RunWith(AndroidJUnit4.class)
 @AppModeFull // TODO(Instant) Figure out which intents should be visible
-public class AvailableIntentsTest extends AndroidTestCase {
+public class AvailableIntentsTest {
     private static final String TAG = "AvailableIntentsTest";
     private static final String NORMAL_URL = "http://www.google.com/";
     private static final String SECURE_URL = "https://www.google.com/";
@@ -74,6 +85,8 @@ public class AvailableIntentsTest extends AndroidTestCase {
                     false,
                     "CtsMotionPhotoCaptureApp.apk");
 
+    private final Context mContext =
+            InstrumentationRegistry.getInstrumentation().getTargetContext();
     /**
      * Uninstall CtsMotionPhotoCaptureApp.
      */
@@ -178,6 +191,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
      * Test ACTION_VIEW when url is http://web_address,
      * it will open a browser window to the URL specified.
      */
+    @Test
     public void testViewNormalUrl() {
         if (FeatureUtil.isAutomotive()) {
             // Skip the test for automotive device.
@@ -192,6 +206,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
      * Test ACTION_VIEW when url is https://web_address,
      * it will open a browser window to the URL specified.
      */
+    @Test
     public void testViewSecureUrl() {
         if (FeatureUtil.isAutomotive()) {
             // Skip the test for automotive device.
@@ -206,6 +221,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
      * Test ACTION_WEB_SEARCH when url is http://web_address,
      * it will open a browser window to the URL specified.
      */
+    @Test
     public void testWebSearchNormalUrl() {
         Uri uri = Uri.parse(NORMAL_URL);
         Intent intent = new Intent(Intent.ACTION_WEB_SEARCH);
@@ -217,6 +233,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
      * Test ACTION_WEB_SEARCH when url is https://web_address,
      * it will open a browser window to the URL specified.
      */
+    @Test
     public void testWebSearchSecureUrl() {
         Uri uri = Uri.parse(SECURE_URL);
         Intent intent = new Intent(Intent.ACTION_WEB_SEARCH);
@@ -228,6 +245,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
      * Test ACTION_WEB_SEARCH when url is empty string,
      * google search will be applied for the plain text.
      */
+    @Test
     public void testWebSearchPlainText() {
         String searchString = "where am I?";
         Intent intent = new Intent(Intent.ACTION_WEB_SEARCH);
@@ -238,6 +256,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
     /**
      * Test ACTION_CALL when uri is a phone number, it will call the entered phone number.
      */
+    @Test
     public void testCallPhoneNumber() {
         PackageManager packageManager = mContext.getPackageManager();
         if (packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
@@ -250,6 +269,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
     /**
      * Test ACTION_DIAL when uri is a phone number, it will dial the entered phone number.
      */
+    @Test
     public void testDialPhoneNumber() {
         PackageManager packageManager = mContext.getPackageManager();
         TelephonyManager telephonyManager =
@@ -265,6 +285,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
     /**
      * Test ACTION_DIAL when uri is a phone number, it will dial the entered phone number.
      */
+    @Test
     public void testDialVoicemail() {
         PackageManager packageManager = mContext.getPackageManager();
         TelephonyManager telephonyManager =
@@ -280,6 +301,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
     /**
      * Test ACTION_CHANGE_PHONE_ACCOUNTS, it will display the phone account preferences.
      */
+    @Test
     public void testChangePhoneAccounts() {
         PackageManager packageManager = mContext.getPackageManager();
         if (packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
@@ -291,6 +313,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
     /**
      * Test ACTION_SHOW_CALL_ACCESSIBILITY_SETTINGS, it will display the call accessibility preferences.
      */
+    @Test
     public void testShowCallAccessibilitySettings() {
         PackageManager packageManager = mContext.getPackageManager();
         if (packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
@@ -302,6 +325,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
     /**
      * Test ACTION_SHOW_CALL_SETTINGS, it will display the call preferences.
      */
+    @Test
     public void testShowCallSettings() {
         PackageManager packageManager = mContext.getPackageManager();
         if (packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
@@ -313,6 +337,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
     /**
      * Test ACTION_SHOW_RESPOND_VIA_SMS_SETTINGS, it will display the respond by SMS preferences.
      */
+    @Test
     public void testShowRespondViaSmsSettings() {
         PackageManager packageManager = mContext.getPackageManager();
         if (packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
@@ -324,6 +349,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
     /**
      * Test start camera by intent
      */
+    @Test
     public void testCamera() {
         PackageManager packageManager = mContext.getPackageManager();
         if (packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA)
@@ -346,6 +372,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
      * TODO: This is a separate test so it can more easily be suppressed while we
      * fix targets that are out of compliance.
      */
+    @Test
     public void testImageCaptureIntentsHandledBySystem() {
         PackageManager packageManager = mContext.getPackageManager();
         if (packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA)
@@ -362,6 +389,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testMotionPhotoCaptureIntentsHandledBySystem()
             throws InterruptedException, PackageManager.NameNotFoundException, IOException {
         PackageManager packageManager = mContext.getPackageManager();
@@ -391,6 +419,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testImageCaptureIntentWithExplicitTargeting() {
         PackageManager packageManager = mContext.getPackageManager();
         if (packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA)
@@ -407,6 +436,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testSettings() {
         assertCanBeHandled(new Intent(Settings.ACTION_SETTINGS));
     }
@@ -414,6 +444,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
     /**
      * Test add event in calendar
      */
+    @Test
     public void testCalendarAddAppointment() {
         Intent addAppointmentIntent = new Intent(Intent.ACTION_EDIT);
         addAppointmentIntent.setType("vnd.android.cursor.item/event");
@@ -423,6 +454,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
     /**
      * Test view call logs
      */
+    @Test
     public void testContactsCallLogs() {
         PackageManager packageManager = mContext.getPackageManager();
         if (packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
@@ -435,6 +467,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
     /**
      * Test view music playback
      */
+    @Test
     public void testMusicPlayback() {
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setDataAndType(ContentUris.withAppendedId(
@@ -442,6 +475,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
         assertCanBeHandled(intent);
     }
 
+    @Test
     public void testAlarmClockSetAlarm() {
         Intent intent = new Intent(AlarmClock.ACTION_SET_ALARM);
         intent.putExtra(AlarmClock.EXTRA_MESSAGE, "Custom message");
@@ -450,11 +484,13 @@ public class AvailableIntentsTest extends AndroidTestCase {
         assertCanBeHandled(intent);
     }
 
+    @Test
     public void testAlarmClockShowAlarms() {
         Intent intent = new Intent(AlarmClock.ACTION_SHOW_ALARMS);
         assertCanBeHandled(intent);
     }
 
+    @Test
     public void testAlarmClockDismissAlarm() {
         if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK_ONLY)) {
             return;
@@ -463,6 +499,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
         assertCanBeHandled(intent);
     }
 
+    @Test
     public void testAlarmClockSnoozeAlarm() {
         if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK_ONLY)) {
             return;
@@ -472,12 +509,14 @@ public class AvailableIntentsTest extends AndroidTestCase {
         assertCanBeHandled(intent);
     }
 
+    @Test
     public void testAlarmClockSetTimer() {
         Intent intent = new Intent(AlarmClock.ACTION_SET_TIMER);
         intent.putExtra(AlarmClock.EXTRA_LENGTH, 60000);
         assertCanBeHandled(intent);
     }
 
+    @Test
     public void testAlarmClockShowTimers() {
         if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK_ONLY)) {
             return;
@@ -486,6 +525,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
         assertCanBeHandled(intent);
     }
 
+    @Test
     public void testGetContentAny() {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -493,6 +533,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
         assertCanBeHandled(intent);
     }
 
+    @Test
     public void testGetContentImage() {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -500,18 +541,22 @@ public class AvailableIntentsTest extends AndroidTestCase {
         assertCanBeHandled(intent);
     }
 
+    @Test
     public void testRingtonePicker() {
         assertCanBeHandled(new Intent(RingtoneManager.ACTION_RINGTONE_PICKER));
     }
 
+    @Test
     public void testViewDownloads() {
         assertCanBeHandled(new Intent(DownloadManager.ACTION_VIEW_DOWNLOADS));
     }
 
+    @Test
     public void testManageStorage() {
         assertCanBeHandled(new Intent(StorageManager.ACTION_MANAGE_STORAGE));
     }
 
+    @Test
     @ApiTest(apis = {"android.provider.Settings#ACTION_FINGERPRINT_ENROLL"})
     public void testFingerprintEnrollStart() {
         PackageManager packageManager = mContext.getPackageManager();
@@ -520,6 +565,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testUsageAccessSettings() {
         PackageManager packageManager = mContext.getPackageManager();
         if (!packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)) {
@@ -527,6 +573,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testPictureInPictureSettings() {
         PackageManager packageManager = mContext.getPackageManager();
         if (packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)) {
@@ -534,6 +581,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testRequestManageMedia() {
         if (FeatureUtil.isAutomotive()) {
             // Skip the test for automotive device.
@@ -542,6 +590,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
         assertCanBeHandled(new Intent(Settings.ACTION_REQUEST_MANAGE_MEDIA));
     }
 
+    @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL)
     public void testMediaRoutingControlSettings() {
         if (FeatureUtil.isTV() || FeatureUtil.isAutomotive() || FeatureUtil.isWatch()) {
@@ -550,6 +599,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
         assertCanBeHandled(new Intent(Settings.ACTION_REQUEST_MEDIA_ROUTING_CONTROL));
     }
 
+    @Test
     public void testInteractAcrossProfilesSettings() {
         PackageManager packageManager = mContext.getPackageManager();
         if (packageManager.hasSystemFeature(PackageManager.FEATURE_MANAGED_PROFILES)) {
@@ -557,6 +607,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testChangeDefaultSmsApplication() {
         PackageManager packageManager = mContext.getPackageManager();
         if (packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
@@ -564,6 +615,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testLocationScanningSettings() {
         PackageManager packageManager = mContext.getPackageManager();
         if (packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)) {
@@ -576,6 +628,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testSettingsSearchIntent() {
         if (FeatureUtil.isTV() || FeatureUtil.isAutomotive() || FeatureUtil.isWatch()) {
             return;
@@ -583,6 +636,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
         assertCanBeHandled(new Intent(Settings.ACTION_APP_SEARCH_SETTINGS));
     }
 
+    @Test
     public void testChangeDefaultDialer() {
         PackageManager packageManager = mContext.getPackageManager();
         if (packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
@@ -590,6 +644,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testTapAnPaySettings() {
         PackageManager packageManager = mContext.getPackageManager();
         if (packageManager.hasSystemFeature(PackageManager.FEATURE_NFC_HOST_CARD_EMULATION)) {
@@ -597,6 +652,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testPowerUsageSummarySettings() {
         if (FeatureUtil.isWatch() || FeatureUtil.isAutomotive()) {
             return;
@@ -607,6 +663,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
         }
     }
 
+    @Test
     @CddTest(requirement = "7.4.2.6/C-1-1")
     public void testEasyConnectIntent() {
         // Android only supports Initiator-... modes right now, which require the device to
@@ -624,6 +681,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testRequestSetAutofillServiceIntent() {
         if (FeatureUtil.isWatch()) {
             return;
@@ -633,6 +691,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
         assertCanBeHandled(intent);
     }
 
+    @Test
     public void testRequestSetCredentialManagerServiceIntent() {
         if (!isHandheld()) {
             return;
@@ -646,6 +705,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testNotificationPolicyDetailIntent() {
         if (!isHandheld()) {
             return;
@@ -656,6 +716,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
         assertCanBeHandled(intent);
     }
 
+    @Test
     public void testRequestEnableContentCaptureIntent() {
         if (!hasService(Context.CONTENT_CAPTURE_MANAGER_SERVICE)) return;
 
@@ -663,6 +724,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
         assertCanBeHandled(intent);
     }
 
+    @Test
     public void testVoiceInputSettingsIntent() {
         // Non-handheld devices do not allow more than one VoiceInteractionService, and therefore do
         // not have to support this Intent.
@@ -673,10 +735,12 @@ public class AvailableIntentsTest extends AndroidTestCase {
         assertCanBeHandled(intent);
     }
 
+    @Test
     public void testAddNetworksIntent() {
         assertCanBeHandled(new Intent(Settings.ACTION_WIFI_ADD_NETWORKS));
     }
 
+    @Test
     public void testManageUnusedAppsIntent() {
         assertCanBeHandled(new Intent(Intent.ACTION_MANAGE_UNUSED_APPS));
     }
@@ -684,7 +748,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
     private boolean isHandheld() {
         // handheld nature is not exposed to package manager, for now
         // we check for touchscreen and NOT watch, NOT tv and NOT car
-        PackageManager pm = getContext().getPackageManager();
+        PackageManager pm = mContext.getPackageManager();
         return pm.hasSystemFeature(pm.FEATURE_TOUCHSCREEN)
                 && !pm.hasSystemFeature(pm.FEATURE_WATCH)
                 && !pm.hasSystemFeature(pm.FEATURE_TELEVISION)

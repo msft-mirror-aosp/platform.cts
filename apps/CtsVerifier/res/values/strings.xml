@@ -7844,4 +7844,30 @@ You should be prompted to select credentials; choose the ones you just installed
         <item>CtsWifiSoftApTestCases</item>
         <item>CtsWifiDirectTests</item>
     </string-array>
+
+    <!-- Strings for Audio Workload Test. -->
+    <string name="audio_workload_title">Audio Workload Test</string>
+    <string name="audio_workload_mpc">Current Media Performance Class: </string>
+    <string name="audio_workload_info">
+        Tests the device\'s ability to handle switching from playing one sine wave to fifty sine
+        waves (simulating low to high audio workloads) without glitching.
+        \n\nTest Setup:
+        \nEnsure the device\'s volume is turned on and set to an audible level.
+        \n\nTest Process:
+        \n1. Tap the "Start" button to begin the test.
+        \n2. Wait for 3 seconds for the test to complete.
+        \n\nTest Criteria:
+        \nThe test passes if no glitches are detected (xRun count = 0).
+        For devices with Media Performance Class &gt;= 37, the test fails and the "Pass" button
+        is disabled if the xRun count is &gt; 0.
+    </string>
+    <string name="audio_workload_instructions">
+        \n1. Tap the \"Start\" button.
+        \n2. Wait for 3 seconds for the test to complete.
+        \n3. For MPC &gt;= 37, test fails on glitch.
+    </string>
+    <string name="audio_workload_cpu_affinity">CPUs:</string>
+    <string name="audio_workload_start_audio">Start</string>
+    <string name="audio_workload_stop_audio">Stop</string>
+
 </resources>

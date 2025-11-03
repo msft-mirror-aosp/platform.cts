@@ -29,7 +29,17 @@ enum class Status {
     NotApplicable,
 
     /** The known issues is not fixed on this device. */
-    NotFixed,
+    NotFixed;
+
+    /** Returns true if the status is Fixed or NotApplicable. */
+    fun isResolved(): Boolean {
+        return when (this) {
+            Unknown,
+            NotFixed -> false
+            Fixed,
+            NotApplicable -> true
+        }
+    }
 }
 
 /** Converts a backported fix status int to the corresponding [Status] */

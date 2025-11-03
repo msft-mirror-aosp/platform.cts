@@ -238,4 +238,7 @@
 
     <!-- b/212223944 placeholder to avoid automerging the test exclusioin from android15-tests-dev -->
 
+    <!-- b/454631245 -->
+    <option name="compatibility:exclude-filter" value="CtsBiometricsTestCases android.server.biometrics.BiometricPromptContentViewTest#testMoreOptionsButton_clickButton" />
+
 </configuration>

@@ -3,5 +3,11 @@
     {
       "name": "CtsDatabaseTestCases"
     }
+  ],
+  "ravenwood-presubmit": [
+    {
+      "name": "CtsDatabaseTestCasesRavenwood",
+      "host": true
+    }
   ]
 }

@@ -579,7 +579,14 @@ public class KeyAttestationTest {
                 assertNotEquals(0, keyStoreFeatureVersion);
             }
             if (keyStoreFeatureVersion != 0) {
-                assertEquals(kmVersionFromAttestation, keyStoreFeatureVersion);
+                assertEquals(
+                        "KeyMint version in attestation ("
+                                + kmVersionFromAttestation
+                                + ") should match PackageManager value ("
+                                + keyStoreFeatureVersion
+                                + ")",
+                        keyStoreFeatureVersion,
+                        kmVersionFromAttestation);
             }
         } finally {
             keyStore.deleteEntry(keystoreAlias);

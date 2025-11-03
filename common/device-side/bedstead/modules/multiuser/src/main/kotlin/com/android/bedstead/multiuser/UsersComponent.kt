@@ -24,7 +24,7 @@ import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.harrier.components.UserTypeResolver
-import com.android.bedstead.multiuser.annotations.EnsureCanAddSecondaryUser
+import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.multiuser.annotations.OtherUser
 import com.android.bedstead.multiuser.annotations.RequireUserSupported
 import com.android.bedstead.multiuser.annotations.meta.EnsureHasNoProfileAnnotation
@@ -276,7 +276,7 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
         enterpriseMediator?.ensureDoesNotHaveUserRestriction(
             UserManager.DISALLOW_ADD_USER
         ) ?: noEnterpriseLog("ensureDoesNotHaveUserRestriction")
-        EnsureCanAddSecondaryUser().logic()
+        EnsureCanAddUser(userType.name()).logic()
         return try {
             val user = users().createUser()
                 .type(userType)

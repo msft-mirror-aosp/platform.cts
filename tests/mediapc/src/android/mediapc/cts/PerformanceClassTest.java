@@ -61,6 +61,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Tests the basic aspects of the media performance class.
@@ -224,7 +225,7 @@ public class PerformanceClassTest {
                 Arrays.stream(MediaPerformanceClass.values())
                         .map(MediaPerformanceClass::getNumber)
                         .filter(x -> x >= 0)
-                        .toList();
+                        .collect(Collectors.toList());
         assertWithMessage("android.os.Build.VERSION.MEDIA_PERFORMANCE_CLASS)")
                 .that(Build.VERSION.MEDIA_PERFORMANCE_CLASS)
                 .isIn(validValues);

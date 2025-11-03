@@ -186,7 +186,7 @@ public class CallRedirectionServiceTest extends BaseTelecomTestWithMockServices 
         assertTrue(Call.STATE_DISCONNECTED != mCall.getState());
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_PLACE_CALL_TO_ALTERNATE_NUMBER)
+    @RequiresFlagsEnabled(android.telecom.flags.Flags.FLAG_PLACE_CALL_TO_ALTERNATE_NUMBER)
     public void testPlaceCallToAlternateNumber() throws Exception {
         if (!shouldTestTelecom(mContext)) {
             return;
@@ -211,7 +211,7 @@ public class CallRedirectionServiceTest extends BaseTelecomTestWithMockServices 
         assertTrue(Call.STATE_DISCONNECTED != mCall.getState());
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_PLACE_CALL_TO_ALTERNATE_NUMBER)
+    @RequiresFlagsEnabled(android.telecom.flags.Flags.FLAG_PLACE_CALL_TO_ALTERNATE_NUMBER)
     public void testPlaceCallToAlternateNumberWithPostDialDigits() throws Exception {
         if (!shouldTestTelecom(mContext)) {
             return;

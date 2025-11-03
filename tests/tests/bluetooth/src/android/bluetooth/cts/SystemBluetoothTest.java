@@ -20,6 +20,8 @@ import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 import static android.Manifest.permission.BLUETOOTH_SCAN;
 
+import static androidx.test.espresso.intent.matcher.IntentMatchers.hasAction;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
@@ -27,10 +29,12 @@ import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import android.Manifest;
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -58,11 +62,16 @@ import com.android.compatibility.common.util.CddTest;
 
 import com.google.common.truth.Expect;
 
+import org.hamcrest.core.AllOf;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import org.mockito.InOrder;
+import org.mockito.Mockito;
+import org.mockito.hamcrest.MockitoHamcrest;
 
 import java.time.Duration;
 import java.util.concurrent.Executor;
@@ -219,6 +228,62 @@ public class SystemBluetoothTest {
             assertThat(discoveryEndTime - currentTime < DEFAULT_DISCOVERY_TIMEOUT_MS).isTrue();
 
             mContext.unregisterReceiver(mockReceiver);
+        } finally {
+            if (recoverOffState) {
+                TestUtils.disableLocation(mContext);
+            }
+        }
+    }
+
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void validateRepeatedDeviceDiscovery() throws InterruptedException {
+        boolean recoverOffState = false;
+        try {
+            if (!TestUtils.isLocationOn(mContext)) {
+                recoverOffState = true;
+                TestUtils.enableLocation(mContext);
+                mUiAutomation.grantRuntimePermission(
+                        "android.bluetooth.cts", Manifest.permission.ACCESS_FINE_LOCATION);
+            }
+
+            // Test repeated start/cancel discovery
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
+            filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+            BroadcastReceiver receiver = mock(BroadcastReceiver.class);
+            InOrder inOrder = Mockito.inOrder(receiver);
+            mContext.registerReceiver(receiver, filter);
+
+            try (var p =
+                    Permissions.withPermissions(
+                            BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_ADVERTISE)) {
+
+                assertThat(mAdapter.startDiscovery()).isTrue();
+                inOrder.verify(receiver, timeout(DISCOVERY_START_TIMEOUT))
+                        .onReceive(
+                                any(),
+                                MockitoHamcrest.argThat(
+                                        hasAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED)));
+
+                // Calling startDiscovery again should trigger another broadcast
+                assertThat(mAdapter.startDiscovery()).isTrue();
+                inOrder.verify(receiver, timeout(DISCOVERY_START_TIMEOUT))
+                        .onReceive(
+                                any(),
+                                MockitoHamcrest.argThat(
+                                        hasAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED)));
+
+                assertThat(mAdapter.cancelDiscovery()).isTrue();
+                inOrder.verify(receiver, timeout(DISCOVERY_START_TIMEOUT))
+                        .onReceive(
+                                any(),
+                                MockitoHamcrest.argThat(
+                                        hasAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)));
+                assertThat(mAdapter.cancelDiscovery()).isFalse();
+            }
+
+            mContext.unregisterReceiver(receiver);
         } finally {
             if (recoverOffState) {
                 TestUtils.disableLocation(mContext);

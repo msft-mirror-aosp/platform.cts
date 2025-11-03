@@ -245,6 +245,9 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
      * called by the platform, so we call it here to satisfy coverage requirements.  Yeah.
      */
     public void testUnusedCallback() {
+        if (!mShouldTestTelecom) {
+            return;
+        }
         mInCallService.onConnectionEvent(null, null, null);
     }
 
@@ -1312,6 +1315,23 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
         assertCallExtras(mCall, TelecomManager.EXTRA_CALL_NETWORK_TYPE);
         assertEquals(TelephonyManager.NETWORK_TYPE_LTE,
                 mCall.getDetails().getExtras().getInt(TelecomManager.EXTRA_CALL_NETWORK_TYPE));
+    }
+
+    /** Placeholder coverage for unused listener class. */
+    public void testCallListener() {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        Call.Listener callListener =
+                new Call.Listener() {
+                    @Override
+                    public void onStateChanged(Call call, int state) {
+                        super.onStateChanged(call, state);
+                    }
+                };
+        Looper.prepare();
+        mCall.addListener(callListener);
+        mCall.removeListener(callListener);
     }
 
     /**

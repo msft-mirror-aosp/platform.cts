@@ -29,14 +29,12 @@ import android.net.Uri;
 import android.os.PersistableBundle;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.DisabledOnRavenwood;
-import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -45,8 +43,6 @@ import org.junit.runner.RunWith;
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ClipDataTest {
     private static final String LOG_TAG = "ClipDataTest";
-
-    @Rule public final RavenwoodRule mRavenwood = new RavenwoodRule();
 
     @Test
     @DisabledOnRavenwood(blockedBy = {PendingIntent.class})

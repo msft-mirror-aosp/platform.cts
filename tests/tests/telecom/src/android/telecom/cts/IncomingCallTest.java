@@ -356,7 +356,7 @@ public class IncomingCallTest extends BaseTelecomTestWithMockServices {
      * TelecomManager#EXTRA_DO_NOT_LOG_CALL} extra is set on a {@link Connection}.
      */
     public void testDoNotLogCall() throws Exception {
-        if (!mShouldTestTelecom || !Flags.promoteExtraDoNotLogCallToSystemApi()) {
+        if (!mShouldTestTelecom || !android.telecom.flags.Flags.promoteExtraDoNotLogCallToSystemApi()) {
             return;
         }
         UiAutomation automation = InstrumentationRegistry.getInstrumentation().getUiAutomation();

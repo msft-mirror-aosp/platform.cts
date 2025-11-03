@@ -143,7 +143,6 @@ android_ravenwood_test {
         "src/android/os/cts/UserHandleTest.java",
     ],
     auto_gen_config: true,
-    team: "trendy_team_ravenwood",
     ravenizer: {
         strip_mockito: true,
     },
@@ -225,7 +224,6 @@ test_module_config {
         "android.os.cts.FileObserverTest#testConstructor",
         "android.os.storage.cts.StorageManagerTest#testAttemptMountNonObb",
         // TODO(b/265922604)
-        "android.os.cts.VibratorTest",
         "android.os.cts.DebugTest#testStartMethodTracingDefaultExternalStorage",
         // TODO(b/213570804)
         "android.os.cts.AutoRevokeTest#testInstallGrants_notRevokedImmediately",

@@ -48,7 +48,6 @@ import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.StringBuilderPrinter;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -66,8 +65,6 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 @AppModeFull // TODO(Instant) Figure out which APIs should work.
 public class ApplicationInfoTest {
-    @Rule
-    public final RavenwoodRule mRavenwood = new RavenwoodRule();
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 

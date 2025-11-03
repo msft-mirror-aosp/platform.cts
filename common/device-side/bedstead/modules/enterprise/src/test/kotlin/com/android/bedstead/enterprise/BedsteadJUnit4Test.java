@@ -19,6 +19,10 @@ package com.android.bedstead.enterprise;
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.enterprise.TestPolicyForPolicyArguments.POLICY_ARGUMENT_ONE;
 import static com.android.bedstead.enterprise.TestPolicyForPolicyArguments.POLICY_ARGUMENT_TWO;
+import static com.android.bedstead.harrier.annotations.TestOrder.EARLY;
+import static com.android.bedstead.harrier.annotations.TestOrder.LAST;
+import static com.android.bedstead.harrier.annotations.TestOrder.LATE;
+import static com.android.bedstead.harrier.annotations.TestOrder.MIDDLE;
 import static com.android.bedstead.nene.TestApis.users;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -26,27 +30,27 @@ import static com.google.common.truth.Truth.assertThat;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.enterprise.annotations.PolicyArgument;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnParentOfProfileOwnerUsingParentInstance;
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnParentOfProfileOwnerWithNoDeviceOwner;
+import com.android.bedstead.enterprise.policies.LockTask;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.AfterClass;
 import com.android.bedstead.harrier.annotations.BeforeClass;
-import com.android.bedstead.harrier.annotations.EnsureRunsLate;
 import com.android.bedstead.harrier.annotations.EnumTestParameter;
 import com.android.bedstead.harrier.annotations.IntTestParameter;
-import com.android.bedstead.enterprise.annotations.PolicyArgument;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.harrier.annotations.StringTestParameter;
+import com.android.bedstead.harrier.annotations.TestOrder;
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeDarkMode;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeLandscapeOrientation;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeLightMode;
 import com.android.bedstead.harrier.annotations.parameterized.IncludePortraitOrientation;
 import com.android.bedstead.harrier.exceptions.RestartTestException;
-import com.android.bedstead.enterprise.policies.LockTask;
 import com.android.queryable.annotations.IntegerQuery;
 import com.android.queryable.annotations.Query;
 
@@ -239,6 +243,7 @@ public class BedsteadJUnit4Test {
     public void requireRunOnInitialUser_runsOnInitialUser() {
         assertThat(users().instrumented()).isEqualTo(users().initial());
     }
+
     @PolicyAppliesTest(policy = LockTask.class)
     @AdditionalQueryParameters(
             forTestApp = "dpc",
@@ -254,6 +259,7 @@ public class BedsteadJUnit4Test {
             forTestApp = "dpc",
             query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 30))
     )
+
     @Test
     public void additionalQueryParameters_policyDoesNotApplyTest_isRespected() {
         assertThat(dpc(sDeviceState).testApp().targetSdkVersion()).isEqualTo(30);
@@ -296,21 +302,17 @@ public class BedsteadJUnit4Test {
         sPolicyDoesNotApplyTestArguments.add(flag);
     }
 
-    @CanSetPolicyTest(policy = {
-            TestPolicyForPolicyArguments.class
-    })
+    @TestOrder(order = EARLY)
+    @CanSetPolicyTest(policy = {TestPolicyForPolicyArguments.class})
     @Postsubmit(reason = "new test")
-    public void canSetPolicyTestAnnotation_withArguments_shouldApply(
-            @PolicyArgument int flag) {
+    public void canSetPolicyTestAnnotation_withArguments_shouldApply(@PolicyArgument int flag) {
         sCanSetPolicyTestArguments.add(flag);
     }
 
-    @CannotSetPolicyTest(policy = {
-            TestPolicyForPolicyArguments.class
-    })
+    @TestOrder(order = LATE)
+    @CannotSetPolicyTest(policy = {TestPolicyForPolicyArguments.class})
     @Postsubmit(reason = "new test")
-    public void cannotSetPolicyTestAnnotation_withArguments_shouldApply(
-            @PolicyArgument int flag) {
+    public void cannotSetPolicyTestAnnotation_withArguments_shouldApply(@PolicyArgument int flag) {
         sCannotSetPolicyTestArguments.add(flag);
     }
 
@@ -319,7 +321,7 @@ public class BedsteadJUnit4Test {
      * asserts if {@code policyAppliesTestAnnotation_withArguments_shouldApply()} ran for all the
      * arguments specified in the policy used in that test.
      */
-    @EnsureRunsLate
+    @TestOrder(order = LATE)
     @Test
     public void policyAppliesTestAnnotation_withArguments_containsAllPolicyArguments() {
         assertThat(sPolicyAppliesTestArguments).containsExactly(
@@ -332,22 +334,19 @@ public class BedsteadJUnit4Test {
      * asserts if {@code policyDoesNotApplyTestAnnotation_withArguments_shouldApply()} ran for all
      * the arguments specified in the policy used in that test.
      */
-    @EnsureRunsLate
+    @TestOrder(order = LATE)
     @Test
     public void policyDoesNotApplyTestAnnotation_withArguments_containsAllPolicyArguments() {
-        assertThat(sPolicyAppliesTestArguments).containsExactly(
-                POLICY_ARGUMENT_ONE,
-                POLICY_ARGUMENT_TWO);
+        assertThat(sPolicyDoesNotApplyTestArguments)
+                .containsExactly(POLICY_ARGUMENT_ONE, POLICY_ARGUMENT_TWO);
     }
 
     /**
-     * This test runs after
-     * {@code canSetPolicyTestAnnotation_withArguments_shouldApply} and
-     * asserts if
-     * {@code canSetPolicyTestAnnotation_withArguments_shouldApply()} ran for
-     * all the arguments specified in the policy used in that test.
+     * This test runs after {@code canSetPolicyTestAnnotation_withArguments_shouldApply} and asserts
+     * if {@code canSetPolicyTestAnnotation_withArguments_shouldApply()} ran for all the arguments
+     * specified in the policy used in that test.
      */
-    @EnsureRunsLate
+    @TestOrder(order = MIDDLE)
     @Test
     public void canSetPolicyTestAnnotation_withArguments_containsAllPolicyArguments() {
         assertThat(sCanSetPolicyTestArguments).containsExactly(
@@ -356,13 +355,11 @@ public class BedsteadJUnit4Test {
     }
 
     /**
-     * This test runs after
-     * {@code cannotSetPolicyTestAnnotation_withArguments_shouldApply} and
-     * asserts if
-     * {@code cannotSetPolicyTestAnnotation_withArguments_shouldApply()} ran for
-     * all the arguments specified in the policy used in that test.
+     * This test runs after {@code cannotSetPolicyTestAnnotation_withArguments_shouldApply} and
+     * asserts if {@code cannotSetPolicyTestAnnotation_withArguments_shouldApply()} ran for all the
+     * arguments specified in the policy used in that test.
      */
-    @EnsureRunsLate
+    @TestOrder(order = LAST)
     @Test
     public void cannotSetPolicyTestAnnotation_withArguments_containsAllPolicyArguments() {
         assertThat(sCannotSetPolicyTestArguments).containsExactly(

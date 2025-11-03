@@ -39,8 +39,10 @@ import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.os.RemoteException;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.platform.test.flag.junit.SetFlagsRule;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.DreamCoordinator;
 import android.server.wm.LockScreenSession;
@@ -75,6 +77,9 @@ public class DreamServiceTest extends ActivityManagerTestBase {
             DREAM_APP_PACKAGE_NAME + "/.SeparateProcessDreamService";
     private static final String CONTROLLED_DREAM_SERVICE_COMPONENT =
             DREAM_APP_PACKAGE_NAME + "/.ControlledTestDreamService";
+
+    @Rule
+    public final SetFlagsRule mSetFlagsRule = new SetFlagsRule();
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -158,6 +163,29 @@ public class DreamServiceTest extends ActivityManagerTestBase {
                 ComponentName.unflattenFromString(testSettingsActivity));
         assertThat(metadata.showComplications).isFalse();
         assertThat(metadata.dreamCategory).isEqualTo(DreamService.DREAM_CATEGORY_HOME_PANEL);
+        assertThat(metadata.userSelectable).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_USER_SELECTABLE_METADATA)
+    public void testMetadataParsing_userSelectableDisabled()
+            throws PackageManager.NameNotFoundException {
+        final String testDreamClassName =
+                DREAM_APP_PACKAGE_NAME + "/.TestDreamServiceUserSelectableDisabled";
+        final DreamService.DreamMetadata metadata = getDreamMetadata(testDreamClassName);
+
+        assertThat(metadata.userSelectable).isFalse();
+    }
+
+    @Test
+    @RequiresFlagsDisabled(Flags.FLAG_USER_SELECTABLE_METADATA)
+    public void testMetadataParsing_userSelectable_withFlagDisabled()
+            throws PackageManager.NameNotFoundException {
+        final String testDreamClassName =
+                DREAM_APP_PACKAGE_NAME + "/.TestDreamServiceUserSelectableDisabled";
+        final DreamService.DreamMetadata metadata = getDreamMetadata(testDreamClassName);
+
+        assertThat(metadata.userSelectable).isTrue();
     }
 
     @Test
@@ -214,14 +242,18 @@ public class DreamServiceTest extends ActivityManagerTestBase {
         waitAndAssertResumedAndFocusedActivityOnDisplay(dreamActivity, Display.DEFAULT_DISPLAY,
                 "Dream activity should be the top resumed activity");
 
-        removeRootTasksWithDreamTypeActivity();
-
         // Listen for the dream to end
         final CountDownLatch countDownLatch = new CountDownLatch(1);
+        final BroadcastReceiver receiver = new DreamBroadcastReceiver(countDownLatch);
         mContext.registerReceiver(
-                new DreamBroadcastReceiver(countDownLatch),
+                receiver,
                 new IntentFilter(Intent.ACTION_DREAMING_STOPPED));
-        assertThat(countDownLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)).isTrue();
+        try {
+            removeRootTasksWithDreamTypeActivity();
+            assertThat(countDownLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)).isTrue();
+        } finally {
+            mContext.unregisterReceiver(receiver);
+        }
 
         assertFalse("DreamService is still dreaming", mDreamCoordinator.isDreaming());
         mDreamCoordinator.stopDream();

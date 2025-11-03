@@ -44,6 +44,7 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
+        "dts",
     ],
     min_sdk_version: "30",
     sdk_version: "current",

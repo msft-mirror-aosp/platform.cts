@@ -33,6 +33,7 @@ import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.ThrowingSupplier
 import com.android.cts.input.BlockingQueueEventVerifier
 import com.android.cts.input.CaptureEventActivity
+import com.android.cts.input.EvdevInputEventCodes.Companion.ABS_THROTTLE
 import com.android.cts.input.EvdevInputEventCodes.Companion.ABS_X
 import com.android.cts.input.EvdevInputEventCodes.Companion.EV_ABS
 import com.android.cts.input.EvdevInputEventCodes.Companion.EV_SYN
@@ -92,7 +93,7 @@ class ControllerAxisRemappingTest {
     }
 
     @Test
-    fun testControllerAxisRemapping() {
+    fun testControllerAxisRemapping_forCenteredAxis() {
         UinputGamepad(instrumentation).use { device ->
             gamepadDevice = inputManager.getInputDevice(device.deviceId)!!
             val listener = TestInputDeviceListener(device.deviceId)
@@ -122,6 +123,164 @@ class ControllerAxisRemappingTest {
                 )
             )
 
+            device.injectEvents(EV_ABS, ABS_X, -127)
+            device.injectEvents(EV_SYN, SYN_REPORT, 0)
+
+            verifier.assertReceivedMotion(
+                allOf(
+                    withMotionAction(MotionEvent.ACTION_MOVE),
+                    withAxisValue(MotionEvent.AXIS_Z, -1f),
+                )
+            )
+        }
+    }
+
+    @Test
+    fun testControllerAxisRemapping_forNonCenteredAxis() {
+        UinputGamepad(instrumentation).use { device ->
+            gamepadDevice = inputManager.getInputDevice(device.deviceId)!!
+            val listener = TestInputDeviceListener(device.deviceId)
+            inputManager.registerInputDeviceListener(listener, Handler(Looper.getMainLooper()))
+            remapControllerAxis(
+                gamepadDevice.identifier,
+                MotionEvent.AXIS_THROTTLE,
+                MotionEvent.AXIS_LTRIGGER
+            )
+            assertEquals(
+                mapOf(MotionEvent.AXIS_THROTTLE to MotionEvent.AXIS_LTRIGGER),
+                getControllerAxisRemappings(gamepadDevice.identifier)
+            )
+            // Wait for input device to change (i.e. axis remapping applied)
+            assertTrue(
+                "Timed out waiting for axis remapping to be applied",
+                listener.waitForDeviceChanged(1000)
+            )
+
+            device.injectEvents(EV_ABS, ABS_THROTTLE, 255)
+            device.injectEvents(EV_SYN, SYN_REPORT, 0)
+
+            verifier.assertReceivedMotion(
+                allOf(
+                    withMotionAction(MotionEvent.ACTION_MOVE),
+                    withAxisValue(MotionEvent.AXIS_LTRIGGER, 1f),
+                )
+            )
+
+            device.injectEvents(EV_ABS, ABS_THROTTLE, 0)
+            device.injectEvents(EV_SYN, SYN_REPORT, 0)
+
+            verifier.assertReceivedMotion(
+                allOf(
+                    withMotionAction(MotionEvent.ACTION_MOVE),
+                    withAxisValue(MotionEvent.AXIS_LTRIGGER, 0f),
+                )
+            )
+        }
+    }
+
+    @Test
+    fun testControllerAxisRemapping_fromCenteredAxis_toNonCenteredAxis() {
+        UinputGamepad(instrumentation).use { device ->
+            gamepadDevice = inputManager.getInputDevice(device.deviceId)!!
+            val listener = TestInputDeviceListener(device.deviceId)
+            inputManager.registerInputDeviceListener(listener, Handler(Looper.getMainLooper()))
+            remapControllerAxis(
+                gamepadDevice.identifier,
+                MotionEvent.AXIS_X,
+                MotionEvent.AXIS_LTRIGGER
+            )
+            assertEquals(
+                mapOf(MotionEvent.AXIS_X to MotionEvent.AXIS_LTRIGGER),
+                getControllerAxisRemappings(gamepadDevice.identifier)
+            )
+            // Wait for input device to change (i.e. axis remapping applied)
+            assertTrue(
+                "Timed out waiting for axis remapping to be applied",
+                listener.waitForDeviceChanged(1000)
+            )
+
+            device.injectEvents(EV_ABS, ABS_X, 127)
+            device.injectEvents(EV_SYN, SYN_REPORT, 0)
+
+            verifier.assertReceivedMotion(
+                allOf(
+                    withMotionAction(MotionEvent.ACTION_MOVE),
+                    withAxisValue(MotionEvent.AXIS_LTRIGGER, 1f),
+                )
+            )
+
+            device.injectEvents(EV_ABS, ABS_X, -127)
+            device.injectEvents(EV_SYN, SYN_REPORT, 0)
+
+            verifier.assertReceivedMotion(
+                allOf(
+                    withMotionAction(MotionEvent.ACTION_MOVE),
+                    withAxisValue(MotionEvent.AXIS_LTRIGGER, 0f),
+                )
+            )
+        }
+    }
+
+    @Test
+    fun testControllerAxisRemapping_fromNonCentredAxis_toCenteredAxis() {
+        UinputGamepad(instrumentation).use { device ->
+            gamepadDevice = inputManager.getInputDevice(device.deviceId)!!
+            val listener = TestInputDeviceListener(device.deviceId)
+            inputManager.registerInputDeviceListener(listener, Handler(Looper.getMainLooper()))
+            remapControllerAxis(
+                gamepadDevice.identifier,
+                MotionEvent.AXIS_THROTTLE,
+                MotionEvent.AXIS_X
+            )
+            assertEquals(
+                mapOf(MotionEvent.AXIS_THROTTLE to MotionEvent.AXIS_X),
+                getControllerAxisRemappings(gamepadDevice.identifier)
+            )
+            // Wait for input device to change (i.e. axis remapping applied)
+            assertTrue(
+                "Timed out waiting for axis remapping to be applied",
+                listener.waitForDeviceChanged(1000)
+            )
+
+            device.injectEvents(EV_ABS, ABS_THROTTLE, 255)
+            device.injectEvents(EV_SYN, SYN_REPORT, 0)
+
+            verifier.assertReceivedMotion(
+                allOf(
+                    withMotionAction(MotionEvent.ACTION_MOVE),
+                    withAxisValue(MotionEvent.AXIS_X, 1f),
+                )
+            )
+
+            device.injectEvents(EV_ABS, ABS_THROTTLE, 0)
+            device.injectEvents(EV_SYN, SYN_REPORT, 0)
+
+            verifier.assertReceivedMotion(
+                allOf(
+                    withMotionAction(MotionEvent.ACTION_MOVE),
+                    withAxisValue(MotionEvent.AXIS_X, -1f),
+                )
+            )
+        }
+    }
+
+    @Test
+    fun testRemoveControllerAxisRemapping() {
+        UinputGamepad(instrumentation).use { device ->
+            gamepadDevice = inputManager.getInputDevice(device.deviceId)!!
+            val listener = TestInputDeviceListener(device.deviceId)
+            inputManager.registerInputDeviceListener(listener, Handler(Looper.getMainLooper()))
+            remapControllerAxis(
+                gamepadDevice.identifier,
+                MotionEvent.AXIS_X,
+                MotionEvent.AXIS_Z
+            )
+            // Wait for input device to change (i.e. axis remapping applied)
+            assertTrue(
+                "Timed out waiting for axis remapping to be applied",
+                listener.waitForDeviceChanged(1000)
+            )
+
             listener.reset()
             // Remove remapping
             removeControllerAxisRemapping(gamepadDevice.identifier, MotionEvent.AXIS_X)
@@ -131,13 +290,13 @@ class ControllerAxisRemappingTest {
                 listener.waitForDeviceChanged(1000)
             )
 
-            device.injectEvents(EV_ABS, ABS_X, -127)
+            device.injectEvents(EV_ABS, ABS_X, 127)
             device.injectEvents(EV_SYN, SYN_REPORT, 0)
 
             verifier.assertReceivedMotion(
                 allOf(
                     withMotionAction(MotionEvent.ACTION_MOVE),
-                    withAxisValue(MotionEvent.AXIS_X, -1f),
+                    withAxisValue(MotionEvent.AXIS_X, 1f),
                 )
             )
         }

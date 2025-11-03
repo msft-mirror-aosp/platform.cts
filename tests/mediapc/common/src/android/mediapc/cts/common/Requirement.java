@@ -76,15 +76,15 @@ public abstract class Requirement {
     /** Returns id cddId with config and variant if available. */
     public String toString() {
         if (configId == null && variantId == null) {
-            return "[%s]".formatted(cddId);
+            return String.format("[%s]", cddId);
         }
         if (variantId == null) {
-            return "[%s] (config=\"%s\")".formatted(cddId, configId);
+            return String.format("[%s] (config=\"%s\")", cddId, configId);
         }
         if (configId == null) {
-            return "[%s] (variant=\"%s\")".formatted(cddId, variantId);
+            return String.format("[%s] (variant=\"%s\")", cddId, variantId);
         }
-        return "[%s] (config=\"%s\", variant=\"%s\")".formatted(cddId, configId, variantId);
+        return String.format("[%s] (config=\"%s\", variant=\"%s\")", cddId, configId, variantId);
     }
 
     /**

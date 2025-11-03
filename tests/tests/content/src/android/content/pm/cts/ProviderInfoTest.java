@@ -28,7 +28,6 @@ import android.content.res.XmlResourceParser;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.DisabledOnRavenwood;
-import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.StringBuilderPrinter;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -36,7 +35,6 @@ import androidx.test.runner.AndroidJUnit4;
 
 import libcore.io.IoUtils;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -46,8 +44,6 @@ import java.util.List;
 @RunWith(AndroidJUnit4.class)
 @AppModeFull // TODO(Instant) Figure out which APIs should work.
 public class ProviderInfoTest {
-    @Rule
-    public final RavenwoodRule mRavenwood = new RavenwoodRule();
 
     private static final String PACKAGE_NAME = "android.content.cts";
     private static final String PROVIDER_NAME = "com.android.cts.content.MockContentProvider";

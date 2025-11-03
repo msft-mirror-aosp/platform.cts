@@ -1056,6 +1056,10 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
         CallAudioState callAudioState = (CallAudioState) counter.getArgs(0)[0];
         int availableRoutes = callAudioState.getSupportedRouteMask();
 
+        // Coverage!
+        connection.getAudioState();
+        connection.onAudioStateChanged(null);
+
         // Both the speaker and either wired or earpiece are required to test changing the audio
         // route. Skip this test if either of these routes is unavailable.
         if ((availableRoutes & CallAudioState.ROUTE_SPEAKER) == 0

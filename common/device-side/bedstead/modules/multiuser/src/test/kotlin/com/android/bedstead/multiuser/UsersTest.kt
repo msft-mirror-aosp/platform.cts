@@ -21,10 +21,12 @@ import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.EnsureHasNoSecondaryUser
 import com.android.bedstead.multiuser.annotations.EnsureCanAddSecondaryUser
+import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.multiuser.annotations.EnsureHasCloneProfile
 import com.android.bedstead.multiuser.annotations.EnsureHasNoCloneProfile
 import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
 import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode
+import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport
 import com.android.bedstead.multiuser.annotations.RequireRunNotOnSecondaryUser
 import com.android.bedstead.multiuser.annotations.RequireRunOnPrimaryUser
 import com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser
@@ -89,7 +91,8 @@ class UsersTest {
     }
 
     @Test
-    @EnsureCanAddSecondaryUser(number = 2)
+    @RequireMultiUserSupport
+    @EnsureCanAddUser(value = UserType.SECONDARY_USER_TYPE_NAME, number = 2)
     fun all_userAddedSinceLastCallToUsers_containsNewUser() {
         val user = TestApis.users().createUser().create()
         TestApis.users().all()
@@ -235,8 +238,8 @@ class UsersTest {
     }
 
     @Test
+    @EnsureCanAddUser(UserType.CLONE_PROFILE_TYPE_NAME)
     @EnsureHasNoCloneProfile
-    // TODO(b/442891661) Check that Clone is supported?
     fun createUser_createsProfile_parentIsSet() {
         val personalUser = TestApis.users().instrumented()
         val user = TestApis
@@ -265,7 +268,7 @@ class UsersTest {
     }
 
     @Test
-    // TODO(b/442891661) Check that Clone is supported?
+    @EnsureCanAddUser(UserType.CLONE_PROFILE_TYPE_NAME)
     fun createUser_specifiesProfileTypeWithoutParent_throwsException() {
         val userBuilder = TestApis.users().createUser().type(mCloneProfileType)
 
@@ -513,7 +516,7 @@ class UsersTest {
     }
 
     @Test
-    @EnsureCanAddSecondaryUser // TODO(b/442891661) Check specifically for Guest creation support
+    @EnsureCanAddUser(UserType.USER_TYPE_FULL_GUEST)
     fun createGuestUser() {
         TestApis.users()
                 .createUser()

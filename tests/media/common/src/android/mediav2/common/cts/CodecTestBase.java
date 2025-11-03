@@ -46,8 +46,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.os.SystemProperties;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Display;
@@ -150,8 +148,10 @@ public abstract class CodecTestBase {
             BOARD_API_LEVEL < Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
     public static final int ANDROID_VENDOR_API_202404 = 202404;
     public static final int ANDROID_VENDOR_API_202504 = 202504;
+    public static final boolean BOARD_SDK_IS_AT_LEAST_202504 =
+            BOARD_API_LEVEL >= ANDROID_VENDOR_API_202504;
     public static final boolean BOARD_SDK_IS_AFTER_202504 =
-            SystemProperties.getInt("ro.board.api_level", 0) > ANDROID_VENDOR_API_202504;
+            BOARD_API_LEVEL > ANDROID_VENDOR_API_202504;
     // ro.vendor.api_level is guaranteed to be set on devices running in Android T and above,
     // so using a default of 0 when not defined is safe to detect devices launching with 202404.
     // These tests run on older versions where ro.vendor.api_level is not defined. So this
@@ -1409,9 +1409,6 @@ public abstract class CodecTestBase {
 
     @Rule
     public final TestName mTestName = new TestName();
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUpCodecTestBase() {

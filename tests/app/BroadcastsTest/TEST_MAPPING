@@ -3,5 +3,11 @@
         {
             "name": "CtsBroadcastTestCases_android_server_am"
         }
-    ]
+    ],
+  "ravenwood-presubmit": [
+    {
+      "name": "CtsBroadcastTestCasesRavenwood",
+      "host": true
+    }
+  ]
 }

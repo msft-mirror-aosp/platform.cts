@@ -32,6 +32,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Range;
 
 import androidx.test.filters.LargeTest;
@@ -41,6 +43,7 @@ import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -74,6 +77,9 @@ import java.util.List;
 public class DecoderDynamicColorAspectTest extends CodecDecoderTestBase {
     private static final String LOG_TAG = DecoderDynamicColorAspectTest.class.getSimpleName();
     private static final String MEDIA_DIR = WorkDir.getMediaDirString();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static class MediaAndColorSpaceAttrib {
         public final String mTestFile;

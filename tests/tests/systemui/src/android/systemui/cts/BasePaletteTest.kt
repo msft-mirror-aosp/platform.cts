@@ -29,6 +29,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.os.Environment
+import android.os.SystemClock
 import android.os.UserManager
 import android.provider.Settings
 import android.view.View
@@ -60,10 +61,12 @@ import androidx.compose.ui.unit.Density
 import androidx.core.view.drawToBitmap
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import com.android.compatibility.common.util.FeatureUtil
+import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import java.io.File
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
+import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.runBlocking
@@ -132,7 +135,7 @@ open class BasePaletteTest {
         screenshotTestRule
             .createScreenshotAsserter(
                 ScreenshotAsserterConfig(
-                    matcher = if (isOldSpec) PixelPerfectMatcher() else PixelPerfectMatcher(),
+                    matcher = PixelPerfectMatcher(),
                     captureStrategy = { bitmap },
                 )
             )
@@ -163,8 +166,7 @@ open class BasePaletteTest {
             !(UserManager.isHeadlessSystemUserMode() &&
                     !Flags.fixContrastAndForceInvertStateForMultiUser())
 
-        fun isSupportedStyle(styleName: String): Boolean {
-            val style = ThemeStyle.valueOf(styleName)
+        fun isSupportedStyle(@ThemeStyle.Type style: Int): Boolean {
             return !(FeatureUtil.isWatch() &&
                 (style == ThemeStyle.MONOCHROMATIC || style == ThemeStyle.FRUIT_SALAD))
         }
@@ -172,19 +174,23 @@ open class BasePaletteTest {
         val isOldSpec =
             context.resources.getIdentifier("system_primary_dim_light", "color", "android") == 0
 
-        private const val POLLING_TIMEOUT_MS = 5000L
+        private const val POLLING_TIMEOUT_MS = 10000L
+        private const val WEAR_SETTLING_DELAY_MS = 1000L
 
         fun getTheme(context: Context): String {
-            return Settings.Secure.getString(
-                context.contentResolver,
-                Settings.Secure.THEME_CUSTOMIZATION_OVERLAY_PACKAGES,
-            ) ?: ""
+            return runWithShellPermissionIdentity<String> {
+                Settings.Secure.getString(
+                    context.contentResolver,
+                    Settings.Secure.THEME_CUSTOMIZATION_OVERLAY_PACKAGES,
+                )
+            } ?: ""
         }
 
-        private fun setTheme(jsonString: String) {
+        // returns true if the theme was actually changed, false if it was already identical.
+        private fun setTheme(jsonString: String): Boolean {
             val currentJson = getTheme(context)
             if (currentJson == jsonString) {
-                return
+                return false
             }
 
             val deferred = CompletableDeferred<Unit>()
@@ -196,17 +202,21 @@ open class BasePaletteTest {
                         }
                     }
                 }
-            context.registerReceiver(receiver, IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED))
-
-            runWithShellPermissionIdentity {
-                Settings.Secure.putString(
-                    context.contentResolver,
-                    Settings.Secure.THEME_CUSTOMIZATION_OVERLAY_PACKAGES,
-                    jsonString,
-                )
-            }
+            context.registerReceiver(
+                receiver,
+                IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED),
+                Context.RECEIVER_EXPORTED
+            )
 
             try {
+                runWithShellPermissionIdentity {
+                    Settings.Secure.putString(
+                        context.contentResolver,
+                        Settings.Secure.THEME_CUSTOMIZATION_OVERLAY_PACKAGES,
+                        jsonString,
+                    )
+                }
+
                 runBlocking {
                     withTimeoutOrNull(POLLING_TIMEOUT_MS) { deferred.await() }
                         ?: throw IllegalStateException("Theme change timed out")
@@ -214,23 +224,23 @@ open class BasePaletteTest {
             } finally {
                 context.unregisterReceiver(receiver)
             }
-        }
-
-        fun setContrast(contrast: Float) {
-            runWithShellPermissionIdentity {
-                Settings.Secure.putFloat(context.contentResolver, "contrast_level", contrast)
-            }
+            return true
         }
 
         @JvmStatic
-        protected fun applyTheme(color: String, style: String, contrast: Float, mode: Int) {
+        protected fun applyTheme(color: String, style: Int, contrast: Float, mode: Int) {
+            var configChanged = false
             val isModeDifferent = uiModeManager.nightMode != mode
             if (isModeDifferent) {
                 runWithShellPermissionIdentity { uiModeManager.nightMode = mode }
-                assumeTrue(uiModeManager.nightMode == mode)
+                assumeTrue("Failed to set night mode", uiModeManager.nightMode == mode)
+                configChanged = true
             }
 
-            setContrast(contrast)
+            if (abs(getContrast() - contrast) > 0.001f) {
+                setContrast(contrast)
+                configChanged = true
+            }
 
             val jsonString =
                 """
@@ -238,11 +248,37 @@ open class BasePaletteTest {
                     "android.theme.customization.system_palette":"$color",
                     "android.theme.customization.accent_color":"$color",
                     "android.theme.customization.color_source":"preset",
-                    "android.theme.customization.theme_style":"$style"
+                    "android.theme.customization.theme_style":"${ThemeStyle.name(style)}"
                 }
                 """
                     .trimIndent()
-            setTheme(jsonString)
+
+            if (setTheme(jsonString)) {
+                configChanged = true
+            }
+
+            // On underpowered devices like Wear, rapid system-wide configuration changes
+            // can trigger binder throttling or freezing. Allow time to settle if we
+            // actually changed something.
+            if (configChanged && FeatureUtil.isWatch()) {
+                SystemClock.sleep(WEAR_SETTLING_DELAY_MS)
+            }
+        }
+
+        private fun getContrast(): Float {
+            return try {
+                SystemUtil.runShellCommand("settings get secure contrast_level")
+                    .trim()
+                    .toFloatOrNull() ?: 0.0f
+            } catch (e: Exception) {
+                0.0f
+            }
+        }
+
+        private fun setContrast(contrast: Float) {
+            runWithShellPermissionIdentity {
+                Settings.Secure.putFloat(context.contentResolver, "contrast_level", contrast)
+            }
         }
     }
 }

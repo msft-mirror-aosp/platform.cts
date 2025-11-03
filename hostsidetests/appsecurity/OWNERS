@@ -15,18 +15,19 @@
 # Bug component: 36137 = per-file SplitTests.java
 
 # Storage bug component
-# Bug component: 46626 = per-file *Adoptable*
-# Bug component: 46626 = per-file *DirectBoot*
-# Bug component: 46626 = per-file *Storage*
+# Bug component: 46626 = per-file AdoptableHostTest.java
+# Bug component: 46626 = per-file DirectBootHostTest.java
+# Bug component: 46626 = per-file ExternalStorageHostTest.java
+# Bug component: 46626 = per-file NoAppDataStorageHostTest.java
+# Bug component: 46626 = per-file StorageHostTest.java
 
 # OTA bug component
-# Bug component: 330599 = per-file *ResumeOnReboot*
+# Bug component: 330599 = per-file ResumeOnRebootHostTest.java
 # Bug component: 330599 = per-file ApexSignatureVerificationTest.java
 
 # Security bug component
 # Bug component: 36824 = per-file ListeningPortsTest.java
 
-patb@google.com
 include platform/frameworks/base:/PACKAGE_MANAGER_OWNERS
 
 # Permissions
@@ -87,11 +88,13 @@ per-file com.android.apex.cts.shim.*.apex = dariofreni@google.com
 per-file com.android.apex.cts.shim.*.apex = ioffe@google.com
 
 # Storage
-per-file *Adoptable* = file:platform/frameworks/base:/core/java/android/os/storage/OWNERS
-per-file *DirectBoot* = file:platform/frameworks/base:/core/java/android/os/storage/OWNERS
-per-file *Storage* = file:platform/frameworks/base:/core/java/android/os/storage/OWNERS
+per-file AdoptableHostTest.java = file:platform/frameworks/base:/core/java/android/os/storage/OWNERS
+per-file DirectBootHostTest.java = file:platform/frameworks/base:/core/java/android/os/storage/OWNERS
+per-file StorageHostTest.java = file:platform/frameworks/base:/core/java/android/os/storage/OWNERS
+per-file ExternalStorageHostTest.java = file:platform/frameworks/base:/core/java/android/os/storage/OWNERS
+per-file NoAppDataStorageHostTest.java = file:platform/frameworks/base:/core/java/android/os/storage/OWNERS
 
 # OTA
 per-file ApexSignatureVerificationTest.java = dariofreni@google.com
-per-file *ResumeOnReboot* = file:platform/frameworks/base:/core/java/android/service/resumeonreboot/OWNERS
+per-file ResumeOnRebootHostTest.java = file:platform/frameworks/base:/core/java/android/service/resumeonreboot/OWNERS
 per-file BootCountTrackerRule.java = file:platform/frameworks/base:/core/java/android/service/resumeonreboot/OWNERS

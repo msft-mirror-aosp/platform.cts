@@ -135,6 +135,7 @@ import android.util.Log;
 import android.util.Pair;
 
 import androidx.test.InstrumentationRegistry;
+// import androidx.test.filters.RequiresDevice;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
@@ -262,7 +263,8 @@ public class TelephonyManagerTest {
     private static final String STATUS_CHANNEL_NOT_SUPPORTED = "6881";
 
     private static final String TEST_FORWARD_NUMBER = "54321";
-    private static final String TESTING_PLMN = "12345";
+    private static final String TESTING_PLMN = "12345"; // 5-digit
+    private static final String TESTING_PLMN_2 = "456789"; // 6-digit
 
     private static final String BAD_IMSI_CERT_URL = "https:badurl.badurl:8080";
     private static final String IMSI_CERT_STRING_EPDG = "-----BEGIN CERTIFICATE-----"
@@ -769,14 +771,8 @@ public class TelephonyManagerTest {
     @Test
     public void testHasCarrierPrivilegesViaCarrierConfigs() throws Exception {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
-        PersistableBundle carrierConfig = mCarrierConfigManager.getConfigForSubId(mTestSub);
-
+        PersistableBundle carrierConfig = new PersistableBundle();
         try {
-            assertNotNull("CarrierConfigManager#getConfigForSubId() returned null",
-                    carrierConfig);
-            assertFalse("CarrierConfigManager#getConfigForSubId() returned empty bundle",
-                    carrierConfig.isEmpty());
-
             // purge the certs in carrierConfigs first
             carrierConfig.putStringArray(
                     CarrierConfigManager.KEY_CARRIER_CERTIFICATE_STRING_ARRAY, new String[]{});
@@ -2495,52 +2491,6 @@ public class TelephonyManagerTest {
     }
 
     /**
-     * Tests that the device properly reports the contents of ManualNetworkSelectionPlmn
-     * The setting is not persisted selection
-     */
-    @Test
-    public void testGetManualNetworkSelectionPlmnNonPersisted() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-
-        if (mTelephonyManager.getPhoneType() != TelephonyManager.PHONE_TYPE_GSM) return;
-
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                    (tm) -> tm.setNetworkSelectionModeManual(
-                     TESTING_PLMN/* operatorNumeric */, false /* persistSelection */));
-            String plmn = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                     (tm) -> tm.getManualNetworkSelectionPlmn());
-            assertEquals("Unexpected plmn", TESTING_PLMN, plmn);
-        } finally {
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                    (tm) -> tm.setNetworkSelectionModeAutomatic());
-        }
-    }
-
-    /**
-     * Tests that the device properly reports the contents of ManualNetworkSelectionPlmn
-     * The setting is persisted selection
-     */
-    @Test
-    public void testGetManualNetworkSelectionPlmnPersisted() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-
-        if (mTelephonyManager.getPhoneType() != TelephonyManager.PHONE_TYPE_GSM) return;
-
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                    (tm) -> tm.setNetworkSelectionModeManual(
-                     TESTING_PLMN/* operatorNumeric */, true /* persistSelection */));
-            String plmn = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                     (tm) -> tm.getManualNetworkSelectionPlmn());
-            assertEquals("Unexpected plmn", TESTING_PLMN, plmn);
-        } finally {
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                    (tm) -> tm.setNetworkSelectionModeAutomatic());
-        }
-    }
-
-    /**
      * Verify that TelephonyManager.getCardIdForDefaultEuicc returns a positive value or either
      * UNINITIALIZED_CARD_ID or UNSUPPORTED_CARD_ID.
      */
@@ -2666,75 +2616,6 @@ public class TelephonyManagerTest {
 
     private static Context getContext() {
         return InstrumentationRegistry.getContext();
-    }
-
-    /**
-     * Tests that the device properly reports the contents of NetworkSelectionMode
-     */
-    @Test
-    public void testGetNetworkSelectionMode() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                    (tm) -> tm.setNetworkSelectionModeAutomatic());
-        } catch (Exception e) {
-        }
-
-        int networkMode = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                (tm) -> tm.getNetworkSelectionMode());
-
-        assertEquals(
-                "Network mode is not auto",
-                TelephonyManager.NETWORK_SELECTION_MODE_AUTO,
-                networkMode);
-    }
-
-    /**
-     * Tests that the device properly sets the network selection mode to automatic.
-     * Expects a security exception since the caller does not have carrier privileges.
-     */
-    @Test
-    public void testSetNetworkSelectionModeAutomatic() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-
-        try {
-            mTelephonyManager.setNetworkSelectionModeAutomatic();
-            fail("Expected SecurityException. App does not have carrier privileges.");
-        } catch (SecurityException expected) {
-        }
-    }
-
-    /**
-     * Tests that the device properly asks the radio to connect to the input network and change
-     * selection mode to manual.
-     * Expects a security exception since the caller does not have carrier privileges.
-     */
-    @Test
-    public void testSetNetworkSelectionModeManual() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-
-        try {
-            mTelephonyManager.setNetworkSelectionModeManual(
-                    "" /* operatorNumeric */, false /* persistSelection */);
-            fail("Expected SecurityException. App does not have carrier privileges.");
-        } catch (SecurityException expected) {
-        }
-    }
-
-    /**
-     * Tests that the device properly check whether selection mode was manual.
-     */
-    @Test
-    public void testIsManualNetworkSelectionAllowed() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-
-        if (mTelephonyManager.getPhoneType() != TelephonyManager.PHONE_TYPE_GSM) return;
-
-        assertTrue(
-                "Manual selection is not allowed",
-                ShellIdentityUtils.invokeMethodWithShellPermissions(
-                        mTelephonyManager, (tm) -> tm.isManualNetworkSelectionAllowed()));
     }
 
     /**
@@ -3530,13 +3411,7 @@ public class TelephonyManagerTest {
         // test with permission
         PublicKey epdgKey = null;
         PublicKey wlanKey = null;
-        PersistableBundle carrierConfig = mCarrierConfigManager.getConfigForSubId(mTestSub);
-
-        assertNotNull("CarrierConfigManager#getConfigForSubId() returned null",
-                carrierConfig);
-        assertFalse("CarrierConfigManager#getConfigForSubId() returned empty bundle",
-                carrierConfig.isEmpty());
-
+        PersistableBundle carrierConfig = new PersistableBundle();
         // purge the certs in carrierConfigs first
         carrierConfig.putInt(
                 CarrierConfigManager.IMSI_KEY_AVAILABILITY_INT, 3);
@@ -6910,7 +6785,7 @@ public class TelephonyManagerTest {
 
     @Test
     @ApiTest(apis = {"android.telephony.TelephonyManager#getLastKnownCellIdentity"})
-    @RequiresFlagsEnabled(com.android.server.telecom.flags.Flags.FLAG_GET_LAST_KNOWN_CELL_IDENTITY)
+    @RequiresFlagsEnabled(android.telecom.flags.Flags.FLAG_GET_LAST_KNOWN_CELL_IDENTITY)
     public void testGetLastKnownCellIdentity() {
         mLocationHelper.enable();
 

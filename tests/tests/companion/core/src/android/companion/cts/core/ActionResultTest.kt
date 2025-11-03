@@ -19,10 +19,16 @@ package android.companion.cts.core
 import android.Manifest.permission.REQUEST_COMPANION_SELF_MANAGED
 import android.Manifest.permission.USE_COMPANION_TRANSPORTS
 import android.companion.ActionRequest
+import android.companion.ActionRequest.OP_ACTIVATE
+import android.companion.ActionRequest.OP_DEACTIVATE
+import android.companion.ActionRequest.REQUEST_NEARBY_SCANNING
 import android.companion.ActionResult
+import android.companion.ActionResult.RESULT_ACTIVATED
+import android.companion.DevicePresenceEvent
 import android.companion.Flags
 import android.companion.cts.common.DEVICE_DISPLAY_NAME_A
 import android.companion.cts.common.DEVICE_DISPLAY_NAME_B
+import android.companion.cts.common.PrimaryCompanionService
 import android.companion.cts.common.SERVICE_NAME_A
 import android.companion.cts.common.SERVICE_NAME_B
 import android.platform.test.annotations.AppModeFull
@@ -59,11 +65,8 @@ class ActionResultTest : CoreTestBase() {
     private var associationIdA: Int = -1
     private var associationIdB: Int = -1
 
-    private var listener: BiConsumer<Int, ActionResult>? = null
-
     override fun setUp() {
         super.setUp()
-        // Create two associations to test filtering.
         associationIdA = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A)
         associationIdB = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_B)
 
@@ -81,26 +84,48 @@ class ActionResultTest : CoreTestBase() {
 
     @Test
     fun testAddAndRemoveListener_receivesResult() {
-        val requestA = ActionRequest.Builder(
-            ActionRequest.REQUEST_NEARBY_SCANNING,
-            ActionRequest.OP_ACTIVATE
+        val request = ActionRequest.Builder(REQUEST_NEARBY_SCANNING, OP_ACTIVATE).build()
+        val resultToSend = ActionResult.Builder(
+            REQUEST_NEARBY_SCANNING,
+            RESULT_ACTIVATED
         ).build()
-        val resultToSend = ActionResult.Builder(requestA, ActionResult.RESULT_SUCCESS)
-            .build()
 
         // 1. Add a listener.
-        listener = BiConsumer { associationId, result ->
-            receivedResults.offer(associationId to result)
+        val listener = BiConsumer<Int, ActionResult> { id, result ->
+            receivedResults.offer(id to result)
         }
-
         withShellPermissionIdentity(USE_COMPANION_TRANSPORTS) {
             cdm.setOnActionResultListener(
                 intArrayOf(associationIdA),
                 SERVICE_NAME_A,
                 executor,
-                listener!!
+                listener
             )
         }
+
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDevicePresence(
+                associationIdA,
+                DevicePresenceEvent(
+                    associationIdA,
+                    DevicePresenceEvent.EVENT_SELF_MANAGED_NEARBY,
+                    null
+                )
+            )
+        }
+
+        withShellPermissionIdentity(USE_COMPANION_TRANSPORTS) {
+            cdm.requestAction(
+                request,
+                SERVICE_NAME_A,
+                intArrayOf(associationIdA)
+            )
+        }
+        // Wait for the mock app to receive the request to ensure the state is PENDING.
+        PrimaryCompanionService.waitToActionRequest(
+            expectedAssociationId = associationIdA,
+            expectedAction = REQUEST_NEARBY_SCANNING
+        )
 
         // 2. Notify a result from the app.
         withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
@@ -122,10 +147,27 @@ class ActionResultTest : CoreTestBase() {
             cdm.notifyActionResult(associationIdA, resultToSend)
         }
         assertNoResultReceived()
+
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDevicePresence(
+                associationIdA,
+                DevicePresenceEvent(
+                    associationIdA,
+                    DevicePresenceEvent.EVENT_SELF_MANAGED_NOT_NEARBY,
+                    null
+                )
+            )
+        }
     }
 
     @Test
-    fun testActionRequestResultListener_multipleListeners() {
+    fun testMultipleServices_onPendingAction_receiveResultTogether() {
+        val request = ActionRequest.Builder(REQUEST_NEARBY_SCANNING, OP_ACTIVATE).build()
+        val resultFromApp = ActionResult.Builder(
+            REQUEST_NEARBY_SCANNING,
+            RESULT_ACTIVATED
+        ).build()
+
         val listenerA = BiConsumer<Int, ActionResult> { id, result ->
             receivedResults.offer(id to result)
         }
@@ -133,7 +175,7 @@ class ActionResultTest : CoreTestBase() {
             receivedResults.offer(id to result)
         }
 
-        // 1. Register listeners for both associations.
+        // 1. Register both listeners.
         withShellPermissionIdentity(USE_COMPANION_TRANSPORTS) {
             cdm.setOnActionResultListener(
                 intArrayOf(associationIdA),
@@ -149,20 +191,245 @@ class ActionResultTest : CoreTestBase() {
             )
         }
 
-        // 2. Notify a result for association A.
-        val requestA = ActionRequest.Builder(
-            ActionRequest.REQUEST_NEARBY_SCANNING,
-            ActionRequest.OP_ACTIVATE
-        ).build()
-        val resultForA = ActionResult.Builder(requestA, ActionResult.RESULT_SUCCESS)
-            .build()
-
         withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
-            cdm.notifyActionResult(associationIdA, resultForA)
+            cdm.notifyDevicePresence(
+                associationIdA,
+                DevicePresenceEvent(
+                    associationIdA,
+                    DevicePresenceEvent.EVENT_SELF_MANAGED_NEARBY,
+                    null
+                )
+            )
         }
 
-        // Verify both listeners received it.
-        assertResultsReceived(2)
+        // 2. Service A requests the action. This should go to the app.
+        withShellPermissionIdentity(USE_COMPANION_TRANSPORTS) {
+            cdm.requestAction(
+                request,
+                SERVICE_NAME_A,
+                intArrayOf(associationIdA)
+            )
+        }
+        PrimaryCompanionService.waitToActionRequest(
+            expectedAssociationId = associationIdA,
+            expectedAction = REQUEST_NEARBY_SCANNING
+        )
+
+        // 3. WHILE PENDING, Service B requests the same action. This should NOT go to the app.
+        withShellPermissionIdentity(USE_COMPANION_TRANSPORTS) {
+            cdm.requestAction(
+                request,
+                SERVICE_NAME_B,
+                intArrayOf(associationIdA)
+            )
+        }
+        PrimaryCompanionService.assertNoActionRequest()
+
+        // 4. Now, the app reports the result.
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyActionResult(associationIdA, resultFromApp)
+        }
+
+        // 5. VERIFY: Both listeners should have received the single result from the app.
+        val results = assertResultsReceived(2)
+        assertEquals(2, results.size)
+        assertEquals(resultFromApp, results[0].second)
+        assertEquals(resultFromApp, results[1].second)
+
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDevicePresence(
+                associationIdA,
+                DevicePresenceEvent(
+                    associationIdA,
+                    DevicePresenceEvent.EVENT_SELF_MANAGED_NOT_NEARBY,
+                    null
+                )
+            )
+        }
+    }
+
+    @Test
+    fun testOnActionResult_forConfirmedActiveAction_getsActivatedCallback() {
+        val request = ActionRequest.Builder(REQUEST_NEARBY_SCANNING, OP_ACTIVATE).build()
+        val resultFromApp = ActionResult.Builder(
+            REQUEST_NEARBY_SCANNING,
+            RESULT_ACTIVATED
+        ).build()
+
+        val listenerA = BiConsumer<Int, ActionResult> { id, result ->
+            receivedResults.offer(id to result)
+        }
+        val listenerB = BiConsumer<Int, ActionResult> { id, result ->
+            receivedResults.offer(id to result)
+        }
+
+        withShellPermissionIdentity(USE_COMPANION_TRANSPORTS) {
+            cdm.setOnActionResultListener(
+                intArrayOf(associationIdA),
+                SERVICE_NAME_A,
+                executor,
+                listenerA
+            )
+            cdm.setOnActionResultListener(
+                intArrayOf(associationIdA),
+                SERVICE_NAME_B,
+                executor,
+                listenerB
+            )
+        }
+
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDevicePresence(
+                associationIdA,
+                DevicePresenceEvent(
+                    associationIdA,
+                    DevicePresenceEvent.EVENT_SELF_MANAGED_NEARBY,
+                    null
+                )
+            )
+        }
+
+        // 1. Service A requests to start the action.
+        withShellPermissionIdentity(USE_COMPANION_TRANSPORTS) {
+            cdm.requestAction(
+                request,
+                SERVICE_NAME_A,
+                intArrayOf(associationIdA)
+            )
+        }
+        PrimaryCompanionService.waitToActionRequest(
+            expectedAssociationId = associationIdA,
+            expectedAction = REQUEST_NEARBY_SCANNING
+        )
+
+        // 2. The app must confirm the action is active. This moves the state from
+        //    PENDING to ACTIVE.
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyActionResult(associationIdA, resultFromApp)
+        }
+
+        assertResultReceived()
+
+        // 3. NOW, Service B requests the same, now-active action.
+        withShellPermissionIdentity(USE_COMPANION_TRANSPORTS) {
+            cdm.requestAction(
+                request,
+                SERVICE_NAME_B,
+                intArrayOf(associationIdA)
+            )
+        }
+        PrimaryCompanionService.assertNoActionRequest()
+
+        // 4. VERIFY: Service B should receive an immediate "already activated" callback.
+        val (receivedId, receivedResult) = assertResultReceived()
+        assertEquals(associationIdA, receivedId)
+        assertEquals(RESULT_ACTIVATED, receivedResult.resultCode)
+
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDevicePresence(
+                associationIdA,
+                DevicePresenceEvent(
+                    associationIdA,
+                    DevicePresenceEvent.EVENT_SELF_MANAGED_NOT_NEARBY,
+                    null
+                )
+            )
+        }
+    }
+
+    @Test
+    fun testOnActionDeactivated_sendAndForget_whenOthersAreActive() {
+        val startRequest = ActionRequest.Builder(
+            REQUEST_NEARBY_SCANNING,
+            OP_ACTIVATE
+        ).build()
+        val stopRequest = ActionRequest.Builder(
+            REQUEST_NEARBY_SCANNING,
+            OP_DEACTIVATE
+        ).build()
+        val resultFromApp = ActionResult.Builder(
+            REQUEST_NEARBY_SCANNING,
+            RESULT_ACTIVATED
+        ).build()
+
+        val listenerA = BiConsumer<Int, ActionResult> { id, result ->
+            receivedResults.offer(id to result)
+        }
+        // Listener for B is just to register it as a requester.
+        val listenerB = BiConsumer<Int, ActionResult> { _, _ -> }
+
+        withShellPermissionIdentity(USE_COMPANION_TRANSPORTS) {
+            cdm.setOnActionResultListener(
+                intArrayOf(associationIdA),
+                SERVICE_NAME_A,
+                executor,
+                listenerA
+            )
+            cdm.setOnActionResultListener(
+                intArrayOf(associationIdA),
+                SERVICE_NAME_B,
+                executor,
+                listenerB
+            )
+        }
+
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDevicePresence(
+                associationIdA,
+                DevicePresenceEvent(
+                    associationIdA,
+                    DevicePresenceEvent.EVENT_SELF_MANAGED_NEARBY,
+                    null
+                )
+            )
+        }
+
+        // 1. Both services start the action.
+        withShellPermissionIdentity(USE_COMPANION_TRANSPORTS) {
+            cdm.requestAction(
+                startRequest,
+                SERVICE_NAME_A,
+                intArrayOf(associationIdA)
+            )
+            cdm.requestAction(
+                startRequest,
+                SERVICE_NAME_B,
+                intArrayOf(associationIdA)
+            )
+        }
+
+        // 2. Wait for the app to receive the first request and confirm it's ACTIVE.
+        PrimaryCompanionService.waitToActionRequest(
+            expectedAssociationId = associationIdA,
+            expectedAction = REQUEST_NEARBY_SCANNING
+        )
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyActionResult(associationIdA, resultFromApp)
+        }
+
+        assertResultReceived()
+
+        // 3. First "stop" request from service A. App should NOT be notified because Service B
+        //    is still using the action.
+        withShellPermissionIdentity(USE_COMPANION_TRANSPORTS) {
+            cdm.requestAction(
+                stopRequest,
+                SERVICE_NAME_A,
+                intArrayOf(associationIdA)
+            )
+        }
+        PrimaryCompanionService.assertNoActionRequest()
+
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDevicePresence(
+                associationIdA,
+                DevicePresenceEvent(
+                    associationIdA,
+                    DevicePresenceEvent.EVENT_SELF_MANAGED_NOT_NEARBY,
+                    null
+                )
+            )
+        }
     }
 
     private fun assertResultReceived(

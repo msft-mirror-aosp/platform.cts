@@ -1912,16 +1912,6 @@
     <option name="compatibility:include-filter" value="CtsSdkExtensionsTestCases com.android.os.ext.SdkExtensionsTest#testExtensionS"/>
     <option name="compatibility:include-filter" value="CtsSdkExtensionsTestCases com.android.os.ext.SdkExtensionsTest#testExtensionT"/>
     <option name="compatibility:include-filter" value="CtsSdkExtensionsTestCases com.android.os.ext.SdkExtensionsTest#testExtensionU"/>
-    <!-- CtsSdkSandboxWebkitTestCases -->
-    <option name="compatibility:include-filter" value="CtsSdkSandboxWebkitTestCases android.sdksandbox.webkit.cts.SdkSandboxCookieManagerTest#testAcceptCookie"/>
-    <option name="compatibility:include-filter" value="CtsSdkSandboxWebkitTestCases android.sdksandbox.webkit.cts.SdkSandboxCookieManagerTest#testSameSiteLaxByDefault"/>
-    <option name="compatibility:include-filter" value="CtsSdkSandboxWebkitTestCases android.sdksandbox.webkit.cts.SdkSandboxCookieManagerTest#testSameSiteNoneRequiresSecure"/>
-    <option name="compatibility:include-filter" value="CtsSdkSandboxWebkitTestCases android.sdksandbox.webkit.cts.SdkSandboxCookieManagerTest#testSchemefulSameSite"/>
-    <option name="compatibility:include-filter" value="CtsSdkSandboxWebkitTestCases android.sdksandbox.webkit.cts.SdkSandboxWebChromeClientTest#testOnShowFileChooserInputFile"/>
-    <option name="compatibility:include-filter" value="CtsSdkSandboxWebkitTestCases android.sdksandbox.webkit.cts.SdkSandboxWebChromeClientTest#testOnShowFileChooserInputFileMultiple"/>
-    <option name="compatibility:include-filter" value="CtsSdkSandboxWebkitTestCases android.sdksandbox.webkit.cts.SdkSandboxWebViewClientTest#testShouldOverrideUrlLoadingOnCreateWindow"/>
-    <option name="compatibility:include-filter" value="CtsSdkSandboxWebkitTestCases android.sdksandbox.webkit.cts.SdkSandboxWebViewTest#testGoBackAndForward"/>
-    <option name="compatibility:include-filter" value="CtsSdkSandboxWebkitTestCases android.sdksandbox.webkit.cts.SdkSandboxWebViewTest#testSetNetworkAvailable"/>
     <!-- CtsSecurityHostTestCases -->
     <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxHostTest#testNoBugreportDenials"/>
     <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxHostTest#testValidFileContexts"/>
@@ -2511,6 +2501,7 @@
     <!-- CtsWearableSensingServiceTestCases -->
     <option name="compatibility:include-filter" value="CtsWearableSensingServiceTestCases android.wearable.cts.WearableSensingManagerIsolatedServiceTest#provideDataStream_binderDied_receivesServiceUnavailableStatus"/>
     <!-- CtsWebkitTestCases -->
+    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.CookieManagerTest#testAcceptCookie"/>
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.CookieManagerTest#testSameSiteLaxByDefault"/>
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.CookieManagerTest#testSameSiteNoneRequiresSecure"/>
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.CookieManagerTest#testSchemefulSameSite"/>
@@ -2527,6 +2518,9 @@
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.RemovedApisTest#testWebView_DebugDump"/>
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.RemovedApisTest#testWebView_GetVisibleTitleHeight"/>
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.RemovedApisTest#testWebView_PlatformNotifications"/>
+    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebChromeClientTest#testOnShowFileChooserInputFile"/>
+    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebChromeClientTest#testOnShowFileChooserInputFileMultiple"/>
+    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewClientTest#testShouldOverrideUrlLoadingOnCreateWindow"/>
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewTest#testGoBackAndForward"/>
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewTest#testSetNetworkAvailable"/>
     <!-- CtsWidgetTestCases -->

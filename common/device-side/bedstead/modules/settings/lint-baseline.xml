@@ -1,0 +1,884 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 8.4.0-alpha08" type="baseline" client="" dependencies="true" name="" variant="all" version="8.4.0-alpha08">
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceServiceClient()`"
+        errorLine1="            SettingsPreferenceServiceClient("
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/BlockingSettingsPreferenceServiceClient.kt"
+            line="51"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceServiceClient#getAllPreferenceMetadata`"
+        errorLine1="            client.getAllPreferenceMetadata("
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/BlockingSettingsPreferenceServiceClient.kt"
+            line="73"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.MetadataRequest.Builder#build`"
+        errorLine1="                MetadataRequest.Builder().build(),"
+        errorLine2="                                          ~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/BlockingSettingsPreferenceServiceClient.kt"
+            line="74"
+            column="43"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.MetadataRequest.Builder()`"
+        errorLine1="                MetadataRequest.Builder().build(),"
+        errorLine2="                                ~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/BlockingSettingsPreferenceServiceClient.kt"
+            line="74"
+            column="33"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceMetadata#getReadPermissions`"
+        errorLine1="                *metadata.readPermissions.toTypedArray().plus(READ_SYSTEM_PREFERENCES)"
+        errorLine2="                          ~~~~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/BlockingSettingsPreferenceServiceClient.kt"
+            line="93"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceServiceClient#getPreferenceValue`"
+        errorLine1="        client.getPreferenceValue("
+        errorLine2="               ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/BlockingSettingsPreferenceServiceClient.kt"
+            line="107"
+            column="16"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.GetValueRequest.Builder#build`"
+        errorLine1="            GetValueRequest.Builder(metadata.screenKey, metadata.key).build(),"
+        errorLine2="                                                                      ~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/BlockingSettingsPreferenceServiceClient.kt"
+            line="108"
+            column="71"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.GetValueRequest.Builder()`"
+        errorLine1="            GetValueRequest.Builder(metadata.screenKey, metadata.key).build(),"
+        errorLine2="                            ~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/BlockingSettingsPreferenceServiceClient.kt"
+            line="108"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceMetadata#getKey`"
+        errorLine1="            GetValueRequest.Builder(metadata.screenKey, metadata.key).build(),"
+        errorLine2="                                                                 ~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/BlockingSettingsPreferenceServiceClient.kt"
+            line="108"
+            column="66"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceMetadata#getScreenKey`"
+        errorLine1="            GetValueRequest.Builder(metadata.screenKey, metadata.key).build(),"
+        errorLine2="                                             ~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/BlockingSettingsPreferenceServiceClient.kt"
+            line="108"
+            column="46"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceMetadata#getWritePermissions`"
+        errorLine1="                *READ_AND_WRITE_SYSTEM_PREFERENCES_PERMISSIONS.plus(metadata.writePermissions)"
+        errorLine2="                                                                             ~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/BlockingSettingsPreferenceServiceClient.kt"
+            line="127"
+            column="78"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceServiceClient#setPreferenceValue`"
+        errorLine1="        client.setPreferenceValue("
+        errorLine2="               ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/BlockingSettingsPreferenceServiceClient.kt"
+            line="141"
+            column="16"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SetValueRequest.Builder()`"
+        errorLine1="            SetValueRequest.Builder("
+        errorLine2="                            ~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/BlockingSettingsPreferenceServiceClient.kt"
+            line="142"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceMetadata#getScreenKey`"
+        errorLine1="                metadata.screenKey,"
+        errorLine2="                         ~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/BlockingSettingsPreferenceServiceClient.kt"
+            line="143"
+            column="26"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceMetadata#getKey`"
+        errorLine1="                metadata.key,"
+        errorLine2="                         ~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/BlockingSettingsPreferenceServiceClient.kt"
+            line="144"
+            column="26"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SetValueRequest.Builder#build`"
+        errorLine1="            ).build(),"
+        errorLine2="              ~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/BlockingSettingsPreferenceServiceClient.kt"
+            line="146"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue#getType`"
+        errorLine1="    val builder = Builder(type)"
+        errorLine2="                          ~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="33"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue.Builder()`"
+        errorLine1="    val builder = Builder(type)"
+        errorLine2="                  ~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="33"
+            column="19"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue#getType`"
+        errorLine1="    return when (type) {"
+        errorLine2="                 ~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="34"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue#getBooleanValue`"
+        errorLine1="        TYPE_BOOLEAN -&gt; builder.setBooleanValue(booleanValue.not()).build()"
+        errorLine2="                                                ~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="35"
+            column="49"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue.Builder#build`"
+        errorLine1="        TYPE_BOOLEAN -&gt; builder.setBooleanValue(booleanValue.not()).build()"
+        errorLine2="                                                                    ~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="35"
+            column="69"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue.Builder#setBooleanValue`"
+        errorLine1="        TYPE_BOOLEAN -&gt; builder.setBooleanValue(booleanValue.not()).build()"
+        errorLine2="                                ~~~~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="35"
+            column="33"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue#getDoubleValue`"
+        errorLine1="            return if (doubleValue == 2.0) {"
+        errorLine2="                       ~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="37"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue.Builder#build`"
+        errorLine1="                builder.setDoubleValue(1.0).build()"
+        errorLine2="                                            ~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="38"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue.Builder#setDoubleValue`"
+        errorLine1="                builder.setDoubleValue(1.0).build()"
+        errorLine2="                        ~~~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="38"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue.Builder#build`"
+        errorLine1="                builder.setDoubleValue(2.0).build()"
+        errorLine2="                                            ~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="40"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue.Builder#setDoubleValue`"
+        errorLine1="                builder.setDoubleValue(2.0).build()"
+        errorLine2="                        ~~~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="40"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue#getIntValue`"
+        errorLine1="        TYPE_INT -&gt; builder.setIntValue(intValue + 1).build()"
+        errorLine2="                                        ~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="44"
+            column="41"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue.Builder#build`"
+        errorLine1="        TYPE_INT -&gt; builder.setIntValue(intValue + 1).build()"
+        errorLine2="                                                      ~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="44"
+            column="55"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue.Builder#setIntValue`"
+        errorLine1="        TYPE_INT -&gt; builder.setIntValue(intValue + 1).build()"
+        errorLine2="                            ~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="44"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue#getLongValue`"
+        errorLine1="        TYPE_LONG -&gt; builder.setLongValue(longValue + 1L).build()"
+        errorLine2="                                          ~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="45"
+            column="43"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue.Builder#build`"
+        errorLine1="        TYPE_LONG -&gt; builder.setLongValue(longValue + 1L).build()"
+        errorLine2="                                                          ~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="45"
+            column="59"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue.Builder#setLongValue`"
+        errorLine1="        TYPE_LONG -&gt; builder.setLongValue(longValue + 1L).build()"
+        errorLine2="                             ~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="45"
+            column="30"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue#getStringValue`"
+        errorLine1="        TYPE_STRING -&gt; builder.setStringValue(stringValue + RANDOM_STRING).build()"
+        errorLine2="                                              ~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="46"
+            column="47"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue.Builder#build`"
+        errorLine1="        TYPE_STRING -&gt; builder.setStringValue(stringValue + RANDOM_STRING).build()"
+        errorLine2="                                                                           ~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="46"
+            column="76"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue.Builder#setStringValue`"
+        errorLine1="        TYPE_STRING -&gt; builder.setStringValue(stringValue + RANDOM_STRING).build()"
+        errorLine2="                               ~~~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="46"
+            column="32"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue#getType`"
+        errorLine1='        else -&gt; throw IllegalStateException("unsupported type: $type")'
+        errorLine2="                                                                ~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="47"
+            column="65"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue#getType`"
+        errorLine1="    if (type != second?.type) {"
+        errorLine2="        ~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="55"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue#getType`"
+        errorLine1="    if (type != second?.type) {"
+        errorLine2="                        ~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="55"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue#getType`"
+        errorLine1="    return when (type) {"
+        errorLine2="                 ~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="59"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue#getBooleanValue`"
+        errorLine1="        TYPE_BOOLEAN -&gt; booleanValue == second.booleanValue"
+        errorLine2="                        ~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="60"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue#getBooleanValue`"
+        errorLine1="        TYPE_BOOLEAN -&gt; booleanValue == second.booleanValue"
+        errorLine2="                                               ~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="60"
+            column="48"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue#getDoubleValue`"
+        errorLine1="        TYPE_DOUBLE -&gt; doubleValue == second.doubleValue"
+        errorLine2="                       ~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="61"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue#getDoubleValue`"
+        errorLine1="        TYPE_DOUBLE -&gt; doubleValue == second.doubleValue"
+        errorLine2="                                             ~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="61"
+            column="46"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue#getIntValue`"
+        errorLine1="        TYPE_INT -&gt; intValue == second.intValue"
+        errorLine2="                    ~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="62"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue#getIntValue`"
+        errorLine1="        TYPE_INT -&gt; intValue == second.intValue"
+        errorLine2="                                       ~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="62"
+            column="40"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue#getLongValue`"
+        errorLine1="        TYPE_LONG -&gt; longValue == second.longValue"
+        errorLine2="                     ~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="63"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue#getLongValue`"
+        errorLine1="        TYPE_LONG -&gt; longValue == second.longValue"
+        errorLine2="                                         ~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="63"
+            column="42"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue#getStringValue`"
+        errorLine1="        TYPE_STRING -&gt; stringValue == second.stringValue"
+        errorLine2="                       ~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="64"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue#getStringValue`"
+        errorLine1="        TYPE_STRING -&gt; stringValue == second.stringValue"
+        errorLine2="                                             ~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="64"
+            column="46"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue#getType`"
+        errorLine1='        else -&gt; throw IllegalStateException("unsupported type: $type")'
+        errorLine2="                                                                ~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/ExtensionFunctions.kt"
+            line="65"
+            column="65"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceMetadata#getWriteSensitivity`"
+        errorLine1="            when (chosenPreferenceMetadata.writeSensitivity) {"
+        errorLine2="                                           ~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsAnnotationExecutor.kt"
+            line="35"
+            column="44"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceMetadata#getKey`"
+        errorLine1="                preference.screenKey == annotation.screenKey &amp;&amp; preference.key == annotation.preferenceKey"
+        errorLine2="                                                                           ~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsAnnotationExecutor.kt"
+            line="62"
+            column="76"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceMetadata#getScreenKey`"
+        errorLine1="                preference.screenKey == annotation.screenKey &amp;&amp; preference.key == annotation.preferenceKey"
+        errorLine2="                           ~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsAnnotationExecutor.kt"
+            line="62"
+            column="28"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue.Builder()`"
+        errorLine1="        val settingsPreferenceValueBuilder = SettingsPreferenceValue.Builder(annotation.valueType)"
+        errorLine2="                                                                     ~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsAnnotationExecutor.kt"
+            line="67"
+            column="70"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue.Builder#build`"
+        errorLine1="                .setBooleanValue(annotation.valueToSet.toBoolean()).build()"
+        errorLine2="                                                                    ~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsAnnotationExecutor.kt"
+            line="70"
+            column="69"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue.Builder#setBooleanValue`"
+        errorLine1="                .setBooleanValue(annotation.valueToSet.toBoolean()).build()"
+        errorLine2="                 ~~~~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsAnnotationExecutor.kt"
+            line="70"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue.Builder#build`"
+        errorLine1="                .setIntValue(annotation.valueToSet.toInt()).build()"
+        errorLine2="                                                            ~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsAnnotationExecutor.kt"
+            line="72"
+            column="61"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue.Builder#setIntValue`"
+        errorLine1="                .setIntValue(annotation.valueToSet.toInt()).build()"
+        errorLine2="                 ~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsAnnotationExecutor.kt"
+            line="72"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue.Builder#build`"
+        errorLine1="                .setLongValue(annotation.valueToSet.toLong()).build()"
+        errorLine2="                                                              ~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsAnnotationExecutor.kt"
+            line="74"
+            column="63"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue.Builder#setLongValue`"
+        errorLine1="                .setLongValue(annotation.valueToSet.toLong()).build()"
+        errorLine2="                 ~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsAnnotationExecutor.kt"
+            line="74"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue.Builder#build`"
+        errorLine1="                .setDoubleValue(annotation.valueToSet.toDouble()).build()"
+        errorLine2="                                                                  ~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsAnnotationExecutor.kt"
+            line="76"
+            column="67"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue.Builder#setDoubleValue`"
+        errorLine1="                .setDoubleValue(annotation.valueToSet.toDouble()).build()"
+        errorLine2="                 ~~~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsAnnotationExecutor.kt"
+            line="76"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue.Builder#build`"
+        errorLine1="                .setStringValue(annotation.valueToSet).build()"
+        errorLine2="                                                       ~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsAnnotationExecutor.kt"
+            line="78"
+            column="56"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceValue.Builder#setStringValue`"
+        errorLine1="                .setStringValue(annotation.valueToSet).build()"
+        errorLine2="                 ~~~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsAnnotationExecutor.kt"
+            line="78"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceMetadata#getWriteSensitivity`"
+        errorLine1="                it.writeSensitivity in writeSensitivity"
+        errorLine2="                   ~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsParameterizedTestWithArgumentGenerator.kt"
+            line="75"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceMetadata#isWritable`"
+        errorLine1="                it.isWritable == isWritable.toBoolean()"
+        errorLine2="                   ~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsParameterizedTestWithArgumentGenerator.kt"
+            line="88"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceMetadata#getReadPermissions`"
+        errorLine1="                    it.readPermissions.isNotEmpty()"
+        errorLine2="                       ~~~~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsParameterizedTestWithArgumentGenerator.kt"
+            line="100"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceMetadata#getWritePermissions`"
+        errorLine1="                    it.writePermissions.isNotEmpty()"
+        errorLine2="                       ~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsParameterizedTestWithArgumentGenerator.kt"
+            line="104"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceMetadata#getLaunchIntent`"
+        errorLine1="                    it.launchIntent != null"
+        errorLine2="                       ~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsParameterizedTestWithArgumentGenerator.kt"
+            line="108"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.GetValueResult#getResultCode`"
+        errorLine1="                    .getValueResult(it).resultCode != GetValueResult.RESULT_UNSUPPORTED"
+        errorLine2="                                        ~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsParameterizedTestWithArgumentGenerator.kt"
+            line="126"
+            column="41"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceMetadata#getKey`"
+        errorLine1='fun SettingsPreferenceMetadata.nameWithKeys() = "$screenKey/$key"'
+        errorLine2="                                                             ~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsParameterizedTestWithArgumentGenerator.kt"
+            line="137"
+            column="62"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceMetadata#getScreenKey`"
+        errorLine1='fun SettingsPreferenceMetadata.nameWithKeys() = "$screenKey/$key"'
+        errorLine2="                                                  ~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsParameterizedTestWithArgumentGenerator.kt"
+            line="137"
+            column="51"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.GetValueResult#getValue`"
+        errorLine1="            val value = blockingClient.getValueResult(metadata).value ?: return"
+        errorLine2="                                                                ~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsPreferenceRepository.kt"
+            line="42"
+            column="65"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceMetadata#getKey`"
+        errorLine1="            preference.metadata.screenKey == screenKey &amp;&amp; preference.metadata.key == preferenceKey"
+        errorLine2="                                                                              ~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsPreferenceRepository.kt"
+            line="56"
+            column="79"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceMetadata#getScreenKey`"
+        errorLine1="            preference.metadata.screenKey == screenKey &amp;&amp; preference.metadata.key == preferenceKey"
+        errorLine2="                                ~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsPreferenceRepository.kt"
+            line="56"
+            column="33"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SetValueResult#getResultCode`"
+        errorLine1="            if (setResult.resultCode == SetValueResult.RESULT_OK) {"
+        errorLine2="                          ~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsPreferenceRepository.kt"
+            line="84"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SetValueResult#getResultCode`"
+        errorLine1="                    if (result.resultCode != SetValueResult.RESULT_OK) {"
+        errorLine2="                               ~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsPreferenceRepository.kt"
+            line="102"
+            column="32"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SetValueResult#getResultCode`"
+        errorLine1='                                    "Result code: ${result.resultCode}"'
+        errorLine2="                                                           ~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsPreferenceRepository.kt"
+            line="106"
+            column="60"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 33): `android.service.settings.preferences.SettingsPreferenceServiceClient#close`"
+        errorLine1="        blockingClient.client.close()"
+        errorLine2="                              ~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/modules/settings/src/main/kotlin/com/android/bedstead/settings/SettingsPreferenceRepository.kt"
+            line="117"
+            column="31"/>
+    </issue>
+
+</issues>

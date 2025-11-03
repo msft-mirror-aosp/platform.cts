@@ -44,6 +44,8 @@ import android.mediav2.common.cts.OutputManager;
 import android.opengl.GLES20;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.util.Pair;
 import android.util.Size;
@@ -59,6 +61,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -305,6 +308,9 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
             EncoderConfigParams cfgParams, String allTestParams) {
         super(encoder, mediaType, cfgParams, allTestParams);
     }
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void prerequisite() {

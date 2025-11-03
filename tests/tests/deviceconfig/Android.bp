@@ -69,5 +69,4 @@ android_ravenwood_test {
     ],
     sdk_version: "test_current",
     auto_gen_config: true,
-    team: "trendy_team_ravenwood",
 }

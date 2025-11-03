@@ -13,5 +13,11 @@
     {
       "name": "CtsDeviceConfigTestCases"
     }
+  ],
+  "ravenwood-presubmit": [
+    {
+      "name": "CtsDeviceConfigTestCasesRavenwood",
+      "host": true
+    }
   ]
 }

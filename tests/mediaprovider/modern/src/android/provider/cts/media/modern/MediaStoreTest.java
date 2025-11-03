@@ -651,8 +651,8 @@ public class MediaStoreTest {
         try {
             final String imageFileName = "image.jpeg";
             final String newImageFileName = "image (1).jpeg";
+            baseTestDirectory.mkdirs();
             final File testImageFile1 = new File(baseTestDirectory, imageFileName);
-            testImageFile1.mkdirs();
             MediaProviderTestUtils.stageFile(R.raw.lg_g4_iso_800_jpg, testImageFile1);
 
             // scan the file to ensure it's populated in the MediaStore

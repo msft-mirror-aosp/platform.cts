@@ -34,6 +34,7 @@ java_test_host {
     test_suites: [
         "cts",
         "general-tests",
+        "dts",
     ],
     java_resources: ["DynamicConfig.xml"],
     data: [

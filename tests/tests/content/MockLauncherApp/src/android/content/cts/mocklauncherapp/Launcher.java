@@ -16,6 +16,29 @@
 package android.content.cts.mocklauncherapp;
 
 import android.app.Activity;
+import android.os.Bundle;
+import android.util.Log;
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 
 public class Launcher extends Activity {
+    private static final String TAG = "mocklauncherapp";
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        File cacheDir = getApplicationContext().getCacheDir();
+        File myCacheFile = new File(cacheDir, "my_cached_data.txt");
+        createEmptyFileOfSize(myCacheFile, 4096 * 10);
+    }
+
+    private static void createEmptyFileOfSize(File file, long sizeInBytes) {
+        try (RandomAccessFile raf = new RandomAccessFile(file, "rw")) {
+            raf.setLength(sizeInBytes);
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to create empty file of size " + sizeInBytes
+                    + " at " + file.getAbsolutePath(), e);
+        }
+    }
 }

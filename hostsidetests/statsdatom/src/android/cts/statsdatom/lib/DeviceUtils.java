@@ -616,6 +616,8 @@ public final class DeviceUtils {
                 .that(waitForStatsServiceStart(device, 120_000))
                 .isTrue();
         RunUtil.getDefault().sleep(2_000);
+        disableLoggingControl(device);
+        RunUtil.getDefault().sleep(2_000);
     }
 
     private static boolean waitForStatsServiceStart(ITestDevice device, long waitTime)
@@ -632,6 +634,11 @@ public final class DeviceUtils {
         }
         LogUtil.CLog.w("Stats service did not start after %d ms", waitTime);
         return false;
+    }
+
+    /** Required to reduce tests flakiness when logging control is enabled */
+    private static void disableLoggingControl(ITestDevice device) throws Exception {
+        device.executeShellCommand("cmd stats logging-control 0");
     }
 
     /**

@@ -34,7 +34,6 @@ import android.graphics.drawable.Drawable;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.DisabledOnRavenwood;
-import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.Printer;
 import android.util.StringBuilderPrinter;
 
@@ -43,7 +42,6 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.WidgetTestUtils;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -53,8 +51,6 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ComponentInfoTest {
-    @Rule
-    public final RavenwoodRule mRavenwood = new RavenwoodRule();
 
     private final String PACKAGE_NAME = "android.content.cts";
     private ComponentInfo mComponentInfo;
@@ -169,7 +165,6 @@ public class ComponentInfoTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = android.content.res.Resources.class)
     public void testGetIconResource() {
         mComponentInfo = new ComponentInfo();
         mComponentInfo.applicationInfo = new ApplicationInfo();

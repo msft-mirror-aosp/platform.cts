@@ -1007,7 +1007,6 @@ public class SurfaceViewTests extends ActivityTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(com.android.graphics.surfaceflinger.flags.Flags.FLAG_BEGONE_BRIGHT_HLG)
     public void surfaceViewThrottlesHLGHeadroom() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
         DrawCallback callback =

@@ -28,4 +28,7 @@ java_library {
         "cts-scopedstorage-lib",
     ],
     sdk_version: "test_current",
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }

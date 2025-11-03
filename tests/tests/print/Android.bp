@@ -14,6 +14,7 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_printing",
 }
 
 android_test {
@@ -25,7 +26,11 @@ android_test {
         "general-tests",
     ],
     srcs: ["src/**/*.java"],
-    static_libs: ["print-test-util-lib"],
+    static_libs: [
+        "print-test-util-lib",
+        "flag-junit",
+        "printspooler_aconfig_flags_java_lib",
+    ],
     sdk_version: "test_current",
     data: [
         ":CtsExternalPrintService",

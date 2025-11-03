@@ -420,7 +420,7 @@ public class PerformanceHintManagerStatsTests extends BaseHostJUnit4Test impleme
                     checkSnapshotCommonData(a0, expectedSnapshotResults);
                 } else if (sessionTag == SESSION_TAG_HWUI) {
                     foundHwui = true;
-                    assertNotNull(a0.getTargetDurationNsList());
+                    assertThat(a0.getTargetDurationNsList()).isNotEmpty();
                     checkSnapshotCommonData(a0, expectedSnapshotResults);
                 }
             }

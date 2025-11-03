@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 8.4.0-alpha08" type="baseline" client="" dependencies="true" name="" variant="all" version="8.4.0-alpha08">
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 37.1 (current min is 36): `new android.app.appfunctions.ExecuteAppFunctionResponse`"
+        errorLine1="        return new ExecuteAppFunctionResponse("
+        errorLine2="               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/appfunctions/testutils/src/android/app/appfunctions/testutils/TestAppFunctionService.java"
+            line="241"
+            column="16"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 37.1 (current min is 36): `new android.app.appfunctions.AppFunctionUriGrant`"
+        errorLine1="                        new AppFunctionUriGrant(readOnlyUri, Intent.FLAG_GRANT_READ_URI_PERMISSION),"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/appfunctions/testutils/src/android/app/appfunctions/testutils/TestAppFunctionService.java"
+            line="245"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 37.1 (current min is 36): `new android.app.appfunctions.AppFunctionUriGrant`"
+        errorLine1="                        new AppFunctionUriGrant("
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/appfunctions/testutils/src/android/app/appfunctions/testutils/TestAppFunctionService.java"
+            line="246"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 37.1 (current min is 36): `new android.app.appfunctions.AppFunctionUriGrant`"
+        errorLine1="                        new AppFunctionUriGrant("
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/appfunctions/testutils/src/android/app/appfunctions/testutils/TestAppFunctionService.java"
+            line="248"
+            column="25"/>
+    </issue>
+
+</issues>

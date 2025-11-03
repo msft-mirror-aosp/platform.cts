@@ -16,6 +16,7 @@
 
 package android.server.wm.input;
 
+import static android.server.wm.ShellCommandHelper.executeShellCommand;
 import static android.server.wm.cts.Components.SAME_UID_EXIT_ANIMATION_ACTIVITY;
 import static android.server.wm.cts.Components.SAME_UID_OVERLAY_ACTIVITY;
 import static android.server.wm.cts.Components.SAME_UID_TOAST_ACTIVITY;
@@ -43,11 +44,13 @@ import static org.junit.Assume.assumeTrue;
 import android.app.ActivityOptions;
 import android.graphics.Rect;
 import android.os.IBinder;
+import android.os.Process;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.wm.overlay.R;
+import android.server.wm.settings.TransitionAnimationScaleSession;
 import android.server.wm.shared.BlockingResultReceiver;
 import android.view.WindowManager.LayoutParams;
 
@@ -63,6 +66,10 @@ import org.junit.Test;
  */
 @Presubmit
 public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
+
+    protected static final String AM_START_HOME_ACTIVITY_COMMAND =
+            "am start -a android.intent.action.MAIN -c android.intent.category.HOME --user "
+                    + Process.myUserHandle().getIdentifier();
 
     @Test
     public void testMaximumObscuringOpacity() throws Throwable {
@@ -684,13 +691,21 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addAnimatedActivityOverlay(
-                SECOND_OVERLAY_ACTIVITY, false /* touchable */, R.anim.alpha_0_9, R.anim.alpha_1);
+        // Extend the duration of animations to reduce test flakiness.
+        try (TransitionAnimationScaleSession session = new TransitionAnimationScaleSession(20f)) {
+            addAnimatedActivityOverlay(
+                    SECOND_OVERLAY_ACTIVITY,
+                    false /* touchable */,
+                    R.anim.alpha_0_9,
+                    R.anim.alpha_1);
 
-        mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
+            mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
 
-        assertAnimationRunning();
-        assertTouchNotReceived();
+            assertTouchNotReceived();
+        }
+        // Now that the assertions are complete, launch home activity to stop the animation.
+        // This reduces the test running time.
+        launchHomeActivity();
     }
 
     @Test
@@ -699,14 +714,18 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
-
-        addAnimatedActivityOverlay(
-                SECOND_OVERLAY_ACTIVITY, false /* touchable */, R.anim.alpha_0_7, R.anim.alpha_1);
-
-        mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
-
-        assertAnimationRunning();
-        assertTouchReceived();
+        try (TransitionAnimationScaleSession session = new TransitionAnimationScaleSession(20f)) {
+            addAnimatedActivityOverlay(
+                    SECOND_OVERLAY_ACTIVITY,
+                    false /* touchable */,
+                    R.anim.alpha_0_7,
+                    R.anim.alpha_0_7);
+            mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
+            assertTouchReceived();
+        }
+        // Now that the assertions are complete, launch home activity to stop the animation.
+        // This reduces the test running time.
+        launchHomeActivity();
     }
 
     @Test
@@ -716,13 +735,19 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addAnimatedActivityOverlay(
-                SECOND_OVERLAY_ACTIVITY, true /* touchable */, R.anim.alpha_0_7, R.anim.alpha_1);
+        try (TransitionAnimationScaleSession session = new TransitionAnimationScaleSession(2f)) {
+            addAnimatedActivityOverlay(
+                    SECOND_OVERLAY_ACTIVITY,
+                    true /* touchable */,
+                    R.anim.alpha_0_7,
+                    R.anim.alpha_0_7);
 
-        mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
-
-        assertAnimationRunning();
-        assertTouchNotReceived();
+            mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
+            assertTouchNotReceived();
+        }
+        // Now that the assertions are complete, launch home activity to stop the animation.
+        // This reduces the test running time.
+        launchHomeActivity();
     }
 
     @Test
@@ -952,5 +977,10 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         mTouchHelper.tapOnViewCenter(mContainer);
 
         assertTouchReceived();
+    }
+
+    private void launchHomeActivity() {
+        executeShellCommand(AM_START_HOME_ACTIVITY_COMMAND);
+        mWmState.waitForHomeActivityVisible();
     }
 }

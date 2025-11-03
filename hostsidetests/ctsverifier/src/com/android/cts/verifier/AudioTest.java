@@ -409,7 +409,7 @@ public final class AudioTest extends CtsVerifierTest {
     @Test
     @SupportMultiDisplayMode
     // MultiDisplayMode
-    @CddTest(requirements = "7.8.2.2/H-1-1", "7.7.2/C-2-1,C-2-2")
+    @CddTest(requirements = {"7.8.2.2/H-1-1", "7.7.2/C-2-1,C-2-2"})
     @ApiTest(apis = "android.app.Activity#onKeyDown")
     public void USBAudioPeripheralRecordTest() throws Exception {
         requireFeatures("android.hardware.usb.host");
@@ -449,5 +449,16 @@ public final class AudioTest extends CtsVerifierTest {
     @CddTest(requirements = "9.8.13/C-1-3")
     public void AudioMicrophoneMuteToggleTest() throws Exception {
         runTest(".audio.AudioMicrophoneMuteToggleActivity", "config_has_mic_toggle");
+    }
+
+    @Interactive
+    @Test
+    @SupportMultiDisplayMode
+    // MultiDisplayMode
+    @CddTest(requirements = "2.2.7.1")
+    public void AudioWorkloadTest() throws Exception {
+        requireFeatures("android.hardware.audio.output");
+
+        runTest(".audio.AudioWorkloadTestActivity");
     }
 }

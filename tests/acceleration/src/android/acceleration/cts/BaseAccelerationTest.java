@@ -16,7 +16,6 @@
 
 package android.acceleration.cts;
 
-import android.Manifest;
 import android.acceleration.AcceleratedView;
 import android.acceleration.BaseAcceleratedActivity;
 import android.app.ActivityManager;
@@ -25,8 +24,6 @@ import android.content.pm.ConfigurationInfo;
 import android.content.pm.FeatureInfo;
 import android.test.ActivityInstrumentationTestCase2;
 import android.view.View;
-
-import com.android.compatibility.common.util.SystemUtil;
 
 abstract class BaseAccelerationTest<B extends BaseAcceleratedActivity>
         extends ActivityInstrumentationTestCase2<B> {
@@ -52,9 +49,7 @@ abstract class BaseAccelerationTest<B extends BaseAcceleratedActivity>
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        mActivity =
-                SystemUtil.runWithShellPermissionIdentity(
-                        this::getActivity, Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+        mActivity = getActivity();
         mHardwareView = mActivity.getHardwareAcceleratedView();
         mSoftwareView = mActivity.getSoftwareAcceleratedView();
         mManualHardwareView = mActivity.getManualHardwareAcceleratedView();

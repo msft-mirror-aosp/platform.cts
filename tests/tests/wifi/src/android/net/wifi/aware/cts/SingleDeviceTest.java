@@ -49,6 +49,7 @@ import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.net.wifi.OuiKeyedData;
 import android.net.wifi.ScanResult;
+import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiScanner;
 import android.net.wifi.aware.AttachCallback;
@@ -666,9 +667,7 @@ public class SingleDeviceTest extends WifiJUnit4TestBase {
         ShellIdentityUtils.invokeWithShellPermissions(
                 () -> mWifiManager.setVerboseLoggingEnabled(true));
 
-        // Disable autojoin to reduce the flakiness
-        ShellIdentityUtils.invokeWithShellPermissions(
-                () -> mWifiManager.allowAutojoinGlobal(false));
+        disableAllSavedNetworks(mWifiManager);
 
         // Turn on Wi-Fi
         mWifiLock = mWifiManager.createWifiLock(TAG);
@@ -707,10 +706,27 @@ public class SingleDeviceTest extends WifiJUnit4TestBase {
 
         ShellIdentityUtils.invokeWithShellPermissions(
                 () -> mWifiManager.setVerboseLoggingEnabled(mWasVerboseLoggingEnabled));
-        ShellIdentityUtils.invokeWithShellPermissions(
-                () -> mWifiManager.allowAutojoinGlobal(true));
+        enableAllSavedNetworks(mWifiManager);
 
         Thread.sleep(INTERVAL_BETWEEN_TESTS_SECS * 1000);
+    }
+
+    private static void enableAllSavedNetworks(@NonNull WifiManager wifiManager) {
+        ShellIdentityUtils.invokeWithShellPermissions(
+                () -> {
+                    for (WifiConfiguration savedNetwork : wifiManager.getConfiguredNetworks()) {
+                        wifiManager.enableNetwork(savedNetwork.networkId, false);
+                    }
+                });
+    }
+
+    private static void disableAllSavedNetworks(@NonNull WifiManager wifiManager) {
+        ShellIdentityUtils.invokeWithShellPermissions(
+                () -> {
+                    for (WifiConfiguration savedNetwork : wifiManager.getConfiguredNetworks()) {
+                        wifiManager.disableNetwork(savedNetwork.networkId);
+                    }
+                });
     }
 
     /**

@@ -54,6 +54,7 @@ import android.telecom.Call;
 import android.telecom.CallAudioState;
 import android.telecom.CallEndpoint;
 import android.telecom.Conference;
+import android.telecom.Conferenceable;
 import android.telecom.Connection;
 import android.telecom.ConnectionRequest;
 import android.telecom.InCallService;
@@ -142,6 +143,7 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
     TestUtils.InvokeCounter mOnCallEndpointChangedCounter;
     TestUtils.InvokeCounter mOnAvailableEndpointsChangedCounter;
     TestUtils.InvokeCounter mOnMuteStateChangedCounter;
+    TestUtils.InvokeCounter mOnCallEndpointRequestedCounter;
     Bundle mPreviousExtras;
     int mPreviousProperties = -1;
     PhoneAccountHandle mPreviousPhoneAccountHandle = null;
@@ -677,6 +679,12 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
                         Log.i(TAG, "onMuteStateChanged, isMuted: " + isMuted);
                         mOnMuteStateChangedCounter.invoke(isMuted);
                     }
+
+                    @Override
+                    public void onCallEndpointRequested(CallEndpoint callEndpoint) {
+                        Log.i(TAG, "onCallEndpointRequested, callEndpoint: " + callEndpoint);
+                        mOnCallEndpointRequestedCounter.invoke(callEndpoint);
+                    }
                 };
 
         MockInCallService.setCallbacks(mInCallCallbacks);
@@ -705,6 +713,8 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         mOnAvailableEndpointsChangedCounter = new TestUtils.InvokeCounter(
                 "OnAvailableEndpointsChanged");
         mOnMuteStateChangedCounter = new TestUtils.InvokeCounter("OnMuteStateChanged");
+        mOnCallEndpointRequestedCounter = new TestUtils.InvokeCounter(
+                "OnCallEndpointRequested");
     }
 
     void registerAndEnablePhoneAccount(PhoneAccount phoneAccount) throws Exception {
@@ -1158,6 +1168,11 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         }
         connection.setConferenceableConnections(confConnections);
         assertEquals(connection.getConferenceables(), confConnections);
+
+        List<Conferenceable> conferenceables = new ArrayList<>();
+        conferenceables.addAll(confConnections);
+        connection.setConferenceables(conferenceables);
+        assertEquals(connection.getConferenceables(), conferenceables);
     }
 
     void addConferenceCall(Call call1, Call call2) {

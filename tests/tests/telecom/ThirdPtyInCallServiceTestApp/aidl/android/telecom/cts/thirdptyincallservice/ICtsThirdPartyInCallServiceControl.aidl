@@ -33,4 +33,8 @@ interface ICtsThirdPartyInCallServiceControl {
     void setExpectedExtra(String newKey, String newValue);
 
     boolean waitUntilExpectedExtrasReceived();
+
+    void setExpectedCallEndpoint(in CallEndpoint expectedEndpoint);
+
+    boolean waitUntilExpectedCallEndpointReceived();
 }

@@ -100,6 +100,10 @@ public class VirtualDisplayHelper {
         mCreated = false;
     }
 
+    public ImageReader getImageReader() {
+        return mReader;
+    }
+
     private void createVirtualDisplay() {
         mReader = ImageReader.newInstance(WIDTH, HEIGHT, PixelFormat.RGBA_8888, 2);
 
