@@ -1483,7 +1483,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
                         .build();
         mNotificationManager.notify(id, notification);
 
-        assertTrue(mNotificationHelper.isNotificationGone(id, SEARCH_TYPE.APP));
+        assertThat(mNotificationHelper.findPostedNotification(null, id, SEARCH_TYPE.APP)).isNull();
     }
 
     @Test
@@ -3640,12 +3640,35 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    public void testNoPermission() throws Exception {
+    public void testNoPermission_basicNotification() {
+        testNoPermission(
+                7,
+                new Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+                        .setSmallIcon(R.drawable.black)
+                        .build());
+    }
+
+    @Test
+    public void testNoPermission_requestedOngoing() {
+        assertThat(mContext.checkSelfPermission(Manifest.permission.POST_PROMOTED_NOTIFICATIONS))
+                .isEqualTo(PackageManager.PERMISSION_GRANTED);
+
+        testNoPermission(
+                8,
+                new Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+                        .setSmallIcon(R.drawable.black)
+                        .setContentTitle("Knock knock")
+                        .setContentText("Who's there?")
+                        .setOngoing(true)
+                        .setRequestPromotedOngoing(true)
+                        .build());
+    }
+
+    private void testNoPermission(int id, Notification notification) {
         assumeFalse(
                 "Permission for POST_NOTIFICATIONS is always granted on TV and cannot be revoked",
                 mPackageManager.hasSystemFeature(FEATURE_LEANBACK));
 
-        int id = 7;
         SystemUtil.runWithShellPermissionIdentity(
                 () -> mContext.getSystemService(PermissionManager.class)
                         .revokePostNotificationPermissionWithoutKillForTest(
@@ -3654,13 +3677,9 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
                 REVOKE_POST_NOTIFICATIONS_WITHOUT_KILL,
                 REVOKE_RUNTIME_PERMISSIONS);
 
-        final Notification notification =
-                new Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
-                        .setSmallIcon(R.drawable.black)
-                        .build();
         mNotificationManager.notify(id, notification);
 
-        assertTrue(mNotificationHelper.isNotificationGone(id, SEARCH_TYPE.APP));
+        assertThat(mNotificationHelper.findPostedNotification(null, id, SEARCH_TYPE.APP)).isNull();
     }
 
     @Test
