@@ -1351,14 +1351,20 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
     }
 
     /**
-     * Tests {@link WifiNetworkSuggestion.Builder#setWifi7Enabled(boolean)}. Validate disable
-     * Wi-Fi 7.
+     * Tests {@link WifiNetworkSuggestion.Builder#setWifi7Enabled(boolean)}. Validate disable Wi-Fi
+     * 7.
      */
-    @ApiTest(apis = {"android.net.wifi.WifiNetworkSuggestion.Builder#setWifi7Enabled",
-            "android.net.wifi.WifiNetworkSuggestion#isWifi7Enabled"})
+    @ApiTest(
+            apis = {
+                "android.net.wifi.WifiNetworkSuggestion.Builder#setWifi7Enabled",
+                "android.net.wifi.WifiNetworkSuggestion#isWifi7Enabled"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
     @Test
     public void testWifi7Disabled() throws Exception {
+        // Skip the test if the VSR API level is less than 15.
+        assumeTrue(PropertyUtil.getVsrApiLevel() >= Build.VERSION_CODES.VANILLA_ICE_CREAM);
         // Make sure device supports Wi-Fi 7
         assumeTrue(sWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_11BE));
         List<WifiConfiguration> savedNetworks = ShellIdentityUtils.invokeWithShellPermissions(
@@ -1382,14 +1388,20 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
     }
 
     /**
-     * Tests {@link WifiNetworkSuggestion.Builder#setWifi7Enabled(boolean)}. Validate enable
-     * Wi-Fi 7.
+     * Tests {@link WifiNetworkSuggestion.Builder#setWifi7Enabled(boolean)}. Validate enable Wi-Fi
+     * 7.
      */
-    @ApiTest(apis = {"android.net.wifi.WifiNetworkSuggestion.Builder#setWifi7Enabled",
-            "android.net.wifi.WifiNetworkSuggestion#isWifi7Enabled"})
+    @ApiTest(
+            apis = {
+                "android.net.wifi.WifiNetworkSuggestion.Builder#setWifi7Enabled",
+                "android.net.wifi.WifiNetworkSuggestion#isWifi7Enabled"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
     @Test
     public void testWifi7Enabled() throws Exception {
+        // Skip the test if the VSR API level is less than 15.
+        assumeTrue(PropertyUtil.getVsrApiLevel() >= Build.VERSION_CODES.VANILLA_ICE_CREAM);
         // Make sure device supports Wi-Fi 7
         assumeTrue(sWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_11BE));
         List<WifiConfiguration> savedNetworks = ShellIdentityUtils.invokeWithShellPermissions(

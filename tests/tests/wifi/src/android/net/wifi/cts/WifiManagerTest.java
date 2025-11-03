@@ -7465,15 +7465,24 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
      * Tests {@link WifiConfiguration#setWifi7Enabled(boolean)}. Validate default behavior, disable
      * Wi-Fi 7 and Enable Wi-Fi 7.
      */
-    @ApiTest(apis = {"android.net.wifi.WifiConfiguration#setWifi7Enabled",
-            "android.net.wifi.WifiConfiguration#isWifi7Enabled"})
+    @ApiTest(
+            apis = {
+                "android.net.wifi.WifiConfiguration#setWifi7Enabled",
+                "android.net.wifi.WifiConfiguration#isWifi7Enabled"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @SdkSuppress(
+            minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
     @Test
     public void testEnableWifi7() throws Exception {
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         TestActionListener actionListener = new TestActionListener(mLock);
         setWifiEnabled(true);
         WifiConfiguration wifi7Network = null;
+        // Skip the test if the VSR API level is less than 15.
+        assumeTrue(PropertyUtil.getVsrApiLevel() >= Build.VERSION_CODES.VANILLA_ICE_CREAM);
+        boolean wasWifi7Enabled = false;
         try {
             uiAutomation.adoptShellPermissionIdentity();
             // Make sure device supports Wi-Fi 7
@@ -7484,6 +7493,15 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                     savedNetworks, TestHelper.AP_CAPABILITY_BIT_WIFI7);
             // TODO: b/322011012
             assumeTrue("Unable to locate Wi-Fi 7 networks in range.\n", wifi7Network != null);
+
+            // Store original Wi-Fi 7 state and enable it for the test
+            wasWifi7Enabled = wifi7Network.isWifi7Enabled();
+            if (!wasWifi7Enabled) {
+                wifi7Network.setWifi7Enabled(true);
+                sWifiManager.updateNetwork(wifi7Network);
+                waitForDisconnection();
+                waitForConnection();
+            }
 
             // Default behavior: check new connection is Wi-Fi 7
             sWifiManager.disconnect();
@@ -7521,8 +7539,8 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
 
         } finally {
             // Restore
-            if (wifi7Network != null && !wifi7Network.isWifi7Enabled()) {
-                wifi7Network.setWifi7Enabled(true);
+            if (wifi7Network != null) {
+                wifi7Network.setWifi7Enabled(wasWifi7Enabled);
                 sWifiManager.updateNetwork(wifi7Network);
             }
             uiAutomation.dropShellPermissionIdentity();
