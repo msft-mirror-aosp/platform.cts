@@ -79,6 +79,7 @@ import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.WindowManagerState;
+import android.server.wm.WindowManagerStateHelper;
 import android.support.test.uiautomator.UiObject2;
 import android.text.TextUtils;
 import android.util.Log;
@@ -1722,6 +1723,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     @FlakyTest
     public void testIMEVisibleInSplitScreenWithWindowInsetsApi() throws Throwable {
         assumeTrue(TestUtils.supportsSplitScreenMultiWindow());
+        final var wmState = new WindowManagerStateHelper();
 
         try (MockImeSession imeSession = MockImeSession.create(
                 mInstrumentation.getContext(),
@@ -1761,6 +1763,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                     NOT_EXPECT_TIMEOUT);
             expectImeInvisible(TIMEOUT);
 
+            final var display = editText1Ref.get().getContext().getDisplay();
             // Tap on the test activity to change focus
             mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation,
                     null, testActivity2.getWindow().getDecorView());
@@ -1793,10 +1796,14 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
             // Finish the primary activity to exit split-screen mode.
             splitPrimaryActivity.runOnUiThread(splitPrimaryActivity::finish);
+
+            wmState.waitForAppTransitionIdleOnDisplay(display.getDisplayId());
             TestUtils.waitOnMainUntil(() -> {
                 final View decorView = testActivity2.getWindow().getDecorView();
                 return decorView.hasWindowFocus() && decorView.getVisibility() == VISIBLE;
             }, TIMEOUT, "Activity should visible & focused when exiting split-screen mode");
+            // TestActivity2 doesn't handle config change and gets re-created, so IME is hidden.
+            expectImeInvisible(TIMEOUT);
 
             // Rerun the test procedure to ensure it passes after exiting split-screen mode.
             testProcedureForTestActivity2.run();
