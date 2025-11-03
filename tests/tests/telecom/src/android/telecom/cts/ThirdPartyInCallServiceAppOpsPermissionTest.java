@@ -32,7 +32,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.OutcomeReceiver;
-import android.os.ParcelUuid;
 import android.os.RemoteException;
 import android.telecom.Call;
 import android.telecom.CallAudioState;
@@ -49,7 +48,6 @@ import android.util.Log;
 import com.android.compatibility.common.util.ApiTest;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -152,17 +150,21 @@ public class ThirdPartyInCallServiceAppOpsPermissionTest extends BaseTelecomTest
         // Store the initial audio state:
         final int initialRoute = callAudioState.getRoute();
 
-        try {
-            mOnAvailableEndpointsChangedCounter.waitForCount(1);
-            List<CallEndpoint> availableEndpoints =
-                    (List<CallEndpoint>) mOnAvailableEndpointsChangedCounter.getArgs(0)[0];
-            if (availableEndpoints.size() < 2) {
-                Log.i(TAG, "testSetAudioRouteOnCallEndpointRequestedPropagation: There are "
-                        + "less than 2 available CallEndpoints; available endpoints: "
-                        + availableEndpoints);
-                return;
-            }
+        // Skip the test if there are less than 2 available endpoints:
+        mOnAvailableEndpointsChangedCounter.waitForCount(1);
+        List<CallEndpoint> availableEndpoints =
+                (List<CallEndpoint>) mOnAvailableEndpointsChangedCounter.getArgs(0)[0];
+        if (availableEndpoints.size() < 2) {
+            Log.i(TAG, "testSetAudioRouteOnCallEndpointRequestedPropagation: There are "
+                    + "less than 2 available CallEndpoints; available endpoints: "
+                    + availableEndpoints);
+            mICtsThirdPartyInCallServiceControl.resetLatchForServiceBound(true);
+            // Revoke App Ops Permission
+            setInCallServiceAppOpsPermission(false);
+            return;
+        }
 
+        try {
             CallEndpoint expectedEndpoint = null;
             for (CallEndpoint endpoint : availableEndpoints) {
                 if (endpoint.getEndpointType() == CallEndpoint.TYPE_SPEAKER) {
