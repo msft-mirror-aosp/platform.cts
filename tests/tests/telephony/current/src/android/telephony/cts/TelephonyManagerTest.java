@@ -6209,7 +6209,6 @@ public class TelephonyManagerTest {
      * exception when called and has the correct permissions.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_ISIM_RECORD)
     public void getImsPrivateUserIdentity() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         // make sure not to face any permission problem while calling the API
@@ -6228,7 +6227,6 @@ public class TelephonyManagerTest {
      * SecurityException when required permissions are not granted.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_ISIM_RECORD)
     public void getImsPrivateUserIdentity_NoPermissionGranted() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         try {
@@ -6246,7 +6244,6 @@ public class TelephonyManagerTest {
      * exception when granted with READ_PRIVILEGED_PHONE_STATE permission.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_ISIM_RECORD)
     public void getImsPublicUserIdentities_ReadPrivilegedPermission() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         // make sure not to face any permission problem while calling the API
@@ -6273,7 +6270,6 @@ public class TelephonyManagerTest {
      * SecurityException when called with out any permissions granted.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_ISIM_RECORD)
     public void getImsPublicUserIdentities_NoPermissionGranted() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         try {
@@ -6291,7 +6287,6 @@ public class TelephonyManagerTest {
      * SecurityException when granted with READ_PRIVILEGED_PHONE_STATE permission.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_ISIM_RECORD)
     public void getImsPcscfAddresses_WithReadPrivilegedPermission() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         // make sure not to face any permission problem while calling the API
@@ -6310,7 +6305,6 @@ public class TelephonyManagerTest {
      * when called without any permissions granted.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_ISIM_RECORD)
     public void getImsPcscfAddresses_NoPermissionGranted() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         try {
@@ -6328,7 +6322,6 @@ public class TelephonyManagerTest {
      * SecurityException when granted with READ_PRIVILEGED_PHONE_STATE permission.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_ISIM_RECORD)
     public void getSimServiceTable_WithReadPrivilegedPermission() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         // make sure not to face any permission problem while calling the API
@@ -6359,7 +6352,6 @@ public class TelephonyManagerTest {
      * when called without any permissions granted.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_ISIM_RECORD)
     public void getSimServiceTable_NoPermissionGranted() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
