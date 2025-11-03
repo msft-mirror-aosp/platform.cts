@@ -24,6 +24,7 @@ java_test_helper_library {
     ],
     static_libs: [
         "LocationCtsCommon",
+        "android.location.flags-aconfig-java",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "apache-commons-math",
@@ -45,6 +46,7 @@ android_test {
     defaults: ["cts_defaults"],
     static_libs: [
         "LocationCtsCommon",
+        "android.location.flags-aconfig-java",
         "androidx.test.ext.junit",
         "androidx.test.ext.truth",
         "androidx.test.rules",

@@ -16,13 +16,20 @@
 
 package android.location.cts.none;
 
+import static android.location.flags.Flags.FLAG_SUPPORT_CODETYPE_IN_GNSS_STATUS;
+
 import static org.junit.Assert.assertEquals;
 
+import android.location.GnssMeasurement;
 import android.location.GnssStatus;
 import android.os.Parcel;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -31,6 +38,9 @@ public class GnssStatusTest {
 
     private static final float DELTA = 1e-3f;
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Test
     public void testGetValues() {
         GnssStatus gnssStatus = getTestGnssStatus();
@@ -38,9 +48,18 @@ public class GnssStatusTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_SUPPORT_CODETYPE_IN_GNSS_STATUS)
+    public void testGetValuesWithCodeType() {
+        GnssStatus gnssStatus = getTestGnssStatusWithCodeType();
+        verifyTestValues(gnssStatus);
+        verifyTestValueWithCodeType(gnssStatus);
+    }
+
+    @Test
     public void testBuilder_ClearSatellites() {
         GnssStatus.Builder builder = new GnssStatus.Builder();
-        builder.addSatellite(GnssStatus.CONSTELLATION_GPS,
+        builder.addSatellite(
+                GnssStatus.CONSTELLATION_GPS,
                 /* svid= */ 13,
                 /* cn0DbHz= */ 25.5f,
                 /* elevation= */ 2.0f,
@@ -59,6 +78,35 @@ public class GnssStatusTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_SUPPORT_CODETYPE_IN_GNSS_STATUS)
+    public void testBuilderWithCodeType_ClearSatellites() {
+        GnssStatus.Builder builder = new GnssStatus.Builder();
+        builder.addSatellite(
+                GnssStatus.CONSTELLATION_GPS,
+                /* svid= */ 13,
+                /* cn0DbHz= */ 25.5f,
+                /* elevation= */ 2.0f,
+                /* azimuth= */ 255.1f,
+                /* hasEphemeris= */ true,
+                /* hasAlmanac= */ false,
+                /* usedInFix= */ true,
+                /* hasCarrierFrequency= */ true,
+                /* carrierFrequency= */ 1575420000f,
+                /* hasBasebandCn0DbHz= */ true,
+                /* basebandCn0DbHz= */ 20.5f,
+                /* hasCodeType */ true,
+                /* codeType */ GnssMeasurement.CODE_TYPE_C,
+                /* hasElapsedRealTimeNanos */ true,
+                /* elapsedRealTimeNanos */ 10987732253L,
+                /* hasElapsedRealTimeUncertaintyNanos */ true,
+                /* elapsedRealtimeUncertaintyNanos */ 3943523.0);
+        builder.clearSatellites();
+
+        GnssStatus status = builder.build();
+        assertEquals(0, status.getSatelliteCount());
+    }
+
+    @Test
     public void testRoundtrip() {
         GnssStatus gnssStatus = getTestGnssStatus();
 
@@ -70,9 +118,24 @@ public class GnssStatusTest {
         assertEquals(gnssStatus, fromParcel);
     }
 
+    @Test
+    @RequiresFlagsEnabled(FLAG_SUPPORT_CODETYPE_IN_GNSS_STATUS)
+    public void testRoundtripWithCodeType() {
+        GnssStatus gnssStatus = getTestGnssStatusWithCodeType();
+
+        Parcel parcel = Parcel.obtain();
+        gnssStatus.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+
+        GnssStatus fromParcel = GnssStatus.CREATOR.createFromParcel(parcel);
+        assertEquals(gnssStatus, fromParcel);
+    }
+
     private static GnssStatus getTestGnssStatus() {
         GnssStatus.Builder builder = new GnssStatus.Builder();
-        builder.addSatellite(GnssStatus.CONSTELLATION_GPS,
+
+        builder.addSatellite(
+                GnssStatus.CONSTELLATION_GPS,
                 /* svid= */ 13,
                 /* cn0DbHz= */ 25.5f,
                 /* elevation= */ 2.0f,
@@ -85,7 +148,8 @@ public class GnssStatusTest {
                 /* hasBasebandCn0DbHz= */ true,
                 /* basebandCn0DbHz= */ 20.5f);
 
-        builder.addSatellite(GnssStatus.CONSTELLATION_GLONASS,
+        builder.addSatellite(
+                GnssStatus.CONSTELLATION_GLONASS,
                 /* svid= */ 9,
                 /* cn0DbHz= */ 31.0f,
                 /* elevation= */ 1.0f,
@@ -97,6 +161,52 @@ public class GnssStatusTest {
                 /* carrierFrequency= */ Float.NaN,
                 /* hasBasebandCn0DbHz= */ true,
                 /* basebandCn0DbHz= */ 26.9f);
+
+        return builder.build();
+    }
+
+    private static GnssStatus getTestGnssStatusWithCodeType() {
+        GnssStatus.Builder builder = new GnssStatus.Builder();
+
+        builder.addSatellite(
+                GnssStatus.CONSTELLATION_GPS,
+                /* svid= */ 13,
+                /* cn0DbHz= */ 25.5f,
+                /* elevation= */ 2.0f,
+                /* azimuth= */ 255.1f,
+                /* hasEphemeris= */ true,
+                /* hasAlmanac= */ false,
+                /* usedInFix= */ true,
+                /* hasCarrierFrequency= */ true,
+                /* carrierFrequency= */ 1575420000f,
+                /* hasBasebandCn0DbHz= */ true,
+                /* basebandCn0DbHz= */ 20.5f,
+                /* hasCodeType */ true,
+                /* codeType */ GnssMeasurement.CODE_TYPE_C,
+                /* hasElapsedRealtimeNanos */ true,
+                /* elapsedRealtimeNanos */ 10987732253L,
+                /* hasElapsedRealtimeUncertaintyNanos */ true,
+                /* elapsedRealtimeUncertaintyNanos */ 3943523.0);
+
+        builder.addSatellite(
+                GnssStatus.CONSTELLATION_GLONASS,
+                /* svid= */ 9,
+                /* cn0DbHz= */ 31.0f,
+                /* elevation= */ 1.0f,
+                /* azimuth= */ 193.8f,
+                /* hasEphemeris= */ false,
+                /* hasAlmanac= */ true,
+                /* usedInFix= */ false,
+                /* hasCarrierFrequency= */ false,
+                /* carrierFrequency= */ Float.NaN,
+                /* hasBasebandCn0DbHz= */ true,
+                /* basebandCn0DbHz= */ 26.9f,
+                /* hasCodeType*/ true,
+                /* codeType */ GnssMeasurement.CODE_TYPE_C,
+                /* hasElapsedRealtimeNanos */ true,
+                /* elapsedRealtimeNanos */ 10987732253L,
+                /* hasElapsedRealtimeUncertaintyNanos */ true,
+                /* elapsedRealtimeUncertaintyNanos */ 3943523.0);
 
         return builder.build();
     }
@@ -137,5 +247,26 @@ public class GnssStatusTest {
 
         assertEquals(20.5f, gnssStatus.getBasebandCn0DbHz(0), DELTA);
         assertEquals(26.9f, gnssStatus.getBasebandCn0DbHz(1), DELTA);
+    }
+
+    private static void verifyTestValueWithCodeType(GnssStatus gnssStatus) {
+
+        assertEquals(true, gnssStatus.hasCodeType(0));
+        assertEquals(true, gnssStatus.hasCodeType(1));
+
+        assertEquals(GnssMeasurement.CODE_TYPE_C, gnssStatus.getCodeType(0));
+        assertEquals(GnssMeasurement.CODE_TYPE_C, gnssStatus.getCodeType(1));
+
+        assertEquals(true, gnssStatus.hasElapsedRealtimeNanos(0));
+        assertEquals(true, gnssStatus.hasElapsedRealtimeNanos(1));
+
+        assertEquals(10987732253L, gnssStatus.getElapsedRealtimeNanos(0));
+        assertEquals(10987732253L, gnssStatus.getElapsedRealtimeNanos(1));
+
+        assertEquals(true, gnssStatus.hasElapsedRealtimeUncertaintyNanos(0));
+        assertEquals(true, gnssStatus.hasElapsedRealtimeUncertaintyNanos(1));
+
+        assertEquals(3943523.0, gnssStatus.getElapsedRealtimeUncertaintyNanos(0), DELTA);
+        assertEquals(3943523.0, gnssStatus.getElapsedRealtimeUncertaintyNanos(1), DELTA);
     }
 }
