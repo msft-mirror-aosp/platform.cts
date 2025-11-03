@@ -20,7 +20,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import android.os.Parcel;
 import android.os.PersistableBundle;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -36,7 +35,6 @@ import java.util.Collections;
 import java.util.List;
 
 @SmallTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class TextAttributeTest {
     private static final String SUGGESTION = "suggestion";
     private static final String EXTRAS_KEY = "extras_key";

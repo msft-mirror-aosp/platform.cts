@@ -71,7 +71,6 @@ import android.os.Process;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.provider.DeviceConfig;
 import android.server.wm.BuildUtils;
 import android.server.wm.WindowManagerStateHelper;
@@ -131,7 +130,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 @MediumTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class FocusHandlingTest extends EndToEndImeTestBase {
     static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5) * BuildUtils.HW_TIMEOUT_MULTIPLIER;
     static final long EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(2);

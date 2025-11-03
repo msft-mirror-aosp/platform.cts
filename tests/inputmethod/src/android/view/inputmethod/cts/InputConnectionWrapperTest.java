@@ -35,7 +35,6 @@ import static org.testng.Assert.expectThrows;
 import android.content.ClipDescription;
 import android.net.Uri;
 import android.os.Bundle;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.inputmethod.CompletionInfo;
@@ -56,7 +55,6 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 @SmallTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class InputConnectionWrapperTest {
     @Test
     public void testInputConnectionWrapper() {

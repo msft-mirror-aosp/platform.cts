@@ -50,7 +50,6 @@ import android.os.CancellationSignal;
 import android.os.Handler;
 import android.os.Process;
 import android.os.SystemClock;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -136,7 +135,6 @@ import java.util.function.IntConsumer;
  * <p>TODO(b/193535269): Clean up boilerplate code around mocking InputConnection.</p>
  */
 @LargeTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
     private static final long TIME_SLICE = TimeUnit.MILLISECONDS.toMillis(125);
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);

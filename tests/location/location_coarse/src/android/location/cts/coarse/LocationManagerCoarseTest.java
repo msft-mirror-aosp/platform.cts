@@ -49,7 +49,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.provider.Settings;
 import android.util.Log;
 
@@ -144,7 +143,6 @@ public class LocationManagerCoarseTest {
     }
 
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_COARSE_LOCATION permission")
     public void testGetLastKnownLocation() {
         Location loc = createLocation(TEST_PROVIDER, mRandom);
 
@@ -154,7 +152,6 @@ public class LocationManagerCoarseTest {
     }
 
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_COARSE_LOCATION permission")
     public void testGetLastKnownLocation_FastInterval() {
         Location loc1 = createLocation(TEST_PROVIDER, mRandom);
         Location loc2 = createLocation(TEST_PROVIDER, mRandom);
@@ -166,7 +163,6 @@ public class LocationManagerCoarseTest {
     }
 
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_COARSE_LOCATION permission")
     public void testRequestLocationUpdates() throws Exception {
         Location loc = createLocation(TEST_PROVIDER, mRandom);
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
@@ -190,7 +186,6 @@ public class LocationManagerCoarseTest {
     }
 
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_COARSE_LOCATION permission")
     public void testRequestLocationUpdates_Passive() throws Exception {
         Location loc = createLocation(TEST_PROVIDER, mRandom);
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
@@ -215,7 +210,6 @@ public class LocationManagerCoarseTest {
     }
 
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_COARSE_LOCATION permission")
     public void testRequestLocationUpdates_PendingIntent() throws Exception {
         Location loc = createLocation(TEST_PROVIDER, mRandom);
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
@@ -232,7 +226,6 @@ public class LocationManagerCoarseTest {
     }
 
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_COARSE_LOCATION permission")
     public void testGetProviders() {
         List<String> providers = mManager.getProviders(false);
         assertTrue(providers.contains(TEST_PROVIDER));
@@ -245,7 +238,6 @@ public class LocationManagerCoarseTest {
     }
 
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_COARSE_LOCATION permission")
     public void testGetBestProvider() {
         Criteria criteria = new Criteria();
         criteria.setAccuracy(Criteria.ACCURACY_COARSE);
@@ -292,7 +284,6 @@ public class LocationManagerCoarseTest {
     }
 
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_COARSE_LOCATION permission")
     public void testAddProximityAlert() {
         try (ProximityPendingIntentCapture capture = new ProximityPendingIntentCapture(mContext)) {
             try {

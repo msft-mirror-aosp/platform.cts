@@ -20,7 +20,6 @@ import android.content.Context
 import android.os.Bundle
 import android.os.Looper
 import android.os.UserHandle
-import android.platform.test.annotations.AppModeSdkSandbox
 import android.provider.Settings
 import android.text.InputType
 import android.text.style.SuggestionSpan
@@ -82,7 +81,6 @@ import org.junit.Rule
 import org.junit.Test
 
 @MediumTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 class SpellCheckerTest : EndToEndImeTestBase() {
 
     private val TAG = "SpellCheckerTest"

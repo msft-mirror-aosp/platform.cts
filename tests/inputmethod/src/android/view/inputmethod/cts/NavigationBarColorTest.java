@@ -42,7 +42,6 @@ import android.app.UiAutomation;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Process;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.cts.util.EndToEndImeTestBase;
@@ -72,7 +71,6 @@ import org.junit.Test;
 import java.util.concurrent.TimeUnit;
 
 @MediumTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class NavigationBarColorTest extends EndToEndImeTestBase {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     private static final long LAYOUT_STABLE_THRESHOLD = TimeUnit.SECONDS.toMillis(3);

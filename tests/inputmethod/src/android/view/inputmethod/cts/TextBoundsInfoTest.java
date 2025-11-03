@@ -24,7 +24,6 @@ import static org.junit.Assert.fail;
 import android.graphics.Matrix;
 import android.graphics.RectF;
 import android.os.Parcel;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.text.SegmentFinder;
 import android.view.inputmethod.TextBoundsInfo;
 import android.view.inputmethod.TextBoundsInfoResult;
@@ -36,7 +35,6 @@ import com.android.compatibility.common.util.ApiTest;
 import org.junit.Test;
 
 @SmallTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class TextBoundsInfoTest {
     private static final float[] CHARACTER_BOUNDS1 = new float[] {
             0.0f, 0.0f, 10.0f, 20.0f,
