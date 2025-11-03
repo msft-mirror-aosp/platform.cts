@@ -629,7 +629,6 @@ public class AppFunctionCtsTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_INDEXER_RUN_ON_APP_FUNCTION_COMPONENT_CHANGE)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void indexApp_appFunctionServiceEnabledInRuntime_functionsIndexed() throws Throwable {
@@ -666,7 +665,7 @@ public class AppFunctionCtsTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_INDEXER_RUN_ON_APP_FUNCTION_COMPONENT_CHANGE)
+
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void indexApp_appFunctionServiceDisabledInRuntime_functionsRemoved() throws Throwable {
@@ -698,38 +697,5 @@ public class AppFunctionCtsTest {
         }
     }
 
-    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_INDEXER_RUN_ON_APP_FUNCTION_COMPONENT_CHANGE)
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-    @Test
-    public void
-            indexApp_compChangeFlagDisabled_appFunctionServiceDisabledInRuntime_functionNotRemoved()
-                    throws Throwable {
-        {
-            installPackage(mContext, TEST_APP_A_DYNAMIC_SCHEMA_PATH);
 
-            // Retry till the indexer has completed a run.
-            retryAssert(
-                    () -> {
-                        // AppFunctions for App A should be indexed.
-                        Map<String, GenericDocument> appFnMap =
-                                searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
-                        assertThat(appFnMap).hasSize(1);
-                    });
-        }
-
-        {
-            updateAppFunctionServiceEnabledState(
-                    mContext, TEST_APP_A_PKG, PackageManager.COMPONENT_ENABLED_STATE_DISABLED);
-
-            // Retry till the indexer has completed another run.
-            retryAssert(
-                    () -> {
-                        Map<String, GenericDocument> appFnMap =
-                                searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
-                        // Since flag is disabled app is not re-indexed and functions were not
-                        // removed.
-                        assertThat(appFnMap).hasSize(1);
-                    });
-        }
-    }
 }
