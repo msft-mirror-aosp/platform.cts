@@ -32,7 +32,6 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.Process;
 import android.os.UserHandle;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.telecom.Call;
 import android.telecom.PhoneAccount;
 import android.telecom.TelecomManager;
@@ -186,9 +185,8 @@ public class CallRedirectionServiceTest extends BaseTelecomTestWithMockServices 
         assertTrue(Call.STATE_DISCONNECTED != mCall.getState());
     }
 
-    @RequiresFlagsEnabled(android.telecom.flags.Flags.FLAG_PLACE_CALL_TO_ALTERNATE_NUMBER)
     public void testPlaceCallToAlternateNumber() throws Exception {
-        if (!shouldTestTelecom(mContext)) {
+        if (!shouldTestTelecom(mContext) || !Flags.placeCallToAlternateNumber()) {
             return;
         }
         mCallRedirectionServiceController.setPlaceCallToAlternateNumber(
@@ -211,9 +209,8 @@ public class CallRedirectionServiceTest extends BaseTelecomTestWithMockServices 
         assertTrue(Call.STATE_DISCONNECTED != mCall.getState());
     }
 
-    @RequiresFlagsEnabled(android.telecom.flags.Flags.FLAG_PLACE_CALL_TO_ALTERNATE_NUMBER)
     public void testPlaceCallToAlternateNumberWithPostDialDigits() throws Exception {
-        if (!shouldTestTelecom(mContext)) {
+        if (!shouldTestTelecom(mContext) || !Flags.placeCallToAlternateNumber()) {
             return;
         }
         mCallRedirectionServiceController.setPlaceCallToAlternateNumber(
