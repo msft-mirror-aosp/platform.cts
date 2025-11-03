@@ -195,6 +195,7 @@ android_library {
 
     static_libs: [
         "android-ex-camera2",
+        "cts_backported_fixes_verifier",
         "cts-camera-performance-tests",
         "cts-verifier-framework",
         "ctstestrunner-axt",
