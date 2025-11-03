@@ -26,6 +26,7 @@ import android.platform.test.annotations.AppModeFull;
 import libcore.javax.net.ssl.SSLConfigurationAsserts;
 
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -60,6 +61,7 @@ public class SSLCertificateSocketFactoryTest {
     private InetAddress mTestHostAddress;
     // SocketAddress combining mTestHostAddress and HTTPS_PORT.
     private List<SocketAddress> mTestSocketAddresses;
+    private String mSkipTestReason = "";
 
     @Before
     public void setUp() {
@@ -74,8 +76,12 @@ public class SSLCertificateSocketFactoryTest {
         try {
             addresses = InetAddress.getAllByName(TEST_HOST);
         } catch (UnknownHostException uhe) {
-            throw new AssertionError(
-                    "Unable to test SSLCertificateSocketFactory: cannot resolve " + TEST_HOST, uhe);
+            // Usually this fails because the hostname cannot be resolved by DNS (EAI_NODATA).
+            // We can't control the test environment's DNS, so we just skip the
+            // tests for this class.
+            mSkipTestReason = String.format(
+                "Skipping SSLCertificateSocketFactoryTest: cannot resolve %s", TEST_HOST);
+            return;
         }
 
         mTestSocketAddresses =
@@ -106,11 +112,13 @@ public class SSLCertificateSocketFactoryTest {
 
     @Test
     public void testDefaultConfiguration() throws Exception {
+        Assume.assumeTrue(mSkipTestReason, mSkipTestReason.isEmpty());
         SSLConfigurationAsserts.assertSSLSocketFactoryDefaultConfiguration(mSocketFactory);
     }
 
     @Test
     public void testAccessProperties() {
+        Assume.assumeTrue(mSkipTestReason, mSkipTestReason.isEmpty());
         mSocketFactory.getSupportedCipherSuites();
         mSocketFactory.getDefaultCipherSuites();
     }
@@ -121,6 +129,7 @@ public class SSLCertificateSocketFactoryTest {
     @Test
     @AppModeFull(reason = "Socket cannot bind in instant app mode")
     public void createSocket_io_error_expected() {
+        Assume.assumeTrue(mSkipTestReason, mSkipTestReason.isEmpty());
         // Connect to the localhost HTTPS port. Should result in connection refused IOException
         // because no service should be listening on that port.
         InetAddress localhostAddress = InetAddress.getLoopbackAddress();
@@ -180,6 +189,7 @@ public class SSLCertificateSocketFactoryTest {
      */
     @Test
     public void createSocket_simple_with_hostname_verification() throws Exception {
+        Assume.assumeTrue(mSkipTestReason, mSkipTestReason.isEmpty());
         Socket socket = mSocketFactory.createSocket(TEST_HOST, HTTPS_PORT);
         assertConnectedSocket(socket);
         socket.close();
@@ -207,6 +217,7 @@ public class SSLCertificateSocketFactoryTest {
      */
     @Test
     public void createSocket_wrapped_with_hostname_verification() throws Exception {
+        Assume.assumeTrue(mSkipTestReason, mSkipTestReason.isEmpty());
         Socket underlying = new Socket(TEST_HOST, HTTPS_PORT);
         Socket socket = mSocketFactory.createSocket(underlying, TEST_HOST, HTTPS_PORT, true);
         assertConnectedSocket(socket);
@@ -237,6 +248,7 @@ public class SSLCertificateSocketFactoryTest {
     @Test
     @AppModeFull(reason = "Socket cannot bind in instant app mode")
     public void createSocket_bound_with_hostname_verification() throws Exception {
+        Assume.assumeTrue(mSkipTestReason, mSkipTestReason.isEmpty());
         Socket socket = mSocketFactory.createSocket(TEST_HOST, HTTPS_PORT, mLocalAddress, 0);
         assertConnectedSocket(socket);
         socket.close();
@@ -275,6 +287,7 @@ public class SSLCertificateSocketFactoryTest {
      */
     @Test
     public void createSocket_simple_no_hostname_verification() throws Exception {
+        Assume.assumeTrue(mSkipTestReason, mSkipTestReason.isEmpty());
         HttpsURLConnection.setDefaultHostnameVerifier(new NegativeHostnameVerifier());
         Socket socket = mSocketFactory.createSocket(mTestHostAddress, HTTPS_PORT);
         // Need to provide the expected hostname here or the TLS handshake will
@@ -308,6 +321,7 @@ public class SSLCertificateSocketFactoryTest {
     @Test
     @AppModeFull(reason = "Socket cannot bind in instant app mode")
     public void createSocket_bound_no_hostname_verification() throws Exception {
+        Assume.assumeTrue(mSkipTestReason, mSkipTestReason.isEmpty());
         HttpsURLConnection.setDefaultHostnameVerifier(new NegativeHostnameVerifier());
         Socket socket = mSocketFactory.createSocket(mTestHostAddress, HTTPS_PORT, mLocalAddress, 0);
         // Need to provide the expected hostname here or the TLS handshake will
