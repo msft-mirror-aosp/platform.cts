@@ -33,6 +33,7 @@ import gen2_rig_controller_utils
 import its_session_utils
 import lighting_control_utils
 import preview_processing_utils
+import sensor_fusion_utils
 import video_processing_utils
 import feature_combination_info_pb2
 
@@ -249,7 +250,9 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
   def _setup_lighting_cntl(self):
     if self.lighting_cntl == 'gen2_lights':
       lights_port = gen2_rig_controller_utils.find_serial_port(
-          self.lighting_cntl)
+          self.lighting_cntl, port=self.config_lights_port)
+      sensor_fusion_utils.establish_serial_comm(lights_port)
+      logging.debug('found lights port %s', lights_port)
       lights_channel = int(self.lighting_ch)
       gen2_rig_controller_utils.set_lighting_state(
           lights_port, lights_channel, 'ON')
@@ -304,6 +307,8 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
       # Initialize rotation rig
       rot_rig['cntl'] = self.rotator_cntl
       rot_rig['ch'] = self.rotator_ch
+      rot_rig['port'] = self.config_rotator_port
+      logging.debug('rot_rig: %s', rot_rig)
       if (rot_rig['cntl'].lower() not in _VALID_RIGS and
           len(stabilization_modes) > 1):
         raise AssertionError(

@@ -29,7 +29,12 @@ from snippet_uiautomator import uiautomator
 ADAPTIVE_BRIGHTNESS_OFF = '0'
 CTS_VERIFIER_PKG = 'com.android.cts.verifier'
 FRONT_CAMERA_ID_PREFIX = '1'
-GEN2_RIG_SCENES = ['scene_ip', 'scene_gen2_chart']
+GEN2_RIG_SCENES = [
+    'scene_ip',
+    'scene_gen2_chart',
+    'feature_combination',
+    'scene_flash',
+]
 SCROLLER_TIMEOUT_MS = 3000
 TABLET_CMD_DELAY_SEC = 0.5  # found empirically
 TABLET_DIMMER_TIMEOUT_MS = 1800000  # this is max setting possible
@@ -91,6 +96,8 @@ class ItsBaseTest(base_test.BaseTestClass):
     self.resultstore_upload = (
         self.user_params.get('resultstore_upload') == 'True'
     )
+    self.config_rotator_port = self.user_params.get('rotator_port')
+    self.config_lights_port = self.user_params.get('lights_port')
     camera_id_combo = self.parse_hidden_camera_id()
     self.camera_id = camera_id_combo[0]
     if len(camera_id_combo) == 2:
