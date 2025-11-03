@@ -33,7 +33,6 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.RemoteCallback;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
@@ -54,7 +53,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 @AppModeFull
-@AppModeNonSdkSandbox
 @RunWith(AndroidJUnit4.class)
 public class PackageChangedBroadcastGroupPolicyTest {
     private static final String TAG = "PackageChangedBroadcastGroupPolicyTest";

@@ -27,7 +27,6 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.os.Parcel;
 import android.os.Process;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.test.mock.MockContext;
 
@@ -42,7 +41,6 @@ import org.junit.runner.RunWith;
  * Test {@link ComponentName}.
  */
 @RunWith(AndroidJUnit4.class)
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ComponentNameTest {
     private Context mContext;
 
@@ -227,7 +225,7 @@ public class ComponentNameTest {
     }
 
     @Test
-    @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
+
     public void testHashCode() {
         final ComponentName componentName = getComponentName();
 

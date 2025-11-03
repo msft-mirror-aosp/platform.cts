@@ -27,7 +27,6 @@ import static org.junit.Assert.fail;
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
 import android.os.ParcelFileDescriptor;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.system.Os;
 import android.system.StructStat;
 
@@ -51,7 +50,6 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.WritableByteChannel;
 
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class AssetFileDescriptor_AutoCloseInputStreamTest {
     private Context getContext() {

@@ -36,7 +36,6 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.util.ArrayMap;
 
 import androidx.test.InstrumentationRegistry;
@@ -71,7 +70,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @RunWith(AndroidJUnit4.class)
 @AppModeFull
-@AppModeNonSdkSandbox
 @LargeTest
 public class ResourcesHardeningTest {
     private static final String TEST_APK_PATH = "/data/local/tmp/cts/content/";

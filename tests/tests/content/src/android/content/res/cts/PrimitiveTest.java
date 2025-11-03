@@ -22,7 +22,6 @@ import android.content.Context;
 import android.content.cts.R;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.TypedValue;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -33,7 +32,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class PrimitiveTest {
     private Context getContext() {

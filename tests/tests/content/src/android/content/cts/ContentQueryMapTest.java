@@ -25,7 +25,6 @@ import android.database.Cursor;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.test.InstrumentationTestCase;
 import android.test.UiThreadTest;
 
@@ -36,7 +35,6 @@ import java.util.Observer;
 /**
  * Test {@link ContentQueryMap}.
  */
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ContentQueryMapTest extends InstrumentationTestCase {
     private static final int TEST_TIME_OUT = 5000;
 

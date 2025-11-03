@@ -49,7 +49,6 @@ import android.net.Uri;
 import android.os.Parcel;
 import android.os.PersistableBundle;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -74,7 +73,6 @@ import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
 @AppModeFull
-@AppModeNonSdkSandbox
 @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
 public class DeveloperVerifierServiceTest {
     @Rule

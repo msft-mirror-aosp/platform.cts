@@ -45,7 +45,6 @@ import android.os.ICancellationSignal;
 import android.os.OperationCanceledException;
 import android.os.RemoteException;
 import android.os.SystemClock;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.test.mock.MockContentResolver;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -66,7 +65,6 @@ import java.util.concurrent.TimeUnit;
  * Simple delegation test for {@link ContentProviderClient}, checking the right methods are called.
  * Actual {@link ContentProvider} functionality is tested in {@link ContentProviderTest}.
  */
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public final class ContentProviderClientTest {
 

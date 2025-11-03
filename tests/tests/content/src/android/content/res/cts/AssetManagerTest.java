@@ -26,7 +26,6 @@ import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.content.res.XmlResourceParser;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.TypedValue;
 
 import androidx.test.InstrumentationRegistry;
@@ -46,7 +45,6 @@ import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.HashSet;
 
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class AssetManagerTest {
     private AssetManager mAssets;

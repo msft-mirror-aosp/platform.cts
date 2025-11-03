@@ -22,7 +22,6 @@ import android.accounts.Account;
 import android.content.ContentResolver;
 import android.content.SyncRequest;
 import android.os.Bundle;
-import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
@@ -32,7 +31,6 @@ import org.junit.runner.RunWith;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class SyncRequestTest {
     private static final String AUTHORITY = "authority1";
     private static final Account NULL_ACCOUNT = null;

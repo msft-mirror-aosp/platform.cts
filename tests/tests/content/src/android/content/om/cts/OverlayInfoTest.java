@@ -25,7 +25,6 @@ import static org.junit.Assert.fail;
 
 import android.content.om.OverlayInfo;
 import android.os.Parcel;
-import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.test.runner.AndroidJUnit4;
 
@@ -35,7 +34,6 @@ import org.junit.runner.RunWith;
 /**
  * Verifies the member variables inside {@link OverlayInfo}
  */
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class OverlayInfoTest {
 
