@@ -1,1 +1,4 @@
-blindahl@google.com
+per-file HdrCapabilitiesTests.java,MediaCapabilitiesTests.java=blindahl@google.com
+
+# Ideally, this would be a lead group, but it seems that is difficult to set up.
+per-file MediaDrmAtomTests.java=lajos@google.com
