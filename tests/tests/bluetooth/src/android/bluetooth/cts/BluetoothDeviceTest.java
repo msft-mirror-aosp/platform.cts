@@ -44,6 +44,9 @@ import android.app.UiAutomation;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothDevice.BluetoothAddress;
+import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCallback;
+import android.bluetooth.BluetoothGattConnectionSettings;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothSinkAudioPolicy;
 import android.bluetooth.BluetoothStatusCodes;
@@ -888,5 +891,27 @@ public class BluetoothDeviceTest {
         assertThat(encryptionStatus.getAlgorithm())
                 .isEqualTo(BluetoothDevice.ENCRYPTION_ALGORITHM_AES);
         assertThat(encryptionStatus.getKeySize()).isEqualTo(mFakeKeySize);
+    }
+
+    /*Testcases for BluetoothDevice#connectGatt(BluetoothGattConnectionSettings)*/
+    @Test(expected = NullPointerException.class)
+    @RequiresFlagsEnabled(Flags.FLAG_GATT_CONN_SETTINGS)
+    public void illegalArgumentsToConnectGattWithNullConnectionSettings() {
+        // No support for Gatt connection without Gatt Callback handler
+        mFakeDevice.connectGatt((BluetoothGattConnectionSettings) null);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_GATT_CONN_SETTINGS)
+    public void connectGattUsingConnectionSettingsTest() {
+        BluetoothGattConnectionSettings settings =
+                new BluetoothGattConnectionSettings.Builder(
+                                mContext.getMainExecutor(), new BluetoothGattCallback() {})
+                        .setTransport(BluetoothDevice.TRANSPORT_LE)
+                        .setAutoConnectEnabled(false)
+                        .setOpportunisticEnabled(false)
+                        .build();
+        BluetoothGatt gatt = mFakeDevice.connectGatt(settings);
+        assertThat(gatt).isNotNull();
     }
 }
