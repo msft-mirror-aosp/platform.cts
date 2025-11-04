@@ -135,6 +135,11 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         assertInvoked(mTracker.mProgressLatch, progressFailMessageSupplier());
         assertNotInvoked(mTracker.mInvokeLatch);
         assertNotInvoked(mTracker.mCancelLatch);
+
+        mSwipeHelper.finishSwipe();
+        assertInvoked(mTracker.mInvokeLatch);
+        assertNotInvoked(mTracker.mCancelLatch);
+
         List<BackEvent> events = mTracker.mProgressEvents;
         assertTrue(events.size() > 0);
         for (int i = 0; i < events.size() - 1; i++) {
@@ -148,10 +153,6 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
             assertEquals(midHeight, midHeight, event.getTouchY());
             assertEquals(BackEvent.EDGE_LEFT, event.getSwipeEdge());
         }
-
-        mSwipeHelper.finishSwipe();
-        assertInvoked(mTracker.mInvokeLatch);
-        assertNotInvoked(mTracker.mCancelLatch);
     }
 
     @Test
