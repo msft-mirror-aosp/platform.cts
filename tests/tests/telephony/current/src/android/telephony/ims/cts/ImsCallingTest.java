@@ -353,7 +353,7 @@ public class ImsCallingTest extends ImsCallingBase {
     }
 
     @RequiresFlagsEnabled({Flags.FLAG_REUSE_ORIGINAL_CONN_REMOTE_CONF_BEHAVIOR,
-            com.android.server.telecom.flags.Flags.FLAG_MULTI_PARTY_ANCHOR_CONF})
+        android.telecom.flags.Flags.FLAG_MULTI_PARTY_ANCHOR_CONF})
     @Test
     @ApiTest(apis={"android.telecom.Conference#setConferenceables",
             "android.telecom.Conference#onMerge"})
