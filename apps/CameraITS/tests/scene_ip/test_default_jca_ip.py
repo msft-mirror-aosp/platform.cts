@@ -278,9 +278,18 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
           video_stabilization = (
               ui_interaction_utils.JCA_VIDEO_STABILIZATION_MODE_OFF
           )
-      else:
+      elif video_stabilization_mode == 'PREVIEW_STABILIZATION':
         video_stabilization = (
             ui_interaction_utils.JCA_VIDEO_STABILIZATION_MODE_ON
+        )
+      elif video_stabilization_mode == 'ON':
+        video_stabilization = (
+            ui_interaction_utils.JCA_VIDEO_STABILIZATION_MODE_HIGH_QUALITY
+        )
+      else:
+        logging.warning(
+            'Unexpected video stabilization mode: %s. Leaving JCA stabilization'
+            ' as default.', video_stabilization_mode
         )
       # Take JCA capture with UI
       jca_capture_path, _ = ui_interaction_utils.launch_jca_and_capture(
