@@ -24,6 +24,7 @@ import static android.telephony.CarrierConfigManager.KEY_CARRIER_NAME_OVERRIDE_B
 import static android.telephony.CarrierConfigManager.KEY_CARRIER_NAME_STRING;
 import static android.telephony.CarrierConfigManager.KEY_CARRIER_ROAMING_NTN_CONNECT_TYPE_INT;
 import static android.telephony.CarrierConfigManager.KEY_CARRIER_ROAMING_NTN_EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_INT;
+import static android.telephony.CarrierConfigManager.KEY_CARRIER_ROAMING_SATELLITE_T911_TO_ESOS_HANDOVER_SUPPORTED_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_CARRIER_SUPPORTED_SATELLITE_NOTIFICATION_HYSTERESIS_SEC_INT;
 import static android.telephony.CarrierConfigManager.KEY_CARRIER_VOLTE_PROVISIONED_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_CELLULAR_SERVICE_CAPABILITIES_INT_ARRAY;
@@ -279,6 +280,14 @@ public class CarrierConfigManagerTest {
                             + "doesn't match static default.",
                     config.getInt(KEY_EMERGENCY_CALL_TO_SATELLITE_T911_HANDOVER_TIMEOUT_MILLIS_INT),
                     TimeUnit.SECONDS.toMillis(30));
+            if (Flags.satellite26q2Apis()) {
+                assertFalse(
+                        "KEY_CARRIER_ROAMING_SATELLITE_T911_TO_ESOS_HANDOVER_SUPPORTED_BOOL"
+                                + "doesn't match static default.",
+                        config.getBoolean(
+                                KEY_CARRIER_ROAMING_SATELLITE_T911_TO_ESOS_HANDOVER_SUPPORTED_BOOL)
+                );
+            }
             assertFalse("KEY_SATELLITE_ESOS_SUPPORTED_BOOL doesn't match static default.",
                     config.getBoolean(KEY_SATELLITE_ESOS_SUPPORTED_BOOL));
             assertFalse("KEY_SATELLITE_P2P_SMS_SUPPORTED_BOOL "
