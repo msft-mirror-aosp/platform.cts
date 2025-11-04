@@ -20,8 +20,8 @@ import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.packages.Package;
-import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
+import com.android.bedstead.permissions.PermissionContext;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -36,11 +36,12 @@ public final class RoleContext implements AutoCloseable {
     private final UserReference mUser;
     private final Set<String> mPreviousRoleHolders;
 
-    public RoleContext(String role, Package pkg, UserReference user) {
+    public RoleContext(
+            String role, Package pkg, UserReference user, Set<String> previousRoleHolders) {
         mRole = role;
         mPackage = pkg;
         mUser = user;
-        mPreviousRoleHolders = TestApis.roles().getRoleHoldersAsUser(user, role);
+        mPreviousRoleHolders = previousRoleHolders;
     }
 
     @Override
