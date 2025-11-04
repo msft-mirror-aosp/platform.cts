@@ -266,13 +266,10 @@ public class SystemBluetoothTest {
                                 MockitoHamcrest.argThat(
                                         hasAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED)));
 
-                // Calling startDiscovery again should trigger another broadcast
-                assertThat(mAdapter.startDiscovery()).isTrue();
-                inOrder.verify(receiver, timeout(DISCOVERY_START_TIMEOUT))
-                        .onReceive(
-                                any(),
-                                MockitoHamcrest.argThat(
-                                        hasAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED)));
+                // TODO (b/457613460): Restore the redundant startDiscovery once the flags are in
+                // nextfood.
+                // Calling startDiscovery again from same package should fail.
+                // assertThat(mAdapter.startDiscovery()).isFalse();
 
                 assertThat(mAdapter.cancelDiscovery()).isTrue();
                 inOrder.verify(receiver, timeout(DISCOVERY_START_TIMEOUT))
