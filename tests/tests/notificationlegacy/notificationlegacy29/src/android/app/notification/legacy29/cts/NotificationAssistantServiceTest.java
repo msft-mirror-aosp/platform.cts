@@ -41,6 +41,7 @@ import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertNotNull;
 
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
@@ -1282,31 +1283,67 @@ public class NotificationAssistantServiceTest {
         assertNull(out.getSummarization());
     }
 
+    private int getUnusedDynamicBundleId() {
+        int dynamicBundleId = 100;
+        for (DynamicBundle db : mAssistant.getDynamicBundles()) {
+            if (db.getDynamicBundleType() > dynamicBundleId) {
+                dynamicBundleId = db.getDynamicBundleType();
+            }
+        }
+        dynamicBundleId++;
+        return dynamicBundleId;
+    }
+
     @RequiresFlagsEnabled(android.app.Flags.FLAG_NM_CONTEXTUAL_DISPLAY)
     @Test
     public void testDynamicBundles() throws Exception {
-        int dynamicBundleId = 100;
         setUpListeners();
+        int dynamicBundleId = getUnusedDynamicBundleId();
 
         mAssistant.createDynamicBundle(dynamicBundleId, "name");
 
         assertThat(mAssistant.getDynamicBundles())
                 .contains(new DynamicBundle(dynamicBundleId, "name"));
 
+        mAssistant.createDynamicBundle(dynamicBundleId, "update name");
+
+        assertThat(mAssistant.getDynamicBundles())
+                .contains(new DynamicBundle(dynamicBundleId, "name"));
+        assertThat(mAssistant.getDynamicBundles())
+                .doesNotContain(new DynamicBundle(dynamicBundleId, "update name"));
+
         mAssistant.deleteDynamicBundle(dynamicBundleId);
 
-        assertThat(mAssistant.getDynamicBundles()).isEmpty();
+        assertThat(mAssistant.getDynamicBundles()).doesNotContain(
+                new DynamicBundle(dynamicBundleId, "name"));
+    }
+
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_NM_CONTEXTUAL_DISPLAY)
+    @Test
+    public void testDynamicBundles_outOfRange() throws Exception {
+        setUpListeners();
+
+        assertThrows(IllegalArgumentException.class,
+                () -> mAssistant.createDynamicBundle(99, "name"));
+
+        assertThat(mAssistant.getDynamicBundles())
+                .doesNotContain(new DynamicBundle(99, "name"));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> mAssistant.createDynamicBundle(201, "name"));
+
+        assertThat(mAssistant.getDynamicBundles())
+                .doesNotContain(new DynamicBundle(201, "name"));
     }
 
     @RequiresFlagsEnabled(android.app.Flags.FLAG_NM_CONTEXTUAL_DISPLAY)
     @Test
     public void testDynamicBundles_classifyToDynamicBundle() throws Exception {
-        int dynamicBundleId = 100;
-
         setUpListeners();
+        int dynamicBundleId = getUnusedDynamicBundleId();
 
         try {
-            mAssistant.createDynamicBundle(dynamicBundleId, "name");
+            mAssistant.createDynamicBundle(dynamicBundleId, "bundle name");
 
             sendNotification(1, null, ICON_ID);
             StatusBarNotification sbn = mHelper.findPostedNotification(
@@ -1324,7 +1361,8 @@ public class NotificationAssistantServiceTest {
             rankingUpdateLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
             mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
 
-            assertThat(out.getChannel().getId()).isEqualTo(String.valueOf(dynamicBundleId));
+            assertThat(out.getChannel().isBundleChannel()).isTrue();
+            assertThat(out.getChannel().getName()).isEqualTo("bundle name");
         } finally {
             mAssistant.deleteDynamicBundle(dynamicBundleId);
         }
@@ -1333,11 +1371,10 @@ public class NotificationAssistantServiceTest {
     @RequiresFlagsEnabled(android.app.Flags.FLAG_NM_CONTEXTUAL_DISPLAY)
     @Test
     public void testDynamicBundles_classifyToDynamicBundle_thenDeleteBundle() throws Exception {
-        int dynamicBundleId = 100;
-
         setUpListeners();
+        int dynamicBundleId = getUnusedDynamicBundleId();
 
-        mAssistant.createDynamicBundle(dynamicBundleId, "name");
+        mAssistant.createDynamicBundle(dynamicBundleId, "bundle name");
 
         sendNotification(1, null, ICON_ID);
         StatusBarNotification sbn = mHelper.findPostedNotification(
@@ -1355,7 +1392,8 @@ public class NotificationAssistantServiceTest {
         rankingUpdateLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
         mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
 
-        assertThat(out.getChannel().getId()).isEqualTo(String.valueOf(dynamicBundleId));
+        assertThat(out.getChannel().isBundleChannel()).isTrue();
+        assertThat(out.getChannel().getName()).isEqualTo("bundle name");
 
         // deleting bundle returns the notification to its original channel
         rankingUpdateLatch =
