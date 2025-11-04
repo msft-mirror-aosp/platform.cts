@@ -576,4 +576,6 @@
     <!-- b/428568285 b/427411967 -->
     <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectManagerTest#testGetHealthConnectDataState_afterStagingAndMerge_returnsStateIdle" />
 
+    <!-- b/456618211 b/444582225-->
+    <option name="compatibility:exclude-filter" value="CtsMediaPlayerTestCases android.media.player.cts.MediaPlayerTest#testSetNextMediaPlayer" />
 </configuration>
