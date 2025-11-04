@@ -703,6 +703,7 @@
         <activity android:name="android.server.wm.backnavigation.BackGestureInvokedTest$BackInvokedActivity"
                   android:label="BackInvokedActivity"
                   android:enableOnBackInvokedCallback="true"
+                  android:screenOrientation="locked"
                   android:exported="true" />
         <activity android:name="android.server.wm.backnavigation.BackGestureInvokedTest$NewTaskActivity"
                   android:enableOnBackInvokedCallback="true"
