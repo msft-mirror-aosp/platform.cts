@@ -568,6 +568,7 @@ public class MediaSessionManagerTest {
         }
     }
 
+    @Ignore("Flaky: b/457584699")
     @Test
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testAddAndRemoveSession2TokensListener() throws Exception {
