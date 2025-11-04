@@ -22,6 +22,7 @@ import static android.mediav2.common.cts.CodecTestBase.isExtractorFormatSimilar;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
@@ -1151,7 +1152,7 @@ public class ExtractorTest {
         @Test
         public void testExtractNative() {
             assumeTrue(shouldRunTest(mMediaType));
-            if (mSrcFiles.length == 1) return;
+            assumeFalse("Skipping test: requires more than one source file", mSrcFiles.length == 1);
             assumeTrue("TODO(b/146925481)", !mMediaType.equals(MediaFormat.MIMETYPE_AUDIO_VORBIS));
             assumeTrue("TODO(b/146925481)", !mMediaType.equals(MediaFormat.MIMETYPE_AUDIO_OPUS));
             assumeTrue("TODO(b/146925481)", !mMediaType.equals(MediaFormat.MIMETYPE_AUDIO_MPEG));

@@ -23,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.media.MediaCodec;
 import android.media.MediaExtractor;
@@ -1300,7 +1301,7 @@ public class MuxerTest {
 
         @Test
         public void testEmptyVideoTrack() {
-            if (!mMediaType.startsWith("video/")) return;
+            assumeTrue("Skipping test: requires video mediaType", mMediaType.startsWith("video/"));
             for (int format = MediaMuxer.OutputFormat.MUXER_OUTPUT_FIRST;
                     format <= MediaMuxer.OutputFormat.MUXER_OUTPUT_LAST;
                     ++format) {
@@ -1324,7 +1325,7 @@ public class MuxerTest {
 
         @Test
         public void testEmptyAudioTrack() {
-            if (!mMediaType.startsWith("audio/")) return;
+            assumeTrue("Skipping test: requires audio mediaType", mMediaType.startsWith("audio/"));
             for (int format = MediaMuxer.OutputFormat.MUXER_OUTPUT_FIRST;
                     format <= MediaMuxer.OutputFormat.MUXER_OUTPUT_LAST;
                     ++format) {
@@ -1352,7 +1353,8 @@ public class MuxerTest {
 
         @Test
         public void testEmptyMetaDataTrack() {
-            if (!mMediaType.startsWith("application/")) return;
+            assumeTrue("Skipping test: requires application mediaType",
+                    mMediaType.startsWith("application/"));
             for (int format = MediaMuxer.OutputFormat.MUXER_OUTPUT_FIRST;
                     format <= MediaMuxer.OutputFormat.MUXER_OUTPUT_LAST;
                     ++format) {
@@ -1373,7 +1375,7 @@ public class MuxerTest {
 
         @Test
         public void testEmptyImageTrack() {
-            if (!mMediaType.startsWith("image/")) return;
+            assumeTrue("Skipping test: requires image mediatype", mMediaType.startsWith("image/"));
             for (int format = MediaMuxer.OutputFormat.MUXER_OUTPUT_FIRST;
                     format <= MediaMuxer.OutputFormat.MUXER_OUTPUT_LAST;
                     ++format) {
