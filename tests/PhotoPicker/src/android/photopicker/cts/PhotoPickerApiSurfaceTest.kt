@@ -28,11 +28,14 @@ import android.cts.photopicker.lib.TestMedia
 import android.cts.photopicker.lib.WithTestMedia
 import android.os.Build
 import android.os.Process
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.provider.MediaStore
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.bedstead.nene.TestApis
+import com.android.providers.media.flags.Flags
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertFailsWith
@@ -49,6 +52,9 @@ class PhotoPickerApiSurfaceTest {
     @get:Rule
     val photoPickerRule =
         PhotoPickerTestRule(InstrumentationRegistry.getInstrumentation().targetContext)
+
+    @get:Rule
+    val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @Before
     fun setup() {
@@ -264,6 +270,20 @@ class PhotoPickerApiSurfaceTest {
         future.get(5, TimeUnit.SECONDS)
     }
 
+    @Test
+    @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
+    @ModernPhotopickerOnly
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PICKER_LOCATION_METADATA_API)
+    fun testLaunch_withLocationMetadataExtra_succeeds() {
+        val intent =
+            Intent(MediaStore.ACTION_PICK_IMAGES)
+                .putExtra(MediaStore.EXTRA_PICK_IMAGES_REQUEST_LOCATION_METADATA_ACCESS, true)
+        val future = photoPickerRule.launchPhotoPicker(intent)
+        // press back to ensure picker launches successfully
+        photoPickerRule.device.pressBack()
+        future.get(5, TimeUnit.SECONDS)
+    }
+
     // GET_CONTENT
 
     // GET_CONTENT takeover requires a DeviceConfig override on S, so skip in CTS.
@@ -355,6 +375,21 @@ class PhotoPickerApiSurfaceTest {
         assertThat(result.getSelectedMedia().size).isEqualTo(2)
     }
 
+    @Test
+    @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE, count = 3)])
+    @ModernPhotopickerOnly
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PICKER_LOCATION_METADATA_API)
+    fun testGetContent_locationMetadataExtra_failsToLaunchPicker() {
+        val intent =
+            Intent(Intent.ACTION_GET_CONTENT).apply {
+                type = "image/*"
+                putExtra(MediaStore.EXTRA_PICK_IMAGES_REQUEST_LOCATION_METADATA_ACCESS, true)
+            }
+
+        val result = photoPickerRule.launchPhotoPicker(intent).get(5, TimeUnit.SECONDS)
+        assertThat(result.resultCode).isEqualTo(Activity.RESULT_CANCELED)
+    }
+
     // USER_SELECT - Only available U+ SDK.
 
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
@@ -420,6 +455,23 @@ class PhotoPickerApiSurfaceTest {
 
         assertFailsWith<ActivityNotFoundException> {
             photoPickerRule.launchPhotoPicker(intent).get(5, TimeUnit.SECONDS)
+        }
+    }
+
+    @Test
+    @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE, count = 3)])
+    @ModernPhotopickerOnly
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PICKER_LOCATION_METADATA_API)
+    fun testUserSelect_locationMetadataExtra_failsToLaunchPicker() {
+        val intent =
+            Intent(MediaStore.ACTION_USER_SELECT_IMAGES_FOR_APP).apply {
+                putExtra(MediaStore.EXTRA_PICK_IMAGES_REQUEST_LOCATION_METADATA_ACCESS, true)
+            }
+
+        TestApis.permissions().withPermission(Manifest.permission.GRANT_RUNTIME_PERMISSIONS).use {
+            val resultFuture = photoPickerRule.launchPhotoPicker(intent)
+            val result = resultFuture.get(5, TimeUnit.SECONDS)
+            assertThat(result.resultCode).isEqualTo(Activity.RESULT_CANCELED)
         }
     }
 }
