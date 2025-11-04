@@ -14,32 +14,15 @@
  * limitations under the License.
  */
 
-package {
-    default_applicable_licenses: ["Android-Apache-2.0"],
-}
+package com.android.cts.pcc.processes;
 
-android_test {
-    name: "CtsPccProcessTests",
-    team: "trendy_team_private_compute_core",
-    defaults: ["cts_defaults"],
-    sdk_version: "test_current",
+public class PccSecondProcessBroadcastReceiver extends PccBroadcastReceiver {
 
-    srcs: [
-        "src/**/*.java",
-        "src/**/*.aidl",
-    ],
+    public static final String ACTION_TEST_BROADCAST_SECOND_PROCESS =
+            "com.android.cts.pcc.processes.ACTION_TEST_BROADCAST_SECOND_PROCESS";
 
-    static_libs: [
-        "androidx.test.ext.junit",
-        "androidx.test.rules",
-        "flag-junit",
-        "android.app.privatecompute.flags-aconfig-java",
-    ],
-
-    test_suites: [
-        "cts",
-        "general-tests",
-    ],
-    test_config: "AndroidTest.xml",
-    manifest: "AndroidManifest.xml",
+    @Override
+    protected String getAction() {
+        return ACTION_TEST_BROADCAST_SECOND_PROCESS;
+    }
 }
