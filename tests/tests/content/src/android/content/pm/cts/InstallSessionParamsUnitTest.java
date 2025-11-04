@@ -259,7 +259,7 @@ public class InstallSessionParamsUnitTest {
         installReason.ifPresent(params::setInstallReason);
         installScenario.ifPresent(params::setInstallScenario);
         packageSource.ifPresent(params::setPackageSource);
-        if (Flags.sdkDependencyInstaller()) {
+        if (!Flags.sdkDependencyInstallerDeprecation()) {
             // Verify that auto install of dependencies is enabled by default.
             assertThat(params.isAutoInstallDependenciesEnabled).isTrue();
             enableAutoDependencyInstall.ifPresent(params::setAutoInstallDependenciesEnabled);
@@ -301,7 +301,7 @@ public class InstallSessionParamsUnitTest {
         originatingUid.ifPresent(i -> assertThat(info.getOriginatingUid()).isEqualTo(i));
         referredUri.ifPresent(uri -> assertThat(info.getReferrerUri()).isEqualTo(uri));
         installReason.ifPresent(i -> assertThat(info.getInstallReason()).isEqualTo(i));
-        if (Flags.sdkDependencyInstaller()) {
+        if (!Flags.sdkDependencyInstallerDeprecation()) {
             enableAutoDependencyInstall.ifPresent(
                     i -> assertThat(info.isAutoInstallDependenciesEnabled()).isEqualTo(i));
         }
