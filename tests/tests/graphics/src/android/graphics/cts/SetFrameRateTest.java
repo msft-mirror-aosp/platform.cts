@@ -52,11 +52,11 @@ public class SetFrameRateTest {
 
     @Rule
     public final AdoptShellPermissionsRule mShellPermissionsRule =
-            new AdoptShellPermissionsRule(getInstrumentation().getUiAutomation(),
+            new AdoptShellPermissionsRule(
+                    getInstrumentation().getUiAutomation(),
                     Manifest.permission.HDMI_CEC,
                     Manifest.permission.OVERRIDE_DISPLAY_MODE_REQUESTS,
-                    Manifest.permission.MODIFY_REFRESH_RATE_SWITCHING_TYPE,
-                    Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+                    Manifest.permission.MODIFY_REFRESH_RATE_SWITCHING_TYPE);
 
     private DisplayManager mDisplayManager;
     private int mInitialRefreshRateSwitchingType;

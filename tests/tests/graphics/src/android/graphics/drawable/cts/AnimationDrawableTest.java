@@ -24,7 +24,6 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import android.Manifest;
 import android.app.Activity;
 import android.content.res.Resources;
 import android.content.res.XmlResourceParser;
@@ -38,11 +37,9 @@ import android.widget.ImageView;
 
 import androidx.test.annotation.UiThreadTest;
 import androidx.test.filters.LargeTest;
-import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.PollingCheck;
 
 import org.junit.After;
@@ -70,11 +67,6 @@ public class AnimationDrawableTest {
     private AnimationDrawable mAnimationDrawable;
     private Resources mResources;
     private boolean mInitialOneShotValue;
-
-    @Rule(order = 0)
-    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
-            InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
 
     @Rule(order = 1)
     public ActivityTestRule<ImageViewCtsActivity> mActivityRule =

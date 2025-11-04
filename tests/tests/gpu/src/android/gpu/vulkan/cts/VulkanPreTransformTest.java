@@ -19,7 +19,6 @@ package android.gpu.vulkan.cts;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.gpu.cts.R;
@@ -34,7 +33,6 @@ import androidx.test.filters.LargeTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.SynchronousPixelCopy;
 
 import org.junit.Before;
@@ -98,12 +96,6 @@ public class VulkanPreTransformTest {
     private static final boolean DEBUG = false;
     private static VulkanPreTransformCtsActivity sActivity = null;
     private Context mContext;
-
-    @Rule
-    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
-            androidx.test.platform.app.InstrumentationRegistry
-                    .getInstrumentation().getUiAutomation(),
-            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
 
     @Rule
     public ActivityTestRule<VulkanPreTransformCtsActivity> mActivityRule =

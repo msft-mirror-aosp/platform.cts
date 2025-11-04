@@ -32,7 +32,6 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.PowerManager;
 import android.os.RemoteException;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -66,7 +65,6 @@ import java.util.concurrent.TimeUnit;
  * Tests that applications can receive display events correctly.
  */
 @RunWith(AndroidJUnit4.class)
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class DisplayEventTest extends TestBase {
     private static final float RR_FLOAT_DELTA = 0.01f;
     private static final String TAG = "DisplayEventTest";
@@ -93,12 +91,11 @@ public class DisplayEventTest extends TestBase {
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Rule
-    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
-            InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-            Manifest.permission.OVERRIDE_DISPLAY_MODE_REQUESTS,
-            Manifest.permission.MODIFY_REFRESH_RATE_SWITCHING_TYPE,
-            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
-
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule =
+            new AdoptShellPermissionsRule(
+                    InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                    Manifest.permission.OVERRIDE_DISPLAY_MODE_REQUESTS,
+                    Manifest.permission.MODIFY_REFRESH_RATE_SWITCHING_TYPE);
 
     @Rule
     public ActivityScenarioRule<DisplayEventPropertyChangeActivity> mActivityRule =

@@ -38,7 +38,6 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.os.Messenger;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -70,7 +69,6 @@ import java.util.concurrent.TimeUnit;
 
 /** Tests that applications can receive display events correctly. */
 @RunWith(Parameterized.class)
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class DisplayEventDeliveryTest {
     private static final String TAG = "DisplayEventDeliveryTest";
 
@@ -387,8 +385,7 @@ public class DisplayEventDeliveryTest {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
                     TestApis.activities().startActivity(intent);
-                },
-                android.Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+                });
         waitLatch(mLatchActivityLaunch);
     }
 
@@ -400,8 +397,7 @@ public class DisplayEventDeliveryTest {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
                     TestApis.activities().startActivity(intent);
-                },
-                android.Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+                });
     }
 
     /** Bring the test activity into cached mode by launching another 2 apps */
@@ -419,8 +415,7 @@ public class DisplayEventDeliveryTest {
                 () -> {
                     mInstrumentation.startActivitySync(intent);
                     mInstrumentation.startActivitySync(intent2);
-                },
-                android.Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+                });
         waitLatch(mLatchActivityCached);
     }
 
