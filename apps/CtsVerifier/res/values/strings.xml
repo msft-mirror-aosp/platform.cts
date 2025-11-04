@@ -2430,6 +2430,12 @@
          \n\u2022 75% of the bar should look filled and the rest of it should look unfilled.
          \n\u2022 The progress bar color should be orange.
     </string>
+    <string name="progress_style_semantic_color" formatted="false">A progress style notification was posted. Expand it (if it’s not already expanded), and verify that:
+         \n\u2022 The progress bar is segmented in three colors.
+         \n\u2022 The first segment is green, the second is yellow/orange, and the third is red.
+         \n\u2022 The points separating the segments are blue.
+         \n\u2022 (note that colors may vary slightly according to the current theme).
+    </string>
     <string name="metric_style_one_chronometer" formatted="false">A notification containing a chronometer was posted.
          \n\u2022 The chronometer is ticking every second (regardless of whether the notification is collapsed or expanded).
          \n\u2022 The text "Clock" is shown.
@@ -2458,6 +2464,22 @@
     <string name="live_update_notification_appearance_text_styling" formatted="false"><b>Notification Appearance: Text Styling</b>
          \n A ProgressStyle Live Update Notification is posted.
          \n View the Live Update notification in the shade and verify that it has correctly <b>styled text</b> (bold, underlined, and italic).
+    </string>
+    <string name="live_update_notification_appearance_semantic_text_styling" formatted="false"><b>Notification Appearance: Semantic Text Color</b>
+         \n A Live Update Notification is posted.
+         \n View the Live Update notification in the shade and verify that it has correctly <b>colored text</b>. The words INFO, SAFE, CAUTION, DANGER should appear respectively in BLUE, GREEN, YELLOW/ORANGE, AND RED (subject to slight adjustment according to the current theme).
+    </string>
+    <string name="live_update_notification_appearance_semantic_metric_styling" formatted="false"><b>Notification Appearance: Semantic Metric Color</b>
+         \n A Live Update Notification with a running timer is posted.
+         \n View the Live Update notification in the shade and verify that the timer is colored RED (subject to slight adjustment according to the current theme).
+    </string>
+    <string name="live_update_notification_demoted_appearance_semantic_text_styling" formatted="false"><b>Notification Appearance: No Semantic Color when demoted</b>
+         \n A demoted Live Update Notification is posted.
+         \n View the demoted Live Update notification in the shade and verify that its text doesn\'t have any special coloring.
+    </string>
+    <string name="live_update_notification_demoted_appearance_semantic_metric_styling" formatted="false"><b>Notification Appearance: No Semantic Metric Color when demoted</b>
+         \n A demoted Live Update Notification with a running timer is posted.
+         \n View the Live Update notification in the shade and verify that the timer doesn\'t have any special coloring.
     </string>
     <string name="live_update_notification_appearance_action" formatted="false"><b>Notification Appearance: Action</b>
          \n A ProgressStyle Live Update Notification is posted.

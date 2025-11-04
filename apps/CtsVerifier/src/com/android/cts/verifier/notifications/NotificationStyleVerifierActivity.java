@@ -16,6 +16,10 @@
 
 package com.android.cts.verifier.notifications;
 
+import static android.app.Notification.SEMANTIC_STYLE_CAUTION;
+import static android.app.Notification.SEMANTIC_STYLE_DANGER;
+import static android.app.Notification.SEMANTIC_STYLE_INFO;
+import static android.app.Notification.SEMANTIC_STYLE_SAFE;
 import static android.app.NotificationManager.IMPORTANCE_DEFAULT;
 import static android.app.NotificationManager.IMPORTANCE_HIGH;
 
@@ -79,6 +83,9 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
         testItems.add(new ProgressStyleNotStyledByProgressTest());
         testItems.add(new ProgressStyleManySegmentsSameColorTest());
         testItems.add(new ProgressStyleRTLTest());
+        if (Flags.apiNotificationSemanticStyle()) {
+            testItems.add(new ProgressStyleSemanticColorTest());
+        }
 
         if (Flags.apiMetricStyle()) {
             testItems.add(new MetricStyleChronometerTest());
@@ -674,6 +681,45 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
                     .setContentTitle("Arrive 10:08 AM")
                     .setContentText("Dominique Ansel Bakery Soho")
                     .setStyle(progressStyle)
+                    .build();
+        }
+    }
+
+    @FlaggedApi(Flags.FLAG_API_NOTIFICATION_SEMANTIC_STYLE)
+    private class ProgressStyleSemanticColorTest extends NotifyTestCase {
+        private static final String CHANNEL_ID = "NSVA.ProgressStyleSemanticColorTest";
+
+        ProgressStyleSemanticColorTest() {
+            super(R.string.progress_style_semantic_color);
+        }
+
+        @Override
+        protected NotificationChannel getChannel() {
+            return new NotificationChannel(CHANNEL_ID, CHANNEL_ID, IMPORTANCE_DEFAULT);
+        }
+
+        @Override
+        protected Notification getNotification() {
+            return new Notification.Builder(mContext, CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_stat_alice)
+                    .setStyle(
+                            new Notification.ProgressStyle()
+                                    .addProgressSegment(
+                                            new Notification.ProgressStyle.Segment(33)
+                                                    .setSemanticStyle(SEMANTIC_STYLE_SAFE))
+                                    .addProgressPoint(
+                                            new Notification.ProgressStyle.Point(33)
+                                                    .setSemanticStyle(SEMANTIC_STYLE_INFO))
+                                    .addProgressSegment(
+                                            new Notification.ProgressStyle.Segment(33)
+                                                    .setSemanticStyle(SEMANTIC_STYLE_CAUTION))
+                                    .addProgressPoint(
+                                            new Notification.ProgressStyle.Point(66)
+                                                    .setSemanticStyle(SEMANTIC_STYLE_INFO))
+                                    .addProgressSegment(
+                                            new Notification.ProgressStyle.Segment(34)
+                                                    .setSemanticStyle(SEMANTIC_STYLE_DANGER))
+                                    .setProgress(100))
                     .build();
         }
     }
