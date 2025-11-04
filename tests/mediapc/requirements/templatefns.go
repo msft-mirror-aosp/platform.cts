@@ -39,8 +39,8 @@ func Funcs() template.FuncMap {
 		"KebabCase":            kebabCase,
 		"LowerCamelCase":       lowerCamelCase,
 		"LowerCase":            strings.ToLower,
-		"SafeReqID":            safeReqID,
-		"SafeTestConfigID":     safeTestConfigID,
+		"SafeReqID":            SafeReqID,
+		"SafeTestConfigID":     SafeTestConfigID,
 		"SnakeCase":            snakeCase,
 		"SortRequirementsByID": SortRequirementsByID,
 		"TitleCase":            titleCase,
@@ -123,16 +123,16 @@ func lowerCamelCase(s string) string {
 	return string(unicode.ToLower(runes[0])) + string(runes[1:])
 }
 
-// safeReqID converts a Media Performance Class (MPC) requirement id to a variable name safe string.
-func safeReqID(s string) string {
+// SafeReqID converts a Media Performance Class (MPC) requirement id to a variable name safe string.
+func SafeReqID(s string) string {
 	f := func(a, b, c string) string {
 		return strings.Replace(a, b, c, -1)
 	}
 	return "r" + strings.ToLower(f(f(f(s, "/", "__"), ".", "_"), "-", "_"))
 }
 
-// safeTestConfigID converts a group name to a variable name safe string to append onto a requirement id.
-func safeTestConfigID(s string) string {
+// SafeTestConfigID converts a group name to a variable name safe string to append onto a requirement id.
+func SafeTestConfigID(s string) string {
 	if s == "" {
 		return ""
 	}
