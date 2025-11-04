@@ -152,7 +152,7 @@ func TestLowerCamelCase(t *testing.T) {
 func TestSafeTestConfigID(t *testing.T) {
 	for _, tt := range caseTests {
 		t.Run(tt.input, func(t *testing.T) {
-			if got := safeTestConfigID(tt.input); got != tt.safeTestConfigID {
+			if got := SafeTestConfigID(tt.input); got != tt.safeTestConfigID {
 				t.Fatalf("safeTestConfigID(%q) = %q, want %q", tt.input, got, tt.safeTestConfigID)
 			}
 		})
