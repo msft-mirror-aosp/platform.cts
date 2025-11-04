@@ -2430,6 +2430,23 @@
          \n\u2022 75% of the bar should look filled and the rest of it should look unfilled.
          \n\u2022 The progress bar color should be orange.
     </string>
+    <string name="metric_style_one_chronometer" formatted="false">A notification containing a chronometer was posted.
+         \n\u2022 The chronometer is ticking every second (regardless of whether the notification is collapsed or expanded).
+         \n\u2022 The text "Clock" is shown.
+         \n\u2022 The text "Stopwatch" is shown.
+         \n\u2022 No text including "SHOULD NOT APPEAR" is shown.
+    </string>
+    <string name="metric_style_two_metrics" formatted="false">A notification containing two metric values (one of them a chronometer) was posted.
+         \n\u2022 The chronometer is ticking every second (regardless of whether the notification is collapsed or expanded).
+         \n\u2022 The text "Clock" is shown.
+         \n\u2022 The title of each metric ("Elapsed", "Laps") is shown adjacent to its value.
+         \n\u2022 No text including "SHOULD NOT APPEAR" is shown.
+    </string>
+    <string name="metric_style_three_metrics" formatted="false">A notification containing three metric values was posted.
+         \n\u2022 The text "Fun" is shown.
+         \n\u2022 The title of each metric ("Level", "Score", "Weather") is shown adjacent to its value.
+         \n\u2022 No text including "SHOULD NOT APPEAR" is shown.
+    </string>
     <string name="live_update_enable_step" formatted="false">Enable Live updates for \"CTS Verifier\".</string>
     <string name="live_update_disable_step" formatted="false">Disable Live updates for \"CTS Verifier\".</string>
     <string name="live_update_promoted_ongoing_set">Notification should have \"FLAG_PROMOTED_ONGOING\" set.</string>

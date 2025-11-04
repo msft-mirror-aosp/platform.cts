@@ -20,14 +20,18 @@ import static android.app.NotificationManager.IMPORTANCE_DEFAULT;
 import static android.app.NotificationManager.IMPORTANCE_HIGH;
 
 import android.annotation.DrawableRes;
+import android.annotation.FlaggedApi;
 import android.annotation.StringRes;
 import android.app.Flags;
 import android.app.Notification;
+import android.app.Notification.Metric;
+import android.app.Notification.Metric.TimeDifference;
 import android.app.NotificationChannel;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.drawable.Icon;
 import android.net.Uri;
+import android.os.SystemClock;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RemoteViews;
@@ -73,8 +77,14 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
         testItems.add(new ProgressStyleProgressTrackerIconTest());
         testItems.add(new ProgressStyleLargeIconTest());
         testItems.add(new ProgressStyleNotStyledByProgressTest());
-        testItems.add(new ProgressStyleManySegmentsSameColor());
+        testItems.add(new ProgressStyleManySegmentsSameColorTest());
         testItems.add(new ProgressStyleRTLTest());
+
+        if (Flags.apiMetricStyle()) {
+            testItems.add(new MetricStyleChronometerTest());
+            testItems.add(new MetricStyleTwoMetricsTest());
+            testItems.add(new MetricStyleManyMetricsTest());
+        }
 
         return Collections.unmodifiableList(testItems);
     }
@@ -636,10 +646,10 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
         }
     }
 
-    private class ProgressStyleManySegmentsSameColor extends NotifyTestCase {
+    private class ProgressStyleManySegmentsSameColorTest extends NotifyTestCase {
         private static final String CHANNEL_ID = "NPSVA.ManySegmentsWithSameColor";
 
-        ProgressStyleManySegmentsSameColor() {
+        ProgressStyleManySegmentsSameColorTest() {
             super(
                     R.string.progress_style_many_segments_with_same_color,
                     R.drawable.progress_style_many_segments_with_same_color);
@@ -664,6 +674,103 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
                     .setContentTitle("Arrive 10:08 AM")
                     .setContentText("Dominique Ansel Bakery Soho")
                     .setStyle(progressStyle)
+                    .build();
+        }
+    }
+
+    @FlaggedApi(Flags.FLAG_API_METRIC_STYLE)
+    private class MetricStyleChronometerTest extends NotifyTestCase {
+        private static final String CHANNEL_ID = "NSVA.MetricStyleChronometerTest";
+
+        private MetricStyleChronometerTest() {
+            super(R.string.metric_style_one_chronometer, R.drawable.metric_style_one_chronometer);
+        }
+
+        @Override
+        protected NotificationChannel getChannel() {
+            return new NotificationChannel(CHANNEL_ID, CHANNEL_ID, IMPORTANCE_DEFAULT);
+        }
+
+        @Override
+        protected Notification getNotification() {
+            return new Notification.Builder(mContext, CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_stat_alice)
+                    .setContentTitle("Clock")
+                    .setContentText("ContentText - SHOULD NOT APPEAR!")
+                    .setStyle(
+                            new Notification.MetricStyle()
+                                    .addMetric(
+                                            new Metric(
+                                                    TimeDifference.forStopwatch(
+                                                            SystemClock.elapsedRealtime(),
+                                                            TimeDifference.FORMAT_CHRONOMETER),
+                                                    "Stopwatch")))
+                    .build();
+        }
+    }
+
+    @FlaggedApi(Flags.FLAG_API_METRIC_STYLE)
+    private class MetricStyleTwoMetricsTest extends NotifyTestCase {
+        private static final String CHANNEL_ID = "NSVA.MetricStyleTwoMetricsTest";
+
+        private MetricStyleTwoMetricsTest() {
+            super(R.string.metric_style_two_metrics, R.drawable.metric_style_two_metrics);
+        }
+
+        @Override
+        protected NotificationChannel getChannel() {
+            return new NotificationChannel(CHANNEL_ID, CHANNEL_ID, IMPORTANCE_DEFAULT);
+        }
+
+        @Override
+        protected Notification getNotification() {
+            return new Notification.Builder(mContext, CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_stat_bob)
+                    .setContentTitle("Clock")
+                    .setContentText("ContentText - SHOULD NOT APPEAR!")
+                    .setStyle(
+                            new Notification.MetricStyle()
+                                    .addMetric(
+                                            new Metric(
+                                                    TimeDifference.forStopwatch(
+                                                            SystemClock.elapsedRealtime(),
+                                                            TimeDifference.FORMAT_CHRONOMETER),
+                                                    "Elapsed"))
+                                    .addMetric(new Metric(new Metric.FixedInt(2), "Laps")))
+                    .build();
+        }
+    }
+
+    @FlaggedApi(Flags.FLAG_API_METRIC_STYLE)
+    private class MetricStyleManyMetricsTest extends NotifyTestCase {
+        private static final String CHANNEL_ID = "NSVA.MetricStyleManyMetricsTest";
+
+        private MetricStyleManyMetricsTest() {
+            super(R.string.metric_style_three_metrics, R.drawable.metric_style_three_metrics);
+        }
+
+        @Override
+        protected NotificationChannel getChannel() {
+            return new NotificationChannel(CHANNEL_ID, CHANNEL_ID, IMPORTANCE_DEFAULT);
+        }
+
+        @Override
+        protected Notification getNotification() {
+            // Actually create a Notification with FOUR metrics, to validate that only the first
+            // three are shown.
+            return new Notification.Builder(mContext, CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_stat_charlie)
+                    .setContentTitle("Fun")
+                    .setContentText("ContentText - SHOULD NOT APPEAR!")
+                    .setStyle(
+                            new Notification.MetricStyle()
+                                    .addMetric(new Metric(new Metric.FixedText("1-1"), "Level"))
+                                    .addMetric(new Metric(new Metric.FixedInt(2300), "Score"))
+                                    .addMetric(new Metric(new Metric.FixedText("🌞"), "Weather"))
+                                    .addMetric(
+                                            new Metric(
+                                                    new Metric.FixedText("SHOULD NOT APPEAR"),
+                                                    "SHOULD NOT APPEAR")))
                     .build();
         }
     }
