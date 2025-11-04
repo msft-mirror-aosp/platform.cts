@@ -45,7 +45,7 @@ public class RoleSecurityTest extends StsExtraBusinessLogicHostTestBase {
     @AppModeFull(reason = "Instant apps cannot access role manager")
     @AsbSecurityTest(cveBugId = 177927831)
     public void cannotGetSmsRoleHolderForAnotherUser() throws Exception {
-        final int[] userIds = Utils.prepareMultipleUsers(getDevice(), 2);
+        final int[] userIds = Utils.prepareMultipleFullUsers(getDevice(), 2);
         assumeTrue(userIds.length == 2);
 
         final int initialUserId = getDevice().getCurrentUser();
