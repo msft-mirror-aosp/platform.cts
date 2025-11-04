@@ -225,8 +225,8 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
 
         TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
 
-        sMockModemManager.notifyEmergencyNumberList(sTestSlot,
-                new String[] { TEST_EMERGENCY_NUMBER });
+        TelephonyUtils.addTestEmergencyNumber(
+                InstrumentationRegistry.getInstrumentation(), TEST_EMERGENCY_NUMBER);
     }
 
     @AfterClass
@@ -259,6 +259,8 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         }
 
         TestUtils.clearSystemDialerOverride(InstrumentationRegistry.getInstrumentation());
+        TelephonyUtils.removeTestEmergencyNumber(
+                InstrumentationRegistry.getInstrumentation(), TEST_EMERGENCY_NUMBER);
     }
 
     @Before
