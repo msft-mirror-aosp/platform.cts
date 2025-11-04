@@ -90,11 +90,11 @@ specs {
   key: 37
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
-    specification: "same"
+    specification: "MUST ensure a random write performance of at least 30 MB/s."
     required_values: {
       key: "filesystem_io_rate_mbps"
       value: {
-        double_value: 10
+        double_value: 30
       }
     }
   }

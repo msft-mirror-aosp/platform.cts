@@ -90,11 +90,11 @@ specs {
   key: 37
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
-    specification: "same"
+    specification: "MUST ensure a random read performance of at least 200 MB/s."
     required_values: {
       key: "filesystem_io_rate_mbps"
       value: {
-        double_value: 100
+        double_value: 200
       }
     }
   }
