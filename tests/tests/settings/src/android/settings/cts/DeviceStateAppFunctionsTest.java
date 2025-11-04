@@ -28,6 +28,9 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.KeyguardManager;
+import android.os.Build;
+
+import androidx.test.filters.SdkSuppress;
 
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner;
@@ -45,7 +48,6 @@ import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.ShellCommand;
-
 import com.android.compatibility.common.util.FeatureUtil;
 
 import org.junit.ClassRule;
@@ -73,6 +75,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasNoDeviceOwner
     @EnsureUnlocked
     @EnsurePasswordNotSet
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void testGetUncategorizedDeviceState_shouldNotReturnWorkData() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getUncategorizedDeviceState"));
 
@@ -88,6 +91,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasNoDeviceOwner
     @EnsureUnlocked
     @EnsurePasswordNotSet
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void testGetStorageDeviceState_shouldNotReturnWorkData() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getStorageDeviceState"));
 
@@ -103,6 +107,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasNoDeviceOwner
     @EnsureUnlocked
     @EnsurePasswordNotSet
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void testGetBatteryDeviceState_shouldNotReturnWorkData() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getBatteryDeviceState"));
 
@@ -118,6 +123,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasNoDeviceOwner
     @EnsureUnlocked
     @EnsurePasswordNotSet
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void testGetMobileDataUsageDeviceState_shouldNotReturnWorkData() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getMobileDataUsageDeviceState"));
 
@@ -133,6 +139,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasNoDeviceOwner
     @EnsureUnlocked
     @EnsurePasswordNotSet
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void testGetNotificationsDeviceState_shouldNotReturnWorkData() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getNotificationsDeviceState"));
 
@@ -148,6 +155,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasNoDeviceOwner
     @EnsureUnlocked
     @EnsurePasswordNotSet
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void testGetAppsDeviceState_shouldNotReturnWorkData() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getAppsDeviceState"));
 
@@ -163,6 +171,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasNoDeviceOwner
     @EnsureUnlocked
     @EnsurePasswordNotSet
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void testGetDeviceStateMetadata_shouldNotReturnWorkData() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getDeviceStateMetadata"));
 
@@ -178,6 +187,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasDeviceOwner
     @Postsubmit(reason = "New test")
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void testGetDeviceStateMetadata_deviceLocked_throwsException() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getDeviceStateMetadata"));
         assumeTrue(supportsSecureLock());
@@ -198,6 +208,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasDeviceOwner
     @Postsubmit(reason = "New test")
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void testGetDeviceStateMetadata_requestInitiatedWhileUnlockedSet_doesNotThrowException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("getDeviceStateMetadata"));
@@ -222,6 +233,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasNoDeviceOwner
     @EnsureUnlocked
     @EnsurePasswordNotSet
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void testGetDeviceStateMetadata_deviceNotLocked_doesNotThrowException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("getDeviceStateMetadata"));
@@ -236,6 +248,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasDeviceOwner
     @Postsubmit(reason = "New test")
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void testGetUncategorizedDeviceState_deviceLocked_throwsException() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getUncategorizedDeviceState"));
         assumeTrue(supportsSecureLock());
@@ -256,6 +269,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasDeviceOwner
     @Postsubmit(reason = "New test")
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void
             testGetUncategorizedDeviceState_requestInitiatedWhileUnlockedSet_doesNotThrowException()
                     throws Exception {
@@ -281,6 +295,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasNoDeviceOwner
     @EnsureUnlocked
     @EnsurePasswordNotSet
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void testGetUncategorizedDeviceState_deviceNotLocked_doesNotThrowException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("getUncategorizedDeviceState"));
@@ -295,6 +310,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasDeviceOwner
     @Postsubmit(reason = "New test")
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void testGetStorageDeviceState_deviceLocked_throwsException() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getStorageDeviceState"));
         assumeTrue(supportsSecureLock());
@@ -315,6 +331,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasDeviceOwner
     @Postsubmit(reason = "New test")
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void testGetStorageDeviceState_requestInitiatedWhileUnlockedSet_doesNotThrowException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("getStorageDeviceState"));
@@ -339,6 +356,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasNoDeviceOwner
     @EnsureUnlocked
     @EnsurePasswordNotSet
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void testGetStorageDeviceState_deviceNotLocked_doesNotThrowException() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getStorageDeviceState"));
 
@@ -352,6 +370,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasDeviceOwner
     @Postsubmit(reason = "New test")
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void testGetBatteryDeviceState_deviceLocked_throwsException() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getBatteryDeviceState"));
         assumeTrue(supportsSecureLock());
@@ -372,6 +391,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasDeviceOwner
     @Postsubmit(reason = "New test")
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void testGetBatteryDeviceState_requestInitiatedWhileUnlockedSet_doesNotThrowException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("getBatteryDeviceState"));
@@ -396,6 +416,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasNoDeviceOwner
     @EnsureUnlocked
     @EnsurePasswordNotSet
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void testGetBatteryDeviceState_deviceNotLocked_doesNotThrowException() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getBatteryDeviceState"));
 
@@ -409,6 +430,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasDeviceOwner
     @Postsubmit(reason = "New test")
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void testSetDeviceStateItem_deviceLocked_throwsException() throws Exception {
         assumeTrue(deviceSupportsAppFunction("setDeviceStateItem"));
         assumeTrue(supportsSecureLock());
@@ -434,6 +456,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasDeviceOwner
     @Postsubmit(reason = "New test")
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void testSetDeviceStateItem_requestInitiatedWhileUnlockedSet_doesNotThrowException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("setDeviceStateItem"));
@@ -459,6 +482,7 @@ public class DeviceStateAppFunctionsTest {
     @Test
     @EnsureUnlocked
     @EnsurePasswordNotSet
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void testSetDeviceStateItem_deviceNotLocked_doesNotThrowException() throws Exception {
         assumeTrue(deviceSupportsAppFunction("setDeviceStateItem"));
 
@@ -477,6 +501,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasDeviceOwner
     @Postsubmit(reason = "New test")
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void testOffsetNumericDeviceStateItemByValue_deviceLocked_throwsException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("offsetNumericDeviceStateItemByValue"));
@@ -503,6 +528,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasDeviceOwner
     @Postsubmit(reason = "New test")
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void
             testOffsetNumericDeviceStateItemByValue_requestInitiatedWhileUnlockedSet_doesNotThrowException()
                     throws Exception {
@@ -529,6 +555,7 @@ public class DeviceStateAppFunctionsTest {
     @Test
     @EnsureUnlocked
     @EnsurePasswordNotSet
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void testOffsetNumericDeviceStateItemByValue_deviceNotLocked_doesNotThrowException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("offsetNumericDeviceStateItemByValue"));
@@ -548,6 +575,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasDeviceOwner
     @Postsubmit(reason = "New test")
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void testAdjustNumericDeviceStateItemByPercentage_deviceLocked_throwsException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("adjustNumericDeviceStateItemByPercentage"));
@@ -574,6 +602,7 @@ public class DeviceStateAppFunctionsTest {
     @EnsureHasDeviceOwner
     @Postsubmit(reason = "New test")
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void
             testAdjustNumericDeviceStateItemByPercentage_requestInitiatedWhileUnlockedSet_doesNotThrowException()
                     throws Exception {
@@ -600,6 +629,7 @@ public class DeviceStateAppFunctionsTest {
     @Test
     @EnsureUnlocked
     @EnsurePasswordNotSet
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void testAdjustNumericDeviceStateItemByPercentage_deviceNotLocked_doesNotThrowException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("adjustNumericDeviceStateItemByPercentage"));
