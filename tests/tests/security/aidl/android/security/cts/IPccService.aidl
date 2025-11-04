@@ -18,4 +18,5 @@ package android.security.cts;
 interface IPccService {
     boolean getProcessIsIsolated();
     int getUid();
+    String getSeLinuxContext();
 }
