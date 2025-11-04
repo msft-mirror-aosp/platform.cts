@@ -70,6 +70,7 @@ import org.junit.runner.RunWith;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 
 // Test that an AccessibilityService can display an accessibility overlay
@@ -212,6 +213,7 @@ public class AccessibilityOverlayTest {
     public void testA11yServiceShowsWindowOverlayUsingSurfaceControl_shouldAppearAndDisappear()
             throws Exception {
         // Show an activity on screen.
+        final StringBuilder timeoutExceptionRecords = new StringBuilder();
         final Activity activity =
                 launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen(
                         sInstrumentation,
@@ -229,6 +231,7 @@ public class AccessibilityOverlayTest {
             final SurfaceControl sc = viewHost.getSurfacePackage().getSurfaceControl();
             final SurfaceControl.Transaction transaction = new SurfaceControl.Transaction();
             transaction.setVisibility(sc, true).apply();
+            transaction.close();
 
             // Create an accessibility overlay hosting a FrameLayout with the same size
             // as the activity's root node bounds.
@@ -271,56 +274,73 @@ public class AccessibilityOverlayTest {
                                     () -> mService.attachAccessibilityOverlayToWindow(
                                             activityRootNode.getWindowId(), sc)),
                     (event) -> {
+                        // Wait until the overlay window is added
                         final AccessibilityWindowInfo overlayWindow =
                                 ActivityLaunchUtils.findWindowByTitle(sUiAutomation, overlayTitle);
-                        if (overlayWindow == null) {
+                        if (overlayWindow == null || overlayWindow.getType()
+                                != AccessibilityWindowInfo.TYPE_ACCESSIBILITY_OVERLAY) {
                             return false;
                         }
-                        if (overlayWindow.getType()
-                                == AccessibilityWindowInfo.TYPE_ACCESSIBILITY_OVERLAY) {
-                            final AccessibilityNodeInfo overlayButtonNode =
-                                    overlayWindow.getRoot().findAccessibilityNodeInfosByText(
-                                            buttonText).get(0);
-                            final Rect expected = new Rect();
-                            final Rect actual = new Rect();
+                        // Refresh the activity's button node to ensure the AccessibilityNodeInfo
+                        // is the latest
+                        activityNodeToDrawOver.refresh();
 
-                            // The overlay button should have the same window-space and screen-space
-                            // bounds as the view in the activity, as configured above.
-                            activityNodeToDrawOver.getBoundsInWindow(expected);
-                            overlayButtonNode.getBoundsInWindow(actual);
-                            assertThat(actual.isEmpty()).isFalse();
-                            assertThat(actual).isEqualTo(expected);
-                            activityNodeToDrawOver.getBoundsInScreen(expected);
-                            overlayButtonNode.getBoundsInScreen(actual);
-                            assertThat(actual.isEmpty()).isFalse();
-                            assertThat(actual).isEqualTo(expected);
-                            return true;
-                        }
-                        return false;
+                        // Wait until overlay is drawn on correct location
+                        final AccessibilityNodeInfo overlayButtonNode = overlayWindow
+                                .getRoot()
+                                .findAccessibilityNodeInfosByText(buttonText)
+                                .get(0);
+                        final Rect expectedBoundsInWindow = new Rect();
+                        final Rect actualBoundsInWindow = new Rect();
+                        activityNodeToDrawOver.getBoundsInWindow(expectedBoundsInWindow);
+                        overlayButtonNode.getBoundsInWindow(actualBoundsInWindow);
+
+                        final Rect expectedBoundsInScreen = new Rect();
+                        final Rect actualBoundsInScreen = new Rect();
+                        activityNodeToDrawOver.getBoundsInScreen(expectedBoundsInScreen);
+                        overlayButtonNode.getBoundsInScreen(actualBoundsInScreen);
+
+                        // Stores the related information including event, bounds
+                        // as a timeout exception record.
+                        timeoutExceptionRecords.append(String.format("""
+                                        { Received event: %s }
+                                        Expected bounds in window: %s, actual bounds in window: %s
+                                        Expected bounds in screen: %s, actual bounds in screen: %s
+                                        """,
+                                event, expectedBoundsInWindow, actualBoundsInWindow,
+                                expectedBoundsInScreen, actualBoundsInScreen));
+
+                        // The overlay button should have the same window-space and screen-space
+                        // bounds as the view in the activity, as configured above.
+                        return actualBoundsInWindow.equals(expectedBoundsInWindow)
+                                && actualBoundsInScreen.equals(expectedBoundsInScreen);
                     },
                     AsyncUtils.DEFAULT_TIMEOUT_MS);
 
             checkTrustedOverlayExists(overlayTitle);
-
-            // Remove the overlay.
-            sUiAutomation.executeAndWaitForEvent(
-                    () ->
-                            mService.runOnServiceSync(
-                                    () -> {
-                                        transaction.reparent(sc, null).apply();
-                                        transaction.close();
-                                        sc.release();
-                                    }),
-                    (event) ->
-                            // There should be no windows with this window title.
-                            ActivityLaunchUtils.findWindowByTitle(sUiAutomation, overlayTitle)
-                                    == null,
-                    AsyncUtils.DEFAULT_TIMEOUT_MS);
+            removeOverlayAndCheck(sc, overlayTitle);
+        } catch (TimeoutException timeout) {
+            throw new TimeoutException(timeout.getMessage() + "\n\nTimeout exception records : \n"
+                    + timeoutExceptionRecords);
         } finally {
             if (activity != null) {
                 activity.finish();
             }
         }
+    }
+
+    private void removeOverlayAndCheck(SurfaceControl sc, String overlayTitle) throws Exception {
+        // Remove the overlay.
+        sUiAutomation.executeAndWaitForEvent(
+                () -> {
+                    SurfaceControl.Transaction t = new SurfaceControl.Transaction();
+                    t.reparent(sc, null).apply();
+                    t.close();
+                    sc.release();
+                },
+                (event) ->
+                        ActivityLaunchUtils.findWindowByTitle(sUiAutomation, overlayTitle) == null,
+                AsyncUtils.DEFAULT_TIMEOUT_MS);
     }
 
     private void checkTrustedOverlayExists(String overlayTitle) throws Exception {
