@@ -174,7 +174,7 @@ public class FileUtil {
                 removeEntry(new File(entry, child));
             }
         }
-        Log.i(TAG, "delete file " + entry.getAbsolutePath());
+        Log.v(TAG, "delete file " + entry.getAbsolutePath());
         entry.delete();
     }
 
