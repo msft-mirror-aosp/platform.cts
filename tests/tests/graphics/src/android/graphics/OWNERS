@@ -4,4 +4,3 @@ include platform/frameworks/base:/graphics/java/android/graphics/CORE_GRAPHICS_O
 # For fonts, text, e.g. Typeface, Font, Minikin, etc
 nona@google.com
 haoyuchang@google.com
-justinghan@google.com
