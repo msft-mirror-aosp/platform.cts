@@ -16,7 +16,9 @@
 package android.app.appsearch.cts.app;
 
 import android.app.appsearch.EnterpriseGlobalSearchSessionShim;
+import android.app.appsearch.Features;
 import android.app.appsearch.testutil.EnterpriseGlobalSearchSessionShimImpl;
+import android.app.appsearch.testutil.MainlineFeaturesImpl;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -29,5 +31,10 @@ public class EnterpriseGlobalSearchSessionCtsTest extends EnterpriseGlobalSearch
     protected ListenableFuture<EnterpriseGlobalSearchSessionShim>
             createEnterpriseGlobalSearchSessionAsync() {
         return EnterpriseGlobalSearchSessionShimImpl.createEnterpriseGlobalSearchSessionAsync();
+    }
+
+    @Override
+    protected Features getFeatures() {
+        return new MainlineFeaturesImpl();
     }
 }
