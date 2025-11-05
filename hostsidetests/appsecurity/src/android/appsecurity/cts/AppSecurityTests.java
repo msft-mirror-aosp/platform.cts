@@ -76,7 +76,8 @@ public class AppSecurityTests extends BaseAppSecurityTest {
     private static final String DECLARE_PERMISSION_APK = "CtsPermissionDeclareApp.apk";
     private static final String DECLARE_PERMISSION_PKG = "com.android.cts.permissiondeclareapp";
     private static final String DECLARE_PERMISSION_COMPAT_APK = "CtsPermissionDeclareAppCompat.apk";
-    private static final String DECLARE_PERMISSION_COMPAT_PKG = "com.android.cts.permissiondeclareappcompat";
+    private static final String DECLARE_PERMISSION_COMPAT_PKG =
+            "com.android.cts.permissiondeclareappcompat";
 
     private static final String PERMISSION_DIFF_CERT_APK = "CtsUsePermissionDiffCert.apk";
     private static final String PERMISSION_DIFF_CERT_PKG =
@@ -104,6 +105,12 @@ public class AppSecurityTests extends BaseAppSecurityTest {
             "CtsDuplicatePermission_SamePermissionGroup.apk";
     private static final String DUPLICATE_PERMISSION_SAME_PERMISSION_GROUP_PKG =
             "com.android.cts.duplicatepermission.samepermissiongroup";
+
+    private static final String DECLARE_PERMISSIONS_WITH_SPACES_APK =
+            "CtsDeclarePermissions_WithSpaces.apk";
+
+    private static final String DECLARE_PERMISSIONS_WITH_SPACES_PKG =
+            "com.android.cts.declarepermissions.withspaces";
 
     private static final String LOG_TAG = "AppSecurityTests";
 
@@ -253,7 +260,8 @@ public class AppSecurityTests extends BaseAppSecurityTest {
      * certificate than the app that declared the permission.
      */
     @Test
-    @AppModeFull(reason = "Only the platform can define permissions obtainable by instant applications")
+    @AppModeFull(
+            reason = "Only the platform can define permissions obtainable by instant applications")
     @AsbSecurityTest(cveBugId = 111934948)
     public void testPermissionDiffCert() throws Exception {
         Log.i(LOG_TAG, "installing app that attempts to use permission of another app");
@@ -438,6 +446,20 @@ public class AppSecurityTests extends BaseAppSecurityTest {
                     .run(true /* expectingSuccess */);
         } finally {
             getDevice().uninstallPackage(DUPLICATE_PERMISSION_SAME_PERMISSION_GROUP_PKG);
+        }
+    }
+
+    /** Tests that permission and permission-group manifest tags have their names trimmed. */
+    @Test
+    @AsbSecurityTest(cveBugId = 453649815)
+    public void testPermissionNamesTrimmed() throws Exception {
+        try {
+            new InstallMultiple(false /* instant */)
+                    .addFile(DECLARE_PERMISSIONS_WITH_SPACES_APK)
+                    .run(true /* expectingSuccess */);
+            runDeviceTests(DECLARE_PERMISSIONS_WITH_SPACES_PKG, null);
+        } finally {
+            getDevice().uninstallPackage(DECLARE_PERMISSIONS_WITH_SPACES_PKG);
         }
     }
 }

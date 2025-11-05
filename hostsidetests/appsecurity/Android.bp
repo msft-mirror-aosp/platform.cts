@@ -70,6 +70,7 @@ java_test_host {
 
     // Prebuilts of all ABIs.
     data: [
+        ":CtsDeclarePermissions_WithSpaces",
         ":CtsSignatureQueryService",
         ":CtsSignatureQueryServiceTest",
         ":CtsApkVerityTestPrebuiltFiles",
