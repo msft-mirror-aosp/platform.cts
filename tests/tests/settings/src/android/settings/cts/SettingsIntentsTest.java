@@ -16,8 +16,11 @@
 
 package android.settings.cts;
 
+import static com.android.cts.install.lib.InstallUtils.getPackageInfo;
+
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeNotNull;
 
 import android.content.Context;
 import android.content.Intent;
@@ -67,6 +70,10 @@ public class SettingsIntentsTest {
         assumeFalse(
                 "Skipping test: Satellite settings are not supported in Wear",
                 SettingsTestUtils.isWatch());
+        assumeNotNull(
+                "Skipping test: Settings application is not installed",
+                getPackageInfo("com.android.settings"));
+
         Context targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
 
         final Intent intent = new Intent(Settings.ACTION_SATELLITE_SETTING).addFlags(
