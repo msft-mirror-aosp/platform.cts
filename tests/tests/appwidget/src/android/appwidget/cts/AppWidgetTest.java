@@ -88,6 +88,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.time.Duration;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -1677,6 +1678,63 @@ public class AppWidgetTest extends AppWidgetTestCase {
         }
     }
 
+    @AppModeFull(reason = "Instant apps cannot provide or host app widgets")
+    @Test
+    public void testWidgetRemovalOnAllocate() throws Exception {
+        grantBindAppWidgetPermission();
+        AppWidgetHost host = new AppWidgetHost(getInstrumentation().getTargetContext(), 0);
+        host.deleteHost();
+        host.startListening();
+
+        try {
+            final AppWidgetProviderInfo provider = getFirstAppWidgetProviderInfo();
+            final AtomicInteger invocationCounter = new AtomicInteger();
+            AppWidgetProviderCallbacks callbacks =
+                    createAppWidgetProviderCallbacks(
+                            invocationCounter);
+            // Track calls to AppWidgetProvider.onDeleted.
+            final ArrayDeque<Integer> removedIds = new ArrayDeque<>();
+            doAnswer((Answer<Void>) invocation -> {
+                int[] deleted = invocation.getArgument(1);
+                for (int i : deleted) {
+                    removedIds.addLast(i);
+                }
+                synchronized (mLock) {
+                    invocationCounter.incrementAndGet();
+                    mLock.notifyAll();
+                }
+                return null;
+            }).when(callbacks).onDeleted(any(Context.class), any(int[].class));
+            FirstAppWidgetProvider.setCallbacks(callbacks);
+
+            // Bind 200 widgets, the maximum allowed per host by AppWidgetServiceImpl.
+            final ArrayDeque<Integer> widgetIds = new ArrayDeque<>();
+            for (int i = 0; i < 200; i++) {
+                final int appWidgetId = host.allocateAppWidgetId();
+                final boolean result = getAppWidgetManager().bindAppWidgetIdIfAllowed(appWidgetId,
+                        provider.getProfile(), provider.provider, null);
+                assertThat(result).isTrue();
+                widgetIds.addLast(appWidgetId);
+            }
+            // 1 onEnabled + 200 onUpdate calls
+            waitForCallCount(invocationCounter, 201);
+            assertThat(removedIds).isEmpty();
+
+            // Each additional allocation should trigger the removal of the oldest widget.
+            for (int i = 0; i < 10; i++) {
+                final int appWidgetId = host.allocateAppWidgetId();
+                waitForCallCount(invocationCounter, 202 + i);
+                assertThat(removedIds.getLast()).isEqualTo(widgetIds.removeFirst());
+                widgetIds.addLast(appWidgetId);
+                // getAppWidgetIds should not return the removed widget.
+                assertThat(host.getAppWidgetIds()).asList().containsExactlyElementsIn(widgetIds);
+            }
+        } finally {
+            host.deleteHost();
+            revokeBindAppWidgetPermission();
+        }
+    }
+
     private void setGeneratedPreviewRateLimit(long resetIntervalMs, int maxCallsPerInterval) {
         final DeviceConfig.Properties props = new DeviceConfig.Properties.Builder(
                 DeviceConfig.NAMESPACE_SYSTEMUI)
@@ -1693,7 +1751,8 @@ public class AppWidgetTest extends AppWidgetTestCase {
                 final long elapsedTimeMillis = SystemClock.uptimeMillis() - startTimeMillis;
                 final long remainingTimeMillis = OPERATION_TIMEOUT - elapsedTimeMillis;
                 if (remainingTimeMillis <= 0) {
-                    fail("Did not get expected call");
+                    fail(String.format("Did not get expected call; counter=%d, expectedCount=%d",
+                            counter.get(), expectedCount));
                 }
                 try {
                     mLock.wait(remainingTimeMillis);
