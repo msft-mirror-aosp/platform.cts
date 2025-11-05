@@ -250,6 +250,7 @@ class AppOpDefinitionTest {
             APP_OPS[AppOpsManager.OPSTR_READ_HEART_RATE_VARIABILITY] = 171
             APP_OPS[AppOpsManager.OPSTR_READ_RESPIRATORY_RATE] = 172
             APP_OPS[AppOpsManager.OPSTR_READ_VO2_MAX] = 173
+            APP_OPS[AppOpsManager.OPSTR_CONTINUE_ACROSS_DEVICES] = 174
         }
     }
 }
