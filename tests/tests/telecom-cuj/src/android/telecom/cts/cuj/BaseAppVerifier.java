@@ -226,6 +226,12 @@ public class BaseAppVerifier {
      * not part of the test application's direct UI.
      */
     protected void dismissErrorDialogIfPresent() {
+        // This method is designed to tear down child test classes. In case mInstrumentation is null
+        // or mShouldTestTelecom is false, we should skip this step to avoid NPE or any other error.
+        if (!mShouldTestTelecom || mInstrumentation == null) {
+            return;
+        }
+
         // The ErrorDialogActivity is part of the Telecom package. We create a selector
         // to find the "OK" button specifically within that package's context.
         // The button text is determined by android.R.string.ok.
