@@ -30,7 +30,6 @@ import android.media.AudioManager;
 import android.media.IVolumeController;
 import android.media.SoundPool;
 import android.os.RemoteException;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Log;
 
 import com.android.compatibility.common.util.CtsAndroidTestCase;
@@ -39,7 +38,6 @@ import com.android.compatibility.common.util.FrameworkSpecificTest;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @FrameworkSpecificTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class SoundDoseHelperTest extends CtsAndroidTestCase {
     private static final String TAG = "SoundDoseHelperTest";
 

@@ -22,7 +22,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.os.CountDownTimer;
-import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -33,7 +32,6 @@ import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class CountDownTimerTest {
     private static final long OFFSET = 200;
     private static final long MILLISINFUTURE = 4500;

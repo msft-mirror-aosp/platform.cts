@@ -66,7 +66,6 @@ import android.os.strictmode.UntaggedSocketViolation;
 import android.os.strictmode.Violation;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.Presubmit;
 import android.system.Os;
 import android.system.OsConstants;
@@ -113,7 +112,6 @@ import java.util.zip.GZIPOutputStream;
 
 /** Tests for {@link StrictMode} */
 @RunWith(AndroidJUnit4.class)
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class StrictModeTest extends StrictModeTestBase {
     private static final String TAG = "StrictModeTest";
     private static final String REMOTE_SERVICE_ACTION = "android.app.REMOTESERVICE";

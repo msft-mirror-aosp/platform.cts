@@ -20,7 +20,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import android.media.AudioTimestamp;
 import android.os.Parcel;
-import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
@@ -33,7 +32,6 @@ import org.junit.runner.RunWith;
  * The unit tests for {@link AudioTimestamp} APIs.
  */
 @FrameworkSpecificTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class AudioTimestampTest {
     private static final long FRAME_POSITION = 1;

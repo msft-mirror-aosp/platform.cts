@@ -26,7 +26,6 @@ import android.media.VolumeInfo;
 import android.media.audio.Flags;
 import android.media.audiopolicy.AudioVolumeGroup;
 import android.os.Parcel;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
@@ -44,7 +43,6 @@ import org.junit.runner.RunWith;
 import java.util.List;
 
 @FrameworkSpecificTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class VolumeInfoTest {
     @Rule

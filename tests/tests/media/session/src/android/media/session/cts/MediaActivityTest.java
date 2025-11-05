@@ -47,7 +47,6 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.UserTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
@@ -128,10 +127,7 @@ public class MediaActivityTest {
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.putExtra(MediaSessionTestActivity.KEY_SESSION_TOKEN, mSession.getSessionToken());
 
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> mActivityScenario = ActivityScenario.launch(intent),
-                Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX
-        );
+        mActivityScenario = ActivityScenario.launch(intent);
         // Add permission after runWithShellPermissionIdentity else it gets removed.
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.HDMI_CEC);

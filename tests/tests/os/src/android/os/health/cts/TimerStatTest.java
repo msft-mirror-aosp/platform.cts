@@ -18,7 +18,6 @@ package android.os.health.cts;
 
 import android.os.Parcel;
 import android.os.health.TimerStat;
-import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.test.filters.SmallTest;
 
@@ -28,7 +27,6 @@ import junit.framework.TestCase;
 /**
  * Provides test cases for android.os.health.TimerStat.
  */
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class TimerStatTest extends TestCase {
     /**
      * Tests empty constructor and get methods.

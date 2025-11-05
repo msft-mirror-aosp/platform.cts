@@ -46,10 +46,7 @@ import android.media.cts.MediaProjectionRule;
 import android.media.projection.MediaProjection;
 import android.os.Handler;
 import android.os.Looper;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.Presubmit;
-
-import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 
@@ -79,7 +76,6 @@ import java.util.concurrent.TimeUnit;
  * A better check needs to be used, eg: compare the power spectrum.
  */
 @FrameworkSpecificTest
-@AppModeNonSdkSandbox(reason = "The sandbox cannot retrieve MediaProjection.")
 public class AudioPlaybackCaptureTest {
     private static final String TAG = "AudioPlaybackCaptureTest";
     private static final int SAMPLE_RATE = 44100;

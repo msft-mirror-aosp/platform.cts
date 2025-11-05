@@ -23,7 +23,6 @@ import android.content.Context;
 import android.os.Debug;
 import android.os.Flags;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -47,7 +46,6 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class DebugTest {
     private static final Logger Log = Logger.getLogger(DebugTest.class.getName());

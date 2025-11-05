@@ -17,14 +17,15 @@
 package android.media.misc.cts;
 
 import static android.media.mediarecorder.Flags.apvRecordingSupport;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -43,7 +44,6 @@ import android.media.MediaCodecInfo.CodecProfileLevel;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.media.MediaRecorder;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
@@ -51,7 +51,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.Before;
@@ -570,7 +569,6 @@ public class CamcorderProfileTest {
     }
 
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK sandbox does not have permission to use camera.")
     public void testGetFirstBackCamera() {
         /*
          * Device may not have rear camera for checkGet(-1).
@@ -589,7 +587,6 @@ public class CamcorderProfileTest {
     }
 
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK sandbox does not have permission to use camera.")
     public void testGetWithId() {
         int nCamera = Camera.getNumberOfCameras();
         Context context = InstrumentationRegistry.getContext();

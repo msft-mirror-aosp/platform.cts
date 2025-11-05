@@ -22,7 +22,6 @@ import static org.junit.Assert.assertEquals;
 
 import android.bluetooth.BluetoothProfile;
 import android.media.BluetoothProfileConnectionInfo;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -33,7 +32,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class BluetoothProfileConnectionInfoTest {
     @Rule
