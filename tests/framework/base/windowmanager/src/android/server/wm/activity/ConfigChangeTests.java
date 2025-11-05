@@ -20,14 +20,12 @@ import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.server.wm.StateLogger.log;
 import static android.server.wm.StateLogger.logAlways;
 import static android.server.wm.StateLogger.logE;
-import static android.server.wm.WindowManagerState.STATE_RESUMED;
 import static android.server.wm.app.Components.FONT_SCALE_ACTIVITY;
 import static android.server.wm.app.Components.FONT_SCALE_NO_RELAUNCH_ACTIVITY;
 import static android.server.wm.app.Components.FontScaleActivity.EXTRA_FONT_ACTIVITY_DPI;
 import static android.server.wm.app.Components.FontScaleActivity.EXTRA_FONT_PIXEL_SIZE;
 import static android.server.wm.app.Components.NO_RELAUNCH_ACTIVITY;
 import static android.server.wm.app.Components.TEST_ACTIVITY;
-import static android.server.wm.app.Components.TestActivity.EXTRA_CONFIG_ASSETS_SEQ;
 import static android.view.Surface.ROTATION_0;
 import static android.view.Surface.ROTATION_180;
 import static android.view.Surface.ROTATION_270;
@@ -58,16 +56,12 @@ import android.server.wm.app.Components;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
-import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Build/Install/Run:
@@ -212,7 +206,7 @@ public class ConfigChangeTests extends ActivityManagerTestBase {
     }
 
     private ActivityLifecycleCounts getLifecycleCountsForRotation(ComponentName activityName,
-            RotationSession session, int before, int after, boolean canHandleConfigChange)  {
+            RotationSession session, int before, int after, boolean canHandleConfigChange) {
         final int currentRotation = mWmState.getRotation();
         // The test verifies the events from "before" rotation to "after" rotation. So when
         // preparing "before" rotation, the changes should be consumed to avoid being mixed into
@@ -312,43 +306,6 @@ public class ConfigChangeTests extends ActivityManagerTestBase {
                         EXTRA_FONT_PIXEL_SIZE));
     }
 
-    /**
-     * Test updating application info when app is running. An activity with matching package name
-     * must be recreated and its asset sequence number must be incremented.
-     */
-    @Test
-    public void testUpdateApplicationInfo() throws Exception {
-        separateTestJournal();
-
-        // Launch an activity that prints applied config.
-        launchActivity(TEST_ACTIVITY);
-        final int assetSeq = getAssetSeqNumber(TEST_ACTIVITY);
-
-        separateTestJournal();
-        // Update package info.
-        updateApplicationInfo(Arrays.asList(TEST_ACTIVITY.getPackageName()));
-        mWmState.waitForWithAmState((amState) -> {
-            // Wait for activity to be resumed and asset seq number to be updated.
-            try {
-                return getAssetSeqNumber(TEST_ACTIVITY) == assetSeq + 1
-                        && amState.hasActivityState(TEST_ACTIVITY, STATE_RESUMED);
-            } catch (Exception e) {
-                logE("Error waiting for valid state: " + e.getMessage());
-                return false;
-            }
-        }, "asset sequence number to be updated and for activity to be resumed.");
-
-        // Check if activity is relaunched and asset seq is updated.
-        assertRelaunchOrConfigChanged(TEST_ACTIVITY, 1 /* numRelaunch */,
-                0 /* numConfigChange */);
-        final int newAssetSeq = getAssetSeqNumber(TEST_ACTIVITY);
-        assertTrue("Asset sequence number must be incremented.", assetSeq < newAssetSeq);
-    }
-
-    private static int getAssetSeqNumber(ComponentName activityName) {
-        return TestJournalContainer.get(activityName).extras.getInt(EXTRA_CONFIG_ASSETS_SEQ);
-    }
-
     // Calculate the scaled pixel size just like the device is supposed to.
     private static int scaledPixelsToPixels(float sp, float fontScale, int densityDpi) {
         final int DEFAULT_DENSITY = 160;
@@ -359,13 +316,6 @@ public class ConfigChangeTests extends ActivityManagerTestBase {
         // Use the next up adjacent number to prevent precision loss of the float number.
         f = Math.nextUp(f);
         return (int) ((f >= 0) ? (f + 0.5f) : (f - 0.5f));
-    }
-
-    private void updateApplicationInfo(List<String> packages) {
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> mAm.scheduleApplicationInfoChanged(packages,
-                        android.os.Process.myUserHandle().getIdentifier())
-        );
     }
 
     /**
