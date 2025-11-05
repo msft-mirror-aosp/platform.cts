@@ -16,6 +16,9 @@
 
 package android.security.net.config.cts;
 
+import static android.security.net.config.cts.TestUtils.assertSslSocketFails;
+import static android.security.net.config.cts.TestUtils.assertSslSocketSucceeds;
+
 import android.content.Context;
 import android.security.net.config.cts.CtsNetSecConfigCustomTrustManagerTestCases.R;
 
@@ -24,20 +27,19 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import java.io.InputStream;
 import java.security.KeyStore;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.Collection;
+
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
-@Ignore("b/449012599")
 public class CustomTrustManagerTest {
 
     private Context mContext;
@@ -48,29 +50,45 @@ public class CustomTrustManagerTest {
     }
 
     @Test
-    public void testKeystoreTrustManager() throws Exception {
-        SSLContext sslContext = SSLContext.getInstance("TLS");
-        sslContext.init(null, getKeystoreTrustManager(), null);
+    public void testKeystoreTrustManager_succeeds() throws Exception {
+        SSLContext sslContext = getCustomSSLContext(R.raw.for_connecting_to_google_certs);
 
-        // TODO(b/407952621): Add test for "no-sct.badssl.com".
-        SSLSocket s = (SSLSocket) sslContext.getSocketFactory().createSocket("android.com", 443);
-        s.startHandshake();
-        s.getInputStream();
+        assertSslSocketSucceeds(sslContext, "android.com", 443);
+        assertSslSocketSucceeds(sslContext, "no-sct.badssl.com", 443);
     }
 
-    private TrustManager[] getKeystoreTrustManager() throws Exception {
+    @Test
+    public void testKeystoreTrustManager_fails() throws Exception {
+        SSLContext sslContext = getCustomSSLContext(R.raw.for_connecting_to_google_certs);
+
+        assertSslSocketFails(sslContext, "expired.badssl.com", 443);
+    }
+
+    private SSLContext getCustomSSLContext(int chainResId) throws Exception {
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
         keystore.load(null);
-        X509Certificate cert = null;
-        try (InputStream input = mContext.getResources().openRawResource(R.raw.gts_root_r4)) {
-            cert =
-                    (X509Certificate)
-                            CertificateFactory.getInstance("X.509").generateCertificate(input);
+        int i = 0;
+        for (X509Certificate ca : loadCertificates(chainResId)) {
+            keystore.setCertificateEntry(String.valueOf(i++), ca);
         }
-        keystore.setEntry("0", new KeyStore.TrustedCertificateEntry(cert), null);
-
         TrustManagerFactory tmf = TrustManagerFactory.getInstance("PKIX");
         tmf.init(keystore);
-        return tmf.getTrustManagers();
+
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(null, tmf.getTrustManagers(), null);
+        return sslContext;
+    }
+
+    private X509Certificate[] loadCertificates(int resId) throws Exception {
+        CertificateFactory factory = CertificateFactory.getInstance("X.509");
+        try (InputStream is = mContext.getResources().openRawResource(resId)) {
+            Collection<? extends Certificate> collection = factory.generateCertificates(is);
+            X509Certificate[] certs = new X509Certificate[collection.size()];
+            int i = 0;
+            for (Certificate cert : collection) {
+                certs[i++] = (X509Certificate) cert;
+            }
+            return certs;
+        }
     }
 }

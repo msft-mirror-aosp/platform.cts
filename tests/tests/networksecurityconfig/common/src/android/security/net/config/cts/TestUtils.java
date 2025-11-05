@@ -220,11 +220,14 @@ public final class TestUtils {
         return s;
     }
 
-    private static void assertSslSocketFails(String host, int port)
-            throws Exception {
+    private static void assertSslSocketFails(String host, int port) throws Exception {
+        assertSslSocketFails(SSLContext.getDefault(), host, port);
+    }
+
+    public static void assertSslSocketFails(SSLContext sslContext, String host, int port)
+            throws IOException {
         try {
-            SSLSocket s =
-                    (SSLSocket) SSLContext.getDefault().getSocketFactory().createSocket(host, port);
+            SSLSocket s = (SSLSocket) sslContext.getSocketFactory().createSocket(host, port);
             s.startHandshake();
             fail("Connection to " + host + ":" + port + " succeeded");
         } catch (UnknownHostException e) {
@@ -233,11 +236,14 @@ public final class TestUtils {
         }
     }
 
-    private static void assertSslSocketSucceeds(String host, int port)
-            throws Exception {
+    private static void assertSslSocketSucceeds(String host, int port) throws Exception {
+        assertSslSocketSucceeds(SSLContext.getDefault(), host, port);
+    }
+
+    public static void assertSslSocketSucceeds(SSLContext sslContext, String host, int port)
+            throws IOException {
         try {
-            SSLSocket s =
-                    (SSLSocket) SSLContext.getDefault().getSocketFactory().createSocket(host, port);
+            SSLSocket s = (SSLSocket) sslContext.getSocketFactory().createSocket(host, port);
             s.startHandshake();
         } catch (UnknownHostException e) {
             throw new AssumptionViolatedException("Unable to resolve " + host, e);
