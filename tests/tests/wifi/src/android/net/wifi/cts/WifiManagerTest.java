@@ -4363,7 +4363,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         }
 
         @Override
-        public void onRestrictionStopped() {
+        public void onRestrictionsStopped() {
             synchronized (mLock) {
                 mEvents.add(new StoppedEvent());
                 mLock.notifyAll();
