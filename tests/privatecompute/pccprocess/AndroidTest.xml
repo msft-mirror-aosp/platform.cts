@@ -21,6 +21,11 @@
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
     <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
 
+    <target_preparer class="com.android.tradefed.targetprep.AFlagsTargetPreparer" >
+        <option name="flag-value"
+        value="private_compute/android.app.privatecompute.flags.enable_pcc_framework_support=true" />
+    </target_preparer>
+
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
         <option name="test-file-name" value="CtsPccProcessTests.apk" />
@@ -30,5 +35,7 @@
         <option name="package" value="com.android.cts.pcc.processes" />
         <option name="runner" value="androidx.test.runner.AndroidJUnitRunner" />
         <option name="instrument-in-pcc" value="true" />
+        <!-- TODO(438428601) - Remove when package visibility rules are fixed. -->
+        <option name="use-test-storage" value="false" />
     </test>
 </configuration>
