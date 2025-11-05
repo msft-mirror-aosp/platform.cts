@@ -92,6 +92,9 @@ android_test {
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",
+        // In order for your CTS test cases to be included in ALPE or AVS,
+        // you will need to ensure that it's part of the `dts` `test_suites`
+        "dts",
         "general-tests",
     ],
 
