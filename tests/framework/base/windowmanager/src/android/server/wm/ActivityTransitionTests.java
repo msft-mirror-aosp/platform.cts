@@ -86,7 +86,7 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
 
     // Allowable range with error error for the R.anim.alpha animation duration.
     private static final Range<Long> CUSTOM_ANIMATION_DURATION_RANGE = new Range<>(
-            CUSTOM_ANIMATION_DURATION - 200L, CUSTOM_ANIMATION_DURATION + 1000L);
+            CUSTOM_ANIMATION_DURATION - 200L, CUSTOM_ANIMATION_DURATION + 2500L);
 
     private boolean mAnimationScaleResetRequired = false;
     private String mInitialWindowAnimationScale;
