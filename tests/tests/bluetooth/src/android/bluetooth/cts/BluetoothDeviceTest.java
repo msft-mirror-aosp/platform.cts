@@ -522,6 +522,77 @@ public class BluetoothDeviceTest {
                                 null));
     }
 
+    /**
+     * Test method for {@link BluetoothDevice#fetchUuids(int)}. This test requires the
+     * FLAG_EXPLICIT_UUID_TRANSPORT_API to be enabled.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_EXPLICIT_UUID_TRANSPORT_API)
+    @Test
+    public void fetchUuids() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
+        // --- Tests below run WITH BLUETOOTH_CONNECT ---
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT)) {
+
+            // 2. Test with different Transports
+            assertThat(mFakeDevice.fetchUuids(TRANSPORT_AUTO)).isTrue();
+            assertThat(mFakeDevice.fetchUuids(TRANSPORT_BREDR)).isTrue();
+            assertThat(mFakeDevice.fetchUuids(TRANSPORT_LE)).isTrue();
+
+            // 3. Test with Bluetooth Disabled
+            assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
+            assertThat(mFakeDevice.fetchUuids(TRANSPORT_AUTO)).isFalse();
+            assertThat(mFakeDevice.fetchUuids(TRANSPORT_BREDR)).isFalse();
+        } // Permissions.withPermissions() restores original permission state here.
+    }
+
+    /**
+     * Test method for {@link BluetoothDevice#fetchUuids(int)}. This test requires the
+     * FLAG_EXPLICIT_UUID_TRANSPORT_API to be enabled.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_EXPLICIT_UUID_TRANSPORT_API)
+    @Test
+    public void fetchUuidsInvalidTransport() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT)) {
+
+            // Test with a clearly out-of-range negative value
+            int invalidTransportNegative = -1;
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> mFakeDevice.fetchUuids(invalidTransportNegative));
+
+            // Test with a value greater than defined transports
+            int invalidTransportPositive = 3; // Assuming valid are 0, 1, 2
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> mFakeDevice.fetchUuids(invalidTransportPositive));
+
+            // Example of another out-of-range value
+            int anotherInvalidTransport = 100;
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> mFakeDevice.fetchUuids(anotherInvalidTransport));
+        }
+    }
+
+    /**
+     * Test method for {@link BluetoothDevice#fetchUuids(int)}. Tests that SecurityException is
+     * thrown when calling fetchUuids without BLUETOOTH_CONNECT permission.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_EXPLICIT_UUID_TRANSPORT_API)
+    @Test
+    public void fetchUuidsPermissionEnforcement() {
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
+        // setUp() adopts BLUETOOTH_CONNECT, so drop it to test enforcement.
+        mUiAutomation.dropShellPermissionIdentity();
+        assertThrows(SecurityException.class, () -> mFakeDevice.fetchUuids(TRANSPORT_BREDR));
+    }
+
     @Test
     public void fetchUuidsWithSdp() {
         // Skip the test if bluetooth or companion device are not present.
