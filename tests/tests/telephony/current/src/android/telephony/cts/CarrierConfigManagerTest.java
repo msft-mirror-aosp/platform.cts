@@ -376,6 +376,12 @@ public class CarrierConfigManagerTest {
                 CarrierConfigManager.KEY_LTE_RSRQ_THRESHOLDS_INT_ARRAY));
         assertNotNull(config.getIntArray(
                 CarrierConfigManager.KEY_LTE_RSSNR_THRESHOLDS_INT_ARRAY));
+        assertNotNull(
+                config.getIntArray(CarrierConfigManager.KEY_NTN_5G_NR_SSRSRP_THRESHOLDS_INT_ARRAY));
+        assertNotNull(
+                config.getIntArray(CarrierConfigManager.KEY_NTN_5G_NR_SSRSRQ_THRESHOLDS_INT_ARRAY));
+        assertNotNull(
+                config.getIntArray(CarrierConfigManager.KEY_NTN_5G_NR_SSSINR_THRESHOLDS_INT_ARRAY));
 
         // Check the GPS key prefix
         assertTrue("Gps.KEY_PREFIX doesn't match the prefix of the name of "

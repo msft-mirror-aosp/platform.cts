@@ -45,6 +45,7 @@ import android.util.Log;
 import android.util.SparseArray;
 
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class IRadioNetworkImpl extends IRadioNetwork.Stub {
     private static final String TAG = "MRNW";
@@ -77,6 +78,7 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
     private String[] mCarrierPlmnArray = new String[0];
     private String[] mAllSatellitePlmnArray = new String[0];
     private boolean mIsSatelliteEnabledForCarrier = false;
+    private final AtomicBoolean mIsNonTerrestrialNetwork = new AtomicBoolean(false);
 
     public IRadioNetworkImpl(
             MockModemService service,
@@ -456,6 +458,7 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
         // TODO: support accessTechnologySpecificInfo
         dataRegResponse.accessTechnologySpecificInfo =
                 android.hardware.radio.network.AccessTechnologySpecificInfo.noinit(true);
+        dataRegResponse.isNonTerrestrialNetwork = mIsNonTerrestrialNetwork.get();
 
         RadioResponseInfo rsp = mService.makeSolRsp(serial);
         try {
@@ -732,6 +735,19 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
         } catch (RemoteException ex) {
             Log.e(mTag, "Failed to setLocationUpdates from AIDL. Exception" + ex);
         }
+    }
+
+    /**
+     * Sets the mock Non-Terrestrial Network (NTN) registration status. This method is called from
+     * MockModemManager to simulate whether the device is currently registered on an NTN.
+     *
+     * @param isNtn true if the network is to be considered NTN, false otherwise.
+     */
+    public void setIsNonTerrestrialNetwork(boolean isNtn) {
+        mIsNonTerrestrialNetwork.set(isNtn);
+        Log.d(mTag, "setIsNonTerrestrialNetwork: " + mIsNonTerrestrialNetwork);
+        // Notify the framework about the potential network state change.
+        unsolNetworkStateChanged();
     }
 
     @Override
