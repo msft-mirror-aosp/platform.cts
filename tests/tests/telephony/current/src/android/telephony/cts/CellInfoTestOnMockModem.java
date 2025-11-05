@@ -68,6 +68,10 @@ public class CellInfoTestOnMockModem extends CellInfoTest {
     public void tearDown() throws Exception {
         super.tearDown();
 
+        // Change service state to be NOT REGISTERED
+        assertTrue(
+                sMockModemManager.changeNetworkService(
+                        TEST_SIM_SLOT_ID, MOCK_SIM_PROFILE_ID_TWN_CHT, false));
         // Remove the SIM
         sMockModemManager.removeSimCard(TEST_SIM_SLOT_ID);
     }

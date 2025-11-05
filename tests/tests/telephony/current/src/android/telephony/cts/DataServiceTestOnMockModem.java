@@ -144,6 +144,7 @@ public class DataServiceTestOnMockModem {
 
         // Rebind all interfaces which is binding to MockModemService to default.
         if (mMockModemManager != null) {
+            assertTrue(mMockModemManager.changeNetworkService(TEST_SLOT, 310260, false));
             assertTrue(mMockModemManager.disconnectMockModemService());
             mMockModemManager = null;
 
