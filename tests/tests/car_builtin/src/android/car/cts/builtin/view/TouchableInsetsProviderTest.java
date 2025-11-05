@@ -110,8 +110,11 @@ public final class TouchableInsetsProviderTest extends AbstractExpectableTestCas
         @Override
         protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
             // Sets the top left corner as the obscured touch region.
-            Region obscuredRegion = new Region(left, top,
-                    left + (right - left) / 4, top + (bottom - top) / 4);
+            // setObscuredTouchRegion() expects coordinates relative to the window.
+            int[] loc = new int[2];
+            getLocationInWindow(loc);
+            Region obscuredRegion = new Region(loc[0], loc[1],
+                    loc[0] + (right - left) / 4, loc[1] + (bottom - top) / 4);
             mTouchableInsetsProvider.setObscuredTouchRegion(obscuredRegion);
             super.onLayout(changed, left, top, right, bottom);
         }
@@ -131,7 +134,7 @@ public final class TouchableInsetsProviderTest extends AbstractExpectableTestCas
 
     @Test
     public void testTouchableInsetsProvider_InputEventDeliveredOnObscuredRegion() {
-        View view = mActivity.getWindow().getDecorView();
+        View view = mActivity.mTestView;
         tapOnView(view, view.getWidth() / 8, view.getHeight() / 8);
 
         assertThat(mActivity.mTestView.mCapturedEvent).isNotNull();
@@ -139,7 +142,7 @@ public final class TouchableInsetsProviderTest extends AbstractExpectableTestCas
 
     @Test
     public void testViewWithTouchableInsetsProvider_InputEventIsNotDelivered() {
-        View view = mActivity.getWindow().getDecorView();
+        View view = mActivity.mTestView;
         tapOnView(view, view.getWidth() / 2, view.getHeight() / 2);
 
         expectWithMessage("No touch on center").that(mActivity.mTestView.mCapturedEvent).isNull();
