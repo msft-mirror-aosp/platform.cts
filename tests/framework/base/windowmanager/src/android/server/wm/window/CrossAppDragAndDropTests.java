@@ -192,9 +192,6 @@ public class CrossAppDragAndDropTests extends ActivityManagerTestBase {
                 @Override
                 void assumeDeviceSupportsLaunchMode() {
                     assumeTrue(Flags.enableConnectedDisplaysDnd());
-                    assumeTrue(
-                            com.android.settings.flags.Flags
-                                    .enableDefaultDisplayInTopologySwitchBugfix());
                     assumeFalse(
                             mTestCase
                                     .mContext
