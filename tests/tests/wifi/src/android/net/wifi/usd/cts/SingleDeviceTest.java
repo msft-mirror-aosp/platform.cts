@@ -16,6 +16,8 @@
 
 package android.net.wifi.usd.cts;
 
+import static android.net.wifi.usd.Config.PUBLISH_TYPE_SOLICITED;
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -23,11 +25,13 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
+import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.net.wifi.cts.WifiFeature;
 import android.net.wifi.flags.Flags;
 import android.net.wifi.usd.Characteristics;
 import android.net.wifi.usd.DiscoveryResult;
+import android.net.wifi.usd.ProximityRangingInfo;
 import android.net.wifi.usd.PublishConfig;
 import android.net.wifi.usd.PublishSession;
 import android.net.wifi.usd.PublishSessionCallback;
@@ -97,6 +101,16 @@ public class SingleDeviceTest {
     private static final int CALLBACK_STATUS_FAILURE = 2;
     private final AtomicInteger mCallbackStatus = new AtomicInteger();
     private static final int TEST_PEER_ID = 200;
+    private static final String TEST_PR_DEVICE_NAME = "TEST_PR_DEVICE_NAME";
+    private static final byte[] TEST_DEVICE_IDENTITY_KEY = {
+        11, 22, 33, 44, 55, 66, 77, 88, 11, 22, 33, 44, 55, 66, 77, 88
+    };
+    private static final byte[] TEST_PEER_DEVICE_IDENTITY_KEY_1 = {
+        11, 21, 31, 44, 55, 66, 77, 88, 11, 22, 33, 44, 55, 66, 77, 88
+    };
+    private static final byte[] TEST_PEER_DEVICE_IDENTITY_KEY_2 = {
+        12, 22, 32, 44, 55, 66, 77, 88, 11, 22, 33, 44, 55, 66, 77, 88
+    };
 
     private Consumer<Boolean> getCallbackHandler() {
         return mCallback;
@@ -885,5 +899,209 @@ public class SingleDeviceTest {
                 SubscribeConfig.SERVICE_PROTO_TYPE_CSA_MATTER,
                 discoveryResult.getServiceProtoType());
         assertArrayEquals(TEST_SSI, discoveryResult.getServiceSpecificInfo());
+    }
+
+    /** Test USD characteristics for Proximity Detection support */
+    @SdkSuppress(minSdkVersion = 37)
+    @RequiresFlagsEnabled(com.android.wifi.flags.Flags.FLAG_PROXIMITY_RANGING)
+    @ApiTest(
+            apis = {
+                "android.net.wifi.usd"
+                        + ".Characteristics#isFindingProximityDetectionDevicesSupported"
+            })
+    @Test
+    public void testIsFindingProximityDetectionDevicesSupported() {
+        try (PermissionContext p =
+                TestApis.permissions()
+                        .withPermission(
+                                android.Manifest.permission.MANAGE_WIFI_NETWORK_SELECTION)) {
+            if (!mWifiManager.isUsdPublisherSupported()
+                    && !mWifiManager.isUsdSubscriberSupported()) {
+                return;
+            }
+            assertNotNull(mUsdManager);
+            Characteristics characteristics = mUsdManager.getCharacteristics();
+            assertNotNull(characteristics);
+            characteristics.isFindingProximityDetectionDevicesSupported();
+        }
+    }
+
+    /** Test set and get for Subscribe config with proximity ranging enabled */
+    @SdkSuppress(minSdkVersion = 37)
+    @RequiresFlagsEnabled(com.android.wifi.flags.Flags.FLAG_PROXIMITY_RANGING)
+    @ApiTest(
+            apis = {
+                "android.net.wifi.usd.SubscribeConfig.Builder#setProximityRangingEnabled",
+                "android.net.wifi.usd.SubscribeConfig.Builder#setSelfDeviceIdentityKey",
+                "android.net.wifi.usd.SubscribeConfig.Builder#setPeerDeviceIdentityKeys",
+                "android.net.wifi.usd.Config#isProximityRangingEnabled",
+                "android.net.wifi.usd.Config#getSelfDeviceIdentityKey",
+                "android.net.wifi.usd.Config#getPeerDeviceIdentityKeyList",
+            })
+    @Test
+    public void testSubscribeConfigWithProximityRangingEnabled() {
+        SubscribeConfig subscribeConfig =
+                new SubscribeConfig.Builder(USD_SERVICE_NAME)
+                        .setProximityRangingEnabled(true)
+                        .setSubscribeType(SubscribeConfig.SUBSCRIBE_TYPE_ACTIVE)
+                        .setSelfDeviceIdentityKey(TEST_DEVICE_IDENTITY_KEY)
+                        .setPeerDeviceIdentityKeys(
+                                List.of(
+                                        TEST_PEER_DEVICE_IDENTITY_KEY_1,
+                                        TEST_PEER_DEVICE_IDENTITY_KEY_2))
+                        .build();
+        assertArrayEquals(USD_SERVICE_NAME.getBytes(), subscribeConfig.getServiceName());
+        assertTrue(subscribeConfig.isProximityRangingEnabled());
+        assertArrayEquals(TEST_DEVICE_IDENTITY_KEY, subscribeConfig.getSelfDeviceIdentityKey());
+        assertEquals(2, subscribeConfig.getPeerDeviceIdentityKeys().size());
+        assertArrayEquals(
+                TEST_PEER_DEVICE_IDENTITY_KEY_1,
+                subscribeConfig.getPeerDeviceIdentityKeys().get(0));
+        assertArrayEquals(
+                TEST_PEER_DEVICE_IDENTITY_KEY_2,
+                subscribeConfig.getPeerDeviceIdentityKeys().get(1));
+    }
+
+    /** Test set and get for Publish config with proximity ranging enabled */
+    @SdkSuppress(minSdkVersion = 37)
+    @RequiresFlagsEnabled(com.android.wifi.flags.Flags.FLAG_PROXIMITY_RANGING)
+    @ApiTest(
+            apis = {
+                "android.net.wifi.usd.PublishConfig.Builder#setProximityRangingEnabled",
+                "android.net.wifi.usd.PublishConfig.Builder#setSelfDeviceIdentityKey",
+                "android.net.wifi.usd.PublishConfig.Builder#setPeerDeviceIdentityKeys",
+                "android.net.wifi.usd.PublishConfig.Builder#setPublishType",
+                "android.net.wifi.usd.Config#isProximityRangingEnabled",
+                "android.net.wifi.usd.Config#getPublishType",
+                "android.net.wifi.usd.Config#getSelfDeviceIdentityKey",
+                "android.net.wifi.usd.Config#getPeerDeviceIdentityKeyList",
+            })
+    @Test
+    public void testPublishConfigWithProximityRangingEnabled() {
+        PublishConfig publishConfig =
+                new PublishConfig.Builder(USD_SERVICE_NAME)
+                        .setProximityRangingEnabled(true)
+                        .setPublishType(PUBLISH_TYPE_SOLICITED)
+                        .setSelfDeviceIdentityKey(TEST_DEVICE_IDENTITY_KEY)
+                        .setPeerDeviceIdentityKeys(
+                                List.of(
+                                        TEST_PEER_DEVICE_IDENTITY_KEY_1,
+                                        TEST_PEER_DEVICE_IDENTITY_KEY_2))
+                        .build();
+        assertArrayEquals(USD_SERVICE_NAME.getBytes(), publishConfig.getServiceName());
+        assertTrue(publishConfig.isProximityRangingEnabled());
+        assertEquals(PUBLISH_TYPE_SOLICITED, publishConfig.getPublishType());
+        assertArrayEquals(TEST_DEVICE_IDENTITY_KEY, publishConfig.getSelfDeviceIdentityKey());
+        assertEquals(2, publishConfig.getPeerDeviceIdentityKeys().size());
+        assertArrayEquals(
+                TEST_PEER_DEVICE_IDENTITY_KEY_1, publishConfig.getPeerDeviceIdentityKeys().get(0));
+        assertArrayEquals(
+                TEST_PEER_DEVICE_IDENTITY_KEY_2, publishConfig.getPeerDeviceIdentityKeys().get(1));
+    }
+
+    /** Test discovery result with proximity ranging information */
+    @SdkSuppress(minSdkVersion = 37)
+    @RequiresFlagsEnabled(com.android.wifi.flags.Flags.FLAG_PROXIMITY_RANGING)
+    @ApiTest(
+            apis = {
+                "android.net.wifi.usd.DiscoveryResult.Builder#setProximityRangingInfo",
+                "android.net.wifi.usd.DiscoveryResult.Builder#setDeviceIdentityKey",
+                "android.net.wifi.usd.DiscoveryResult#getProximityRangingInfo",
+                "android.net.wifi.usd.DiscoveryResult#getDeviceIdentityKey",
+                "android.net.wifi.usd.ProximityRangingInfo.Builder#setDeviceName",
+                "android.net.wifi.usd.ProximityRangingInfo.Builder#set80211mcBasedRangingSupported",
+                "android.net.wifi.usd.ProximityRangingInfo.Builder"
+                        + "#setNtbNonSecureLtfRangingSupported",
+                "android.net.wifi.usd.ProximityRangingInfo.Builder#setNtbSecureLtfRangingSupported",
+                "android.net.wifi.usd.ProximityRangingInfo.Builder"
+                        + "#setUnauthenticatedPasnModeSupported",
+                "android.net.wifi.usd.ProximityRangingInfo.Builder"
+                        + "#setAuthenticatedPasnModeSupported",
+                "android.net.wifi.usd.ProximityRangingInfo.Builder"
+                        + "#set80211mcBasedIstaRoleSupported",
+                "android.net.wifi.usd.ProximityRangingInfo.Builder"
+                        + "#set80211mcBasedRstaRoleSupported",
+                "android.net.wifi.usd.ProximityRangingInfo.Builder#setNtbIstaRoleSupported",
+                "android.net.wifi.usd.ProximityRangingInfo.Builder#setNtbRstaRoleSupported",
+                "android.net.wifi.usd.ProximityRangingInfo.Builder"
+                        + "#setMaxSupportedPacketWidth80211mcBased",
+                "android.net.wifi.usd.ProximityRangingInfo.Builder"
+                        + "#setMaxSupportedPreamble80211mcBased",
+                "android.net.wifi.usd.ProximityRangingInfo.Builder#setMaxSupportedPacketWidthNtb",
+                "android.net.wifi.usd.ProximityRangingInfo.Builder#setMaxSupportedPreambleNtb",
+                "android.net.wifi.usd.ProximityRangingInfo.Builder#set6GHzSupported",
+                "android.net.wifi.usd.ProximityRangingInfo#getDeviceName",
+                "android.net.wifi.usd.ProximityRangingInfo#is80211mcBasedRangingSupported",
+                "android.net.wifi.usd.ProximityRangingInfo#isNtbNonSecureLtfRangingSupported",
+                "android.net.wifi.usd.ProximityRangingInfo#isNtbSecureLtfRangingSupported",
+                "android.net.wifi.usd.ProximityRangingInfo#isUnauthenticatedPasnModeSupported",
+                "android.net.wifi.usd.ProximityRangingInfo#isAuthenticatedPasnModeSupported",
+                "android.net.wifi.usd.ProximityRangingInfo#is80211mcBasedIstaRoleSupported",
+                "android.net.wifi.usd.ProximityRangingInfo#is80211mcBasedRstaRoleSupported",
+                "android.net.wifi.usd.ProximityRangingInfo#isNtbIstaRoleSupported",
+                "android.net.wifi.usd.ProximityRangingInfo#isNtbRstaRoleSupported",
+                "android.net.wifi.usd.ProximityRangingInfo#getMaxSupportedPacketWidth80211mcBased",
+                "android.net.wifi.usd.ProximityRangingInfo#getMaxSupportedPreamble80211mcBased",
+                "android.net.wifi.usd.ProximityRangingInfo#getMaxSupportedPacketWidthNtb",
+                "android.net.wifi.usd.ProximityRangingInfo#getMaxSupportedPreambleNtb",
+                "android.net.wifi.usd.ProximityRangingInfo#is6GHzSupported"
+            })
+    @Test
+    public void testDiscoveryResultWithProximityRangingInfo() {
+        ProximityRangingInfo rangingInfo =
+                new ProximityRangingInfo.Builder()
+                        .setDeviceName(TEST_PR_DEVICE_NAME)
+                        .set80211mcBasedRangingSupported(true)
+                        .setNtbNonSecureLtfRangingSupported(true)
+                        .setNtbSecureLtfRangingSupported(false)
+                        .setUnauthenticatedPasnModeSupported(true)
+                        .setAuthenticatedPasnModeSupported(true)
+                        .set80211mcBasedIstaRoleSupported(true)
+                        .set80211mcBasedRstaRoleSupported(false)
+                        .setNtbIstaRoleSupported(true)
+                        .setNtbRstaRoleSupported(false)
+                        .setMaxSupportedPacketWidth80211mcBased(ScanResult.CHANNEL_WIDTH_80MHZ)
+                        .setMaxSupportedPreamble80211mcBased(ScanResult.PREAMBLE_VHT)
+                        .setMaxSupportedPacketWidthNtb(ScanResult.CHANNEL_WIDTH_80MHZ)
+                        .setMaxSupportedPreambleNtb(ScanResult.PREAMBLE_HE)
+                        .set6GHzSupported(false)
+                        .build();
+        DiscoveryResult discoveryResult =
+                new DiscoveryResult.Builder(TEST_PEER_ID)
+                        .setFsdEnabled(true)
+                        .setServiceProtoType(SubscribeConfig.SERVICE_PROTO_TYPE_GENERIC)
+                        .setServiceSpecificInfo(TEST_SSI)
+                        .setProximityRangingInfo(rangingInfo)
+                        .setDeviceIdentityKey(TEST_PEER_DEVICE_IDENTITY_KEY_1)
+                        .build();
+        assertEquals(TEST_PEER_ID, discoveryResult.getPeerId());
+        assertTrue(discoveryResult.isFsdEnabled());
+        assertEquals(
+                SubscribeConfig.SERVICE_PROTO_TYPE_GENERIC, discoveryResult.getServiceProtoType());
+        assertArrayEquals(TEST_SSI, discoveryResult.getServiceSpecificInfo());
+        assertArrayEquals(TEST_PEER_DEVICE_IDENTITY_KEY_1, discoveryResult.getDeviceIdentityKey());
+        ProximityRangingInfo retrievedRangingInfo = discoveryResult.getProximityRangingInfo();
+        assertNotNull(retrievedRangingInfo);
+        assertEquals(TEST_PR_DEVICE_NAME, retrievedRangingInfo.getDeviceName());
+        assertTrue(retrievedRangingInfo.is80211mcBasedRangingSupported());
+        assertTrue(retrievedRangingInfo.isNtbNonSecureLtfRangingSupported());
+        assertFalse(retrievedRangingInfo.isNtbSecureLtfRangingSupported());
+        assertTrue(retrievedRangingInfo.isUnauthenticatedPasnModeSupported());
+        assertTrue(retrievedRangingInfo.isAuthenticatedPasnModeSupported());
+        assertTrue(retrievedRangingInfo.is80211mcBasedIstaRoleSupported());
+        assertFalse(retrievedRangingInfo.is80211mcBasedRstaRoleSupported());
+        assertTrue(retrievedRangingInfo.isNtbIstaRoleSupported());
+        assertFalse(retrievedRangingInfo.isNtbRstaRoleSupported());
+        assertEquals(
+                ScanResult.CHANNEL_WIDTH_80MHZ,
+                retrievedRangingInfo.getMaxSupportedPacketWidth80211mcBased());
+        assertEquals(
+                ScanResult.PREAMBLE_VHT,
+                retrievedRangingInfo.getMaxSupportedPreamble80211mcBased());
+        assertEquals(
+                ScanResult.CHANNEL_WIDTH_80MHZ,
+                retrievedRangingInfo.getMaxSupportedPacketWidthNtb());
+        assertEquals(ScanResult.PREAMBLE_HE, retrievedRangingInfo.getMaxSupportedPreambleNtb());
+        assertFalse(retrievedRangingInfo.is6GHzSupported());
     }
 }

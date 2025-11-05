@@ -33,6 +33,7 @@ import android.net.wifi.WifiManager;
 import android.net.wifi.cts.TestHelper;
 import android.net.wifi.cts.WifiFeature;
 import android.net.wifi.cts.WifiJUnit4TestBase;
+import android.net.wifi.rtt.ProximityDetectionCharacteristics;
 import android.net.wifi.rtt.RangingResult;
 import android.net.wifi.rtt.RangingResultCallback;
 import android.net.wifi.rtt.WifiRttManager;
@@ -105,6 +106,7 @@ public class TestBase extends WifiJUnit4TestBase {
 
     protected WifiRttManager mWifiRttManager;
     protected Bundle mCharacteristics;
+    ProximityDetectionCharacteristics mProximityDetectionCharacteristics;
 
     private final HandlerThread mHandlerThread = new HandlerThread("SingleDeviceTest");
     protected final Executor mExecutor;
@@ -201,6 +203,13 @@ public class TestBase extends WifiJUnit4TestBase {
             assertTrue("Wi-Fi RTT is not available (should be)", mWifiRttManager.isAvailable());
         }
         mCharacteristics = mWifiRttManager.getRttCharacteristics();
+        if (Flags.proximityRanging()) {
+            mProximityDetectionCharacteristics =
+                    mWifiRttManager.getProximityDetectionCharacteristics();
+            if (mProximityDetectionCharacteristics == null) {
+                Log.w(TAG, "Proximity detection feature is not supported");
+            }
+        }
     }
 
     static class WifiRttBroadcastReceiver extends BroadcastReceiver {
