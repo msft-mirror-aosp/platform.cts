@@ -442,4 +442,7 @@
 
     <!-- b/455544614 -->
     <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.DeviceStateAppFunctionServiceTest#onExecuteFunction_withValidIdentifier_returnsSuccessfulResponse" />
+
+    <!-- b/456618211-->
+    <option name="compatibility:exclude-filter" value="CtsMediaPlayerTestCases android.media.player.cts.MediaPlayerTest#testSetNextMediaPlayer" />
 </configuration>
