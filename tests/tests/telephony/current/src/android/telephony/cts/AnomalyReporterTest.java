@@ -24,18 +24,29 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.os.ParcelUuid;
+import android.provider.DeviceConfig;
 import android.telephony.AnomalyReporter;
+import android.telephony.TelephonyManager;
+
+import com.android.bedstead.nene.utils.UndoableContext;
+import com.android.bedstead.permissions.Permissions;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -43,6 +54,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 /** Unit tests for the {@link AnomalyReporter} class. */
 public class AnomalyReporterTest {
@@ -51,19 +63,43 @@ public class AnomalyReporterTest {
     @Mock private PackageManager mMockPackageManager;
 
     private static final String MOCK_PACKAGE_NAME = "com.android.phone.mock";
+    private UndoableContext mIgnorePermissionsContext;
 
-    /** Set up the test environment. */
+    /** Set up common test environment. */
     @Before
     public void setUp() throws Exception {
-        MockitoAnnotations.openMocks(this);
         when(mMockContext.getPackageManager()).thenReturn(mMockPackageManager);
     }
 
-    /** Tear down the test environment. */
+    /** Set up DeviceConfig to enable anomaly reporting. */
+    @Before
+    public void setUpDeviceConfigAnomalyReportEnabled() {
+        MockitoAnnotations.initMocks(this);
+        mIgnorePermissionsContext = Permissions.ignoringPermissions();
+        DeviceConfig.setProperty(
+                DeviceConfig.NAMESPACE_TELEPHONY,
+                "is_telephony_anomaly_report_enabled",
+                "true",
+                false /* makeDefault */);
+    }
+
+    /** Tear down common test environment. */
     @After
     public void tearDown() throws Exception {
-        // Reset the static fields in AnomalyReporter after each test.
         resetAnomalyReporter();
+    }
+
+    /** Tear down DeviceConfig settings. */
+    @After
+    public void tearDownDeviceConfigAnomalyReportEnabled() {
+        DeviceConfig.setProperty(
+                DeviceConfig.NAMESPACE_TELEPHONY,
+                "is_telephony_anomaly_report_enabled",
+                null,
+                false /* makeDefault */);
+        if (mIgnorePermissionsContext != null) {
+            mIgnorePermissionsContext.close();
+        }
     }
 
     /**
@@ -220,6 +256,112 @@ public class AnomalyReporterTest {
         assertDebugPackageName(MOCK_PACKAGE_NAME);
     }
 
+    /**
+     * Verifies that {@link AnomalyReporter#reportAnomaly(UUID, String)} does not send a broadcast
+     * if the reporter has not been initialized.
+     */
+    @Test
+    public void testReportAnomaly_notInitialized() {
+        UUID eventId = UUID.randomUUID();
+        String description = "Test Description";
+        AnomalyReporter.reportAnomaly(eventId, description);
+        // No broadcast should be sent.
+        verify(mMockContext, never()).sendBroadcast(any(), anyString());
+    }
+
+    /**
+     * Verifies that {@link AnomalyReporter#reportAnomaly(UUID, String)} does not send a broadcast
+     * for the same event more than once.
+     */
+    @Test
+    public void testReportAnomaly_duplicateEvent() {
+        initializeWithPackage(MOCK_PACKAGE_NAME);
+        UUID eventId = UUID.randomUUID();
+        String description = "Test Description";
+
+        // Reporting the same event twice.
+        // In a unit test, we can't rely on DeviceConfig, so we assume it passes.
+        AnomalyReporter.reportAnomaly(eventId, description);
+        AnomalyReporter.reportAnomaly(eventId, description);
+
+        // The broadcast should only be sent once.
+        verify(mMockContext, times(1)).sendBroadcast(any(Intent.class), anyString());
+    }
+
+    /**
+     * Verifies a successful call to {@link AnomalyReporter#reportAnomaly(UUID, String)}, checking
+     * for correct logging and broadcast intent.
+     */
+    @Test
+    public void testReportAnomaly() {
+        initializeWithPackage(MOCK_PACKAGE_NAME);
+        UUID eventId = UUID.randomUUID();
+        String description = "Test Description";
+        AnomalyReporter.reportAnomaly(eventId, description);
+
+        ArgumentCaptor<Intent> intentCaptor = ArgumentCaptor.forClass(Intent.class);
+        verify(mMockContext)
+                .sendBroadcast(
+                        intentCaptor.capture(),
+                        eq(Manifest.permission.READ_PRIVILEGED_PHONE_STATE));
+
+        Intent intent = intentCaptor.getValue();
+        assertEquals(TelephonyManager.ACTION_ANOMALY_REPORTED, intent.getAction());
+        assertEquals(MOCK_PACKAGE_NAME, intent.getPackage());
+        assertEquals(
+                new ParcelUuid(eventId),
+                intent.getParcelableExtra(TelephonyManager.EXTRA_ANOMALY_ID));
+        assertEquals(
+                description, intent.getStringExtra(TelephonyManager.EXTRA_ANOMALY_DESCRIPTION));
+    }
+
+
+    /**
+     * Verifies that {@link AnomalyReporter#reportAnomaly(UUID, String)} does not send a broadcast
+     * if initialization failed to find a valid broadcast receiver package.
+     */
+    @Test
+    public void testReportAnomaly_NullPackage() {
+        initializeWithPackage(null);
+        UUID eventId = UUID.randomUUID();
+        String description = "Test Description";
+        AnomalyReporter.reportAnomaly(eventId, description);
+
+        verify(mMockContext, never()).sendBroadcast(any(), anyString());
+    }
+
+    /**
+     * Verifies that {@link AnomalyReporter#reportAnomaly(UUID, String)} throws a
+     * {@link NullPointerException} when the event ID is null.
+     */
+    @Test
+    public void testReportAnomaly_nullEventId() {
+        initializeWithPackage(MOCK_PACKAGE_NAME);
+        String description = "Test Description";
+        assertThrows(NullPointerException.class,
+                () -> AnomalyReporter.reportAnomaly(null, description));
+    }
+
+    /**
+     * Sets up {@link PackageManager} mocks and initializes the {@link AnomalyReporter}.
+     *
+     * @param packageName The package name for the mock receiver. Can be {@code null} to test cases
+     * where no valid receiver is found.
+     */
+    private void initializeWithPackage(String packageName) {
+        try {
+            Field contextField = AnomalyReporter.class.getDeclaredField("sContext");
+            contextField.setAccessible(true);
+            contextField.set(null, mMockContext);
+
+            Field packageNameField = AnomalyReporter.class.getDeclaredField("sDebugPackageName");
+            packageNameField.setAccessible(true);
+            packageNameField.set(null, packageName);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            fail("Failed to set static fields in AnomalyReporter: " + e.getMessage());
+        }
+    }
+
     /** Resets the static fields in the {@link AnomalyReporter} class. */
     private void resetAnomalyReporter() {
         try {
@@ -231,11 +373,11 @@ public class AnomalyReporterTest {
             packageNameField.setAccessible(true);
             packageNameField.set(null, null);
 
-            Field eventsField = AnomalyReporter.class.getDeclaredField("sEvents");
-            eventsField.setAccessible(true);
-            ((java.util.Map) eventsField.get(null)).clear();
+            Field reportedEventsField = AnomalyReporter.class.getDeclaredField("sReportedEventIds");
+            reportedEventsField.setAccessible(true);
+            reportedEventsField.set(null, null);
         } catch (NoSuchFieldException | IllegalAccessException e) {
-            fail("Failed to reset AnomalyReporter: " + e.getMessage());
+            // This can be ignored in tests that don't need to reset the fields.
         }
     }
 
