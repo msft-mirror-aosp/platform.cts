@@ -17,6 +17,7 @@
 package android.widget.cts;
 
 import static android.view.accessibility.Flags.FLAG_TEXT_CURSOR_BLINK_INTERVAL;
+import static android.view.accessibility.Flags.a11yTextChangeTypesApi;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -750,9 +751,14 @@ public class EditTextTest {
         EditorInfo editorInfo = new EditorInfo();
         editText.onCreateInputConnection(editorInfo);
 
-        assertEquals(InputType.TYPE_CLASS_TEXT
-                | InputType.TYPE_TEXT_FLAG_ENABLE_TEXT_CONVERSION_SUGGESTIONS,
-                        editorInfo.inputType);
+        int expectedInputType =
+                InputType.TYPE_CLASS_TEXT
+                        | InputType.TYPE_TEXT_FLAG_ENABLE_TEXT_CONVERSION_SUGGESTIONS;
+        if (a11yTextChangeTypesApi()) {
+            expectedInputType |= InputType.TYPE_TEXT_FLAG_ENABLE_TEXT_SUGGESTION_SELECTED;
+        }
+
+        assertEquals(expectedInputType, editorInfo.inputType);
     }
 
     @UiThreadTest
@@ -764,6 +770,23 @@ public class EditTextTest {
 
         assertEquals(InputType.TYPE_CLASS_TEXT
                 | InputType.TYPE_TEXT_FLAG_ENABLE_TEXT_CONVERSION_SUGGESTIONS, tv.getInputType());
+    }
+
+    @UiThreadTest
+    @Test
+    @RequiresFlagsEnabled("android.view.accessibility.a11y_text_change_types_api")
+    public void testInputTypeForSuggestionSelectedFlag() {
+        EditText editText = new EditText(mActivity);
+        editText.setInputType(EditorInfo.TYPE_CLASS_TEXT);
+        editText.setText(mActivity.getResources().getText(R.string.even_more_long_text));
+
+        EditorInfo editorInfo = new EditorInfo();
+        editText.onCreateInputConnection(editorInfo);
+
+        assertEquals(
+                InputType.TYPE_CLASS_TEXT
+                        | InputType.TYPE_TEXT_FLAG_ENABLE_TEXT_SUGGESTION_SELECTED,
+                editorInfo.inputType);
     }
 
     @Test

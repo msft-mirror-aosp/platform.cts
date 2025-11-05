@@ -152,6 +152,7 @@ import android.view.inputmethod.ExtractedText;
 import android.view.inputmethod.ExtractedTextRequest;
 import android.view.inputmethod.Flags;
 import android.view.inputmethod.InputConnection;
+import android.view.inputmethod.TextAttribute;
 import android.view.textclassifier.TextClassifier;
 import android.view.textclassifier.TextSelection;
 import android.widget.EditText;
@@ -9613,6 +9614,119 @@ public class TextViewTest {
 
         textView.setShiftDrawingOffsetForStartOverhang(false);
         assertFalse(textView.getShiftDrawingOffsetForStartOverhang());
+    }
+
+    @Test
+    @RequiresFlagsEnabled("android.view.accessibility.a11y_text_change_types_api")
+    @UiThreadTest
+    public void testSetComposingText_sendsAccessibilityTextChangeType() throws Throwable {
+        final TextView textView = findTextView(R.id.textview_text);
+        textView.setText("", BufferType.EDITABLE);
+        textView.setKeyListener(TextKeyListener.getInstance());
+
+        final UiAutomation uiAutomation = mInstrumentation.getUiAutomation();
+        for (Boolean isSuggestionSelected : new Boolean[] {true, false, null}) {
+            final Runnable action =
+                    () -> {
+                        final EditorInfo editorInfo = new EditorInfo();
+                        final InputConnection ic = textView.onCreateInputConnection(editorInfo);
+                        assertNotNull(
+                                "InputConnection should not be null for an editable TextView", ic);
+
+                        final CharSequence composingText = "test";
+                        final TextAttribute textAttribute;
+                        if (isSuggestionSelected == null) {
+                            textAttribute = null;
+                        } else {
+                            textAttribute =
+                                    new TextAttribute.Builder()
+                                            .setTextSuggestionSelected(isSuggestionSelected)
+                                            .build();
+                        }
+
+                        if (textAttribute == null) {
+                            ic.setComposingText(composingText, 1);
+                        } else {
+                            ic.setComposingText(composingText, 1, textAttribute);
+                        }
+                    };
+
+            final AccessibilityEvent event =
+                    uiAutomation.executeAndWaitForEvent(
+                            action,
+                            (e) -> e.getEventType() == AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED,
+                            TIMEOUT);
+            assertNotNull(
+                    "Did not receive an AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED within timeout",
+                    event);
+
+            int expectedChangeTypes = AccessibilityEvent.TEXT_CHANGE_TYPE_IN_COMPOSITION;
+            if (Boolean.TRUE.equals(isSuggestionSelected)) {
+                expectedChangeTypes |=
+                        AccessibilityEvent.TEXT_CHANGE_TYPE_CONVERSION_SUGGESTION_SELECTED_BY_IME;
+            }
+            assertEquals(
+                    "The textChangeTypes flag is incorrect",
+                    expectedChangeTypes,
+                    event.getTextChangeTypes());
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled("android.view.accessibility.a11y_text_change_types_api")
+    @UiThreadTest
+    public void testCommitText_sendsAccessibilityTextChangeType() throws Throwable {
+        final TextView textView = findTextView(R.id.textview_text);
+        textView.setText("", BufferType.EDITABLE);
+        textView.setKeyListener(TextKeyListener.getInstance());
+
+        final UiAutomation uiAutomation = mInstrumentation.getUiAutomation();
+
+        for (Boolean isSuggestionSelected : new Boolean[] {true, false, null}) {
+            final Runnable action =
+                    () -> {
+                        final EditorInfo editorInfo = new EditorInfo();
+                        final InputConnection ic = textView.onCreateInputConnection(editorInfo);
+                        assertNotNull(
+                                "InputConnection should not be null for an editable TextView", ic);
+
+                        final CharSequence text = "test";
+                        final TextAttribute textAttribute;
+                        if (isSuggestionSelected == null) {
+                            textAttribute = null;
+                        } else {
+                            textAttribute =
+                                    new TextAttribute.Builder()
+                                            .setTextSuggestionSelected(isSuggestionSelected)
+                                            .build();
+                        }
+
+                        if (textAttribute == null) {
+                            ic.commitText(text, 1);
+                        } else {
+                            ic.commitText(text, 1, textAttribute);
+                        }
+                    };
+
+            final AccessibilityEvent event =
+                    uiAutomation.executeAndWaitForEvent(
+                            action,
+                            (e) -> e.getEventType() == AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED,
+                            TIMEOUT);
+            assertNotNull(
+                    "Did not receive an AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED within timeout",
+                    event);
+
+            int expectedChangeTypes = AccessibilityEvent.TEXT_CHANGE_TYPE_COMMITTED_BY_IME;
+            if (Boolean.TRUE.equals(isSuggestionSelected)) {
+                expectedChangeTypes |=
+                        AccessibilityEvent.TEXT_CHANGE_TYPE_CONVERSION_SUGGESTION_SELECTED_BY_IME;
+            }
+            assertEquals(
+                    "The textChangeTypes flag is incorrect",
+                    expectedChangeTypes,
+                    event.getTextChangeTypes());
+        }
     }
 
     private static boolean isExpectedChangeType(AccessibilityEvent event, int changeType) {
