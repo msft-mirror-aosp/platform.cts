@@ -50,7 +50,6 @@ struct {
 } gJni;
 
 static std::set<int64_t> gSupportedRefreshPeriods;
-static bool isRefreshRateUpdateSupported;
 
 struct RefreshRateCallback {
     RefreshRateCallback(const char* name): name(name) {}
@@ -109,22 +108,20 @@ static void verifyRefreshRateCallback(JNIEnv* env, const T& cb, int expectedMin)
     ASSERT(cb.vsyncPeriod > ZERO,
            "Choreographer failed to report a nonzero refresh period invoking '%s'",
            cb.name.c_str());
-    if (isRefreshRateUpdateSupported) {
-        // TODO(b/441289985) SF won't switch between rates if they are too close.
-        // When ARR modes with 120TE and 240TE exists on the device, then switching between two
-        // with peak rate of 120Fps doesn't switch between 8333333 (120TE) and 8333332 (240TE)
-        constexpr float kEpsilon = 1.f; // 1 nanosecond
-        int count_with_tolerance =
-                std::count_if(gSupportedRefreshPeriods.begin(), gSupportedRefreshPeriods.end(),
-                              [&](int64_t supportedRate) {
-                                  return std::abs(supportedRate - cb.vsyncPeriod.count()) <=
-                                          kEpsilon;
-                              });
-        ASSERT(count_with_tolerance > 0,
-               "Choreographer failed to report a supported refresh period invoking '%s': supported "
-               "periods: %s, actual: %lu",
-               cb.name.c_str(), dumpSupportedRefreshPeriods().c_str(), cb.vsyncPeriod.count());
-    }
+    // TODO(b/441289985) SF won't switch between rates if they are too close.
+    // When ARR modes with 120TE and 240TE exists on the device, then switching between two
+    // with peak rate of 120Fps doesn't switch between 8333333 (120TE) and 8333332 (240TE)
+    constexpr float kEpsilon = 1.f; // 1 nanosecond
+    int count_with_tolerance =
+            std::count_if(gSupportedRefreshPeriods.begin(), gSupportedRefreshPeriods.end(),
+                            [&](int64_t supportedRate) {
+                                return std::abs(supportedRate - cb.vsyncPeriod.count()) <=
+                                        kEpsilon;
+                            });
+    ASSERT(count_with_tolerance > 0,
+            "Choreographer failed to report a supported refresh period invoking '%s': supported "
+            "periods: %s, actual: %lu",
+            cb.name.c_str(), dumpSupportedRefreshPeriods().c_str(), cb.vsyncPeriod.count());
 }
 
 static void resetRefreshRateCallback(RefreshRateCallback& cb) {
@@ -138,8 +135,7 @@ static jlong android_view_surfacecontrol_cts_ChoreographerNativeTest_getChoreogr
 }
 
 static jboolean android_view_surfacecontrol_cts_ChoreographerNativeTest_prepareChoreographerTests(
-        JNIEnv* env, jclass, jlong choreographerPtr, jlongArray supportedRefreshPeriods,
-        jboolean isRefreshRateUpdateSupportedFlagEnabled) {
+        JNIEnv* env, jclass, jlong choreographerPtr, jlongArray supportedRefreshPeriods) {
     std::lock_guard<std::mutex> _l{gLock};
     AChoreographer* choreographer = reinterpret_cast<AChoreographer*>(choreographerPtr);
     const size_t count = env->GetArrayLength(supportedRefreshPeriods);
@@ -147,7 +143,6 @@ static jboolean android_view_surfacecontrol_cts_ChoreographerNativeTest_prepareC
     for (size_t i = 0; i < count; ++i) {
         gSupportedRefreshPeriods.insert(vals[i]);
     }
-    isRefreshRateUpdateSupported = isRefreshRateUpdateSupportedFlagEnabled;
     env->ReleaseLongArrayElements(supportedRefreshPeriods, const_cast<jlong*>(vals), JNI_ABORT);
     return choreographer != nullptr;
 }
@@ -587,7 +582,7 @@ android_view_surfacecontrol_cts_ChoreographerNativeTest_testRefreshRateCallbacks
 static JNINativeMethod gMethods[] = {
         {"nativeGetChoreographer", "()J",
          (void*)android_view_surfacecontrol_cts_ChoreographerNativeTest_getChoreographer},
-        {"nativePrepareChoreographerTests", "(J[JZ)Z",
+        {"nativePrepareChoreographerTests", "(J[J)Z",
          (void*)android_view_surfacecontrol_cts_ChoreographerNativeTest_prepareChoreographerTests},
         {"nativeTestPostVsyncCallbackWithoutDelayEventuallyRunsCallbacks", "(J)V",
          (void*)android_view_surfacecontrol_cts_ChoreographerNativeTest_testPostVsyncCallbackWithoutDelayEventuallyRunsCallback},
