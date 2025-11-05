@@ -309,8 +309,8 @@ bool OutputManager::isOutPtsListIdenticalToInpPtsList(bool isPtsOutOfOrder) {
 bool OutputManager::equals(OutputManager* that) {
     if (this == that) return true;
     if (that == nullptr) return false;
-    if (!equalsDequeuedOutput(that)) return false;
     if (!equalsPtsList(that)) return false;
+    if (!equalsDequeuedOutput(that)) return false;
     return true;
 }
 
