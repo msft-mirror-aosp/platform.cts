@@ -136,6 +136,17 @@
                 <action android:name="android.service.voice.VoiceInteractionService"/>
             </intent-filter>
         </service>
+        <service android:name=".services.VoiceInteractionServiceForPccHotwordDetection"
+            android:label="CTS test PCC voice interaction service"
+            android:permission="android.permission.BIND_VOICE_INTERACTION"
+            android:exported="true"
+            android:visibleToInstantApps="true">
+            <meta-data android:name="android.voice_interaction"
+                       android:resource="@xml/interaction_service_with_pcc_hotword" />
+            <intent-filter>
+                <action android:name="android.service.voice.VoiceInteractionService" />
+            </intent-filter>
+        </service>
         <!-- RecognitionService -->
         <service android:name=".services.MainRecognitionService"
                  android:label="CTS Voice Recognition Service"
@@ -150,6 +161,13 @@
         </service>
 
         <!-- HotwordDetectionService -->
+        <private-compute>
+            <service
+                android:name="android.voiceinteraction.cts.services.PccHotwordDetectionService"
+                android:permission="android.permission.BIND_HOTWORD_DETECTION_SERVICE"
+                android:exported="true">
+            </service>
+        </private-compute>
         <service
             android:name="android.voiceinteraction.cts.services.TestPermissionHotwordDetectionService"
             android:permission="android.permission.BIND_HOTWORD_DETECTION_SERVICE"
