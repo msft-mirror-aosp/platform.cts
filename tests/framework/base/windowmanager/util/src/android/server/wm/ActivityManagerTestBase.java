@@ -2975,6 +2975,10 @@ public abstract class ActivityManagerTestBase {
 
         final int mDisplayId;
 
+        public int getPhysicalDensity() {
+            return physicalDensity;
+        }
+
         /** Get physical and override display metrics from WM for specified display. */
         public static ReportedDisplayMetrics getDisplayMetrics(int displayId) {
             return new ReportedDisplayMetrics(
