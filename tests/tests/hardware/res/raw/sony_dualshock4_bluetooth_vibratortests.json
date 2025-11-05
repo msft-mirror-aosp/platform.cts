@@ -1,4 +1,9 @@
-// Refer to kernel dualshock4_send_output_report() in drivers/hid/hid-sony.c
+// Refer to kernel dualshock4_send_output_report() in drivers/hid/hid-sony.c (prior to kernel 6.2)
+// or to dualshock4_output_worker in drivers/hid/hid-playstation.c (after kernel 6.2)
+// In this file, 'dataMaskForAssertions' is needed because depending on the kernel version, driver
+// behaviour will differ slightly, which means that we only check some pieces of the output report
+// rather that enforce a strict behaviour. As of 2025-10-10, the behavior has changed in kernel
+// 6.12. So these checks will have to persist until at least kernel 6.12 is no longer supported.
 [
   {
     "id": 1,
@@ -12,10 +17,12 @@
             "data" : 0x11},   // DUALSHOCK4_CONTROLLER_BLUETOOTH
 
             {"index" : 1,
-             "data" : 0xc4},   // HID + CRC | sc->ds4_bt_poll_interval
+             "dataMaskForAssertions" : 0xc0,
+             "data" : 0xc0},   // HID + CRC
 
             {"index" : 3,
-             "data" : 0x7}    // blink + LED + motor
+             "dataMaskForAssertions" : 0x1,
+             "data" : 0x1}    // motor
         ]
   },
 
@@ -31,10 +38,12 @@
             "data" : 0x11},   // DUALSHOCK4_CONTROLLER_BLUETOOTH
 
             {"index" : 1,
-             "data" : 0xc4},   // HID + CRC | sc->ds4_bt_poll_interval
+             "dataMaskForAssertions" : 0xc0,
+             "data" : 0xc0},   // HID + CRC
 
             {"index" : 3,
-             "data" : 0x7}    // blink + LED + motor
+             "dataMaskForAssertions" : 0x1,
+             "data" : 0x1}    // motor
         ]
   }
 
