@@ -97,7 +97,7 @@ public class CrossProfileTest extends BaseManagedProfileTest {
     }
 
     @After
-    protected void tearDown() throws Exception {
+    public void tearDown() throws Exception {
         explicitlyResetInteractAcrossProfilesAppOps();
         resetCrossProfilePackages();
     }
