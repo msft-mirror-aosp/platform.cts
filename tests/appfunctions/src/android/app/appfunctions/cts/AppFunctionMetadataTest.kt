@@ -110,7 +110,7 @@ class AppFunctionMetadataTest {
         uninstallPackage(TEST_APP_B_PKG)
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONTEXTUAL_APP_FUNCTIONS)
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @Test
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
@@ -146,7 +146,7 @@ class AppFunctionMetadataTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONTEXTUAL_APP_FUNCTIONS)
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @Test
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
@@ -190,7 +190,7 @@ class AppFunctionMetadataTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONTEXTUAL_APP_FUNCTIONS)
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @Test
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser

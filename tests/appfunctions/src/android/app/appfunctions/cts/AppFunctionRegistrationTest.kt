@@ -76,7 +76,7 @@ import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
 @RequiresFlagsEnabled(
-    android.app.appfunctions.flags.Flags.FLAG_ENABLE_CONTEXTUAL_APP_FUNCTIONS
+    android.app.appfunctions.flags.Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS
 )
 class AppFunctionRegistrationTest {
     @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
