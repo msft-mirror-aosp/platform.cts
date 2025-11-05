@@ -23,6 +23,7 @@ import static android.app.Activity.RESULT_OK;
 import static android.app.AppOpsManager.MODE_ALLOWED;
 import static android.app.AppOpsManager.MODE_DEFAULT;
 import static android.app.AppOpsManager.MODE_ERRORED;
+import static android.app.Notification.BridgedNotificationMetadata;
 import static android.app.Notification.EXTRA_PREFER_SMALL_ICON;
 import static android.app.Notification.FLAG_FOREGROUND_SERVICE;
 import static android.app.Notification.FLAG_NO_CLEAR;
@@ -3680,6 +3681,59 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         mNotificationManager.notify(id, notification);
 
         assertThat(mNotificationHelper.findPostedNotification(null, id, SEARCH_TYPE.APP)).isNull();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_BRIDGED_NOTIFICATIONS_API)
+    public void testSetBridgedNotificationMetadata_noPermission() throws Exception {
+        int id = 99;
+
+        Icon icon = Icon.createWithBitmap(Bitmap.createBitmap(300, 300, Bitmap.Config.ARGB_8888));
+        BridgedNotificationMetadata metadata =
+                new BridgedNotificationMetadata(
+                        BridgedNotificationMetadata.BRIDGED_METADATA_TYPE_PHONE,
+                        "test_package",
+                        icon);
+        final Notification notification =
+                new Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+                        .setSmallIcon(R.drawable.black)
+                        .setBridgedNotificationMetadata(metadata)
+                        .build();
+        mNotificationManager.notify(id, notification);
+
+        StatusBarNotification sbn =
+                mNotificationHelper.findPostedNotification(null, id, SEARCH_TYPE.APP);
+        assertNotNull(sbn);
+
+        assertTrue(sbn.getNotification().getBridgedNotificationMetadata() == null);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_BRIDGED_NOTIFICATIONS_API)
+    public void testSetBridgedNotificationMetadata_hasPermission() throws Exception {
+        int id = 99;
+
+        Icon icon = Icon.createWithBitmap(Bitmap.createBitmap(300, 300, Bitmap.Config.ARGB_8888));
+        BridgedNotificationMetadata metadata =
+                new BridgedNotificationMetadata(
+                        BridgedNotificationMetadata.BRIDGED_METADATA_TYPE_PHONE,
+                        "test_package",
+                        icon);
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    final Notification notification =
+                            new Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+                                    .setSmallIcon(R.drawable.black)
+                                    .setBridgedNotificationMetadata(metadata)
+                                    .build();
+                    mNotificationManager.notify(id, notification);
+                    StatusBarNotification sbn =
+                            mNotificationHelper.findPostedNotification(null, id, SEARCH_TYPE.APP);
+                    assertNotNull(sbn);
+
+                    assertTrue(sbn.getNotification().getBridgedNotificationMetadata() != null);
+                },
+                android.Manifest.permission.POST_BRIDGED_NOTIFICATIONS);
     }
 
     @Test
