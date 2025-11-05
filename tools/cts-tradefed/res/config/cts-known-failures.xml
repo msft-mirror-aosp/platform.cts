@@ -376,6 +376,16 @@
     <option name="compatibility:exclude-filter" value="CtsShortcutManagerTestCases android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
     <option name="compatibility:exclude-filter" value="CtsShortcutManagerTestCases[instant] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
     <option name="compatibility:exclude-filter" value="CtsShortcutManagerTestCases[foldable:1:TENT] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+    <!-- b/381409777-->
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.dailyjob.DailyDeleteAccessLogTest#testAccessLogsAreDeleted" />
+
+    <!-- b/450021782 -->
+    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.changelogs.HealthConnectChangeLogsTests#testGetChangeLogToken_emptyRecordTypes_throwsException" />
+    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.changelogs.HealthConnectChangeLogsTests#testGetChangeLogToken_superRecordTypes_throwsException" />
+
+    <!-- b/378989105 -->
+    <option name="compatibility:exclude-filter" value="CtsSliceTestCases" />
+
     <option name="compatibility:exclude-filter" value="CtsShortcutManagerTestCases[foldable:2:HALF_FOLDED] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
     <option name="compatibility:exclude-filter" value="CtsShortcutManagerTestCases[foldable:3:OPEN] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
     <option name="compatibility:exclude-filter" value="CtsShortcutManagerTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
