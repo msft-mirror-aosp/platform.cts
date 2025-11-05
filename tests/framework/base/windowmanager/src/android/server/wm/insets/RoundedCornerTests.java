@@ -47,7 +47,6 @@ import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.RotationSession;
-import android.server.wm.WindowManagerStateHelper;
 import android.util.Log;
 import android.view.Display;
 import android.view.Gravity;
@@ -63,7 +62,6 @@ import androidx.test.core.app.ActivityScenario;
 
 import com.android.compatibility.common.util.PollingCheck;
 
-import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -90,14 +88,6 @@ public class RoundedCornerTests extends ActivityManagerTestBase {
 
     @Parameterized.Parameter(1)
     public String orientationName;
-
-    private final WindowManagerStateHelper mWindowManagerStateHelper =
-            new WindowManagerStateHelper();
-
-    @After
-    public void tearDown() {
-        mWindowManagerStateHelper.waitForDisplayUnfrozen();
-    }
 
     @Test
     public void testRoundedCorner_fullscreen() {

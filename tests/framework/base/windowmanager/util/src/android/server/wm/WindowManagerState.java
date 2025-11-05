@@ -147,7 +147,6 @@ public class WindowManagerState {
     private Rect mDefaultPinnedStackBounds = new Rect();
     private Rect mPinnedStackMovementBounds = new Rect();
     private String mInputMethodWindowAppToken = null;
-    private boolean mDisplayFrozen;
     private boolean mSanityCheckFocusedWindow = true;
     private boolean mWindowFramesValid;
     private BackNavigationState mBackNavigationState;
@@ -415,7 +414,6 @@ public class WindowManagerState {
             mInputMethodWindowAppToken =
                     Integer.toHexString(state.getInputMethodWindow().getHashCode());
         }
-        mDisplayFrozen = state.getDisplayFrozen();
         mWindowFramesValid = state.getWindowFramesValid();
 
         mBackNavigationState = new BackNavigationState(state.hasBackNavigation()
@@ -455,7 +453,6 @@ public class WindowManagerState {
         if (state.inputMethodWindow != null) {
             mInputMethodWindowAppToken = Integer.toHexString(state.inputMethodWindow.hashCode);
         }
-        mDisplayFrozen = state.displayFrozen;
         mWindowFramesValid = state.windowFramesValid;
 
         mBackNavigationState = new BackNavigationState(state.backNavigation);
@@ -479,7 +476,6 @@ public class WindowManagerState {
         mDefaultPinnedStackBounds.setEmpty();
         mPinnedStackMovementBounds.setEmpty();
         mInputMethodWindowAppToken = null;
-        mDisplayFrozen = false;
         mWindowFramesValid = false;
     }
 
@@ -1188,10 +1184,6 @@ public class WindowManagerState {
 
     public WindowManagerState.WindowState getInputMethodWindowState() {
         return getWindowStateForAppToken(mInputMethodWindowAppToken);
-    }
-
-    public boolean isDisplayFrozen() {
-        return mDisplayFrozen;
     }
 
     public int getRotation() {

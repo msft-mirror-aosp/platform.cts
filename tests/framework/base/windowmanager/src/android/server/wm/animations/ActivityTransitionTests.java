@@ -152,7 +152,6 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
     public void setUp() throws Exception {
         super.setUp();
         mWmState.setSanityCheckWithFocusedWindow(false);
-        mWmState.waitForDisplayUnfrozen();
     }
 
     @Rule
