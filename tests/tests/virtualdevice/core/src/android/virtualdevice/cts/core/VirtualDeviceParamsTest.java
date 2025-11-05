@@ -30,8 +30,10 @@ import static android.media.AudioManager.AUDIO_SESSION_ID_GENERATE;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 import android.companion.virtual.ViewConfigurationParams;
 import android.companion.virtual.VirtualDeviceParams;
@@ -121,6 +123,7 @@ public class VirtualDeviceParamsTest {
 
         VirtualDeviceParams params = VirtualDeviceParams.CREATOR.createFromParcel(parcel);
         assertThat(params).isEqualTo(originalParams);
+        assertFalse(params.isLocalDeviceOnly());
         assertThat(params.getLockState()).isEqualTo(VirtualDeviceParams.LOCK_STATE_ALWAYS_UNLOCKED);
         assertThat(params.getUsersWithMatchingAccounts())
                 .containsExactly(UserHandle.of(123), UserHandle.of(456));
@@ -159,6 +162,19 @@ public class VirtualDeviceParamsTest {
         assertThat(params).isEqualTo(originalParams);
         assertThat(params.getDimDuration()).isEqualTo(dimDuration);
         assertThat(params.getScreenOffTimeout()).isEqualTo(screenOffTimeout);
+    }
+
+    @Test
+    public void localDeviceOnly_parcelable_shouldRecreateSuccessfully() {
+        VirtualDeviceParams originalParams =
+                new VirtualDeviceParams.Builder().setLocalDeviceOnly(true).build();
+
+        Parcel parcel = Parcel.obtain();
+        originalParams.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+
+        VirtualDeviceParams params = VirtualDeviceParams.CREATOR.createFromParcel(parcel);
+        assertTrue(params.isLocalDeviceOnly());
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_VIEWCONFIGURATION_APIS)

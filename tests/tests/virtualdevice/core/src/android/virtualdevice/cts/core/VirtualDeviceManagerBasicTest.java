@@ -223,6 +223,13 @@ public class VirtualDeviceManagerBasicTest {
     }
 
     @Test
+    public void createVirtualDevice_localDeviceOnly_shouldThrowSecurityException() {
+        VirtualDeviceParams params =
+                new VirtualDeviceParams.Builder().setLocalDeviceOnly(true).build();
+        assertThrows(SecurityException.class, () -> mRule.createManagedVirtualDevice(params));
+    }
+
+    @Test
     public void createVirtualDevice_closeMultipleTimes_isSafe() {
         mVirtualDevice.close();
         mVirtualDevice.close();
