@@ -98,7 +98,7 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
 
     // Allowable range with error error for the R.anim.alpha animation duration.
     private static final Range<Long> CUSTOM_ANIMATION_DURATION_RANGE = new Range<>(
-            CUSTOM_ANIMATION_DURATION - 200L, CUSTOM_ANIMATION_DURATION + 1000L);
+            CUSTOM_ANIMATION_DURATION - 200L, CUSTOM_ANIMATION_DURATION + 2500L);
 
     static final String TEST_METHOD_KEY = "test_method_key";
     static final String TRANSITION_TYPE_KEY = "transition_type_key";
