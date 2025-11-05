@@ -80,6 +80,12 @@ public class ImsUtils {
                 && pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING);
     }
 
+    public static boolean shouldTestSms() {
+        final PackageManager pm = InstrumentationRegistry.getInstrumentation().getContext()
+                .getPackageManager();
+        return pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING);
+    }
+
     public static boolean shouldTestImsSingleRegistration() {
         boolean hasSingleReg = InstrumentationRegistry.getInstrumentation().getContext()
                 .getPackageManager().hasSystemFeature(
@@ -125,7 +131,7 @@ public class ImsUtils {
      * if there exist a carrier app that declares a CarrierMessagingService
      */
     public static boolean shouldRunSmsImsTests(int subId) {
-        if (!shouldTestImsService()) {
+        if (!shouldTestImsService() || !shouldTestSms()) {
             return false;
         }
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
