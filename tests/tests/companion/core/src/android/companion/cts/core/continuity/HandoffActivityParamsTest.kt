@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package android.companion.cts.core
+package android.companion.cts.core.continuity
 
 import android.app.HandoffActivityParams
+import android.companion.cts.core.CoreTestBase
 import android.os.Parcel
 import android.platform.test.annotations.AppModeFull
 import androidx.test.ext.junit.runners.AndroidJUnit4
