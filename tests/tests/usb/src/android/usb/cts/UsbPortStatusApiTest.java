@@ -17,57 +17,53 @@
 package android.usb.cts;
 
 import static android.Manifest.permission.MANAGE_USB;
-
-import com.android.compatibility.common.util.SystemUtil;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
-
 import static android.hardware.usb.UsbPortStatus.DATA_STATUS_DISABLED_DOCK;
 import static android.hardware.usb.UsbPortStatus.DATA_STATUS_DISABLED_DOCK_DEVICE_MODE;
 import static android.hardware.usb.UsbPortStatus.DATA_STATUS_DISABLED_DOCK_HOST_MODE;
 
-import android.annotation.Nullable;
-import android.app.UiAutomation;
-import android.content.pm.PackageManager;
-import android.content.Context;
-import android.hardware.usb.IUsbOperationInternal;
-import android.hardware.usb.UsbManager;
-import android.hardware.usb.UsbPort;
-import android.hardware.usb.UsbPortStatus;
-import android.hardware.usb.DisplayPortAltModeInfo;
-import android.util.Log;
-
-import android.os.Build;
-
-import androidx.test.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
-
-import java.util.function.Consumer;
-import java.util.concurrent.Executor;
-import java.util.List;
-
-import org.junit.Assert;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import org.junit.Assume;
+
+import android.annotation.Nullable;
+import android.app.UiAutomation;
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.hardware.usb.DisplayPortAltModeInfo;
+import android.hardware.usb.UsbManager;
+import android.hardware.usb.UsbPort;
+import android.hardware.usb.UsbPortStatus;
+import android.hardware.usb.flags.Flags;
+import android.os.Build;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+
+import androidx.test.InstrumentationRegistry;
+
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.PermissionContext;
+import com.android.compatibility.common.util.SystemUtil;
+
+import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.concurrent.Executor;
+import java.util.function.Consumer;
+
 /**
- * Unit tests for {@link android.hardware.usb.UsbPortStatus}.
- * Note: MUST claimed MANAGE_USB permission in Manifest
+ * Unit tests for {@link android.hardware.usb.UsbPortStatus}. Note: MUST claimed MANAGE_USB
+ * permission in Manifest
  */
-@RunWith(AndroidJUnit4.class)
+@RunWith(BedsteadJUnit4.class)
 public class UsbPortStatusApiTest {
     private static final String TAG = UsbPortStatusApiTest.class.getSimpleName();
 
@@ -88,6 +84,9 @@ public class UsbPortStatusApiTest {
 
     private Executor mExecutor;
     private Consumer<Integer> mConsumer;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() {
@@ -265,6 +264,44 @@ public class UsbPortStatusApiTest {
 
         // Drop MANAGE_USB permission.
         mUiAutomation.dropShellPermissionIdentity();
+    }
+
+    /** Verify that the port partner BC 1.2 is unknown on a fresh simulated port */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_POWER_PROFILE_REPORTING)
+    public void test_UsbApiForBc12TypeValue() throws Exception {
+        // Adopt MANAGE_USB permission to access UsbPort and UsbPortStatus
+        try (PermissionContext p = TestApis.permissions().withPermission(MANAGE_USB)) {
+            final String portId = "ctstest-bc12Type-value";
+            UsbPort port = setupSimulatedPort(portId);
+
+            UsbPortStatus portStatus = port.getStatus();
+            assertEquals(portStatus.getPartnerBc12Type(), UsbPortStatus.BC12_TYPE_UNKNOWN);
+
+            removeSimulatedPort(portId);
+        }
+    }
+
+    /**
+     * Verify that PowerProfileInfo list maintained by UsbPortStatus are empty on a fresh simulated
+     * port
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_POWER_PROFILE_REPORTING)
+    public void test_UsbApiForPowerProfileInfoAccess() throws Exception {
+        // Adopt MANAGE_USB permission to access UsbPort and UsbPortStatus
+        try (PermissionContext p = TestApis.permissions().withPermission(MANAGE_USB)) {
+            final String portId = "ctstest-powerprofile-access";
+            UsbPort port = setupSimulatedPort(portId);
+
+            UsbPortStatus portStatus = port.getStatus();
+            assertEquals(portStatus.getPortSinkPowerProfiles().size(), 0);
+            assertEquals(portStatus.getPortSourcePowerProfiles().size(), 0);
+            assertEquals(portStatus.getPartnerSinkPowerProfiles().size(), 0);
+            assertEquals(portStatus.getPartnerSourcePowerProfiles().size(), 0);
+
+            removeSimulatedPort(portId);
+        }
     }
 
     /**
