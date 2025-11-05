@@ -3,5 +3,10 @@
     {
       "name": "CtsWindowManagerDeviceInsets_insets_windowinsetsanimationcontrollertests"
     }
+  ],
+  "desktop-presubmit": [
+    {
+      "name": "CtsWindowManagerDeviceInsets_insets_windowinsetsanimationcontrollertests"
+    }
   ]
 }
