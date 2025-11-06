@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package android.virtualdevice.cts.audio;
+package android.virtualdevice.cts.common;
 
 import android.companion.virtual.audio.AudioCapture;
 import android.media.AudioRecord;
@@ -27,44 +27,50 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-/**
- * Utility class to observe and wait for changes in the AudioRecord audio signal.
- */
-class SignalObserver implements AutoCloseable {
+/** Utility class to observe and wait for changes in the AudioRecord audio signal. */
+public class SignalObserver implements AutoCloseable {
+
+    // default FREQUENCY to set and observe
+    public static final int FREQUENCY = 264;
     private static final String TAG = SignalObserver.class.getSimpleName();
 
     private static final Duration READ_BUFFER_DURATION = Duration.ofMillis(48);
     private static final double POWER_THRESHOLD_FOR_SIGNAL_PRESENCE = 0.4f;
 
-    private AudioRecorderThread mAudioRecorderThread;
+    private final AudioRecorderThread mAudioRecorderThread;
 
     private final AtomicBoolean mRunning = new AtomicBoolean(true);
 
     public interface SignalChangeListener {
+        /**
+         * Callback called when the detected set of observed frequencies changes.
+         *
+         * @param frequencies - the set of frequencies detected
+         */
         void onSignalChange(Set<Integer> frequencies);
     }
 
     /**
-     * Construct signal observer for the specified audio record and set of frequencies.
-     * Immediately after construction, the record will be continuously read from
-     * until {@link SignalObserver#close()} is called.
+     * Construct signal observer for the specified audio record and set of frequencies. Immediately
+     * after construction, the record will be continuously read from until {@link
+     * SignalObserver#close()} is called.
      *
-     * @param audioCapture         - Audio capture to record from and observe the changes.
+     * @param audioCapture - Audio capture to record from and observe the changes.
      * @param observedFrequencies - Set of frequencies to test the signal for.
      */
-    SignalObserver(AudioCapture audioCapture, Set<Integer> observedFrequencies) {
+    public SignalObserver(AudioCapture audioCapture, Set<Integer> observedFrequencies) {
         this(new AudioCaptureSource(audioCapture), observedFrequencies);
     }
 
     /**
-     * Construct signal observer for the specified audio record and set of frequencies.
-     * Immediately after construction, the record will be continuously read from
-     * until {@link SignalObserver#close()} is called.
+     * Construct signal observer for the specified audio record and set of frequencies. Immediately
+     * after construction, the record will be continuously read from until {@link
+     * SignalObserver#close()} is called.
      *
-     * @param audioRecord         - Audio record to record from and observe the changes.
+     * @param audioRecord - Audio record to record from and observe the changes.
      * @param observedFrequencies - Set of frequencies to test the signal for.
      */
-    SignalObserver(AudioRecord audioRecord, Set<Integer> observedFrequencies) {
+    public SignalObserver(AudioRecord audioRecord, Set<Integer> observedFrequencies) {
         this(new AudioRecordSource(audioRecord), observedFrequencies);
     }
 
@@ -73,14 +79,25 @@ class SignalObserver implements AutoCloseable {
         mAudioRecorderThread.start();
     }
 
-    void registerSignalChangeListener(SignalChangeListener signalChangeListener) {
+    /**
+     * Register a signal change callback to be called when the list of detected frequencies changes.
+     *
+     * @param signalChangeListener - the signal change callback
+     */
+    public void registerSignalChangeListener(SignalChangeListener signalChangeListener) {
         mAudioRecorderThread.addSignalChangeListener(signalChangeListener);
     }
 
-    void unregisterSignalChangeListener(SignalChangeListener signalChangeListener) {
+    /**
+     * Unregister the signal change callback.
+     *
+     * @param signalChangeListener - the previously registered signal change callback
+     */
+    public void unregisterSignalChangeListener(SignalChangeListener signalChangeListener) {
         mAudioRecorderThread.removeSignalChangeListener(signalChangeListener);
     }
 
+    /** Stop and close the signal observer frequencies detection. */
     @Override
     public void close() {
         mRunning.set(false);
@@ -98,13 +115,15 @@ class SignalObserver implements AutoCloseable {
 
         private final ArrayList<SignalChangeListener> mSignalChangeListeners = new ArrayList<>();
 
-
         AudioRecorderThread(AudioSource audioSource, Set<Integer> observedFrequencies) {
             mAudioSource = audioSource;
             mObservedFrequencies = observedFrequencies;
             mReadBufferSampleCount =
-                    (int) ((READ_BUFFER_DURATION.toMillis() * mAudioSource.getSampleRate()
-                            * mAudioSource.getChannelCount()) / 1000);
+                    (int)
+                            ((READ_BUFFER_DURATION.toMillis()
+                                            * mAudioSource.getSampleRate()
+                                            * mAudioSource.getChannelCount())
+                                    / 1000);
         }
 
         void addSignalChangeListener(SignalChangeListener listener) {
@@ -135,9 +154,10 @@ class SignalObserver implements AutoCloseable {
                     break;
                 }
 
-                Set<Integer> currentFrequencies = mObservedFrequencies.stream().filter(
-                        frequency -> isFrequencyPresent(frequency, buffer)).collect(
-                        Collectors.toSet());
+                Set<Integer> currentFrequencies =
+                        mObservedFrequencies.stream()
+                                .filter(frequency -> isFrequencyPresent(frequency, buffer))
+                                .collect(Collectors.toSet());
                 Log.d(TAG, "Read " + ret + "bytes, freq " + currentFrequencies);
 
                 List<SignalObserver.SignalChangeListener> listeners;
@@ -162,9 +182,15 @@ class SignalObserver implements AutoCloseable {
             double power = 0.0;
             for (int j = 0; j < channelCount; j++) {
                 // Get the power in that channel
-                power += goertzel(frequency, mAudioSource.getSampleRate(),
-                        buffer, j /*offset*/, buffer.length, channelCount)
-                        / channelCount;
+                power +=
+                        goertzel(
+                                        frequency,
+                                        mAudioSource.getSampleRate(),
+                                        buffer,
+                                        j /*offset*/,
+                                        buffer.length,
+                                        channelCount)
+                                / channelCount;
             }
 
             Log.d(TAG, "Freq: " + frequency + " : " + power);
@@ -172,16 +198,19 @@ class SignalObserver implements AutoCloseable {
         }
     }
 
-    private interface AudioSource {
-
+    /** Common interface for an AudioSource, can be an AudioRecord, AudioCapter, etc */
+    public interface AudioSource {
+        /** Start the recording from the AudioSource */
         void startRecording();
 
+        /** Gets the sample rate of the AudioSource */
         int getSampleRate();
 
+        /** Gets the channel count of the AudioSource */
         int getChannelCount();
 
+        /** Reads audio data from the AudioSource */
         int read(short[] buffer, int offsetInShorts, int length, int readMode);
-
     }
 
     private static class AudioRecordSource implements AudioSource {
@@ -190,7 +219,6 @@ class SignalObserver implements AutoCloseable {
         AudioRecordSource(AudioRecord audioRecord) {
             mAudioRecord = audioRecord;
         }
-
 
         @Override
         public void startRecording() {
@@ -220,7 +248,6 @@ class SignalObserver implements AutoCloseable {
             mAudioCapture = audioCapture;
         }
 
-
         @Override
         public void startRecording() {
             mAudioCapture.startRecording();
@@ -243,11 +270,11 @@ class SignalObserver implements AutoCloseable {
     }
 
     /**
-     * Computes the relative power of a given frequency within a frame of the signal.
-     * See: http://en.wikipedia.org/wiki/Goertzel_algorithm
+     * Computes the relative power of a given frequency within a frame of the signal. See:
+     * http://en.wikipedia.org/wiki/Goertzel_algorithm
      */
-    static double goertzel(int signalFreq, int samplingFreq,
-            short[] samples, int offset, int length, int stride) {
+    static double goertzel(
+            int signalFreq, int samplingFreq, short[] samples, int offset, int length, int stride) {
         final int n = length / stride;
         final double coeff = Math.cos(signalFreq * 2 * Math.PI / samplingFreq) * 2;
         double s1 = 0;
