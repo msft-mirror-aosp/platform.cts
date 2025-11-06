@@ -447,8 +447,15 @@ public abstract class InputHidTestCase extends InputTestCase {
                     light = lights.get(i);
                 }
             }
-            assertNotNull("Light type " + test.lightType + " name " + test.lightName
-                    + " does not exist.  Lights found: " + lights, light);
+            if (light == null) {
+                failWithMessage(
+                        "Light type "
+                                + test.lightType
+                                + " name "
+                                + test.lightName
+                                + " does not exist. Lights found: "
+                                + lights);
+            }
             try (LightsManager.LightsSession session = lightsManager.openSession()) {
                 // Can't set both player id and color in same LightState
                 assertFalse(test.lightColor > 0 && test.lightPlayerId > 0);
