@@ -1446,6 +1446,19 @@ public abstract class CodecTestBase {
     // default value then explicit initialization is required.
     protected void configureCodecCommon(MediaFormat format, boolean isAsync,
             boolean signalEOSWithLastFrame, boolean isEncoder, int flags) {
+        if (IS_AT_LEAST_R && ((flags & MediaCodec.CONFIGURE_FLAG_USE_BLOCK_MODEL) != 0)) {
+            if (!isAsync) {
+                throw new RuntimeException("Block model feature testing requires mode of operation"
+                        + " to be asynchronous");
+            }
+        }
+        if (IS_AT_LEAST_U && ((flags & MediaCodec.CONFIGURE_FLAG_USE_CRYPTO_ASYNC) != 0)) {
+            if (!isAsync) {
+                throw new RuntimeException("Crypto async flag testing requires mode of operation"
+                        + " to be asynchronous");
+            }
+        }
+
         resetContext(isAsync, signalEOSWithLastFrame);
         mAsyncHandle.setCallBack(mCodec, isAsync);
 
@@ -1470,13 +1483,6 @@ public abstract class CodecTestBase {
 
     protected void configureCodec(MediaFormat format, boolean isAsync,
             boolean cryptoCallAndSignalEosWithLastFrame, boolean isEncoder, int flags) {
-        if (IS_AT_LEAST_R && ((flags & MediaCodec.CONFIGURE_FLAG_USE_BLOCK_MODEL) != 0)) {
-            if (!isAsync) {
-                throw new RuntimeException("Block model feature testing requires mode of operation"
-                        + " to be asynchronous");
-            }
-        }
-
         configureCodecCommon(format, isAsync, cryptoCallAndSignalEosWithLastFrame, isEncoder,
                 flags);
 
