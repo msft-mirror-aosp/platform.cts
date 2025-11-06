@@ -74,6 +74,7 @@ import com.android.graphics.hwui.flags.Flags;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -99,6 +100,12 @@ import java.util.function.ToIntFunction;
 public class ImageDecoderTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @After
+    public void clearDefaultListeners() {
+        ImageDecoder.setDefaultProcessListener(null);
+        ImageDecoder.setDefaultThreadListener(null);
+    }
 
     static final class Record {
         public final int resId;
@@ -1471,6 +1478,97 @@ public class ImageDecoderTest {
         } catch (IOException e) {
             fail("Failed with exception " + e);
         }
+    }
+
+    private void setDefaultProcessListener50x50() {
+        ImageDecoder.OnHeaderDecodedListener processListener =
+                new ImageDecoder.OnHeaderDecodedListener() {
+                    public void onHeaderDecoded(ImageDecoder decoder, ImageDecoder.ImageInfo info,
+                                                ImageDecoder.Source source) {
+                        decoder.setTargetSize(50, 50);
+                    }
+                };
+        ImageDecoder.setDefaultProcessListener(processListener);
+    }
+
+    private void setDefaultThreadListener25x25() {
+        ImageDecoder.OnHeaderDecodedListener threadListener =
+                new ImageDecoder.OnHeaderDecodedListener() {
+                    public void onHeaderDecoded(ImageDecoder decoder, ImageDecoder.ImageInfo info,
+                                                ImageDecoder.Source source) {
+                        decoder.setTargetSize(25, 25);
+                    }
+                };
+        ImageDecoder.setDefaultThreadListener(threadListener);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_IMAGE_DECODER_DEFAULT_LISTENER)
+    public void testDefaultProcessListener() throws IOException {
+        setDefaultProcessListener50x50();
+        ImageDecoder.Source source =
+                ImageDecoder.createSource(getResources(), R.drawable.vector_icon_heart_golden);
+        Drawable drawable = ImageDecoder.decodeDrawable(source);
+        assertEquals(drawable.getIntrinsicWidth(), 50);
+        assertEquals(drawable.getIntrinsicHeight(), 50);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_IMAGE_DECODER_DEFAULT_LISTENER)
+    public void testDefaultThreadListener() throws IOException {
+        // When process and thread listeners set, run the thread listener and skip
+        // the process listener.
+        setDefaultProcessListener50x50();
+        setDefaultThreadListener25x25();
+        ImageDecoder.Source source =
+                ImageDecoder.createSource(getResources(), R.drawable.vector_icon_heart_golden);
+        Drawable drawable = ImageDecoder.decodeDrawable(source);
+        assertEquals(drawable.getIntrinsicWidth(), 25);
+        assertEquals(drawable.getIntrinsicHeight(), 25);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_IMAGE_DECODER_DEFAULT_LISTENER)
+    public void testDefaultsAndLocalListener() throws IOException {
+        // When process, thread, and local listeners all set, process is not used, thread is used
+        // followed by local.
+        ImageDecoder.OnHeaderDecodedListener processListener =
+                new ImageDecoder.OnHeaderDecodedListener() {
+                    public void onHeaderDecoded(ImageDecoder decoder, ImageDecoder.ImageInfo info,
+                                                ImageDecoder.Source source) {
+                            fail("Process listener called!");
+                    }
+                };
+        ImageDecoder.OnHeaderDecodedListener threadListener =
+                new ImageDecoder.OnHeaderDecodedListener() {
+                    public void onHeaderDecoded(ImageDecoder decoder, ImageDecoder.ImageInfo info,
+                                                ImageDecoder.Source source) {
+                        decoder.setTargetSize(25, 25);
+                        decoder.setDecodeAsAlphaMaskEnabled(true);
+                    }
+                };
+        ImageDecoder.OnHeaderDecodedListener localListener =
+                new ImageDecoder.OnHeaderDecodedListener() {
+                    public void onHeaderDecoded(ImageDecoder decoder, ImageDecoder.ImageInfo info,
+                                                ImageDecoder.Source source) {
+                        decoder.setTargetSize(20, 20);
+                    }
+                };
+
+        ImageDecoder.setDefaultProcessListener(processListener);
+        ImageDecoder.setDefaultThreadListener(threadListener);
+
+        ImageDecoder.Source source =
+                    ImageDecoder.createSource(getResources(), R.drawable.grayscale_jpg);
+
+        Bitmap bm = ImageDecoder.decodeBitmap(source, localListener);
+
+        // Confirm local listener was run by targetSize.
+        assertEquals(bm.getWidth(), 20);
+        assertEquals(bm.getHeight(), 20);
+
+        // Confirm thread listener was run.
+        assertEquals(Bitmap.Config.ALPHA_8, bm.getConfig());
     }
 
     @Test
