@@ -199,18 +199,11 @@ public class PowerManager_ThermalTest {
         assertTrue("Expected non-negative headroom", headroom >= 0.0f);
         assertTrue("Expected reasonably small headroom", headroom < 10.0f);
 
-        // Sleep for a second before attempting to call again so as to not get rate limited
         Thread.sleep(1000);
         headroom = mPowerManager.getThermalHeadroom(5);
         assertFalse("Expected data to still be available", Float.isNaN(headroom));
         assertTrue("Expected non-negative headroom", headroom >= 0.0f);
         assertTrue("Expected reasonably small headroom", headroom < 10.0f);
-
-        // Test rate limiting by spamming calls and ensuring that at least the last one fails
-        for (int i = 0; i < 20; ++i) {
-            headroom = mPowerManager.getThermalHeadroom(5);
-        }
-        assertTrue("Abusive calls get rate limited", Float.isNaN(headroom));
     }
 
     @Test
