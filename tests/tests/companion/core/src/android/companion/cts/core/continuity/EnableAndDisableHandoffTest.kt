@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package android.companion.cts.core
+package android.companion.cts.core.continuity
 
 import android.Manifest
 import android.companion.cts.common.RecordingHandoffFeatureStateListener
 import android.companion.cts.common.SIMPLE_EXECUTOR
+import android.companion.cts.core.CoreTestBase
 import android.companion.datatransfer.continuity.TaskContinuityManager
 import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.RequiresFlagsEnabled

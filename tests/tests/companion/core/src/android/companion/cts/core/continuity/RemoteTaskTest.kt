@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package android.companion.cts.core
+package android.companion.cts.core.continuity
 
+import android.companion.cts.core.CoreTestBase
 import android.companion.datatransfer.continuity.RemoteTask
 import android.graphics.drawable.Icon
 import android.os.Parcel
