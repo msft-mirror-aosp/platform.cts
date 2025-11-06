@@ -16,20 +16,26 @@
 
 package com.android.cts.packagemanager.verify.domain.device.multiuser
 
-import com.android.bedstead.harrier.BedsteadJUnit4
-import com.android.bedstead.harrier.UserType
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
+import com.android.bedstead.harrier.BedsteadJUnit4
+import com.android.bedstead.harrier.DeviceState
+import com.android.bedstead.harrier.UserType
+import com.android.bedstead.harrier.annotations.AfterClass
+import com.android.bedstead.harrier.annotations.BeforeClass
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
+import com.android.cts.packagemanager.verify.domain.device.multiuser.DomainVerificationWorkProfileTestsBase.DomainVerificationWorkProfileTestsHelper.Companion.WORK_APP
 import org.junit.After
 import org.junit.Before
+import org.junit.ClassRule
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @EnsureHasWorkProfile(forUser = UserType.INITIAL_USER)
 @RunWith(BedsteadJUnit4::class)
 class DomainVerificationWorkProfileAllowParentLinkingTests :
-    DomainVerificationWorkProfileTestsBase() {
+    DomainVerificationWorkProfileTestsBase(helper) {
 
     private var initialAppLinkPolicy: Boolean? = null
 
@@ -55,10 +61,31 @@ class DomainVerificationWorkProfileAllowParentLinkingTests :
     @RequireRunOnInitialUser
     @Postsubmit(reason = "New test")
     @Test
-    override fun inPersonal_verifiedInOtherProfile() {
-        verify(WORK_APP)
+    fun inPersonal_verifiedInOtherProfile() {
+        helper.verify(WORK_APP)
 
         // General configuration does not allow parent -> managed, so only browsers returned
-        assertResolvesTo(personalBrowsers)
+        helper.assertResolvesTo(helper.personalBrowsers)
+    }
+
+    companion object {
+        @JvmField
+        @ClassRule
+        @Rule
+        val deviceState = DeviceState()
+
+        val helper = DomainVerificationWorkProfileTestsHelper(deviceState)
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            helper.installApks()
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            helper.uninstallApks()
+        }
     }
 }

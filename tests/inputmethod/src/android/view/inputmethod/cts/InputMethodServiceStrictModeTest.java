@@ -38,10 +38,13 @@ import androidx.annotation.IntDef;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.harrier.DeviceState;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.lang.annotation.Retention;
@@ -51,6 +54,10 @@ import java.util.concurrent.TimeUnit;
 /** Tests for verifying {@link StrictMode} violations on {@link InputMethodService} APIs. */
 @LargeTest
 public final class InputMethodServiceStrictModeTest extends EndToEndImeTestBase {
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     private static final long EXPECTED_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
 

@@ -32,10 +32,12 @@ import android.widget.LinearLayout;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.harrier.DeviceState;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -43,6 +45,11 @@ import java.util.concurrent.TimeUnit;
 
 @MediumTest
 public final class OnScreenPositionTest extends EndToEndImeTestBase {
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
 
     @Rule

@@ -44,6 +44,7 @@ import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.harrier.DeviceState;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.mockime.ImeEvent;
 import com.android.cts.mockime.ImeEventStream;
@@ -52,6 +53,8 @@ import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
 import org.jetbrains.annotations.NotNull;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
@@ -60,6 +63,10 @@ import java.util.concurrent.TimeUnit;
 
 @MediumTest
 public final class InputMethodSubtypeEndToEndTest extends EndToEndImeTestBase {
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
     static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
 
     private static final String TEST_IME_ID = "com.android.cts.testime/.TestIme";

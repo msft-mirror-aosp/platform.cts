@@ -104,6 +104,7 @@ import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.harrier.DeviceState;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.input.UinputTouchScreen;
@@ -116,6 +117,7 @@ import com.android.cts.mockime.MockImeSession;
 
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assume;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.testng.Assert;
@@ -131,6 +133,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @MediumTest
 public final class FocusHandlingTest extends EndToEndImeTestBase {
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
     static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5) * BuildUtils.HW_TIMEOUT_MULTIPLIER;
     static final long EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
     static final long NOT_EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(1);

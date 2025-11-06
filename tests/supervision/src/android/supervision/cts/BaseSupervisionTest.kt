@@ -24,12 +24,9 @@ import android.os.UserHandle
 import android.os.UserManager
 import android.platform.test.annotations.AppModeFull
 import androidx.test.platform.app.InstrumentationRegistry
-import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.nene.TestApis
 import com.android.compatibility.common.util.SystemUtil.runShellCommand
 import com.google.common.truth.Truth.assertThat
-import org.junit.ClassRule
-import org.junit.Rule
 
 /** Base class for supervision CTS tests. */
 @AppModeFull(reason = "The SupervisionManager API is not available in instant apps.")
@@ -80,9 +77,6 @@ open class BaseSupervisionTest {
     }
 
     companion object {
-        @[JvmField ClassRule Rule]
-        val deviceState = DeviceState()
-
         val context = TestApis.context().instrumentedContext()
         val supervisionManager = context.getSystemService(SupervisionManager::class.java)
         val userManager = context.getSystemService(UserManager::class.java)
