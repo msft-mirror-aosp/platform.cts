@@ -1190,6 +1190,55 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
         assertTrue(callAttributes.isLogExcluded());
     }
 
+    @ApiTest(
+            apis = {
+                "android.telecom.CallAttributes.Builder#setIsGroupCall",
+                "android.telecom.CallAttributes#isGroupCall"
+            })
+    public void testCallAttributesSetIsGroupCall() {
+        if (!mShouldTestTelecom || !android.telecom.flags.Flags.integratedCallLogsStage2()) {
+            return;
+        }
+
+        assertFalse(mIncomingCallAttributes.isGroupCall());
+        assertFalse(mOutgoingCallAttributes.isGroupCall());
+
+        CallAttributes callAttributes =
+                new CallAttributes.Builder(
+                                DEFAULT_T_HANDLE, DIRECTION_OUTGOING, TEST_NAME_1, TEST_URI_1)
+                        .setCallType(CallAttributes.AUDIO_CALL)
+                        .setCallCapabilities(CallAttributes.SUPPORTS_SET_INACTIVE)
+                        .setIsGroupCall(true)
+                        .build();
+
+        assertTrue(callAttributes.isGroupCall());
+    }
+
+    @ApiTest(
+            apis = {
+                "android.telecom.CallAttributes.Builder#setContactUri",
+                "android.telecom.CallAttributes#getContactUri"
+            })
+    public void testCallAttributesSetContactUri() {
+        if (!mShouldTestTelecom || !android.telecom.flags.Flags.integratedCallLogsStage2()) {
+            return;
+        }
+
+        assertNull(mIncomingCallAttributes.getContactUri());
+        assertNull(mOutgoingCallAttributes.getContactUri());
+
+        Uri testUri = Uri.parse("testUri");
+        CallAttributes callAttributes =
+                new CallAttributes.Builder(
+                                DEFAULT_T_HANDLE, DIRECTION_OUTGOING, TEST_NAME_1, TEST_URI_1)
+                        .setCallType(CallAttributes.AUDIO_CALL)
+                        .setCallCapabilities(CallAttributes.SUPPORTS_SET_INACTIVE)
+                        .setContactUri(testUri)
+                        .build();
+
+        assertNotNull(callAttributes.getContactUri());
+    }
+
     public void verifyCallEndpointIsNotNull(TelecomCtsVoipCall call) {
         waitUntilConditionIsTrueOrTimeout(
                 new Condition() {
