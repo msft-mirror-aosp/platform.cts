@@ -2514,13 +2514,13 @@
          \n View the demoted Live Update notification in the shade and verify that it has a <b>Share</b> contextual action.
     </string>
     <string name="live_update_demote_step" formatted="false"><b>Demote Live Update</b>
-        \n View the Live Update notification in the shade and <b>long-press</b> on it to open its <b>demotion menu</b>. Tap the button to turn off Live Updates for this app.
+        \n View the Live Update notification in the shade, open the notification\'s settings (e.g. long-press), and turn off Live Updates for this app.
     </string>
     <string name="live_update_notification_priority" formatted="false"> <b>Notification Priority</b>
          \n Two notifications are posted, including one Live Update notification.
          \n <b>Verification Instructions</b>:
          \n <b>Open the Notification Shade</b>, Confirm the <b>Live Update notification</b> is displayed at <b>top</b> of the shade.
-         \n <b>Open the Lock Screen</b>, Confirm <b>the Live Update notification</b> is displayed at <b>top</b> of the lock screen.
+         \n <b>Open the Lock Screen</b>, Confirm <b>the Live Update notification</b> is displayed prominently. If the notification is displayed in the list of other notifications, it must be at the <b>top</b> of the list.
     </string>
     <string name="live_update_notification_styled_text">Styled text examples; <b>bold</b>, <u>underlined</u> and <i>italic</i></string>
     <string name="live_update_notification_status_bar_chip" formatted="false"><b>Status Bar Chip</b>
@@ -2532,7 +2532,7 @@
          \n\u2022 Confirm the text on the chip is \“test\”.
          \n\u2022 Tap <b>the chip</b> on the status bar and observe that either of the following behaviors happens:
          \n\t\u2022 Option 1: <b>the app opens</b>.
-         \n\t\u2022 Option 2: <b>the notification appears</b>. In this case, tap <b>the chip</b> again and confirm <b>the notification disappears</b>.
+         \n\t\u2022 Option 2: <b>the notification appears</b>.
     </string>
 
     <string name="live_update_notification_status_bar_chip_chronometer" formatted="false"><b>Status Bar Chip Chronometer</b>
