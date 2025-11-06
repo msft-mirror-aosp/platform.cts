@@ -81,6 +81,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.CtsWindowInfoUtils;
+import android.server.wm.LockScreenSession;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerStateHelper;
 import android.text.TextUtils;
@@ -1320,6 +1321,58 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 }
                 expectImeInvisible(TIMEOUT);
             }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_REPORT_ANIMATING_INSETS_TYPES)
+    public void testImeVisibleAfterRotationAndUnlockWithConfigChanges() throws Exception {
+        final var wmState = new WindowManagerStateHelper();
+        try (var orientationSession = new FixedDeviceOrientationSession(Orientation.PORTRAIT);
+             var lockScreenSession = new LockScreenSession(mInstrumentation, wmState);
+             MockImeSession imeSession = MockImeSession.create(mInstrumentation.getContext(),
+                     mInstrumentation.getUiAutomation(), new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+
+            orientationSession.setDeviceOrientation(Orientation.LANDSCAPE);
+
+            // show keyboard
+            final String marker = getTestMarker();
+
+            final AtomicReference<EditText> editTextRef = new AtomicReference<>();
+            // Launch a simple test activity that handles configuration changes
+            TestActivity testActivity = TestActivity.startSync(activity -> {
+                final LinearLayout layout = new LinearLayout(activity);
+                layout.setOrientation(LinearLayout.VERTICAL);
+
+                final EditText editText = new EditText(activity);
+                layout.addView(editText);
+                editTextRef.set(editText);
+                editText.setHint("focused editText");
+                editText.setPrivateImeOptions(marker);
+                editText.requestFocus();
+                activity.getWindow().getDecorView().getWindowInsetsController().show(ime());
+                return layout;
+            });
+            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+            expectEvent(stream, eventMatcher("showSoftInput"), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            // Wait until screen is turned off before rotating
+            lockScreenSession.sleepDevice();
+            wmState.waitForNonActivityWindowFocused();
+
+            orientationSession.setDeviceOrientation(Orientation.PORTRAIT);
+
+            // Turn screen on again, unlock and verify that the IME is showing again
+            lockScreenSession.wakeUpDevice();
+            lockScreenSession.unlockDevice();
+            assertTrue("TestActivity should be focused after wakeup",
+                    wmState.waitForFocusedActivity(testActivity.getComponentName()));
+            assertTrue("EditText should remain focused after wakeup",
+                    editTextRef.get().isFocused());
+
+            expectImeVisible(TIMEOUT);
         }
     }
 
