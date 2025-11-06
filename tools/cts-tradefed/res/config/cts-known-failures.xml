@@ -376,6 +376,15 @@
     <!-- b/358008915 -->
     <option name="compatibility:exclude-filter" value="CtsAdServicesHostTests com.android.adservices.cts.TopicsApiLoggingHostTest#testGetTopicsLog" />
     <option name="compatibility:exclude-filter" value="CtsAdServicesHostTests com.android.adservices.cts.UiApiLoggingHostTest#testStartSettingMainActivityAndGetUiLog" />
+    <!-- b/381409777-->
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.dailyjob.DailyDeleteAccessLogTest#testAccessLogsAreDeleted" />
+
+    <!-- b/450021782 -->
+    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.changelogs.HealthConnectChangeLogsTests#testGetChangeLogToken_emptyRecordTypes_throwsException" />
+    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.changelogs.HealthConnectChangeLogsTests#testGetChangeLogToken_superRecordTypes_throwsException" />
+
+    <!-- b/378989105 -->
+    <option name="compatibility:exclude-filter" value="CtsSliceTestCases" />
 
     <!-- b/355285596 -->
     <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
