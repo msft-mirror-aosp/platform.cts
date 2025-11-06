@@ -277,7 +277,9 @@ public class SystemBluetoothTest {
                                 any(),
                                 MockitoHamcrest.argThat(
                                         hasAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)));
-                assertThat(mAdapter.cancelDiscovery()).isFalse();
+                // TODO (b/457613460): Restore the redundant cancelDiscovery once the flags are in
+                // nextfood.
+                // assertThat(mAdapter.cancelDiscovery()).isFalse();
             }
 
             mContext.unregisterReceiver(receiver);
