@@ -16,7 +16,6 @@
 
 package com.android.bedstead.enterprise;
 
-import static com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolderKt.ensureHasDevicePolicyManagerRoleHolder;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_AFFILIATED_PROFILE_OWNER;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_AFFILIATED_PROFILE_OWNER_PROFILE;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_AFFILIATED_PROFILE_OWNER_USER;
@@ -36,7 +35,6 @@ import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLI
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_TO_PARENT;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_TO_UNAFFILIATED_CHILD_PROFILES_WITHOUT_INHERITANCE;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_TO_UNAFFILIATED_OTHER_USERS;
-import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.CANNOT_BE_APPLIED_BY_ROLE_HOLDER;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.CAN_BE_DELEGATED;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.DO_NOT_APPLY_TO_CANNOT_SET_POLICY_TESTS;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.DO_NOT_APPLY_TO_POLICY_DOES_NOT_APPLY_TESTS;
@@ -51,11 +49,7 @@ import static com.android.bedstead.enterprise.annotations.parameterized.IncludeR
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSingleDeviceOwnerUserKt.includeRunOnSingleDeviceOwnerUser;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSystemDeviceOwnerUserKt.includeRunOnSystemDeviceOwnerUser;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnUnaffiliatedDeviceOwnerSecondaryUserKt.includeRunOnUnaffiliatedDeviceOwnerSecondaryUser;
-import static com.android.bedstead.harrier.UserType.INITIAL_USER;
 import static com.android.bedstead.harrier.UserType.INSTRUMENTED_USER;
-import static com.android.bedstead.harrier.UserType.SECONDARY_USER;
-import static com.android.bedstead.harrier.UserType.SYSTEM_USER;
-import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
 import static com.android.bedstead.nene.devicepolicy.CommonDevicePolicy.DELEGATION_APP_RESTRICTIONS;
 import static com.android.bedstead.nene.devicepolicy.CommonDevicePolicy.DELEGATION_BLOCK_UNINSTALL;
 import static com.android.bedstead.nene.devicepolicy.CommonDevicePolicy.DELEGATION_CERT_INSTALL;
@@ -153,18 +147,17 @@ public final class Policy {
     private static final ImmutableMap<Integer, Function<EnterprisePolicy, Set<Annotation>>>
             STATE_ANNOTATIONS =
             ImmutableMap.<Integer, Function<EnterprisePolicy, Set<Annotation>>>builder()
-                    .put(APPLIED_BY_SYSTEM_DEVICE_OWNER | APPLIES_TO_OWN_USER, generateDevicePolicyManagerRoleHolderAnnotation(includeRunOnSystemDeviceOwnerUser(), /* roleHolderUser= */ SYSTEM_USER))
+                    .put(APPLIED_BY_SYSTEM_DEVICE_OWNER | APPLIES_TO_OWN_USER, singleAnnotation(includeRunOnSystemDeviceOwnerUser()))
                     .put(APPLIED_BY_SYSTEM_DEVICE_OWNER | APPLIES_TO_OWN_USER | CAN_BE_DELEGATED, generateDelegateAnnotation(includeRunOnSystemDeviceOwnerUser(), /* isPrimary= */ true))
                     .put(APPLIED_BY_SYSTEM_DEVICE_OWNER | APPLIES_TO_OWN_USER | APPLIES_IN_BACKGROUND, singleAnnotation(includeRunOnBackgroundDeviceOwnerUser()))
                     .put(APPLIED_BY_SYSTEM_DEVICE_OWNER | APPLIES_TO_OWN_USER | APPLIES_IN_BACKGROUND | CAN_BE_DELEGATED, generateDelegateAnnotation(includeRunOnBackgroundDeviceOwnerUser(), /* isPrimary= */ true))
-
-                    .put(APPLIED_BY_SYSTEM_DEVICE_OWNER | APPLIES_TO_UNAFFILIATED_OTHER_USERS, generateDevicePolicyManagerRoleHolderAnnotation(includeRunOnUnaffiliatedDeviceOwnerSecondaryUser(), /* roleHolderUser= */ SYSTEM_USER))
+                    .put(APPLIED_BY_SYSTEM_DEVICE_OWNER | APPLIES_TO_UNAFFILIATED_OTHER_USERS, singleAnnotation(includeRunOnUnaffiliatedDeviceOwnerSecondaryUser()))
                     .put(APPLIED_BY_SYSTEM_DEVICE_OWNER | APPLIES_TO_UNAFFILIATED_OTHER_USERS | CAN_BE_DELEGATED, generateDelegateAnnotation(includeRunOnUnaffiliatedDeviceOwnerSecondaryUser(), /* isPrimary= */ true))
-                    .put(APPLIED_BY_SYSTEM_DEVICE_OWNER | APPLIES_TO_AFFILIATED_OTHER_USERS, generateDevicePolicyManagerRoleHolderAnnotation(includeRunOnAffiliatedDeviceOwnerSecondaryUser(), /* roleHolderUser= */ SYSTEM_USER))
+                    .put(APPLIED_BY_SYSTEM_DEVICE_OWNER | APPLIES_TO_AFFILIATED_OTHER_USERS, singleAnnotation(includeRunOnAffiliatedDeviceOwnerSecondaryUser()))
                     .put(APPLIED_BY_SYSTEM_DEVICE_OWNER | APPLIES_TO_AFFILIATED_OTHER_USERS | CAN_BE_DELEGATED, generateDelegateAnnotation(includeRunOnAffiliatedDeviceOwnerSecondaryUser(), /* isPrimary= */ true))
 
-                    .put(APPLIED_BY_SINGLE_DEVICE_OWNER | APPLIES_TO_OWN_USER, generateDevicePolicyManagerRoleHolderAnnotation(
-                            includeRunOnSingleDeviceOwnerUser(), /* roleHolderUser= */ SECONDARY_USER))
+                    .put(APPLIED_BY_SINGLE_DEVICE_OWNER | APPLIES_TO_OWN_USER, singleAnnotation(
+                            includeRunOnSingleDeviceOwnerUser()))
                     .put(APPLIED_BY_SINGLE_DEVICE_OWNER | APPLIES_TO_OWN_USER | CAN_BE_DELEGATED,
                             generateDelegateAnnotation(
                             includeRunOnSingleDeviceOwnerUser(), /* isPrimary= */ true))
@@ -175,34 +168,34 @@ public final class Policy {
                     .put(APPLIED_BY_DPM_ROLE_HOLDER | APPLIES_TO_UNAFFILIATED_OTHER_USERS, singleAnnotation(includeRunOnDevicePolicyManagementRoleHolderSecondaryUser()))
                     .put(APPLIED_BY_DPM_ROLE_HOLDER | APPLIES_TO_UNAFFILIATED_CHILD_PROFILES_WITHOUT_INHERITANCE, singleAnnotation(includeRunOnDevicePolicyManagementRoleHolderProfile()))
 
-                    .put(APPLIED_BY_AFFILIATED_PROFILE_OWNER_USER | APPLIES_TO_OWN_USER, generateDevicePolicyManagerRoleHolderAnnotation(includeRunOnAffiliatedProfileOwnerAdditionalUser(), /* roleHolderUser= */ SECONDARY_USER))
+                    .put(APPLIED_BY_AFFILIATED_PROFILE_OWNER_USER | APPLIES_TO_OWN_USER, singleAnnotation(includeRunOnAffiliatedProfileOwnerAdditionalUser()))
                     .put(APPLIED_BY_AFFILIATED_PROFILE_OWNER_USER | APPLIES_TO_OWN_USER | CAN_BE_DELEGATED, generateDelegateAnnotation(includeRunOnAffiliatedProfileOwnerAdditionalUser(), /* isPrimary= */ true))
-                    .put(APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_USER | APPLIES_TO_OWN_USER, generateDevicePolicyManagerRoleHolderAnnotation(includeRunOnUnaffiliatedProfileOwnerAdditionalUser(), /* roleHolderUser= */ SECONDARY_USER))
+                    .put(APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_USER | APPLIES_TO_OWN_USER, singleAnnotation(includeRunOnUnaffiliatedProfileOwnerAdditionalUser()))
                     .put(APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_USER | APPLIES_TO_OWN_USER | CAN_BE_DELEGATED, generateDelegateAnnotation(includeRunOnUnaffiliatedProfileOwnerAdditionalUser(), /* isPrimary= */ true))
-                    .put(APPLIED_BY_PROFILE_OWNER_USER_WITH_NO_DO | APPLIES_TO_OWN_USER, generateDevicePolicyManagerRoleHolderAnnotation(includeRunOnProfileOwnerPrimaryUser(), /* roleHolderUser= */ SYSTEM_USER))
+                    .put(APPLIED_BY_PROFILE_OWNER_USER_WITH_NO_DO | APPLIES_TO_OWN_USER, singleAnnotation(includeRunOnProfileOwnerPrimaryUser()))
                     .put(APPLIED_BY_PROFILE_OWNER_USER_WITH_NO_DO | APPLIES_TO_OWN_USER | CAN_BE_DELEGATED, generateDelegateAnnotation(includeRunOnProfileOwnerPrimaryUser(), /* isPrimary= */ true))
 
-                    .put(APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_PROFILE | APPLIES_TO_OWN_USER, generateDevicePolicyManagerRoleHolderAnnotation(includeRunOnProfileOwnerProfileWithNoDeviceOwner(), /* roleHolderUser= */ WORK_PROFILE))
+                    .put(APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_PROFILE | APPLIES_TO_OWN_USER, singleAnnotation(includeRunOnProfileOwnerProfileWithNoDeviceOwner()))
                     .put(APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_PROFILE | APPLIES_TO_OWN_USER | CAN_BE_DELEGATED, generateDelegateAnnotation(includeRunOnProfileOwnerProfileWithNoDeviceOwner(), /* isPrimary= */ true))
-                    .put(APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE | APPLIES_TO_OWN_USER, generateDevicePolicyManagerRoleHolderAnnotation(includeRunOnOrganizationOwnedProfileOwner(), /* roleHolderUser= */ WORK_PROFILE))
+                    .put(APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE | APPLIES_TO_OWN_USER, singleAnnotation(includeRunOnOrganizationOwnedProfileOwner()))
                     .put(APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE | APPLIES_TO_OWN_USER | CAN_BE_DELEGATED, generateDelegateAnnotation(includeRunOnOrganizationOwnedProfileOwner(), /* isPrimary= */ true))
 
-                    .put(APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_PROFILE | APPLIES_TO_PARENT, generateDevicePolicyManagerRoleHolderAnnotation(includeRunOnParentOfProfileOwnerWithNoDeviceOwner(), /* roleHolderUser= */ WORK_PROFILE))
+                    .put(APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_PROFILE | APPLIES_TO_PARENT, singleAnnotation(includeRunOnParentOfProfileOwnerWithNoDeviceOwner()))
                     .put(APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_PROFILE | APPLIES_TO_PARENT | CAN_BE_DELEGATED, generateDelegateAnnotation(includeRunOnParentOfProfileOwnerWithNoDeviceOwner(), /* isPrimary= */ true))
-                    .put(APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE | APPLIES_TO_PARENT, generateDevicePolicyManagerRoleHolderAnnotation(includeRunOnParentOfOrganizationOwnedProfileOwner(), /* roleHolderUser= */ WORK_PROFILE))
+                    .put(APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE | APPLIES_TO_PARENT, singleAnnotation(includeRunOnParentOfOrganizationOwnedProfileOwner()))
                     .put(APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE | APPLIES_TO_PARENT | CAN_BE_DELEGATED, generateDelegateAnnotation(includeRunOnParentOfOrganizationOwnedProfileOwner(), /* isPrimary= */ true))
 
-                    .put(APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_PROFILE | APPLIES_TO_UNAFFILIATED_OTHER_USERS, generateDevicePolicyManagerRoleHolderAnnotation(includeRunOnSecondaryUserInDifferentProfileGroupToProfileOwnerProfile(), /* roleHolderUser= */ WORK_PROFILE))
+                    .put(APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_PROFILE | APPLIES_TO_UNAFFILIATED_OTHER_USERS, singleAnnotation(includeRunOnSecondaryUserInDifferentProfileGroupToProfileOwnerProfile()))
                     .put(APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_PROFILE | APPLIES_TO_UNAFFILIATED_OTHER_USERS | CAN_BE_DELEGATED, generateDelegateAnnotation(includeRunOnSecondaryUserInDifferentProfileGroupToProfileOwnerProfile(), /* isPrimary= */ true))
 
-                    .put(APPLIED_BY_PARENT_INSTANCE_OF_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE | APPLIES_TO_UNAFFILIATED_OTHER_USERS, generateDevicePolicyManagerRoleHolderAnnotation(includeRunOnSecondaryUserInDifferentProfileGroupToOrganizationOwnedProfileOwnerProfileUsingParentInstance(), /* roleHolderUser= */ WORK_PROFILE))
+                    .put(APPLIED_BY_PARENT_INSTANCE_OF_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE | APPLIES_TO_UNAFFILIATED_OTHER_USERS, singleAnnotation(includeRunOnSecondaryUserInDifferentProfileGroupToOrganizationOwnedProfileOwnerProfileUsingParentInstance()))
 
                     // The model here is that APPLIED_BY_PARENT + APPLIES_TO_OWN_USER means it applies to the parent of the DPC - I'm not sure this is the best model (APPLIES_TO_PARENT would also be reasonable)
                     .put(APPLIED_BY_PARENT_INSTANCE_OF_NON_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE
-                            | APPLIES_TO_OWN_USER, generateDevicePolicyManagerRoleHolderAnnotation(includeRunOnParentOfProfileOwnerUsingParentInstance(), /* roleHolderUser= */ INITIAL_USER))
-                    .put(APPLIED_BY_PARENT_INSTANCE_OF_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE | APPLIES_TO_OWN_USER, generateDevicePolicyManagerRoleHolderAnnotation(includeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance(), /* roleHolderUser= */ INITIAL_USER))
+                            | APPLIES_TO_OWN_USER, singleAnnotation(includeRunOnParentOfProfileOwnerUsingParentInstance()))
+                    .put(APPLIED_BY_PARENT_INSTANCE_OF_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE | APPLIES_TO_OWN_USER, singleAnnotation(includeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance()))
 
-                    .put(APPLIED_BY_FINANCED_DEVICE_OWNER | APPLIES_TO_OWN_USER, generateDevicePolicyManagerRoleHolderAnnotation(includeRunOnFinancedDeviceOwnerUser(), /* roleHolderUser= */ SYSTEM_USER))
+                    .put(APPLIED_BY_FINANCED_DEVICE_OWNER | APPLIES_TO_OWN_USER, singleAnnotation(includeRunOnFinancedDeviceOwnerUser()))
 
                     .put(APPLIED_BY_PARENT_INSTANCE_OF_NON_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE | APPLIES_TO_OWN_USER | INHERITABLE, multipleAnnotations(includeRunOnCloneProfileAlongsideManagedProfileUsingParentInstance(), includeRunOnPrivateProfileAlongsideManagedProfileUsingParentInstance()))
                     .put(APPLIED_BY_PARENT_INSTANCE_OF_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE | APPLIES_TO_OWN_USER | INHERITABLE, multipleAnnotations(includeRunOnCloneProfileAlongsideOrganizationOwnedProfileUsingParentInstance(), includeRunOnPrivateProfileAlongsideOrganizationOwnedProfileUsingParentInstance()))
@@ -218,32 +211,22 @@ public final class Policy {
     private static final ImmutableMap<Integer, BiFunction<EnterprisePolicy, Boolean, Set<Annotation>>>
             DPC_STATE_ANNOTATIONS_BASE =
             ImmutableMap.<Integer, BiFunction<EnterprisePolicy, Boolean, Set<Annotation>>>builder()
-                    .put(APPLIED_BY_SYSTEM_DEVICE_OWNER, (flags, canSet) -> hasFlag(flags.dpc(), APPLIED_BY_SYSTEM_DEVICE_OWNER | APPLIES_IN_BACKGROUND) ? generateDevicePolicyManagerRoleHolderAnnotation(includeRunOnBackgroundDeviceOwnerUser(), /* roleHolderUser= */ SYSTEM_USER).apply(flags) : generateDevicePolicyManagerRoleHolderAnnotation(
-                            includeRunOnSystemDeviceOwnerUser(), /* roleHolderUser= */ SYSTEM_USER).apply(flags))
+                    .put(APPLIED_BY_SYSTEM_DEVICE_OWNER, (flags, canSet) -> hasFlag(flags.dpc(), APPLIED_BY_SYSTEM_DEVICE_OWNER | APPLIES_IN_BACKGROUND) ? singleAnnotation(includeRunOnBackgroundDeviceOwnerUser()).apply(flags) : singleAnnotation(
+                            includeRunOnSystemDeviceOwnerUser()).apply(flags))
                     .put(APPLIED_BY_SINGLE_DEVICE_OWNER, (flags, canSet) -> hasFlag(flags.dpc(), APPLIED_BY_SINGLE_DEVICE_OWNER
-                            | APPLIES_IN_BACKGROUND) ? generateDevicePolicyManagerRoleHolderAnnotation(includeRunOnBackgroundDeviceOwnerUser(), /* roleHolderUser= */ SECONDARY_USER).apply(flags) : generateDevicePolicyManagerRoleHolderAnnotation(
-                            includeRunOnSingleDeviceOwnerUser(), /* roleHolderUser= */ SECONDARY_USER).apply(flags))
-                    .put(APPLIED_BY_AFFILIATED_PROFILE_OWNER, devicePolicyManagerRoleHolderIfCanSet(includeRunOnAffiliatedProfileOwnerAdditionalUser(), /* roleHolderUser= */ SECONDARY_USER))
-                    .put(APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_USER, devicePolicyManagerRoleHolderIfCanSet(includeRunOnProfileOwnerPrimaryUser(), /* roleHolderUser= */ SYSTEM_USER))
-                    .put(APPLIED_BY_PROFILE_OWNER_USER_WITH_NO_DO, devicePolicyManagerRoleHolderIfCanSet(includeRunOnProfileOwnerPrimaryUser(), /* roleHolderUser= */ SYSTEM_USER))
-                    .put(APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE, devicePolicyManagerRoleHolderIfCanSet(includeRunOnOrganizationOwnedProfileOwner(), /* roleHolderUser= */ WORK_PROFILE))
-                    .put(APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_PROFILE, devicePolicyManagerRoleHolderIfCanSet(includeRunOnProfileOwnerProfileWithNoDeviceOwner(), /* roleHolderUser= */ WORK_PROFILE))
-                    .put(APPLIED_BY_FINANCED_DEVICE_OWNER, devicePolicyManagerRoleHolderIfCanSet(includeRunOnFinancedDeviceOwnerUser(), /* roleHolderUser= */ SYSTEM_USER))
+                            | APPLIES_IN_BACKGROUND) ? singleAnnotation(includeRunOnBackgroundDeviceOwnerUser()).apply(flags) : singleAnnotation(
+                            includeRunOnSingleDeviceOwnerUser()).apply(flags))
+                    .put(APPLIED_BY_AFFILIATED_PROFILE_OWNER, (flags, canSet) -> singleAnnotation(includeRunOnAffiliatedProfileOwnerAdditionalUser()).apply(flags))
+                    .put(APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_USER, (flags, canSet) -> singleAnnotation(includeRunOnProfileOwnerPrimaryUser()).apply(flags))
+                    .put(APPLIED_BY_PROFILE_OWNER_USER_WITH_NO_DO, (flags, canSet) -> singleAnnotation(includeRunOnProfileOwnerPrimaryUser()).apply(flags))
+                    .put(APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE, (flags, canSet) -> singleAnnotation(includeRunOnOrganizationOwnedProfileOwner()).apply(flags))
+                    .put(APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_PROFILE, (flags, canSet) -> singleAnnotation(includeRunOnProfileOwnerProfileWithNoDeviceOwner()).apply(flags))
+                    .put(APPLIED_BY_FINANCED_DEVICE_OWNER, (flags, canSet) -> singleAnnotation(includeRunOnFinancedDeviceOwnerUser()).apply(flags))
                     .put(APPLIED_BY_PARENT_INSTANCE_OF_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE, (flags, canSet) -> singleAnnotation(includeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance()).apply(flags))
                     .put(APPLIED_BY_PARENT_INSTANCE_OF_NON_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE, (flags, canSet) -> singleAnnotation(includeRunOnParentOfProfileOwnerUsingParentInstance()).apply(flags))
                     .put(APPLIED_BY_DPM_ROLE_HOLDER, (flags, canSet) -> singleAnnotation(includeRunOnDevicePolicyManagementRoleHolderUser()).apply(flags))
                     .build();
 
-    private static BiFunction<EnterprisePolicy, Boolean, Set<Annotation>> devicePolicyManagerRoleHolderIfCanSet(Annotation annotation, UserType roleHolderUser) {
-        return (flags, canSet) -> {
-            // If the policy already allows the DPM to set it - no need to add the special-cased test
-            if (canSet && (!hasFlag(flags.dpc(), APPLIED_BY_DPM_ROLE_HOLDER))) {
-                return generateDevicePolicyManagerRoleHolderAnnotation(annotation, roleHolderUser).apply(flags);
-            } else {
-                return singleAnnotation(annotation).apply(flags);
-            }
-        };
-    }
     private static final Map<Integer, BiFunction<EnterprisePolicy, Boolean, Set<Annotation>>>
             DPC_STATE_ANNOTATIONS = DPC_STATE_ANNOTATIONS_BASE.entrySet().stream()
             .collect(Collectors.toMap(Map.Entry::getKey, Policy::addGeneratedStates));
@@ -411,32 +394,6 @@ public final class Policy {
     private static Function<EnterprisePolicy, Set<Annotation>> multipleAnnotations(
             Annotation... annotations) {
         return (i) -> ImmutableSet.copyOf(annotations);
-    }
-
-    private static Function<EnterprisePolicy, Set<Annotation>> generateDevicePolicyManagerRoleHolderAnnotation(
-            Annotation annotation, UserType roleHolderUser) {
-        return (policy) -> {
-            if (true) {
-                // Temporarily disabling enforcement of third-party coexistence
-                return ImmutableSet.of(annotation);
-            }
-
-            // If DPM role holder is handled elsewhere - we don't special case it here
-            if (hasFlag(policy.dpc(), CANNOT_BE_APPLIED_BY_ROLE_HOLDER)
-                    || hasFlag(policy.dpc(), APPLIED_BY_DPM_ROLE_HOLDER)) {
-                return ImmutableSet.of(annotation);
-            }
-            Annotation[] existingAnnotations = annotation.annotationType().getAnnotations();
-            Annotation[] newAnnotations = Arrays.copyOf(existingAnnotations,
-                    existingAnnotations.length + 1);
-            newAnnotations[newAnnotations.length - 1] = ensureHasDevicePolicyManagerRoleHolder(
-                    roleHolderUser, /* isPrimary= */ true);
-            return new HashSet<>(Arrays.asList(annotation,
-                    new DynamicParameterizedAnnotation(
-                    annotation.annotationType().getSimpleName() + "_DPMRH",
-                    newAnnotations
-            )));
-        };
     }
 
     private static Function<EnterprisePolicy, Set<Annotation>> generateDelegateAnnotation(
