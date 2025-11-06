@@ -45,10 +45,10 @@ import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc;
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.enterprise.policies.DisallowAirplaneMode;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.enterprise.policies.DisallowAirplaneMode;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.permissions.CommonPermissions;
@@ -100,7 +100,9 @@ public final class DevicePolicyManagerTest {
     }
 
     @Test
-    @ApiTest(apis = "android.app.admin.DevicePolicyManager#getDevicePolicyManagementRoleHolderPackage")
+    @ApiTest(
+            apis =
+                    "android.app.admin.DevicePolicyManager#getDevicePolicyManagementRoleHolderPackage")
     public void getDeviceManagerRoleHolderPackageName_doesNotCrash() {
         sDevicePolicyManager.getDevicePolicyManagementRoleHolderPackage();
     }
@@ -181,11 +183,14 @@ public final class DevicePolicyManagerTest {
         try {
             // Set the limit to the current size of policies set by the admin. setting any new
             // policy should hit the size limit.
-            int newLimit = TestApis.devicePolicy().getPolicySizeForAdmin(
-                    new EnforcingAdmin(
-                            dpc(sDeviceState).packageName(),
-                            DpcAuthority.DPC_AUTHORITY,
-                            dpc(sDeviceState).user().userHandle()));
+            int newLimit =
+                    TestApis.devicePolicy()
+                            .getPolicySizeForAdmin(
+                                    new EnforcingAdmin(
+                                            dpc(sDeviceState).packageName(),
+                                            DpcAuthority.DPC_AUTHORITY,
+                                            dpc(sDeviceState).user().userHandle(),
+                                            dpc(sDeviceState).componentName()));
             TestApis.devicePolicy().setMaxPolicySize(newLimit);
             dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
                     dpc(sDeviceState).componentName(), DISALLOW_AIRPLANE_MODE);
