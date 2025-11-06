@@ -145,10 +145,14 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         for (int i = 0; i < events.size() - 1; i++) {
             // Check that progress events report increasing progress and frameTime values.
             BackEvent event = events.get(i);
-            assertTrue(event.getProgress() <= events.get(i + 1).getProgress());
-            assertTrue(event.getTouchX() <= events.get(i + 1).getTouchX());
-            assertTrue("frame time must be monotonically increasing",
-                    event.getFrameTimeMillis() <= events.get(i + 1).getFrameTimeMillis());
+            BackEvent nextEvent = events.get(i + 1);
+            assertTrue(event.getProgress() <= nextEvent.getProgress());
+            assertTrue(event.getTouchX() <= nextEvent.getTouchX());
+            assertTrue("frame time must be monotonically increasing "
+                            + "Event[" + i + "] time=" + event.getFrameTimeMillis()
+                            + " > Event[" + (i + 1) + "] time=" + nextEvent.getFrameTimeMillis()
+                            + "\nAll events: " + events,
+                    event.getFrameTimeMillis() <= nextEvent.getFrameTimeMillis());
             assertTrue("frame time must be >= 0", event.getFrameTimeMillis() >= 0);
             assertEquals(midHeight, midHeight, event.getTouchY());
             assertEquals(BackEvent.EDGE_LEFT, event.getSwipeEdge());
