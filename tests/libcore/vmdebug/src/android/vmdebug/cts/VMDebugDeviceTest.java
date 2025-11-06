@@ -68,7 +68,6 @@ public class VMDebugDeviceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(com.android.art.flags.Flags.FLAG_EXECUTABLE_METHOD_FILE_OFFSETS)
     public void testGetExecutableMethodFileOffsets() throws Exception {
         java.lang.reflect.Method method = this.getClass().getDeclaredMethod("testMethod");
 
