@@ -44,8 +44,8 @@ public class WallpaperColorsTest {
         colorList.add(Color.valueOf(Color.BLACK));
         colorList.add(Color.valueOf(Color.GREEN));
 
-        WallpaperColors colors = new WallpaperColors(colorList.get(0), colorList.get(1),
-                colorList.get(2));
+        WallpaperColors colors =
+                new WallpaperColors(colorList.get(0), colorList.get(1), colorList.get(2));
         Assert.assertSame(colors.getPrimaryColor(), colorList.get(0));
         Assert.assertSame(colors.getSecondaryColor(), colorList.get(1));
         Assert.assertSame(colors.getTertiaryColor(), colorList.get(2));
@@ -66,8 +66,11 @@ public class WallpaperColorsTest {
 
     @Test
     public void parcelTest() {
-        WallpaperColors wallpaperColors = new WallpaperColors(Color.valueOf(Color.WHITE),
-                Color.valueOf(Color.BLACK), Color.valueOf(Color.GREEN));
+        WallpaperColors wallpaperColors =
+                new WallpaperColors(
+                        Color.valueOf(Color.WHITE),
+                        Color.valueOf(Color.BLACK),
+                        Color.valueOf(Color.GREEN));
 
         Parcel parcel = Parcel.obtain();
         wallpaperColors.writeToParcel(parcel, 0);
@@ -111,29 +114,42 @@ public class WallpaperColorsTest {
 
     @Test
     public void wallpaperColorsHints_default() {
-        WallpaperColors wallpaperColors = new WallpaperColors(Color.valueOf(Color.WHITE),
-                Color.valueOf(Color.BLACK), Color.valueOf(Color.GREEN));
+        WallpaperColors wallpaperColors =
+                new WallpaperColors(
+                        Color.valueOf(Color.WHITE),
+                        Color.valueOf(Color.BLACK),
+                        Color.valueOf(Color.GREEN));
         Assert.assertEquals(wallpaperColors.getColorHints(), 0);
     }
 
     @Test
     public void wallpaperColorsHints_ctor() {
-        WallpaperColors wallpaperColors = new WallpaperColors(Color.valueOf(Color.WHITE),
-                Color.valueOf(Color.BLACK), Color.valueOf(Color.GREEN),
-                WallpaperColors.HINT_SUPPORTS_DARK_TEXT);
-        Assert.assertEquals(wallpaperColors.getColorHints(),
-                WallpaperColors.HINT_SUPPORTS_DARK_TEXT);
+        WallpaperColors wallpaperColors =
+                new WallpaperColors(
+                        Color.valueOf(Color.WHITE),
+                        Color.valueOf(Color.BLACK),
+                        Color.valueOf(Color.GREEN),
+                        WallpaperColors.HINT_SUPPORTS_DARK_TEXT);
+        Assert.assertEquals(
+                wallpaperColors.getColorHints(), WallpaperColors.HINT_SUPPORTS_DARK_TEXT);
 
-        wallpaperColors = new WallpaperColors(Color.valueOf(Color.WHITE),
-                Color.valueOf(Color.BLACK), Color.valueOf(Color.GREEN),
-                WallpaperColors.HINT_SUPPORTS_DARK_THEME);
-        Assert.assertEquals(wallpaperColors.getColorHints(),
-                WallpaperColors.HINT_SUPPORTS_DARK_THEME);
+        wallpaperColors =
+                new WallpaperColors(
+                        Color.valueOf(Color.WHITE),
+                        Color.valueOf(Color.BLACK),
+                        Color.valueOf(Color.GREEN),
+                        WallpaperColors.HINT_SUPPORTS_DARK_THEME);
+        Assert.assertEquals(
+                wallpaperColors.getColorHints(), WallpaperColors.HINT_SUPPORTS_DARK_THEME);
 
-        final int both = WallpaperColors.HINT_SUPPORTS_DARK_TEXT
-                | WallpaperColors.HINT_SUPPORTS_DARK_THEME;
-        wallpaperColors = new WallpaperColors(Color.valueOf(Color.WHITE),
-                Color.valueOf(Color.BLACK), Color.valueOf(Color.GREEN), both);
+        final int both =
+                WallpaperColors.HINT_SUPPORTS_DARK_TEXT | WallpaperColors.HINT_SUPPORTS_DARK_THEME;
+        wallpaperColors =
+                new WallpaperColors(
+                        Color.valueOf(Color.WHITE),
+                        Color.valueOf(Color.BLACK),
+                        Color.valueOf(Color.GREEN),
+                        both);
         Assert.assertEquals(wallpaperColors.getColorHints(), both);
     }
 }

@@ -97,8 +97,13 @@ public class WallpaperInfoTest {
             }
         }
 
-        assertWithMessage(service.getName() + " was not found in the queried "
-                + "wallpaper services list " + result).that(info).isNotNull();
+        assertWithMessage(
+                        service.getName()
+                                + " was not found in the queried "
+                                + "wallpaper services list "
+                                + result)
+                .that(info)
+                .isNotNull();
 
         try {
             return new WallpaperInfo(context, info);

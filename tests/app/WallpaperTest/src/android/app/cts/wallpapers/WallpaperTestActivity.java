@@ -16,7 +16,6 @@
 
 package android.app.cts.wallpapers;
 
-
 import android.app.Activity;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -30,9 +29,10 @@ public class WallpaperTestActivity extends Activity {
         super.onCreate(savedInstanceState);
         FrameLayout frameLayout = new FrameLayout(this);
         frameLayout.setBackgroundColor(Color.TRANSPARENT);
-        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT);
+        FrameLayout.LayoutParams layoutParams =
+                new FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.MATCH_PARENT,
+                        FrameLayout.LayoutParams.MATCH_PARENT);
 
         setContentView(frameLayout, layoutParams);
     }
