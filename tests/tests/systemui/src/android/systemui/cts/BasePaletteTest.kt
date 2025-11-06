@@ -159,16 +159,21 @@ open class BasePaletteTest {
         val context: Context = getInstrumentation().targetContext
         val uiModeManager = context.getSystemService(UiModeManager::class.java)
 
-        val isDynamicColorSupported =
-            !(FeatureUtil.isTV() || FeatureUtil.isWatch() || FeatureUtil.isAutomotive()) &&
-            // DynamicColor was broken on HSUM but got fixed.
-            // So we skip testing if Headless AND the fix is not applied.
-            !(UserManager.isHeadlessSystemUserMode() &&
-                    !Flags.fixContrastAndForceInvertStateForMultiUser())
+        val isDynamicColorSupported: Boolean
+            get() {
+                if (FeatureUtil.isAutomotive() ||
+                    FeatureUtil.isTV() ||
+                    FeatureUtil.isWatch()) {
+                        return false
+                    }
+
+                if (!UserManager.isHeadlessSystemUserMode()) return true
+                return Flags.fixContrastAndForceInvertStateForMultiUser()
+            }
 
         fun isSupportedStyle(@ThemeStyle.Type style: Int): Boolean {
             return !(FeatureUtil.isWatch() &&
-                (style == ThemeStyle.MONOCHROMATIC || style == ThemeStyle.FRUIT_SALAD))
+                    (style == ThemeStyle.MONOCHROMATIC || style == ThemeStyle.FRUIT_SALAD))
         }
 
         val isOldSpec =
@@ -229,6 +234,8 @@ open class BasePaletteTest {
 
         @JvmStatic
         protected fun applyTheme(color: String, style: Int, contrast: Float, mode: Int) {
+            if (!isDynamicColorSupported) return
+
             var configChanged = false
             val isModeDifferent = uiModeManager.nightMode != mode
             if (isModeDifferent) {

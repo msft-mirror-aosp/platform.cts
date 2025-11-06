@@ -66,6 +66,10 @@ class DynamicColorsTest(private val params: DynamicColorParams) : BasePaletteTes
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
         fun testData(): Collection<DynamicColorParams> {
+            if (!isDynamicColorSupported) {
+                return listOf(DynamicColorParams("Unsupported", 0, "Unsupported", 0.0f))
+            }
+
             val dataList = mutableListOf<DynamicColorParams>()
             val contrastModes = mapOf("low" to 0.0f, "medium" to 0.5f, "high" to 1.0f)
 
@@ -84,9 +88,7 @@ class DynamicColorsTest(private val params: DynamicColorParams) : BasePaletteTes
         @JvmStatic
         @Parameterized.BeforeParam
         fun setup(params: DynamicColorParams) {
-            if (isDynamicColorSupported) {
-                applyTheme(params.color, params.style, params.contrastValue, MODE_NIGHT_YES)
-            }
+            applyTheme(params.color, params.style, params.contrastValue, MODE_NIGHT_YES)
         }
     }
 
