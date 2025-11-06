@@ -18,12 +18,9 @@ package android.content.cts.mocklauncherapp;
 import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 
 public class Launcher extends Activity {
     private static final String TAG = "mocklauncherapp";
@@ -39,13 +36,6 @@ public class Launcher extends Activity {
     private static void createEmptyFileOfSize(File file, long sizeInBytes) {
         try (RandomAccessFile raf = new RandomAccessFile(file, "rw")) {
             raf.setLength(sizeInBytes);
-            FileChannel channel = raf.getChannel();
-            ByteBuffer buffer = ByteBuffer.allocate(4096);
-            for (long i = 0; i < sizeInBytes; i += buffer.capacity()) {
-                channel.write(buffer, i);
-            }
-            channel.force(true);
-            Log.i(TAG, "created cache file " + file.getName() + " of " + sizeInBytes + " bytes");
         } catch (IOException e) {
             Log.e(TAG, "Failed to create empty file of size " + sizeInBytes
                     + " at " + file.getAbsolutePath(), e);
