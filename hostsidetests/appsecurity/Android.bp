@@ -140,6 +140,7 @@ java_test_host {
         ":CtsSimpleAppInstallDiffCert",
         ":CtsTargetInstrumentationApp",
         ":CtsUsePermissionDiffCert",
+        ":CtsDeclarePermissions_WithSpaces",
         // DeviceIdentifierTest
         ":CtsAccessDeviceIdentifiers",
         // KeySetHostTest
