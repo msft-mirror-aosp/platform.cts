@@ -247,6 +247,19 @@ public class CtsConnectionService extends ConnectionService {
         }
     }
 
+    public static void addExistingConnectionToConference(
+            PhoneAccountHandle phoneAccountHandle, Connection connection, Conference conference) {
+        ConnectionService telecomConn = getTelecomConnection();
+        if (telecomConn != null) {
+            telecomConn.addExistingConnection(phoneAccountHandle, connection, conference);
+        } else {
+            Log.e(
+                    LOG_TAG,
+                    "addExistingConnectionToConference called when"
+                            + " sTelecomConnectionService null!");
+        }
+    }
+
     public static Collection<Connection> getAllConnectionsFromTelecom() {
         ConnectionService telecomConn = getTelecomConnection();
         if (telecomConn == null) {

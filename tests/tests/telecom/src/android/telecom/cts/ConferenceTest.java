@@ -20,6 +20,7 @@ import static android.telecom.cts.TestUtils.*;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
+import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.telecom.Call;
@@ -219,6 +220,73 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
         assertNull(extras);
     }
 
+    public void testAddExistingConnectionToConference() {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+
+        // We already have a base conference ready to go from the setup method
+        final Call originalConf = mInCallService.getLastConferenceCall();
+        assertCallState(originalConf, Call.STATE_ACTIVE);
+
+        final MockInCallService.InCallServiceCallbacks callbacks = createCallbacks();
+        MockInCallService.addCallbacks(callbacks);
+
+        final MockConnection connection = new MockConnection();
+        connection.setOnHold();
+        CtsConnectionService.addExistingConnectionToConference(
+                TEST_PHONE_ACCOUNT_HANDLE, connection, mConferenceObject);
+
+        Call addedCall = null;
+        try {
+            addedCall = mAddedCalls.poll(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            fail("Expected new exsisting connection to be added");
+        }
+
+        assertNotNull(
+                "Expected existing call to be added as part of a conf", addedCall.getParent());
+    }
+
+    public void testMergeConnectionToConference() {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+
+        // We already have a base conference ready to go from the setup method
+        final Call originalConf = mInCallService.getLastConferenceCall();
+        assertCallState(originalConf, Call.STATE_ACTIVE);
+
+        // Make another standalone call.
+        // Create the standalone call which will be converted into the second conference:
+        placeAndVerifyCall();
+        mConnection3 = verifyConnectionForOutgoingCall(2);
+        mCall3 = mInCallService.getLastCall();
+        assertCallState(mCall3, Call.STATE_DIALING);
+        mConnection3.setActive();
+        assertCallState(mCall3, Call.STATE_ACTIVE);
+
+        // Setup linked blocking queue to observe offered connection.
+        LinkedBlockingQueue<Conferenceable> onMergeQueue = new LinkedBlockingQueue<>();
+        mConferenceVerificationObject.setOnMergeQueue(onMergeQueue);
+
+        // Now, request to merge the new call with the existing conference.
+        originalConf.conference(mCall3);
+
+        // Ensure we got offered the connection.
+        Connection mergedConnection = null;
+        try {
+            mergedConnection =
+                    (Connection)
+                            onMergeQueue.poll(
+                                    WAIT_FOR_STATE_CHANGE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            fail("Expected to be offered connection");
+        }
+
+        assertEquals("Expected to get a connection merged.", mConnection3, mergedConnection);
+    }
+
     /**
      * Verifies the ability to merge two conference calls together and the utility methods that
      * surround that process.
@@ -279,7 +347,7 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
             assertCallConferenceableList(originalConf, expectedCalls);
 
             // Setup a linked blocking queue that will have the requested merge pushed onto it.
-            LinkedBlockingQueue<Conference> onMergeQueue = new LinkedBlockingQueue<>();
+            LinkedBlockingQueue<Conferenceable> onMergeQueue = new LinkedBlockingQueue<>();
             newConference.setOnMergeQueue(onMergeQueue);
 
             // Now merge the two conferences together.
@@ -289,7 +357,9 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
             Conference onMergeRequest = null;
             try {
                 onMergeRequest =
-                        onMergeQueue.poll(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                        (Conference)
+                                onMergeQueue.poll(
+                                        WAIT_FOR_STATE_CHANGE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
                 assertNotNull("Expected conferences to be merged together.", onMergeRequest);
             } catch (InterruptedException e) {
                 fail("Expected conferences to be merged together.");
@@ -335,6 +405,8 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
         assertEquals(0, mConferenceObject.getConnectionTime());
         assertEquals(0, mConferenceObject.getConnectTimeMillis());
         assertEquals(0, mConferenceObject.getConnectionStartElapsedRealtimeMillis());
+        mConferenceObject.setConnectionStartElapsedRealTime(0);
+        mConferenceObject.setConnectTimeMillis(0);
 
         Bundle extras = new Bundle();
         extras.putString(TelecomManager.EXTRA_CALL_DISCONNECT_MESSAGE, "Test");
@@ -348,9 +420,18 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
         mConferenceObject.setStatusHints(hints);
         assertCallStatusHints(conf, hints);
 
+        LinkedBlockingQueue<Connection> connectionQueue = new LinkedBlockingQueue<>();
+        mConferenceVerificationObject.setOnConnectionAddedQueue(connectionQueue);
         assertFalse(conf.getChildren().contains(newCall));
         mConferenceObject.addConnection(newConnection);
         assertCallChildrenContains(conf, newCall, true);
+        Connection found = null;
+        try {
+            found = connectionQueue.poll(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            fail("Expected onConnectionAdded to be called");
+        }
+        assertEquals(newConnection, found);
 
         assertTrue(conf.getChildren().contains(newCall));
         mConferenceObject.removeConnection(newConnection);
@@ -635,6 +716,56 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
         CallEndpoint endpoint = (CallEndpoint) mConferenceVerificationObject
                 .mCurrentCallEndpoint.getArgs(0)[0];
         assertEquals(endpoint, mConferenceObject.getCurrentCallEndpoint());
+    }
+
+    /**
+     * Verifies mute changes reported from an {@link android.telecom.InCallService} are reported to
+     * the conference.
+     */
+    public void testOnMuteStateChanged() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        LinkedBlockingQueue<Boolean> muteQueue = new LinkedBlockingQueue<>();
+        mConferenceVerificationObject.setOnMuteSateChangedQueue(muteQueue);
+
+        AudioManager audioManager = mContext.getSystemService(AudioManager.class);
+        boolean newMuteState = !audioManager.isMicrophoneMute();
+        mInCallService.setMuted(newMuteState);
+
+        Boolean changedMuteState = null;
+
+        // The mute state is reported as the initial state, so wait for it to become the desired.
+        assertEquals(
+                newMuteState,
+                waitForCondition(
+                        new Condition() {
+                            @Override
+                            public Object expected() {
+                                return newMuteState;
+                            }
+
+                            @Override
+                            public Object actual() {
+                                try {
+                                    return muteQueue
+                                            .poll(
+                                                    WAIT_FOR_STATE_CHANGE_TIMEOUT_MS,
+                                                    TimeUnit.MILLISECONDS)
+                                            .booleanValue();
+                                } catch (InterruptedException ie) {
+                                    fail("Expected mute change");
+                                    return false;
+                                }
+                            }
+                        },
+                        WAIT_FOR_STATE_CHANGE_TIMEOUT_MS));
+
+        assertEquals(newMuteState, mConferenceObject.getAudioState().isMuted());
+        assertEquals(newMuteState, mConferenceObject.getCallAudioState().isMuted());
+
+        // Revert it back.
+        mInCallService.setMuted(!newMuteState);
     }
 
     @ApiTest(apis = {"android.telecom.ConnectionService#addConferenceFromConnection"})
