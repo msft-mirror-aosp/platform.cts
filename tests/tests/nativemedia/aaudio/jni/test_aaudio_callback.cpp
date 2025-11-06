@@ -272,8 +272,6 @@ void AAudioInputStreamCallbackTest::SetUp() {
 }
 
 void AAudioInputStreamCallbackTest::runTest() {
-    if (!mSetupSuccessful) return;
-
     const int32_t framesPerDataCallback = std::get<PARAM_FRAMES_PER_CB>(GetParam());
     const int32_t streamFramesPerDataCallback = AAudioStream_getFramesPerDataCallback(stream());
     if (framesPerDataCallback != AAUDIO_UNSPECIFIED) {
@@ -337,6 +335,7 @@ void AAudioInputStreamCallbackTest::runTest() {
 
 // Test starting and stopping an INPUT AAudioStream that uses a Callback
 TEST_P(AAudioInputStreamCallbackTest, testRecording) {
+    if (!mSetupSuccessful) return;
     AAudioStreamBuilder_setDataCallback(builder(), &MyDataCallbackProc, mCbData.get());
     createAndVerifyHonoringMMap();
 
@@ -344,6 +343,7 @@ TEST_P(AAudioInputStreamCallbackTest, testRecording) {
 }
 
 TEST_P(AAudioInputStreamCallbackTest, testRecordingPartialCallback) {
+    if (!mSetupSuccessful) return;
     auto result = AAudioStreamBuilder_setPartialDataCallback(builder(), &MyPartialDataCallbackProc,
                                                              mCbData.get());
     if (result == AAUDIO_ERROR_UNIMPLEMENTED) {
@@ -491,8 +491,6 @@ void AAudioOutputStreamCallbackTest::SetUp() {
 }
 
 void AAudioOutputStreamCallbackTest::runTest() {
-    if (!mSetupSuccessful) return;
-
     const int32_t framesPerDataCallback = std::get<PARAM_FRAMES_PER_CB>(GetParam());
     const int32_t streamFramesPerDataCallback = AAudioStream_getFramesPerDataCallback(stream());
     if (framesPerDataCallback != AAUDIO_UNSPECIFIED) {
@@ -572,6 +570,7 @@ void AAudioOutputStreamCallbackTest::runTest() {
 
 // Test starting and stopping an OUTPUT AAudioStream that uses a Callback
 TEST_P(AAudioOutputStreamCallbackTest, testPlayback) {
+    if (!mSetupSuccessful) return;
     AAudioStreamBuilder_setDataCallback(builder(), &MyDataCallbackProc, mCbData.get());
     createAndVerifyHonoringMMap();
 
@@ -579,6 +578,7 @@ TEST_P(AAudioOutputStreamCallbackTest, testPlayback) {
 }
 
 TEST_P(AAudioOutputStreamCallbackTest, testPlaybackPartialCallback) {
+    if (!mSetupSuccessful) return;
     auto result = AAudioStreamBuilder_setPartialDataCallback(builder(), &MyPartialDataCallbackProc,
                                                              mCbData.get());
     if (result == AAUDIO_ERROR_UNIMPLEMENTED) {
