@@ -279,10 +279,6 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
             sInitError = new AssertionError("enforceMockModemDeveloperSetting failed", e);
             return;
         }
-        setUpNtnOnlyTestEnvironment(
-            NTN_ONLY_SLOT_ID, NTN_ONLY_SIM_PROFILE_ID, NTN_ONLY_PHONE_NUMBER);
-        sNtnOnlySubId = SubscriptionManager.getSubscriptionId(NTN_ONLY_SLOT_ID);
-        assumeTrue(sNtnOnlySubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
 
         grantSatellitePermission();
         try {
@@ -293,6 +289,11 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
         }
         sMockSatelliteServiceManager.setSupportedRadioTechnologies(
             new int[]{NTRadioTechnology.PROPRIETARY});
+
+        setUpNtnOnlyTestEnvironment(
+            NTN_ONLY_SLOT_ID, NTN_ONLY_SIM_PROFILE_ID, NTN_ONLY_PHONE_NUMBER);
+        sNtnOnlySubId = SubscriptionManager.getSubscriptionId(NTN_ONLY_SLOT_ID);
+        assumeTrue(sNtnOnlySubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
 
         // Enable CTS mode to ignore the requests from SG-APK and real Pointing UI app.
         assertTrue(sMockSatelliteServiceManager.setCtsMode(true));
