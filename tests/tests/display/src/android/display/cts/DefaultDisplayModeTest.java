@@ -29,7 +29,6 @@ import android.graphics.Point;
 import android.hardware.display.DisplayManager;
 import android.os.Handler;
 import android.os.Looper;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.view.Display;
 
 import androidx.test.InstrumentationRegistry;
@@ -55,7 +54,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 
 @RunWith(AndroidJUnit4.class)
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class DefaultDisplayModeTest {
     private final static int DISPLAY_CHANGE_TIMEOUT_SECS = 3;
 
