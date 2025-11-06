@@ -76,7 +76,6 @@ import junitparams.naming.TestCaseName;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -291,7 +290,6 @@ public class VirtualAudioPermissionTest {
                 /* useService= */ false);
     }
 
-    @Ignore("b/402139346") // TODO - enable after 25Q2 release
     @RequiresFlagsEnabled({
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED
