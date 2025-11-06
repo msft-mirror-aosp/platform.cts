@@ -717,6 +717,14 @@ public abstract class CodecTestBase {
         return false;
     }
 
+    public static boolean isProfileHDR(String mediaType, int profile) {
+        int[] hdrProfiles = PROFILE_HDR_MAP.get(mediaType);
+        if (hdrProfiles == null) {
+            return false;
+        }
+        return IntStream.of(hdrProfiles).anyMatch(x -> x == profile);
+    }
+
     public static boolean doesCodecSupportHDRProfile(String codecName, String mediaType) {
         int[] hdrProfiles = PROFILE_HDR_MAP.get(mediaType);
         if (hdrProfiles == null) {

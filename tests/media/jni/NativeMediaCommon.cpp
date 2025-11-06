@@ -214,3 +214,22 @@ AMediaFormat* deSerializeMediaFormat(const char* msg, const char* separator) {
     }
     return fmt;
 }
+
+bool JniExceptionCheckAndClear(JNIEnv* env) {
+    if (env->ExceptionCheck()) {
+        jthrowable e = env->ExceptionOccurred();
+        env->ExceptionClear();
+        jclass clazz = env->GetObjectClass(e);
+        jmethodID getMessage = env->GetMethodID(clazz, "getMessage", "()Ljava/lang/String;");
+        jstring message = (jstring)env->CallObjectMethod(e, getMessage);
+        const char* mstr = env->GetStringUTFChars(message, NULL);
+        ALOGD("%s", mstr);
+        env->ReleaseStringUTFChars(message, mstr);
+        env->DeleteLocalRef(message);
+        env->DeleteLocalRef(clazz);
+        env->DeleteLocalRef(e);
+        return true;
+    }
+    return false;
+}
+

@@ -27,7 +27,6 @@ import static android.mediav2.common.cts.MuxerUtils.getTempFilePath;
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
 
 import android.media.MediaFormat;
 import android.mediav2.common.cts.CodecEncoderSurfaceTestBase;
@@ -236,8 +235,8 @@ public class CodecEncoderSurfaceTest extends CodecEncoderSurfaceTestBase {
 
     private native boolean nativeTestSimpleEncode(String encoder, String decoder, String mediaType,
             String testFile, String testFileMediaType, String muxFile, int colorFormat,
-            boolean usePersistentSurface, String cfgParams, String separator, StringBuilder retMsg,
-            int frameLimit);
+            boolean isOutputToneMapped, boolean usePersistentSurface, String cfgParams,
+            String separator, StringBuilder retMsg, int frameLimit);
 
     /**
      * Test is similar to {@link #testSimpleEncodeFromSurface()} but uses ndk api
@@ -249,8 +248,6 @@ public class CodecEncoderSurfaceTest extends CodecEncoderSurfaceTestBase {
     @LargeTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
     public void testSimpleEncodeFromSurfaceNative() throws IOException, InterruptedException {
-        // TODO(b/281661171) Update native tests to encode for tone mapped output
-        assumeFalse("tone mapping tests are skipped in native mode", mIsOutputToneMapped);
         String tmpPath = null;
         if (!mEncMediaType.equals(MediaFormat.MIMETYPE_VIDEO_AV1) || CodecTestBase.IS_AT_LEAST_U) {
             tmpPath = getTempFilePath(mEncCfgParams.mInputBitDepth > 8 ? "10bit" : "");
@@ -258,11 +255,11 @@ public class CodecEncoderSurfaceTest extends CodecEncoderSurfaceTestBase {
         }
         int colorFormat = mDecoderFormat.getInteger(MediaFormat.KEY_COLOR_FORMAT, -1);
         boolean isPass = nativeTestSimpleEncode(mEncoderName, mDecoderName, mEncMediaType,
-                mTestFile, mTestFileMediaType, tmpPath, colorFormat, mUsePersistentSurface,
-                EncoderConfigParams.serializeMediaFormat(mEncoderFormat),
+                mTestFile, mTestFileMediaType, tmpPath, colorFormat, mIsOutputToneMapped,
+                mUsePersistentSurface, EncoderConfigParams.serializeMediaFormat(mEncoderFormat),
                 EncoderConfigParams.TOKEN_SEPARATOR, mTestConfig, mFrameLimit);
         assertTrue(mTestConfig.toString(), isPass);
-        if (tmpPath != null) {
+        if (tmpPath != null && !mIsOutputToneMapped) {
             // HDR support introduced with T, with pieces in both system+vendor
             if (mEncCfgParams.mInputBitDepth > 8) {
                 if (!FIRST_SDK_IS_AT_LEAST_T) return;
