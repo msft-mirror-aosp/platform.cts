@@ -53,6 +53,7 @@ import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.hardware.cts.helpers.CameraUtils;
+import android.hardware.display.DisplayManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.media.CamcorderProfile;
@@ -69,6 +70,7 @@ import android.util.Log;
 import android.util.Pair;
 import android.util.Range;
 import android.util.Size;
+import android.view.Display;
 import android.view.Surface;
 import android.view.WindowManager;
 import android.view.WindowMetrics;
@@ -79,6 +81,7 @@ import com.android.ex.camera2.blocking.BlockingCameraManager.BlockingOpenExcepti
 import com.android.ex.camera2.blocking.BlockingSessionCallback;
 import com.android.ex.camera2.blocking.BlockingStateCallback;
 import com.android.ex.camera2.exceptions.TimeoutRuntimeException;
+import com.android.internal.camera.flags.Flags;
 
 import junit.framework.Assert;
 
@@ -4911,7 +4914,10 @@ public class CameraTestUtils extends Assert {
             Size[] heicSizes = sm.getAvailableSizesForFormatChecked(ImageFormat.HEIC,
                     StaticMetadata.StreamDirection.Output, /*fastSizes*/true, /*slowSizes*/false);
 
-            Size maxPreviewSize = getMaxPreviewSize(context, cameraId);
+            Size maxPreviewSize =
+                    Flags.capMandatoryPreviewSizeToAllDisplays()
+                            ? getMaxPreviewSizeForAllDisplayModes(context, cameraId)
+                            : getMaxPreviewSize(context, cameraId);
 
             StreamConfigurationMap configs = sm.getCharacteristics().get(
                     CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
@@ -5503,6 +5509,58 @@ public class CameraTestUtils extends Assert {
         }
         fail("Camera " + cameraId + " does not support any 30fps video output");
         return fullHD; // doesn't matter what size is returned here
+    }
+
+    private static Size getMaxDisplaySize(Context context) {
+        DisplayManager displayManager = context.getSystemService(DisplayManager.class);
+        assertNotNull("Could not find DisplayManager service.", displayManager);
+
+        Size maxDisplaySize = null;
+        int width, height;
+
+        Display[] builtinDisplays =
+                displayManager.getDisplays(DisplayManager.DISPLAY_CATEGORY_BUILT_IN_DISPLAYS);
+        for (Display display : builtinDisplays) {
+            Display.Mode[] supportedModes = display.getSupportedModes();
+            for (Display.Mode mode : supportedModes) {
+                width = mode.getPhysicalWidth();
+                height = mode.getPhysicalHeight();
+                if (height > width) {
+                    width = height;
+                    height = mode.getPhysicalWidth();
+                }
+                if (maxDisplaySize == null
+                        || width * height
+                                > maxDisplaySize.getWidth() * maxDisplaySize.getHeight()) {
+                    maxDisplaySize = new Size(width, height);
+                }
+            }
+        }
+
+        assertNotNull("Could not find max display size.", maxDisplaySize);
+        return maxDisplaySize;
+    }
+
+    private static Size getMaxPreviewSizeForAllDisplayModes(Context context, String cameraId) {
+        try {
+            Size maxDisplaySize = getMaxDisplaySize(context);
+
+            CameraManager camMgr = context.getSystemService(CameraManager.class);
+            List<Size> orderedPreviewSizes =
+                    CameraTestUtils.getSupportedPreviewSizes(cameraId, camMgr, PREVIEW_SIZE_BOUND);
+
+            if (orderedPreviewSizes != null) {
+                for (Size size : orderedPreviewSizes) {
+                    if (maxDisplaySize.getWidth() >= size.getWidth()
+                            && maxDisplaySize.getHeight() >= size.getHeight()) {
+                        return size;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "getMaxPreviewSizeForAllDisplayModes Failed. " + e);
+        }
+        return PREVIEW_SIZE_BOUND;
     }
 
     private static Size getMaxPreviewSize(Context context, String cameraId) {
