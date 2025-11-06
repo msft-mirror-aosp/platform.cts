@@ -21,6 +21,8 @@ import static android.server.wm.CtsWindowInfoUtils.waitForWindowOnTop;
 
 import static com.android.graphics.surfaceflinger.flags.Flags.FLAG_READBACK_SCREENSHOT;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -140,6 +142,7 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                             new ScreenCaptureParams.Builder(Display.DEFAULT_DISPLAY)
                                     .setCaptureMode(
                                             ScreenCaptureParams.CAPTURE_MODE_REQUIRE_OPTIMIZED)
+                                    .setPixelFormat(0) // Any pixel format.
                                     .build();
                     Executor executor = runnable -> runnable.run();
                     SynchronousReceiver receiver = new SynchronousReceiver();
@@ -148,7 +151,7 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                     bitmap[0] = makeSoftwareBitmap(result);
                 });
 
-        verifyBitmap(Color.RED, bitmap[0], contentBounds);
+        verifyBitmap(Color.RED, bitmap[0], contentBounds, /* tolerance */ 0.01f);
     }
 
     @RequiresFlagsEnabled(FLAG_READBACK_SCREENSHOT)
@@ -337,14 +340,24 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
         }
     }
 
-    private void verifyBitmap(int expectedColor, Bitmap bitmap, Rect contentBounds)
+    /**
+     * @param tolerance - a float number range [0, 1]. The allowing ratio of total pixels that are
+     *     mismatched. 0 means no tolerance.
+     */
+    private void verifyBitmap(int expectedColor, Bitmap bitmap, Rect contentBounds, float tolerance)
             throws AssertionError {
         int expectedMatchingPixels = contentBounds.width() * contentBounds.height();
         int actualMatchingPixels =
                 new BitmapPixelChecker(expectedColor, contentBounds)
                         .getNumMatchingPixels(bitmap, contentBounds);
         mDumpOnFailure.dumpOnFailure("ScreenCaptureResult", bitmap);
-        assertEquals(expectedMatchingPixels, actualMatchingPixels);
+        assertThat(Math.abs(actualMatchingPixels - expectedMatchingPixels))
+                .isAtMost((int) (expectedMatchingPixels * tolerance));
+    }
+
+    private void verifyBitmap(int expectedColor, Bitmap bitmap, Rect contentBounds)
+            throws AssertionError {
+        verifyBitmap(expectedColor, bitmap, contentBounds, 0.0f);
     }
 
     public static class TestActivity extends FocusableActivity {
