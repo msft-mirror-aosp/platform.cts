@@ -17,6 +17,7 @@
 package android.hardware.camera2.cts;
 
 import static android.hardware.camera2.cts.CameraTestUtils.REPORT_LOG_NAME;
+import static android.hardware.camera2.cts.CameraTestUtils.getZoomRatiosToTest;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -36,6 +37,8 @@ import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.cts.CameraTestUtils.SimpleCaptureCallback;
+import android.hardware.camera2.cts.CameraTestUtils.ZoomDirection;
+import android.hardware.camera2.cts.CameraTestUtils.ZoomRange;
 import android.hardware.camera2.cts.CameraTestUtils.SimpleImageReaderListener;
 import android.hardware.camera2.cts.helpers.StaticMetadata;
 import android.hardware.camera2.cts.helpers.StaticMetadata.CheckLevel;
@@ -105,7 +108,6 @@ public class PerformanceTest {
     private static final int NUM_RESULTS_WAIT_TIMEOUT = 100;
     private static final int NUM_FRAMES_WAITED_FOR_UNKNOWN_LATENCY = 8;
     private static final long FRAME_DURATION_NS_30FPS = 33333333L;
-    private static final int NUM_ZOOM_STEPS = 10;
     private static final String HAS_ACTIVITY_ARG_KEY = "has-activity";
 
     private DeviceReportLog mReportLog;
@@ -914,19 +916,6 @@ public class PerformanceTest {
         }
     }
 
-    // Direction of zoom: in or out
-    private enum ZoomDirection {
-        ZOOM_IN,
-        ZOOM_OUT;
-    }
-
-    // Range of zoom: >= 1.0x, <= 1.0x, or full range.
-    private enum ZoomRange {
-        RATIO_1_OR_LARGER,
-        RATIO_1_OR_SMALLER,
-        RATIO_FULL_RANGE;
-    }
-
     /**
      * Testing Zoom settings override performance for zoom in from 1.0x
      *
@@ -988,69 +977,6 @@ public class PerformanceTest {
         testZoomSettingsOverrideLatency("zoom_out_to_ultrawide",
                 ZoomDirection.ZOOM_OUT, ZoomRange.RATIO_FULL_RANGE,
                 /*checkSmoothZoom*/ true);
-    }
-
-    /**
-     * Get zoom ratios to be tested for zoom settings override test
-     */
-    private double[] getZoomRatiosToTest(StaticMetadata staticMetadata,
-            boolean checkSmoothZoomForV, ZoomDirection direction, ZoomRange range) {
-        Range<Float> zoomRatioRange = staticMetadata.getZoomRatioRangeChecked();
-        final float kSmoothZoomStep = 0.1f;
-        final float kMaxZoomRatio = 10.0f;
-        float startRatio = zoomRatioRange.getLower();
-        float endRatio = Math.min(zoomRatioRange.getUpper(), kMaxZoomRatio);
-
-        if (range == ZoomRange.RATIO_1_OR_LARGER) {
-            startRatio = 1.0f;
-        } else if (range == ZoomRange.RATIO_1_OR_SMALLER) {
-            endRatio = 1.0f;
-        }
-
-        ArrayList<Double> zoomRatios = new ArrayList<>();
-        if (!checkSmoothZoomForV) {
-            // If not checking smooth zoom, equally divide zoom range into NUM_ZOOM_STEPS
-            // equal pieces.
-            for (int i = 0; i <= NUM_ZOOM_STEPS; i++) {
-                double ratio = startRatio + (endRatio - startRatio) * i / NUM_ZOOM_STEPS;
-                zoomRatios.add(adjustZoomRatio(ratio));
-            }
-        } else {
-            // If checking smooth zoom:
-            // 1. Divide zoom range logarithmically to align with user perception.
-            // 2. Smaller steps to simulate pinch zoom better, and at the same time giving
-            //    lens switch enough time.
-            double stepLog = Math.log(1.0f + kSmoothZoomStep);
-            // Add zoom-out ratios
-            for (double logRatio = 0.0f; logRatio >= Math.log(startRatio);
-                    logRatio -= stepLog) {
-                zoomRatios.add(adjustZoomRatio(Math.exp(logRatio)));
-            }
-            Collections.reverse(zoomRatios);
-            // Add zoom-in ratios
-            for (double logRatio = stepLog; logRatio <= Math.log(endRatio);
-                    logRatio += stepLog) {
-                zoomRatios.add(adjustZoomRatio(Math.exp(logRatio)));
-            }
-        }
-
-        if (direction == ZoomDirection.ZOOM_OUT) {
-            Collections.reverse(zoomRatios);
-        }
-        return zoomRatios.stream().mapToDouble(d -> d).toArray();
-    }
-
-    /**
-     * If needed, adjust the given zoom ratio so that it is not equal to 1.0
-     *
-     */
-    private double adjustZoomRatio(double zoomRatio) {
-        if (Flags.zoomMethod()) {
-            return zoomRatio;
-        } else {
-            final double kZoomRatioAt1x = 1.01f;
-            return zoomRatio == 1.0 ? kZoomRatioAt1x : zoomRatio;
-        }
     }
 
     /**

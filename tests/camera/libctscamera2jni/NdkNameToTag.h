@@ -182,6 +182,7 @@
       {"android.scaler.multiResolutionStreamSupported", ACAMERA_SCALER_MULTI_RESOLUTION_STREAM_SUPPORTED},
       {"android.scaler.availableStreamUseCases", ACAMERA_SCALER_AVAILABLE_STREAM_USE_CASES},
       {"android.scaler.rawCropRegion", ACAMERA_SCALER_RAW_CROP_REGION},
+      {"android.scaler.concurrentMultiResolutionFormats", ACAMERA_SCALER_CONCURRENT_MULTI_RESOLUTION_FORMATS},
       {"android.sensor.exposureTime", ACAMERA_SENSOR_EXPOSURE_TIME},
       {"android.sensor.frameDuration", ACAMERA_SENSOR_FRAME_DURATION},
       {"android.sensor.sensitivity", ACAMERA_SENSOR_SENSITIVITY},
