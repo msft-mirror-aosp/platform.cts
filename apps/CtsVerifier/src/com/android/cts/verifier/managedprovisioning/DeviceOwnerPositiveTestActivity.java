@@ -548,16 +548,20 @@ public class DeviceOwnerPositiveTestActivity extends PassFailButtons.TestListAct
 //                                    createCreateManagedUserIntent())}));
 
             // User switcher message
-            adapter.add(createInteractiveTestItem(this, USER_SWITCHER_MESSAGE_TEST_ID,
-                    R.string.device_owner_user_switcher_message,
-                    R.string.device_owner_user_switcher_message_info,
-                    new ButtonInfo[]{
-                            new ButtonInfo(
-                                    R.string.device_owner_with_user_switcher_message,
-                                    createWithUserSwitcherMessageIntent()),
-                            new ButtonInfo(
-                                    R.string.device_owner_without_user_switcher_message,
-                                    createWithoutUserSwitcherMessageIntent())}));
+            // TODO: Re-enable test after the fixes in http://ag/35659528 have been released
+            // Bug: 437845664
+            if (!UserManager.isHeadlessSystemUserMode()) {
+                adapter.add(createInteractiveTestItem(this, USER_SWITCHER_MESSAGE_TEST_ID,
+                        R.string.device_owner_user_switcher_message,
+                        R.string.device_owner_user_switcher_message_info,
+                        new ButtonInfo[]{
+                                new ButtonInfo(
+                                        R.string.device_owner_with_user_switcher_message,
+                                        createWithUserSwitcherMessageIntent()),
+                                new ButtonInfo(
+                                        R.string.device_owner_without_user_switcher_message,
+                                        createWithoutUserSwitcherMessageIntent())}));
+            }
 
             // Enable logout
             adapter.add(createInteractiveTestItem(this, ENABLE_LOGOUT_TEST_ID,
