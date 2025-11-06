@@ -24,6 +24,8 @@ import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.assertTrue;
+
 import android.app.DownloadManager;
 import android.app.DownloadManager.Query;
 import android.app.DownloadManager.Request;
@@ -38,9 +40,13 @@ import android.content.pm.ProviderInfo;
 import android.content.pm.ResolveInfo;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
 import android.os.FileUtils;
 import android.os.ParcelFileDescriptor;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.util.Log;
@@ -49,13 +55,18 @@ import android.util.Pair;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.FlakyTest;
+import androidx.test.filters.SdkSuppress;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.UiObject;
 import androidx.test.uiautomator.UiObjectNotFoundException;
 import androidx.test.uiautomator.UiSelector;
 
 import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.SystemUtil;
+import com.android.providers.downloads.flags.Flags;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -76,6 +87,9 @@ public final class DownloadManagerTest extends DownloadManagerTestBase {
     private static final String CONTENT_TYPE = "text/plain";
     private static final boolean SHOW_NOTIFICATION = true;
     private static final String ANDROID_SHELL = "com.android.shell";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @FlakyTest
     @Test
@@ -877,6 +891,58 @@ public final class DownloadManagerTest extends DownloadManagerTestBase {
             assertThat(checkUriPermission(uri)).isEqualTo(PERMISSION_DENIED);
         } finally {
             file.delete();
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_SET_VISIBLE_DOWNLOADS_AS_UIDT)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+    @Test
+    public void testVisibleDownloadJobsAreMarkedAsUidt() throws Exception {
+        final DownloadCompleteReceiver receiver = new DownloadCompleteReceiver();
+        try {
+            mContext.registerReceiver(
+                    receiver,
+                    new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
+                    Context.RECEIVER_EXPORTED);
+
+            // Create a download request that is visible in the UI.
+            final Request request = new Request(getGoodUrl());
+            request.setVisibleInDownloadsUi(true);
+
+            final long id = mDownloadManager.enqueue(request);
+
+            // The package name for the Download Manager provider
+            String packageName = "com.android.providers.downloads";
+
+            // Run the command before the test logic to remove logs from other tests
+            SystemUtil.runShellCommand(
+                    InstrumentationRegistry.getInstrumentation(),
+                    "cmd jobscheduler clear " + packageName);
+
+            // Execute the dumpsys command filtered by the package name
+            String dumpsysOutput =
+                    SystemUtil.runShellCommand(
+                            InstrumentationRegistry.getInstrumentation(),
+                            "dumpsys jobscheduler " + packageName);
+
+            // Look for the line that confirms it was started as a User-Initiated Job (UIJ).
+            String expectedLogLine = "userInitiatedApproved: true (started as UIJ: true)";
+
+            // Assert that the filtered dumpsys output contains the confirmation line.
+            assertTrue(
+                    "Job was not scheduled as a user-initiated job.",
+                    dumpsysOutput.contains(expectedLogLine));
+
+            int allDownloads = getTotalNumberDownloads();
+            assertThat(allDownloads).isEqualTo(1);
+            assertDownloadQueryableById(id);
+
+            receiver.waitForDownloadComplete(SHORT_TIMEOUT, id);
+
+            assertDownloadQueryableByStatus(DownloadManager.STATUS_SUCCESSFUL);
+            assertRemoveDownload(id, 0);
+        } finally {
+            mContext.unregisterReceiver(receiver);
         }
     }
 
