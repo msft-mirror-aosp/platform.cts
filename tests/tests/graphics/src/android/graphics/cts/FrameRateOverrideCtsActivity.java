@@ -373,8 +373,8 @@ public class FrameRateOverrideCtsActivity extends Activity {
             public void run() {
                 Looper.prepare();
                 mChoreographer = Choreographer.getInstance();
-                mHandler = new Handler();
                 mLooper = Looper.myLooper();
+                mHandler = new Handler(mLooper);
                 mStartTime = System.nanoTime();
                 mChoreographer.postFrameCallback(this);
                 Looper.loop();
