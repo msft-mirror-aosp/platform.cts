@@ -22,6 +22,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Resources.NotFoundException
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraManager
+import android.hardware.camera2.CameraMetadata
 import android.hardware.SensorPrivacyManager
 import android.hardware.SensorPrivacyManager.OnSensorPrivacyChangedListener
 import android.hardware.SensorPrivacyManager.TOGGLE_TYPE_HARDWARE
@@ -401,6 +404,9 @@ abstract class SensorPrivacyBaseTest(
     @Test
     @AppModeFull(reason = "Uses secondary app, instant apps have no visibility")
     fun testOpGetsRecordedAfterStartedWithSensorPrivacyEnabled() {
+        if (sensor == CAMERA) {
+            Assume.assumeTrue(supportsCameraMute())
+        }
         setSensor(true)
         // Retry camera connection because external cameras are disconnected
         // if sensor privacy is enabled (b/182204067)
@@ -553,6 +559,23 @@ abstract class SensorPrivacyBaseTest(
         return callWithShellPermissionIdentity {
             spm.areAnySensorPrivacyTogglesEnabled(sensor)
         }
+    }
+
+    private fun supportsCameraMute(): Boolean {
+        val cameraManager = context.getSystemService(CameraManager::class.java)!!
+        val cameraIdList = cameraManager.cameraIdList
+        Assume.assumeFalse(cameraIdList.isEmpty())
+
+        val cameraId = cameraManager.cameraIdList[0]
+        val availableTestPatternModes = cameraManager.getCameraCharacteristics(cameraId)
+                .get(CameraCharacteristics.SENSOR_AVAILABLE_TEST_PATTERN_MODES) ?: return false
+        for (mode in availableTestPatternModes) {
+            if ((mode == CameraMetadata.SENSOR_TEST_PATTERN_MODE_SOLID_COLOR) ||
+                    (mode == CameraMetadata.SENSOR_TEST_PATTERN_MODE_BLACK)) {
+                return true
+            }
+        }
+        return false
     }
 
     private fun getOpForSensor(sensor: Int): String? {
