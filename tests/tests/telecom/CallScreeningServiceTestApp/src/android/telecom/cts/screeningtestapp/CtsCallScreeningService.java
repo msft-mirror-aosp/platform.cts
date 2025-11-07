@@ -95,5 +95,6 @@ public class CtsCallScreeningService extends CallScreeningService {
             Log.w(TAG, "onScreenOutgoingCall: No control interface, allowing.");
             respondToCall(callDetails, new CallResponse.Builder().build());
         }
+        super.onScreenOutgoingCall(callDetails);
     }
 }
