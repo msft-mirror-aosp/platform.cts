@@ -31,18 +31,19 @@ import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
 
-import com.android.bedstead.multiuser.annotations.RequireVisibleBackgroundUsers;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
+import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireFeature;
+import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode;
 import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
-import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.multiuser.annotations.RequireRunOnPrimaryUser;
 import com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser;
+import com.android.bedstead.multiuser.annotations.RequireVisibleBackgroundUsers;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.users.UserType;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Test;
@@ -64,6 +65,10 @@ abstract class UserVisibilityVisibleBackgroundUsersTestCase extends UserVisibili
 
     private static final String TAG = UserVisibilityVisibleBackgroundUsersTestCase.class
             .getSimpleName();
+
+    protected UserVisibilityVisibleBackgroundUsersTestCase(DeviceState deviceState) {
+        super(deviceState);
+    }
 
     @Test
     @ApiTest(apis = {"android.os.UserManager#isUserVisible"})
@@ -242,7 +247,7 @@ abstract class UserVisibilityVisibleBackgroundUsersTestCase extends UserVisibili
         }
 
         // Stop the profile as it was initially running in the same display as parent
-        UserReference profile = workProfile(sDeviceState);
+        UserReference profile = workProfile(mDeviceState);
         Log.d(TAG, "Stopping profile " + profile + " (called from " + sContext.getUser() + ")");
         profile.stop();
 

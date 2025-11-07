@@ -27,13 +27,16 @@ import static org.junit.Assert.assertThrows;
 import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsersOnDefaultDisplay;
-import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.multiuser.annotations.RequireVisibleBackgroundUsers;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.compatibility.common.util.ApiTest;
 
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -56,6 +59,14 @@ import org.junit.Test;
 @RequireNotVisibleBackgroundUsersOnDefaultDisplay(reason = "Because class is testing exactly that")
 public final class UserVisibilityVisibleBackgroundUsersTest
         extends UserVisibilityVisibleBackgroundUsersTestCase {
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
+    public UserVisibilityVisibleBackgroundUsersTest() {
+        super(sDeviceState);
+    }
 
     @ApiTest(apis = {"android.app.ActivityManager#startUserInBackgroundOnSecondaryDisplay"})
     @RequireRunOnInitialUser

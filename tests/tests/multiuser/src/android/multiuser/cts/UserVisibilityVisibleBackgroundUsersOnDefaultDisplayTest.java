@@ -25,15 +25,17 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.platform.test.annotations.AppModeFull;
 
-import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
+import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
+import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.multiuser.annotations.RequireVisibleBackgroundUsers;
 import com.android.bedstead.multiuser.annotations.RequireVisibleBackgroundUsersOnDefaultDisplay;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.compatibility.common.util.ApiTest;
 
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-
 
 /**
  * Tests for user-related APIs that are only available on devices that
@@ -54,6 +56,14 @@ import org.junit.Test;
 @RequireVisibleBackgroundUsersOnDefaultDisplay(reason = "Because class is testing exactly that")
 public final class UserVisibilityVisibleBackgroundUsersOnDefaultDisplayTest
         extends UserVisibilityVisibleBackgroundUsersTestCase {
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
+    public UserVisibilityVisibleBackgroundUsersOnDefaultDisplayTest() {
+        super(sDeviceState);
+    }
 
     @Test
     @ApiTest(apis = {"android.os.UserManager#isUserVisible"})
