@@ -16,11 +16,15 @@
 
 package android.os.cts;
 
+import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeSdkSandbox;
@@ -73,6 +77,7 @@ public class BuildTest {
     static final String DEVICE = "ro.product.device";
     static final String MANUFACTURER = "ro.product.manufacturer";
     static final String MODEL = "ro.product.model";
+    static final String DEFAULT_STRONGBOX_PROP_VALUE = "unsupported";
 
     /**
      * Check if minimal properties are set (note that these might come from either
@@ -219,6 +224,10 @@ public class BuildTest {
         Pattern.compile("^([0-9A-Za-z ._/+-]+)$");
     private static final Pattern SERIAL_NUMBER_PATTERN =
         Pattern.compile("^([0-9A-Za-z]{6,20})$");
+    private static final Pattern STRONGBOX_MANUFACTURER_PATTERN =
+            Pattern.compile("^([0-9A-Za-z ]+)$");
+    private static final Pattern STRONGBOX_MODEL_PATTERN =
+            Pattern.compile("^([0-9A-Za-z ._/+-]+)$");
     private static final Pattern SKU_PATTERN =
         Pattern.compile("^([0-9A-Za-z.,_-]+)$");
     private static final Pattern TAGS_PATTERN =
@@ -264,6 +273,28 @@ public class BuildTest {
         assertTrue(PRODUCT_PATTERN.matcher(Build.PRODUCT).matches());
 
         assertTrue(SERIAL_NUMBER_PATTERN.matcher(Build.SERIAL).matches());
+
+        if (android.os.Flags.strongboxPropertiesApi()) {
+            boolean supportsStrongbox =
+                    getApplicationContext()
+                            .getPackageManager()
+                            .hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE);
+            if (supportsStrongbox) {
+                assertEquals(Build.STRONGBOX_MANUFACTURER, Build.STRONGBOX_MANUFACTURER.trim());
+                assertTrue(
+                        STRONGBOX_MANUFACTURER_PATTERN
+                                .matcher(Build.STRONGBOX_MANUFACTURER)
+                                .matches());
+                assertNotEquals(Build.STRONGBOX_MANUFACTURER, DEFAULT_STRONGBOX_PROP_VALUE);
+
+                assertEquals(Build.STRONGBOX_MODEL, Build.STRONGBOX_MODEL.trim());
+                assertTrue(STRONGBOX_MODEL_PATTERN.matcher(Build.STRONGBOX_MODEL).matches());
+                assertNotEquals(Build.STRONGBOX_MODEL, DEFAULT_STRONGBOX_PROP_VALUE);
+            } else {
+                assertEquals(Build.STRONGBOX_MANUFACTURER, DEFAULT_STRONGBOX_PROP_VALUE);
+                assertEquals(Build.STRONGBOX_MODEL, DEFAULT_STRONGBOX_PROP_VALUE);
+            }
+        }
 
         assertTrue(SKU_PATTERN.matcher(Build.SKU).matches());
 
