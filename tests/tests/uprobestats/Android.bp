@@ -33,6 +33,7 @@ android_test {
         "bedstead",
         "junit",
         "truth",
+        "art-aconfig-rw-flags-java-lib",
     ],
     srcs: ["src/**/*.java"],
     test_suites: [
