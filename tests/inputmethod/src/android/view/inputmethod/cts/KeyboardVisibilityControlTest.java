@@ -749,25 +749,27 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     @AppModeFull(reason = "KeyguardManager is not accessible from instant apps")
     @Test
     public void testHideImeAfterBackPressed_ScreenOffOn() throws Exception {
-        verifyHideImeBackPressed(
-                /* appRequestsBackCallback= */ true,
-                /* imeRequestsBackCallback= */ true,
-                /* fullscreenInteraction= */ false,
-                (instrumentation, editorRef) -> {
-                    TestUtils.turnScreenOff();
-                    TestUtils.waitOnMainUntil(
-                            () -> ((TestActivity) editorRef.get().getContext()).isPaused(),
-                            TIMEOUT);
-                    TestUtils.turnScreenOn();
-                    TestUtils.unlockScreen();
-                    TestUtils.waitOnMainUntil(
-                            () -> !((TestActivity) editorRef.get().getContext()).isPaused(),
-                            TIMEOUT);
-                    // Before testing the back procedure, ensure the test activity has the window
-                    // focus and the IME visible after screen-on.
-                    TestUtils.waitOnMainUntil(editorRef.get()::hasWindowFocus, TIMEOUT);
-                    expectImeVisible(TIMEOUT);
-                } /* pre back press procedure */);
+        try (var ignored = new FixedDeviceOrientationSession(Orientation.PORTRAIT)) {
+            verifyHideImeBackPressed(
+                    /* appRequestsBackCallback= */ true,
+                    /* imeRequestsBackCallback= */ true,
+                    /* fullscreenInteraction= */ false,
+                    (instrumentation, editorRef) -> {
+                        TestUtils.turnScreenOff();
+                        TestUtils.waitOnMainUntil(
+                                () -> ((TestActivity) editorRef.get().getContext()).isPaused(),
+                                TIMEOUT);
+                        TestUtils.turnScreenOn();
+                        TestUtils.unlockScreen();
+                        TestUtils.waitOnMainUntil(
+                                () -> !((TestActivity) editorRef.get().getContext()).isPaused(),
+                                TIMEOUT);
+                        // Before testing the back procedure, ensure the test activity has the
+                        // window focus and the IME visible after screen-on.
+                        TestUtils.waitOnMainUntil(editorRef.get()::hasWindowFocus, TIMEOUT);
+                        expectImeVisible(TIMEOUT);
+                    } /* pre back press procedure */);
+        }
     }
 
     @Test
