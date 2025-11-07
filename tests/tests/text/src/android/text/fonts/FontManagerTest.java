@@ -27,6 +27,7 @@ import static org.junit.Assert.fail;
 import android.Manifest;
 import android.app.UiAutomation;
 import android.content.Context;
+import android.graphics.fonts.FallbackFontUpdateRequest;
 import android.graphics.fonts.FontFamilyUpdateRequest;
 import android.graphics.fonts.FontFileUpdateRequest;
 import android.graphics.fonts.FontManager;
@@ -379,6 +380,44 @@ public class FontManagerTest {
                     fontFamily,
                     "NotoColorEmoji",
                     fm.getFontConfig().getConfigVersion());
+            fail("SecurityException is expected.");
+        } catch (SecurityException e) {
+            // pass
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.text.flags.Flags.FLAG_INSERT_FONT_FAMILY)
+    public void fontManager_updateFontFallbacks_permissionEnforce() throws Exception {
+        FontManager fm = getContext().getSystemService(FontManager.class);
+        assertThat(fm).isNotNull();
+
+        // Roboto-Regular.ttf is always available.
+        File robotoFile = new File("/system/fonts/Roboto-Regular.ttf");
+        ParcelFileDescriptor pfd =
+                ParcelFileDescriptor.open(robotoFile, ParcelFileDescriptor.MODE_READ_ONLY);
+        byte[] randomSignature = new byte[256];
+
+        try {
+            FontFileUpdateRequest fontFileUpdateRequest =
+                    new FontFileUpdateRequest(pfd, randomSignature);
+            updateFontFile(fm, fontFileUpdateRequest, fm.getFontConfig().getConfigVersion());
+            List<FallbackFontUpdateRequest> fallbackRequests = new ArrayList<>();
+            FontFamilyUpdateRequest.Font newFont =
+                    new FontFamilyUpdateRequest.Font.Builder(
+                                    "myNewFont",
+                                    new FontStyle(
+                                            FontStyle.FONT_WEIGHT_NORMAL,
+                                            FontStyle.FONT_SLANT_UPRIGHT))
+                            .build();
+            fallbackRequests.add(
+                    new FallbackFontUpdateRequest.Builder()
+                            .addFont(newFont)
+                            .setLanguages("und-Zsye") // BCP 47 language tag
+                            .setPriority(100) // Set a priority
+                            .build());
+
+            fm.updateFontFallbacks(fallbackRequests);
             fail("SecurityException is expected.");
         } catch (SecurityException e) {
             // pass
