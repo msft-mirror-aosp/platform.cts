@@ -33,6 +33,15 @@
                     <action android:name="com.android.cts.pcc.processes.ACTION_TEST_BROADCAST_SECOND_PROCESS" />
                 </intent-filter>
             </receiver>
+            <provider
+                android:name=".PccContentProvider"
+                android:exported="true"
+                android:authorities="com.android.cts.pcc.processes.provider" />
+            <provider
+                android:name=".PccSecondProcessContentProvider"
+                android:exported="true"
+                android:authorities="com.android.cts.pcc.processes.provider_second"
+                android:process=":pcc_second" />
         </private-compute>
     </application>
 
