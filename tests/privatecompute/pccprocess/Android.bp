@@ -25,8 +25,9 @@ android_test {
     sdk_version: "test_current",
 
     srcs: [
-        "src/**/*.java",
+        "src/**/processes/*.java",
         "src/**/*.aidl",
+        ":PccAppOpsAidl",
     ],
 
     static_libs: [
@@ -35,6 +36,7 @@ android_test {
         "flag-junit",
         "android.app.privatecompute.flags-aconfig-java",
         "privatecompute-common",
+        "compatibility-device-util-axt",
     ],
 
     test_suites: [
@@ -43,4 +45,8 @@ android_test {
     ],
     test_config: "AndroidTest.xml",
     manifest: "AndroidManifest.xml",
+
+    data: [
+        ":PccAppOpsApp",
+    ],
 }
