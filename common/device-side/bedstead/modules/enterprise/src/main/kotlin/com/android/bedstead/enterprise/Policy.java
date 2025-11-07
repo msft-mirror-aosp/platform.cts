@@ -16,6 +16,7 @@
 
 package com.android.bedstead.enterprise;
 
+import static com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolderKt.ensureHasDevicePolicyManagerRoleHolder;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_AFFILIATED_PROFILE_OWNER;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_AFFILIATED_PROFILE_OWNER_PROFILE;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_AFFILIATED_PROFILE_OWNER_USER;
@@ -41,6 +42,9 @@ import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.DO_NO
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.DO_NOT_APPLY_TO_POLICY_DOES_NOT_APPLY_TESTS;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.INHERITABLE;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.NO;
+import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnDevicePolicyManagementRoleHolderProfileKt.includeRunOnDevicePolicyManagementRoleHolderProfile;
+import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnDevicePolicyManagementRoleHolderSecondaryUserKt.includeRunOnDevicePolicyManagementRoleHolderSecondaryUser;
+import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnDevicePolicyManagementRoleHolderUserKt.includeRunOnDevicePolicyManagementRoleHolderUser;
 import static com.android.bedstead.harrier.UserType.INITIAL_USER;
 import static com.android.bedstead.harrier.UserType.INSTRUMENTED_USER;
 import static com.android.bedstead.harrier.UserType.SECONDARY_USER;
@@ -62,7 +66,6 @@ import static com.android.bedstead.testapps.TestAppsComponent.DELEGATE_KEY;
 import static com.android.xts.root.annotations.RequireRootInstrumentationKt.requireRootInstrumentation;
 
 import com.android.bedstead.enterprise.annotations.EnsureHasDelegate;
-import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder;
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDelegate;
 import com.android.bedstead.enterprise.annotations.EnsureTestAppInstalledAsPrimaryDPC;
 import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
@@ -75,9 +78,6 @@ import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnClo
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnCloneProfileAlongsideManagedProfileUsingParentInstance;
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfile;
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfileUsingParentInstance;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnDevicePolicyManagementRoleHolderProfile;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnDevicePolicyManagementRoleHolderSecondaryUser;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnDevicePolicyManagementRoleHolderUser;
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnFinancedDeviceOwnerUser;
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnOrganizationOwnedProfileOwner;
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnParentOfOrganizationOwnedProfileOwner;
@@ -386,12 +386,6 @@ public final class Policy {
     }
 
     @AutoAnnotation
-    private static EnsureHasDevicePolicyManagerRoleHolder ensureHasDevicePolicyManagerRoleHolder(
-            UserType onUser, boolean isPrimary) {
-        return new AutoAnnotation_Policy_ensureHasDevicePolicyManagerRoleHolder(onUser, isPrimary);
-    }
-
-    @AutoAnnotation
     private static IncludeRunOnParentOfProfileOwnerUsingParentInstance includeRunOnParentOfProfileOwnerUsingParentInstance() {
         return new AutoAnnotation_Policy_includeRunOnParentOfProfileOwnerUsingParentInstance();
     }
@@ -446,20 +440,6 @@ public final class Policy {
         return new AutoAnnotation_Policy_includeRunOnPrivateProfileAlongsideOrganizationOwnedProfile();
     }
 
-    @AutoAnnotation
-    private static IncludeRunOnDevicePolicyManagementRoleHolderProfile includeRunOnDevicePolicyManagementRoleHolderProfile() {
-        return new AutoAnnotation_Policy_includeRunOnDevicePolicyManagementRoleHolderProfile();
-    }
-
-    @AutoAnnotation
-    private static IncludeRunOnDevicePolicyManagementRoleHolderUser includeRunOnDevicePolicyManagementRoleHolderUser() {
-        return new AutoAnnotation_Policy_includeRunOnDevicePolicyManagementRoleHolderUser();
-    }
-
-    @AutoAnnotation
-    private static IncludeRunOnDevicePolicyManagementRoleHolderSecondaryUser includeRunOnDevicePolicyManagementRoleHolderSecondaryUser() {
-        return new AutoAnnotation_Policy_includeRunOnDevicePolicyManagementRoleHolderSecondaryUser();
-    }
     private static Function<EnterprisePolicy, Set<Annotation>> singleAnnotation(
             Annotation annotation) {
         return (i) -> ImmutableSet.of(annotation);
