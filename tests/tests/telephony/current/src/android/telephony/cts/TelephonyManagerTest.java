@@ -7078,7 +7078,7 @@ public class TelephonyManagerTest {
         List<String> emergencyRoleHolders = ShellIdentityUtils.invokeMethodWithShellPermissions(
                 getContext().getSystemService(RoleManager.class),
                 (rm) -> rm.getRoleHolders(RoleManager.ROLE_EMERGENCY));
-        if (mTelephonyManager.isDeviceVoiceCapable()
+        if (mTelephonyManager.isVoiceCapable()
             && ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                 (tm) -> tm.isEmergencyAssistanceEnabled())) {
             String emergencyAssistancePackageName =
