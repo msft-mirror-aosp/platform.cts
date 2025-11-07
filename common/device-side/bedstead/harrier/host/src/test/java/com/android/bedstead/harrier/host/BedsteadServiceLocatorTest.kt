@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.bedstead.harrier
+package com.android.bedstead.harrier.host
 
-import com.android.bedstead.harrier.components.UserTypeResolver
-import com.android.bedstead.nene.utils.Assert.assertThrows
-import com.google.common.truth.Truth.assertThat
+import com.android.bedstead.harrier.BedsteadServiceLocator
+import com.google.common.truth.Truth
+import org.junit.Assert
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -32,13 +32,13 @@ class BedsteadServiceLocatorTest {
 
         val locator = BedsteadServiceLocator()
 
-        assertThrows(IllegalStateException::class.java) {
+        Assert.assertThrows(IllegalStateException::class.java) {
             locator.get(ClassNotSupportedByBedsteadServiceLocatorReflection::class)
         }
-        assertThrows(IllegalStateException::class.java) {
+        Assert.assertThrows(IllegalStateException::class.java) {
             locator.get<ClassNotSupportedByBedsteadServiceLocatorReflection>()
         }
-        assertThrows(IllegalStateException::class.java) {
+        Assert.assertThrows(IllegalStateException::class.java) {
             locator.get(ClassNotSupportedByBedsteadServiceLocatorReflection::class.java)
         }
     }
@@ -54,10 +54,10 @@ class BedsteadServiceLocatorTest {
         val result3 = locator.get(ExampleClass::class.java)
         val result4 = locator.get<ExampleClass>()
 
-        assertThat(result1).isSameInstanceAs(result2)
-        assertThat(result1).isSameInstanceAs(result3)
-        assertThat(result1).isSameInstanceAs(result4)
-        assertThat(locator.getAllDependencies().size).isEqualTo(1)
+        Truth.assertThat(result1).isSameInstanceAs(result2)
+        Truth.assertThat(result1).isSameInstanceAs(result3)
+        Truth.assertThat(result1).isSameInstanceAs(result4)
+        Truth.assertThat(locator.getAllDependencies().size).isEqualTo(1)
     }
 
     @Test
@@ -72,16 +72,16 @@ class BedsteadServiceLocatorTest {
         val locator = BedsteadServiceLocator()
         val exampleClass: ExampleClass = locator.get()
 
-        assertThat(exampleClass.classWithoutParameters).isNotNull()
-        assertThat(exampleClass.classWithLocatorParameter).isNotNull()
-        assertThat(locator.getAllDependencies().size).isEqualTo(3)
+        Truth.assertThat(exampleClass.classWithoutParameters).isNotNull()
+        Truth.assertThat(exampleClass.classWithLocatorParameter).isNotNull()
+        Truth.assertThat(locator.getAllDependencies().size).isEqualTo(3)
     }
 
-    private class FirstClass(locator: BedsteadServiceLocator) {
+    internal class FirstClass(locator: BedsteadServiceLocator) {
         val secondClass: SecondClass by locator
     }
 
-    private class SecondClass(locator: BedsteadServiceLocator) {
+    internal class SecondClass(locator: BedsteadServiceLocator) {
         val firstClass: FirstClass by locator
     }
 
@@ -92,24 +92,26 @@ class BedsteadServiceLocatorTest {
         val firstClass: FirstClass = locator.get()
         val secondClass: SecondClass = locator.get()
 
-        assertThat(firstClass.secondClass).isNotNull()
-        assertThat(secondClass.firstClass).isNotNull()
+        Truth.assertThat(firstClass.secondClass).isNotNull()
+        Truth.assertThat(secondClass.firstClass).isNotNull()
     }
 
     @Test
     fun getClassByName_dependencyIsCreated() {
         val locator = BedsteadServiceLocator()
 
-        val instance: UserTypeResolver = locator.get(UserTypeResolver::class.qualifiedName!!)
+        val instance: BedsteadServiceLocatorTest = locator.get(
+            BedsteadServiceLocatorTest::class.qualifiedName!!
+        )
 
-        assertThat(instance).isNotNull()
+        Truth.assertThat(instance).isNotNull()
     }
 
     @Test
     fun getNonExistingClass_throwsException() {
         val locator = BedsteadServiceLocator()
 
-        assertThrows {
+        Assert.assertThrows(IllegalStateException::class.java) {
             locator.get("non.existing.class")
         }
     }
@@ -120,6 +122,6 @@ class BedsteadServiceLocatorTest {
 
         val instance: Any? = locator.getOrNull("non.existing.class")
 
-        assertThat(instance).isNull()
+        Truth.assertThat(instance).isNull()
     }
 }
