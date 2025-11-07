@@ -753,7 +753,6 @@ public class KeyguardTests extends KeyguardTestBase {
         rotationSession.set(ROTATION_90);
         mBroadcastActionTrigger.finishBroadcastReceiverActivity();
         mWmState.waitForKeyguardShowingAndNotOccluded();
-        mWmState.waitForDisplayUnfrozen();
         mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
         mWmState.assertValidity();
         mWmState.waitAndAssertVisibilityGone(mWmState.getHomeActivityName());

@@ -290,12 +290,6 @@ public abstract class ActivityManagerTestBase {
                     .around(mTombstoneCollectorRule)
                     .around(new WrapperRule(null /* before */, this::tearDownBase));
 
-    /**
-     * Whether to wait for the rotation to be stable state after testing. It can be set if the
-     * display rotation may be changed by test.
-     */
-    protected boolean mWaitForRotationOnTearDown;
-
     /** Indicate to wait for all non-home activities to be destroyed when test finished. */
     protected boolean mShouldWaitForAllNonHomeActivitiesToDestroyed = false;
 
@@ -755,10 +749,6 @@ public abstract class ActivityManagerTestBase {
 
         if (mShouldWaitForAllNonHomeActivitiesToDestroyed) {
             mWmState.waitForAllNonHomeActivitiesToDestroyed();
-        }
-
-        if (mWaitForRotationOnTearDown) {
-            mWmState.waitForDisplayUnfrozen();
         }
 
         if (!mWmState.waitForAppTransitionIdleOnDisplay(getMainDisplayId())) {
@@ -1543,7 +1533,6 @@ public abstract class ActivityManagerTestBase {
 
     /** @see ObjectTracker#manage(AutoCloseable) */
     protected RotationSession createManagedRotationSession() {
-        mWaitForRotationOnTearDown = true;
         return mObjectTracker.manage(new RotationSession(mWmState));
     }
 

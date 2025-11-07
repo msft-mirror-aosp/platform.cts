@@ -327,10 +327,6 @@ public class WindowManagerStateHelper extends WindowManagerState {
         }, "orientation of " + getActivityName(activityName) + " to be " + configOrientation);
     }
 
-    public void waitForDisplayUnfrozen() {
-        waitForWithAmState(state -> !state.isDisplayFrozen(), "Display unfrozen");
-    }
-
     public boolean waitForActivityState(ComponentName activityName, String activityState) {
         return waitForWithAmState(state -> state.hasActivityState(activityName, activityState),
                 "state of " + getActivityName(activityName) + " to be " + activityState);
