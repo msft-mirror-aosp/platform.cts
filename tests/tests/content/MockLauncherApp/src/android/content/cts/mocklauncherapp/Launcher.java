@@ -37,9 +37,9 @@ public class Launcher extends Activity {
     }
 
     private static void createEmptyFileOfSize(File file, long sizeInBytes) {
-        try (RandomAccessFile raf = new RandomAccessFile(file, "rw")) {
+        try (RandomAccessFile raf = new RandomAccessFile(file, "rw");
+                FileChannel channel = raf.getChannel()) {
             raf.setLength(sizeInBytes);
-            FileChannel channel = raf.getChannel();
             ByteBuffer buffer = ByteBuffer.allocate(4096);
             for (long i = 0; i < sizeInBytes; i += buffer.capacity()) {
                 channel.write(buffer, i);
