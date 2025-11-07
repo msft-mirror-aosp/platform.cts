@@ -26,6 +26,8 @@ import android.companion.cts.common.RecordingOnTransportsChangedListener
 import android.companion.cts.common.SIMPLE_EXECUTOR
 import android.companion.cts.common.assertEmpty
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -34,6 +36,9 @@ import java.io.IOException
 import java.util.function.BiConsumer
 import java.util.function.Consumer
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -45,6 +50,8 @@ import org.junit.runner.RunWith
 @AppModeFull(reason = "CompanionDeviceManager APIs are not available to the instant apps.")
 @RunWith(AndroidJUnit4::class)
 class TransportsListenerTest : CoreTestBase() {
+    @get:Rule
+    val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @Test
     fun test_addOnTransportsChangedListener_requiresPermission() {
@@ -192,6 +199,40 @@ class TransportsListenerTest : CoreTestBase() {
             cdm.removeOnTransportsChangedListener(listener)
         }
         listener.clearRecordedInvocations()
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DATA_SYNC)
+    fun test_isSystemDataTransportAttached() {
+        // Create a regular (not self-managed) association.
+        targetApp.associate(MAC_ADDRESS_A)
+        val associationId = cdm.myAssociations.first().id
+
+        // 1. Verify that the transport is not attached initially.
+        assertFalse(
+            actual = cdm.isSystemDataTransportAttached(associationId),
+            message = "Transport should not be attached before" +
+                    "attachSystemDataTransport() is called."
+        )
+
+        val input = BlockedInputStream()
+        val output = ByteArrayOutputStream()
+
+        // 2. Attach the transport and verify it is now attached.
+        cdm.attachSystemDataTransport(associationId, input, output)
+        assertTrue(
+            actual = cdm.isSystemDataTransportAttached(associationId),
+            message = "Transport should be attached after" +
+                    "attachSystemDataTransport() is called."
+        )
+
+        // 3. Detach the transport and verify it is no longer attached.
+        cdm.detachSystemDataTransport(associationId)
+        assertFalse(
+            actual = cdm.isSystemDataTransportAttached(associationId),
+            message = "Transport should not be attached after" +
+                    "detachSystemDataTransport() is called."
+        )
     }
 
     class BlockedInputStream : FilterInputStream(ByteArrayInputStream(byteArrayOf(0))) {
