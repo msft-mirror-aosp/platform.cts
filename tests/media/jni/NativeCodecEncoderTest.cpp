@@ -805,14 +805,6 @@ int registerAndroidMediaV2CtsEncoderTest(JNIEnv* env) {
              "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/"
              "String;Ljava/lang/String;Ljava/lang/StringBuilder;I)Z",
              (void*)nativeTestReconfigure},
-            {"nativeTestSetForceSyncFrame",
-             "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/"
-             "String;Ljava/lang/StringBuilder;)Z",
-             (void*)nativeTestSetForceSyncFrame},
-            {"nativeTestAdaptiveBitRate",
-             "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/"
-             "String;Ljava/lang/StringBuilder;)Z",
-             (void*)nativeTestAdaptiveBitRate},
             {"nativeTestOnlyEos",
              "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/"
              "StringBuilder;)Z",
@@ -822,9 +814,25 @@ int registerAndroidMediaV2CtsEncoderTest(JNIEnv* env) {
     return env->RegisterNatives(c, methodTable, sizeof(methodTable) / sizeof(JNINativeMethod));
 }
 
+int registerAndroidMediaV2CtsVideoEncoderParamTest(JNIEnv* env) {
+    const JNINativeMethod methodTable[] = {
+            {"nativeTestSetForceSyncFrame",
+             "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/"
+             "String;Ljava/lang/StringBuilder;)Z",
+             (void*)nativeTestSetForceSyncFrame},
+            {"nativeTestAdaptiveBitRate",
+             "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/"
+             "String;Ljava/lang/StringBuilder;)Z",
+             (void*)nativeTestAdaptiveBitRate},
+    };
+    jclass c = env->FindClass("android/mediav2/cts/VideoEncoderParamTest");
+    return env->RegisterNatives(c, methodTable, sizeof(methodTable) / sizeof(JNINativeMethod));
+}
+
 extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void*) {
     JNIEnv* env;
     if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) return JNI_ERR;
     if (registerAndroidMediaV2CtsEncoderTest(env) != JNI_OK) return JNI_ERR;
+    if (registerAndroidMediaV2CtsVideoEncoderParamTest(env) != JNI_OK) return JNI_ERR;
     return JNI_VERSION_1_6;
 }
