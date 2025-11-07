@@ -25,6 +25,7 @@
         <restrict_callers_with_execute_app_functions>true
         </restrict_callers_with_execute_app_functions>
     </appfunction>
+
     <appfunction>
         <function_id>add_disabledByDefault</function_id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>

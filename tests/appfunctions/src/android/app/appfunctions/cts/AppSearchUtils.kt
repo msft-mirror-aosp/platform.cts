@@ -31,4 +31,31 @@ object AppSearchUtils {
         } while (results.isNotEmpty())
         return documents
     }
+
+    /** Sanitize the [GenericDocument] by removing AppFunction unrelated properties. */
+    fun sanitizeGenericDocument(document: GenericDocument): GenericDocument {
+        val builder =
+            GenericDocument.Builder<GenericDocument.Builder<*>?>(document)
+                .setCreationTimestampMillis(
+                    0
+                ) // GenericDocument#PARENT_TYPES_SYNTHETIC_PROPERTY is hidden
+                .clearProperty("$\$__AppSearch__parentTypes")
+                .clearProperty("mobileApplicationQualifiedId")
+
+        for (propertyName in document.propertyNames) {
+            val property = document.getProperty(propertyName)
+            if (property is Array<*> && property.isArrayOf<GenericDocument>()) {
+                val clearedNestedDocuments = kotlin.arrayOfNulls<GenericDocument>(property.size)
+
+                for (i in property.indices) {
+                    clearedNestedDocuments[i] =
+                        sanitizeGenericDocument(property[i] as GenericDocument)
+                }
+
+                builder.setPropertyDocument(propertyName, *clearedNestedDocuments)
+            }
+        }
+
+        return builder.build()
+    }
 }
