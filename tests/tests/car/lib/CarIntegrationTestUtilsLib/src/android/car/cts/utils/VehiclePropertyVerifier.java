@@ -55,6 +55,7 @@ import android.car.hardware.property.CarPropertyManager.SupportedValuesChangeCal
 import android.car.hardware.property.DetailedErrorCode;
 import android.car.hardware.property.ErrorState;
 import android.car.hardware.property.MinMaxSupportedValue;
+import android.car.hardware.property.PropertyAccessDeniedSecurityException;
 import android.car.hardware.property.PropertyNotAvailableAndRetryException;
 import android.car.hardware.property.PropertyNotAvailableErrorCode;
 import android.car.hardware.property.PropertyNotAvailableException;
@@ -1808,7 +1809,7 @@ public class VehiclePropertyVerifier<T> {
             if (valueEquals(valueToSet, currentCarPropertyValue.getValue())) {
                 return;
             }
-        } catch (PropertyNotAvailableAndRetryException e) {
+        } catch (PropertyAccessDeniedSecurityException | PropertyNotAvailableAndRetryException e) {
             Log.w(
                     TAG,
                     "Skipping SET verification for propertyId: "
@@ -1817,7 +1818,9 @@ public class VehiclePropertyVerifier<T> {
                             + areaId
                             + " valueToSet:"
                             + valueToSet
-                            + " because getProperty threw PropertyNotAvailableAndRetryException - "
+                            + " because getProperty threw "
+                            + e.getClass().getSimpleName()
+                            + " - "
                             + e);
             return;
         } catch (PropertyNotAvailableException e) {
@@ -1897,12 +1900,14 @@ public class VehiclePropertyVerifier<T> {
         spaceOutCarPropertyManagerActions();
         try {
             mCarPropertyManager.setProperty(mPropertyType, mPropertyId, areaId, valueToSet);
-        } catch (PropertyNotAvailableAndRetryException e) {
+        } catch (PropertyAccessDeniedSecurityException | PropertyNotAvailableAndRetryException e) {
             // Do nothing
         } catch (PropertyNotAvailableException e) {
             verifyPropertyNotAvailableException(e);
         } catch (CarInternalErrorException e) {
             verifyInternalErrorException(e);
+        } catch (IllegalArgumentException e) {
+            verifyIllegalArgumentException(e);
         } catch (Exception e) {
             assertWithMessage(
                             "Unexpected exception thrown when trying to setProperty on "
@@ -2686,6 +2691,24 @@ public class VehiclePropertyVerifier<T> {
         int vendorErrorCode = e.getVendorErrorCode();
         assertThat(vendorErrorCode).isAtLeast(VENDOR_ERROR_CODE_MINIMUM_VALUE);
         assertThat(vendorErrorCode).isAtMost(VENDOR_ERROR_CODE_MAXIMUM_VALUE);
+    }
+
+    /**
+     * CarService may throw IllegalArgumentException for multiple reasons including failed
+     * preconditions or as a result of StatusCode.INVALID_ARG returned from VHAL. The only valid
+     * IllegalArgumentException is the latter case. CarService does not wrap the
+     * ServiceSpecificException, but it does append it to the error message starting Android T. See
+     * {@link android.os.ServiceSpecificException#toString()} and {@link
+     * com.android.car.hal.VehicleHal#set(HalPropValue)}.
+     */
+    private static void verifyIllegalArgumentException(IllegalArgumentException e) {
+        if (!isAtLeastT()) {
+            return;
+        }
+
+        assertWithMessage("Invalid IllegalArgumentException thrown: " + e)
+                .that(e.getMessage())
+                .contains("ServiceSpecificException");
     }
 
     private void verifyCarPropertyValue(
@@ -4551,7 +4574,7 @@ public class VehiclePropertyVerifier<T> {
                 .isTrue();
         try {
             carPropertyManager.setProperty(propertyType, propertyId, areaId, valueToSet);
-        } catch (PropertyNotAvailableAndRetryException e) {
+        } catch (PropertyAccessDeniedSecurityException | PropertyNotAvailableAndRetryException e) {
             return null;
         } catch (PropertyNotAvailableException e) {
             verifyPropertyNotAvailableException(e);
@@ -4560,6 +4583,9 @@ public class VehiclePropertyVerifier<T> {
         } catch (CarInternalErrorException e) {
             verifyInternalErrorException(e);
             sExceptionClassOnSet = e.getClass();
+            return null;
+        } catch (IllegalArgumentException e) {
+            verifyIllegalArgumentException(e);
             return null;
         }
 
