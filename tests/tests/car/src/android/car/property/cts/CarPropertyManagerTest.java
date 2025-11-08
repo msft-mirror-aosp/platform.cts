@@ -4975,11 +4975,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     })
     public void testSubscribePropertyEventsForOnchangeProperty_alwaysReceiveInitEvent()
             throws Exception {
-        assumeTrue(
-                "Skipped for target SDK version <= Android V",
-                mContext.getApplicationInfo().targetSdkVersion
-                        > Build.VERSION_CODES.VANILLA_ICE_CREAM);
-
         runWithShellPermissionIdentity(
                 () -> {
                     // Test for on_change properties
