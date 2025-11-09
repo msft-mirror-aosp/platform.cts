@@ -812,6 +812,7 @@ def restart_cts_verifier(dut, package_name):
   # Set correct intent flags so that JCA finishes successfully (b/353830655)
   force_stop_app(dut, package_name)
   dut.adb.shell('am start -n com.android.cts.verifier/.CtsVerifierActivity')
+  its_device_utils.start_its_test_activity(dut.serial)
 
 
 def force_stop_app(dut, pkg_name):
