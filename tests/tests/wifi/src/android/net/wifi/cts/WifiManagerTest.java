@@ -7105,8 +7105,11 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             assertTrue(wifi7Network.isWifi7Enabled());
             sWifiManager.connect(wifi7Network.networkId, actionListener);
             waitForConnection();
-            assertTrue(sWifiManager.getConnectionInfo().getWifiStandard()
-                    == ScanResult.WIFI_STANDARD_11BE);
+            int wifiStandard = sWifiManager.getConnectionInfo().getWifiStandard();
+            assertEquals(
+                    "Expected 11be connection, but was " + wifiStandard,
+                    ScanResult.WIFI_STANDARD_11BE,
+                    wifiStandard);
 
             // Disable Wi-Fi 7 while connected: check new connection is not Wi-Fi 7
             // Skip test if vendor Android version is less than 15,Android 15 (V) corresponds to API level 35
@@ -7118,23 +7121,27 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             sWifiManager.updateNetwork(wifi7Network);
             waitForDisconnection();
             waitForConnection();
-            assertTrue(sWifiManager.getConnectionInfo().getWifiStandard()
-                    != ScanResult.WIFI_STANDARD_11BE);
+            wifiStandard = sWifiManager.getConnectionInfo().getWifiStandard();
+            assertTrue(
+                    "Not expected 11be connection", wifiStandard != ScanResult.WIFI_STANDARD_11BE);
 
             // Enable Wi-Fi 7: check new connection is Wi-Fi 7
-            sWifiManager.disconnect();
-            waitForDisconnection();
             wifi7Network.setWifi7Enabled(true);
             assertTrue(wifi7Network.isWifi7Enabled());
-            sWifiManager.connect(wifi7Network.networkId, actionListener);
+            sWifiManager.updateNetwork(wifi7Network);
+            waitForDisconnection();
             waitForConnection();
-            assertTrue(sWifiManager.getConnectionInfo().getWifiStandard()
-                    == ScanResult.WIFI_STANDARD_11BE);
+            wifiStandard = sWifiManager.getConnectionInfo().getWifiStandard();
+            assertEquals(
+                    "Expected 11be connection, but was " + wifiStandard,
+                    ScanResult.WIFI_STANDARD_11BE,
+                    wifiStandard);
 
         } finally {
             // Restore
-            if (wifi7Network != null) {
+            if (wifi7Network != null && !wifi7Network.isWifi7Enabled()) {
                 wifi7Network.setWifi7Enabled(true);
+                sWifiManager.updateNetwork(wifi7Network);
             }
             uiAutomation.dropShellPermissionIdentity();
         }
