@@ -32,6 +32,7 @@ import android.app.appfunctions.testutils.LongRunning
 import android.app.appfunctions.testutils.LongRunning.Companion.LONG_RUNNING_FUNCTION_ID
 import android.app.appfunctions.testutils.OutputInvalidArgumentException
 import android.app.appfunctions.testutils.OutputInvalidArgumentException.Companion.OUTPUT_INVALID_ARGUMENT_EXCEPTION_FUNCTION_ID
+import android.app.appfunctions.testutils.StopProcess.Companion.STOP_PROCESS_FUNCTION_ID
 import android.app.appfunctions.testutils.TestAppFunctionRegistrationService
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver.waitForCancelListenerSet
@@ -348,7 +349,7 @@ class AppFunctionRegistrationTest {
         )
 
         // Wait until cancellation listener is set to be able to call cancel
-        assertThat(waitForCancelListenerSet(SHORT_TIMEOUT_SECOND, TimeUnit.SECONDS)).isTrue()
+        assertThat(waitForCancelListenerSet(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)).isTrue()
         cancellationSignal.cancel()
 
         val callbackReceived = latch.await(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)
@@ -392,7 +393,7 @@ class AppFunctionRegistrationTest {
 
         // Wait for the function to start executing.
         assertWithMessage("Timed out waiting for execution to start").that(
-            executionStartedLatch.await(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)
+            executionStartedLatch.await(SHORT_TIMEOUT_SECOND, TimeUnit.SECONDS)
         ).isTrue()
 
         // While the function is "running" (awaiting), unregister it and register a new one.
@@ -428,6 +429,30 @@ class AppFunctionRegistrationTest {
             assertThat(response.isSuccess).isFalse()
             assertThat(response.appFunctionException().errorCode).isEqualTo(
                 AppFunctionException.ERROR_DISABLED
+            )
+        }
+    }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    @Throws(Exception::class)
+    fun execute_toolProviderProcessStopped_reportsAppError() = doBlocking {
+        val service = bindToRegistrationService(false)
+        service.registerAppFunction(FunctionType.STOP_PROCESS.toString())
+
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            val request = ExecuteAppFunctionRequest.Builder(
+                TEST_HELPER_PKG,
+                STOP_PROCESS_FUNCTION_ID
+            )
+                .build()
+
+            val response = executeAppFunctionAndWait(manager, request)
+
+            assertThat(response.isSuccess).isFalse()
+            assertThat(response.appFunctionException().errorCode).isEqualTo(
+                AppFunctionException.ERROR_APP_UNKNOWN_ERROR
             )
         }
     }
@@ -526,7 +551,7 @@ class AppFunctionRegistrationTest {
         @JvmField @ClassRule @Rule val sDeviceState: DeviceState = DeviceState()
         const val TEST_HELPER_PKG: String = "android.app.appfunctions.cts.helper"
         const val CURRENT_PKG: String = "android.app.appfunctions.cts"
-        const val SHORT_TIMEOUT_SECOND: Long = 1
+        const val SHORT_TIMEOUT_SECOND: Long = 2
         const val LONG_TIMEOUT_SECOND: Long = 10
 
         const val EXECUTE_APP_FUNCTIONS_PERMISSION = Manifest.permission.EXECUTE_APP_FUNCTIONS
