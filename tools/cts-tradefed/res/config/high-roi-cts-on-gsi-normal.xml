@@ -2500,29 +2500,6 @@
     <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.VoiceInteractionServiceTest#testCreateHotwordDetectorWithExecutor_callbackRunsOnNonMainThread"/>
     <!-- CtsWearableSensingServiceTestCases -->
     <option name="compatibility:include-filter" value="CtsWearableSensingServiceTestCases android.wearable.cts.WearableSensingManagerIsolatedServiceTest#provideDataStream_binderDied_receivesServiceUnavailableStatus"/>
-    <!-- CtsWebkitTestCases -->
-    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.CookieManagerTest#testAcceptCookie"/>
-    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.CookieManagerTest#testSameSiteLaxByDefault"/>
-    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.CookieManagerTest#testSameSiteNoneRequiresSecure"/>
-    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.CookieManagerTest#testSchemefulSameSite"/>
-    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.CookieManagerTest#testThirdPartyCookie"/>
-    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.GeolocationTest#testGeolocationRequestDeniedOnInsecureOrigin"/>
-    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.PacProcessorTest#testSetNetwork"/>
-    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.PrintingTest#testPrinting"/>
-    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.PrintingTest#testPrintingPagesCount"/>
-    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.RemovedApisTest#testGetZoomControls"/>
-    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.RemovedApisTest#testWebSettings_AccessPluginsPath"/>
-    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.RemovedApisTest#testWebSettings_AccessUseDoubleTree"/>
-    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.RemovedApisTest#testWebSettings_AppCacheEnabled"/>
-    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.RemovedApisTest#testWebView_AccessPluginList"/>
-    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.RemovedApisTest#testWebView_DebugDump"/>
-    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.RemovedApisTest#testWebView_GetVisibleTitleHeight"/>
-    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.RemovedApisTest#testWebView_PlatformNotifications"/>
-    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebChromeClientTest#testOnShowFileChooserInputFile"/>
-    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebChromeClientTest#testOnShowFileChooserInputFileMultiple"/>
-    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewClientTest#testShouldOverrideUrlLoadingOnCreateWindow"/>
-    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewTest#testGoBackAndForward"/>
-    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewTest#testSetNetworkAvailable"/>
     <!-- CtsWidgetTestCases -->
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.ChronometerTest#testAccessBase"/>
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.ChronometerTest#testStartAndStop"/>
