@@ -114,6 +114,7 @@ public class CtsSelfManagedConnectionService extends ConnectionService {
     @Override
     public void onCreateOutgoingConnectionFailed(PhoneAccountHandle connectionManagerHandle,
                                                  ConnectionRequest request) {
+        super.onCreateOutgoingConnectionFailed(connectionManagerHandle, request);
         mLocks[CREATE_OUTGOING_CONNECTION_FAILED_LOCK].countDown();
     }
 
@@ -133,18 +134,21 @@ public class CtsSelfManagedConnectionService extends ConnectionService {
 
     @Override
     public void onHandoverFailed(ConnectionRequest request, int error) {
+        super.onHandoverFailed(request, error);
         mLocks[HANDOVER_FAILED_LOCK].countDown();
     }
 
 
     @Override
     public void onConnectionServiceFocusGained() {
+        super.onConnectionServiceFocusGained();
         Log.i(TAG, "onConnectionServiceFocusGained");
         mLocks[FOCUS_GAINED_LOCK].countDown();
     }
 
     @Override
     public void onConnectionServiceFocusLost() {
+        super.onConnectionServiceFocusLost();
         Log.i(TAG, "onConnectionServiceFocusLost");
         mLocks[FOCUS_LOST_LOCK].countDown();
         connectionServiceFocusReleased();
@@ -152,6 +156,7 @@ public class CtsSelfManagedConnectionService extends ConnectionService {
 
     @Override
     public void onCreateConnectionComplete(Connection connection) {
+        super.onCreateConnectionComplete(connection);
         if (connection instanceof SelfManagedConnection) {
             // Make sure we fire a latch on create connection complete so tests don't try to use a
             // Connection before it is added to Telecom.

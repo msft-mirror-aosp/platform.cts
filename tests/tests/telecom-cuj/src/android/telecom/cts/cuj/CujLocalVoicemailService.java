@@ -58,6 +58,10 @@ public class CujLocalVoicemailService extends LocalVoicemailService {
         }
     }
 
+    public static LocalVoicemailService getInstance() {
+        return sService;
+    }
+
     @Override
     public void onVoicemailRequested(@NonNull Call.Details call) {
         Log.i(TAG, "onVoicemailRequested: callId=" + call.getId());

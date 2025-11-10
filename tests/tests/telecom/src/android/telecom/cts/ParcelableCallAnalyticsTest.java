@@ -118,6 +118,8 @@ public class ParcelableCallAnalyticsTest extends InstrumentationTestCase {
 
         ParcelableCallAnalytics newAnalytics =
                 ParcelableCallAnalytics.CREATOR.createFromParcel(parcel);
+        ParcelableCallAnalytics constructed = new ParcelableCallAnalytics(parcel);
+        assertNotNull(constructed);
         parcel.recycle();
 
         assertEquals(originalAnalytics.getStartTimeMillis(), newAnalytics.getStartTimeMillis());

@@ -309,6 +309,9 @@ public class LocalVoicemailTest extends BaseAppVerifier {
             assertNotNull("Expected the CujLocalVoicemailService to receive the call.", call);
             assertEquals(incomingCallId, call.getId());
 
+            // Make sure we can get the executor.
+            assertNotNull(CujLocalVoicemailService.getInstance().getExecutor());
+
             // Disconnect the call as if the remote party dropped it.
             managedApp.setCallState(incomingCallId, Call.STATE_DISCONNECTED, true, new Bundle());
 
