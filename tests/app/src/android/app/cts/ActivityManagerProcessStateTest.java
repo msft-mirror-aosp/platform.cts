@@ -72,6 +72,7 @@ import android.os.RemoteException;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.permission.cts.PermissionUtils;
+import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
 import android.provider.DeviceConfig;
 import android.server.wm.WindowManagerStateHelper;
@@ -1050,6 +1051,7 @@ public final class ActivityManagerProcessStateTest {
      * Test that the foreground service app op does prevent the foreground state.
      */
     @Test
+    @AppModeFull(reason = "Instant apps can't start foreground services")
     public void testForegroundServiceAppOp() throws Exception {
         PermissionUtils.grantPermission(
                 STUB_PACKAGE_NAME, android.Manifest.permission.PACKAGE_USAGE_STATS);
@@ -1615,6 +1617,7 @@ public final class ActivityManagerProcessStateTest {
      * @throws Exception
      */
     @Test
+    @AppModeFull(reason = "Instant apps can't start foreground services")
     public void testCycleFgs() throws Exception {
         ApplicationInfo app1Info = mContext.getPackageManager().getApplicationInfo(
                 PACKAGE_NAME_APP1, 0);
@@ -1680,6 +1683,7 @@ public final class ActivityManagerProcessStateTest {
      * @throws Exception
      */
     @Test
+    @AppModeFull(reason = "Instant apps can't start foreground services")
     public void testCycleFgsTriangle() throws Exception {
         ApplicationInfo app1Info = mContext.getPackageManager().getApplicationInfo(
                 PACKAGE_NAME_APP1, 0);
@@ -1771,6 +1775,7 @@ public final class ActivityManagerProcessStateTest {
      * @throws Exception
      */
     @Test
+    @AppModeFull(reason = "Instant apps can't start foreground services")
     public void testCycleFgsTriangleBiDi() throws Exception {
         ApplicationInfo app1Info = mContext.getPackageManager().getApplicationInfo(
                 PACKAGE_NAME_APP1, 0);
@@ -1858,6 +1863,7 @@ public final class ActivityManagerProcessStateTest {
      * @throws Exception
      */
     @Test
+    @AppModeFull(reason = "Instant apps can't start foreground services")
     public void testFgsLocationBind() throws Exception {
         setupWatchers(3);
 
@@ -2303,6 +2309,7 @@ public final class ActivityManagerProcessStateTest {
      * @throws Exception
      */
     @Test
+    @AppModeFull(reason = "Instant apps can't start foreground services")
     public void testFgsSticky1() throws Exception {
         // For START_STICKY, service is restarted, Service.onStartCommand is called with a null
         // intent.
@@ -2324,6 +2331,7 @@ public final class ActivityManagerProcessStateTest {
      * @throws Exception
      */
     @Test
+    @AppModeFull(reason = "Instant apps can't start foreground services")
     public void testFgsSticky2() throws Exception {
         // For START_REDELIVER_INTENT, service is restarted, Service.onStartCommand is called with
         // the same intent as previous service start.
@@ -2345,6 +2353,7 @@ public final class ActivityManagerProcessStateTest {
      * @throws Exception
      */
     @Test
+    @AppModeFull(reason = "Instant apps can't start foreground services")
     public void testFgsSticky3() throws Exception {
         // For START_NOT_STICKY, service does not restart and Service.onStartCommand is not called
         // again.
@@ -2392,6 +2401,7 @@ public final class ActivityManagerProcessStateTest {
     }
 
     @Test
+    @AppModeFull(reason = "Instant apps can't start foreground services")
     public void testForegroundService_malformedNotificationExtras() throws Exception {
         PermissionUtils.grantPermission(
                 STUB_PACKAGE_NAME, android.Manifest.permission.PACKAGE_USAGE_STATS);
@@ -2510,6 +2520,7 @@ public final class ActivityManagerProcessStateTest {
      * @throws Exception
      */
     @Test
+    @AppModeFull(reason = "Instant apps can't start foreground services")
     public void testFgsDefaultCapabilityNone() throws Exception {
         setupWatchers(2);
 
