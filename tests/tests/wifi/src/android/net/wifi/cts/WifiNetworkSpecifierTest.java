@@ -21,6 +21,8 @@ import static android.os.Process.myUid;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.annotation.NonNull;
@@ -52,6 +54,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ShellIdentityUtils;
+import com.android.wifi.flags.Flags;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -72,6 +75,8 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -328,6 +333,33 @@ public class WifiNetworkSpecifierTest extends WifiJUnit4TestBase {
         assertThat(ScanResult.convertFrequencyMhzToChannelIfSupported(specifier
                 .getPreferredChannelFrequenciesMhz()[0]) != ScanResult.UNSPECIFIED).isTrue();
         testSuccessfulConnectionWithSpecifier(specifier);
+        if (Flags.localOnlyDisconnectReason()
+                && ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU)) {
+            CountDownLatch blocker = new CountDownLatch(1);
+            WifiManager.LocalOnlyDisconnectionStatusListener listener =
+                    (networkSpecifier, isTriggeredByUser, reason) -> blocker.countDown();
+            try {
+                assertThrows(
+                        SecurityException.class,
+                        () ->
+                                sWifiManager.addLocalOnlyDisconnectionStatusListener(
+                                        Executors.newSingleThreadExecutor(), listener));
+                ShellIdentityUtils.invokeWithShellPermissions(
+                        () ->
+                                sWifiManager.addLocalOnlyDisconnectionStatusListener(
+                                        Executors.newSingleThreadExecutor(), listener));
+                ShellIdentityUtils.invokeWithShellPermissions(
+                        () -> sWifiManager.setWifiEnabled(false));
+                PollingCheck.check(
+                        "Wifi not disabled", DURATION, () -> !sWifiManager.isWifiEnabled());
+                assertTrue(
+                        "disconnection listener should have triggered",
+                        blocker.await(DURATION, TimeUnit.MILLISECONDS));
+            } finally {
+                ShellIdentityUtils.invokeWithShellPermissions(
+                        () -> sWifiManager.removeLocalOnlyDisconnectionStatusListener(listener));
+            }
+        }
     }
 
     /**
