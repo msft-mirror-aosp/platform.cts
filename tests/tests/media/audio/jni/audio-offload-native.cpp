@@ -51,16 +51,142 @@ static inline jlong streamToNativeHandle(AAudioStream* stream) {
 }
 
 /**
+ * @brief Maps Java's AudioFormat.ENCODING_* constants to AAudio's aaudio_format_t enums.
+ *
+ * @param javaFormat The integer format ID from Java's AudioFormat class.
+ * @return The corresponding aaudio_format_t enum, or AAUDIO_FORMAT_INVALID if not found.
+ */
+static aaudio_format_t convertJavaFormatToAAudio(jint javaFormat) {
+    // These integer values correspond to the AudioFormat.ENCODING_* constants in Java.
+    switch (javaFormat) {
+        case 4: // AudioFormat.ENCODING_PCM_FLOAT
+            return AAUDIO_FORMAT_PCM_FLOAT;
+        case 2: // AudioFormat.ENCODING_PCM_16BIT
+            return AAUDIO_FORMAT_PCM_I16;
+        case 22: // AudioFormat.ENCODING_PCM_32BIT
+            return AAUDIO_FORMAT_PCM_I32;
+        case 21: // AudioFormat.ENCODING_PCM_24BIT_PACKED
+            return AAUDIO_FORMAT_PCM_I24_PACKED;
+        default:
+            return AAUDIO_FORMAT_INVALID;
+    }
+}
+
+/**
+ * @brief Helper template to generate and write sine wave data for a specific PCM type.
+ *
+ * @tparam T The data type of the PCM samples (e.g., float, int16_t).
+ * @param stream The AAudio stream to write to.
+ * @param frequency The frequency of the sine wave to generate.
+ * @return AAUDIO_OK on success, or a negative error code on failure.
+ */
+template <typename T>
+aaudio_result_t generateSineWaveAndWrite(AAudioStream* stream, float frequency) {
+    const int numberOfStreamFrames = kSampleRate * kDurationInSeconds;
+    std::vector<T> data(numberOfStreamFrames * kStereoChannelCount);
+
+    // Determine the maximum amplitude based on the type T.
+    double maxAmplitude;
+    if constexpr (std::is_same_v<T, float>) {
+        maxAmplitude = 1.0f;
+    } else if constexpr (std::is_same_v<T, int16_t> || std::is_same_v<T, int32_t>) {
+        maxAmplitude = std::numeric_limits<T>::max(); // (2^15 - 1) or (2^31 - 1)
+    } else {
+        // Fallback for unknown types, though this should not be reached given our switch cases.
+        ALOGE("Unsupported data type in %s", __func__);
+        return AAUDIO_ERROR_INVALID_FORMAT;
+    }
+
+    for (int i = 0; i < numberOfStreamFrames; i++) {
+        const float time = (float)i / kSampleRate;
+        const float floatSample = kAmplitude * sinf(2.0f * M_PI * frequency * time);
+        T pcmSample = static_cast<T>(floatSample * maxAmplitude);
+        data[i * kStereoChannelCount] = pcmSample;
+        data[i * kStereoChannelCount + 1] = pcmSample;
+    }
+
+    int totalFramesWritten = 0;
+    int framesLeft = numberOfStreamFrames;
+    while (framesLeft > 0) {
+        auto framesWritten =
+                AAudioStream_write(stream, data.data() + (totalFramesWritten * kStereoChannelCount),
+                                   framesLeft, NANOS_PER_SECOND);
+        if (framesWritten < 0) {
+            ALOGE("Failed to write data, error=%d", framesWritten);
+            return framesWritten;
+        }
+        framesLeft -= framesWritten;
+        totalFramesWritten += framesWritten;
+    }
+    return AAUDIO_OK;
+}
+
+/**
+ * @brief Specialized helper to generate and write 24-bit packed PCM data.
+ * 24-bit packed uses 3 bytes per sample, requiring manual byte manipulation.
+ *
+ * @param stream The AAudio stream to write to.
+ * @param frequency The frequency of the sine wave to generate.
+ * @return AAUDIO_OK on success, or a negative error code on failure.
+ */
+aaudio_result_t generateSineWaveAndWrite24Bit(AAudioStream* stream, float frequency) {
+    const int numberOfStreamFrames = kSampleRate * kDurationInSeconds;
+    const int bytesPerFrame = kStereoChannelCount * 3;
+    std::vector<uint8_t> data(numberOfStreamFrames * bytesPerFrame);
+
+    // 24-bit max value is 2^23 - 1 = 8,388,607
+    const float maxAmplitude = 8388607.0f;
+
+    for (int i = 0; i < numberOfStreamFrames; i++) {
+        float time = (float)i / kSampleRate;
+        float floatSample = kAmplitude * sinf(2.0f * M_PI * frequency * time);
+        int32_t sampleValue = static_cast<int32_t>(floatSample * maxAmplitude);
+
+        for (int c = 0; c < kStereoChannelCount; c++) {
+            // Calculate the starting byte index for this sample
+            int offset = (i * kStereoChannelCount + c) * 3;
+            // Pack the 32-bit integer into 3 bytes (Little Endian)
+            data[offset + 0] = static_cast<uint8_t>(sampleValue & 0xFF);
+            data[offset + 1] = static_cast<uint8_t>((sampleValue >> 8) & 0xFF);
+            data[offset + 2] = static_cast<uint8_t>((sampleValue >> 16) & 0xFF);
+        }
+    }
+
+    int totalFramesWritten = 0;
+    int framesLeft = numberOfStreamFrames;
+    while (framesLeft > 0) {
+        auto framesWritten =
+                AAudioStream_write(stream, data.data() + (totalFramesWritten * bytesPerFrame),
+                                   framesLeft, NANOS_PER_SECOND);
+        if (framesWritten < 0) {
+            ALOGE("Failed to write 24-bit data, error=%d", framesWritten);
+            return framesWritten;
+        }
+        framesLeft -= framesWritten;
+        totalFramesWritten += framesWritten;
+    }
+    return AAUDIO_OK;
+}
+
+/**
  * @brief Opens and configures an AAudio stream for offloaded playback.
  * This function creates a stream with properties suitable for power-saving offload mode.
  *
+ * @param javaFormat The Java AudioFormat.ENCODING_* constant.
  * @return A jlong handle to the created AAudioStream on success. Returns 0 on failure.
  * The handle is an opaque integer used by Java to reference the native stream object.
  */
 extern "C" JNIEXPORT jlong JNICALL
 Java_android_media_audio_cts_AudioOffloadNativeEffectsTest_nativeOpenStream(JNIEnv* /*env*/,
-                                                                            jclass /*clazz*/) {
+                                                                            jclass /*clazz*/,
+                                                                            jint javaFormat) {
     ALOGI("Starting nativeOpenStream");
+
+    aaudio_format_t format = convertJavaFormatToAAudio(javaFormat);
+    if (format == AAUDIO_FORMAT_INVALID) {
+        ALOGE("Invalid format passed from Java: %d", javaFormat);
+        return 0;
+    }
 
     // Create a builder
     AAudioStreamBuilder* builder = nullptr;
@@ -72,7 +198,7 @@ Java_android_media_audio_cts_AudioOffloadNativeEffectsTest_nativeOpenStream(JNIE
 
     AAudioStreamBuilder_setBufferCapacityInFrames(builder, kSampleRate * kDurationInSeconds);
     AAudioStreamBuilder_setChannelMask(builder, AAUDIO_CHANNEL_STEREO);
-    AAudioStreamBuilder_setFormat(builder, AAUDIO_FORMAT_PCM_FLOAT);
+    AAudioStreamBuilder_setFormat(builder, format);
     AAudioStreamBuilder_setPerformanceMode(builder, AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED);
     AAudioStreamBuilder_setSampleRate(builder, kSampleRate);
     AAudioStreamBuilder_setSharingMode(builder, AAUDIO_SHARING_MODE_EXCLUSIVE);
@@ -137,17 +263,6 @@ Java_android_media_audio_cts_AudioOffloadNativeEffectsTest_nativePlayAndSignalEn
     // Reset stream before playback to ensure it is in a known state.
     AAudioStream_requestStop(stream);
 
-    const int numberOfStreamFrames = kSampleRate * kDurationInSeconds;
-    std::vector<float> data(numberOfStreamFrames * kStereoChannelCount);
-
-    // Generate input sine wave of kAmplitude and testFrequency
-    for (int i = 0; i < numberOfStreamFrames; i++) {
-        float time = (float)i / kSampleRate;
-        float sample = kAmplitude * sinf(2.0f * M_PI * testFrequencyHz * time);
-        data[i * kStereoChannelCount] = sample;
-        data[i * kStereoChannelCount + 1] = sample;
-    }
-
     int32_t sizeInBursts = 2;
     int32_t framesPerBurst = AAudioStream_getFramesPerBurst(stream);
     int32_t bufferSizeFrames = sizeInBursts * framesPerBurst;
@@ -168,21 +283,32 @@ Java_android_media_audio_cts_AudioOffloadNativeEffectsTest_nativePlayAndSignalEn
         return result;
     }
 
-    int totalFramesWritten = 0;
-    int framesLeft = numberOfStreamFrames;
-    while (framesLeft > 0) {
-        auto framesWritten =
-                AAudioStream_write(stream,
-                                   static_cast<void*>(
-                                           &data[totalFramesWritten * kStereoChannelCount]),
-                                   framesLeft, NANOS_PER_SECOND);
-        if (framesWritten < 0) {
-            ALOGE("Failed to write data, error=%d", framesWritten);
-            return framesWritten;
-        }
-        ALOGV("Write data succeed, frames=%d", framesWritten);
-        framesLeft -= framesWritten;
-        totalFramesWritten += framesWritten;
+    // Generate and write data based on the stream's actual format.
+    const aaudio_format_t format = AAudioStream_getFormat(stream);
+    switch (format) {
+        case AAUDIO_FORMAT_PCM_FLOAT:
+            ALOGI("Writing FLOAT data");
+            result = generateSineWaveAndWrite<float>(stream, testFrequencyHz);
+            break;
+        case AAUDIO_FORMAT_PCM_I16:
+            ALOGI("Writing I16 data");
+            result = generateSineWaveAndWrite<int16_t>(stream, testFrequencyHz);
+            break;
+        case AAUDIO_FORMAT_PCM_I32:
+            ALOGI("Writing I32 data");
+            result = generateSineWaveAndWrite<int32_t>(stream, testFrequencyHz);
+            break;
+        case AAUDIO_FORMAT_PCM_I24_PACKED:
+            ALOGI("Writing I24_PACKED data");
+            result = generateSineWaveAndWrite24Bit(stream, testFrequencyHz);
+            break;
+        default:
+            ALOGE("Unsupported format for data generation: %d", format);
+            result = AAUDIO_ERROR_INVALID_FORMAT;
+    }
+
+    if (result != AAUDIO_OK) {
+        return result;
     }
 
     result = AAudioStream_setOffloadEndOfStream(stream);

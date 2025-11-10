@@ -87,20 +87,10 @@ public class AudioOffloadNativeEffectsTest {
 
         assumeTrue("Skipping test, no audio output found", hasAudioOutput(context));
 
-        // TODO (b/452270871): try all pcm formats and open the stream with first one
-        // supported
-        // The encoding, sample rate and the channel mask should be the same as the
-        // one in native for creating stream.
-        final boolean offloadSupported =
-                AudioManager.isOffloadedPlaybackSupported(
-                        new AudioFormat.Builder()
-                                .setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
-                                .setSampleRate(AUDIOTRACK_DEFAULT_SAMPLE_RATE)
-                                .setChannelMask(AudioFormat.CHANNEL_OUT_STEREO)
-                                .build(),
-                        new AudioAttributes.Builder().build());
-
-        assumeTrue("Skipping test, offload support not found", offloadSupported);
+        final int supportedOffloadFormat = findSupportedPcmOffloadFormat();
+        assumeTrue(
+                "Skipping test, no PCM offload support found on this device",
+                supportedOffloadFormat != AudioFormat.ENCODING_INVALID);
 
         mAudioManager = context.getSystemService(AudioManager.class);
         mOriginalVolume = mAudioManager.getStreamVolume(mStreamType);
@@ -112,7 +102,7 @@ public class AudioOffloadNativeEffectsTest {
                 mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC) / 2,
                 /* flag= */ 0);
 
-        mStreamHandle = nativeOpenStream();
+        mStreamHandle = nativeOpenStream(supportedOffloadFormat);
         assertTrue("Failed to open native stream", mStreamHandle != 0);
 
         mSessionId = nativeGetSessionId(mStreamHandle);
@@ -146,6 +136,35 @@ public class AudioOffloadNativeEffectsTest {
 
     private boolean hasAudioOutput(Context context) {
         return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUDIO_OUTPUT);
+    }
+
+    private int findSupportedPcmOffloadFormat() {
+        // Define formats in order of preference.
+        final int[] formatsToCheck = {
+            AudioFormat.ENCODING_PCM_FLOAT,
+            AudioFormat.ENCODING_PCM_16BIT,
+            AudioFormat.ENCODING_PCM_32BIT,
+            AudioFormat.ENCODING_PCM_24BIT_PACKED
+        };
+
+        final AudioAttributes attributes = new AudioAttributes.Builder().build();
+
+        for (int format : formatsToCheck) {
+            // The encoding, sample rate and the channel mask should be the same as the
+            // one in native for creating stream.
+            final AudioFormat audioFormat =
+                    new AudioFormat.Builder()
+                            .setEncoding(format)
+                            .setSampleRate(AUDIOTRACK_DEFAULT_SAMPLE_RATE)
+                            .setChannelMask(AudioFormat.CHANNEL_OUT_STEREO)
+                            .build();
+
+            if (AudioManager.isOffloadedPlaybackSupported(audioFormat, attributes)) {
+                Log.i(TAG, "Device supports offload for format: " + format);
+                return format;
+            }
+        }
+        return AudioFormat.ENCODING_INVALID;
     }
 
     private void setupVisualizer() {
@@ -314,7 +333,7 @@ public class AudioOffloadNativeEffectsTest {
         }
     }
 
-    private static native long nativeOpenStream();
+    private static native long nativeOpenStream(int supportedOffloadFormat);
 
     private static native int nativeGetSessionId(long streamHandle);
 
