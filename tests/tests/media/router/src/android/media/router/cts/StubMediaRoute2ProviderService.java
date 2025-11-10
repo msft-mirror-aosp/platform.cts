@@ -47,6 +47,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.Executors;
 
 import javax.annotation.concurrent.GuardedBy;
@@ -82,6 +83,13 @@ public class StubMediaRoute2ProviderService extends MediaRoute2ProviderService {
 
     public static final String ROUTE_ID9_REMOTE = "route_id9_remote";
     public static final String ROUTE_NAME9 = "Sample Route 9 - Remote playback";
+
+    public static final String ROUTE_ID_REQ_NEARBY_PERM = "route_req_nearby_perm";
+    public static final String ROUTE_NAME_REQ_NEARBY_PERM = "Route Requiring Nearby Devices Perm";
+    public static final String ROUTE_ID_REQ_UNDECLARED_PERM = "route_req_undeclared_perm";
+    public static final String ROUTE_NAME_REQ_UNDECLARED_PERM = "Route Requiring Undeclared Perm";
+    public static final String ROUTE_ID_REQ_INTERNET_PERM = "route_req_internet_perm";
+    public static final String ROUTE_NAME_REQ_INTERNET_PERM = "Route Requiring Internet Perm";
 
     public static final int INITIAL_VOLUME = 30;
     public static final int VOLUME_MAX = 100;
@@ -185,6 +193,25 @@ public class StubMediaRoute2ProviderService extends MediaRoute2ProviderService {
                         .setVolumeMax(VOLUME_MAX)
                         .build();
 
+        MediaRoute2Info routeReqNearby =
+                new MediaRoute2Info.Builder(ROUTE_ID_REQ_NEARBY_PERM, ROUTE_NAME_REQ_NEARBY_PERM)
+                        .addFeature(FEATURE_SAMPLE)
+                        .setRequiredPermissions(
+                                Set.of(android.Manifest.permission.NEARBY_WIFI_DEVICES))
+                        .build();
+        MediaRoute2Info routeReqUndeclared =
+                new MediaRoute2Info.Builder(
+                                ROUTE_ID_REQ_UNDECLARED_PERM, ROUTE_NAME_REQ_UNDECLARED_PERM)
+                        .addFeature(FEATURE_SAMPLE)
+                        .setRequiredPermissions(Set.of("android.permission.UNDECLARED_PERMISSION"))
+                        .build();
+        MediaRoute2Info routeReqInternet =
+                new MediaRoute2Info.Builder(
+                                ROUTE_ID_REQ_INTERNET_PERM, ROUTE_NAME_REQ_INTERNET_PERM)
+                        .addFeature(FEATURE_SAMPLE)
+                        .setRequiredPermissions(Set.of(android.Manifest.permission.INTERNET))
+                        .build();
+
         mRoutes.put(route1.getId(), route1);
         mRoutes.put(route2.getId(), route2);
         mRoutes.put(route3.getId(), route3);
@@ -197,6 +224,9 @@ public class StubMediaRoute2ProviderService extends MediaRoute2ProviderService {
         mRoutes.put(routeSpecial.getId(), routeSpecial);
         mRoutes.put(fixedVolumeRoute.getId(), fixedVolumeRoute);
         mRoutes.put(variableVolumeRoute.getId(), variableVolumeRoute);
+        mRoutes.put(routeReqNearby.getId(), routeReqNearby);
+        mRoutes.put(routeReqUndeclared.getId(), routeReqUndeclared);
+        mRoutes.put(routeReqInternet.getId(), routeReqInternet);
     }
 
     public static StubMediaRoute2ProviderService getInstance() {
