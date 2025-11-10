@@ -1617,4 +1617,48 @@ public class MessageQueueTest {
             setStackTrace(stack);
         }
     }
+
+    /**
+     * Test that the idle check in MessageQueue.next() is correct and doesn't run the idle handler
+     * if the queue is busy.
+     */
+    @Test
+    public void testLooperIsIdleCheck() throws Throwable {
+        final AtomicBoolean idleHandlerCalled = new AtomicBoolean(false);
+        final CountDownLatch latch = new CountDownLatch(1);
+        final AssertableHandlerThread thread = new AssertableHandlerThread();
+        thread.start();
+
+        try {
+            final Handler handler = new Handler(thread.getLooper());
+            final MessageQueue queue = thread.getLooper().getQueue();
+
+            // Add barrier. This will make our queue not-idle.
+            queue.postSyncBarrier();
+
+            // Add idle handler. It should never fire.
+            final IdleHandler idleHandler =
+                    () -> {
+                        idleHandlerCalled.set(true);
+                        return false;
+                    };
+            queue.addIdleHandler(idleHandler);
+
+            // Post an async message to ensure that the Looper has had a chance to check the idle
+            // state, and would have run the idle handler if the queue falsely thought it's idle.
+            final Message kick = Message.obtain();
+            kick.setAsynchronous(true);
+            assertTrue(handler.sendMessage(kick));
+
+            // Post a final message to end the test and make sure all prior messages
+            // were processed.
+            final Handler asyncHandler = Handler.createAsync(thread.getLooper());
+            asyncHandler.post(() -> latch.countDown());
+
+            assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
+        } finally {
+            thread.quitAndRethrow();
+            assertFalse("IdleHandler#queueIdle was called unexpectedly", idleHandlerCalled.get());
+        }
+    }
 }
