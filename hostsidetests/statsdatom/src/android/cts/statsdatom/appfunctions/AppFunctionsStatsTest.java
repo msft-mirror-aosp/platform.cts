@@ -44,6 +44,7 @@ import com.google.protobuf.ExtensionRegistry;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -139,6 +140,7 @@ public class AppFunctionsStatsTest extends BaseHostJUnit4Test implements IBuildR
         FLAG_APP_FUNCTION_ACCESS_API_ENABLED,
         FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED
     })
+    @Ignore("b/455988256 - Fix the flaky issue before re-enable")
     public void testAtom_executeAppFunction_crossUser_success() throws Exception {
         if (!getDevice().isMultiUserSupported()) return;
 
