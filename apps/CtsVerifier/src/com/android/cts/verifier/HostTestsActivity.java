@@ -30,6 +30,7 @@ import android.view.View;
 import android.widget.ListView;
 
 import com.android.cts.verifier.TestListAdapter.TestListItem;
+
 import com.google.common.collect.ImmutableList;
 
 import org.json.JSONException;
@@ -72,7 +73,11 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
         new HostTestCategory("Wi-Fi Tests")
                 .addTest("CtsWifiAwareTests", "CtsWifiAwareTests")
                 .addTest("CtsWifiSoftApTestCases", "CtsWifiSoftApTestCases")
-                .addTest("CtsWifiDirectTests", "CtsWifiDirectTests")
+                .addTest("CtsWifiDirectTests", "CtsWifiDirectTests"),
+        new HostTestCategory("Notification Tests")
+                .addTest(
+                        "CtsNotificationSizeVerifierHostTest",
+                        "CtsNotificationSizeVerifierHostTest")
     };
 
     // List of test categories that will be excluded on Automotive.

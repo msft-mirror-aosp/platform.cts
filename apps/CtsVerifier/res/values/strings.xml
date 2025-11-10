@@ -7882,6 +7882,7 @@ You should be prompted to select credentials; choose the ones you just installed
         <item>CtsWifiAwareTests</item>
         <item>CtsWifiSoftApTestCases</item>
         <item>CtsWifiDirectTests</item>
+        <item>CtsNotificationSizeVerifierHostTest</item>
     </string-array>
 
     <!-- Strings for Audio Workload Test. -->
