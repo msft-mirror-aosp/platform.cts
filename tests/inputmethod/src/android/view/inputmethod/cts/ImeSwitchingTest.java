@@ -40,6 +40,7 @@ import android.server.wm.LockScreenSession;
 import android.server.wm.WindowManagerStateHelper;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.cts.util.EndToEndImeTestBase;
+import android.view.inputmethod.cts.util.FixedDeviceOrientationSession;
 import android.view.inputmethod.cts.util.TestActivity;
 import android.view.inputmethod.cts.util.TestUtils;
 import android.view.inputmethod.cts.util.UnlockScreenRule;
@@ -199,8 +200,10 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
                 pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
 
         final var wmState = new WindowManagerStateHelper();
-        try (var lockScreenSession = new LockScreenSession(
-                InstrumentationRegistry.getInstrumentation(), wmState)) {
+        try (var ignored = new FixedDeviceOrientationSession(
+                FixedDeviceOrientationSession.Orientation.PORTRAIT);
+                var lockScreenSession = new LockScreenSession(
+                        InstrumentationRegistry.getInstrumentation(), wmState)) {
             testWithActivityAndTwoImes((session1, session2, activity, editText, marker) -> {
                 final var stream1 = session1.openEventStream();
                 final var stream2 = session2.openEventStream();
@@ -327,7 +330,7 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
      * Starts the test activity with MockIme1 and MockIme2 enabled, and MockIme2 selected as the
      * current IME, and then runs the given test code.
      *
-     * @param testRunnable the test code to run.
+     * @param runnable the test code to run.
      */
     private void testWithActivityAndTwoImes(@NonNull TestRunnable runnable) throws Exception {
         testWithActivityAndTwoImes(runnable, false /* enforceDevicePolicy */);
