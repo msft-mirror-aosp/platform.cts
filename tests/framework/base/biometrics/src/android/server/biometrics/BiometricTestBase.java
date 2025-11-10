@@ -134,7 +134,7 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
     protected static final String VIEW_ID_PASSWORD_FIELD = "lockPassword";
     protected static final String KEY_ENTER = "key_enter";
     protected static final String WEAR_KEYPAD_ID_PREFIX = "key_";
-    private static final int VIEW_WAIT_TIME_MS = 10000;
+    protected static final int VIEW_WAIT_TIME_MS = 10000;
     @NonNull
     protected final Instrumentation mInstrumentation = getInstrumentation();
     @NonNull
