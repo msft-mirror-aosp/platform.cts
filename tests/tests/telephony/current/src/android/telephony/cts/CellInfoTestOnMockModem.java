@@ -34,11 +34,13 @@ public class CellInfoTestOnMockModem extends CellInfoTest {
 
     private static final int TEST_SIM_SLOT_ID = 0;
     private static MockModemManager sMockModemManager;
+    private static boolean sIsMockModemSupported = true;
 
     @BeforeClass
     public static void beforeAllTests() throws Exception {
         if (!MockModemTestBase.beforeAllTestsCheck()) {
             Log.e(LOG_TAG, "MockModem is not supported!");
+            sIsMockModemSupported = false;
             return;
         }
         MockModemTestBase.createMockModemAndConnectToService();
@@ -54,6 +56,8 @@ public class CellInfoTestOnMockModem extends CellInfoTest {
     public void setUp() throws Exception {
         super.setUp();
 
+        if (!sIsMockModemSupported) return;
+
         // Remove the SIM for initial state, don't need to check the result
         sMockModemManager.removeSimCard(TEST_SIM_SLOT_ID);
         // Insert a SIM
@@ -67,6 +71,8 @@ public class CellInfoTestOnMockModem extends CellInfoTest {
     @After
     public void tearDown() throws Exception {
         super.tearDown();
+
+        if (!sIsMockModemSupported) return;
 
         // Change service state to be NOT REGISTERED
         assertTrue(
