@@ -51,6 +51,7 @@ import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
 import android.app.ActivityOptions;
+import android.app.WindowConfiguration;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -187,6 +188,7 @@ public class StartActivityTests extends ActivityManagerTestBase {
                 .setTargetActivity(TEST_ACTIVITY)
                 .setUseInstrumentation()
                 .setNewTask(true)
+                .setWindowingMode(WindowConfiguration.WINDOWING_MODE_FULLSCREEN)
                 .execute();
 
         // launch an activity behind
