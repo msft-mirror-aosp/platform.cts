@@ -18,10 +18,9 @@ package android.mediav2.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_MultipleFrames;
 import static android.media.audio.Flags.iamfDefinitionsApi;
-import static android.media.codec.Flags.FLAG_LARGE_AUDIO_FRAME_FINISH;
+
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
 
-import static com.android.media.codec.flags.Flags.FLAG_LARGE_AUDIO_FRAME;
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableIamf;
 
 import static org.junit.Assert.fail;
@@ -34,9 +33,6 @@ import android.mediav2.common.cts.CodecDecoderTestBase;
 import android.mediav2.common.cts.OutputManager;
 import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.filters.LargeTest;
 import androidx.test.filters.SdkSuppress;
@@ -45,7 +41,6 @@ import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Before;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -73,7 +68,6 @@ import java.util.Map;
  **/
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @AppModeFull(reason = "Instant apps cannot access the SD card")
-@RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
 @RunWith(Parameterized.class)
 public class CodecDecoderMultiAccessUnitTest extends CodecDecoderMultiAccessUnitTestBase {
     private static final String LOG_TAG = CodecDecoderMultiAccessUnitTest.class.getSimpleName();
@@ -190,9 +184,6 @@ public class CodecDecoderMultiAccessUnitTest extends CodecDecoderMultiAccessUnit
     }
 
     private final String mReconfigFile;
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Parameterized.Parameters(name = "{index}_{0}_{1}")
     public static Collection<Object[]> input() {

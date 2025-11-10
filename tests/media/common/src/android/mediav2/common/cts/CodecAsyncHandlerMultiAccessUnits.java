@@ -32,9 +32,6 @@ import java.util.LinkedList;
  * Helper class for running mediacodec in asynchronous mode in large buffer mode. All mediacodec
  * callback events are registered in this object so that the client can take appropriate action in
  * time.
- *
- * <p>NOTE: If a JUnit TestCLass or JUnit Test is making use of this class, it needs to be annotated
- * with @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
  */
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
 public class CodecAsyncHandlerMultiAccessUnits extends CodecAsyncHandler {

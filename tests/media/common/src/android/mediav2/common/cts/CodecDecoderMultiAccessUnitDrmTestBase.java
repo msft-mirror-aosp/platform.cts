@@ -46,9 +46,6 @@ import java.util.UUID;
 
 /**
  * Wrapper class for trying and testing mediacodec secure decoder components in large buffer mode
- *
- * <p>NOTE: If a JUnit TestCLass or JUnit Test is making use of this class, it needs to be annotated
- * with @RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
  */
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
 public class CodecDecoderMultiAccessUnitDrmTestBase extends CodecDecoderMultiAccessUnitTestBase {
