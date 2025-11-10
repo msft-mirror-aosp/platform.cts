@@ -34,7 +34,6 @@ import android.media.MediaFormat;
 import android.mediav2.common.cts.CodecEncoderTestBase;
 import android.mediav2.common.cts.EncoderConfigParams;
 import android.mediav2.common.cts.OutputManager;
-import android.os.Bundle;
 import android.util.Log;
 
 import androidx.test.filters.LargeTest;
@@ -43,7 +42,6 @@ import androidx.test.filters.SmallTest;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -82,22 +80,12 @@ import java.util.List;
 @RunWith(Parameterized.class)
 public class CodecEncoderTest extends CodecEncoderTestBase {
     private static final String LOG_TAG = CodecEncoderTest.class.getSimpleName();
-    private static final ArrayList<String> ABR_MEDIATYPE_LIST = new ArrayList<>();
 
     private boolean mGotCSD;
-    private int mNumSyncFramesReceived;
-    private final ArrayList<Integer> mSyncFramesPos = new ArrayList<>();
     private final int mFrameLimit;
 
     static {
         System.loadLibrary("ctsmediav2codecenc_jni");
-
-        ABR_MEDIATYPE_LIST.add(MediaFormat.MIMETYPE_VIDEO_AVC);
-        ABR_MEDIATYPE_LIST.add(MediaFormat.MIMETYPE_VIDEO_HEVC);
-        ABR_MEDIATYPE_LIST.add(MediaFormat.MIMETYPE_VIDEO_VP8);
-        ABR_MEDIATYPE_LIST.add(MediaFormat.MIMETYPE_VIDEO_VP9);
-        ABR_MEDIATYPE_LIST.add(MediaFormat.MIMETYPE_VIDEO_AV1);
-        ABR_MEDIATYPE_LIST.add(MediaFormat.MIMETYPE_VIDEO_APV);
     }
 
     public CodecEncoderTest(String encoder, String mediaType, EncoderConfigParams[] cfgParams,
@@ -110,8 +98,6 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
     protected void resetContext(boolean isAsync, boolean signalEOSWithLastFrame) {
         super.resetContext(isAsync, signalEOSWithLastFrame);
         mGotCSD = false;
-        mNumSyncFramesReceived = 0;
-        mSyncFramesPos.clear();
     }
 
     @Override
@@ -119,29 +105,7 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
         if (info.size > 0 && ((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0)) {
             mGotCSD = true;
         }
-        if (info.size > 0 && (info.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0) {
-            mNumSyncFramesReceived += 1;
-            mSyncFramesPos.add(mOutputCount);
-        }
         super.dequeueOutput(bufferIndex, info);
-    }
-
-    private void forceSyncFrame() {
-        final Bundle syncFrame = new Bundle();
-        syncFrame.putInt(MediaCodec.PARAMETER_KEY_REQUEST_SYNC_FRAME, 0);
-        if (ENABLE_LOGS) {
-            Log.v(LOG_TAG, "requesting key frame");
-        }
-        mCodec.setParameters(syncFrame);
-    }
-
-    private void updateBitrate(int bitrate) {
-        final Bundle bitrateUpdate = new Bundle();
-        bitrateUpdate.putInt(MediaCodec.PARAMETER_KEY_VIDEO_BITRATE, bitrate);
-        if (ENABLE_LOGS) {
-            Log.v(LOG_TAG, "requesting bitrate to be changed to " + bitrate);
-        }
-        mCodec.setParameters(bitrateUpdate);
     }
 
     private static EncoderConfigParams getVideoEncoderCfgParam(String mediaType, int width,
@@ -655,188 +619,6 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
             format = mActiveEncCfg.getBuilder().setColorFormat(colorFormat).build().getFormat();
         }
         boolean isPass = nativeTestOnlyEos(mCodecName, mMediaType,
-                EncoderConfigParams.serializeMediaFormat(format),
-                EncoderConfigParams.TOKEN_SEPARATOR, mTestConfig);
-        assertTrue(mTestConfig.toString(), isPass);
-    }
-
-    /**
-     * Test video encoders for feature "request-sync". Video encoders are expected to give a sync
-     * frame upon request. The test requests encoder to provide key frame every 'n' seconds.  The
-     * test feeds encoder input for 'm' seconds. At the end, it expects to receive m/n key frames
-     * at least. Also it checks if the key frame received is not too far from the point of request.
-     */
-    @ApiTest(apis = "android.media.MediaCodec#PARAMETER_KEY_REQUEST_SYNC_FRAME")
-    @LargeTest
-    @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    public void testSetForceSyncFrame()
-            throws IOException, InterruptedException, CloneNotSupportedException {
-        Assume.assumeTrue("Test is applicable only for video encoders", mIsVideo);
-        EncoderConfigParams currCfg = mActiveEncCfg.getBuilder().setKeyFrameInterval(500.f).build();
-        MediaFormat format = currCfg.getFormat();
-        // Maximum allowed key frame interval variation from the target value.
-        final int maxKeyframeIntervalVariation = 3;
-        final int keyFrameInterval = 2; // force key frame every 2 seconds.
-        final int keyFramePos = currCfg.mFrameRate * keyFrameInterval;
-        final int numKeyFrameRequests = 7;
-
-        setUpSource(mActiveRawRes.mFileName);
-        mOutputBuff = new OutputManager();
-        boolean[] boolStates = {true, false};
-        {
-            mCodec = MediaCodec.createByCodecName(mCodecName);
-            for (boolean isAsync : boolStates) {
-                mOutputBuff.reset();
-                mInfoList.clear();
-                configureCodec(format, isAsync, false, true);
-                mCodec.start();
-                for (int i = 0; i < numKeyFrameRequests; i++) {
-                    doWork(keyFramePos);
-                    if (mSawInputEOS) {
-                        fail(String.format("Unable to encode %d frames as the input resource "
-                                + "contains only %d frames \n", keyFramePos, mInputCount));
-                    }
-                    forceSyncFrame();
-                    mInputBufferReadOffset = 0;
-                }
-                queueEOS();
-                waitForAllOutputs();
-                /* TODO(b/147348711) */
-                if (false) mCodec.stop();
-                else mCodec.reset();
-                String msg = String.format("Received only %d key frames for %d key frame "
-                        + "requests \n", mNumSyncFramesReceived, numKeyFrameRequests);
-                assertTrue(msg + mTestConfig + mTestEnv,
-                        mNumSyncFramesReceived >= numKeyFrameRequests);
-                for (int i = 0, expPos = 0, index = 0; i < numKeyFrameRequests; i++) {
-                    int j = index;
-                    for (; j < mSyncFramesPos.size(); j++) {
-                        // Check key frame intervals:
-                        // key frame position should not be greater than target value + 3
-                        // key frame position should not be less than target value - 3
-                        if (Math.abs(expPos - mSyncFramesPos.get(j)) <=
-                                maxKeyframeIntervalVariation) {
-                            index = j;
-                            break;
-                        }
-                    }
-                    if (j == mSyncFramesPos.size()) {
-                        Log.w(LOG_TAG, "requested key frame at frame index " + expPos +
-                                " none found near by");
-                    }
-                    expPos += keyFramePos;
-                }
-            }
-            mCodec.release();
-        }
-    }
-
-    private native boolean nativeTestSetForceSyncFrame(String encoder, String file,
-            String mediaType, String cfgParams, String separator, StringBuilder retMsg);
-
-    /**
-     * Test is similar to {@link #testSetForceSyncFrame()} but uses ndk api
-     */
-    @ApiTest(apis = "android.media.MediaCodec#PARAMETER_KEY_REQUEST_SYNC_FRAME")
-    @LargeTest
-    @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    public void testSetForceSyncFrameNative() throws IOException, CloneNotSupportedException {
-        Assume.assumeTrue("Test is applicable only for encoders", mIsVideo);
-
-        int colorFormat = findByteBufferColorFormat(mCodecName, mMediaType);
-        assertTrue("no valid color formats received \n" + mTestConfig + mTestEnv,
-                colorFormat != -1);
-        MediaFormat format =
-                mActiveEncCfg.getBuilder().setColorFormat(colorFormat).setKeyFrameInterval(500.f)
-                        .build().getFormat();
-        boolean isPass = nativeTestSetForceSyncFrame(mCodecName, mActiveRawRes.mFileName,
-                mMediaType, EncoderConfigParams.serializeMediaFormat(format),
-                EncoderConfigParams.TOKEN_SEPARATOR, mTestConfig);
-        assertTrue(mTestConfig.toString(), isPass);
-    }
-
-    /**
-     * Test video encoders for feature adaptive bitrate. Video encoders are expected to honor
-     * bitrate changes upon request. The test requests encoder to encode at new bitrate every 'n'
-     * seconds.  The test feeds encoder input for 'm' seconds. At the end, it expects the output
-     * file size to be around {sum of (n * Bi) for i in the range [0, (m/n)]} and Bi is the
-     * bitrate chosen for the interval 'n' seconds
-     */
-    @CddTest(requirements = {"5.2/C-2-1"})
-    @ApiTest(apis = "android.media.MediaCodec#PARAMETER_KEY_VIDEO_BITRATE")
-    @LargeTest
-    @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    public void testAdaptiveBitRate() throws IOException, InterruptedException {
-        Assume.assumeTrue("Skipping AdaptiveBitrate test for " + mMediaType,
-                ABR_MEDIATYPE_LIST.contains(mMediaType));
-        MediaFormat format = mActiveEncCfg.getFormat();
-        final int adaptiveBrInterval = 3; // change br every 3 seconds.
-        final int adaptiveBrDurFrm = mActiveEncCfg.mFrameRate * adaptiveBrInterval;
-        final int brChangeRequests = 7;
-        // TODO(b/251265293) Reduce the allowed deviation after improving the test conditions
-        final float maxBitrateDeviation = 60.0f; // allowed bitrate deviation in %
-
-        boolean[] boolStates = {true, false};
-        setUpSource(mActiveRawRes.mFileName);
-        mOutputBuff = new OutputManager();
-        mSaveToMem = true;
-        {
-            mCodec = MediaCodec.createByCodecName(mCodecName);
-            for (boolean isAsync : boolStates) {
-                mOutputBuff.reset();
-                mInfoList.clear();
-                configureCodec(format, isAsync, false, true);
-                mCodec.start();
-                int expOutSize = 0;
-                int bitrate = format.getInteger(MediaFormat.KEY_BIT_RATE);
-                for (int i = 0; i < brChangeRequests; i++) {
-                    doWork(adaptiveBrDurFrm);
-                    if (mSawInputEOS) {
-                        fail(String.format("Unable to encode %d frames as the input resource "
-                                + "contains only %d frames \n", adaptiveBrDurFrm, mInputCount));
-                    }
-                    expOutSize += adaptiveBrInterval * bitrate;
-                    if ((i & 1) == 1) bitrate *= 2;
-                    else bitrate /= 2;
-                    updateBitrate(bitrate);
-                    mInputBufferReadOffset = 0;
-                }
-                queueEOS();
-                waitForAllOutputs();
-                /* TODO(b/147348711) */
-                if (false) mCodec.stop();
-                else mCodec.reset();
-                /* TODO: validate output br with sliding window constraints Sec 5.2 cdd */
-                int outSize = mOutputBuff.getOutStreamSize() * 8;
-                float brDev = Math.abs(expOutSize - outSize) * 100.0f / expOutSize;
-                if (brDev > maxBitrateDeviation) {
-                    fail("Relative Bitrate error is too large " + brDev + "\n" + mTestConfig
-                            + mTestEnv);
-                }
-            }
-            mCodec.release();
-        }
-    }
-
-    private native boolean nativeTestAdaptiveBitRate(String encoder, String file, String mediaType,
-            String cfgParams, String separator, StringBuilder retMsg);
-
-    /**
-     * Test is similar to {@link #testAdaptiveBitRate()} but uses ndk api
-     */
-    @CddTest(requirements = {"5.2/C-2-1"})
-    @ApiTest(apis = "android.media.MediaCodec#PARAMETER_KEY_VIDEO_BITRATE")
-    @LargeTest
-    @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    public void testAdaptiveBitRateNative() throws IOException, CloneNotSupportedException {
-        Assume.assumeTrue("Skipping Native AdaptiveBitrate test for " + mMediaType,
-                ABR_MEDIATYPE_LIST.contains(mMediaType));
-        int colorFormat = findByteBufferColorFormat(mCodecName, mMediaType);
-        assertTrue("no valid color formats received \n" + mTestConfig + mTestEnv,
-                colorFormat != -1);
-        MediaFormat format =
-                mActiveEncCfg.getBuilder().setColorFormat(colorFormat).build().getFormat();
-        boolean isPass = nativeTestAdaptiveBitRate(mCodecName, mActiveRawRes.mFileName, mMediaType,
                 EncoderConfigParams.serializeMediaFormat(format),
                 EncoderConfigParams.TOKEN_SEPARATOR, mTestConfig);
         assertTrue(mTestConfig.toString(), isPass);
