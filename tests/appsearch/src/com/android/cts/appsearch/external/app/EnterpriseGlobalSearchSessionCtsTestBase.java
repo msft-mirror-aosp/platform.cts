@@ -20,46 +20,55 @@ import static android.app.appsearch.AppSearchResult.RESULT_NOT_FOUND;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
+
 import android.app.appsearch.AppSearchBatchResult;
 import android.app.appsearch.AppSearchResult;
 import android.app.appsearch.EnterpriseGlobalSearchSessionShim;
+import android.app.appsearch.Features;
 import android.app.appsearch.GenericDocument;
 import android.app.appsearch.GetByDocumentIdRequest;
 import android.app.appsearch.testutil.AppSearchTestUtils;
+import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+
+import androidx.test.filters.SdkSuppress;
 
 import com.android.appsearch.flags.Flags;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
-import org.junit.Before;
+import org.jspecify.annotations.NonNull;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
 public abstract class EnterpriseGlobalSearchSessionCtsTestBase {
     @Rule public final RuleChain mRuleChain = AppSearchTestUtils.createCommonTestRules();
-
-    protected EnterpriseGlobalSearchSessionShim mEnterpriseGlobalSearchSession;
 
     protected abstract ListenableFuture<EnterpriseGlobalSearchSessionShim>
             createEnterpriseGlobalSearchSessionAsync() throws Exception;
 
-    @Before
-    public void setUp() throws Exception {
-        mEnterpriseGlobalSearchSession = createEnterpriseGlobalSearchSessionAsync().get();
-    }
+    @NonNull
+    protected abstract Features getFeatures();
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ENTERPRISE_EMPTY_BATCH_RESULT_FIX)
     @Test
     public void testGetByDocumentId_returnsNotFoundResults() throws Exception {
+        assumeTrue(getFeatures().isFeatureSupported(Features.ENTERPRISE_GLOBAL_SEARCH_SESSION));
+        EnterpriseGlobalSearchSessionShim enterpriseGlobalSearchSession =
+                createEnterpriseGlobalSearchSessionAsync().get();
+
         // The batch result may be empty instead of containing NOT_FOUND errors if the enterprise
         // user is missing. If that's the case, we correct the batch result before returning to the
         // caller
         GetByDocumentIdRequest request =
                 new GetByDocumentIdRequest.Builder("namespace").addIds("123", "456", "789").build();
         AppSearchBatchResult<String, GenericDocument> result =
-                mEnterpriseGlobalSearchSession.getByDocumentIdAsync("foo", "bar", request).get();
+                enterpriseGlobalSearchSession.getByDocumentIdAsync("foo", "bar", request).get();
         assertThat(result.getFailures())
                 .containsExactly(
                         "123",
@@ -71,5 +80,13 @@ public abstract class EnterpriseGlobalSearchSessionCtsTestBase {
                         "789",
                         AppSearchResult.newFailedResult(
                                 RESULT_NOT_FOUND, "Document (namespace, 789) not found."));
+    }
+
+    @Test
+    public void testEnterpriseGlobalSearchNotAvailable_throwsException() {
+        assumeFalse(getFeatures().isFeatureSupported(Features.ENTERPRISE_GLOBAL_SEARCH_SESSION));
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> createEnterpriseGlobalSearchSessionAsync().get());
     }
 }

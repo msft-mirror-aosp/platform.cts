@@ -69,6 +69,7 @@ import android.util.ArrayMap;
 import android.util.Log;
 
 import androidx.test.core.app.ApplicationProvider;
+import androidx.test.filters.SdkSuppress;
 
 import com.android.appsearch.flags.Flags;
 
@@ -1739,6 +1740,7 @@ public abstract class AppSearchSessionCtsTestBase {
         }
     }
 
+    @SdkSuppress(minSdkVersion = 24) // b/441557822
     @Test
     public void testPutHugeDocumentInBatch() throws Exception {
         // Schema registration
@@ -2789,6 +2791,43 @@ public abstract class AppSearchSessionCtsTestBase {
         // check all document presents
         assertThat(documents).containsExactlyElementsIn(emailSet);
         assertThat(pageNumber).isEqualTo(6); // 5 (upper(31/7)) + 1 (final empty page)
+    }
+
+    @Test
+    public void testQuery_searchSourceLogTag() throws Exception {
+        assumeTrue(
+                mDb1.getFeatures()
+                        .isFeatureSupported(Features.SEARCH_SPEC_SET_SEARCH_SOURCE_LOG_TAG));
+
+        // Schema registration
+        mDb1.setSchemaAsync(
+                        new SetSchemaRequest.Builder().addSchemas(AppSearchEmail.SCHEMA).build())
+                .get();
+
+        // Index a document
+        AppSearchEmail inEmail =
+                new AppSearchEmail.Builder("namespace", "id1")
+                        .setFrom("from@example.com")
+                        .setTo("to1@example.com", "to2@example.com")
+                        .setSubject("testPut example")
+                        .setBody("This is the body of the testPut email")
+                        .build();
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(
+                        new PutDocumentsRequest.Builder().addGenericDocuments(inEmail).build()));
+
+        // Query for the document with log tag set. This should not cause any issues because the
+        // feature must be available.
+        SearchResultsShim searchResults =
+                mDb1.search(
+                        "body",
+                        new SearchSpec.Builder()
+                                .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                                .setSearchSourceLogTag("LOG_TAG")
+                                .build());
+        List<GenericDocument> documents = convertSearchResultsToDocuments(searchResults);
+        assertThat(documents).hasSize(1);
+        assertThat(documents.get(0)).isEqualTo(inEmail);
     }
 
     @Test

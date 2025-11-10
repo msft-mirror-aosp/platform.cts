@@ -109,6 +109,10 @@ public class MainlineFeaturesImpl implements Features {
             case Features.SET_SCHEMA_REQUEST_SCHEMA_TYPE_DISPLAYED_BY_SYSTEM:
                 return true;
 
+            // Features which are supported on T+ devices only.
+            case Features.ENTERPRISE_GLOBAL_SEARCH_SESSION:
+                return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU;
+
             // Features which are supported on U+ devices only.
             case Features.SET_SCHEMA_CIRCULAR_REFERENCES:
                 // fall through
