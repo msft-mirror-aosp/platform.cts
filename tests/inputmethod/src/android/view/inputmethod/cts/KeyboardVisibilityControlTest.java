@@ -1326,7 +1326,8 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
         try (var orientationSession = new FixedDeviceOrientationSession(Orientation.PORTRAIT);
              var lockScreenSession = new LockScreenSession(mInstrumentation, wmState);
              MockImeSession imeSession = MockImeSession.create(mInstrumentation.getContext(),
-                     mInstrumentation.getUiAutomation(), new ImeSettings.Builder())) {
+                     mInstrumentation.getUiAutomation(), new ImeSettings.Builder()
+                             .setInputViewHeight(NEW_KEYBOARD_HEIGHT))) {
             final ImeEventStream stream = imeSession.openEventStream();
 
             orientationSession.setDeviceOrientation(Orientation.LANDSCAPE);
