@@ -62,6 +62,9 @@ public class CtsCallRedirectionService2 extends CallRedirectionService {
         } else {
             Log.w(TAG, "onPlaceCall: No control interface.");
         }
+
+        // Adding call to Super class for API coverage.
+        super.onPlaceCall(handle, originalHandle, initialPhoneAccount, allowInteractiveResponse);
     }
 
 
