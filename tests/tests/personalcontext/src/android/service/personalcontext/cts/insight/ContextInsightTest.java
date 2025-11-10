@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.service.personalcontext.cts;
+package android.service.personalcontext.cts.insight;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -60,7 +60,8 @@ public class ContextInsightTest {
             apis = {
                 "android.service.personalcontext.insight.ContextInsight#getInsightType",
                 "android.service.personalcontext.insight.ContextInsight#getInsightId",
-                "android.service.personalcontext.insight.ContextInsight#getOriginHints"
+                "android.service.personalcontext.insight.ContextInsight#getOriginHints",
+                "android.service.personalcontext.insight.ContextInsight#getTags"
             })
     @Test
     public void testContextInsightBundleUnbundle() throws GeneralSecurityException {
@@ -71,11 +72,17 @@ public class ContextInsightTest {
         final ContextHintWithSignature signedHint =
                 new ContextHintWithSignature.Builder(hint, generateSignedHintKey()).build();
 
-        final BundleInsight insight = new BundleInsight.Builder().addOriginHint(signedHint).build();
+        final BundleInsight insight =
+                new BundleInsight.Builder()
+                        .addOriginHint(signedHint)
+                        .addTag("test1")
+                        .addTag("test2")
+                        .build();
         ContextInsight outputInsight = bundleUnbundle(insight);
 
         assertThat(outputInsight).isInstanceOf(BundleInsight.class);
         assertThat(insight.getInsightId()).isEqualTo(outputInsight.getInsightId());
+        assertThat(insight.getTags()).containsExactly("test1", "test2");
 
         assertThat(outputInsight.getOriginHints().size()).isEqualTo(1);
 
