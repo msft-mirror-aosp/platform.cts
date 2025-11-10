@@ -18,7 +18,6 @@ package android.view.inputmethod.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.text.InputType;
 import android.text.Selection;
 import android.view.inputmethod.SurroundingText;
@@ -31,7 +30,6 @@ import androidx.test.filters.SmallTest;
 import org.junit.Test;
 
 @SmallTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class TextSnapshotTest {
 
     @Test

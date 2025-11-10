@@ -34,7 +34,6 @@ import android.platform.test.annotations.AppModeInstant;
 import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.AfterClass;
 import com.android.bedstead.harrier.annotations.BeforeClass;
 import com.android.compatibility.common.util.FeatureUtil;
@@ -42,7 +41,6 @@ import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 
@@ -50,11 +48,6 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 public abstract class EndToEndImeTestBase {
-
-    // Required for Bedstead annotations to take effect.
-    @ClassRule
-    @Rule
-    public static final DeviceState sDeviceState = new DeviceState();
 
     @Rule
     public TestName mTestName = new TestName();

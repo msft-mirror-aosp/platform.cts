@@ -20,9 +20,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
-import com.android.ddmlib.AdbCommandRejectedException;
 import com.android.ddmlib.CollectingOutputReceiver;
 import com.android.ddmlib.Log;
+import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
@@ -134,10 +134,10 @@ public class ShadowCallLogTest extends BaseHostJUnit4Test {
     private static boolean isBootCompleted(ITestDevice device) throws Exception {
         CollectingOutputReceiver receiver = new CollectingOutputReceiver();
         try {
-            device.getIDevice().executeShellCommand("getprop sys.boot_completed", receiver);
-        } catch (AdbCommandRejectedException e) {
+            device.executeShellCommand("getprop sys.boot_completed", receiver);
+        } catch (DeviceNotAvailableException e) {
             // do nothing: device might be temporarily disconnected
-            Log.d(TAG, "Ignored AdbCommandRejectedException while `getprop sys.boot_completed`");
+            Log.d(TAG, "Ignored DeviceNotAvailableException while `getprop sys.boot_completed`");
         }
         String output = receiver.getOutput();
         if (output != null) {

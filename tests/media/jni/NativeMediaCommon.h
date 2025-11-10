@@ -18,10 +18,20 @@
 #define MEDIACTSNATIVE_NATIVE_MEDIA_COMMON_H
 
 #include <inttypes.h>
+#include <jni.h>
 #include <string>
 #include <vector>
 #include <media/NdkMediaFormat.h>
 #include <media/NdkMediaMuxer.h>
+
+#define NO_EXCEPTION_OR_RET_VAL(env, val) \
+    if (JniExceptionCheckAndClear(env)) { \
+        return val;                       \
+    }
+#define NOT_NULL_OR_RET_VAL(result, val) \
+    if (result == nullptr) {             \
+        return val;                      \
+    }
 
 // Migrate this method to std::format when C++20 becomes available
 template <typename... Args>
@@ -77,6 +87,7 @@ bool isCSDIdentical(AMediaFormat* refFormat, AMediaFormat* testFormat);
 bool isFormatSimilar(AMediaFormat* refFormat, AMediaFormat* testFormat);
 AMediaFormat* deSerializeMediaFormat(const char* msg, const char* separator);
 bool isMediaTypeOutputUnAffectedBySeek(const char* mediaType);
+bool JniExceptionCheckAndClear(JNIEnv* env);
 
 template <class T>
 void flattenField(uint8_t* buffer, int* pos, T value);

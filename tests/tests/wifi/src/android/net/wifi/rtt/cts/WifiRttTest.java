@@ -19,9 +19,12 @@ package android.net.wifi.rtt.cts;
 import static android.net.wifi.rtt.PasnConfig.AKM_PASN;
 import static android.net.wifi.rtt.PasnConfig.AKM_SAE;
 import static android.net.wifi.rtt.PasnConfig.CIPHER_GCMP_256;
+import static android.net.wifi.rtt.ProximityDetectionConfig.RANGING_MEASUREMENT_ROLE_ISTA;
+import static android.net.wifi.rtt.ProximityDetectionConfig.RANGING_SERVICE_ROLE_SEEKER;
 import static android.net.wifi.rtt.ResponderConfig.PREAMBLE_HE;
 import static android.net.wifi.rtt.ResponderConfig.RESPONDER_AP;
 import static android.net.wifi.rtt.ResponderConfig.RESPONDER_AWARE;
+import static android.net.wifi.rtt.ResponderConfig.RESPONDER_STA;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -35,6 +38,7 @@ import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.mock;
 
+import android.annotation.RequiresApi;
 import android.net.MacAddress;
 import android.net.wifi.OuiKeyedData;
 import android.net.wifi.ScanResult;
@@ -45,7 +49,10 @@ import android.net.wifi.aware.WifiAwareManager;
 import android.net.wifi.aware.WifiAwareSession;
 import android.net.wifi.cts.WifiBuildCompat;
 import android.net.wifi.cts.WifiFeature;
+import android.net.wifi.rtt.ContinuousRangingResultCallback;
 import android.net.wifi.rtt.PasnConfig;
+import android.net.wifi.rtt.ProximityDetectionCharacteristics;
+import android.net.wifi.rtt.ProximityDetectionConfig;
 import android.net.wifi.rtt.RangingRequest;
 import android.net.wifi.rtt.RangingResult;
 import android.net.wifi.rtt.ResponderConfig;
@@ -58,6 +65,7 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
@@ -67,6 +75,7 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.DeviceReportLog;
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
+import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.wifi.flags.Flags;
 
 import org.junit.Rule;
@@ -79,6 +88,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * Wi-Fi RTT CTS test: range to all available Access Points which support IEEE 802.11mc.
@@ -119,6 +129,15 @@ public class WifiRttTest extends TestBase {
     private static final String TEST_SSID = "test";
     private static final String TEST_PASSWORD = "secret";
     private static final byte[] TEST_PASN_COMEBACK_COOKIE = new byte[] {1, 2, 3};
+
+    // Test parameters for single device proximity detection tests
+    private static final int TEST_DISCOVERY_CHANNEL_FREQUENCY = 2437;
+    private static final int TEST_PREFERRED_RANGING_CHANNEL_FREQUENCY = 5745;
+    private static final int TEST_RANGING_INTERVAL_MS = 250;
+    private static final byte[] TEST_DEVICE_IDENTITY_KEY = {
+        11, 22, 33, 44, 55, 66, 77, 88, 11, 22, 33, 44, 55, 66, 77, 88
+    };
+    private final Object mLock = new Object();
 
     /**
      * Test Wi-Fi RTT ranging operation using ScanResults in request:
@@ -250,6 +269,54 @@ public class WifiRttTest extends TestBase {
             assertEquals(1, request.getRttResponders().size());
         }
         range11mcApRequest(request, testAp);
+    }
+
+    static class ContinuousResultCallback extends ContinuousRangingResultCallback {
+        private final CountDownLatch mBlocker = new CountDownLatch(1);
+        private List<RangingResult> mResults;
+        private int mFailureCode = -1;
+        private int mStoppedReason = -1;
+
+        @Override
+        public void onRangingFailure(int code) {
+            Log.d(TAG, "onRangingFailure: " + code);
+            mFailureCode = code;
+            mBlocker.countDown();
+        }
+
+        @Override
+        public void onRangingResults(List<RangingResult> results) {
+            Log.d(TAG, "onRangingResults: ");
+            mResults = results;
+            mBlocker.countDown();
+        }
+
+        @Override
+        public void onRangingStopped(int reason) {
+            Log.d(TAG, "onRangingStopped: " + reason);
+            mStoppedReason = reason;
+            mBlocker.countDown();
+        }
+
+        /**
+         * Waits for the listener callback to be called - or an error (timeout, interruption).
+         * Returns true on callback called, false on error (timeout, interruption).
+         */
+        boolean waitForCallback() throws InterruptedException {
+            return mBlocker.await(10, TimeUnit.SECONDS);
+        }
+
+        int getFailureCode() {
+            return mFailureCode;
+        }
+
+        List<RangingResult> getResults() {
+            return mResults;
+        }
+
+        int getRangingStoppedReason() {
+            return mStoppedReason;
+        }
     }
 
     /**
@@ -1600,5 +1667,208 @@ public class WifiRttTest extends TestBase {
             // expected
         }
     }
-}
 
+    /** Test setProximityDetectionDeviceName API */
+    @RequiresApi(37)
+    @RequiresFlagsEnabled(Flags.FLAG_PROXIMITY_RANGING)
+    @Test
+    @ApiTest(
+            apis = {
+                "android.net.wifi.rtt.WifiRttManager#setProximityDetectionDeviceName",
+                "android.net.wifi.rtt.WifiRttManager#getProximityDetectionCharacteristics",
+                "android.net.wifi.rtt"
+                        + ".ProximityDetectionCharacteristics#getProximityDetectionDeviceName"
+            })
+    public void testSetProximityDetectionDeviceName() {
+        // Check for Proximity Detection support
+        if (mProximityDetectionCharacteristics == null) {
+            Log.d(TAG, "Skipping test as Proximity Detection is not supported");
+            return;
+        }
+        ProximityDetectionCharacteristics pdCharacteristics =
+                mWifiRttManager.getProximityDetectionCharacteristics();
+        assertNotNull("Proximity detection characteristics should not be null", pdCharacteristics);
+        String originalDeviceName = pdCharacteristics.getProximityDetectionDeviceName();
+        assertNotNull("Proximity detection device name should not be null", originalDeviceName);
+
+        final String testDeviceName = "TestDeviceName123";
+        ShellIdentityUtils.invokeWithShellPermissions(
+                () -> mWifiRttManager.setProximityDetectionDeviceName(testDeviceName));
+        pdCharacteristics = mWifiRttManager.getProximityDetectionCharacteristics();
+        assertNotNull(pdCharacteristics);
+        assertEquals(testDeviceName, pdCharacteristics.getProximityDetectionDeviceName());
+
+        // Restore the original device name
+        ShellIdentityUtils.invokeWithShellPermissions(
+                () -> mWifiRttManager.setProximityDetectionDeviceName(originalDeviceName));
+    }
+
+    /**
+     * Test getProximityDetectionRandomizedMacAddress API.
+     *
+     * <p>Verifies that a valid, locally-administered, unicast MAC address is returned when
+     * Proximity Detection is supported.
+     */
+    @RequiresApi(37)
+    @RequiresFlagsEnabled(Flags.FLAG_PROXIMITY_RANGING)
+    @Test
+    @ApiTest(
+            apis = {
+                "android.net.wifi.rtt.WifiRttManager#getProximityDetectionRandomizedMacAddress"
+            })
+    public void testGetProximityDetectionRandomizedMacAddress() {
+        // Check for Proximity Detection support
+        if (mProximityDetectionCharacteristics == null) {
+            Log.d(TAG, "Skipping test as Proximity Detection is not supported");
+            return;
+        }
+
+        // Call the API to get the randomized MAC address.
+        MacAddress macAddress =
+                ShellIdentityUtils.invokeWithShellPermissions(
+                        () -> mWifiRttManager.getProximityDetectionRandomizedMacAddress());
+
+        // Validate the returned MAC address.
+        assertNotNull(
+                "Randomized MAC address for Proximity Detection should not be null", macAddress);
+        assertTrue(
+                "The MAC address should be a locally-administered address.",
+                macAddress.isLocallyAssigned());
+        assertEquals(
+                "The MAC address should be a unicast address (not multicast).",
+                MacAddress.TYPE_UNICAST,
+                macAddress.getAddressType());
+    }
+
+    /** Test that ProximityDetectionMacAddressCallback receives MacAddress changed callback. */
+    @RequiresApi(37)
+    @RequiresFlagsEnabled(Flags.FLAG_PROXIMITY_RANGING)
+    @Test
+    @ApiTest(
+            apis = {
+                "android.net.wifi.rtt.WifiRttManager#registerProximityDetectionMacAddressCallback",
+                "android.net.wifi.rtt.WifiRttManager"
+                        + "#unregisterProximityDetectionMacAddressCallback",
+                "android.net.wifi.rtt.WifiRttManager.ProximityDetectionMacAddressCallback"
+                        + "#onProximityDetectionMacAddressChanged"
+            })
+    public void testProximityDetectionMacAddressCallback() throws Exception {
+        // Check for Proximity Detection support
+        if (mProximityDetectionCharacteristics == null) {
+            Log.d(TAG, "Skipping test as Proximity Detection is not supported");
+            return;
+        }
+
+        synchronized (mLock) {
+            Consumer<MacAddress> callback =
+                    new Consumer<MacAddress>() {
+                        @Override
+                        public void accept(MacAddress macAddress) {
+                            synchronized (mLock) {
+                                mLock.notify();
+                            }
+                        }
+                    };
+
+            ShellIdentityUtils.invokeWithShellPermissions(
+                    () ->
+                            mWifiRttManager.registerProximityDetectionMacAddressCallback(
+                                    mExecutor, callback));
+            ShellIdentityUtils.invokeWithShellPermissions(
+                    () -> mWifiRttManager.unregisterProximityDetectionMacAddressCallback(callback));
+        }
+    }
+
+    /**
+     * Test Wi-Fi RTT continuous ranging operation. - Build Responder configuration - Start
+     * continuous RTT operations - Stop continuous RTT
+     */
+    @RequiresApi(37)
+    @RequiresFlagsEnabled(Flags.FLAG_PROXIMITY_RANGING)
+    @Test
+    @ApiTest(
+            apis = {
+                "android.net.wifi.rtt.WifiRttManager#startContinuousRanging",
+                "android.net.wifi.rtt.WifiRttManager#stopContinuousRanging",
+                "android.net.wifi.rtt.PasnConfig.Builder#setPassword",
+                "android.net.wifi.rtt.PasnConfig.Builder"
+                        + "#setProximityDetectionSeekerDeviceIdentityKey",
+                "android.net.wifi.rtt.SecureRangingConfig.Builder#setSecureHeLtfEnabled",
+                "android.net.wifi.rtt.SecureRangingConfig.Builder"
+                        + "#setRangingFrameProtectionEnabled",
+                "android.net.wifi.rtt.ProximityDetectionConfig.Builder"
+                        + "#setDiscoveryChannelFrequencyMhz",
+                "android.net.wifi.rtt.ProximityDetectionConfig.Builder"
+                        + "#setPreferredRangingChannelFrequencyMhz",
+                "android.net.wifi.rtt.ProximityDetectionConfig.Builder"
+                        + "#setContinuousRangingIntervalMillis",
+                "android.net.wifi.rtt.ProximityDetectionConfig.Builder"
+                        + "#setPreferredRangingMeasurementRole",
+                "android.net.wifi.rtt.ProximityDetectionConfig.Builder#setIngressDistanceMm",
+                "android.net.wifi.rtt.ProximityDetectionConfig.Builder#setEgressDistanceMm",
+                "android.net.wifi.rtt.ResponderConfig.Builder#setMacAddress",
+                "android.net.wifi.rtt.ResponderConfig.Builder#set80211azNtbSupported",
+                "android.net.wifi.rtt.ResponderConfig.Builder#setPreamble",
+                "android.net.wifi.rtt.ResponderConfig.Builder#setChannelWidth",
+                "android.net.wifi.rtt.ResponderConfig.Builder#setResponderType",
+                "android.net.wifi.rtt.ResponderConfig.Builder#setSecureRangingConfig",
+                "android.net.wifi.rtt.ResponderConfig.Builder#setProximityDetectionConfig",
+                "android.net.wifi.rtt.RangingRequest.Builder#setSecurityMode",
+                "android.net.wifi.rtt.RangingRequest.Builder#addResponder"
+            })
+    public void testContinuousRanging() throws InterruptedException {
+        // Proximity detection feature is the main user of continuous ranging.
+        if (mProximityDetectionCharacteristics == null) {
+            Log.d(TAG, "Skipping test as Proximity Detection is not supported");
+            return;
+        }
+
+        // Create a ResponderConfig from the builder API.
+        PasnConfig pasnConfig =
+                new PasnConfig.Builder(PasnConfig.AKM_SAE, PasnConfig.CIPHER_GCMP_256)
+                        .setPassword("TestPassword")
+                        .setProximityDetectionSeekerDeviceIdentityKey(TEST_DEVICE_IDENTITY_KEY)
+                        .build();
+        SecureRangingConfig originalSecureConfig =
+                new SecureRangingConfig.Builder(pasnConfig)
+                        .setSecureHeLtfEnabled(true)
+                        .setRangingFrameProtectionEnabled(true)
+                        .build();
+        ProximityDetectionConfig pdConfig =
+                new ProximityDetectionConfig.Builder(RANGING_SERVICE_ROLE_SEEKER)
+                        .setDiscoveryChannelFrequencyMhz(TEST_DISCOVERY_CHANNEL_FREQUENCY)
+                        .setPreferredRangingChannelFrequencyMhz(
+                                TEST_PREFERRED_RANGING_CHANNEL_FREQUENCY)
+                        .setContinuousRangingIntervalMillis(TEST_RANGING_INTERVAL_MS)
+                        .setPreferredRangingMeasurementRole(RANGING_MEASUREMENT_ROLE_ISTA)
+                        .setIngressDistanceMm(0)
+                        .setEgressDistanceMm(0)
+                        .build();
+        ResponderConfig.Builder responderBuilder = new ResponderConfig.Builder();
+        ResponderConfig responder =
+                responderBuilder
+                        .setMacAddress(MAC)
+                        .set80211azNtbSupported(true)
+                        .setPreamble(PREAMBLE_HE)
+                        .setChannelWidth(ScanResult.CHANNEL_WIDTH_80MHZ)
+                        .setResponderType(RESPONDER_STA)
+                        .setSecureRangingConfig(originalSecureConfig)
+                        .setProximityDetectionConfig(pdConfig)
+                        .build();
+
+        RangingRequest.Builder builder = new RangingRequest.Builder();
+        builder.setSecurityMode(RangingRequest.SECURITY_MODE_SECURE_AUTH);
+        builder.addResponder(responder);
+        RangingRequest secureRangingRequest = builder.build();
+
+        ContinuousResultCallback callback = new ContinuousResultCallback();
+
+        ShellIdentityUtils.invokeWithShellPermissions(
+                () ->
+                        mWifiRttManager.startContinuousRanging(
+                                null, secureRangingRequest, mExecutor, callback));
+        assertTrue("Wi-Fi RTT results: no callback ", callback.waitForCallback());
+        ShellIdentityUtils.invokeWithShellPermissions(
+                () -> mWifiRttManager.stopContinuousRanging(null));
+    }
+}

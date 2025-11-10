@@ -60,6 +60,11 @@ import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnFinancedDeviceOwnerUser;
+import com.android.bedstead.enterprise.policies.SetPermissionGrantState;
+import com.android.bedstead.enterprise.policies.SetPermissionPolicy;
+import com.android.bedstead.enterprise.policies.SetSensorPermissionGranted;
+import com.android.bedstead.enterprise.policies.SetSensorPermissionPolicyPromptForOrganizationOwnedWorkProfile;
+import com.android.bedstead.enterprise.policies.SetSmsPermissionGranted;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.AfterClass;
@@ -72,11 +77,6 @@ import com.android.bedstead.harrier.annotations.NotificationsTest;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.StringTestParameter;
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters;
-import com.android.bedstead.enterprise.policies.SetPermissionGrantState;
-import com.android.bedstead.enterprise.policies.SetPermissionPolicy;
-import com.android.bedstead.enterprise.policies.SetSensorPermissionGranted;
-import com.android.bedstead.enterprise.policies.SetSensorPermissionPolicyPromptForOrganizationOwnedWorkProfile;
-import com.android.bedstead.enterprise.policies.SetSmsPermissionGranted;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.devicepolicy.DeviceOwner;
 import com.android.bedstead.nene.devicepolicy.DeviceOwnerType;
@@ -190,8 +190,9 @@ public final class PermissionGrantTest {
   @Ignore("b/290932414")
   public void denyPermission_setsGrantState(@DeniablePermissionTestParameter String permission) {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-              (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
 
         int existingGrantState = dpc(sDeviceState).devicePolicyManager()
                 .getPermissionGrantState(dpc(sDeviceState).componentName(),
@@ -219,8 +220,9 @@ public final class PermissionGrantTest {
     @CanSetPolicyTest(policy = SetPermissionGrantState.class)
     public void grantPermission_setsGrantState() {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
 
         int existingGrantState = dpc(sDeviceState).devicePolicyManager()
                 .getPermissionGrantState(dpc(sDeviceState).componentName(),
@@ -250,9 +252,10 @@ public final class PermissionGrantTest {
   @Ignore("b/290932414")
   public void denyPermission_permissionIsDenied(
       @DeniablePermissionTestParameter String permission) {
-      // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-              (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        // TODO(b/409348309): Remove assumption after flag rollout.
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
 
         int existingGrantState = dpc(sDeviceState).devicePolicyManager()
                 .getPermissionGrantState(dpc(sDeviceState).componentName(),
@@ -278,8 +281,9 @@ public final class PermissionGrantTest {
     @PolicyAppliesTest(policy = SetPermissionGrantState.class)
     public void grantPermission_permissionIsGranted() {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
 
         int existingGrantState = dpc(sDeviceState).devicePolicyManager()
                 .getPermissionGrantState(dpc(sDeviceState).componentName(),
@@ -306,9 +310,10 @@ public final class PermissionGrantTest {
   @Ignore("b/290932414")
   public void denyPermission_doesNotApply_permissionIsNotDenied(
       @DeniablePermissionTestParameter String permission) {
-      // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-              (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        // TODO(b/409348309): Remove assumption after flag rollout.
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
         try {
             sTestApp.pkg().grantPermission(TestApis.users().instrumented(), permission);
 
@@ -331,8 +336,9 @@ public final class PermissionGrantTest {
   public void grantPermission_doesNotApply_permissionIsNotGranted(
       @DeniablePermissionTestParameter String permission) {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-              (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
         try {
             sTestApp.pkg().denyPermission(TestApis.users().instrumented(), permission);
 
@@ -351,8 +357,9 @@ public final class PermissionGrantTest {
     public void grantPermission_cannotBeSet_throwsException(
             @DeniablePermissionTestParameter String permission) {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
 
         assertThrows(SecurityException.class, () -> dpc(sDeviceState).devicePolicyManager()
                 .setPermissionGrantState(dpc(sDeviceState).componentName(), sTestApp.packageName(),
@@ -364,8 +371,9 @@ public final class PermissionGrantTest {
     @CanSetPolicyTest(policy = SetPermissionGrantState.class)
     public void grantDevelopmentPermission_cannotGrant() {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
 
         int existingGrantState = dpc(sDeviceState).devicePolicyManager()
                 .getPermissionGrantState(dpc(sDeviceState).componentName(),
@@ -396,8 +404,9 @@ public final class PermissionGrantTest {
     @CanSetPolicyTest(policy = SetPermissionGrantState.class)
     public void denyDevelopmentPermission_cannotDeny() {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
 
         int existingGrantState = dpc(sDeviceState).devicePolicyManager()
                 .getPermissionGrantState(dpc(sDeviceState).componentName(),
@@ -425,8 +434,9 @@ public final class PermissionGrantTest {
     @CanSetPolicyTest(policy = SetPermissionGrantState.class)
     public void setDevelopmentPermissionToDefault_cannotSet() {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
 
         int existingGrantState = dpc(sDeviceState).devicePolicyManager()
                 .getPermissionGrantState(dpc(sDeviceState).componentName(),
@@ -449,8 +459,9 @@ public final class PermissionGrantTest {
     @CanSetPolicyTest(policy = SetSmsPermissionGranted.class)
     public void grantSmsPermission_setsGrantState() {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
 
         int existingGrantState = dpc(sDeviceState).devicePolicyManager()
                 .getPermissionGrantState(dpc(sDeviceState).componentName(),
@@ -480,8 +491,9 @@ public final class PermissionGrantTest {
     public void grantSensorPermission_setsGrantState(
             @SensorPermissionTestParameter String permission) {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
 
         int existingGrantState = dpc(sDeviceState).devicePolicyManager()
                 .getPermissionGrantState(dpc(sDeviceState).componentName(),
@@ -509,8 +521,9 @@ public final class PermissionGrantTest {
     @PolicyAppliesTest(policy = SetSmsPermissionGranted.class)
     public void grantSmsPermission_permissionIsGranted() {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
 
         int existingGrantState = dpc(sDeviceState).devicePolicyManager()
                 .getPermissionGrantState(dpc(sDeviceState).componentName(),
@@ -533,8 +546,9 @@ public final class PermissionGrantTest {
     public void grantSensorPermission_permissionIsGranted(
             @SensorPermissionTestParameter String permission) {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
 
         int existingGrantState = dpc(sDeviceState).devicePolicyManager()
                 .getPermissionGrantState(dpc(sDeviceState).componentName(),
@@ -556,8 +570,9 @@ public final class PermissionGrantTest {
     @PolicyDoesNotApplyTest(policy = SetSmsPermissionGranted.class)
     public void grantSmsPermission_doesNotApplyToUser_permissionIsNotGranted() {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
 
         int existingGrantState = dpc(sDeviceState).devicePolicyManager()
                 .getPermissionGrantState(dpc(sDeviceState).componentName(),
@@ -583,8 +598,9 @@ public final class PermissionGrantTest {
     public void grantSensorPermission_doesNotApplyToUser_permissionIsNotGranted(
             @SensorPermissionTestParameter String permission) {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
 
         int existingGrantState = dpc(sDeviceState).devicePolicyManager()
                 .getPermissionGrantState(dpc(sDeviceState).componentName(),
@@ -608,8 +624,9 @@ public final class PermissionGrantTest {
         skipTestForFinancedDevice();
         Assume.assumeFalse("Parent throws exception", dpc(sDeviceState).isParentInstance());
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
 
         int existingGrantState = dpc(sDeviceState).devicePolicyManager()
                 .getPermissionGrantState(dpc(sDeviceState).componentName(),
@@ -645,8 +662,9 @@ public final class PermissionGrantTest {
         skipTestForFinancedDevice();
         Assume.assumeFalse("Parent throws exception", dpc(sDeviceState).isParentInstance());
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
 
         int existingGrantState = dpc(sDeviceState).devicePolicyManager()
                 .getPermissionGrantState(dpc(sDeviceState).componentName(),
@@ -683,8 +701,9 @@ public final class PermissionGrantTest {
     public void grantSensorPermission_cannotBeApplied_throwsSecurityException(
             @SensorPermissionTestParameter String permission) {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
         assertThrows(SecurityException.class, () ->
                 dpc(sDeviceState).devicePolicyManager().setPermissionGrantState(
                     dpc(sDeviceState).componentName(), sTestApp.packageName(),
@@ -696,8 +715,9 @@ public final class PermissionGrantTest {
     @CannotSetPolicyTest(policy = SetPermissionGrantState.class)
     public void getPermissionGrantState_notAllowed_throwsException() {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
         assertThrows(SecurityException.class, () -> {
             dpc(sDeviceState).devicePolicyManager().getPermissionGrantState(
                     dpc(sDeviceState).componentName(), sTestApp.packageName(),
@@ -783,8 +803,9 @@ public final class PermissionGrantTest {
     public void grantLocationPermission_userNotified(
             @LocationPermissionTestParameter String permission) {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
         int existingGrantState = dpc(sDeviceState).devicePolicyManager()
                 .getPermissionGrantState(dpc(sDeviceState).componentName(),
                         sTestApp.packageName(), permission);
@@ -811,8 +832,9 @@ public final class PermissionGrantTest {
     @CanSetPolicyTest(policy = SetPermissionGrantState.class)
     public void setPermissionGrantState_permissionIsNotDeclared_doesNotSetGrantState() {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
         try {
             boolean wasSet = dpc(sDeviceState).devicePolicyManager()
                     .setPermissionGrantState(dpc(sDeviceState).componentName(),
@@ -837,8 +859,9 @@ public final class PermissionGrantTest {
     public void setPermissionGrantStateDeny_autoGrantPermission_deniesPermissions(
             @DeniablePermissionTestParameter String permission) {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
         assumeTrue("Test requires showing activities",
                 TestApis.users().instrumented().canShowActivities());
         try (TestAppInstance testApp = sNotInstalledTestApp.install()) {
@@ -924,8 +947,9 @@ public final class PermissionGrantTest {
     public void setPermissionGrantStateDeny_autoDenyPermission_deniesPermissions(
             @DeniablePermissionTestParameter String permission) {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
         assumeTrue("Test requires showing activities",
                 TestApis.users().instrumented().canShowActivities());
         try (TestAppInstance testApp = sNotInstalledTestApp.install()) {
@@ -959,8 +983,9 @@ public final class PermissionGrantTest {
     @EnsureUnlocked
     public void setPermissionGrantStateDeny_promptPermission_deniesPermissions() {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
         assumeTrue("Test requires showing activities",
                 TestApis.users().instrumented().canShowActivities());
         try (TestAppInstance testApp = sNotInstalledTestApp.install()) {
@@ -991,8 +1016,9 @@ public final class PermissionGrantTest {
     @PolicyAppliesTest(policy = SetPermissionPolicy.class)
     public void setPermissionStateGranted_autoDenyPermission_grantsPermissions() {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
         assumeTrue("Test requires showing activities",
                 TestApis.users().instrumented().canShowActivities());
         try (TestAppInstance testApp = sNotInstalledTestApp.install()) {
@@ -1027,8 +1053,9 @@ public final class PermissionGrantTest {
     @EnsureUnlocked
     public void setPermissionStateGranted_promptPermission_grantsPermissions() {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
         assumeTrue("Test requires showing activities",
                 TestApis.users().instrumented().canShowActivities());
         try (TestAppInstance testApp = sNotInstalledTestApp.install()) {
@@ -1066,8 +1093,9 @@ public final class PermissionGrantTest {
     public void setSensorPermissionStateGranted_promptPermission_denyAsPermissionCantBeGrantedAutomatically(
             @SensorPermissionTestParameter String permission) {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
         assumeTrue("Test requires showing activities",
                 TestApis.users().instrumented().canShowActivities());
         try (TestAppInstance testApp = sNotInstalledTestApp.install()) {
@@ -1097,8 +1125,9 @@ public final class PermissionGrantTest {
     @CanSetPolicyTest(policy = SetPermissionGrantState.class)
     public void setPermissionGrantState_appIsNotInstalled_doesNotSetGrantState() {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
 
         try {
             boolean wasSet = dpc(sDeviceState).devicePolicyManager()
@@ -1123,8 +1152,9 @@ public final class PermissionGrantTest {
     @CanSetPolicyTest(policy = SetPermissionGrantState.class)
     public void setPermissionGrantStateDefault_wasPreviouslyGranted_permissionStaysGranted() {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
 
         int existingGrantState = dpc(sDeviceState).devicePolicyManager()
                 .getPermissionGrantState(dpc(sDeviceState).componentName(),
@@ -1159,8 +1189,9 @@ public final class PermissionGrantTest {
     @CanSetPolicyTest(policy = SetPermissionGrantState.class)
     public void setPermissionGrantStateDefault_wasPreviouslyDenied_permissionStaysDenied() {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
 
         int existingGrantState = dpc(sDeviceState).devicePolicyManager()
                 .getPermissionGrantState(dpc(sDeviceState).componentName(),
@@ -1196,8 +1227,9 @@ public final class PermissionGrantTest {
     @IncludeRunOnFinancedDeviceOwnerUser
     public void grantReadPhoneStatePermission_setsGrantState() {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
 
         int existingGrantState = dpc(sDeviceState).devicePolicyManager()
                 .getPermissionGrantState(dpc(sDeviceState).componentName(),
@@ -1230,8 +1262,9 @@ public final class PermissionGrantTest {
     @Ignore("b/300397938")
     public void grantSmsPermission_orgOwnedDeviceWithManagedSubscriptionsPolicySet_granted() {
         // TODO(b/409348309): Remove assumption after flag rollout.
-        assumeTrue(dpc(sDeviceState).componentName() != null ||
-                (Flags.setPermissionGrantStateCoexistence() && Flags.dpeBasedOnAsyncApisEnabled()));
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null
+                        || Flags.setPermissionGrantStateCoexistence());
 
         RemoteDevicePolicyManager devicePolicyManager =
                 profileOwner(sDeviceState, WORK_PROFILE).devicePolicyManager();

@@ -41,6 +41,6 @@ public final class AnnotationPriorityRunPrecedence {
     public static final int ENSURE_HAS_USER_RESTRICTION_PRIORITY = LATE;
     public static final int DO_PO_PRIORITY = MIDDLE;
     public static final int ENSURE_HAS_DELEGATE_PRIORITY = DO_PO_PRIORITY + 1; // Should run after setting DO/PO
-    public static final int ENSURE_HAS_WORK_PROFILE_PRIORITY = REQUIRE_RUN_ON_PRECEDENCE - 1;
+    public static final int ENSURE_HAS_SPECIFIED_USER_PRIORITY = REQUIRE_RUN_ON_PRECEDENCE - 1;
     //endregion
 }

@@ -29,6 +29,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -73,6 +74,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -96,6 +98,10 @@ public class SharedConnectivityManagerTest {
 
     private static final String SERVICE_PACKAGE_NAME = "TEST_PACKAGE";
     private static final String SERVICE_INTENT_ACTION = "TEST_INTENT_ACTION";
+
+    // Copied from SharedConnectivityManager.
+    private static final int RECOVER_MAXIMUM_RETRY_COUNT = 10;
+    private static final long RECOVER_TEST_BUFFER_IN_MS = 1000;
 
     private NetworkProviderInfo mNetworkProviderInfo;
 
@@ -176,14 +182,26 @@ public class SharedConnectivityManagerTest {
     }
 
     @Test
-    public void bindToServiceFails_userUnlocked_callsOnRegisterCallbackFailed() {
+    public void bindToServiceFails_userUnlocked_failedManyTimes_callsOnRegisterCallbackFailed() {
+        long delayedInMs = 1000L;
         when(mContext.bindService(any(Intent.class), any(ServiceConnection.class),
                 anyInt())).thenReturn(false);
         SharedConnectivityManager manager = SharedConnectivityManager.create(mContext);
+        setDelayedTimeInMs(manager, delayedInMs);
+        int expectedTimeout =
+                (int) ((RECOVER_MAXIMUM_RETRY_COUNT * delayedInMs) + RECOVER_TEST_BUFFER_IN_MS);
 
+        // Action
         manager.registerCallback(mExecutor, mClientCallback);
 
-        verify(mClientCallback).onRegisterCallbackFailed(any(IllegalStateException.class));
+        // Wait for the onRegisterCallbackFailed to be called after all retries.
+        verify(mClientCallback, timeout(expectedTimeout))
+                .onRegisterCallbackFailed(any(IllegalStateException.class));
+        // There are "RECOVER_MAXIMUM_RETRY_COUNT + 1" times for bindService and unbindService.
+        verify(mContext, times(RECOVER_MAXIMUM_RETRY_COUNT + 1))
+                .bindService(any(Intent.class), any(ServiceConnection.class), anyInt());
+        verify(mContext, times(RECOVER_MAXIMUM_RETRY_COUNT + 1))
+                .unbindService(any(ServiceConnection.class));
     }
 
     @Test
@@ -364,6 +382,24 @@ public class SharedConnectivityManagerTest {
         manager.getServiceConnection().onServiceDisconnected(COMPONENT_NAME);
 
         verify(mClientCallback).onServiceDisconnected();
+    }
+
+    @Test
+    public void onServiceDisconnected_whenDisconnectedUnexpectedly_shouldRecover() {
+        long delayedInMs = 1000L;
+        SharedConnectivityManager manager = SharedConnectivityManager.create(mContext);
+        setDelayedTimeInMs(manager, delayedInMs);
+        manager.registerCallback(mExecutor, mClientCallback);
+        manager.getServiceConnection().onServiceConnected(COMPONENT_NAME, mIBinder);
+        int expectedTimeout = (int) (delayedInMs + RECOVER_TEST_BUFFER_IN_MS);
+
+        // Unexpected service disconnection.
+        manager.getServiceConnection().onServiceDisconnected(COMPONENT_NAME);
+
+        verify(mClientCallback).onServiceDisconnected();
+        verify(mContext).unbindService(any(ServiceConnection.class));
+        verify(mContext, timeout(expectedTimeout).times(2))
+                .bindService(any(Intent.class), any(ServiceConnection.class), anyInt());
     }
 
     @Test
@@ -656,5 +692,15 @@ public class SharedConnectivityManagerTest {
                 .setSsid(SSID).setNetworkProviderInfo(mNetworkProviderInfo);
         Arrays.stream(SECURITY_TYPES).forEach(builder::addSecurityType);
         return builder.build();
+    }
+
+    private void setDelayedTimeInMs(SharedConnectivityManager manager, long delayedTimeInMs) {
+        try {
+            Field field = SharedConnectivityManager.class.getDeclaredField("mDelayedTimeInMs");
+            field.setAccessible(true);
+            field.setLong(manager, delayedTimeInMs);
+        } catch (Exception e) {
+            // Do nothing.
+        }
     }
 }

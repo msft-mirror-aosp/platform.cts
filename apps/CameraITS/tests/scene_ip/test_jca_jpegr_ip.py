@@ -37,6 +37,12 @@ _JETPACK_CAMERA_APP_PACKAGE_NAME = 'com.google.jetpackcamera'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _SCREEN_RECORDING_PATH = f'/sdcard/{_NAME}_screen_recording.mp4'
 _AWB_DIFF_THRESHOLD = 4  # Determined empirically
+# Known Issue b/398591036 - [Instagram] Bad color optimization in the
+# Instagram camera
+# its_session_utils.get_backported_issue_is_fixed will check if the issue is
+# listed as fixed applied fix with the following file:
+# platform/build/backported_fixes/applied_fixes/ki398591036.txtpb
+_KNOWN_ISSUE_398591036 = 398591036
 
 
 class JcaJpegRImageParityClassTest(its_base_test.ItsBaseTest):
@@ -155,7 +161,10 @@ class JcaJpegRImageParityClassTest(its_base_test.ItsBaseTest):
       camera_properties_utils.skip_unless(
           not is_dut_tablet_or_desktop and
           is_primary_camera and
-          first_api_level >= its_session_utils.ANDROID17_API_LEVEL and
+          (
+            first_api_level >= its_session_utils.ANDROID17_API_LEVEL or
+            its_session_utils.get_backported_issue_is_fixed(_KNOWN_ISSUE_398591036)
+          ) and
           supports_hdr
       )
 
@@ -235,11 +244,15 @@ class JcaJpegRImageParityClassTest(its_base_test.ItsBaseTest):
       if abs(mean_white_balance_diff) > _AWB_DIFF_THRESHOLD:
         e_msg.append('Device fails the white balance difference criteria.')
       if e_msg:
-        if first_api_level < its_session_utils.ANDROID17_API_LEVEL:
+        if (
+            first_api_level < its_session_utils.ANDROID17_API_LEVEL
+            and not its_session_utils.get_backported_issue_is_fixed(_KNOWN_ISSUE_398591036)
+        ):
           raise AssertionError(
-              f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}\n\n{e_msg}')
-        else:
-          raise AssertionError(e_msg)  # Checks mandated starting Android 17
+              f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}\n'
+              f'https://issuetracker.google.com/issues/{_KNOWN_ISSUE_398591036} is'
+              f' not marked fixed on this device.\n\n{e_msg}'
+          )
       else:  # Check for marginal pass
         if marginal_while_balance_pass:
           logging.warning('its_session_utils.MARGINAL_PASSING_MESSAGE\n %s',
@@ -248,4 +261,3 @@ class JcaJpegRImageParityClassTest(its_base_test.ItsBaseTest):
 
 if __name__ == '__main__':
   test_runner.main()
-

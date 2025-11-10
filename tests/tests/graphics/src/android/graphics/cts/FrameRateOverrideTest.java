@@ -29,22 +29,19 @@ import android.support.test.uiautomator.UiDevice;
 import android.sysprop.SurfaceFlingerProperties;
 import android.util.Log;
 import android.view.Display;
-import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
-import androidx.test.core.app.ActivityScenario;
+
 import androidx.test.InstrumentationRegistry;
+import androidx.test.core.app.ActivityScenario;
 import androidx.test.filters.MediumTest;
-import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.cts.display.DisplayUtilKt;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -75,13 +72,6 @@ public final class FrameRateOverrideTest {
     private final Handler mHandler = new Handler(Looper.getMainLooper());
     private FrameRateOverrideCtsActivity mActivity;
     private ActivityScenario<FrameRateOverrideCtsActivity> mScenario;
-
-
-    @Rule(order = 0)
-    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
-            androidx.test.platform.app.InstrumentationRegistry
-                    .getInstrumentation().getUiAutomation(),
-            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
 
     @Before
     public void setUp() throws Exception {
@@ -293,7 +283,9 @@ public final class FrameRateOverrideTest {
         testGlobalFrameRateOverride(activity.new DisplayGetRefreshRateFrameRateObserver());
     }
 
-    @Ignore("Disabled in b/412233132. Apps use Display#getRefreshRate, not Display.Mode#getRefreshRate")
+    @Ignore(
+            "Disabled in b/412233132. Apps use Display#getRefreshRate, not"
+                    + " Display.Mode#getRefreshRate")
     @Test
     public void testGlobalDisplayModeGetRefreshRateDisplayModeReturnsPhysicalRefreshRateEnabled()
             throws InterruptedException, IOException {

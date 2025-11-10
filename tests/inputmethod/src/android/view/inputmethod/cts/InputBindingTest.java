@@ -23,7 +23,6 @@ import static org.mockito.Mockito.mock;
 
 import android.os.Binder;
 import android.os.Parcel;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.view.inputmethod.InputBinding;
@@ -36,7 +35,6 @@ import org.junit.Test;
 
 // This is a bivalent test, it is expected to run on both device and host (Ravenwood) sides.
 @SmallTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class InputBindingTest {
 
     private static final int ANY_UID = 1;

@@ -24,6 +24,7 @@ import static com.android.compatibility.common.util.ShellIdentityUtils.invokeMet
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -384,8 +385,10 @@ public class LocalVoicemailTest extends BaseAppVerifier {
     }
 
     /**
-     * Verifies that a call undergoing local voicemail will continue processing while an incoming
-     * call rings, but will disconnect when the ringing call is answered.
+     * Verifies the behavior when a local voicemail call is processing and a new incoming call
+     * arrives. In this test case we set the ringer mode to silence which means that the incoming
+     * ringing call does NOT change the audio mode to {@link AudioManager#MODE_RINGTONE} and hence
+     * the local vm can continue until the call is answered.
      */
     @Test
     @ApiTest(
@@ -398,9 +401,14 @@ public class LocalVoicemailTest extends BaseAppVerifier {
         assumeTrue("Skipped for devices with no dialer role", mSupportsManagedCalls);
 
         AppControlWrapper managedApp = null;
+        int previousRingerMode = mAudioManager.getRingerMode();
         try {
             managedApp = bindToApp(ManagedConnectionServiceApp);
             configureTestLocalVoicemailServiceAndVerify();
+
+            // Set the ringer mode to silent so that we do not enter mode ringtone.
+            invokeMethodWithShellPermissionsNoReturn(
+                    mAudioManager, am -> am.setRingerMode(AudioManager.RINGER_MODE_SILENT));
 
             // Start by assuming that the timeout is quite short; 1 sec.
             // This way we can ensure the local voicemail service picks up quickly without this test
@@ -426,10 +434,19 @@ public class LocalVoicemailTest extends BaseAppVerifier {
 
             // There is no direct way to observe that a call is in local vm state, so we will check
             // the audio mode and make sure it is still `MODE_CALL_REDIRECT`.
+            // If it moves to MODE_RINGTONE then something went wrong; we shouldn't play a ringtone.
+            int newAudioMode = mAudioManager.getMode();
+            assertNotEquals(
+                    "The ringer mode was set to silent so we shouldn't play a ringtone",
+                    AudioManager.MODE_RINGTONE,
+                    newAudioMode);
+            // It turns out the device didn't play a ringtone, so we can assume that local VM
+            // should still be active.
             assertEquals(
-                    "Local voicemail should still be in progress when a ringing call added.",
+                    "Local voicemail should still be in progress when a ringing call added "
+                            + "that does not result in a playing ringtone.",
                     AudioManager.MODE_CALL_REDIRECT,
-                    mAudioManager.getMode());
+                    newAudioMode);
 
             // Answer the second incoming call.
             managedApp.setCallState(incomingCall2Id, Call.STATE_ACTIVE, true, new Bundle());
@@ -443,6 +460,77 @@ public class LocalVoicemailTest extends BaseAppVerifier {
                             .await(STATE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS));
         } finally {
             tearDownApp(managedApp);
+            invokeMethodWithShellPermissionsNoReturn(
+                    mAudioManager, am -> am.setRingerMode(previousRingerMode));
+            invokeMethodWithShellPermissionsNoReturn(
+                    mTelecomManager,
+                    tm -> tm.disableLocalVoicemail(MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle()));
+            resetTestLocalVoicemailService();
+            unregisterAcctAndVerify(MANAGED_DEFAULT_ACCOUNT_1);
+        }
+    }
+
+    /**
+     * Verifies the behavior when a local voicemail call is processing and a new incoming call
+     * arrives. In this test case we set the ringer mode to on which means that the incoming ringing
+     * call will change the audio mode to {@link AudioManager#MODE_RINGTONE} so the call should
+     * drop.
+     */
+    @Test
+    @ApiTest(
+            apis = {
+                "android.telecom.LocalVoicemailService#onVoicemailRequested",
+                "android.telecom.LocalVoicemailService#onVoicemailStopped"
+            })
+    public void testIncomingCallDuringLocalVoicemailCallRingerOn() throws Exception {
+        assumeTrue("Skipped for devices with no FEATURE_TELECOM", mShouldTestTelecom);
+        assumeTrue("Skipped for devices with no dialer role", mSupportsManagedCalls);
+
+        AppControlWrapper managedApp = null;
+        int previousRingerMode = mAudioManager.getRingerMode();
+        try {
+            managedApp = bindToApp(ManagedConnectionServiceApp);
+            configureTestLocalVoicemailServiceAndVerify();
+
+            // Set the ringer mode to normal so that we do not enter mode ringtone.
+            invokeMethodWithShellPermissionsNoReturn(
+                    mAudioManager, am -> am.setRingerMode(AudioManager.RINGER_MODE_NORMAL));
+
+            // Start by assuming that the timeout is quite short; 1 sec.
+            // This way we can ensure the local voicemail service picks up quickly without this test
+            // becoming an absolute time vortex.
+            invokeMethodWithShellPermissionsNoReturn(
+                    mTelecomManager,
+                    tm ->
+                            tm.enableLocalVoicemail(
+                                    MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle(),
+                                    Duration.ofSeconds(1)));
+
+            String incomingCallId = addIncomingCallAndVerify(managedApp);
+
+            // We'll wait up to 5 sec for the local vm service to get the call.
+            Call.Details call =
+                    CujLocalVoicemailService.getRequestedCalls()
+                            .poll(STATE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+            assertNotNull("Expected the CujLocalVoicemailService to receive the call.", call);
+            assertEquals(incomingCallId, call.getId());
+
+            // Add a second incoming call.
+            String incomingCall2Id = addIncomingCallAndVerify(managedApp);
+
+            // A ringtone is happening!  Should disconnect the call.
+
+            // Make sure the original call got disconnected.
+            verifyLocalVoicemailStopped(call);
+
+            assertTrue(
+                    "Expected unbind from the local voicemail service.",
+                    CujLocalVoicemailService.getUnbindLatch()
+                            .await(STATE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS));
+        } finally {
+            tearDownApp(managedApp);
+            invokeMethodWithShellPermissionsNoReturn(
+                    mAudioManager, am -> am.setRingerMode(previousRingerMode));
             invokeMethodWithShellPermissionsNoReturn(
                     mTelecomManager,
                     tm -> tm.disableLocalVoicemail(MANAGED_DEFAULT_ACCOUNT_1.getAccountHandle()));

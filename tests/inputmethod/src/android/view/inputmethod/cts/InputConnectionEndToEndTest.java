@@ -50,7 +50,6 @@ import android.os.CancellationSignal;
 import android.os.Handler;
 import android.os.Process;
 import android.os.SystemClock;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -97,6 +96,7 @@ import androidx.test.filters.FlakyTest;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.harrier.DeviceState;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.cts.inputmethod.LegacyImeClientTestUtils;
 import com.android.cts.mocka11yime.MockA11yImeEventStream;
@@ -111,6 +111,7 @@ import com.android.cts.mockime.MockImeSession;
 
 import com.google.common.truth.Correspondence;
 
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ErrorCollector;
@@ -136,8 +137,11 @@ import java.util.function.IntConsumer;
  * <p>TODO(b/193535269): Clean up boilerplate code around mocking InputConnection.</p>
  */
 @LargeTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
     private static final long TIME_SLICE = TimeUnit.MILLISECONDS.toMillis(125);
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     private static final long EXPECTED_NOT_CALLED_TIMEOUT = TimeUnit.SECONDS.toMillis(1);

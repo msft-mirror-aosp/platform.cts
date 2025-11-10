@@ -44,6 +44,9 @@ import android.app.UiAutomation;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothDevice.BluetoothAddress;
+import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCallback;
+import android.bluetooth.BluetoothGattConnectionSettings;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothSinkAudioPolicy;
 import android.bluetooth.BluetoothStatusCodes;
@@ -57,6 +60,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.os.Build;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -389,8 +394,38 @@ public class BluetoothDeviceTest {
         assertThat(mFakeDevice.isEncrypted()).isFalse();
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_APAIRING_26Q2_PERMISSION_IMPROVEMENTS)
     @Test
     public void removeBond() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
+        // Device is not bonded
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
+            assertThat(mFakeDevice.removeBond()).isFalse();
+        }
+
+        mUiAutomation.dropShellPermissionIdentity();
+
+        if (Build.VERSION.SDK_INT >= 37) {
+            Permissions.enforceEachPermissions(
+                    () -> mFakeDevice.removeBond(),
+                    List.of(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED));
+        } else {
+            assertThrows(SecurityException.class, () -> mFakeDevice.removeBond());
+        }
+
+        // Starting with API level 37, removeBond() requires BLUETOOTH_PRIVILEGED permission
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
+            assertThat(mFakeDevice.removeBond()).isFalse();
+        }
+    }
+
+    // TODO(delwiche): Remove this test once the flag is fully rolled out.
+    @RequiresFlagsDisabled(Flags.FLAG_APAIRING_26Q2_PERMISSION_IMPROVEMENTS)
+    @Test
+    public void removeBondLegacy() {
         // Skip the test if bluetooth or companion device are not present.
         assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
@@ -405,8 +440,42 @@ public class BluetoothDeviceTest {
         assertThat(mFakeDevice.removeBond()).isFalse();
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_APAIRING_26Q2_PERMISSION_IMPROVEMENTS)
     @Test
     public void setPinByteArray() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
+        // Starting with API level 37, setPin() requires BLUETOOTH_PRIVILEGED permission
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
+            assertThrows(NullPointerException.class, () -> mFakeDevice.setPin((byte[]) null));
+
+            // check PIN too big
+            assertThat(mFakeDevice.setPin(convertPinToBytes("12345678901234567"))).isFalse();
+            assertThat(mFakeDevice.setPin(convertPinToBytes("123456")))
+                    .isFalse(); // device is not bonding
+        }
+
+        mUiAutomation.dropShellPermissionIdentity();
+        if (Build.VERSION.SDK_INT >= 37) {
+            Permissions.enforceEachPermissions(
+                    () -> mFakeDevice.setPin(convertPinToBytes("123456")),
+                    List.of(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED));
+        } else {
+            assertThrows(
+                    SecurityException.class, () -> mFakeDevice.setPin(convertPinToBytes("123456")));
+        }
+
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
+            assertThat(mFakeDevice.setPin(convertPinToBytes("123456"))).isFalse();
+        }
+    }
+
+    // TODO(delwiche): Remove this test once the flag is fully rolled out.
+    @RequiresFlagsDisabled(Flags.FLAG_APAIRING_26Q2_PERMISSION_IMPROVEMENTS)
+    @Test
+    public void setPinByteArrayLegacy() {
         // Skip the test if bluetooth or companion device are not present.
         assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
@@ -661,8 +730,11 @@ public class BluetoothDeviceTest {
 
         // Clean up create bond
         // Either cancel the bonding process or remove bond
-        mFakeDevice.cancelBondProcess();
-        mFakeDevice.removeBond();
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
+            mFakeDevice.cancelBondProcess();
+            mFakeDevice.removeBond();
+        }
+
         verifyIntentReceived(
                 mockReceiver,
                 Duration.ofSeconds(5),
@@ -751,7 +823,9 @@ public class BluetoothDeviceTest {
         if (mFakeDevice.isConnected()) {
             assertThat(mFakeDevice.getKeyMissingCount()).isEqualTo(0);
         }
-        mFakeDevice.removeBond();
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
+            mFakeDevice.removeBond();
+        }
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_PRIORITIZED_IN_EAR_ROUTING)
@@ -817,5 +891,27 @@ public class BluetoothDeviceTest {
         assertThat(encryptionStatus.getAlgorithm())
                 .isEqualTo(BluetoothDevice.ENCRYPTION_ALGORITHM_AES);
         assertThat(encryptionStatus.getKeySize()).isEqualTo(mFakeKeySize);
+    }
+
+    /*Testcases for BluetoothDevice#connectGatt(BluetoothGattConnectionSettings)*/
+    @Test(expected = NullPointerException.class)
+    @RequiresFlagsEnabled(Flags.FLAG_GATT_CONN_SETTINGS)
+    public void illegalArgumentsToConnectGattWithNullConnectionSettings() {
+        // No support for Gatt connection without Gatt Callback handler
+        mFakeDevice.connectGatt((BluetoothGattConnectionSettings) null);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_GATT_CONN_SETTINGS)
+    public void connectGattUsingConnectionSettingsTest() {
+        BluetoothGattConnectionSettings settings =
+                new BluetoothGattConnectionSettings.Builder(
+                                mContext.getMainExecutor(), new BluetoothGattCallback() {})
+                        .setTransport(BluetoothDevice.TRANSPORT_LE)
+                        .setAutoConnectEnabled(false)
+                        .setOpportunisticEnabled(false)
+                        .build();
+        BluetoothGatt gatt = mFakeDevice.connectGatt(settings);
+        assertThat(gatt).isNotNull();
     }
 }

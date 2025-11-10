@@ -24,6 +24,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.personalcontext.Flags;
 import android.service.personalcontext.hint.BundleHint;
+import android.service.personalcontext.hint.ContextHintWithSignature;
 import android.service.personalcontext.insight.BundleInsight;
 import android.service.personalcontext.insight.ContextInsight;
 
@@ -35,12 +36,24 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.security.GeneralSecurityException;
+import java.util.Random;
+
+import javax.crypto.spec.SecretKeySpec;
+
 /** Build/Install/Run: atest CtsPersonalContextTestCases:ContextInsightTest */
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PERSONAL_CONTEXT_SERVICE)
 @RunWith(AndroidJUnit4.class)
 public class ContextInsightTest {
     @Rule
     public final CheckFlagsRule checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    /** Generates a key to use when signing hints. */
+    public static SecretKeySpec generateSignedHintKey() {
+        byte[] key = new byte[64];
+        new Random().nextBytes(key);
+        return new SecretKeySpec(key, ContextHintWithSignature.HMAC_ALGORITHM);
+    }
 
     // Tests bundling and unbundling fields on the base ContextInsight.
     @ApiTest(
@@ -50,13 +63,15 @@ public class ContextInsightTest {
                 "android.service.personalcontext.insight.ContextInsight#getOriginHints"
             })
     @Test
-    public void testContextInsightBundleUnbundle() {
+    public void testContextInsightBundleUnbundle() throws GeneralSecurityException {
         final int inputValue = 1234;
         final String dataKey = "test-key";
         final BundleHint hint = new BundleHint();
         hint.getDataBundle().putInt(dataKey, inputValue);
+        final ContextHintWithSignature signedHint =
+                new ContextHintWithSignature.Builder(hint, generateSignedHintKey()).build();
 
-        final BundleInsight insight = new BundleInsight.Builder().addOriginHint(hint).build();
+        final BundleInsight insight = new BundleInsight.Builder().addOriginHint(signedHint).build();
         ContextInsight outputInsight = bundleUnbundle(insight);
 
         assertThat(outputInsight).isInstanceOf(BundleInsight.class);
@@ -64,7 +79,10 @@ public class ContextInsightTest {
 
         assertThat(outputInsight.getOriginHints().size()).isEqualTo(1);
 
-        final BundleHint outHint = (BundleHint) outputInsight.getOriginHints().get(0);
+        final BundleHint outHint =
+                (BundleHint)
+                        outputInsight.getOriginHints().stream().findFirst().get().getContextHint();
+
         assertThat(outHint.getDataBundle().getInt(dataKey)).isEqualTo(inputValue);
     }
 

@@ -1,9 +1,6 @@
 # Bug component: 526266
 include platform/packages/services/Car:/OWNERS
 
-# Audio
-per-file src/com/android/car/media/CarAudio*.java = oscarazu@google.com, ericjeong@google.com
-
 # Cluster
 per-file src/com/android/car/cluster/* = bkchoi@google.com
 
@@ -11,7 +8,7 @@ per-file src/com/android/car/cluster/* = bkchoi@google.com
 per-file src/com/android/car/input/* = kanant@google.com
 
 # OccupantZone
-per-file src/com/android/car/CarOccupantZoneManagerPermissionTest.java = xiangw@google.com, oscarazu@google.com, ericjeong@google.com
+per-file src/com/android/car/CarOccupantZoneManagerPermissionTest.java = xiangw@google.com, ericjeong@google.com
 
 # Power
 per-file src/com/android/car/power/* = ericjeong@google.com

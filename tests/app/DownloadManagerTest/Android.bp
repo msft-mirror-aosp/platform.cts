@@ -27,6 +27,7 @@ android_test {
     static_libs: [
         "androidx.test.rules",
         "bedstead",
+        "com.android.providers.downloads.flags-aconfig-java",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "ctstestserver",

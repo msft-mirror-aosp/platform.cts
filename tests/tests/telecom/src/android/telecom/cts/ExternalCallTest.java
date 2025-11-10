@@ -80,11 +80,14 @@ public class ExternalCallTest extends BaseTelecomTestWithMockServices {
 
     @Override
     protected void tearDown() throws Exception {
-        runWithShellPermissionIdentity(() -> {
-            // Make sure it is unregistered as well.
-            mTelecomManager.unregisterPhoneAccount(
-                    TestUtils.TEST_SIM_PHONE_ACCOUNT.getAccountHandle());
-        });
+        if (mShouldTestTelecom) {
+            runWithShellPermissionIdentity(
+                    () -> {
+                        // Make sure it is unregistered as well.
+                        mTelecomManager.unregisterPhoneAccount(
+                                TestUtils.TEST_SIM_PHONE_ACCOUNT.getAccountHandle());
+                    });
+        }
         super.tearDown();
     }
 

@@ -54,7 +54,6 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.SystemClock;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -102,7 +101,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * are required.  See also framework VirtualDisplayTest unit tests.
  */
 @RunWith(AndroidJUnit4.class)
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class VirtualDisplayTest {
     private static final String TAG = "VirtualDisplayTest";
 
@@ -758,10 +756,11 @@ public class VirtualDisplayTest {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         ActivityOptions activityOptions = ActivityOptions.makeBasic();
         activityOptions.setLaunchDisplayId(displayId);
-        return (SimpleActivity) SystemUtil.runWithShellPermissionIdentity(
-                () -> InstrumentationRegistry.getInstrumentation()
-                        .startActivitySync(intent, activityOptions.toBundle()),
-                Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+        return (SimpleActivity)
+                SystemUtil.runWithShellPermissionIdentity(
+                        () ->
+                                InstrumentationRegistry.getInstrumentation()
+                                        .startActivitySync(intent, activityOptions.toBundle()));
     }
 
     private boolean supportsActivitiesOnSecondaryDisplays() {

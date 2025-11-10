@@ -16,7 +16,6 @@
 
 package android.location.cts.gnss;
 
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
@@ -30,7 +29,6 @@ import android.location.cts.common.TestGnssStatusCallback;
 import android.location.cts.common.TestLocationListener;
 import android.location.cts.common.TestLocationManager;
 import android.location.cts.common.TestMeasurementUtil;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.util.Log;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -66,7 +64,6 @@ import java.util.List;
  *              yet been reported. Therefore, the test fails.
  */
 @RunWith(JUnit4.class)
-@AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
 public class GnssMeasurementRegistrationTest {
 
     private static final String TAG = "GnssMeasRegTest";

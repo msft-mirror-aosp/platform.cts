@@ -52,7 +52,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -82,11 +81,6 @@ public class MediaProjectionMirroringTest {
     @Rule public MediaProjectionRule mMediaProjectionRule = new MediaProjectionRule();
 
     private final WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
-    /**
-     * Whether to wait for the rotation to be stable state after testing. It can be set if the
-     * display rotation may be changed by test.
-     */
-    private boolean mWaitForRotationOnTearDown;
 
     @Before
     public void setUp() {
@@ -97,13 +91,6 @@ public class MediaProjectionMirroringTest {
                     android.Manifest.permission.SYSTEM_ALERT_WINDOW,
                     new UserHandle(mContext.getUserId()));
         });
-    }
-
-    @After
-    public void tearDown() {
-        if (mWaitForRotationOnTearDown) {
-            mWmState.waitForDisplayUnfrozen();
-        }
     }
 
     // Validate that the mirrored hierarchy is the expected size.
@@ -160,7 +147,7 @@ public class MediaProjectionMirroringTest {
 
         try (ActivityScenario<TestRotationActivity> activityScenario =
                         ActivityScenario.launch(testActivityIntent);
-                RotationSession rotationSession = createManagedRotationSession(); ) {
+                RotationSession rotationSession = new RotationSession(mWmState); ) {
             rotateDeviceAndWaitForActivity(rotationSession, initialRotation);
             // Re-fetch the activity since reference may have been modified during rotation.
             activityScenario.onActivity(
@@ -334,11 +321,6 @@ public class MediaProjectionMirroringTest {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private RotationSession createManagedRotationSession() {
-        mWaitForRotationOnTearDown = true;
-        return new RotationSession(mWmState);
     }
 
     /**

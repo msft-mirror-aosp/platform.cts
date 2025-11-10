@@ -30,7 +30,6 @@ import android.location.cts.common.TestLocationListener;
 import android.location.cts.common.TestLocationManager;
 import android.location.cts.common.TestMeasurementUtil;
 import android.location.cts.common.TestUtils;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.util.Log;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -49,7 +48,6 @@ import org.junit.runner.RunWith;
  * are in the correct range.
  */
 @RunWith(AndroidJUnit4.class)
-@AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
 public class GnssLocationValuesTest {
 
     private static final String TAG = "GnssLocationValuesTest";

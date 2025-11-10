@@ -708,6 +708,10 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
                 // Blocklist current AP with invalid session Id
                 scoreUpdateObserver.blocklistCurrentBssid(-1);
             }
+            if (sFeatureFlags.feedMoreDataToExternalScorer()) {
+                // Unblock all BSSIDs
+                scoreUpdateObserver.unblockAllBssids();
+            }
             // Now disconnect from the network.
             sWifiManager.disconnect();
             // Wait for it to be disconnected.

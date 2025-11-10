@@ -1,9 +1,5 @@
 # Bug component: 526266
 
-# Audio related CTS files
-per-file CarAudioManagerTest.java=oscarazu@google.com
-per-file CarAudioFocusTest.java=oscarazu@google.com
-
 # Input related CTS files
 per-file CarInputManagerSystemTest.java=kanant@google.com
 per-file CarInputTest.java=kanant@google.com

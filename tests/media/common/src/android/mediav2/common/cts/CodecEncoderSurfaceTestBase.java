@@ -60,7 +60,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.IntStream;
 
 /**
  * Wrapper class for trying and testing encoder components in surface mode.
@@ -698,7 +697,7 @@ public class CodecEncoderSurfaceTestBase {
         int profile = format.getInteger(MediaFormat.KEY_PROFILE, -1);
         int[] profileArray = CodecTestBase.PROFILE_HDR_MAP.get(mEncMediaType);
         assertFalse(descriptor + " must not contain HDR profile after tone mapping",
-                IntStream.of(profileArray).anyMatch(x -> x == profile));
+                CodecTestBase.isProfileHDR(mEncMediaType, profile));
     }
 
     @TargetApi(33)

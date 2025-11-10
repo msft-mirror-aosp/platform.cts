@@ -21,6 +21,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import android.os.Build;
 import android.os.Process;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.annotation.NonNull;
@@ -102,11 +104,23 @@ public class DynamicInstrumentationManagerTest {
     @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @EnsureHasPermission(DYNAMIC_INSTRUMENTATION)
+    @RequiresFlagsDisabled(com.android.art.rw.flags.Flags.FLAG_DYNAMIC_INSTRUMENTATION_METHOD_ENTRY_HOOK)
     public void jitCompiled_null() {
         OffsetsWithStatusCode result = getOffsetsWithStatusCode(
                 FQCN_NOT_IN_ART_PROFILE, METHOD_NOT_IN_ART_PROFILE, PARAMS_NOT_IN_ART_PROFILE);
         assertThat(result.statusCode).isEqualTo(0);
         assertThat(result.offsets).isNull();
+    }
+
+    @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @EnsureHasPermission(DYNAMIC_INSTRUMENTATION)
+    @RequiresFlagsEnabled(com.android.art.rw.flags.Flags.FLAG_DYNAMIC_INSTRUMENTATION_METHOD_ENTRY_HOOK)
+    public void jitCompiled() {
+        OffsetsWithStatusCode result = getOffsetsWithStatusCode(
+                FQCN_NOT_IN_ART_PROFILE, METHOD_NOT_IN_ART_PROFILE, PARAMS_NOT_IN_ART_PROFILE);
+        assertThat(result.statusCode).isEqualTo(0);
+        assertThat(result.offsets).isNotNull();
     }
 
     @Test

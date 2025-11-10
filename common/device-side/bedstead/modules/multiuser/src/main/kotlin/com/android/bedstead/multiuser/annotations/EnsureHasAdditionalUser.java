@@ -16,7 +16,7 @@
 
 package com.android.bedstead.multiuser.annotations;
 
-import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.ENSURE_HAS_WORK_PROFILE_PRIORITY;
+import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.ENSURE_HAS_SPECIFIED_USER_PRIORITY;
 import static com.android.bedstead.nene.types.OptionalBoolean.ANY;
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
@@ -53,7 +53,7 @@ public @interface EnsureHasAdditionalUser {
      */
     OptionalBoolean switchedToUser() default ANY;
 
-     /**
+    /**
      * Priority sets the order that annotations will be resolved.
      *
      * <p>Annotations with a lower priority will be resolved before annotations with a higher
@@ -62,9 +62,10 @@ public @interface EnsureHasAdditionalUser {
      * <p>If there is an order requirement between annotations, ensure that the priority of the
      * annotation which must be resolved first is lower than the one which must be resolved later.
      *
-     * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant, or to any {@link int}.
+     * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant, or to any
+     * {@link int}.
      */
     // Lower weights than EnsureWorkProfile annotation to make sure parent exists during profile
     // creation
-    int priority() default ENSURE_HAS_WORK_PROFILE_PRIORITY - 1;
+    int priority() default ENSURE_HAS_SPECIFIED_USER_PRIORITY - 1;
 }

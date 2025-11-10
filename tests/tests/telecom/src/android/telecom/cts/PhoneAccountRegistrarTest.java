@@ -144,7 +144,7 @@ public class PhoneAccountRegistrarTest extends BaseTelecomTestWithMockServices {
      * {@link IllegalArgumentException}.
      */
     public void testExceptionThrownDueToInvalidSimultaneousCallRestriction_tooManyAccounts() {
-        if (!mShouldTestTelecom || !Flags.simultaneousCallingIndications()) return;
+        if (!mShouldTestTelecom) return;
 
         // ensure the test starts without any phone accounts registered to the test package
         cleanupPhoneAccounts();
@@ -183,7 +183,7 @@ public class PhoneAccountRegistrarTest extends BaseTelecomTestWithMockServices {
      * associated PhoneAccountHandle contains an ID where the field exceeds the maximum size.
      */
     public void testExceptionThrownDueToInvalidSimultaneousCallRestriction_invalidId() {
-        if (!mShouldTestTelecom || !Flags.simultaneousCallingIndications()) return;
+        if (!mShouldTestTelecom) return;
 
         // ensure the test starts without any phone accounts registered to the test package
         cleanupPhoneAccounts();

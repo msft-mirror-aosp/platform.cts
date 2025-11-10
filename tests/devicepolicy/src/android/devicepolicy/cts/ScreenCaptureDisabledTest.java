@@ -389,7 +389,6 @@ public final class ScreenCaptureDisabledTest {
         }
     }
 
-    @Ignore // TODO: 454277430 - Disabled because the test app can not call test APIs.
     @PolicyAppliesTest(policy = ScreenCaptureDisabledDevice.class)
     @Postsubmit(reason = "new test")
     @ApiTest(
@@ -399,13 +398,12 @@ public final class ScreenCaptureDisabledTest {
                 "android.app.admin.DevicePolicyManager#POLICY_SCOPE_DEVICE",
                 "android.app.admin.PolicyIdentifier#SCREEN_CAPTURE"
             })
-    @RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING)
+    @RequireFlagsEnabled({Flags.FLAG_POLICY_STREAMLINING, Flags.FLAG_POLICY_STREAMLINING_TESTS})
     public void setPolicy_deviceScope_disallowed_works() {
         testSetAndGetPolicy(
                 DevicePolicyManager.POLICY_SCOPE_DEVICE, PolicyIdentifier.SCREEN_CAPTURE_DISALLOWED);
     }
 
-    @Ignore // TODO: 454277430 - Disabled because the test app can not call test APIs.
     @PolicyAppliesTest(policy = ScreenCaptureDisabledDevice.class)
     @Postsubmit(reason = "new test")
     @ApiTest(
@@ -415,13 +413,12 @@ public final class ScreenCaptureDisabledTest {
                 "android.app.admin.DevicePolicyManager#POLICY_SCOPE_DEVICE",
                 "android.app.admin.PolicyIdentifier#SCREEN_CAPTURE"
             })
-    @RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING)
+    @RequireFlagsEnabled({Flags.FLAG_POLICY_STREAMLINING, Flags.FLAG_POLICY_STREAMLINING_TESTS})
     public void setPolicy_deviceScope_allowed_works() {
         testSetAndGetPolicy(
                 DevicePolicyManager.POLICY_SCOPE_DEVICE, PolicyIdentifier.SCREEN_CAPTURE_ALLOWED);
     }
 
-    @Ignore // TODO: 454277430 - Disabled because the test app can not call test APIs.
     @PolicyAppliesTest(policy = ScreenCaptureDisabledDevice.class)
     @Postsubmit(reason = "new test")
     @ApiTest(
@@ -431,12 +428,11 @@ public final class ScreenCaptureDisabledTest {
                 "android.app.admin.DevicePolicyManager#POLICY_SCOPE_DEVICE",
                 "android.app.admin.PolicyIdentifier#SCREEN_CAPTURE"
             })
-    @RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING)
+    @RequireFlagsEnabled({Flags.FLAG_POLICY_STREAMLINING, Flags.FLAG_POLICY_STREAMLINING_TESTS})
     public void setPolicy_deviceScope_null_works() {
         testSetAndGetPolicy(DevicePolicyManager.POLICY_SCOPE_DEVICE, null);
     }
 
-    @Ignore // TODO: 454277430 - Disabled because the test app can not call test APIs.
     @PolicyAppliesTest(policy = ScreenCaptureDisabledUser.class)
     @Postsubmit(reason = "new test")
     @ApiTest(
@@ -446,14 +442,13 @@ public final class ScreenCaptureDisabledTest {
                 "android.app.admin.DevicePolicyManager#POLICY_SCOPE_USER",
                 "android.app.admin.PolicyIdentifier#SCREEN_CAPTURE"
             })
-    @RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING)
+    @RequireFlagsEnabled({Flags.FLAG_POLICY_STREAMLINING, Flags.FLAG_POLICY_STREAMLINING_TESTS})
     public void setPolicy_userScope_disallowed_works() {
         testSetAndGetPolicy(
                 DevicePolicyManager.POLICY_SCOPE_USER, PolicyIdentifier.SCREEN_CAPTURE_DISALLOWED);
     }
 
     /** Check that setting the policy at the device scope to false works */
-    @Ignore // TODO: 454277430 - Disabled because the test app can not call test APIs.
     @PolicyAppliesTest(policy = ScreenCaptureDisabledUser.class)
     @Postsubmit(reason = "new test")
     @ApiTest(
@@ -463,14 +458,13 @@ public final class ScreenCaptureDisabledTest {
                 "android.app.admin.DevicePolicyManager#POLICY_SCOPE_USER",
                 "android.app.admin.PolicyIdentifier#SCREEN_CAPTURE"
             })
-    @RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING)
+    @RequireFlagsEnabled({Flags.FLAG_POLICY_STREAMLINING, Flags.FLAG_POLICY_STREAMLINING_TESTS})
     public void setPolicy_userScope_allowed_works() {
         testSetAndGetPolicy(
                 DevicePolicyManager.POLICY_SCOPE_USER, PolicyIdentifier.SCREEN_CAPTURE_ALLOWED);
     }
 
     /** Check that setting the policy at the user scope to null works */
-    @Ignore // TODO: 454277430 - Disabled because the test app can not call test APIs.
     @PolicyAppliesTest(policy = ScreenCaptureDisabledUser.class)
     @Postsubmit(reason = "new test")
     @ApiTest(
@@ -480,12 +474,11 @@ public final class ScreenCaptureDisabledTest {
                 "android.app.admin.DevicePolicyManager#POLICY_SCOPE_USER",
                 "android.app.admin.PolicyIdentifier#SCREEN_CAPTURE"
             })
-    @RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING)
+    @RequireFlagsEnabled({Flags.FLAG_POLICY_STREAMLINING, Flags.FLAG_POLICY_STREAMLINING_TESTS})
     public void setPolicy_userScope_null_works() {
         testSetAndGetPolicy(DevicePolicyManager.POLICY_SCOPE_USER, null);
     }
 
-    @Ignore // TODO: 454277430 - Disabled because the test app can not call test APIs.
     @PolicyAppliesTest(policy = ScreenCaptureDisabledUser.class)
     @Postsubmit(reason = "new test")
     @ApiTest(
@@ -493,7 +486,7 @@ public final class ScreenCaptureDisabledTest {
                 "android.app.admin.DevicePolicyManager#setPolicy",
                 "android.app.admin.DevicePolicyManager#getScreenCaptureDisabled",
             })
-    @RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING)
+    @RequireFlagsEnabled({Flags.FLAG_POLICY_STREAMLINING, Flags.FLAG_POLICY_STREAMLINING_TESTS})
     public void setPolicy_allowed_getScreenCaptureDisabled_returnsEnabled() {
         if (isParentInstance()) {
             // TODO(b/434655549): Support the parent scope.
@@ -509,7 +502,6 @@ public final class ScreenCaptureDisabledTest {
         assertThat(isDisabled).isFalse();
     }
 
-    @Ignore // TODO: 454277430 - Disabled because the test app can not call test APIs.
     @PolicyAppliesTest(policy = ScreenCaptureDisabledUser.class)
     @Postsubmit(reason = "new test")
     @ApiTest(
@@ -517,7 +509,7 @@ public final class ScreenCaptureDisabledTest {
                 "android.app.admin.DevicePolicyManager#setPolicy",
                 "android.app.admin.DevicePolicyManager#getScreenCaptureDisabled",
             })
-    @RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING)
+    @RequireFlagsEnabled({Flags.FLAG_POLICY_STREAMLINING, Flags.FLAG_POLICY_STREAMLINING_TESTS})
     public void setPolicy_disallowed_getScreenCaptureDisabled_returnsDisabled() {
         if (isParentInstance()) {
             // TODO(b/434655549): Support the parent scope.

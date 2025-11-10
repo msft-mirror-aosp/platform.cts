@@ -42,9 +42,9 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.Preconditions;
 
 import com.google.android.exoplayer2.Format;
@@ -83,8 +83,6 @@ public class MediaMuxerTest {
     private static final float TOLERANCE = 0.0002f;
     private static final long OFFSET_TIME_US = 29 * 60 * 1000000L; // 29 minutes
     private static final String MEDIA_DIR = WorkDir.getMediaDirString();
-
-    private final boolean mAndroid11 = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -387,9 +385,8 @@ public class MediaMuxerTest {
      * when video and audio samples start after zero, audio later than video.
      */
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.R)
     public void testTimestampsAudioBVideoStartOffsetAudioVideo() throws Exception {
-        if (!MediaUtils.check(mAndroid11, "test needs Android 11")) return;
-
         Vector<Integer> startOffsetUsVect = new Vector<Integer>();
         // Video starts at 200000us.
         startOffsetUsVect.add(200000);
@@ -403,9 +400,8 @@ public class MediaMuxerTest {
      * when video starts after zero and audio starts before zero.
      */
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.R)
     public void testTimestampsAudioBVideoStartOffsetNegativeAudioVideo() throws Exception {
-        if (!MediaUtils.check(mAndroid11, "test needs Android 11")) return;
-
         Vector<Integer> startOffsetUsVect = new Vector<Integer>();
         // Video starts at 200000us.
         startOffsetUsVect.add(200000);
@@ -419,9 +415,8 @@ public class MediaMuxerTest {
      * samples start later than video.
      */
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.R)
     public void testTimestampsAudioBVideoStartOffsetAudio() throws Exception {
-        if (!MediaUtils.check(mAndroid11, "test needs Android 11")) return;
-
         Vector<Integer> startOffsetUsVect = new Vector<Integer>();
         // Video starts at 0us.
         startOffsetUsVect.add(0);
@@ -435,9 +430,8 @@ public class MediaMuxerTest {
      * audio and video, audio later than video at 0us.
      */
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.R)
     public void testTimestampsStartOffsetAudio() throws Exception {
-        if (!MediaUtils.check(mAndroid11, "test needs Android 11")) return;
-
         Vector<Integer> startOffsetUsVect = new Vector<Integer>();
         // Video starts at 0us.
         startOffsetUsVect.add(0);
@@ -451,9 +445,8 @@ public class MediaMuxerTest {
      * audio and video, video later than audio at 0us.
      */
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.R)
     public void testTimestampsStartOffsetVideo() throws Exception {
-        if (!MediaUtils.check(mAndroid11, "test needs Android 11")) return;
-
         Vector<Integer> startOffsetUsVect = new Vector<Integer>();
         // Video starts at 500000us.
         startOffsetUsVect.add(500000);
@@ -467,9 +460,8 @@ public class MediaMuxerTest {
      * audio and video, audio later than video, positive offsets for both.
      */
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.R)
     public void testTimestampsStartOffsetVideoAudio() throws Exception {
-        if (!MediaUtils.check(mAndroid11, "test needs Android 11")) return;
-
         Vector<Integer> startOffsetUsVect = new Vector<Integer>();
         // Video starts at 250000us.
         startOffsetUsVect.add(250000);
@@ -483,9 +475,8 @@ public class MediaMuxerTest {
      * audio and video, video later than audio, positive offets for both.
      */
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.R)
     public void testTimestampsStartOffsetAudioVideo() throws Exception {
-        if (!MediaUtils.check(mAndroid11, "test needs Android 11")) return;
-
         Vector<Integer> startOffsetUsVect = new Vector<Integer>();
         // Video starts at 500000us.
         startOffsetUsVect.add(500000);
@@ -499,9 +490,8 @@ public class MediaMuxerTest {
      * audio and video, video later than audio, audio before zero.
      */
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.R)
     public void testTimestampsStartOffsetNegativeAudioVideo() throws Exception {
-        if (!MediaUtils.check(mAndroid11, "test needs Android 11")) return;
-
         Vector<Integer> startOffsetUsVect = new Vector<Integer>();
         // Video starts at 50000us.
         startOffsetUsVect.add(50000);

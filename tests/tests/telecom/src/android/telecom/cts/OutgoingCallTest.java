@@ -37,6 +37,8 @@ import android.telecom.TelecomManager;
 import android.telephony.TelephonyManager;
 import android.telephony.emergency.EmergencyNumber;
 
+import androidx.test.filters.FlakyTest;
+
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.server.telecom.flags.Flags;
 
@@ -146,6 +148,7 @@ public class OutgoingCallTest extends BaseTelecomTestWithMockServices {
      *
      * @see {@link TelecomManager#EXTRA_START_CALL_WITH_SPEAKERPHONE}
      */
+    @FlakyTest(bugId = 450041067)
     public void testStartCallWithSpeakerphoneTrue_SpeakerphoneOnInCall() {
         if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;

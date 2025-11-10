@@ -23,7 +23,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import android.Manifest;
 import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.res.Resources;
@@ -51,7 +50,6 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.FlakyTest;
 import androidx.test.rule.ActivityTestRule;
 
-import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.BitmapUtils;
 import com.android.compatibility.common.util.WidgetTestUtils;
 import com.android.compatibility.common.util.WindowUtil;
@@ -82,12 +80,6 @@ public class AnimatedImageDrawableTest {
     private static final int NUM_FRAMES = 4;
     private static final int FRAME_DURATION = 250; // in milliseconds
     private static final int DURATION = NUM_FRAMES * FRAME_DURATION;
-
-    @Rule(order = 0)
-    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
-            androidx.test.platform.app.InstrumentationRegistry
-                    .getInstrumentation().getUiAutomation(),
-            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
 
     @Rule(order = 1)
     public ActivityTestRule<AnimatedImageActivity> mActivityRule =

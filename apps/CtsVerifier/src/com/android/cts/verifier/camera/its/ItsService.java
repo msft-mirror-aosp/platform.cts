@@ -109,6 +109,8 @@ import androidx.annotation.RequiresApi;
 import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ReportLog.Metric;
+import com.android.cts.backportedfixes.BackportedFixVerifier;
+import com.android.cts.backportedfixes.resolver.Status;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.camera.performance.CameraTestInstrumentation;
 import com.android.cts.verifier.camera.performance.CameraTestInstrumentation.MetricListener;
@@ -1094,6 +1096,8 @@ public class ItsService extends Service implements SensorEventListener {
                         doGetSupportedVideoQualities(cameraId);
                     }
                     case "hasHifiSensors" -> doCheckHasHifiSensors();
+                    case "isBackportedIssueResolved" ->
+                        doIsBackportedIssueResolved(cmdObj.getLong("knownIssueId"));
                     case "isCameraPrivacyModeSupported" -> doCheckCameraPrivacyModeSupport();
                     case "isHLG10SupportedForProfile" -> {
                         String cameraId = cmdObj.getString("cameraId");
@@ -1647,6 +1651,20 @@ public class ItsService extends Service implements SensorEventListener {
             }
         }
         return unavailablePhysicalCameras;
+    }
+
+    private void doIsBackportedIssueResolved(long knownIssueId) throws ItsException {
+        BackportedFixVerifier verifier = new BackportedFixVerifier();
+        if (!verifier.isApproved(knownIssueId)) {
+            throw new ItsException(
+                    String.format(
+                            Locale.ROOT,
+                            "https://issuetracker.google.com/issues/%d is not an approved"
+                                    + " backported fix.",
+                            knownIssueId));
+        }
+        boolean resolved = verifier.getStatus(knownIssueId).isResolved();
+        mSocketRunnableObj.sendResponse("resolved", resolved ? "true" : "false");
     }
 
     private void doGetCameraIds() throws ItsException {

@@ -44,7 +44,6 @@ import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
 
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 
@@ -63,9 +62,7 @@ public abstract class UserVisibilityTestCase {
 
     protected static final String CMD_DUMP_MEDIATOR = "dumpsys user --visibility-mediator";
 
-    @Rule
-    @ClassRule
-    public static final DeviceState sDeviceState = new DeviceState();
+    protected final DeviceState mDeviceState;
 
     @Rule
     public final LogShellCommandRule mLogShellCommandRule = new LogShellCommandRule();
@@ -73,6 +70,10 @@ public abstract class UserVisibilityTestCase {
     private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
 
     protected UserManager mUserManager;
+
+    protected UserVisibilityTestCase(DeviceState deviceState) {
+        mDeviceState = deviceState;
+    }
 
     @Before
     public void setUp() {
@@ -115,7 +116,7 @@ public abstract class UserVisibilityTestCase {
         try (UserReference user = TestApis.users().createUser().name("childless_user").create()) {
             startVisibleBackgroundUser(user, displayId);
             try {
-                TestApp testApp = testApps(sDeviceState).any();
+                TestApp testApp = testApps(mDeviceState).any();
                 try (TestAppInstance instance = testApp.install(user)) {
                     test.run(user, displayId, instance);
                 }
@@ -150,7 +151,7 @@ public abstract class UserVisibilityTestCase {
                     // Make sure profile is stopped, as it could have been automatically started
                     // with parent user
                     Log.d(TAG, "Stopping profile " + profile.id()); profile.stop();
-                    TestApp testApp = testApps(sDeviceState).any();
+                    TestApp testApp = testApps(mDeviceState).any();
                     try (TestAppInstance instance = testApp.install(profile)) {
                         tester.run(user, profile, displayId, instance);
                     } // test instance

@@ -465,11 +465,12 @@ class ContextualSearchManagerTest {
                     .isEqualTo(ContextualSearchMessage.RESULT_OK)
         }
 
-        // Start a second activity to push the first one to the background.
+        // Send a home intent to push the activity to the background.
         ctx.startActivity(
-                Intent(context, OverlayActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                Intent(Intent.ACTION_MAIN)
+                    .addCategory(Intent.CATEGORY_HOME)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         )
-        await(OverlayActivity.WATCHER?.resumed, "Waiting for OverlayActivity to be resumed.")
 
         // BackgroundCallerActivity attempts to startContextualSearch() in onStop().
 

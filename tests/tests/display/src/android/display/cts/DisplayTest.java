@@ -70,7 +70,6 @@ import android.os.Looper;
 import android.os.Parcel;
 import android.os.ParcelFileDescriptor;
 import android.os.SystemProperties;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -135,7 +134,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @RunWith(AndroidJUnit4.class)
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class DisplayTest extends TestBase {
     private static final String TAG = "DisplayTest";
 
@@ -245,14 +243,14 @@ public class DisplayTest extends TestBase {
      * and ACCESS_SURFACE_FLINGER are privileged permission.
      */
     @Rule(order = 1)
-    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
-            InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-            Manifest.permission.OVERRIDE_DISPLAY_MODE_REQUESTS,
-            Manifest.permission.ACCESS_SURFACE_FLINGER,
-            Manifest.permission.WRITE_SECURE_SETTINGS,
-            Manifest.permission.HDMI_CEC,
-            Manifest.permission.MODIFY_REFRESH_RATE_SWITCHING_TYPE,
-            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule =
+            new AdoptShellPermissionsRule(
+                    InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                    Manifest.permission.OVERRIDE_DISPLAY_MODE_REQUESTS,
+                    Manifest.permission.ACCESS_SURFACE_FLINGER,
+                    Manifest.permission.WRITE_SECURE_SETTINGS,
+                    Manifest.permission.HDMI_CEC,
+                    Manifest.permission.MODIFY_REFRESH_RATE_SWITCHING_TYPE);
 
     @Rule(order = 2)
     public StateKeeperRule<DisplayStateManager.DisplayState>

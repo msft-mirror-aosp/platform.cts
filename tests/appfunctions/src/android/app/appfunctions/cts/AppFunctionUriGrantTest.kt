@@ -46,15 +46,6 @@ class AppFunctionUriGrantTest {
         assertThrows(IllegalArgumentException::class.java) { AppFunctionUriGrant(uri, modeFlags) }
     }
 
-    @Test
-    fun build_AppFunctionUriGrantWithPersistFlag_shouldFail() {
-        val uri = Uri.EMPTY
-        val modeFlags =
-            Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
-
-        assertThrows(IllegalArgumentException::class.java) { AppFunctionUriGrant(uri, modeFlags) }
-    }
-
     @ApiTest(
         apis =
             [
@@ -111,6 +102,53 @@ class AppFunctionUriGrantTest {
         val uri = Uri.parse("content://com.android/example")
         val modeFlags =
             Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+        val grantUri = AppFunctionUriGrant(uri, modeFlags)
+
+        val restored = parcelAndUnparcel(grantUri)
+
+        assertThat(restored.uri).isEqualTo(uri)
+        assertThat(restored.modeFlags).isEqualTo(modeFlags)
+    }
+
+    @ApiTest(
+        apis =
+            [
+                "android.app.appfunctions.AppFunctionUriGrant#CREATOR",
+                "android.app.appfunctions.AppFunctionUriGrant#writeToParcel",
+                "android.app.appfunctions.AppFunctionUriGrant#getUri",
+                "android.app.appfunctions.AppFunctionUriGrant#getModeFlags",
+            ]
+    )
+    @Test
+    fun build_AppFunctionUriGrantWithPersistFlag() {
+        val uri = Uri.parse("content://com.android/example")
+        val modeFlags =
+            Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+        val grantUri = AppFunctionUriGrant(uri, modeFlags)
+
+        val restored = parcelAndUnparcel(grantUri)
+
+        assertThat(restored.uri).isEqualTo(uri)
+        assertThat(restored.modeFlags).isEqualTo(modeFlags)
+    }
+
+    @ApiTest(
+        apis =
+            [
+                "android.app.appfunctions.AppFunctionUriGrant#CREATOR",
+                "android.app.appfunctions.AppFunctionUriGrant#writeToParcel",
+                "android.app.appfunctions.AppFunctionUriGrant#getUri",
+                "android.app.appfunctions.AppFunctionUriGrant#getModeFlags",
+            ]
+    )
+    @Test
+    fun build_AppFunctionUriGrantWithAllFlags() {
+        val uri = Uri.parse("content://com.android/example")
+        val modeFlags =
+            Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+                Intent.FLAG_GRANT_PREFIX_URI_PERMISSION or
+                Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
         val grantUri = AppFunctionUriGrant(uri, modeFlags)
 
         val restored = parcelAndUnparcel(grantUri)

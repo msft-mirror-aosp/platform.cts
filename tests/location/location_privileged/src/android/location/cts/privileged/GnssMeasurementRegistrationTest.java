@@ -27,7 +27,6 @@ import android.location.cts.common.TestGnssMeasurementListener;
 import android.location.cts.common.TestLocationListener;
 import android.location.cts.common.TestLocationManager;
 import android.location.cts.common.TestMeasurementUtil;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
@@ -56,7 +55,6 @@ import java.util.List;
  *              {@link GnssMeasurementsEvent}s are provided only if the application registers for
  *              location updates as well.
  */
-@AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
 public class GnssMeasurementRegistrationTest extends GnssTestCase {
 
     private static final String TAG = "GnssMeasRegTest";

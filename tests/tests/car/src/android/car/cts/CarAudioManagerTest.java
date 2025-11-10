@@ -1825,6 +1825,188 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.car.media.CarAudioManager#setVolumeGroupRestrictions",
+                "android.car.media.CarVolumeGroupInfo#isBlocked",
+                "android.car.media.CarVolumeGroupInfo#setBlockedGainIndex",
+                "android.car.media.CarVolumeGroupInfo#getBlockedGainIndex"
+            })
+    @RequiresFlagsEnabled(Flags.FLAG_AUDIO_SEND_RESTRICTIONS_TO_OEM_VOLUME_SERVICE)
+    @EnsureHasPermission(Car.PERMISSION_CAR_CONTROL_AUDIO_VOLUME)
+    public void setVolumeGroupRestrictions_withBlockedRestriction_receivesCallback()
+            throws Exception {
+        assumeDynamicRoutingIsEnabled();
+        assumeVolumeGroupEventsIsEnabled();
+        readFirstZoneAndVolumeGroup();
+        Executor executor = Executors.newFixedThreadPool(1);
+        mEventCallback = new CarAudioManagerTestUtils.TestCarVolumeGroupEventCallback();
+        mCarAudioManager.registerCarVolumeGroupEventCallback(executor, mEventCallback);
+        int currentVolumeIndex = mCarAudioManager.getGroupVolume(mZoneId, mVolumeGroupId);
+        mCarAudioManager.setVolumeGroupRestrictions(mZoneId, mVolumeGroupId, List.of(),
+                currentVolumeIndex);
+        mEventCallback.waitForVolumeGroupEvent();
+        CarVolumeGroupInfo initialInfo = mCarAudioManager.getVolumeGroupInfo(mZoneId,
+                mVolumeGroupId);
+        int restrictionIndex = initialInfo.getMinVolumeGainIndex();
+        assertWithMessage("Initial volume group info blocked status")
+                .that(initialInfo.isBlocked()).isFalse();
+
+        List<Integer> restrictions = List.of(
+                android.car.media.CarVolumeGroupEvent.EXTRA_INFO_MUTE_TOGGLED_BY_AUDIO_SYSTEM);
+        mCarAudioManager.setVolumeGroupRestrictions(mZoneId, mVolumeGroupId, restrictions,
+                restrictionIndex);
+
+        mEventCallback.waitForVolumeGroupEvent();
+        assertWithMessage("Car Volume Group Event blocked type after blocked restriction")
+                .that(mEventCallback.getEventTypes()
+                & android.car.media.CarVolumeGroupEvent.EVENT_TYPE_VOLUME_BLOCKED_CHANGED)
+                .isNotEqualTo(0);
+        CarVolumeGroupInfo restrictedInfo = mEventCallback.getCarVolumeGroupInfo(mZoneId,
+                mVolumeGroupId);
+        assertWithMessage("Volume group info blocked status after blocked restriction")
+                .that(restrictedInfo.isBlocked()).isTrue();
+        assertWithMessage("Volume group info blocked gain index after blocked restriction")
+                .that(restrictedInfo.getBlockedGainIndex()).isEqualTo(restrictionIndex);
+        mEventCallback.reset();
+
+        mCarAudioManager.setVolumeGroupRestrictions(mZoneId, mVolumeGroupId, List.of(),
+                currentVolumeIndex);
+
+        mEventCallback.waitForVolumeGroupEvent();
+        assertWithMessage("Car Volume Group Event blocked type after unblocked restriction")
+                .that(mEventCallback.getEventTypes()
+                & android.car.media.CarVolumeGroupEvent.EVENT_TYPE_VOLUME_BLOCKED_CHANGED)
+                .isNotEqualTo(0);
+        CarVolumeGroupInfo unrestrictedInfo = mEventCallback.getCarVolumeGroupInfo(mZoneId,
+                mVolumeGroupId);
+        assertWithMessage("Volume group info blocked status after unblocked restriction")
+                .that(unrestrictedInfo.isBlocked()).isFalse();
+    }
+
+    @Test
+    @ApiTest(
+            apis = {
+                "android.car.media.CarAudioManager#setVolumeGroupRestrictions",
+                "android.car.media.CarVolumeGroupInfo#isAttenuated",
+                "android.car.media.CarVolumeGroupInfo#setAttenuatedGainIndex",
+                "android.car.media.CarVolumeGroupInfo#getAttenuatedGainIndex"
+            })
+    @RequiresFlagsEnabled(Flags.FLAG_AUDIO_SEND_RESTRICTIONS_TO_OEM_VOLUME_SERVICE)
+    @EnsureHasPermission(Car.PERMISSION_CAR_CONTROL_AUDIO_VOLUME)
+    public void setVolumeGroupRestrictions_withAttenuatedRestriction_receivesCallback()
+            throws Exception {
+        assumeDynamicRoutingIsEnabled();
+        assumeVolumeGroupEventsIsEnabled();
+        readFirstZoneAndVolumeGroup();
+        Executor executor = Executors.newFixedThreadPool(1);
+        mEventCallback = new CarAudioManagerTestUtils.TestCarVolumeGroupEventCallback();
+        mCarAudioManager.registerCarVolumeGroupEventCallback(executor, mEventCallback);
+        int currentVolumeIndex = mCarAudioManager.getGroupVolume(mZoneId, mVolumeGroupId);
+        mCarAudioManager.setVolumeGroupRestrictions(mZoneId, mVolumeGroupId, List.of(),
+                currentVolumeIndex);
+        mEventCallback.waitForVolumeGroupEvent();
+        CarVolumeGroupInfo initialInfo = mCarAudioManager.getVolumeGroupInfo(mZoneId,
+                mVolumeGroupId);
+        int restrictionIndex = currentVolumeIndex > initialInfo.getMinVolumeGainIndex()
+                ? currentVolumeIndex - 1
+                : initialInfo.getMinVolumeGainIndex();
+        assertWithMessage("Initial volume group info attenuated status")
+                .that(initialInfo.isAttenuated()).isFalse();
+
+        List<Integer> restrictions = List.of(
+                android.car.media.CarVolumeGroupEvent.EXTRA_INFO_TRANSIENT_ATTENUATION_EXTERNAL);
+        mCarAudioManager.setVolumeGroupRestrictions(mZoneId, mVolumeGroupId, restrictions,
+                restrictionIndex);
+
+        mEventCallback.waitForVolumeGroupEvent();
+        assertWithMessage("Car Volume Group Event attenuation type after attenuated restriction")
+                .that(mEventCallback.getEventTypes()
+                & android.car.media.CarVolumeGroupEvent.EVENT_TYPE_ATTENUATION_CHANGED)
+                .isNotEqualTo(0);
+        CarVolumeGroupInfo restrictedInfo = mEventCallback.getCarVolumeGroupInfo(mZoneId,
+                mVolumeGroupId);
+        assertWithMessage("Volume group info attenuated status after attenuated restriction")
+                .that(restrictedInfo.isAttenuated()).isTrue();
+        assertWithMessage("Volume group info attenuated gain index after attenuated restriction")
+                .that(restrictedInfo.getAttenuatedGainIndex()).isEqualTo(restrictionIndex);
+        mEventCallback.reset();
+
+        mCarAudioManager.setVolumeGroupRestrictions(mZoneId, mVolumeGroupId, List.of(),
+                currentVolumeIndex);
+
+        mEventCallback.waitForVolumeGroupEvent();
+        assertWithMessage("Car Volume Group Event attenuation type after unattenuated restriction")
+                .that(mEventCallback.getEventTypes()
+                & android.car.media.CarVolumeGroupEvent.EVENT_TYPE_ATTENUATION_CHANGED)
+                .isNotEqualTo(0);
+        CarVolumeGroupInfo unrestrictedInfo = mEventCallback.getCarVolumeGroupInfo(mZoneId,
+                mVolumeGroupId);
+        assertWithMessage("Volume group info attenuated status after unattenuated restriction")
+                .that(unrestrictedInfo.isAttenuated()).isFalse();
+    }
+
+    @Test
+    @ApiTest(
+            apis = {
+                "android.car.media.CarAudioManager#setVolumeGroupRestrictions",
+                "android.car.media.CarVolumeGroupInfo#isLimited",
+                "android.car.media.CarVolumeGroupInfo#setLimitedVolumeGainIndex",
+                "android.car.media.CarVolumeGroupInfo#getLimitedVolumeGainIndex"
+            })
+    @RequiresFlagsEnabled(Flags.FLAG_AUDIO_SEND_RESTRICTIONS_TO_OEM_VOLUME_SERVICE)
+    @EnsureHasPermission(Car.PERMISSION_CAR_CONTROL_AUDIO_VOLUME)
+    public void setVolumeGroupRestrictions_withLimitationRestriction_receivesCallback()
+            throws Exception {
+        assumeDynamicRoutingIsEnabled();
+        assumeVolumeGroupEventsIsEnabled();
+        readFirstZoneAndVolumeGroup();
+        Executor executor = Executors.newFixedThreadPool(1);
+        mEventCallback = new CarAudioManagerTestUtils.TestCarVolumeGroupEventCallback();
+        mCarAudioManager.registerCarVolumeGroupEventCallback(executor, mEventCallback);
+        int currentVolumeIndex = mCarAudioManager.getGroupVolume(mZoneId, mVolumeGroupId);
+        mCarAudioManager.setVolumeGroupRestrictions(mZoneId, mVolumeGroupId, List.of(),
+                currentVolumeIndex);
+        mEventCallback.waitForVolumeGroupEvent();
+        CarVolumeGroupInfo initialInfo = mCarAudioManager.getVolumeGroupInfo(mZoneId,
+                mVolumeGroupId);
+        int restrictionIndex = initialInfo.getMaxVolumeGainIndex() - 1;
+        assertWithMessage("Initial volume group info limited status")
+                .that(initialInfo.isLimited()).isFalse();
+
+        List<Integer> restrictions = List.of(
+                android.car.media.CarVolumeGroupEvent.EXTRA_INFO_TRANSIENT_ATTENUATION_THERMAL);
+        mCarAudioManager.setVolumeGroupRestrictions(mZoneId, mVolumeGroupId, restrictions,
+                restrictionIndex);
+
+        mEventCallback.waitForVolumeGroupEvent();
+        assertWithMessage("Car Volume Group Event attenuation type after limitation restriction")
+                .that(mEventCallback.getEventTypes()
+                & android.car.media.CarVolumeGroupEvent.EVENT_TYPE_ATTENUATION_CHANGED)
+                .isNotEqualTo(0);
+        CarVolumeGroupInfo restrictedInfo = mEventCallback.getCarVolumeGroupInfo(mZoneId,
+                mVolumeGroupId);
+        assertWithMessage("Volume group info limited status after limitation restriction")
+                .that(restrictedInfo.isLimited()).isTrue();
+        assertWithMessage("Volume group info limited gain index after limitation restriction")
+                .that(restrictedInfo.getLimitedGainIndex()).isEqualTo(restrictionIndex);
+        mEventCallback.reset();
+
+        mCarAudioManager.setVolumeGroupRestrictions(mZoneId, mVolumeGroupId, List.of(),
+                currentVolumeIndex);
+
+        mEventCallback.waitForVolumeGroupEvent();
+        assertWithMessage("Car Volume Group Event attenuation type after unlimitation restriction")
+                .that(mEventCallback.getEventTypes()
+                & android.car.media.CarVolumeGroupEvent.EVENT_TYPE_ATTENUATION_CHANGED)
+                .isNotEqualTo(0);
+        CarVolumeGroupInfo unrestrictedInfo = mEventCallback.getCarVolumeGroupInfo(mZoneId,
+                mVolumeGroupId);
+        assertWithMessage("Volume group info limited status after unlimitation restriction")
+                .that(unrestrictedInfo.isLimited()).isFalse();
+    }
+
+    @Test
     @EnsureHasPermission(Car.PERMISSION_CAR_CONTROL_AUDIO_VOLUME)
     @ApiTest(
             apis = {

@@ -27,6 +27,7 @@ import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 
+import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
@@ -53,8 +54,6 @@ public class ExtractorUnitTest {
     private static final String MEDIA_DIR = WorkDir.getMediaDirString();
     private static final String INPUT_MEDIA = "ForBiggerEscapes.mp4";
     private static final String TAG = "ExtractorUnitTest";
-
-    private static boolean sIsAtLeastS = ApiLevelUtil.isAtLeast(Build.VERSION_CODES.S);
 
     @SmallTest
     public static class TestApi {
@@ -1087,24 +1086,18 @@ public class ExtractorUnitTest {
         private native boolean nativeTestIfNullLocationIsRejectedBySetDataSource();
 
         @ApiTest(apis = "AMEDIAFORMAT_KEY_SAMPLE_FILE_OFFSET")
+        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
         @Test
         public void testVideoSampleFileOffsetByGetSampleFormat() {
-            if (!sIsAtLeastS) {
-                Log.d(TAG, "testVideoSampleFileOffsetByGetSampleFormat requires Android 12");
-                return;
-            }
             Preconditions.assertTestFileExists(MEDIA_DIR + INPUT_MEDIA);
             assertTrue(nativeTestVideoSampleFileOffsetByGetSampleFormat(MEDIA_DIR + INPUT_MEDIA));
         }
         private native boolean nativeTestVideoSampleFileOffsetByGetSampleFormat(String srcPath);
 
         @ApiTest(apis = "AMEDIAFORMAT_KEY_SAMPLE_FILE_OFFSET")
+        @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
         @Test
         public void testAudioSampleFileOffsetByGetSampleFormat() {
-            if (!sIsAtLeastS) {
-                Log.d(TAG, "testAudioSampleFileOffsetByGetSampleFormat requires Android 12");
-                return;
-            }
             Preconditions.assertTestFileExists(MEDIA_DIR + INPUT_MEDIA);
             assertTrue(nativeTestAudioSampleFileOffsetByGetSampleFormat(MEDIA_DIR + INPUT_MEDIA));
         }

@@ -18,6 +18,7 @@ package com.android.cts.verifier.nfc.hcef;
 
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.nfc.NfcAdapter;
 import android.os.Bundle;
 
 import com.android.cts.verifier.ArrayTestListAdapter;
@@ -49,16 +50,19 @@ public class HceFReaderTestActivity extends PassFailButtons.TestListActivity {
                             HceFReaderActivity.TEST_NAME,
                             new Intent(this, HceFReaderActivity.class),
                             null));
-            Intent observeModeIntent = new Intent(this, HceFReaderActivity.class);
-            observeModeIntent.putExtra(
-                    TEST_NAME_EXTRA, getString(R.string.nfc_hce_f_reader_observe_mode_tests));
-            adapter.add(
-                    TestListItem.newTest(
-                            this,
-                            R.string.nfc_hce_f_reader_observe_mode_tests,
-                            HceFReaderActivity.OBSERVE_MODE_TEST_NAME,
-                            observeModeIntent,
-                            null));
+            NfcAdapter nfcAdapter = NfcAdapter.getDefaultAdapter(this);
+            if (nfcAdapter != null && nfcAdapter.isObserveModeSupported()) {
+                Intent observeModeIntent = new Intent(this, HceFReaderActivity.class);
+                observeModeIntent.putExtra(
+                        TEST_NAME_EXTRA, getString(R.string.nfc_hce_f_reader_observe_mode_tests));
+                adapter.add(
+                        TestListItem.newTest(
+                                this,
+                                R.string.nfc_hce_f_reader_observe_mode_tests,
+                                HceFReaderActivity.OBSERVE_MODE_TEST_NAME,
+                                observeModeIntent,
+                                null));
+            }
         }
 
         setTestListAdapter(adapter);

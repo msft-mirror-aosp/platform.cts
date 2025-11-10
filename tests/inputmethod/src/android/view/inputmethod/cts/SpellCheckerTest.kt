@@ -20,7 +20,6 @@ import android.content.Context
 import android.os.Bundle
 import android.os.Looper
 import android.os.UserHandle
-import android.platform.test.annotations.AppModeSdkSandbox
 import android.provider.Settings
 import android.text.InputType
 import android.text.style.SuggestionSpan
@@ -55,6 +54,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
+import com.android.bedstead.harrier.DeviceState
 import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.SettingsStateChangerRule
 import com.android.compatibility.common.util.SystemUtil
@@ -78,11 +78,11 @@ import org.junit.Assert.assertThrows
 import org.junit.Assert.fail
 import org.junit.Assume
 import org.junit.Before
+import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
 
 @MediumTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 class SpellCheckerTest : EndToEndImeTestBase() {
 
     private val TAG = "SpellCheckerTest"
@@ -796,5 +796,12 @@ class SpellCheckerTest : EndToEndImeTestBase() {
         override fun execute(r: Runnable) {
             runnables.add(r)
         }
+    }
+
+    companion object {
+        @JvmField
+        @ClassRule
+        @Rule
+        val deviceState = DeviceState()
     }
 }

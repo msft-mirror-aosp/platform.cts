@@ -130,6 +130,7 @@ public final class DeviceState extends HarrierRule {
 
     private final DeviceStateLocator mLocator = new DeviceStateLocator();
     private final Context mContext = TestApis.context().instrumentedContext();
+    private TestClass mTestClass = null;
 
     public DeviceState(Duration maxTestDuration) {
         mMaxTestDuration = maxTestDuration;
@@ -412,6 +413,12 @@ public final class DeviceState extends HarrierRule {
                 checkValidAnnotations(description);
 
                 TestClass testClass = new TestClass(description.getTestClass());
+
+                if (mTestClass != null && !mTestClass.equals(testClass)) {
+                    throw new IllegalStateException("Bedstead does not support sharing a single "
+                            + "DeviceState instance across multiple test classes.");
+                }
+                mTestClass = testClass;
 
                 if (mSkipTests || mFailTests) {
                     Log.d(

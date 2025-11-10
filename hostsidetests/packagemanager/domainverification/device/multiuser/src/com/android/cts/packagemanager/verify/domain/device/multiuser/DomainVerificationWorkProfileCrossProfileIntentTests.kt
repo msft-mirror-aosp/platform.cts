@@ -19,21 +19,28 @@ package com.android.cts.packagemanager.verify.domain.device.multiuser
 import android.app.admin.DevicePolicyManager
 import android.content.Intent
 import android.content.IntentFilter
-import com.android.bedstead.harrier.BedsteadJUnit4
-import com.android.bedstead.harrier.UserType
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
+import com.android.bedstead.harrier.BedsteadJUnit4
+import com.android.bedstead.harrier.DeviceState
+import com.android.bedstead.harrier.UserType
+import com.android.bedstead.harrier.annotations.AfterClass
+import com.android.bedstead.harrier.annotations.BeforeClass
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
+import com.android.cts.packagemanager.verify.domain.device.multiuser.DomainVerificationWorkProfileTestsBase.DomainVerificationWorkProfileTestsHelper.Companion.FORWARD_TO_MANAGED
+import com.android.cts.packagemanager.verify.domain.device.multiuser.DomainVerificationWorkProfileTestsBase.DomainVerificationWorkProfileTestsHelper.Companion.WORK_APP
 import com.android.cts.packagemanager.verify.domain.java.DomainUtils.DOMAIN_1
 import org.junit.After
 import org.junit.Before
+import org.junit.ClassRule
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @EnsureHasWorkProfile(forUser = UserType.INITIAL_USER)
 @RunWith(BedsteadJUnit4::class)
 class DomainVerificationWorkProfileCrossProfileIntentTests :
-    DomainVerificationWorkProfileTestsBase() {
+    DomainVerificationWorkProfileTestsBase(helper) {
 
     // The specific cross profile Intent test requires general app link policy to be disabled
     private var initialAppLinkPolicy: Boolean? = null
@@ -75,10 +82,31 @@ class DomainVerificationWorkProfileCrossProfileIntentTests :
     @RequireRunOnInitialUser
     @Postsubmit(reason = "New test")
     @Test
-    override fun inPersonal_verifiedInOtherProfile() {
-        verify(WORK_APP)
+    fun inPersonal_verifiedInOtherProfile() {
+        helper.verify(WORK_APP)
 
         // Specific configuration does allow parent -> managed
-        assertResolvesTo(personalBrowsers + FORWARD_TO_MANAGED)
+        helper.assertResolvesTo(helper.personalBrowsers + FORWARD_TO_MANAGED)
+    }
+
+    companion object {
+        @JvmField
+        @ClassRule
+        @Rule
+        val deviceState = DeviceState()
+
+        val helper = DomainVerificationWorkProfileTestsHelper(deviceState)
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            helper.installApks()
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            helper.uninstallApks()
+        }
     }
 }

@@ -19,7 +19,7 @@ package com.android.bedstead.enterprise.annotations
 import com.android.bedstead.harrier.HarrierRule
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.UserType.INITIAL_USER
-import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.ENSURE_HAS_WORK_PROFILE_PRIORITY
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.ENSURE_HAS_SPECIFIED_USER_PRIORITY
 import com.android.bedstead.harrier.annotations.RequireFeature
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
 import com.android.bedstead.nene.types.OptionalBoolean
@@ -75,7 +75,7 @@ annotation class EnsureHasWorkProfile(
     val useParentInstanceOfDpc: Boolean = false,
     val switchedToParentUser: OptionalBoolean = ANY,
     val isQuietModeEnabled: OptionalBoolean = FALSE,
-    val priority: Int = ENSURE_HAS_WORK_PROFILE_PRIORITY
+    val priority: Int = ENSURE_HAS_SPECIFIED_USER_PRIORITY
 ) {
     companion object {
         const val PROFILE_TYPE = "android.os.usertype.profile.MANAGED"

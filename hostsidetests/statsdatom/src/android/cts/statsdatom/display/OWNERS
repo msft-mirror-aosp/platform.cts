@@ -1,7 +1,6 @@
 # Owners of the DisplayBrightnessChanged atom
 flc@google.com
-silviavinyes@google.com
 # Owners of the DisplayEventOccurredStatsTests
-per-file DisplayEventOccurredStatsTests.java = file:frameworks/base/services/core/java/com/android/server/display/OWNERS
+per-file DisplayEventOccurredStatsTests.java = file:platform/frameworks/base:/services/core/java/com/android/server/display/OWNERS
 # Owners of the DisplayWakeReportedStatsTests
 qingxun@google.com

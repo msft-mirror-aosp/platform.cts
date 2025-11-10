@@ -18,7 +18,14 @@ package com.android.cts.verifier.notifications
 
 import android.annotation.DrawableRes
 import android.annotation.StringRes
+import android.app.Flags
 import android.app.Notification
+import android.app.Notification.SEMANTIC_STYLE_CAUTION
+import android.app.Notification.SEMANTIC_STYLE_DANGER
+import android.app.Notification.SEMANTIC_STYLE_INFO
+import android.app.Notification.SEMANTIC_STYLE_SAFE
+import android.app.Notification.SEMANTIC_STYLE_UNSPECIFIED
+import android.app.Notification.createSemanticStyleAnnotation
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -29,8 +36,11 @@ import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
 import android.content.res.Resources
 import android.graphics.drawable.Icon
+import android.os.SystemClock
 import android.provider.Settings
 import android.provider.Settings.EXTRA_APP_PACKAGE
+import android.text.SpannableStringBuilder
+import android.text.format.DateUtils.MINUTE_IN_MILLIS
 import android.view.View
 import android.view.ViewGroup
 import com.android.cts.verifier.R
@@ -43,28 +53,55 @@ open class LiveUpdateNotificationVerifierActivity : InteractiveVerifierActivity(
 
     override fun getInstructionsResource(): Int = R.string.live_update_notification_test_info
 
-    override fun createTestItems(): List<InteractiveTestCase> = listOf(
-        enableLiveUpdateStep(),
-        disableLiveUpdateStep(),
-        enableLiveUpdateStep(),
-        assertOngoingPromotionStep(),
-        verifyLiveUpdateIsExpandedStep(),
-        verifyLiveUpdateTextAppearanceStep(),
-        verifyLiveUpdateRendersActionStep(),
-        verifyLiveUpdateNotRenderReplyActionsStep(),
-        verifyLiveUpdateNotRenderContextualActionsStep(),
-        demoteLiveUpdateStep(),
-        verifyDemotedLiveUpdateIsExpandableStep(),
-        verifyDemotedLiveUpdateTextStylingStep(),
-        verifyDemotedLiveUpdateRendersActionStep(),
-        verifyDemotedLiveUpdateRendersReplayActionsStep(),
-        verifyDemotedLiveUpdateRendersContextualActionsStep(),
-        enableLiveUpdateStep(),
-        verifyLiveUpdatePriorityStep(),
-        verifyLiveUpdateStatusBarChipStep(),
-        verifyLiveUpdateStatusBarChipChronometerStep(),
-        verifyLiveUpdateStatusBarChipTimerStep(),
-    )
+    override fun createTestItems(): List<InteractiveTestCase> {
+        val tests = mutableListOf(
+            enableLiveUpdateStep(),
+            disableLiveUpdateStep(),
+            enableLiveUpdateStep(),
+            assertOngoingPromotionStep(),
+            verifyLiveUpdateIsExpandedStep(),
+            verifyLiveUpdateTextAppearanceStep()
+        )
+
+        if (Flags.apiNotificationSemanticStyle()) {
+            tests.add(verifyLiveUpdateSemanticTextAppearanceStep())
+            if (Flags.apiMetricStyle()) {
+                tests.add(verifyLiveUpdateSemanticMetricAppearanceStep())
+            }
+        }
+
+        tests.addAll(
+            listOf(
+            verifyLiveUpdateRendersActionStep(),
+            verifyLiveUpdateNotRenderReplyActionsStep(),
+            verifyLiveUpdateNotRenderContextualActionsStep(),
+            demoteLiveUpdateStep(),
+            verifyDemotedLiveUpdateIsExpandableStep(),
+            verifyDemotedLiveUpdateTextStylingStep(),
+            verifyDemotedLiveUpdateRendersActionStep(),
+            verifyDemotedLiveUpdateRendersReplayActionsStep(),
+            verifyDemotedLiveUpdateRendersContextualActionsStep())
+        )
+
+        if (Flags.apiNotificationSemanticStyle()) {
+            tests.add(verifyDemotedLiveUpdateSemanticTextAppearanceStep())
+            if (Flags.apiMetricStyle()) {
+                tests.add(verifyDemotedLiveUpdateSemanticMetricAppearanceStep())
+            }
+        }
+
+        tests.addAll(
+        listOf(
+            enableLiveUpdateStep(),
+            verifyLiveUpdatePriorityStep(),
+            verifyLiveUpdateStatusBarChipStep(),
+            verifyLiveUpdateStatusBarChipChronometerStep(),
+            verifyLiveUpdateStatusBarChipTimerStep(),
+        )
+        )
+
+        return tests
+    }
 
     // region Steps
     private fun enableLiveUpdateStep() =
@@ -85,192 +122,182 @@ open class LiveUpdateNotificationVerifierActivity : InteractiveVerifierActivity(
     private fun verifyLiveUpdateIsExpandedStep() = LiveUpdateUserVerificationBase(
         instructionsText = R.string.live_update_notification_appearance_expanded,
         onBefore = {
-            if (!mNm.canPostPromotedNotifications()) {
-                logFail(
-                    "CTS Verifier app should be able to post a live update to verify this step."
-                )
-                status = FAIL
-                next()
-            } else {
-                mNm.notify(
-                    NOTIFICATION_ID,
-                    NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
-                        .build()
-                )
-            }
-        }
+            mNm.notify(
+                NOTIFICATION_ID,
+                NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
+                    .build()
+            )
+        },
+        preconditionCanPostPromotedNotifications = true
     )
 
     private fun verifyLiveUpdateTextAppearanceStep() = LiveUpdateUserVerificationBase(
         instructionsText = R.string.live_update_notification_appearance_text_styling,
         onBefore = {
-            if (!mNm.canPostPromotedNotifications()) {
-                logFail(
-                    "CTS Verifier app should be able to post a live update to verify this step."
+            mNm.notify(
+                NOTIFICATION_ID,
+                NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
+                    .build()
+            )
+        },
+        preconditionCanPostPromotedNotifications = true
+    )
+
+    private fun verifyLiveUpdateSemanticTextAppearanceStep() = LiveUpdateUserVerificationBase(
+        instructionsText = R.string.live_update_notification_appearance_semantic_text_styling,
+        onBefore = {
+            mNm.notify(
+                NOTIFICATION_ID,
+                NotificationFactory.createLiveUpdateNotificationBuilderWithSemanticStyledText(
+                    mContext,
+                    CHANNEL_ID
                 )
-                status = FAIL
-                next()
-            } else {
+                    .build()
+            )
+        },
+        preconditionCanPostPromotedNotifications = true
+    )
+
+    private fun verifyLiveUpdateSemanticMetricAppearanceStep() = LiveUpdateUserVerificationBase(
+        instructionsText = R.string.live_update_notification_appearance_semantic_metric_styling,
+        onBefore = {
                 mNm.notify(
                     NOTIFICATION_ID,
-                    NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
+                    NotificationFactory.createLiveUpdateNotificationBuilderWithSemanticStyledMetric(
+                        mContext,
+                        CHANNEL_ID
+                    )
                         .build()
                 )
-            }
-        }
+        },
+        preconditionCanPostPromotedNotifications = true
     )
 
     private fun verifyLiveUpdateRendersActionStep() = LiveUpdateUserVerificationBase(
         instructionsText = R.string.live_update_notification_appearance_action,
         onBefore = {
-            if (!mNm.canPostPromotedNotifications()) {
-                logFail(
-                    "CTS Verifier app should be able to post a live update to verify this step."
-                )
-                status = FAIL
-                next()
-            } else {
                 mNm.notify(
                     NOTIFICATION_ID,
                     NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
                         .build()
                 )
-            }
-        }
+        },
+        preconditionCanPostPromotedNotifications = true
     )
 
     private fun verifyLiveUpdateNotRenderReplyActionsStep() = LiveUpdateUserVerificationBase(
         instructionsText = R.string.live_update_notification_appearance_reply_action,
         onBefore = {
-            if (!mNm.canPostPromotedNotifications()) {
-                logFail(
-                    "CTS Verifier app should be able to post a live update to verify this step."
-                )
-                status = FAIL
-                next()
-            } else {
                 mNm.notify(
                     NOTIFICATION_ID,
                     NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
                         .build()
                 )
-            }
-        }
+        },
+        preconditionCanPostPromotedNotifications = true
     )
 
     private fun verifyLiveUpdateNotRenderContextualActionsStep() = LiveUpdateUserVerificationBase(
         instructionsText = R.string.live_update_notification_appearance_reply_contextual_action,
         onBefore = {
-            if (!mNm.canPostPromotedNotifications()) {
-                logFail(
-                    "CTS Verifier app should be able to post a live update to verify this step."
-                )
-                status = FAIL
-                next()
-            } else {
                 mNm.notify(
                     NOTIFICATION_ID,
                     NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
                         .build()
                 )
-            }
-        }
+        },
+        preconditionCanPostPromotedNotifications = true
     )
 
     private fun verifyDemotedLiveUpdateIsExpandableStep() = LiveUpdateUserVerificationBase(
         instructionsText = R.string.live_update_notification_demoted_appearance_expander,
         onBefore = {
-            if (mNm.canPostPromotedNotifications()) {
-                logFail(
-                    "CTS Verifier app should not be able to post a live update to verify this step."
-                )
-                status = FAIL
-                next()
-            } else {
                 mNm.notify(
                     NOTIFICATION_ID,
                     NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
                         .build()
                 )
-            }
-        }
+        },
+        preconditionCanPostPromotedNotifications = false
     )
 
     private fun verifyDemotedLiveUpdateTextStylingStep() = LiveUpdateUserVerificationBase(
         instructionsText = R.string.live_update_notification_demoted_appearance_text_styling,
         onBefore = {
-            if (mNm.canPostPromotedNotifications()) {
-                logFail(
-                    "CTS Verifier app should not be able to post a live update to verify this step."
-                )
-                status = FAIL
-                next()
-            } else {
                 mNm.notify(
                     NOTIFICATION_ID,
                     NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
                         .build()
                 )
-            }
-        }
+        },
+        preconditionCanPostPromotedNotifications = false
     )
 
     private fun verifyDemotedLiveUpdateRendersActionStep() = LiveUpdateUserVerificationBase(
         instructionsText = R.string.live_update_notification_demoted_appearance_action,
         onBefore = {
-            if (mNm.canPostPromotedNotifications()) {
-                logFail(
-                    "CTS Verifier app should not be able to post a live update to verify this step."
-                )
-                status = FAIL
-                next()
-            } else {
                 mNm.notify(
                     NOTIFICATION_ID,
                     NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
                         .build()
                 )
-            }
-        }
+        },
+        preconditionCanPostPromotedNotifications = false
     )
 
     private fun verifyDemotedLiveUpdateRendersReplayActionsStep() = LiveUpdateUserVerificationBase(
         instructionsText = R.string.live_update_notification_demoted_appearance_reply_action,
         onBefore = {
-            if (mNm.canPostPromotedNotifications()) {
-                logFail(
-                    "CTS Verifier app should not be able to post a live update to verify this step."
-                )
-                status = FAIL
-                next()
-            } else {
                 mNm.notify(
                     NOTIFICATION_ID,
                     NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
                         .build()
                 )
-            }
-        }
+        },
+        preconditionCanPostPromotedNotifications = false
     )
 
     private fun verifyDemotedLiveUpdateRendersContextualActionsStep(
     ) = LiveUpdateUserVerificationBase(
         instructionsText = R.string.live_update_notification_demoted_appearance_contextual_action,
         onBefore = {
-            if (mNm.canPostPromotedNotifications()) {
-                logFail(
-                    "CTS Verifier app should not be able to post a live update to verify this step."
-                )
-                status = FAIL
-                next()
-            } else {
                 mNm.notify(
                     NOTIFICATION_ID,
                     NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
                         .build()
                 )
-            }
-        }
+        },
+        preconditionCanPostPromotedNotifications = false
+    )
+
+    private fun verifyDemotedLiveUpdateSemanticTextAppearanceStep() = LiveUpdateUserVerificationBase(
+        instructionsText = R.string.live_update_notification_demoted_appearance_semantic_text_styling,
+        onBefore = {
+            mNm.notify(
+                NOTIFICATION_ID,
+                NotificationFactory.createLiveUpdateNotificationBuilderWithSemanticStyledText(
+                    mContext,
+                    CHANNEL_ID
+                )
+                    .build()
+            )
+        },
+        preconditionCanPostPromotedNotifications = false
+    )
+
+    private fun verifyDemotedLiveUpdateSemanticMetricAppearanceStep() = LiveUpdateUserVerificationBase(
+        instructionsText = R.string.live_update_notification_demoted_appearance_semantic_metric_styling,
+        onBefore = {
+            mNm.notify(
+                NOTIFICATION_ID,
+                NotificationFactory.createLiveUpdateNotificationBuilderWithSemanticStyledMetric(
+                    mContext,
+                    CHANNEL_ID
+                )
+                    .build()
+            )
+        },
+        preconditionCanPostPromotedNotifications = false
     )
 
     private fun verifyLiveUpdatePriorityStep() = LiveUpdateUserVerificationBase(
@@ -361,6 +388,51 @@ open class LiveUpdateNotificationVerifierActivity : InteractiveVerifierActivity(
                 .addAction(createNormalAction(context))
         }
 
+        fun createLiveUpdateNotificationBuilderWithSemanticStyledText(
+            context: Context,
+            channelId: String
+        ): Notification.Builder {
+            val ssb = SpannableStringBuilder()
+                .append("Colors: ")
+                .append("NONE", createSemanticStyleAnnotation(SEMANTIC_STYLE_UNSPECIFIED), 0)
+                .append(", ")
+                .append("INFO", createSemanticStyleAnnotation(SEMANTIC_STYLE_INFO), 0)
+                .append(", ")
+                .append("SAFE", createSemanticStyleAnnotation(SEMANTIC_STYLE_SAFE), 0)
+                .append(", ")
+                .append("CAUTION", createSemanticStyleAnnotation(SEMANTIC_STYLE_CAUTION), 0)
+                .append(", ")
+                .append("DANGER", createSemanticStyleAnnotation(SEMANTIC_STYLE_DANGER), 0)
+
+            return Notification.Builder(context, channelId)
+                .setSmallIcon(R.drawable.ic_stat_charlie)
+                .setContentTitle("Hello World!")
+                .setContentText(ssb)
+                .setOngoing(true)
+                .setRequestPromotedOngoing(true)
+        }
+
+        fun createLiveUpdateNotificationBuilderWithSemanticStyledMetric(
+            context: Context,
+            channelId: String
+        ): Notification.Builder {
+            return Notification.Builder(context, channelId)
+                .setSmallIcon(R.drawable.ic_stat_charlie)
+                .setContentTitle("Hello World!")
+                .setOngoing(true)
+                .setRequestPromotedOngoing(true)
+                .setStyle(Notification.MetricStyle().addMetric(
+                    Notification.Metric(
+                        Notification.Metric.TimeDifference.forTimer(
+                            SystemClock.elapsedRealtime() + 3 * MINUTE_IN_MILLIS,
+                            Notification.Metric.TimeDifference.FORMAT_CHRONOMETER
+                        ),
+                        "Countdown",
+                        SEMANTIC_STYLE_DANGER
+                        )
+                    ))
+        }
+
         private fun createRemoteInputAction(context: Context): Notification.Action {
             val remoteInput = RemoteInput.Builder("AnyKey").setLabel("label").build()
             val replyIntent = Intent(context, LiveUpdateNoOpReplyReceiver::class.java)
@@ -410,7 +482,8 @@ open class LiveUpdateNotificationVerifierActivity : InteractiveVerifierActivity(
     protected open inner class LiveUpdateUserVerificationBase(
         @StringRes private val instructionsText: Int,
         @DrawableRes private val instructionsImage: Int = Resources.ID_NULL,
-        private val onBefore: LiveUpdateUserVerificationBase.() -> Unit
+        private val onBefore: LiveUpdateUserVerificationBase.() -> Unit,
+        private val preconditionCanPostPromotedNotifications: Boolean? = null
     ) : InteractiveTestCase() {
         protected var view: View? = null
 
@@ -422,6 +495,24 @@ open class LiveUpdateNotificationVerifierActivity : InteractiveVerifierActivity(
 
         override fun setUp() {
             mNm.createNotificationChannel(CHANNEL)
+            if (preconditionCanPostPromotedNotifications != null) {
+                if (preconditionCanPostPromotedNotifications && !mNm.canPostPromotedNotifications()) {
+                    logFail(
+                        "CTS Verifier app should be able to post a live update to verify ${javaClass.simpleName}"
+                    )
+                    status = FAIL
+                    next()
+                    return
+                } else if (!preconditionCanPostPromotedNotifications && mNm.canPostPromotedNotifications()) {
+                    logFail(
+                        "CTS Verifier app should not be able to post a live update to verify ${javaClass.simpleName}"
+                    )
+                    status = FAIL
+                    next()
+                    return
+                }
+            }
+
             onBefore()
             setButtonsEnabled(view, false)
             super.setUp()

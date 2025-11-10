@@ -677,7 +677,8 @@ public final class Users {
         }
     }
 
-    private static boolean isRemovable(UserReference user) {
+    /** Checks if the given {@link UserReference} can be removed. */
+    public boolean isRemovable(UserReference user) {
         if (user.equals(TestApis.users().instrumented())) {
             return false;
         }

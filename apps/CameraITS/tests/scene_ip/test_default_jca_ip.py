@@ -194,6 +194,11 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
         logging.debug('Device only has one primary camera')
         flip_camera = False
 
+      if camera_facing == 'front':
+        camera_properties_utils.skip_unless(self.camera_id == primary_front_cam)
+      if camera_facing == 'rear':
+        camera_properties_utils.skip_unless(self.camera_id == primary_rear_cam)
+
       ui_interaction_utils.default_camera_app_dut_setup(device_id, pkg_name)
 
       # Launch ItsTestActivity

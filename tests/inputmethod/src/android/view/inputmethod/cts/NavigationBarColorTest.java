@@ -42,7 +42,6 @@ import android.app.UiAutomation;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Process;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.cts.util.EndToEndImeTestBase;
@@ -59,6 +58,7 @@ import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.BeforeClass;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeLayoutInfo;
@@ -66,14 +66,19 @@ import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
 @MediumTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class NavigationBarColorTest extends EndToEndImeTestBase {
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     private static final long LAYOUT_STABLE_THRESHOLD = TimeUnit.SECONDS.toMillis(3);
 

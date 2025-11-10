@@ -21,6 +21,7 @@ import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_C
 import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC;
 import static android.util.DisplayMetrics.DENSITY_HIGH;
 import static android.util.DisplayMetrics.DENSITY_MEDIUM;
+import static android.view.Display.INVALID_DISPLAY;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -37,18 +38,24 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.os.Messenger;
-import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.util.SparseArray;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.server.display.feature.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -62,7 +69,6 @@ import java.util.concurrent.TimeUnit;
 
 /** Tests that applications can receive display events correctly. */
 @RunWith(Parameterized.class)
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class DisplayEventDeliveryTest {
     private static final String TAG = "DisplayEventDeliveryTest";
 
@@ -76,6 +82,7 @@ public class DisplayEventDeliveryTest {
     private static final int DISPLAY_ADDED = 1;
     private static final int DISPLAY_CHANGED = 2;
     private static final int DISPLAY_REMOVED = 3;
+    private static final int DISPLAY_SNAPSHOT = 4;
 
     private static final long DISPLAY_EVENT_TIMEOUT_MSEC = 100;
     private static final long TEST_FAILURE_TIMEOUT_MSEC = 10000;
@@ -111,6 +118,11 @@ public class DisplayEventDeliveryTest {
      */
     private SparseArray<DisplayBundle> mDisplayBundles;
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    private DisplayBundle mSnapshotBundle;
+
     /**
      * Helper class to store VirtualDisplay and its corresponding display events expected to be sent
      * to DisplayEventActivity.
@@ -122,9 +134,9 @@ public class DisplayEventDeliveryTest {
         // Display events we expect to receive before timeout
         private final LinkedBlockingQueue<Integer> mExpectations;
 
-        DisplayBundle(VirtualDisplay display) {
+        DisplayBundle(@Nullable VirtualDisplay display) {
             mVirtualDisplay = display;
-            mDisplayId = display.getDisplay().getDisplayId();
+            mDisplayId = display != null ? display.getDisplay().getDisplayId() : INVALID_DISPLAY;
             mExpectations = new LinkedBlockingQueue<>();
         }
 
@@ -210,10 +222,14 @@ public class DisplayEventDeliveryTest {
                     break;
                 case MESSAGE_CALLBACK:
                     synchronized (mLock) {
+                        // arg2: display event type
+                        if (msg.arg2 == DISPLAY_SNAPSHOT) {
+                            mSnapshotBundle.addDisplayEvent(msg.arg2);
+                            break;
+                        }
                         // arg1: displayId
                         DisplayBundle bundle = mDisplayBundles.get(msg.arg1);
                         if (bundle != null) {
-                            // arg2: display event
                             bundle.addDisplayEvent(msg.arg2);
                         }
                     }
@@ -250,6 +266,7 @@ public class DisplayEventDeliveryTest {
         mHandler = new TestHandler(mHandlerThread.getLooper());
         mMessenger = new Messenger(mHandler);
         mPid = 0;
+        mSnapshotBundle = new DisplayBundle(null);
     }
 
     @After
@@ -273,10 +290,27 @@ public class DisplayEventDeliveryTest {
      * false in non-cached mode
      */
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_DISPLAY_LISTENER_SNAPSHOT)
     public void testDisplayEvents() {
+        testDisplayEventsInternal(/* isSnapshotEnabled= */ false);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DISPLAY_LISTENER_SNAPSHOT)
+    public void testDisplayEventsWithSnapshot() {
+        testDisplayEventsInternal(/* isSnapshotEnabled= */ true);
+    }
+
+    private void testDisplayEventsInternal(boolean isSnapshotEnabled) {
         Log.d(TAG, "Start test testDisplayEvents " + mDisplayCount + " " + mCached);
         // Launch DisplayEventActivity and start listening to display events
         launchTestActivity();
+
+        if (isSnapshotEnabled) {
+            mSnapshotBundle.waitDisplayEvent(DISPLAY_SNAPSHOT);
+        } else {
+            mSnapshotBundle.assertNoDisplayEvents();
+        }
 
         if (mCached) {
             // The test activity in cached mode won't receive the pending display events
@@ -351,8 +385,7 @@ public class DisplayEventDeliveryTest {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
                     TestApis.activities().startActivity(intent);
-                },
-                android.Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+                });
         waitLatch(mLatchActivityLaunch);
     }
 
@@ -364,8 +397,7 @@ public class DisplayEventDeliveryTest {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
                     TestApis.activities().startActivity(intent);
-                },
-                android.Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+                });
     }
 
     /** Bring the test activity into cached mode by launching another 2 apps */
@@ -383,8 +415,7 @@ public class DisplayEventDeliveryTest {
                 () -> {
                     mInstrumentation.startActivitySync(intent);
                     mInstrumentation.startActivitySync(intent2);
-                },
-                android.Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+                });
         waitLatch(mLatchActivityCached);
     }
 

@@ -16,13 +16,17 @@
 
 package android.telecom.cts.cuj.app.integration;
 
+import static android.telecom.cts.apps.TelecomTestApp.ConnectionServiceVoipAppMain;
+import static android.telecom.cts.apps.TelecomTestApp.MANAGED_APP_CN;
+import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceApp;
 import static android.telecom.cts.apps.TelecomTestApp.SELF_MANAGED_CS_MAIN_ACCOUNT_CUSTOM;
 import static android.telecom.cts.apps.TelecomTestApp.SELF_MANAGED_CS_MAIN_ACCOUNT_TRANSACTIONAL;
-import static android.telecom.cts.apps.TelecomTestApp.TRANSACTIONAL_MAIN_SUPPLEMENTARY_ACCOUNT;
 import static android.telecom.cts.apps.TelecomTestApp.TRANSACTIONAL_APP_SUPPLEMENTARY_HANDLE;
+import static android.telecom.cts.apps.TelecomTestApp.TRANSACTIONAL_MAIN_SUPPLEMENTARY_ACCOUNT;
 import static android.telecom.cts.apps.TelecomTestApp.TRANSACTIONAL_PACKAGE_NAME;
-import static android.telecom.cts.apps.TelecomTestApp.ConnectionServiceVoipAppMain;
 import static android.telecom.cts.apps.TelecomTestApp.TransactionalVoipAppMain;
+
+import static com.android.compatibility.common.util.ShellIdentityUtils.invokeMethodWithShellPermissions;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -36,10 +40,14 @@ import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
 import android.telecom.cts.apps.AppControlWrapper;
+import android.telecom.cts.apps.ShellCommandExecutor;
 import android.telecom.cts.cuj.BaseAppVerifier;
+
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.server.telecom.flags.Flags;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -48,6 +56,15 @@ import java.util.List;
 
 @RunWith(JUnit4.class)
 public class PhoneAccountTest extends BaseAppVerifier {
+    private TelecomManager mTelecomManager;
+
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+
+        mTelecomManager = mContext.getSystemService(TelecomManager.class);
+    }
+
     /*********************************************************************************************
      *                           ConnectionServiceVoipAppMain
      /*********************************************************************************************/
@@ -326,6 +343,50 @@ public class PhoneAccountTest extends BaseAppVerifier {
             unregisterAcctAndVerify(transactionalApp, acctAudioOnlyCap, 1 /* numOfAccounts */);
         } finally {
             tearDownApp(transactionalApp);
+        }
+    }
+
+    /** Verify RTT related capabilities. */
+    @RequiresFlagsEnabled(android.telecom.flags.Flags.FLAG_CHANGE_RTT_TO_AUDIO)
+    @Test
+    public void testRttCapabilities() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        AppControlWrapper managedApp = null;
+        final PhoneAccountHandle uniqueHandle = new PhoneAccountHandle(MANAGED_APP_CN, "90210");
+
+        final PhoneAccount acctRtt =
+                PhoneAccount.builder(uniqueHandle, "RTT_WHEE")
+                        .setCapabilities(
+                                PhoneAccount.CAPABILITY_CALL_PROVIDER
+                                        | PhoneAccount.CAPABILITY_RTT
+                                        | PhoneAccount.CAPABILITY_CHANGE_RTT_CALL_TO_AUDIO_CALL)
+                        .build();
+
+        try {
+            managedApp = bindToApp(ManagedConnectionServiceApp);
+
+            managedApp.registerCustomPhoneAccount(acctRtt);
+            ShellCommandExecutor.enablePhoneAccount(
+                    InstrumentationRegistry.getInstrumentation(), acctRtt.getAccountHandle());
+
+            List<PhoneAccount> accounts =
+                    invokeMethodWithShellPermissions(
+                            mTelecomManager, tm -> tm.getAllPhoneAccounts());
+            android.util.Log.i("TYLER", "TLER got accuonts " + accounts);
+            assertEquals(
+                    PhoneAccount.CAPABILITY_CALL_PROVIDER
+                            | PhoneAccount.CAPABILITY_RTT
+                            | PhoneAccount.CAPABILITY_CHANGE_RTT_CALL_TO_AUDIO_CALL,
+                    accounts.stream()
+                            .filter(acct -> acct.getAccountHandle().equals(uniqueHandle))
+                            .findFirst()
+                            .get()
+                            .getCapabilities());
+            managedApp.unregisterPhoneAccountWithHandle(acctRtt.getAccountHandle());
+        } finally {
+            tearDownApp(managedApp);
         }
     }
 

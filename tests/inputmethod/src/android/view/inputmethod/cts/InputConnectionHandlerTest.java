@@ -38,7 +38,6 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Process;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.system.Os;
 import android.text.InputType;
 import android.view.View;
@@ -58,12 +57,15 @@ import androidx.annotation.NonNull;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.harrier.DeviceState;
 import com.android.cts.mockime.ImeCommand;
 import com.android.cts.mockime.ImeEvent;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Objects;
@@ -79,8 +81,12 @@ import java.util.concurrent.atomic.AtomicReference;
  * <p>TODO: Add more tests.</p>
  */
 @LargeTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class InputConnectionHandlerTest extends EndToEndImeTestBase {
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
 
     /**

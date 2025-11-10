@@ -18,7 +18,6 @@ package android.appsecurity.cts;
 
 import static com.android.tradefed.device.UserInfo.USER_SYSTEM;
 
-import com.android.ddmlib.AdbCommandRejectedException;
 import com.android.ddmlib.CollectingOutputReceiver;
 import com.android.ddmlib.Log;
 import com.android.ddmlib.Log.LogLevel;
@@ -328,12 +327,12 @@ public final class Utils {
     private static boolean isBootCompleted(ITestDevice device) throws Exception {
         CollectingOutputReceiver receiver = new CollectingOutputReceiver();
         try {
-            device.getIDevice().executeShellCommand("getprop sys.boot_completed", receiver);
-        } catch (AdbCommandRejectedException e) {
+            device.executeShellCommand("getprop sys.boot_completed", receiver);
+        } catch (DeviceNotAvailableException e) {
             // do nothing: device might be temporarily disconnected
             Log.d(
                     LOG_TAG,
-                    "Ignored AdbCommandRejectedException while `getprop sys.boot_completed`");
+                    "Ignored DeviceNotAvailableException while `getprop sys.boot_completed`");
         }
         String output = receiver.getOutput();
         if (output != null) {

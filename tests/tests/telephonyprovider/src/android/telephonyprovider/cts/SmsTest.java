@@ -727,7 +727,7 @@ public class SmsTest {
     public void testOtpSms_standardAppCanReadAfterOtpHidingTimeExpires() {
         final String message = getSmsRetrieverOtpMessage();
         long expiredOtpHidingTime =
-                System.currentTimeMillis() - OTP_HIDING_TIME_MS - TimeUnit.SECONDS.toMillis(1);
+                System.currentTimeMillis() - OTP_HIDING_TIME_MS - TimeUnit.MINUTES.toMillis(1);
         Uri inserted = mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(TEST_ADDRESS,
                 message, expiredOtpHidingTime);
         try {

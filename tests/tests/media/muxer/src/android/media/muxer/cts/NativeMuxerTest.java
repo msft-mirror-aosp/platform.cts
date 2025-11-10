@@ -18,6 +18,7 @@ package android.media.muxer.cts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.res.AssetFileDescriptor;
 import android.media.MediaExtractor;
@@ -157,9 +158,8 @@ public class NativeMuxerTest extends MediaTestBase {
     private void testMuxer(final String res, boolean signalEos) throws Exception {
         boolean webm = res.endsWith("webm");
         Preconditions.assertTestFileExists(MEDIA_DIR + res);
-        if (!MediaUtils.checkCodecsForResource(MEDIA_DIR + res)) {
-            return; // skip
-        }
+        assumeTrue("Skipping test: no codec found",
+                MediaUtils.checkCodecsForResource(MEDIA_DIR + res));
 
         AssetFileDescriptor infd = getAssetFileDescriptorFor(res);
 

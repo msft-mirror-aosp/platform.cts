@@ -20,7 +20,7 @@ import static android.app.role.RoleManager.ROLE_SYSTEM_DEPENDENCY_INSTALLER;
 import static android.content.Context.RECEIVER_EXPORTED;
 import static android.content.pm.Checksum.TYPE_PARTIAL_MERKLE_ROOT_1M_SHA256;
 import static android.content.pm.Checksum.TYPE_WHOLE_MERKLE_ROOT_4K_SHA256;
-import static android.content.pm.Flags.FLAG_SDK_DEPENDENCY_INSTALLER;
+import static android.content.pm.Flags.FLAG_SDK_DEPENDENCY_INSTALLER_DEPRECATION;
 import static android.content.pm.Flags.FLAG_SDK_LIB_INDEPENDENCE;
 import static android.content.pm.PackageInstaller.DATA_LOADER_TYPE_INCREMENTAL;
 import static android.content.pm.PackageInstaller.DATA_LOADER_TYPE_NONE;
@@ -350,7 +350,7 @@ public class PackageManagerShellCommandInstallTest {
                 mDataLoaderType == DATA_LOADER_TYPE_STREAMING ? " install-streaming " :
                         " install-incremental ";
 
-        if (Flags.sdkDependencyInstaller()) {
+        if (!Flags.sdkDependencyInstallerDeprecation()) {
             mDisableDependencyInstall += "--disable-auto-install-dependencies ";
         }
 
@@ -1421,10 +1421,8 @@ public class PackageManagerShellCommandInstallTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_SDK_LIB_INDEPENDENCE)
-    @RequiresFlagsDisabled(FLAG_SDK_DEPENDENCY_INSTALLER)
-    public void testAppUsingSdkOptionalInstallInstall_allowAppInstallWithoutSDK()
-            throws Exception {
+    @RequiresFlagsEnabled({FLAG_SDK_LIB_INDEPENDENCE, FLAG_SDK_DEPENDENCY_INSTALLER_DEPRECATION})
+    public void testAppUsingSdkOptionalInstallInstall_allowAppInstallWithoutSDK() throws Exception {
         onBeforeSdkTests();
 
         // Try to install without required SDK1.
@@ -1470,7 +1468,7 @@ public class PackageManagerShellCommandInstallTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    @RequiresFlagsDisabled(FLAG_SDK_DEPENDENCY_INSTALLER_DEPRECATION)
     public void testAppWithMissingDependency_dependencyInstallerDisabledShellCommand()
             throws Exception {
         onBeforeSdkTests();
@@ -1483,7 +1481,7 @@ public class PackageManagerShellCommandInstallTest {
 
     @Test
     @EnsureCanAddSecondaryUser
-    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    @RequiresFlagsDisabled(FLAG_SDK_DEPENDENCY_INSTALLER_DEPRECATION)
     public void testAppWithMissingDependency_dependencyInstallerRoleHolderMissing()
             throws Exception {
         onBeforeSdkTests();
@@ -1508,7 +1506,7 @@ public class PackageManagerShellCommandInstallTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    @RequiresFlagsDisabled(FLAG_SDK_DEPENDENCY_INSTALLER_DEPRECATION)
     public void testAppWithMissingDependency_failDependencyResolution() throws Exception {
         onBeforeSdkTests();
 
@@ -1526,7 +1524,7 @@ public class PackageManagerShellCommandInstallTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    @RequiresFlagsDisabled(FLAG_SDK_DEPENDENCY_INSTALLER_DEPRECATION)
     public void testAppWithMissingDependency_resolveSdk1_sync() throws Exception {
         onBeforeSdkTests();
 
@@ -1546,7 +1544,7 @@ public class PackageManagerShellCommandInstallTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    @RequiresFlagsDisabled(FLAG_SDK_DEPENDENCY_INSTALLER_DEPRECATION)
     public void testAppWithMissingDependency_resolveSdk1_wrongCertDigest() throws Exception {
         onBeforeSdkTests();
 
@@ -1565,9 +1563,8 @@ public class PackageManagerShellCommandInstallTest {
         }
     }
 
-
     @Test
-    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    @RequiresFlagsDisabled(FLAG_SDK_DEPENDENCY_INSTALLER_DEPRECATION)
     public void testAppWithMissingDependency_resolveSdk2_async() throws Exception {
         onBeforeSdkTests();
 
@@ -1586,7 +1583,7 @@ public class PackageManagerShellCommandInstallTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    @RequiresFlagsDisabled(FLAG_SDK_DEPENDENCY_INSTALLER_DEPRECATION)
     public void testDependencyInstallerService_sendsInvalidSessionId() throws Exception {
         onBeforeSdkTests();
 
@@ -1607,7 +1604,7 @@ public class PackageManagerShellCommandInstallTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    @RequiresFlagsDisabled(FLAG_SDK_DEPENDENCY_INSTALLER_DEPRECATION)
     public void testDependencyInstallerService_sendsAbandonedSessionId() throws Exception {
         onBeforeSdkTests();
 
@@ -1628,7 +1625,7 @@ public class PackageManagerShellCommandInstallTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    @RequiresFlagsDisabled(FLAG_SDK_DEPENDENCY_INSTALLER_DEPRECATION)
     public void testDependencyInstallerService_abandonSession_resumeOnFailure() throws Exception {
         onBeforeSdkTests();
 
@@ -1648,7 +1645,7 @@ public class PackageManagerShellCommandInstallTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    @RequiresFlagsDisabled(FLAG_SDK_DEPENDENCY_INSTALLER_DEPRECATION)
     public void testDependencyInstallerService_resumeOnFailure_failsInstall() throws Exception {
         onBeforeSdkTests();
 
@@ -1670,7 +1667,7 @@ public class PackageManagerShellCommandInstallTest {
 
     @Test
     @EnsureCanAddSecondaryUser
-    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    @RequiresFlagsDisabled(FLAG_SDK_DEPENDENCY_INSTALLER_DEPRECATION)
     public void testDependencyInstallerService_multiUser() throws Exception {
         onBeforeSdkTests();
 
@@ -1727,7 +1724,7 @@ public class PackageManagerShellCommandInstallTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    @RequiresFlagsDisabled(FLAG_SDK_DEPENDENCY_INSTALLER_DEPRECATION)
     public void testAppWithMissingDependency_multiSessionFailsLater() throws Exception {
         onBeforeSdkTests();
 
@@ -1755,7 +1752,7 @@ public class PackageManagerShellCommandInstallTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    @RequiresFlagsDisabled(FLAG_SDK_DEPENDENCY_INSTALLER_DEPRECATION)
     public void testInstallAppWithDependantSdk_dependencyInstallerDisabled_succeeds()
             throws Exception {
         onBeforeSdkTests();
@@ -1777,7 +1774,7 @@ public class PackageManagerShellCommandInstallTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    @RequiresFlagsDisabled(FLAG_SDK_DEPENDENCY_INSTALLER_DEPRECATION)
     public void testInstallAppWithoutDependantSdk_dependencyInstallerDisabled_failsLater()
             throws Exception {
         onBeforeSdkTests();
@@ -1796,7 +1793,7 @@ public class PackageManagerShellCommandInstallTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    @RequiresFlagsDisabled(FLAG_SDK_DEPENDENCY_INSTALLER_DEPRECATION)
     public void testInstallAppWithoutDependantSdk_dependencyInstallerEnabled_succeeds()
             throws Exception {
         onBeforeSdkTests();
@@ -3085,7 +3082,7 @@ public class PackageManagerShellCommandInstallTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    @RequiresFlagsDisabled(FLAG_SDK_DEPENDENCY_INSTALLER_DEPRECATION)
     public void testInstallSdk_withoutInstallDependencyPackagePermission() throws Exception {
         onBeforeSdkTests();
 
@@ -3098,7 +3095,7 @@ public class PackageManagerShellCommandInstallTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    @RequiresFlagsDisabled(FLAG_SDK_DEPENDENCY_INSTALLER_DEPRECATION)
     public void testInstallSdk_withInstallDependencyPackagePermission() throws Exception {
         onBeforeSdkTests();
 
@@ -3117,7 +3114,7 @@ public class PackageManagerShellCommandInstallTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    @RequiresFlagsDisabled(FLAG_SDK_DEPENDENCY_INSTALLER_DEPRECATION)
     public void testInstallNonDependency_withInstallDependencyPackagePermission_fails()
             throws Exception {
         onBeforeSdkTests();

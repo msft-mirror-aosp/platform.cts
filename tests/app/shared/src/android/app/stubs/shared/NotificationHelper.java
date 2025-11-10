@@ -31,6 +31,7 @@ import android.os.ParcelFileDescriptor;
 import android.service.notification.StatusBarNotification;
 import android.util.Log;
 
+import androidx.annotation.Nullable;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.SystemUtil;
@@ -94,8 +95,12 @@ public class NotificationHelper {
                 .getNotification().contentIntent.send();
     }
 
-    public StatusBarNotification findPostedNotification(String tag, int id,
-            SEARCH_TYPE searchType) {
+    /**
+     * Looks for a Notification in the list of posted ones, giving up after {@link #MAX_WAIT_TIME}
+     * ms if not seen.
+     */
+    public StatusBarNotification findPostedNotification(
+            @Nullable String tag, int id, SEARCH_TYPE searchType) {
         // notification posting is asynchronous so it may take a few hundred ms to appear.
         // we will check for it for up to MAX_WAIT_TIME ms before giving up.
         for (long totalWait = 0; totalWait < MAX_WAIT_TIME; totalWait += SHORT_WAIT_TIME) {
@@ -114,7 +119,11 @@ public class NotificationHelper {
 
     /**
      * Returns true if the notification cannot be found. Polls for the notification to account for
-     * delays in posting
+     * delays in posting.
+     *
+     * <p>Use this method if you're cancelling an already posted notification, but NOT to verify
+     * that a notification was never posted (because notification posting is asynchronous, so not
+     * finding it on the first attempt doesn't mean it won't appear shortly afterwards.
      */
     public boolean isNotificationGone(int id, SEARCH_TYPE searchType) {
         // notification is a bit asynchronous so it may take a few ms to appear in
@@ -158,8 +167,8 @@ public class NotificationHelper {
         return false;
     }
 
-    private StatusBarNotification findNotificationNoWait(String tag, int id,
-            SEARCH_TYPE searchType) {
+    private StatusBarNotification findNotificationNoWait(
+            @Nullable String tag, int id, SEARCH_TYPE searchType) {
         for (StatusBarNotification sbn : getNotifications(searchType)) {
             if (sbn.getId() == id && Objects.equal(sbn.getTag(), tag)) {
                 return sbn;

@@ -298,8 +298,14 @@ class AppOpsDeviceAwareTest {
         val permGroupUsage = groupUsage[0]
         assertThat(permGroupUsage.persistentDeviceId).isEqualTo(virtualDevice.persistentDeviceId)
         assertThat(permGroupUsage.packageName).isEqualTo(context.opPackageName)
+        assertThat(permGroupUsage.uid).isEqualTo(Process.myUid())
         assertThat(permGroupUsage.permissionGroupName).isEqualTo(Manifest.permission_group.CAMERA)
+        assertThat(permGroupUsage.isActive).isTrue()
+        assertThat(permGroupUsage.isPhoneCall).isFalse()
         assertThat(permGroupUsage.lastAccessTimeMillis).isAtLeast(startTimeMillis)
         assertThat(permGroupUsage.lastAccessTimeMillis).isAtMost(endTimeMillis)
+        assertThat(permGroupUsage.proxyLabel).isNull()
+        assertThat(permGroupUsage.attributionLabel).isNull()
+        assertThat(permGroupUsage.attributionTag).isNull()
     }
 }

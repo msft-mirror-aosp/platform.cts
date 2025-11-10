@@ -42,6 +42,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.SystemClock;
 import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.MediaStore;
@@ -87,6 +88,8 @@ public final class StableUrisTest extends ScopedStorageBaseDeviceTest {
             permissionToOp(Manifest.permission.MANAGE_EXTERNAL_STORAGE);
 
     private static final int MAX_MEDIA_FILES_COUNT_THRESHOLD = 1000;
+    private static final int MEDIAPROVIDER_PROCESS_START_TIMEOUT_MILLIS = 20000;
+    private static final int MEDIAPROVIDER_PROCESS_START_POLL_TIME_MILLIS = 200;
 
     private Context mContext;
     private ContentResolver mContentResolver;
@@ -246,8 +249,28 @@ public final class StableUrisTest extends ScopedStorageBaseDeviceTest {
     private void clearMediaProvider() throws Exception {
         mDevice.executeShellCommand(
                 "pm clear --user " + mContext.getUserId() + " " + getMediaProviderPackageName());
+        waitForMediaProviderProcessToStart();
         waitForMountedAndIdleState(mContentResolver);
         MediaStore.scanVolume(mContentResolver, mVolumeName);
+    }
+
+    private void waitForMediaProviderProcessToStart() throws Exception {
+        Uri uri = MediaStore.Files.getContentUri(mVolumeName);
+        long start = System.currentTimeMillis();
+        while (System.currentTimeMillis() - start < MEDIAPROVIDER_PROCESS_START_TIMEOUT_MILLIS) {
+            try (Cursor c =
+                    mContext.getContentResolver()
+                            .query(
+                                    uri,
+                                    new String[] {MediaStore.MediaColumns._ID},
+                                    /* selection */ null,
+                                    /* selectionArgs */ null,
+                                    /* sortOrder */ null)) {
+                break;
+            } catch (Exception e) {
+                SystemClock.sleep(MEDIAPROVIDER_PROCESS_START_POLL_TIME_MILLIS);
+            }
+        }
     }
 
     private void testScenario(boolean nextRowIdBackupEnabled) throws Exception {

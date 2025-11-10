@@ -46,6 +46,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
+import android.util.Pair;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.WindowManager;
@@ -238,12 +239,25 @@ public abstract class InputHidTestCase extends InputTestCase {
     }
 
     private boolean verifyVibratorReportData(HidVibratorTestData test, HidResultData result) {
-        for (Map.Entry<Integer, Integer> entry : test.verifyMap.entrySet()) {
+        for (Map.Entry<Integer, Pair<Integer, Integer>> entry : test.verifyMap.entrySet()) {
             final int index = entry.getKey();
-            final int value = entry.getValue();
-            if ((result.reportData[index] & 0XFF) != value) {
-                Log.v(TAG, "index=" + index + " value= " + value
-                        + "actual= " + (result.reportData[index] & 0XFF));
+            final Pair<Integer, Integer> value = entry.getValue();
+            final int dataMaskForAssertions = value.first;
+            final int expectedValue = value.second;
+            final int maskedValue = (result.reportData[index] & dataMaskForAssertions);
+            if (maskedValue != expectedValue) {
+                Log.e(
+                        TAG,
+                        "index="
+                                + index
+                                + ", dataMaskForAssertions="
+                                + dataMaskForAssertions
+                                + ", expectedValue="
+                                + expectedValue
+                                + ", maskedValue="
+                                + maskedValue
+                                + ", result.reportData[index]="
+                                + result.reportData[index]);
                 return false;
             }
         }
@@ -321,7 +335,7 @@ public abstract class InputHidTestCase extends InputTestCase {
                     }
                 }
             }
-            assertEquals(vibrationCount, totalVibrations);
+            assertEquals(totalVibrations, vibrationCount);
             // Verify vibrator state listener
             verify(mListener, timeout(CALLBACK_TIMEOUT_MILLIS)
                     .times(1)).onVibratorStateChanged(false);
@@ -433,8 +447,15 @@ public abstract class InputHidTestCase extends InputTestCase {
                     light = lights.get(i);
                 }
             }
-            assertNotNull("Light type " + test.lightType + " name " + test.lightName
-                    + " does not exist.  Lights found: " + lights, light);
+            if (light == null) {
+                failWithMessage(
+                        "Light type "
+                                + test.lightType
+                                + " name "
+                                + test.lightName
+                                + " does not exist. Lights found: "
+                                + lights);
+            }
             try (LightsManager.LightsSession session = lightsManager.openSession()) {
                 // Can't set both player id and color in same LightState
                 assertFalse(test.lightColor > 0 && test.lightPlayerId > 0);

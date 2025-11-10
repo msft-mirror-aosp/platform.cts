@@ -17,7 +17,6 @@
 package android.hardware.input.cts.tests;
 
 import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
 
 import android.hardware.cts.R;
 import android.platform.test.annotations.RequiresFlagsDisabled;
@@ -63,9 +62,6 @@ public class SonyDualshock4BluetoothTest extends InputHidTestCase {
 
     @Test
     public void testVibrator() throws Exception {
-        assumeFalse("b/337286136 - Broken since kernel 6.2 from driver changes",
-                KernelInfo.isKernelVersionGreaterThan("6.2"));
-        assumeTrue(KernelInfo.isKernelVersionGreaterThan("4.19"));
         testInputVibratorEvents(R.raw.sony_dualshock4_bluetooth_vibratortests);
     }
 

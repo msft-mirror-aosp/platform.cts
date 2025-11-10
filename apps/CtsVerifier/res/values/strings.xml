@@ -2430,6 +2430,29 @@
          \n\u2022 75% of the bar should look filled and the rest of it should look unfilled.
          \n\u2022 The progress bar color should be orange.
     </string>
+    <string name="progress_style_semantic_color" formatted="false">A progress style notification was posted. Expand it (if it’s not already expanded), and verify that:
+         \n\u2022 The progress bar is segmented in three colors.
+         \n\u2022 The first segment is green, the second is yellow/orange, and the third is red.
+         \n\u2022 The points separating the segments are blue.
+         \n\u2022 (note that colors may vary slightly according to the current theme).
+    </string>
+    <string name="metric_style_one_chronometer" formatted="false">A notification containing a chronometer was posted.
+         \n\u2022 The chronometer is ticking every second (regardless of whether the notification is collapsed or expanded).
+         \n\u2022 The text "Clock" is shown.
+         \n\u2022 The text "Stopwatch" is shown.
+         \n\u2022 No text including "SHOULD NOT APPEAR" is shown.
+    </string>
+    <string name="metric_style_two_metrics" formatted="false">A notification containing two metric values (one of them a chronometer) was posted.
+         \n\u2022 The chronometer is ticking every second (regardless of whether the notification is collapsed or expanded).
+         \n\u2022 The text "Clock" is shown.
+         \n\u2022 The title of each metric ("Elapsed", "Laps") is shown adjacent to its value.
+         \n\u2022 No text including "SHOULD NOT APPEAR" is shown.
+    </string>
+    <string name="metric_style_three_metrics" formatted="false">A notification containing three metric values was posted.
+         \n\u2022 The text "Fun" is shown.
+         \n\u2022 The title of each metric ("Level", "Score", "Weather") is shown adjacent to its value.
+         \n\u2022 No text including "SHOULD NOT APPEAR" is shown.
+    </string>
     <string name="live_update_enable_step" formatted="false">Enable Live updates for \"CTS Verifier\".</string>
     <string name="live_update_disable_step" formatted="false">Disable Live updates for \"CTS Verifier\".</string>
     <string name="live_update_promoted_ongoing_set">Notification should have \"FLAG_PROMOTED_ONGOING\" set.</string>
@@ -2441,6 +2464,22 @@
     <string name="live_update_notification_appearance_text_styling" formatted="false"><b>Notification Appearance: Text Styling</b>
          \n A ProgressStyle Live Update Notification is posted.
          \n View the Live Update notification in the shade and verify that it has correctly <b>styled text</b> (bold, underlined, and italic).
+    </string>
+    <string name="live_update_notification_appearance_semantic_text_styling" formatted="false"><b>Notification Appearance: Semantic Text Color</b>
+         \n A Live Update Notification is posted.
+         \n View the Live Update notification in the shade and verify that it has correctly <b>colored text</b>. The words INFO, SAFE, CAUTION, DANGER should appear respectively in BLUE, GREEN, YELLOW/ORANGE, AND RED (subject to slight adjustment according to the current theme).
+    </string>
+    <string name="live_update_notification_appearance_semantic_metric_styling" formatted="false"><b>Notification Appearance: Semantic Metric Color</b>
+         \n A Live Update Notification with a running timer is posted.
+         \n View the Live Update notification in the shade and verify that the timer is colored RED (subject to slight adjustment according to the current theme).
+    </string>
+    <string name="live_update_notification_demoted_appearance_semantic_text_styling" formatted="false"><b>Notification Appearance: No Semantic Color when demoted</b>
+         \n A demoted Live Update Notification is posted.
+         \n View the demoted Live Update notification in the shade and verify that its text doesn\'t have any special coloring.
+    </string>
+    <string name="live_update_notification_demoted_appearance_semantic_metric_styling" formatted="false"><b>Notification Appearance: No Semantic Metric Color when demoted</b>
+         \n A demoted Live Update Notification with a running timer is posted.
+         \n View the Live Update notification in the shade and verify that the timer doesn\'t have any special coloring.
     </string>
     <string name="live_update_notification_appearance_action" formatted="false"><b>Notification Appearance: Action</b>
          \n A ProgressStyle Live Update Notification is posted.
@@ -2475,13 +2514,13 @@
          \n View the demoted Live Update notification in the shade and verify that it has a <b>Share</b> contextual action.
     </string>
     <string name="live_update_demote_step" formatted="false"><b>Demote Live Update</b>
-        \n View the Live Update notification in the shade and <b>long-press</b> on it to open its <b>demotion menu</b>. Tap the button to turn off Live Updates for this app.
+        \n View the Live Update notification in the shade, open the notification\'s settings (e.g. long-press), and turn off Live Updates for this app.
     </string>
     <string name="live_update_notification_priority" formatted="false"> <b>Notification Priority</b>
          \n Two notifications are posted, including one Live Update notification.
          \n <b>Verification Instructions</b>:
          \n <b>Open the Notification Shade</b>, Confirm the <b>Live Update notification</b> is displayed at <b>top</b> of the shade.
-         \n <b>Open the Lock Screen</b>, Confirm <b>the Live Update notification</b> is displayed at <b>top</b> of the lock screen.
+         \n <b>Open the Lock Screen</b>, Confirm <b>the Live Update notification</b> is displayed prominently. If the notification is displayed in the list of other notifications, it must be at the <b>top</b> of the list.
     </string>
     <string name="live_update_notification_styled_text">Styled text examples; <b>bold</b>, <u>underlined</u> and <i>italic</i></string>
     <string name="live_update_notification_status_bar_chip" formatted="false"><b>Status Bar Chip</b>
@@ -2493,7 +2532,7 @@
          \n\u2022 Confirm the text on the chip is \“test\”.
          \n\u2022 Tap <b>the chip</b> on the status bar and observe that either of the following behaviors happens:
          \n\t\u2022 Option 1: <b>the app opens</b>.
-         \n\t\u2022 Option 2: <b>the notification appears</b>. In this case, tap <b>the chip</b> again and confirm <b>the notification disappears</b>.
+         \n\t\u2022 Option 2: <b>the notification appears</b>.
     </string>
 
     <string name="live_update_notification_status_bar_chip_chronometer" formatted="false"><b>Status Bar Chip Chronometer</b>

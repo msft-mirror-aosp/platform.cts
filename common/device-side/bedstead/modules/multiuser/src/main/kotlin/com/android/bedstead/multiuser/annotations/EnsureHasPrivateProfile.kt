@@ -17,7 +17,7 @@ package com.android.bedstead.multiuser.annotations
 
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
-import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.REQUIRE_RUN_ON_PRECEDENCE
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.ENSURE_HAS_SPECIFIED_USER_PRIORITY
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
 import com.android.bedstead.multiuser.annotations.meta.EnsureHasProfileAnnotation
 import com.android.bedstead.nene.types.OptionalBoolean
@@ -74,6 +74,6 @@ annotation class EnsureHasPrivateProfile(
     val priority: Int = ENSURE_HAS_PRIVATE_PROFILE_PRECEDENCE
 ) {
     companion object {
-        const val ENSURE_HAS_PRIVATE_PROFILE_PRECEDENCE: Int = REQUIRE_RUN_ON_PRECEDENCE - 1
+        const val ENSURE_HAS_PRIVATE_PROFILE_PRECEDENCE: Int = ENSURE_HAS_SPECIFIED_USER_PRIORITY
     }
 }

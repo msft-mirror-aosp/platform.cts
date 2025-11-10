@@ -35,7 +35,7 @@ import org.junit.runner.RunWith;
  * com.android.cts.networksecurityconfig.HostsideUsesCleartextTrafficTests}.
  */
 @RunWith(AndroidJUnit4.class)
-@RequiresFlagsEnabled(Flags.FLAG_DEPRECATE_USES_CLEARTEXT_TRAFFIC)
+@RequiresFlagsEnabled(Flags.FLAG_DEPRECATE_USES_CLEARTEXT_TRAFFIC2)
 public final class DeviceSideUsesCleartextTrafficTests {
 
     @Rule

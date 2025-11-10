@@ -15,8 +15,6 @@
  */
 
 package android.app.cts.wallpapers;
-
-import static android.app.Flags.alwaysRebindUserSetWallpaper;
 import static android.app.WallpaperManager.FLAG_LOCK;
 import static android.app.WallpaperManager.FLAG_SYSTEM;
 
@@ -285,19 +283,7 @@ public class WallpaperManagerTestUtils {
          * of a live wallpaper from this state
          */
         public int expectedNumberOfLiveWallpaperCreate(WallpaperChange change) {
-
-            if (change.mWallpaper.isStatic()) return 0;
-            if (alwaysRebindUserSetWallpaper()) return 1;
-            switch (change.mDestination) {
-                case FLAG_SYSTEM | FLAG_LOCK:
-                    return change.mWallpaper != mHomeWallpaper ? 1 : 0;
-                case FLAG_SYSTEM:
-                    return mSingleEngine || (change.mWallpaper != mHomeWallpaper) ? 1 : 0;
-                case FLAG_LOCK:
-                    return mSingleEngine || (change.mWallpaper != mLockWallpaper) ? 1 : 0;
-                default:
-                    throw new IllegalArgumentException();
-            }
+            return change.mWallpaper.isStatic() ? 0 : 1;
         }
 
 
@@ -306,32 +292,14 @@ public class WallpaperManagerTestUtils {
          * of a live wallpaper from this state
          */
         public int expectedNumberOfLiveWallpaperDestroy(WallpaperChange change) {
-            if (alwaysRebindUserSetWallpaper()) {
-                boolean changeSystem = (change.mDestination & FLAG_SYSTEM) != 0;
-                boolean changeLock = (change.mDestination & FLAG_LOCK) != 0;
-                if (mSingleEngine) {
-                    return mHomeWallpaper.isLive() && changeSystem && changeLock ? 1 : 0;
-                }
-                int result = 0;
-                if (changeSystem && mHomeWallpaper.isLive()) result += 1;
-                if (changeLock && mLockWallpaper.isLive()) result += 1;
-                return result;
-            }
-            if (mSingleEngine) {
-                return mHomeWallpaper.isLive()
-                        && mHomeWallpaper != change.mWallpaper
-                        && change.mDestination == (FLAG_LOCK | FLAG_SYSTEM) ? 1 : 0;
-            }
-
             boolean changeSystem = (change.mDestination & FLAG_SYSTEM) != 0;
             boolean changeLock = (change.mDestination & FLAG_LOCK) != 0;
-            boolean systemReplaced = changeSystem && change.mWallpaper != mHomeWallpaper;
-            boolean lockReplaced =
-                    changeLock && (change.mWallpaper != mLockWallpaper || changeSystem);
-
+            if (mSingleEngine) {
+                return mHomeWallpaper.isLive() && changeSystem && changeLock ? 1 : 0;
+            }
             int result = 0;
-            if (systemReplaced && mHomeWallpaper.isLive()) result += 1;
-            if (lockReplaced && mLockWallpaper.isLive()) result += 1;
+            if (changeSystem && mHomeWallpaper.isLive()) result += 1;
+            if (changeLock && mLockWallpaper.isLive()) result += 1;
             return result;
         }
 

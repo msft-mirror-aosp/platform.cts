@@ -17,6 +17,7 @@
 package com.android.cts.input;
 
 import android.util.ArrayMap;
+import android.util.Pair;
 
 import java.util.List;
 
@@ -37,5 +38,7 @@ public class HidVibratorTestData {
     public int rightFfIndex;
 
     // Hid output verification check, index and expected data.
-    public ArrayMap<Integer, Integer> verifyMap;
+    // First int in the pair is a mask defining which bits to check.
+    // Second int in the pair is the expected value after the mask is applied.
+    public ArrayMap<Integer, Pair<Integer, Integer>> verifyMap;
 }

@@ -670,7 +670,6 @@ public class DisplayCutoutTests {
         WindowUtil.waitForFocus(activity);
         final WindowManagerStateHelper wmState = new WindowManagerStateHelper();
         wmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
-        wmState.waitForDisplayUnfrozen();
         return activity;
     }
 

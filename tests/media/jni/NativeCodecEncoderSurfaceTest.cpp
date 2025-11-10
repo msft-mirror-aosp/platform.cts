@@ -60,7 +60,12 @@ class CodecEncoderSurfaceTest {
     std::string mErrorLogs;
     std::string mTestEnv;
 
-    bool setUpExtractor(const char* srcFile, const char* srcMediaType, int colorFormat);
+    static constexpr const char* kKeyColorTransferRequest = "color-transfer-request";
+    static constexpr int kColorTransferSdrVideo = 3;
+    static constexpr int kColorStandardBt2020 = 6;
+
+    bool setUpExtractor(const char* srcFile, const char* srcMediaType, int colorFormat,
+                        bool isOutputToneMapped);
     void deleteExtractor();
     bool configureCodec(bool isAsync, bool signalEOSWithLastFrame, bool usePersistentSurface);
     void resetContext(bool isAsync, bool signalEOSWithLastFrame);
@@ -73,6 +78,8 @@ class CodecEncoderSurfaceTest {
     bool enqueueDecoderEOS(size_t bufferIndex);
     bool doWork(int frameLimit);
     bool hasSeenError() { return mAsyncHandleDecoder.getError() || mAsyncHandleEncoder.getError(); }
+    bool validateToneMappedFormat(JNIEnv* env, AMediaFormat* format, const char* descriptor);
+    bool isProfileHDR(JNIEnv* env, const char* mediaType, int profile);
 
   public:
     std::string getErrorMsg() {
@@ -83,9 +90,10 @@ class CodecEncoderSurfaceTest {
     CodecEncoderSurfaceTest(const char* mediaType, const char* cfgParams, const char* separator);
     ~CodecEncoderSurfaceTest();
 
-    bool testSimpleEncode(const char* encoder, const char* decoder, const char* srcPath,
-                          const char* srcMediaType, const char* muxOutPath, int colorFormat,
-                          bool usePersistentSurface, int frameLimit);
+    bool testSimpleEncode(JNIEnv* env, const char* encoder, const char* decoder,
+                          const char* srcPath, const char* srcMediaType, const char* muxOutPath,
+                          int colorFormat, bool isOutputToneMapped, bool usePersistentSurface,
+                          int frameLimit);
 };
 
 CodecEncoderSurfaceTest::CodecEncoderSurfaceTest(const char* mediaType, const char* cfgParams,
@@ -144,7 +152,7 @@ CodecEncoderSurfaceTest::~CodecEncoderSurfaceTest() {
 }
 
 bool CodecEncoderSurfaceTest::setUpExtractor(const char* srcFile, const char* srcMediaType,
-                                             int colorFormat) {
+                                             int colorFormat, bool isOutputToneMapped) {
     FILE* fp = fopen(srcFile, "rbe");
     struct stat buf {};
     if (fp && !fstat(fileno(fp), &buf)) {
@@ -160,9 +168,13 @@ bool CodecEncoderSurfaceTest::setUpExtractor(const char* srcFile, const char* sr
                 AMediaFormat* currFormat = AMediaExtractor_getTrackFormat(mExtractor, trackID);
                 const char* mediaType = nullptr;
                 AMediaFormat_getString(currFormat, AMEDIAFORMAT_KEY_MIME, &mediaType);
-                if (mediaType && strcmp(mediaType, srcMediaType) == 0) {
+                if (mediaType && strncmp(mediaType, srcMediaType, strlen(srcMediaType)) == 0) {
                     AMediaExtractor_selectTrack(mExtractor, trackID);
                     AMediaFormat_setInt32(currFormat, AMEDIAFORMAT_KEY_COLOR_FORMAT, colorFormat);
+                    if (isOutputToneMapped) {
+                        AMediaFormat_setInt32(currFormat, kKeyColorTransferRequest,
+                                              kColorTransferSdrVideo);
+                    }
                     mDecFormat = currFormat;
                     break;
                 }
@@ -341,7 +353,7 @@ bool CodecEncoderSurfaceTest::dequeueEncoderOutput(size_t bufferIndex,
             }
             if ((info->flags & AMEDIACODEC_BUFFER_FLAG_CODEC_CONFIG) == 0) {
                 RETURN_IF_FAIL(AMediaMuxer_writeSampleData(mMuxer, mMuxTrackID, buf, info),
-                                "AMediaMuxer_writeSampleData failed")
+                               "AMediaMuxer_writeSampleData failed")
             }
         }
         if ((info->flags & AMEDIACODEC_BUFFER_FLAG_CODEC_CONFIG) == 0) {
@@ -556,22 +568,59 @@ bool CodecEncoderSurfaceTest::doWork(int frameLimit) {
     return !hasSeenError();
 }
 
-bool CodecEncoderSurfaceTest::testSimpleEncode(const char* encoder, const char* decoder,
-                                               const char* srcPath, const char *srcMediaType,
-                                               const char* muxOutPath, int colorFormat,
+bool CodecEncoderSurfaceTest::validateToneMappedFormat(JNIEnv* env, AMediaFormat* format,
+                                                       const char* descriptor) {
+    const char* formatStr = AMediaFormat_toString(format);
+    int transferRequest = 0;
+    AMediaFormat_getInt32(format, AMEDIAFORMAT_KEY_COLOR_TRANSFER, &transferRequest);
+    RETURN_IF_TRUE((transferRequest != kColorTransferSdrVideo),
+                   StringFormat("unexpected color standard in %s after tone mapping \n. Format: "
+                                "%s\n", descriptor, formatStr))
+    int colorStandard = 0;
+    AMediaFormat_getInt32(format, AMEDIAFORMAT_KEY_COLOR_STANDARD, &colorStandard);
+    RETURN_IF_TRUE((colorStandard == kColorStandardBt2020),
+                   StringFormat("unexpected color standard in %s after tone mapping \n. Format: "
+                                "%s\n", descriptor, formatStr))
+    int profile = -1;
+    AMediaFormat_getInt32(format, AMEDIAFORMAT_KEY_PROFILE, &profile);
+    RETURN_IF_TRUE(isProfileHDR(env, mMediaType, profile),
+                   StringFormat("unexpected profile in %s after tone mapping \n. Format: %s\n",
+                                descriptor, formatStr))
+    return true;
+}
+
+bool CodecEncoderSurfaceTest::isProfileHDR(JNIEnv* env, const char* mediaType, int profile) {
+    NOT_NULL_OR_RET_VAL(env, false)
+    jclass clazz = env->FindClass("android/mediav2/common/cts/CodecTestBase");
+    NO_EXCEPTION_OR_RET_VAL(env, false)
+    NOT_NULL_OR_RET_VAL(clazz, false)
+    jmethodID staticMethodID =
+            env->GetStaticMethodID(clazz, "isProfileHDR", "(Ljava/lang/String;I)Z");
+    NO_EXCEPTION_OR_RET_VAL(env, false)
+    NOT_NULL_OR_RET_VAL(staticMethodID, false)
+    jstring jMediaType = env->NewStringUTF(mediaType);
+    jboolean result = env->CallStaticBooleanMethod(clazz, staticMethodID, jMediaType, profile);
+    NO_EXCEPTION_OR_RET_VAL(env, false)
+    env->DeleteLocalRef(jMediaType);
+    env->DeleteLocalRef(clazz);
+    return result;
+}
+
+bool CodecEncoderSurfaceTest::testSimpleEncode(JNIEnv* env, const char* encoder,
+                                               const char* decoder, const char* srcPath,
+                                               const char* srcMediaType, const char* muxOutPath,
+                                               int colorFormat, bool isOutputToneMapped,
                                                bool usePersistentSurface, int frameLimit) {
-    RETURN_IF_FALSE(setUpExtractor(srcPath, srcMediaType, colorFormat),
-                    std::string{"setUpExtractor failed"})
     bool muxOutput = muxOutPath != nullptr;
 
-    /* TODO(b/149027258) */
-    if (true) mSaveToMem = false;
-    else mSaveToMem = true;
+    mSaveToMem = true;
     auto ref = mRefBuff;
     auto test = mTestBuff;
     int loopCounter = 0;
     const bool boolStates[]{true, false};
     for (bool isAsync : boolStates) {
+        RETURN_IF_FALSE(setUpExtractor(srcPath, srcMediaType, colorFormat, isOutputToneMapped),
+                        std::string{"setUpExtractor for input file failed"})
         AMediaExtractor_seekTo(mExtractor, 0, AMEDIAEXTRACTOR_SEEK_CLOSEST_SYNC);
         mOutputBuff = loopCounter == 0 ? ref : test;
         mOutputBuff->reset();
@@ -596,6 +645,16 @@ bool CodecEncoderSurfaceTest::testSimpleEncode(const char* encoder, const char* 
             }
         }
         if (!configureCodec(isAsync, false, usePersistentSurface)) return false;
+        if (isOutputToneMapped) {
+            AMediaFormat* inpFormat = AMediaCodec_getInputFormat(mDecoder);
+            int transferRequest = 0;
+            AMediaFormat_getInt32(inpFormat, kKeyColorTransferRequest, &transferRequest);
+            AMediaFormat_delete(inpFormat);
+            if (0 == transferRequest) {
+                ALOGI("%s does not support hdr to sdr tone mapping", decoder);
+                return true;
+            }
+        }
         RETURN_IF_FAIL(AMediaCodec_start(mEncoder), "Encoder AMediaCodec_start failed")
         RETURN_IF_FAIL(AMediaCodec_start(mDecoder), "Decoder AMediaCodec_start failed")
         if (!doWork(frameLimit)) return false;
@@ -609,6 +668,22 @@ bool CodecEncoderSurfaceTest::testSimpleEncode(const char* encoder, const char* 
                 mMuxer = nullptr;
             }
             if (ofp) fclose(ofp);
+        }
+        if (isOutputToneMapped) {
+            AMediaFormat* outFormat = AMediaCodec_getOutputFormat(mEncoder);
+            bool res = validateToneMappedFormat(env, outFormat, "encoder output format");
+            AMediaFormat_delete(outFormat);
+            RETURN_IF_TRUE((!res), std::string{})
+            outFormat = AMediaCodec_getOutputFormat(mDecoder);
+            res = validateToneMappedFormat(env, outFormat, "decoder output format");
+            AMediaFormat_delete(outFormat);
+            RETURN_IF_TRUE((!res), std::string{})
+            if (muxOutPath != nullptr) {
+                RETURN_IF_FALSE(setUpExtractor(muxOutPath, "video/", -1, false),
+                                std::string{"setUpExtractor for muxed file failed"})
+                res = validateToneMappedFormat(env, mDecFormat, "extractor format");
+                RETURN_IF_TRUE((!res), std::string{})
+            }
         }
         RETURN_IF_FAIL(AMediaCodec_stop(mDecoder), "AMediaCodec_stop failed for Decoder")
         RETURN_IF_FAIL(AMediaCodec_stop(mEncoder), "AMediaCodec_stop failed for Encoder")
@@ -635,11 +710,9 @@ bool CodecEncoderSurfaceTest::testSimpleEncode(const char* encoder, const char* 
         RETURN_IF_TRUE(!mOutputBuff->isOutPtsListIdenticalToInpPtsList(mMaxBFrames != 0),
                        std::string{"Input pts list and Output pts list are not identical \n"}
                                .append(ref->getErrorMsg()))
-        // TODO:(b/149027258) Remove false once output is validated across runs
-        if (false) {
-            RETURN_IF_TRUE((loopCounter != 0 && !ref->equals(test)),
-                           std::string{"Encoder output is not consistent across runs \n"}.append(
-                                   test->getErrorMsg()))
+        if (loopCounter != 0 && !ref->equals(test)) {
+            ALOGE("Encoder output is not consistent across runs\n%s\n%s",
+                  test->getErrorMsg().c_str(), getErrorMsg().c_str());
         }
         loopCounter++;
         ANativeWindow_release(mWindow);
@@ -655,9 +728,9 @@ bool CodecEncoderSurfaceTest::testSimpleEncode(const char* encoder, const char* 
 static jboolean nativeTestSimpleEncode(JNIEnv* env, jobject, jstring jEncoder, jstring jDecoder,
                                        jstring jMediaType, jstring jtestFile,
                                        jstring jTestFileMediaType, jstring jmuxFile,
-                                       jint jColorFormat, jboolean jUsePersistentSurface,
-                                       jstring jCfgParams, jstring jSeparator, jobject jRetMsg,
-                                       jint jFrameLimit) {
+                                       jint jColorFormat, jboolean jIsOutputToneMapped,
+                                       jboolean jUsePersistentSurface, jstring jCfgParams,
+                                       jstring jSeparator, jobject jRetMsg, jint jFrameLimit) {
     const char* cEncoder = env->GetStringUTFChars(jEncoder, nullptr);
     const char* cDecoder = env->GetStringUTFChars(jDecoder, nullptr);
     const char* cMediaType = env->GetStringUTFChars(jMediaType, nullptr);
@@ -667,10 +740,10 @@ static jboolean nativeTestSimpleEncode(JNIEnv* env, jobject, jstring jEncoder, j
     const char* cCfgParams = env->GetStringUTFChars(jCfgParams, nullptr);
     const char* cSeparator = env->GetStringUTFChars(jSeparator, nullptr);
     auto codecEncoderSurfaceTest = new CodecEncoderSurfaceTest(cMediaType, cCfgParams, cSeparator);
-    bool isPass = codecEncoderSurfaceTest->testSimpleEncode(cEncoder, cDecoder, cTestFile,
+    bool isPass = codecEncoderSurfaceTest->testSimpleEncode(env, cEncoder, cDecoder, cTestFile,
                                                             cTestFileMediaType, cMuxFile,
-                                                            jColorFormat, jUsePersistentSurface,
-                                                            jFrameLimit);
+                                                            jColorFormat, jIsOutputToneMapped,
+                                                            jUsePersistentSurface, jFrameLimit);
     std::string msg = isPass ? std::string{} : codecEncoderSurfaceTest->getErrorMsg();
     delete codecEncoderSurfaceTest;
     jclass clazz = env->GetObjectClass(jRetMsg);
@@ -693,7 +766,7 @@ int registerAndroidMediaV2CtsEncoderSurfaceTest(JNIEnv* env) {
     const JNINativeMethod methodTable[] = {
             {"nativeTestSimpleEncode",
              "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/"
-             "String;Ljava/lang/String;IZLjava/lang/String;Ljava/lang/String;Ljava/lang/"
+             "String;Ljava/lang/String;IZZLjava/lang/String;Ljava/lang/String;Ljava/lang/"
              "StringBuilder;I)Z",
              (void*)nativeTestSimpleEncode},
     };

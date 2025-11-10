@@ -84,6 +84,7 @@ android_test {
         ":CtsCantSaveState2",
         ":StorageDelegator",
         ":CtsActivityManagerApi29",
+        ":CtsAppTestClearSelf",
         ":WallpaperTest",
         ":CtsAppTestProviderApp",
     ],

@@ -24,7 +24,10 @@ android_test {
     defaults: ["cts_defaults"],
     sdk_version: "test_current",
 
-    srcs: ["src/**/*.java"],
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.aidl",
+    ],
 
     static_libs: [
         "androidx.test.ext.junit",

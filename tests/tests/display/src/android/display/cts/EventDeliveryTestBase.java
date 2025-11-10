@@ -28,7 +28,6 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Messenger;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -43,7 +42,6 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public abstract class EventDeliveryTestBase {
     protected static final int MESSAGE_LAUNCHED = 1;
     protected static final int MESSAGE_CALLBACK = 2;
@@ -115,8 +113,7 @@ public abstract class EventDeliveryTestBase {
         putExtra(intent);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         SystemUtil.runWithShellPermissionIdentity(
-                () -> TestApis.activities().startActivity(intent),
-                android.Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+                () -> TestApis.activities().startActivity(intent));
         waitLatch(mLatchActivityLaunch, "Failed to launch test activity");
 
         try {
@@ -138,8 +135,7 @@ public abstract class EventDeliveryTestBase {
         intent.setClassName(getTestPackage(), getTestActivity());
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         SystemUtil.runWithShellPermissionIdentity(
-                () -> TestApis.activities().startActivity(intent),
-                android.Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+                () -> TestApis.activities().startActivity(intent));
     }
 
     /** Bring the test activity into cached mode by launching another 2 apps */
@@ -157,8 +153,7 @@ public abstract class EventDeliveryTestBase {
                 () -> {
                     mInstrumentation.startActivitySync(intent);
                     mInstrumentation.startActivitySync(intent2);
-                },
-                android.Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+                });
         waitLatch(mLatchActivityCached, "Failed to make test activity cached");
     }
 

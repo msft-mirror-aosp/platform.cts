@@ -378,6 +378,15 @@ public class BluetoothAdapterTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_OVER_HDT_PHY_API)
+    public void isLeHighDataThroughputPhySupported() throws Exception {
+        assumeTrue(mHasBluetooth);
+
+        assertThat(mAdapter.isLeHighDataThroughputPhySupported())
+                .isNotEqualTo(BluetoothStatusCodes.ERROR_UNKNOWN);
+    }
+
+    @Test
     public void getMaxConnectedAudioDevices() {
         assumeTrue(mHasBluetooth);
         assertThrows(SecurityException.class, () -> mAdapter.getMaxConnectedAudioDevices());

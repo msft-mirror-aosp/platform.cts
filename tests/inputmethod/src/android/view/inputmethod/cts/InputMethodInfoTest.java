@@ -39,7 +39,6 @@ import android.content.pm.ServiceInfo;
 import android.icu.util.ULocale;
 import android.os.Bundle;
 import android.os.Parcel;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Printer;
 import android.view.inputmethod.InputMethod;
 import android.view.inputmethod.InputMethodInfo;
@@ -62,7 +61,6 @@ import java.io.IOException;
 import java.util.List;
 
 @SmallTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class InputMethodInfoTest {
     private static final String MOCK_IME_PACKAGE = "com.android.cts.mockime";
     private static final String MOCK_IME_ID = "com.android.cts.mockime/.MockIme";
