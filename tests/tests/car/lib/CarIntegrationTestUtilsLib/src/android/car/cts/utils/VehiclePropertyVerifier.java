@@ -70,7 +70,6 @@ import android.util.SparseArray;
 import android.util.SparseIntArray;
 
 import androidx.annotation.Nullable;
-import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
@@ -324,8 +323,7 @@ public class VehiclePropertyVerifier<T> {
     private static SparseArray<CarPropertyConfig<?>> sCachedCarPropertyConfigs =
             new SparseArray<>();
 
-    private final Context mContext =
-            InstrumentationRegistry.getInstrumentation().getTargetContext();
+    private static final Context sContext = TestApis.context().instrumentedContext();
     private final CarPropertyManager mCarPropertyManager;
     private final int mPropertyId;
     private final String mPropertyName;
@@ -871,7 +869,7 @@ public class VehiclePropertyVerifier<T> {
         for (ImmutableSet<String> writePermissionSet : writePermissions) {
             boolean result = true;
             for (String permission : writePermissionSet) {
-                if (mContext.checkSelfPermission(permission) != PERMISSION_GRANTED) {
+                if (sContext.checkSelfPermission(permission) != PERMISSION_GRANTED) {
                     result = false;
                     break;
                 }
@@ -1011,7 +1009,7 @@ public class VehiclePropertyVerifier<T> {
 
     private boolean hasReadPermissions(ImmutableSet<String> allReadPermissions) {
         for (String permission : allReadPermissions) {
-            if (mContext.checkSelfPermission(permission) == PERMISSION_GRANTED) {
+            if (sContext.checkSelfPermission(permission) == PERMISSION_GRANTED) {
                 return true;
             }
         }
@@ -2185,7 +2183,7 @@ public class VehiclePropertyVerifier<T> {
                         carPropertyValue.getAreaId(),
                         CAR_PROPERTY_VALUE_SOURCE_CALLBACK);
                 if (isAtLeastC() && Flags.carPropertyStatusDetailedNotAvailable()) {
-                    if (mContext.checkSelfPermission(Car.PERMISSION_READ_PROPERTY_VENDOR_STATUS)
+                    if (sContext.checkSelfPermission(Car.PERMISSION_READ_PROPERTY_VENDOR_STATUS)
                             != PERMISSION_GRANTED) {
                         assertThrows(
                                 SecurityException.class,
@@ -2675,6 +2673,13 @@ public class VehiclePropertyVerifier<T> {
         }
         assertThat(((PropertyNotAvailableException) e).getDetailedErrorCode())
                 .isIn(PROPERTY_NOT_AVAILABLE_ERROR_CODES);
+        if (isAtLeastC()
+                && Flags.carPropertyVendorErrorCodePermission()
+                && sContext.checkSelfPermission(Car.PERMISSION_READ_PROPERTY_VENDOR_ERROR_CODE)
+                        != PERMISSION_GRANTED) {
+            assertThrows(SecurityException.class, () -> e.getVendorErrorCode());
+            return;
+        }
         int vendorErrorCode = e.getVendorErrorCode();
         assertThat(vendorErrorCode).isAtLeast(VENDOR_ERROR_CODE_MINIMUM_VALUE);
         assertThat(vendorErrorCode).isAtMost(VENDOR_ERROR_CODE_MAXIMUM_VALUE);
@@ -2682,6 +2687,13 @@ public class VehiclePropertyVerifier<T> {
 
     private static void verifyInternalErrorException(CarInternalErrorException e) {
         if (!isAtLeastU()) {
+            return;
+        }
+        if (isAtLeastC()
+                && Flags.carPropertyVendorErrorCodePermission()
+                && sContext.checkSelfPermission(Car.PERMISSION_READ_PROPERTY_VENDOR_ERROR_CODE)
+                        != PERMISSION_GRANTED) {
+            assertThrows(SecurityException.class, () -> e.getVendorErrorCode());
             return;
         }
         int vendorErrorCode = e.getVendorErrorCode();
@@ -4100,9 +4112,17 @@ public class VehiclePropertyVerifier<T> {
                     .isEqualTo(requestIdToAreaIdMap.get(requestId));
             assertThat(propertyAsyncError.getErrorCode()).isIn(ASYNC_GENERAL_ERROR_CODES);
 
-            int vendorErrorCode = propertyAsyncError.getVendorErrorCode();
-            assertThat(vendorErrorCode).isAtLeast(VENDOR_ERROR_CODE_MINIMUM_VALUE);
-            assertThat(vendorErrorCode).isAtMost(VENDOR_ERROR_CODE_MAXIMUM_VALUE);
+            if (isAtLeastC()
+                    && Flags.carPropertyVendorErrorCodePermission()
+                    && sContext.checkSelfPermission(Car.PERMISSION_READ_PROPERTY_VENDOR_ERROR_CODE)
+                            != PERMISSION_GRANTED) {
+                assertThrows(
+                        SecurityException.class, () -> propertyAsyncError.getVendorErrorCode());
+            } else {
+                int vendorErrorCode = propertyAsyncError.getVendorErrorCode();
+                assertThat(vendorErrorCode).isAtLeast(VENDOR_ERROR_CODE_MINIMUM_VALUE);
+                assertThat(vendorErrorCode).isAtMost(VENDOR_ERROR_CODE_MAXIMUM_VALUE);
+            }
 
             if (isAtLeastV()) {
                 assertThat(propertyAsyncError.getDetailedErrorCode())
@@ -4234,9 +4254,19 @@ public class VehiclePropertyVerifier<T> {
                         .isEqualTo(requestIdToAreaIdMap.get(requestId));
                 assertThat(propertyAsyncError.getErrorCode()).isIn(ASYNC_GENERAL_ERROR_CODES);
 
-                int vendorErrorCode = propertyAsyncError.getVendorErrorCode();
-                assertThat(vendorErrorCode).isAtLeast(VENDOR_ERROR_CODE_MINIMUM_VALUE);
-                assertThat(vendorErrorCode).isAtMost(VENDOR_ERROR_CODE_MAXIMUM_VALUE);
+                if (isAtLeastC()
+                        && Flags.carPropertyVendorErrorCodePermission()
+                        && sContext.checkSelfPermission(
+                                        Car.PERMISSION_READ_PROPERTY_VENDOR_ERROR_CODE)
+                                != PERMISSION_GRANTED) {
+                    assertThrows(
+                            SecurityException.class, () -> propertyAsyncError.getVendorErrorCode());
+                    continue;
+                } else {
+                    int vendorErrorCode = propertyAsyncError.getVendorErrorCode();
+                    assertThat(vendorErrorCode).isAtLeast(VENDOR_ERROR_CODE_MINIMUM_VALUE);
+                    assertThat(vendorErrorCode).isAtMost(VENDOR_ERROR_CODE_MAXIMUM_VALUE);
+                }
 
                 if (isAtLeastV()) {
                     assertThat(propertyAsyncError.getDetailedErrorCode())
