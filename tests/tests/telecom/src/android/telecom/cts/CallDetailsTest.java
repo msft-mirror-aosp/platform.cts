@@ -1256,6 +1256,36 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
         assertEquals(CallLog.Calls.FEATURES_VOLTE, features & CallLog.Calls.FEATURES_VOLTE);
     }
 
+    /** Tests whether the CallLogManager logs the features of a VoNR call correctly. */
+    public void testFeaturesVoNr() throws Exception {
+        if (!mShouldTestTelecom || !Flags.hdPlusCall()) {
+            return;
+        }
+
+        // Register content observer on call log and get latch
+        CountDownLatch callLogEntryLatch = getCallLogEntryLatch();
+
+        Bundle testBundle = new Bundle();
+        testBundle.putInt(TelecomManager.EXTRA_CALL_NETWORK_TYPE, TelephonyManager.NETWORK_TYPE_NR);
+        mConnection.putExtras(testBundle);
+
+        // Wait for the 2nd invocation; setExtras is called in the setup method.
+        mOnExtrasChangedCounter.waitForCount(2, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+
+        mCall.disconnect();
+
+        // Wait on the call log latch.
+        callLogEntryLatch.await(ASYNC_TIMEOUT, TimeUnit.MILLISECONDS);
+
+        // Verify the contents of the call log
+        Cursor callsCursor =
+                mContext.getContentResolver()
+                        .query(CallLog.Calls.CONTENT_URI, null, null, null, "_id DESC");
+        callsCursor.moveToFirst();
+        int features = callsCursor.getInt(callsCursor.getColumnIndex("features"));
+        assertEquals(CallLog.Calls.FEATURES_VONR, features & CallLog.Calls.FEATURES_VONR);
+    }
+
     /**
      * Tests whether the CallLogManager logs the features of a HD+ call correctly.
      *
