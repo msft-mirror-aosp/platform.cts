@@ -1651,6 +1651,21 @@ public class WindowManagerState {
             return null;
         }
 
+        /** Gets the parent Task if exist. */
+        public Task getParentTask() {
+            if (isRootTask()) {
+                return null;
+            }
+            if (mParent instanceof Task) {
+                return (Task) mParent;
+            }
+            return null;
+        }
+
+        public boolean isCreatedByOrganizer() {
+            return mCreatedByOrganizer;
+        }
+
         public int getResizeMode() {
             return mResizeMode;
         }
