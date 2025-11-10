@@ -28,8 +28,8 @@ import android.widget.FrameLayout;
 import javax.annotation.Nullable;
 
 /* This activity is added to simulate switching window focus by
-* launching a second app on top of the first activity
-*/
+ * launching a second app on top of the first activity
+ */
 public class WallpaperOverlayTestActivity extends Activity {
     Context mContext;
     WallpaperManager mWallpaperManager;
@@ -41,9 +41,10 @@ public class WallpaperOverlayTestActivity extends Activity {
         mWallpaperManager = WallpaperManager.getInstance(mContext);
         FrameLayout frameLayout = new FrameLayout(this);
         frameLayout.setBackgroundColor(Color.TRANSPARENT);
-        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT);
+        FrameLayout.LayoutParams layoutParams =
+                new FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.MATCH_PARENT,
+                        FrameLayout.LayoutParams.MATCH_PARENT);
 
         setContentView(frameLayout, layoutParams);
     }

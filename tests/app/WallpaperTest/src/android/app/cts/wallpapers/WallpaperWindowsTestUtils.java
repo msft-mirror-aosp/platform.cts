@@ -27,8 +27,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Utility class to check the status of the wallpaper windows.
- * Includes tool to handle the keyguard state to check both home and lock screen wallpapers.
+ * Utility class to check the status of the wallpaper windows. Includes tool to handle the keyguard
+ * state to check both home and lock screen wallpapers.
  */
 public class WallpaperWindowsTestUtils {
     private static Context sContext;
@@ -59,19 +59,18 @@ public class WallpaperWindowsTestUtils {
         }
 
         /**
-         * Wait until the visibility of the window is the one expected,
-         * and return false if it does not happen within N iterations
+         * Wait until the visibility of the window is the one expected, and return false if it does
+         * not happen within N iterations
          */
-        public boolean waitForMatchingWindowVisibility(String name,
-                boolean expectedVisibility) {
+        public boolean waitForMatchingWindowVisibility(String name, boolean expectedVisibility) {
             return mWmState.waitFor(
                     (wmState) -> checkMatchingWindowVisibility(name, expectedVisibility),
                     "Visibility of " + name + " is not " + expectedVisibility);
         }
 
         /**
-         * Wait until the packages of the wallpapers match exactly the expected ones,
-         * and return false if it does not happen within N iterations
+         * Wait until the packages of the wallpapers match exactly the expected ones, and return
+         * false if it does not happen within N iterations
          */
         public boolean waitForMatchingPackages(List<String> expected) {
             return mWmState.waitFor(
@@ -81,8 +80,11 @@ public class WallpaperWindowsTestUtils {
 
         private boolean checkMatchingWindowVisibility(String name, boolean expectedVisibility) {
             updateWindows();
-            return mWallpaperWindows.stream().anyMatch(
-                    w -> w.getName().equals(name) && w.isSurfaceShown() == expectedVisibility);
+            return mWallpaperWindows.stream()
+                    .anyMatch(
+                            w ->
+                                    w.getName().equals(name)
+                                            && w.isSurfaceShown() == expectedVisibility);
         }
 
         private boolean checkMatchingPackages(List<String> expected) {
@@ -101,9 +103,10 @@ public class WallpaperWindowsTestUtils {
         private void updateWindows() {
             mWmState.waitForAppTransitionIdleOnDisplay(sContext.getDisplayId());
             mWmState.computeState();
-            mWallpaperWindows = mWmState.getMatchingWindowType(TYPE_WALLPAPER).stream()
-                    .filter(w->w.getDisplayId() == sContext.getDisplayId())
-                    .collect(Collectors.toList());
+            mWallpaperWindows =
+                    mWmState.getMatchingWindowType(TYPE_WALLPAPER).stream()
+                            .filter(w -> w.getDisplayId() == sContext.getDisplayId())
+                            .collect(Collectors.toList());
             mPackageNames = new ArrayList<>();
             mWallpaperWindows.forEach(w -> mPackageNames.add(w.getPackageName()));
         }
