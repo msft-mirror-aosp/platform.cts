@@ -218,11 +218,15 @@ public class GnssAssistanceTest {
 
         // Assert Snapshot
         TecMapSnapshot snapshot = ionexAssistance.getTecMapSnapshot();
+        float[] tecMap = snapshot.getTecMap();
+        float[] rmsMap = snapshot.getRmsMap();
         TecMapSnapshot newSnapshot = newIonexAssistance.getTecMapSnapshot();
+        float[] newTecMap = newIonexAssistance.getTecMapSnapshot().getTecMap();
+        float[] newRmsMap = newIonexAssistance.getTecMapSnapshot().getRmsMap();
         assertEquals(snapshot.getEpochTimeSeconds(), newSnapshot.getEpochTimeSeconds());
-        for (int i = 0; i < snapshot.getTecMap().size(); i++) {
-            assertEqualsWithDelta(snapshot.getTecMap().get(i), newSnapshot.getTecMap().get(i));
-            assertEqualsWithDelta(snapshot.getRmsMap().get(i), newSnapshot.getRmsMap().get(i));
+        for (int i = 0; i < tecMap.length; i++) {
+            assertEqualsWithDelta(tecMap[i], newTecMap[i]);
+            assertEqualsWithDelta(rmsMap[i], newRmsMap[i]);
         }
     }
 
@@ -238,11 +242,11 @@ public class GnssAssistanceTest {
                         .build();
 
         final int mapSize = latitudeAxis.getNumPoints() * longitudeAxis.getNumPoints();
-        final List<Float> tecMapData = new ArrayList<>(mapSize);
-        final List<Float> rmsMapData = new ArrayList<>(mapSize);
+        final float[] tecMapData = new float[mapSize];
+        final float[] rmsMapData = new float[mapSize];
         for (int i = 0; i < mapSize; i++) {
-            tecMapData.add(i * 0.1f);
-            rmsMapData.add(i * 0.01f);
+            tecMapData[i] = i * 0.1f;
+            rmsMapData[i] = i * 0.01f;
         }
 
         final TecMapSnapshot snapshot =
