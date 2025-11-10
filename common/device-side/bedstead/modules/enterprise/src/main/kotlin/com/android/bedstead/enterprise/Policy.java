@@ -103,7 +103,6 @@ import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.EnsureTestAppDoesNotHavePermission;
 import com.android.bedstead.harrier.annotations.EnsureTestAppHasAppOp;
 import com.android.bedstead.harrier.annotations.EnsureTestAppHasPermission;
-import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
 import com.android.bedstead.harrier.annotations.FailureMode;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeNone;
@@ -271,13 +270,6 @@ public final class Policy {
             AppOp[] appOps, String[] delegatedScopes) {
         return new AutoAnnotation_Policy_enterprisePolicy(
                 dpc, permissions, appOps, delegatedScopes);
-    }
-
-    @AutoAnnotation
-    private static EnsureTestAppInstalled ensureTestAppInstalled(
-            String key, Query query, UserType onUser) {
-        return new AutoAnnotation_Policy_ensureTestAppInstalled(
-                key, query, onUser);
     }
 
     @AutoAnnotation
