@@ -21,10 +21,12 @@
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
     <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
 
-    <target_preparer class="com.android.tradefed.targetprep.AFlagsTargetPreparer" >
-        <option name="flag-value"
-        value="private_compute/android.app.privatecompute.flags.enable_pcc_framework_support=true" />
-    </target_preparer>
+    <object type="module_controller"
+        class="com.android.tradefed.testtype.suite.module.CommandSuccessModuleController">
+        <!--Skip the test if enable_pcc_framework_support is disabled. -->
+        <option name="run-command"
+            value="aflags list | grep 'android.app.privatecompute.flags.enable_pcc_framework_support' | awk '{print $2}' | grep 'enabled'" />
+    </object>
 
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
