@@ -25,12 +25,14 @@ import static org.junit.Assert.assertTrue;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.UserManager;
+import android.telephony.TelephonyManager;
 
 import org.junit.Before;
 
 public class DisallowCellular2GTest extends BaseAdvancedProtectionFeatureTest {
     private UserManager mUserManager;
     private PackageManager mPackageManager;
+    private TelephonyManager mTelephonyManager;
 
     @Override
     @Before
@@ -39,6 +41,7 @@ public class DisallowCellular2GTest extends BaseAdvancedProtectionFeatureTest {
 
         mUserManager = mInstrumentation.getContext().getSystemService(UserManager.class);
         mPackageManager = mInstrumentation.getContext().getPackageManager();
+        mTelephonyManager = mInstrumentation.getContext().getSystemService(TelephonyManager.class);
 
         mInstrumentation
                 .getUiAutomation()
@@ -60,7 +63,9 @@ public class DisallowCellular2GTest extends BaseAdvancedProtectionFeatureTest {
 
     @Override
     protected boolean isSupportedOnDevice() {
-        return mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY);
+        return mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)
+                && mTelephonyManager.isRadioInterfaceCapabilitySupported(
+                        TelephonyManager.CAPABILITY_USES_ALLOWED_NETWORK_TYPES_BITMASK);
     }
 
     @Override
