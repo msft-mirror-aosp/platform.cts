@@ -100,6 +100,7 @@ public final class InlineSuggestionsRequestTest {
         p.recycle();
 
         assertThat(targetRequest).isEqualTo(request);
+        assertThat(targetRequest.hashCode()).isEqualTo(request.hashCode());
     }
 
     @Test
@@ -140,5 +141,6 @@ public final class InlineSuggestionsRequestTest {
         p.recycle();
 
         assertThat(targetRequest).isEqualTo(request);
+        assertThat(targetRequest.hashCode()).isEqualTo(request.hashCode());
     }
 }

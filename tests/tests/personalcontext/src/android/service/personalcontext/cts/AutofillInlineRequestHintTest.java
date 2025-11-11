@@ -101,8 +101,7 @@ public class AutofillInlineRequestHintTest {
                 .isEqualTo(inlineSuggestionsRequest);
 
         assertThat(outputAutofillHint).isEqualTo(hint);
-        // TODO(b/459608398): enable testing hashCode once issue is fixed
-        // assertThat(outputAutofillHint.hashCode()).isEqualTo(hint.hashCode());
+        assertThat(outputAutofillHint.hashCode()).isEqualTo(hint.hashCode());
     }
 
     /** Bundles then unbundles the given {@link ContextHint}. */
