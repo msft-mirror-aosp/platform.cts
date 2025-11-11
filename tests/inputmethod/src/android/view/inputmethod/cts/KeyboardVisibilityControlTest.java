@@ -2452,6 +2452,8 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                         return layout;
                     }, TestActivity2.class);
 
+            CtsWindowInfoUtils.waitForWindowOnTop(testActivity2.getWindow());
+
             notExpectEvent(stream, eventMatcher("onStartInputView"),
                     NOT_EXPECT_TIMEOUT);
             expectImeInvisible(TIMEOUT);
