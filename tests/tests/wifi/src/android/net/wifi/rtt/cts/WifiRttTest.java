@@ -1871,4 +1871,40 @@ public class WifiRttTest extends TestBase {
         ShellIdentityUtils.invokeWithShellPermissions(
                 () -> mWifiRttManager.stopContinuousRanging(null));
     }
+
+    /** Test RangingResult for proximity Ranging */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_PROXIMITY_RANGING)
+    @ApiTest(
+            apis = {
+                "android.net.wifi.rtt.RangingResult.Builder#setUsdPeerId",
+                "android.net.wifi.rtt.RangingResult.Builder#setNominalTimeMillis",
+                "android.net.wifi.rtt.RangingResult"
+                        + ".Builder#setAvailabilityWindowDurationMillis",
+                "android.net.wifi.rtt.RangingResult"
+                        + ".Builder#setNumNtbRepetitionsPerMeasurement",
+                "android.net.wifi.rtt.RangingResult.Builder#setDelayedLmrEnabled",
+                "android.net.wifi.rtt.RangingResult#getUsdPeerId",
+                "android.net.wifi.rtt.RangingResult#getNominalTimeMillis",
+                "android.net.wifi.rtt.RangingResult#getAvailabilityWindowDurationMillis",
+                "android.net.wifi.rtt.RangingResult#getNumNtbRepetitionsPerMeasurement",
+                "android.net.wifi.rtt.RangingResult#isLmrDelayed"
+            })
+    public void testProximityRangingResultBuilder() {
+        RangingResult rangingResult =
+                new RangingResult.Builder()
+                        .setStatus(RangingResult.STATUS_SUCCESS)
+                        .setUsdPeerId(1)
+                        .setNominalTimeMillis(250)
+                        .setAvailabilityWindowDurationMillis(32)
+                        .setNumNtbRepetitionsPerMeasurement(4)
+                        .setLmrDelayed(true)
+                        .build();
+
+        assertEquals(1, rangingResult.getUsdPeerId());
+        assertEquals(250, rangingResult.getNominalTimeMillis());
+        assertEquals(32, rangingResult.getAvailabilityWindowDurationMillis());
+        assertEquals(4, rangingResult.getNumNtbRepetitionsPerMeasurement());
+        assertTrue(rangingResult.isLmrDelayed());
+    }
 }
