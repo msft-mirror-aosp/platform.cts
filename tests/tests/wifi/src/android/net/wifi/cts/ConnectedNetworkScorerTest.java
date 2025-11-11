@@ -711,8 +711,7 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
             if (sFeatureFlags.feedMoreDataToExternalScorer()) {
                 // Unblock all BSSIDs
                 scoreUpdateObserver.unblockAllBssids();
-                scoreUpdateObserver.setPreEvaluationEnabled(connectedNetworkScorer.startSessionId,
-                        true);
+                scoreUpdateObserver.setPreEvaluationEnabled(true);
             }
             // Now disconnect from the network.
             sWifiManager.disconnect();
