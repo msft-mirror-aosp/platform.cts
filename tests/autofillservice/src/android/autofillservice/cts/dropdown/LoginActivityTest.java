@@ -3030,7 +3030,6 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
     public void testSwitchInputMethod_noNewFillRequest() throws Exception {
         // TODO(b/187664861): Find better solution for small display device.
         mUiBot.assumeMinimumResolution(500);
-	mUiBot.setScreenResolution();
         // Set service
         enableService();
 
@@ -3061,6 +3060,5 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
 
         // No new fill request
         sReplier.assertNoUnhandledFillRequests();
-        mUiBot.resetScreenResolution();
     }
 }
