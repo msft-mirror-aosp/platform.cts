@@ -16,6 +16,7 @@
 
 package android.app.appsearch;
 
+
 /**
  * Provides a connection to all enterprise (work profile) AppSearch databases the querying
  * application has been granted access to.

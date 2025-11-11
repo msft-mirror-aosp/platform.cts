@@ -227,6 +227,13 @@ public interface Features {
     String SCHEMA_GET_INDEXABLE_NESTED_PROPERTIES = "SCHEMA_GET_INDEXABLE_NESTED_PROPERTIES";
 
     /**
+     * Feature for {@link #isFeatureSupported(String)}. This features covers whether setting {@link
+     * AppSearchSchema.StringPropertyConfig#JOINABLE_VALUE_TYPE_QUALIFIED_ID} is supported for a
+     * property with cardinality {@link AppSearchSchema.PropertyConfig#CARDINALITY_REPEATED}.
+     */
+    String SCHEMA_JOINABLE_REPEATED_PROPERTIES = "SCHEMA_JOINABLE_REPEATED_PROPERTIES";
+
+    /**
      * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
      * AppSearchSchema.LongPropertyConfig.Builder#setScoringEnabled(boolean)}, {@link
      * AppSearchSchema.DoublePropertyConfig.Builder#setScoringEnabled(boolean)}, {@link
@@ -310,8 +317,6 @@ public interface Features {
      * AppSearchSchema.StringPropertyConfig#DELETE_PROPAGATION_TYPE_PROPAGATE_FROM} and {@link
      * AppSearchSchema.StringPropertyConfig.Builder#setDeletePropagationType}.
      */
-    // TODO(b/384947619) unhide the API once it is ready.
-
     String SCHEMA_STRING_PROPERTY_CONFIG_DELETE_PROPAGATION_TYPE_PROPAGATE_FROM =
             "SCHEMA_STRING_PROPERTY_CONFIG_DELETE_PROPAGATION_TYPE_PROPAGATE_FROM";
 
