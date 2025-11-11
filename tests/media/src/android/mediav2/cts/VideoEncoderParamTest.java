@@ -263,8 +263,9 @@ public class VideoEncoderParamTest extends CodecEncoderTestBase {
         }
     }
 
-    private native boolean nativeTestSetForceSyncFrame(String encoder, String file,
-            String mediaType, String cfgParams, String separator, StringBuilder retMsg);
+    private native boolean nativeTestSetForceSyncFrame(String encoder, String file, int inpWidth,
+            int inpHeight, String mediaType, String cfgParams, String separator,
+            StringBuilder retMsg);
 
     /**
      * Test is similar to {@link #testSetForceSyncFrame()} but uses ndk api
@@ -280,7 +281,8 @@ public class VideoEncoderParamTest extends CodecEncoderTestBase {
                 mActiveEncCfg.getBuilder().setColorFormat(colorFormat).setKeyFrameInterval(500.f)
                         .build().getFormat();
         boolean isPass = nativeTestSetForceSyncFrame(mCodecName, mActiveRawRes.mFileName,
-                mMediaType, EncoderConfigParams.serializeMediaFormat(format),
+                mActiveRawRes.mWidth, mActiveRawRes.mHeight, mMediaType,
+                EncoderConfigParams.serializeMediaFormat(format),
                 EncoderConfigParams.TOKEN_SEPARATOR, mTestConfig);
         assertTrue(mTestConfig.toString(), isPass);
     }
@@ -348,8 +350,9 @@ public class VideoEncoderParamTest extends CodecEncoderTestBase {
         }
     }
 
-    private native boolean nativeTestAdaptiveBitRate(String encoder, String file, String mediaType,
-            String cfgParams, String separator, StringBuilder retMsg);
+    private native boolean nativeTestAdaptiveBitRate(String encoder, String file, int inpWidth,
+            int inpHeight, String mediaType, String cfgParams, String separator,
+            StringBuilder retMsg);
 
     /**
      * Test is similar to {@link #testAdaptiveBitRate()} but uses ndk api
@@ -366,7 +369,8 @@ public class VideoEncoderParamTest extends CodecEncoderTestBase {
                 colorFormat != -1);
         MediaFormat format =
                 mActiveEncCfg.getBuilder().setColorFormat(colorFormat).build().getFormat();
-        boolean isPass = nativeTestAdaptiveBitRate(mCodecName, mActiveRawRes.mFileName, mMediaType,
+        boolean isPass = nativeTestAdaptiveBitRate(mCodecName, mActiveRawRes.mFileName,
+                mActiveRawRes.mWidth, mActiveRawRes.mHeight, mMediaType,
                 EncoderConfigParams.serializeMediaFormat(format),
                 EncoderConfigParams.TOKEN_SEPARATOR, mTestConfig);
         assertTrue(mTestConfig.toString(), isPass);

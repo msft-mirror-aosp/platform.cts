@@ -43,11 +43,12 @@ class CodecEncoderTest final : public CodecTestBase {
     int mColorFormat;
     int mMaxBFrames;
     int mDefFrameRate;
-    const int kInpFrmWidth = 352;
-    const int kInpFrmHeight = 288;
+    const char* mInpFile = nullptr;
+    int mInpFrmWidth = -1;
+    int mInpFrmHeight = -1;
 
     void convertyuv420ptoyuv420sp();
-    void setUpSource(const char* srcPath);
+    void setUpSource(const char* srcPath, int srcWidth, int srcHeight);
     void deleteSource();
     void deleteParams();
     bool configureCodec(AMediaFormat* format, bool isAsync, bool signalEOSWithLastFrame,
@@ -58,8 +59,8 @@ class CodecEncoderTest final : public CodecTestBase {
     bool doWork(int frameLimit) override;
     bool isTestStateValid() override;
     bool initFormat(AMediaFormat* format);
-    bool encodeToMemory(const char* file, const char* encoder, int frameLimit, AMediaFormat* format,
-                        OutputManager* ref);
+    bool encodeToMemory(const char* srcPath, int srcWidth, int srcHeight, const char* encoder,
+                        int frameLimit, AMediaFormat* format, OutputManager* ref);
     void fillByteBuffer(uint8_t* inputBuffer);
     void forceSyncFrame(AMediaFormat* format);
     void updateBitrate(AMediaFormat* format, int bitrate);
@@ -69,10 +70,13 @@ class CodecEncoderTest final : public CodecTestBase {
                      const char* separator);
     ~CodecEncoderTest();
 
-    bool testSimpleEncode(const char* encoder, const char* srcPath, int frameLimit);
-    bool testReconfigure(const char* encoder, const char* srcPath, int frameLimit);
-    bool testSetForceSyncFrame(const char* encoder, const char* srcPath);
-    bool testAdaptiveBitRate(const char* encoder, const char* srcPath);
+    bool testSimpleEncode(const char* encoder, const char* srcPath, int srcWidth, int srcHeight,
+                          int frameLimit);
+    bool testReconfigure(const char* encoder, const char* srcPath, int srcWidth, int srcHeight,
+                         int frameLimit);
+    bool testSetForceSyncFrame(const char* encoder, const char* srcPath, int srcWidth,
+                               int srcHeight);
+    bool testAdaptiveBitRate(const char* encoder, const char* srcPath, int srcWidth, int srcHeight);
     bool testOnlyEos(const char* encoder);
 };
 
@@ -101,8 +105,8 @@ CodecEncoderTest::~CodecEncoderTest() {
 }
 
 void CodecEncoderTest::convertyuv420ptoyuv420sp() {
-    int ySize = kInpFrmWidth * kInpFrmHeight;
-    int uSize = kInpFrmWidth * kInpFrmHeight / 4;
+    int ySize = mInpFrmWidth * mInpFrmHeight;
+    int uSize = mInpFrmWidth * mInpFrmHeight / 4;
     int frameSize = ySize + uSize * 2;
     int totalFrames = mInputLength / frameSize;
     uint8_t* u = new uint8_t[uSize];
@@ -122,7 +126,14 @@ void CodecEncoderTest::convertyuv420ptoyuv420sp() {
     delete[] v;
 }
 
-void CodecEncoderTest::setUpSource(const char* srcPath) {
+void CodecEncoderTest::setUpSource(const char* srcPath, int srcWidth, int srcHeight) {
+    if (mInpFile == srcPath && mInpFrmWidth == srcWidth && mInpFrmHeight == srcHeight &&
+        mInputData != nullptr) {
+        return;
+    }
+    mInpFile = srcPath;
+    mInpFrmWidth = srcWidth;
+    mInpFrmHeight = srcHeight;
     FILE* fp = fopen(srcPath, "rbe");
     struct stat buf {};
     if (fp && !fstat(fileno(fp), &buf)) {
@@ -180,18 +191,18 @@ void CodecEncoderTest::fillByteBuffer(uint8_t* inputBuffer) {
         if (plane == 0) {
             width = mWidth;
             height = mHeight;
-            tileWidth = kInpFrmWidth;
-            tileHeight = kInpFrmHeight;
+            tileWidth = mInpFrmWidth;
+            tileHeight = mInpFrmHeight;
         } else {
             if (mColorFormat == COLOR_FormatYUV420SemiPlanar) {
                 width = mWidth;
-                tileWidth = kInpFrmWidth;
+                tileWidth = mInpFrmWidth;
             } else {
                 width = mWidth / 2;
-                tileWidth = kInpFrmWidth / 2;
+                tileWidth = mInpFrmWidth / 2;
             }
             height = mHeight / 2;
-            tileHeight = kInpFrmHeight / 2;
+            tileHeight = mInpFrmHeight / 2;
         }
         for (int k = 0; k < height; k += tileHeight) {
             int rowsToCopy = std::min(height - k, tileHeight);
@@ -235,13 +246,13 @@ bool CodecEncoderTest::enqueueInput(size_t bufferIndex) {
         } else {
             pts += mInputCount * 1000000LL / mDefFrameRate;
             size = mWidth * mHeight * 3 / 2;
-            int frmSize = kInpFrmWidth * kInpFrmHeight * 3 / 2;
+            int frmSize = mInpFrmWidth * mInpFrmHeight * 3 / 2;
             RETURN_IF_TRUE(mInputBufferReadOffset + frmSize > mInputLength,
                            std::string{"received partial frame to encode"})
             RETURN_IF_TRUE(size > buffSize,
                            StringFormat("frame size exceeds buffer capacity of input buffer %d %zu",
                                         size, buffSize))
-            if (mWidth == kInpFrmWidth && mHeight == kInpFrmHeight) {
+            if (mWidth == mInpFrmWidth && mHeight == mInpFrmHeight) {
                 memcpy(inputBuffer, mInputData + mInputBufferReadOffset, size);
             } else {
                 fillByteBuffer(inputBuffer);
@@ -353,14 +364,15 @@ bool CodecEncoderTest::initFormat(AMediaFormat* format) {
     return true;
 }
 
-bool CodecEncoderTest::encodeToMemory(const char* file, const char* encoder, int32_t frameLimit,
-                                      AMediaFormat* format, OutputManager* ref) {
+bool CodecEncoderTest::encodeToMemory(const char* srcPath, int srcWidth, int srcHeight,
+                                      const char* encoder, int32_t frameLimit, AMediaFormat* format,
+                                      OutputManager* ref) {
     mSaveToMem = true;
     mOutputBuff = ref;
     mCodec = AMediaCodec_createCodecByName(encoder);
     RETURN_IF_NULL(mCodec, StringFormat("unable to create codec by name %s \n", encoder))
-    setUpSource(file);
-    RETURN_IF_NULL(mInputData, StringFormat("unable to open input file %s", file))
+    setUpSource(srcPath, srcWidth, srcHeight);
+    RETURN_IF_NULL(mInputData, StringFormat("unable to open input file %s", srcPath))
     if (!configureCodec(format, false, true, true)) return false;
     RETURN_IF_FAIL(AMediaCodec_start(mCodec), "AMediaCodec_start failed")
     if (!doWork(frameLimit)) return false;
@@ -385,8 +397,9 @@ void CodecEncoderTest::updateBitrate(AMediaFormat* format, int bitrate) {
     AMediaCodec_setParameters(mCodec, format);
 }
 
-bool CodecEncoderTest::testSimpleEncode(const char* encoder, const char* srcPath, int frameLimit) {
-    setUpSource(srcPath);
+bool CodecEncoderTest::testSimpleEncode(const char* encoder, const char* srcPath, int srcWidth,
+                                        int srcHeight, int frameLimit) {
+    setUpSource(srcPath, srcWidth, srcHeight);
     RETURN_IF_NULL(mInputData, StringFormat("unable to open input file %s", srcPath))
     mSaveToMem = true;
     auto ref = mRefBuff;
@@ -431,22 +444,24 @@ bool CodecEncoderTest::testSimpleEncode(const char* encoder, const char* srcPath
     return true;
 }
 
-bool CodecEncoderTest::testReconfigure(const char* encoder, const char* srcPath, int frameLimit) {
-    setUpSource(srcPath);
+bool CodecEncoderTest::testReconfigure(const char* encoder, const char* srcPath, int srcWidth,
+                                       int srcHeight, int frameLimit) {
+    setUpSource(srcPath, srcWidth, srcHeight);
     RETURN_IF_NULL(mInputData, StringFormat("unable to open input file %s", srcPath))
     auto configRef = mReconfBuff;
     if (mFormats.size() > 1) {
         auto format = mFormats[1];
         RETURN_IF_NULL(format,
                        std::string{"encountered error during deserialization of media format"})
-        RETURN_IF_FALSE(encodeToMemory(srcPath, encoder, frameLimit, format, configRef),
+        RETURN_IF_FALSE(encodeToMemory(srcPath, srcWidth, srcHeight, encoder, frameLimit, format,
+                                       configRef),
                         StringFormat("encodeToMemory failed for file: %s codec: %s \n format: %s",
                                      srcPath, encoder, AMediaFormat_toString(format)))
     }
     auto format = mFormats[0];
     RETURN_IF_NULL(format, std::string{"encountered error during deserialization of media format"})
     auto ref = mRefBuff;
-    RETURN_IF_FALSE(encodeToMemory(srcPath, encoder, frameLimit, format, ref),
+    RETURN_IF_FALSE(encodeToMemory(srcPath, srcWidth, srcHeight, encoder, frameLimit, format, ref),
                     StringFormat("encodeToMemory failed for file: %s codec: %s \n format: %s",
                                  srcPath, encoder, AMediaFormat_toString(format)))
 
@@ -549,8 +564,9 @@ bool CodecEncoderTest::testOnlyEos(const char* encoder) {
     return true;
 }
 
-bool CodecEncoderTest::testSetForceSyncFrame(const char* encoder, const char* srcPath) {
-    setUpSource(srcPath);
+bool CodecEncoderTest::testSetForceSyncFrame(const char* encoder, const char* srcPath, int srcWidth,
+                                             int srcHeight) {
+    setUpSource(srcPath, srcWidth, srcHeight);
     RETURN_IF_NULL(mInputData, StringFormat("unable to open input file %s", srcPath))
     AMediaFormat* format = mFormats[0];
     RETURN_IF_NULL(format, std::string{"encountered error during deserialization of media format"})
@@ -612,8 +628,9 @@ bool CodecEncoderTest::testSetForceSyncFrame(const char* encoder, const char* sr
     return true;
 }
 
-bool CodecEncoderTest::testAdaptiveBitRate(const char* encoder, const char* srcPath) {
-    setUpSource(srcPath);
+bool CodecEncoderTest::testAdaptiveBitRate(const char* encoder, const char* srcPath, int srcWidth,
+                                           int srcHeight) {
+    setUpSource(srcPath, srcWidth, srcHeight);
     RETURN_IF_NULL(mInputData, StringFormat("unable to open input file %s", srcPath))
     AMediaFormat* format = mFormats[0];
     RETURN_IF_NULL(format, std::string{"encountered error during deserialization of media format"})
@@ -669,15 +686,17 @@ bool CodecEncoderTest::testAdaptiveBitRate(const char* encoder, const char* srcP
 }
 
 static jboolean nativeTestSimpleEncode(JNIEnv* env, jobject, jstring jEncoder, jstring jsrcPath,
-                                       jstring jMediaType, jstring jCfgParams, jstring jSeparator,
-                                       jobject jRetMsg, jint jFrameLimit) {
+                                       jint srcWidth, jint srcHeight, jstring jMediaType,
+                                       jstring jCfgParams, jstring jSeparator, jobject jRetMsg,
+                                       jint jFrameLimit) {
     const char* csrcPath = env->GetStringUTFChars(jsrcPath, nullptr);
     const char* cMediaType = env->GetStringUTFChars(jMediaType, nullptr);
     const char* cEncoder = env->GetStringUTFChars(jEncoder, nullptr);
     const char* cCfgParams = env->GetStringUTFChars(jCfgParams, nullptr);
     const char* cSeparator = env->GetStringUTFChars(jSeparator, nullptr);
     auto codecEncoderTest = new CodecEncoderTest(cMediaType, cCfgParams, nullptr, cSeparator);
-    bool isPass = codecEncoderTest->testSimpleEncode(cEncoder, csrcPath, jFrameLimit);
+    bool isPass = codecEncoderTest->testSimpleEncode(cEncoder, csrcPath, srcWidth, srcHeight,
+                                                     jFrameLimit);
     std::string msg = isPass ? std::string{} : codecEncoderTest->getErrorMsg();
     delete codecEncoderTest;
     jclass clazz = env->GetObjectClass(jRetMsg);
@@ -693,9 +712,9 @@ static jboolean nativeTestSimpleEncode(JNIEnv* env, jobject, jstring jEncoder, j
 }
 
 static jboolean nativeTestReconfigure(JNIEnv* env, jobject, jstring jEncoder, jstring jsrcPath,
-                                      jstring jMediaType, jstring jCfgParams,
-                                      jstring jReconfigCfgParams, jstring jSeparator,
-                                      jobject jRetMsg, jint jFrameLimit) {
+                                      jint srcWidth, jint srcHeight, jstring jMediaType,
+                                      jstring jCfgParams, jstring jReconfigCfgParams,
+                                      jstring jSeparator, jobject jRetMsg, jint jFrameLimit) {
     bool isPass;
     const char* csrcPath = env->GetStringUTFChars(jsrcPath, nullptr);
     const char* cMediaType = env->GetStringUTFChars(jMediaType, nullptr);
@@ -707,7 +726,8 @@ static jboolean nativeTestReconfigure(JNIEnv* env, jobject, jstring jEncoder, js
     const char* cSeparator = env->GetStringUTFChars(jSeparator, nullptr);
     auto codecEncoderTest =
             new CodecEncoderTest(cMediaType, cCfgParams, cReconfigCfgParams, cSeparator);
-    isPass = codecEncoderTest->testReconfigure(cEncoder, csrcPath, jFrameLimit);
+    isPass =
+            codecEncoderTest->testReconfigure(cEncoder, csrcPath, srcWidth, srcHeight, jFrameLimit);
     std::string msg = isPass ? std::string{} : codecEncoderTest->getErrorMsg();
     delete codecEncoderTest;
     jclass clazz = env->GetObjectClass(jRetMsg);
@@ -726,16 +746,16 @@ static jboolean nativeTestReconfigure(JNIEnv* env, jobject, jstring jEncoder, js
 }
 
 static jboolean nativeTestSetForceSyncFrame(JNIEnv* env, jobject, jstring jEncoder,
-                                            jstring jsrcPath, jstring jMediaType,
-                                            jstring jCfgParams, jstring jSeparator,
-                                            jobject jRetMsg) {
+                                            jstring jsrcPath, jint srcWidth, jint srcHeight,
+                                            jstring jMediaType, jstring jCfgParams,
+                                            jstring jSeparator, jobject jRetMsg) {
     const char* csrcPath = env->GetStringUTFChars(jsrcPath, nullptr);
     const char* cMediaType = env->GetStringUTFChars(jMediaType, nullptr);
     const char* cEncoder = env->GetStringUTFChars(jEncoder, nullptr);
     const char* cCfgParams = env->GetStringUTFChars(jCfgParams, nullptr);
     const char* cSeparator = env->GetStringUTFChars(jSeparator, nullptr);
     auto codecEncoderTest = new CodecEncoderTest(cMediaType, cCfgParams, nullptr, cSeparator);
-    bool isPass = codecEncoderTest->testSetForceSyncFrame(cEncoder, csrcPath);
+    bool isPass = codecEncoderTest->testSetForceSyncFrame(cEncoder, csrcPath, srcWidth, srcHeight);
     std::string msg = isPass ? std::string{} : codecEncoderTest->getErrorMsg();
     delete codecEncoderTest;
     jclass clazz = env->GetObjectClass(jRetMsg);
@@ -751,15 +771,15 @@ static jboolean nativeTestSetForceSyncFrame(JNIEnv* env, jobject, jstring jEncod
 }
 
 static jboolean nativeTestAdaptiveBitRate(JNIEnv* env, jobject, jstring jEncoder, jstring jsrcPath,
-                                          jstring jMediaType, jstring jCfgParams,
-                                          jstring jSeparator, jobject jRetMsg) {
+                                          jint srcWidth, jint srcHeight, jstring jMediaType,
+                                          jstring jCfgParams, jstring jSeparator, jobject jRetMsg) {
     const char* csrcPath = env->GetStringUTFChars(jsrcPath, nullptr);
     const char* cMediaType = env->GetStringUTFChars(jMediaType, nullptr);
     const char* cEncoder = env->GetStringUTFChars(jEncoder, nullptr);
     const char* cCfgParams = env->GetStringUTFChars(jCfgParams, nullptr);
     const char* cSeparator = env->GetStringUTFChars(jSeparator, nullptr);
     auto codecEncoderTest = new CodecEncoderTest(cMediaType, cCfgParams, nullptr, cSeparator);
-    bool isPass = codecEncoderTest->testAdaptiveBitRate(cEncoder, csrcPath);
+    bool isPass = codecEncoderTest->testAdaptiveBitRate(cEncoder, csrcPath, srcWidth, srcHeight);
     std::string msg = isPass ? std::string{} : codecEncoderTest->getErrorMsg();
     delete codecEncoderTest;
     jclass clazz = env->GetObjectClass(jRetMsg);
@@ -798,12 +818,12 @@ static jboolean nativeTestOnlyEos(JNIEnv* env, jobject, jstring jEncoder, jstrin
 int registerAndroidMediaV2CtsEncoderTest(JNIEnv* env) {
     const JNINativeMethod methodTable[] = {
             {"nativeTestSimpleEncode",
-             "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/"
-             "String;Ljava/lang/StringBuilder;I)Z",
+             "(Ljava/lang/String;Ljava/lang/String;IILjava/lang/String;Ljava/lang/String;Ljava/"
+             "lang/String;Ljava/lang/StringBuilder;I)Z",
              (void*)nativeTestSimpleEncode},
             {"nativeTestReconfigure",
-             "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/"
-             "String;Ljava/lang/String;Ljava/lang/StringBuilder;I)Z",
+             "(Ljava/lang/String;Ljava/lang/String;IILjava/lang/String;Ljava/lang/String;Ljava/"
+             "lang/String;Ljava/lang/String;Ljava/lang/StringBuilder;I)Z",
              (void*)nativeTestReconfigure},
             {"nativeTestOnlyEos",
              "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/"
@@ -817,12 +837,12 @@ int registerAndroidMediaV2CtsEncoderTest(JNIEnv* env) {
 int registerAndroidMediaV2CtsVideoEncoderParamTest(JNIEnv* env) {
     const JNINativeMethod methodTable[] = {
             {"nativeTestSetForceSyncFrame",
-             "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/"
-             "String;Ljava/lang/StringBuilder;)Z",
+             "(Ljava/lang/String;Ljava/lang/String;IILjava/lang/String;Ljava/lang/String;Ljava/"
+             "lang/String;Ljava/lang/StringBuilder;)Z",
              (void*)nativeTestSetForceSyncFrame},
             {"nativeTestAdaptiveBitRate",
-             "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/"
-             "String;Ljava/lang/StringBuilder;)Z",
+             "(Ljava/lang/String;Ljava/lang/String;IILjava/lang/String;Ljava/lang/String;Ljava/"
+             "lang/String;Ljava/lang/StringBuilder;)Z",
              (void*)nativeTestAdaptiveBitRate},
     };
     jclass c = env->FindClass("android/mediav2/cts/VideoEncoderParamTest");

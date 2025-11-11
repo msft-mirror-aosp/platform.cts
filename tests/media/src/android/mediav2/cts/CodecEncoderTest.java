@@ -376,8 +376,9 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
         }
     }
 
-    private native boolean nativeTestSimpleEncode(String encoder, String file, String mediaType,
-            String cfgParams, String separator, StringBuilder retMsg, int frameLimit);
+    private native boolean nativeTestSimpleEncode(String encoder, String file, int inpWidth,
+            int inpHeight, String mediaType, String cfgParams, String separator,
+            StringBuilder retMsg, int frameLimit);
 
     /**
      * Test is similar to {@link #testSimpleEncode()} but uses ndk api
@@ -397,7 +398,8 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
                     colorFormat != -1);
             format = mActiveEncCfg.getBuilder().setColorFormat(colorFormat).build().getFormat();
         }
-        boolean isPass = nativeTestSimpleEncode(mCodecName, mActiveRawRes.mFileName, mMediaType,
+        boolean isPass = nativeTestSimpleEncode(mCodecName, mActiveRawRes.mFileName,
+                mActiveRawRes.mWidth, mActiveRawRes.mHeight, mMediaType,
                 EncoderConfigParams.serializeMediaFormat(format),
                 EncoderConfigParams.TOKEN_SEPARATOR, mTestConfig, mFrameLimit);
         assertTrue(mTestConfig.toString(), isPass);
@@ -532,9 +534,9 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
         }
     }
 
-    private native boolean nativeTestReconfigure(String encoder, String file, String mediaType,
-            String cfgParams, String cfgReconfigParams, String separator, StringBuilder retMsg,
-            int frameLimit);
+    private native boolean nativeTestReconfigure(String encoder, String file, int inpWidth,
+            int inpHeight, String mediaType, String cfgParams, String cfgReconfigParams,
+            String separator, StringBuilder retMsg, int frameLimit);
 
     /**
      * Test is similar to {@link #testReconfigure()} but uses ndk api
@@ -556,7 +558,8 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
                         .getFormat();
             }
         }
-        boolean isPass = nativeTestReconfigure(mCodecName, mActiveRawRes.mFileName, mMediaType,
+        boolean isPass = nativeTestReconfigure(mCodecName, mActiveRawRes.mFileName,
+                mActiveRawRes.mWidth, mActiveRawRes.mHeight, mMediaType,
                 EncoderConfigParams.serializeMediaFormat(format), reconfigFormat == null ? null :
                         EncoderConfigParams.serializeMediaFormat(reconfigFormat),
                 EncoderConfigParams.TOKEN_SEPARATOR, mTestConfig, mFrameLimit);
