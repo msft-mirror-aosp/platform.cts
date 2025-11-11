@@ -25,6 +25,7 @@
 
     <queries>
         <package android:name="android.app.appfunctions.helper" />
+        <package android:name="android.app.appfunctions.dynamic.schema" />
     </queries>
     <application>
         <uses-library android:name="android.test.runner"/>

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?><!--
+  ~ Copyright (C) 2025 The Android Open Source Project
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <xs:documentType name="SchemaMetadata">
+        <xs:element name="schemaCategory" type="xs:string" />
+        <xs:element name="schemaName" type="xs:string" />
+        <xs:element name="schemaVersion" type="xs:long" />
+    </xs:documentType>
+
+    <xs:documentType name="AppFunctionStaticMetadata">
+        <xs:element name="functionId" cardinality="2" indexingType="1" tokenizerType="2"
+            type="xs:string" />
+        <xs:element name="packageName" cardinality="2" indexingType="1" tokenizerType="2"
+            type="xs:string" />
+        <xs:element name="schemaName" cardinality="2" indexingType="1" tokenizerType="2"
+            type="xs:string" />
+        <xs:element name="schemaVersion" cardinality="2" indexingType="1" type="xs:long" />
+        <xs:element name="schemaCategory" cardinality="2" indexingType="1" tokenizerType="2"
+            type="xs:string" />
+        <xs:element name="enabledByDefault" cardinality="2" type="xs:boolean" />
+        <xs:element name="restrictCallersWithExecuteAppFunctions" type="xs:boolean"
+            cardinality="2" />
+        <xs:element name="schemaMetadata" type="appfn:SchemaMetadata" cardinality="2"
+            shouldIndexNestedProperties="true" />
+        <xs:element name="displayNameStringRes" type="xs:long" cardinality="2" />
+        <xs:element name="mobileApplicationQualifiedId" type="xs:string" cardinality="2"
+            joinableValueType="1" />
+
+        <xs:element name="customIntProperty" cardinality="2" type="xs:int" />
+        <xs:element name="nestedDocumentProperty" cardinality="2" type="appfn:NestedDocument"/>
+    </xs:documentType>
+
+    <xs:documentType name="CustomTopLevelComponent1">
+        <xs:element name="customStringProperty" cardinality="2" type="xs:string" />
+
+        <xs:element name="packageName" cardinality="2" indexingType="1" tokenizerType="2"
+            type="xs:string" />
+        <xs:element name="schemaMetadata" type="appfn:SchemaMetadata" cardinality="2"
+            shouldIndexNestedProperties="true" />
+        <xs:element name="displayNameStringRes" type="xs:long" cardinality="2" />
+        <xs:element name="mobileApplicationQualifiedId" type="xs:string" cardinality="2"
+            joinableValueType="1" />
+    </xs:documentType>
+
+    <xs:documentType name="CustomTopLevelComponent2">
+        <xs:element name="nestedDocumentProperty" cardinality="2" type="appfn:NestedDocument" />
+
+        <xs:element name="packageName" cardinality="2" indexingType="1" tokenizerType="2"
+            type="xs:string" />
+        <xs:element name="schemaMetadata" type="appfn:SchemaMetadata" cardinality="2"
+            shouldIndexNestedProperties="true" />
+        <xs:element name="displayNameStringRes" type="xs:long" cardinality="2" />
+        <xs:element name="mobileApplicationQualifiedId" type="xs:string" cardinality="2"
+            joinableValueType="1" />
+    </xs:documentType>
+
+    <xs:documentType name="NestedDocument">
+        <xs:element name="nestedIntProperty" cardinality="2" type="xs:int" />
+        <xs:element name="nestedRepeatedString" cardinality="1" type="xs:string" />
+
+        <xs:element name="packageName" cardinality="2" indexingType="1" tokenizerType="2"
+            type="xs:string" />
+        <xs:element name="schemaMetadata" type="appfn:SchemaMetadata" cardinality="2"
+            shouldIndexNestedProperties="true" />
+        <xs:element name="displayNameStringRes" type="xs:long" cardinality="2" />
+        <xs:element name="mobileApplicationQualifiedId" type="xs:string" cardinality="2"
+            joinableValueType="1" />
+    </xs:documentType>
+</xs:schema>

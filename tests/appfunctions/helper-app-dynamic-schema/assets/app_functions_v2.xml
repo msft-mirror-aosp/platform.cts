@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><!--
+  ~ Copyright (C) 2025 The Android Open Source Project
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<appfunctions>
+    <appfunction>
+        <id>appFunctionEnabledByDefault</id>
+        <function_id>appFunctionEnabledByDefault</function_id>
+        <enabled_by_default>true</enabled_by_default>
+        <schemaCategory>myUtils</schemaCategory>
+        <schemaVersion>1</schemaVersion>
+        <schemaName>testSchema</schemaName>
+        <customIntProperty>255</customIntProperty>
+        <nestedDocumentProperty>
+            <id>appFunctionEnabledByDefault/nestedDocumentProperty</id>
+            <nestedRepeatedString>value 1</nestedRepeatedString>
+            <nestedRepeatedString>value 2</nestedRepeatedString>Z
+        </nestedDocumentProperty>
+    </appfunction>
+    <appfunction>
+        <id>appFunctionDisabledByDefault_noSchema</id>
+        <function_id>appFunctionDisabledByDefault_noSchema</function_id>
+        <enabled_by_default>false</enabled_by_default>
+    </appfunction>
+    <appfunction>
+        <id>appFunctionWithHighSchemaVersion</id>
+        <function_id>appFunctionWithHighSchemaVersion</function_id>
+        <schemaCategory>myUtils</schemaCategory>
+        <schemaVersion>7</schemaVersion>
+        <schemaName>testSchema</schemaName>
+        <enabled_by_default>true</enabled_by_default>
+    </appfunction>
+    <CustomTopLevelComponent1>
+        <id>testTopLevelComponentId</id>
+        <customStringProperty>testValue</customStringProperty>
+    </CustomTopLevelComponent1>
+    <CustomTopLevelComponent2>
+        <id>testTopLevelComponentId2</id>
+        <nestedDocumentProperty>
+            <id>testTopLevelComponentId2/nestedDocumentProperty</id>
+            <nestedIntProperty>333</nestedIntProperty>
+            <nestedRepeatedString>value 1</nestedRepeatedString>
+            <nestedRepeatedString>value 2</nestedRepeatedString>
+        </nestedDocumentProperty>
+    </CustomTopLevelComponent2>
+</appfunctions>
