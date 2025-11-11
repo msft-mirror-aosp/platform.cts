@@ -31,7 +31,6 @@ class MotionEventBuilder(val action: Int, val source: Int) {
     private var downTime = System.currentTimeMillis()
     private var eventTime = downTime
     private var displayId = Display.DEFAULT_DISPLAY
-    private var pointerIndex: Int? = null
     private var actionButton = 0
     private var metaState = 0
     private var buttonState = 0
@@ -63,17 +62,6 @@ class MotionEventBuilder(val action: Int, val source: Int) {
     }
     fun pointer(pointer: PointerBuilder) = apply { pointers.add(pointer) }
     fun classification(classification: Int) = apply { this.classification = classification }
-    fun pointerIndex(index: Int) = apply {
-        when (action and MotionEvent.ACTION_MASK) {
-            MotionEvent.ACTION_POINTER_DOWN, MotionEvent.ACTION_POINTER_UP -> {
-                this.pointerIndex = index
-            }
-
-            else -> {
-                throw IllegalArgumentException("pointerIndex must be unset for non pointer events")
-            }
-        }
-    }
 
     fun build(): MotionEvent {
         val pointerProperties = pointers.map { it.buildProperties() }
@@ -86,19 +74,6 @@ class MotionEventBuilder(val action: Int, val source: Int) {
             rawXCursorPosition = pointerCoords[0].x
             rawYCursorPosition = pointerCoords[0].y
         }
-
-        val pointerIndex = when (action and MotionEvent.ACTION_MASK) {
-            MotionEvent.ACTION_POINTER_DOWN, MotionEvent.ACTION_POINTER_UP -> {
-                checkNotNull(
-                    this.pointerIndex
-                ) { "pointerIndex must be set for pointer events" }
-            }
-
-            else -> 0
-        }
-
-        check(this.action and MotionEvent.ACTION_POINTER_INDEX_MASK == 0) { "Use pointerIndex" }
-        val action = this.action or (pointerIndex shl MotionEvent.ACTION_POINTER_INDEX_SHIFT)
 
         return MotionEvent.obtain(
             downTime, eventTime, action, pointerProperties.size, pointerProperties.toTypedArray(),

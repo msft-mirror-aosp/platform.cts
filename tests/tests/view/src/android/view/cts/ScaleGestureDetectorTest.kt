@@ -1151,10 +1151,9 @@ class ScaleGestureDetectorTest {
 
     private fun pointerDown(index: Int, pointers: List<PointF>, eventTime: Long = 0) =
         motionEvent(
-            MotionEvent.ACTION_POINTER_DOWN,
+            MotionEvent.ACTION_POINTER_DOWN or (index shl MotionEvent.ACTION_POINTER_INDEX_SHIFT),
             pointers,
             eventTime = eventTime,
-            pointerIndex = index,
         )
 
     private fun move(pointers: List<PointF>, eventTime: Long = 0, buttonState: Int = 0) =
@@ -1167,10 +1166,9 @@ class ScaleGestureDetectorTest {
 
     private fun pointerUp(index: Int, pointers: List<PointF>, eventTime: Long = 0) =
         motionEvent(
-            MotionEvent.ACTION_POINTER_UP,
+            MotionEvent.ACTION_POINTER_UP or (index shl MotionEvent.ACTION_POINTER_INDEX_SHIFT),
             pointers,
             eventTime = eventTime,
-            pointerIndex = index,
         )
 
     private fun up(pointer: PointF, eventTime: Long = 0, buttonState: Int = 0) =
@@ -1186,21 +1184,16 @@ class ScaleGestureDetectorTest {
         pointers: List<PointF>,
         eventTime: Long = 0L,
         buttonState: Int = 0,
-        pointerIndex: Int? = null,
     ): MotionEvent {
-        val pointers =
-            pointers.mapIndexed { id, pointer -> PointerBuilder(id, TOOL_TYPE_FINGER).xy(pointer) }
-
-        val builder = MotionEventBuilder(action, InputDevice.SOURCE_TOUCHSCREEN)
-            .eventTime(eventTime)
-            .buttonState(buttonState)
-            .apply { pointers.forEach(this::pointer) }
-
-        if (pointerIndex != null) {
-            builder.pointerIndex(pointerIndex)
-        }
-
-        return builder.build()
+        return MotionEventBuilder(action, InputDevice.SOURCE_TOUCHSCREEN)
+            .apply {
+                pointers.forEachIndexed { id, pointer ->
+                    pointer(PointerBuilder(id, TOOL_TYPE_FINGER).x(pointer.x).y(pointer.y))
+                }
+                eventTime(eventTime)
+                buttonState(buttonState)
+            }
+            .build()
     }
 
     fun PointF.hypot() = kotlin.math.hypot(this.x, this.y)
