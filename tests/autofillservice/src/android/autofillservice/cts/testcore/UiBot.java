@@ -94,6 +94,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -135,6 +136,7 @@ public class UiBot {
     private static final String RESOURCE_STRING_SAVE_BUTTON_YES = "autofill_save_yes";
     private static final String RESOURCE_STRING_UPDATE_BUTTON_YES = "autofill_update_yes";
     private static final String RESOURCE_STRING_CONTINUE_BUTTON_YES = "autofill_continue_yes";
+    private static final String RESOURCE_STRING_CANCEL_BUTTON = "cancel";
     private static final String RESOURCE_STRING_UPDATE_TITLE = "autofill_update_title";
     private static final String RESOURCE_STRING_UPDATE_TITLE_WITH_TYPE =
             "autofill_update_title_with_type";
@@ -1557,6 +1559,20 @@ public class UiBot {
         assertWithMessage("wrong text on reject button")
                 .that(rejectButton.getText().toUpperCase()).isEqualTo(
                         getString(RESOURCE_STRING_SAVE_BUTTON_NO_THANKS).toUpperCase());
+    }
+
+    /** Asserts reject button in the fill dialog. */
+    public void assertExpressiveFillDialogRejectButton() throws Exception {
+        final UiObject2 picker = findFillDialogPicker();
+
+        // "No thanks" button shown
+        final UiObject2 rejectButton =
+                picker.findObject(By.res("android", RESOURCE_ID_FILL_DIALOG_BUTTON_NO));
+        assertWithMessage("No reject button in fill dialog").that(rejectButton).isNotNull();
+        assertWithMessage("wrong text on reject button")
+                .that(rejectButton.getText().toUpperCase(Locale.getDefault()))
+                .isEqualTo(
+                        getString(RESOURCE_STRING_CANCEL_BUTTON).toUpperCase(Locale.getDefault()));
     }
 
     /**

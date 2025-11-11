@@ -30,11 +30,12 @@ import android.autofillservice.cts.commontests.AutoFillServiceTestCase;
 import android.autofillservice.cts.testcore.CannedFillResponse;
 import android.autofillservice.cts.testcore.InstrumentedAutoFillService;
 import android.content.Intent;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
-
 
 /**
  * The tests for showing fill dialog for an Activity that only updates the content for login
@@ -114,6 +115,7 @@ public class MultipleStepsSignInActivityTest extends AutoFillServiceTestCase.Man
         mUiBot.assertFillDialogDatasets("Dialog Password");
     }
 
+    @RequiresFlagsDisabled("android.service.autofill.expressive_fill_dialog")
     @Test
     public void testShowFillDialog_backPrevPage_notShownFillDialog() throws Exception {
         // Enable feature and test service
@@ -164,6 +166,80 @@ public class MultipleStepsSignInActivityTest extends AutoFillServiceTestCase.Man
 
         // Verify fill dialog shown
         mUiBot.assertFillDialogDatasets("Dialog Password");
+
+        // Go back previous page
+        mActivity.prevPage();
+
+        mUiBot.assertShownByRelativeId(ID_USERNAME_LABEL);
+
+        // Verify there is no any fill request because response already exists
+        sReplier.assertNoUnhandledFillRequests();
+
+        // Click on username field to trigger menu UI
+        mUiBot.selectByRelativeId(ID_USERNAME);
+        mUiBot.waitForIdleSync();
+
+        // Verify fill menu shown
+        mUiBot.assertDatasets("Menu Username");
+    }
+
+    @RequiresFlagsEnabled("android.service.autofill.expressive_fill_dialog")
+    @Test
+    public void testShowExpressiveFillDialog_backPrevPage_notShownFillDialog() throws Exception {
+        // Enable feature and test service
+        enableFillDialogFeature(sContext);
+        enableService();
+
+        // Set response
+        final CannedFillResponse.Builder builder =
+                new CannedFillResponse.Builder()
+                        .addDataset(
+                                new CannedFillResponse.CannedDataset.Builder()
+                                        .setField(ID_USERNAME, "dude")
+                                        .setPresentation(createPresentation("Menu Username"))
+                                        .setDialogPresentation(
+                                                createPresentation("Dialog Username"))
+                                        .build())
+                        .setDialogHeader(createPresentation("Dialog Header"))
+                        .setDialogTriggerIds(ID_USERNAME);
+        sReplier.addResponse(builder.build());
+
+        // Start activity
+        mActivity = startMultipleStepsSignInActivity();
+
+        // Check onFillRequest has the flag: FLAG_SUPPORTS_FILL_DIALOG
+        final InstrumentedAutoFillService.FillRequest fillRequest = sReplier.getNextFillRequest();
+        assertHasFlags(fillRequest.flags, FLAG_SUPPORTS_FILL_DIALOG);
+
+        // Set response for second page
+        final CannedFillResponse.Builder builder2 =
+                new CannedFillResponse.Builder()
+                        .addDataset(
+                                new CannedFillResponse.CannedDataset.Builder()
+                                        .setField(ID_PASSWORD, "sweet")
+                                        .setPresentation(createPresentation("Menu Password"))
+                                        .setDialogPresentation(
+                                                createPresentation("Dialog Password"))
+                                        .build())
+                        .setDialogHeader(createPresentation("Dialog Header"))
+                        .setDialogTriggerIds(ID_PASSWORD);
+        sReplier.addResponse(builder2.build());
+
+        // Do nothing on the 1st page and go to next page
+        mActivity.nextPage();
+
+        mUiBot.assertShownByRelativeId(ID_PASSWORD_LABEL);
+
+        // Check onFillRequest has the flag: FLAG_SUPPORTS_FILL_DIALOG
+        final InstrumentedAutoFillService.FillRequest fillRequest2 = sReplier.getNextFillRequest();
+        assertHasFlags(fillRequest2.flags, FLAG_SUPPORTS_FILL_DIALOG);
+
+        // Click on password field to trigger fill dialog
+        mUiBot.selectByRelativeId(ID_PASSWORD);
+        mUiBot.waitForIdleSync();
+
+        // Verify fill dialog shown
+        mUiBot.assertFillDialogDatasets("Dialog Header", "Dialog Password");
 
         // Go back previous page
         mActivity.prevPage();
