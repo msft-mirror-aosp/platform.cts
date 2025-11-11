@@ -44,6 +44,7 @@ public class PersistableBundleTest {
         bundle.putLongArray("long_array", new long[] {1234567L, 2345678L});
         bundle.putString("string", "abc123");
         bundle.putStringArray("string_array", new String[] {"xyz789"});
+        bundle.putByteArray("byte_array", new byte[] {1, 2, 3, 4, 5});
         PersistableBundle nestedBundle = new PersistableBundle();
         nestedBundle.putBooleanArray("boolean_array", new boolean[]{});
         nestedBundle.putInt("int", 9);
@@ -71,6 +72,8 @@ public class PersistableBundleTest {
         assertEquals("abc123", restoredBundle.getString("string"));
         assertTrue(Arrays.equals(
             new String[] {"xyz789"}, restoredBundle.getStringArray("string_array")));
+        assertTrue(Arrays.equals(
+                new byte[] {1, 2, 3, 4, 5}, restoredBundle.getByteArray("byte_array")));
         PersistableBundle restoredNestedBundle = restoredBundle.getPersistableBundle("bundle");
         assertEquals(nestedBundle.size(), restoredNestedBundle.size());
         assertTrue(Arrays.equals(
