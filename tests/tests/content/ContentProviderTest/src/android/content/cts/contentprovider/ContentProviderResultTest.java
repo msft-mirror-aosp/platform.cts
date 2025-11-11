@@ -21,7 +21,6 @@ import static com.google.common.truth.Truth.assertThat;
 import android.content.ContentProviderResult;
 import android.net.Uri;
 import android.os.Bundle;
-import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
@@ -29,7 +28,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class ContentProviderResultTest {
     private static final Uri TEST_URI = Uri.EMPTY;
     private static final Bundle TEST_BUNDLE = Bundle.EMPTY;

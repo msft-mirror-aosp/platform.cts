@@ -22,7 +22,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import android.os.Process;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.util.Log;
 
 import com.android.bedstead.enterprise.annotations.EnsureHasUserRestriction;
@@ -45,7 +44,6 @@ import java.util.Set;
  */
 @RunWith(BedsteadJUnit4.class)
 @AppModeFull
-@AppModeNonSdkSandbox
 public class PackageManagerShellCommandUserRestrictionTest {
 
     private static final String TAG = "PackageManagerShellCommandUserRestrictionTest";

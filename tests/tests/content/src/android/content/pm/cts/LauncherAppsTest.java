@@ -58,7 +58,6 @@ import android.os.Process;
 import android.os.RemoteException;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -86,7 +85,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /** Some tests in this class are ignored until b/126946674 is fixed. */
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class LauncherAppsTest {
     private static CompletableFuture<String> sUnarchiveReceiverPackageName;

@@ -37,7 +37,6 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.RemoteCallback;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -57,7 +56,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @AppModeFull
-@AppModeNonSdkSandbox
 @RunWith(AndroidJUnit4.class)
 public class PackageChangedBroadcastTest {
     private static final String TAG = "PackageChangedBroadcastTest";

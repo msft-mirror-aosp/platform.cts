@@ -22,7 +22,6 @@ import android.app.ActivityManager;
 import android.content.ContentResolver;
 import android.os.RemoteCallback;
 import android.os.UserHandle;
-import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -38,7 +37,6 @@ import org.junit.runner.RunWith;
  * <p>see @{@link MockBuggyProvider}
  */
 @RunWith(AndroidJUnit4.class)
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class BuggyProviderTest {
 
     @Test

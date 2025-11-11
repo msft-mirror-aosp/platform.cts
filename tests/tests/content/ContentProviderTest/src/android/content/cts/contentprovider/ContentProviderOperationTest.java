@@ -32,7 +32,6 @@ import android.content.ContentValues;
 import android.database.MatrixCursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
@@ -44,7 +43,6 @@ import org.mockito.ArgumentMatchers;
 import java.util.Objects;
 
 @RunWith(AndroidJUnit4.class)
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class ContentProviderOperationTest {
     private static final Uri TEST_URI = Uri.parse("content://com.example");
     private static final Uri TEST_URI_RESULT = Uri.parse("content://com.example/12");

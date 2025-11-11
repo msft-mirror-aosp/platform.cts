@@ -52,7 +52,6 @@ import android.os.IBinder;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -81,7 +80,6 @@ import java.util.Objects;
 import java.util.Set;
 
 @RunWith(AndroidJUnit4.class)
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class IntentTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -542,7 +540,8 @@ public class IntentTest {
         assertEquals(Short.valueOf("1").shortValue(), mIntent.getShortExtra(
                 TEST_EXTRA_NAME, Short.valueOf("1")));
         mIntent.putExtra(TEST_EXTRA_NAME, expected);
-        assertEquals(expected.shortValue(), mIntent.getShortExtra(TEST_EXTRA_NAME, Short.valueOf("1")));
+        assertEquals(
+                expected.shortValue(), mIntent.getShortExtra(TEST_EXTRA_NAME, Short.valueOf("1")));
     }
 
     @Test
@@ -829,7 +828,8 @@ public class IntentTest {
         assertEquals(Short.valueOf("1").shortValue(), mIntent.getShortExtra(
                 TEST_EXTRA_NAME, Short.valueOf("1")));
         mIntent.putExtra(TEST_EXTRA_NAME, expected);
-        assertEquals(expected.shortValue(), mIntent.getShortExtra(TEST_EXTRA_NAME, Short.valueOf("1")));
+        assertEquals(
+                expected.shortValue(), mIntent.getShortExtra(TEST_EXTRA_NAME, Short.valueOf("1")));
     }
 
     @Test
@@ -1236,7 +1236,8 @@ public class IntentTest {
         checkIntentUri(
                 "intent://www.example.com/blah#Intent;scheme=http;component=com.exfoo/com.argh.Bar;end",
                 null,
-                new Intent().setAction(Intent.ACTION_VIEW)
+                new Intent()
+                        .setAction(Intent.ACTION_VIEW)
                         .setData(Uri.parse("http://www.example.com/blah"))
                         .setComponent(new ComponentName("com.exfoo", "com.argh.Bar")));
         checkIntentUri(
@@ -1297,9 +1298,13 @@ public class IntentTest {
         checkIntentUri(
                 "intent:#Intent;S.string=text;i.int=1000;l.long=1000;B.boolean=true;f.float=10.4;end",
                 null,
-                new Intent().setAction(Intent.ACTION_VIEW).putExtra("string", "text")
-                        .putExtra("int", 1000).putExtra("long", (long) 1000)
-                        .putExtra("boolean", true).putExtra("float", 10.4f));
+                new Intent()
+                        .setAction(Intent.ACTION_VIEW)
+                        .putExtra("string", "text")
+                        .putExtra("int", 1000)
+                        .putExtra("long", 1000L)
+                        .putExtra("boolean", true)
+                        .putExtra("float", 10.4f));
         checkIntentUri(
                 "intent:foo#Intent;scheme=mailto;SEL;scheme=foobar;action=android.test.FOO;end",
                 null,
@@ -1313,7 +1318,8 @@ public class IntentTest {
         checkIntentUri(
                 "intent:foo#Intent;scheme=mailto;SEL;action=android.test.FOO;component=com.exfoo/com.argh.Bar;end",
                 null,
-                makeSelector(new Intent(Intent.ACTION_VIEW).setData(Uri.parse("mailto:foo")),
+                makeSelector(
+                        new Intent(Intent.ACTION_VIEW).setData(Uri.parse("mailto:foo")),
                         new Intent("android.test.FOO")
                                 .setComponent(new ComponentName("com.exfoo", "com.argh.Bar"))));
 
@@ -1332,7 +1338,9 @@ public class IntentTest {
         checkIntentUri(
                 "intent:#Intent;category=android.test.FOO;package=com.myapp;end",
                 "android-app://com.myapp#Intent;action=android.intent.action.VIEW;category=android.test.FOO;end",
-                new Intent().setAction(Intent.ACTION_VIEW).addCategory("android.test.FOO")
+                new Intent()
+                        .setAction(Intent.ACTION_VIEW)
+                        .addCategory("android.test.FOO")
                         .setPackage("com.myapp"));
         checkIntentUri(
                 "intent:#Intent;action=android.test.FOO;launchFlags=0x20;package=com.myapp;end",
@@ -1348,7 +1356,8 @@ public class IntentTest {
         checkIntentUri(
                 "intent://www.example.com/blah#Intent;scheme=http;package=com.myapp;component=com.exfoo/com.argh.Bar;end",
                 "android-app://com.myapp/http/www.example.com/blah#Intent;component=com.exfoo/com.argh.Bar;end",
-                new Intent().setAction(Intent.ACTION_VIEW)
+                new Intent()
+                        .setAction(Intent.ACTION_VIEW)
                         .setData(Uri.parse("http://www.example.com/blah"))
                         .setComponent(new ComponentName("com.exfoo", "com.argh.Bar"))
                         .setPackage("com.myapp"));
@@ -1361,7 +1370,8 @@ public class IntentTest {
         checkIntentUri(
                 "intent://www.example.com/blah#fragment#Intent;scheme=http;action=android.test.FOO;package=com.myapp;end",
                 "android-app://com.myapp/http/www.example.com/blah#fragment#Intent;action=android.test.FOO;end",
-                new Intent().setAction("android.test.FOO")
+                new Intent()
+                        .setAction("android.test.FOO")
                         .setData(Uri.parse("http://www.example.com/blah#fragment"))
                         .setPackage("com.myapp"));
         checkIntentUri(
@@ -1414,9 +1424,13 @@ public class IntentTest {
         checkIntentUri(
                 "intent:#Intent;package=com.myapp;S.string=text;i.int=1000;l.long=1000;B.boolean=true;f.float=10.4;end",
                 "android-app://com.myapp#Intent;action=android.intent.action.VIEW;S.string=text;i.int=1000;l.long=1000;B.boolean=true;f.float=10.4;end",
-                new Intent().setAction(Intent.ACTION_VIEW).putExtra("string", "text")
-                        .putExtra("int", 1000).putExtra("long", (long) 1000)
-                        .putExtra("boolean", true).putExtra("float", 10.4f)
+                new Intent()
+                        .setAction(Intent.ACTION_VIEW)
+                        .putExtra("string", "text")
+                        .putExtra("int", 1000)
+                        .putExtra("long", 1000L)
+                        .putExtra("boolean", true)
+                        .putExtra("float", 10.4f)
                         .setPackage("com.myapp"));
         checkIntentUri(
                 "intent://example.org/db?123#Intent;scheme=z39.50r;end",

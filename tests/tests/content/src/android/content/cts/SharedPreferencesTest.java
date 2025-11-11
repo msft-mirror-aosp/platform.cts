@@ -20,7 +20,6 @@ import android.app.QueuedWork;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.StrictMode;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.preference.PreferenceManager;
 import android.test.AndroidTestCase;
 import android.util.Log;
@@ -38,7 +37,6 @@ import java.util.concurrent.TimeUnit;
 /**
  * Test {@link SharedPreferences}.
  */
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class SharedPreferencesTest extends AndroidTestCase {
     private static final String TAG = "SharedPreferencesTest";
 
