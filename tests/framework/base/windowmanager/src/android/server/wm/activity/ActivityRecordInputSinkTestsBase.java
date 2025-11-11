@@ -86,7 +86,7 @@ public abstract class ActivityRecordInputSinkTestsBase extends ActivityManagerTe
 
     void touchButtonsAndAssert(boolean expectTouchesToReachActivity, boolean waitForAnimation) {
         mWmState.waitAndAssert(
-                ActivityRecordInputSinkTestsBase::hasStartingWindows,
+                ActivityRecordInputSinkTestsBase::hasNoStartingWindows,
                 "Splash screens aren't dismissed on time.");
 
         final WindowManagerState.Activity activity = mWmState.getActivity(mTestActivity);
@@ -107,7 +107,7 @@ public abstract class ActivityRecordInputSinkTestsBase extends ActivityManagerTe
                 .isEqualTo(mTouchCount);
     }
 
-    private static boolean hasStartingWindows(WindowManagerState state) {
+    private static boolean hasNoStartingWindows(WindowManagerState state) {
         return state.findFirstWindowWithType(WindowManager.LayoutParams.TYPE_APPLICATION_STARTING)
                 == null;
     }
