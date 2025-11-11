@@ -3686,12 +3686,14 @@ public class PackageManagerShellCommandInstallTest {
         private final int mTargetUserId;
         private CompletableFuture<Intent> mUserReceivedBroadcast = new CompletableFuture();
         private final String mAction;
+
         PackageBroadcastReceiver(String packageName, int targetUserId, String action) {
             mTargetPackage = packageName;
             mTargetUserId = targetUserId;
             mAction = action;
             reset();
         }
+
         @Override
         public void onReceive(Context context, Intent intent) {
             final String packageName = intent.getData() == null
@@ -3703,6 +3705,7 @@ public class PackageManagerShellCommandInstallTest {
                 mUserReceivedBroadcast.complete(intent);
             }
         }
+
         public void assertBroadcastReceived() throws Exception {
             // Make sure broadcast has been sent from PackageManager
             executeShellCommand("pm wait-for-handler --timeout 2000");
@@ -3710,8 +3713,20 @@ public class PackageManagerShellCommandInstallTest {
             executeShellCommand(String.format(
                     "am wait-for-broadcast-dispatch -a %s -d package:%s", mAction, mTargetPackage));
             // Checks that broadcast is delivered here
-            assertNotNull(mUserReceivedBroadcast.get(6000, TimeUnit.MILLISECONDS));
+            try {
+                assertNotNull(mUserReceivedBroadcast.get(6000, TimeUnit.MILLISECONDS));
+            } catch (Throwable t) {
+                Log.d(
+                        TAG,
+                        "Status of broadcast "
+                                + mAction
+                                + ":\n"
+                                + executeShellCommand(
+                                        "cmd activity dump broadcasts filter --action " + mAction));
+                throw t;
+            }
         }
+
         public void assertBroadcastNotReceived() throws Exception {
             // Make sure broadcast has been sent from PackageManager
             executeShellCommand("pm wait-for-handler --timeout 2000");
