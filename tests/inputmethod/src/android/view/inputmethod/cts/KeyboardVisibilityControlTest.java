@@ -17,6 +17,8 @@
 package android.view.inputmethod.cts;
 
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
+import static android.inputmethodservice.InputMethodService.BACK_DISPOSITION_ADJUST_NOTHING;
+import static android.inputmethodservice.InputMethodService.BACK_DISPOSITION_DEFAULT;
 import static android.inputmethodservice.InputMethodService.FINISH_INPUT_NO_FALLBACK_CONNECTION;
 import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.View.VISIBLE;
@@ -185,6 +187,12 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     @Rule
     public final RequireImeCompatFlagRule mRequireImeCompatFlagRule = new RequireImeCompatFlagRule(
             FINISH_INPUT_NO_FALLBACK_CONNECTION, true);
+
+    private static final long BACK_DISPOSITION_CONTROLS_BACK_INTERCEPTION = 454542168L;
+
+    @Rule
+    public final RequireImeCompatFlagRule mRequireBackDispositionCompatFlagRule =
+            new RequireImeCompatFlagRule(BACK_DISPOSITION_CONTROLS_BACK_INTERCEPTION, true);
 
     private Instrumentation mInstrumentation;
 
@@ -1401,6 +1409,101 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     @Test
     public void testImeInvisibleWhenForceStopPkgProcess_Instant() throws Exception {
         runImeVisibilityTestWhenForceStopPackage(true /* instant */);
+    }
+
+    private void verifyBackEventsBypassImeWithBackDisposition(
+            int backDisposition, boolean expectBypassIme, boolean predictiveBack) throws Exception {
+        final var instrumentation = InstrumentationRegistry.getInstrumentation();
+        final var context = instrumentation.getTargetContext();
+        final boolean onBackCallbackEnabled =
+                context.getApplicationInfo().isOnBackInvokedCallbackEnabled();
+
+        try (var imeSession =
+                MockImeSession.create(
+                        context,
+                        instrumentation.getUiAutomation(),
+                        new ImeSettings.Builder().setOnBackCallbackEnabled(true))) {
+            context.getApplicationInfo().setEnableOnBackInvokedCallback(predictiveBack);
+
+            final var stream = imeSession.openEventStream();
+            final var marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final var editText = launchTestActivity(marker);
+            final var backCallbackInvocationCount = new AtomicInteger();
+            final var testActivity = (TestActivity) editText.getContext();
+            testActivity
+                    .getOnBackInvokedDispatcher()
+                    .registerOnBackInvokedCallback(
+                            OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                            backCallbackInvocationCount::getAndIncrement);
+
+            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker), NOT_EXPECT_TIMEOUT);
+            expectImeInvisible(TIMEOUT);
+            // Set back disposition
+            expectCommand(stream, imeSession.callSetBackDisposition(backDisposition), TIMEOUT);
+
+            final var imm = editText.getContext().getSystemService(InputMethodManager.class);
+            assertNotNull("InputMethodManager should be found", imm);
+            assertTrue(
+                    "hasActiveInputConnection() must return true if the View has IME focus",
+                    getOnMainSync(() -> imm.hasActiveInputConnection(editText)));
+            assertTrue(
+                    "showSoftInput must success if the View has IME focus",
+                    getOnMainSync(() -> imm.showSoftInput(editText, 0)));
+            expectEvent(stream, showSoftInputMatcher(InputMethod.SHOW_EXPLICIT), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            expectEventWithKeyValue(
+                    stream, "onWindowVisibilityChanged", "visible", View.VISIBLE, TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            // Send back event
+            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+
+            if (expectBypassIme) {
+                // back event bypasses IME and is directly sent to app
+                assertEquals(1, backCallbackInvocationCount.get());
+                expectImeVisible(TIMEOUT);
+            } else {
+                // back event is sent to IME and hides IME
+                assertEquals(0, backCallbackInvocationCount.get());
+                expectImeInvisible(TIMEOUT);
+            }
+        } finally {
+            context.getApplicationInfo().setEnableOnBackInvokedCallback(onBackCallbackEnabled);
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_BACK_DISPOSITION_CONTROLS_BACK_INTERCEPTION)
+    @Test
+    public void testBackBehaviour_backDispositionAdjustNothing_predictiveBack() throws Exception {
+        verifyBackEventsBypassImeWithBackDisposition(
+                BACK_DISPOSITION_ADJUST_NOTHING,
+                /* expectBypassIme= */ true,
+                /* predictiveBack= */ true);
+    }
+
+    @Test
+    public void testBackBehaviour_backDispositionDefault_predictiveBack() throws Exception {
+        verifyBackEventsBypassImeWithBackDisposition(
+                BACK_DISPOSITION_DEFAULT,
+                /* expectBypassIme= */ false,
+                /* predictiveBack= */ true);
+    }
+
+    @Test
+    public void testBackBehaviour_backDispositionAdjustNothing_legacyBack() throws Exception {
+        verifyBackEventsBypassImeWithBackDisposition(
+                BACK_DISPOSITION_ADJUST_NOTHING,
+                /* expectBypassIme= */ false,
+                /* predictiveBack= */ false);
+    }
+
+    @Test
+    public void testBackBehaviour_backDispositionDefault_legacyBack() throws Exception {
+        verifyBackEventsBypassImeWithBackDisposition(
+                BACK_DISPOSITION_DEFAULT,
+                /* expectBypassIme= */ false,
+                /* predictiveBack= */ false);
     }
 
     @Test
