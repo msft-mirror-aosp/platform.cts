@@ -16,6 +16,8 @@
 
 package android.assist.cts;
 
+import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
+
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
@@ -26,6 +28,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assert.fail;
 
 import android.app.ActivityManager;
+import android.app.ActivityOptions;
 import android.app.assist.AssistContent;
 import android.app.assist.AssistStructure;
 import android.app.assist.AssistStructure.ViewNode;
@@ -236,6 +239,10 @@ abstract class AssistTestBase {
         Utils.setTestAppAction(intent, testCaseName);
         intent.putExtra(Utils.EXTRA_REMOTE_CALLBACK, mRemoteCallback);
         intent.addFlags(Intent.FLAG_ACTIVITY_MATCH_EXTERNAL);
+        // Make sure activities are launched in fullscreen to cover the entire screen even
+        // in freeform environement.
+        final ActivityOptions options = ActivityOptions.makeBasic();
+        options.setLaunchWindowingMode(WINDOWING_MODE_FULLSCREEN);
 
         // In devices which support multi-window Activity positioning by default (such as foldables)
         // it is necessary to launch additional activities ("screen fillers") so we may validate the
@@ -259,7 +266,7 @@ abstract class AssistTestBase {
             intent.putExtras(extras);
         }
 
-        mTestActivity.startActivity(intent);
+        mTestActivity.startActivity(intent, options.toBundle());
         waitForOnResume();
     }
 
