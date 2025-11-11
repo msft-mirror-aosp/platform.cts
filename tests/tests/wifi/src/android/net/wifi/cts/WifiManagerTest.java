@@ -89,7 +89,6 @@ import android.net.wifi.WifiManager.SubsystemRestartTrackingCallback;
 import android.net.wifi.WifiManager.WifiLock;
 import android.net.wifi.WifiNetworkConnectionStatistics;
 import android.net.wifi.WifiNetworkSelectionConfig;
-import android.net.wifi.WifiNetworkSpecifier;
 import android.net.wifi.WifiNetworkSuggestion;
 import android.net.wifi.WifiScanner;
 import android.net.wifi.WifiSsid;
@@ -6169,8 +6168,10 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             return;
         }
         CountDownLatch countDownLatch = new CountDownLatch(1);
-        TestLocalOnlyDisconnectionStatusListener listener =
-                new TestLocalOnlyDisconnectionStatusListener(countDownLatch);
+        WifiManager.LocalOnlyDisconnectionStatusListener listener =
+                (networkSpecifier, isTriggeredByUser, reason) -> {
+                    countDownLatch.countDown();
+                };
         assertThrows(
                 SecurityException.class,
                 () -> sWifiManager.addLocalOnlyDisconnectionStatusListener(mExecutor, listener));
@@ -6184,23 +6185,6 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             sWifiManager.removeLocalOnlyDisconnectionStatusListener(listener);
         } finally {
             uiAutomation.dropShellPermissionIdentity();
-        }
-    }
-
-    private static class TestLocalOnlyDisconnectionStatusListener
-            implements WifiManager.LocalOnlyDisconnectionStatusListener {
-        private final CountDownLatch mBlocker;
-
-        TestLocalOnlyDisconnectionStatusListener(CountDownLatch countDownLatch) {
-            mBlocker = countDownLatch;
-        }
-
-        @Override
-        public void onDisconnectionStatus(
-                @androidx.annotation.NonNull WifiNetworkSpecifier networkSpecifier,
-                boolean isTriggeredByUser,
-                int reason) {
-            mBlocker.countDown();
         }
     }
 
