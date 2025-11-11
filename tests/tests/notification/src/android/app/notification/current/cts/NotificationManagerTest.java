@@ -1886,8 +1886,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({
-            com.android.server.notification.Flags.FLAG_NOTIFICATION_FORCE_GROUP_SINGLETONS})
     public void testAutogrouping_sparseGroups() throws Exception {
         assumeFalse("NotificationListeners do not support visible background users",
                 mUserHelper.isVisibleBackgroundUser());
@@ -1947,8 +1945,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({
-            com.android.server.notification.Flags.FLAG_NOTIFICATION_FORCE_GROUP_SINGLETONS})
     public void testAutogrouping_sparseGroups_appCancelsRemovedSummary() throws Exception {
         assumeFalse("NotificationListeners do not support visible background users",
                 mUserHelper.isVisibleBackgroundUser());
