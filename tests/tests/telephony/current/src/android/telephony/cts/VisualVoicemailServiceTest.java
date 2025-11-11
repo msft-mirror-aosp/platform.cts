@@ -21,13 +21,11 @@ import static androidx.test.InstrumentationRegistry.getInstrumentation;
 import static com.android.internal.telephony.SmsConstants.ENCODING_8BIT;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeNotNull;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
@@ -46,7 +44,6 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.ParcelFileDescriptor;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.provider.Telephony.Sms;
 import android.provider.Telephony.Sms.Intents;
@@ -83,7 +80,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-@AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
 public class VisualVoicemailServiceTest {
 
     private static final String TAG = "VvmServiceTest";

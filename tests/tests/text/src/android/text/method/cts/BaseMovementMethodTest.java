@@ -24,7 +24,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import android.Manifest;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.os.SystemClock;
@@ -47,7 +46,6 @@ import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
-import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.WidgetTestUtils;
 
@@ -65,11 +63,6 @@ public class BaseMovementMethodTest {
     private Instrumentation mInstrumentation;
     private BaseMovementMethod mMovementMethod;
     private TextView mTextView;
-
-    @Rule(order = 0)
-    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
-            InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
 
     @Rule(order = 1)
     public ActivityTestRule<CtsActivity> mActivityRule = new ActivityTestRule<>(CtsActivity.class);

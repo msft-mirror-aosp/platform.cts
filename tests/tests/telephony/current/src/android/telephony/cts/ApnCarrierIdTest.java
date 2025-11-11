@@ -30,7 +30,6 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Telephony.Carriers;
@@ -208,7 +207,6 @@ public class ApnCarrierIdTest {
      * as MCCMNC/numeric can establish a data connection.
      */
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have access to telephony provider")
     public void validateDataConnectionWithCarrierIdApn() throws Exception {
         ApnSetting currentApn = mPreciseDataConnectionState.getApnSetting();
         validateAndSetupInitialState(currentApn);

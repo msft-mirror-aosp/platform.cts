@@ -18,7 +18,6 @@ package android.text.method.cts;
 
 import static android.provider.Settings.System.TEXT_AUTO_CAPS;
 
-import android.Manifest;
 import android.app.AppOpsManager;
 import android.app.Instrumentation;
 import android.content.ContentResolver;
@@ -34,7 +33,6 @@ import android.widget.EditText;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
-import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.CtsKeyEventUtil;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.WindowUtil;
@@ -56,11 +54,6 @@ public abstract class KeyListenerTestCase {
     private CtsKeyEventUtil mCtsKeyEventUtil;
     protected EditText mTextView;
     private int mAutoCapSetting;
-
-    @Rule(order = 0)
-    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
-            InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
 
     @Rule(order = 1)
     public ActivityTestRule<KeyListenerCtsActivity> mActivityRule =

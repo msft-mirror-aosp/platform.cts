@@ -10,7 +10,6 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.telephony.AccessNetworkConstants;
 import android.telephony.CallAttributes;
 import android.telephony.CallState;
@@ -40,7 +39,6 @@ import com.android.compatibility.common.util.ShellIdentityUtils;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -56,8 +54,6 @@ import java.util.concurrent.TimeUnit;
 /**
  * Test TelephonyRegistryManagerTest APIs.
  */
-@AppModeNonSdkSandbox(reason = "SDK sandboxes do not have access to TelephonyRegistryManager"
-        + "(telephony_registry)")
 public class TelephonyRegistryManagerTest {
     private TelephonyRegistryManager mTelephonyRegistryMgr;
     private LocationHelper mLocationHelper;

@@ -21,7 +21,6 @@
     <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="not_secondary_user" />
     <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
-    <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
     <target_preparer class="com.android.tradefed.targetprep.DeviceSetup">
         <!-- Disable package verifier before installing APKs -->
         <option name="set-global-setting" key="verifier_verify_adb_installs" value="0" />

@@ -72,7 +72,6 @@ import android.content.pm.PackageManager;
 import android.net.NetworkCapabilities;
 import android.os.Looper;
 import android.os.PersistableBundle;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -488,7 +487,6 @@ public class CarrierConfigManagerTest {
     }
 
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testGetConfig() {
         PersistableBundle config = mConfigManager.getConfig();
         checkConfig(config);
@@ -511,7 +509,6 @@ public class CarrierConfigManagerTest {
     }
 
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testGetConfig_withValidKeys() {
         PersistableBundle allConfigs = mConfigManager.getConfig();
         Set<String> allKeys = allConfigs.keySet();
@@ -524,7 +521,6 @@ public class CarrierConfigManagerTest {
     }
 
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testGetConfig_keyWithoutDefaultValue() {
         String keyWithDefaultValue = CarrierConfigManager.KEY_CARRIER_SUPPORTS_TETHERING_BOOL;
         String keyWithoutDefaultValue = "random_key_for_testing";
@@ -541,7 +537,6 @@ public class CarrierConfigManagerTest {
 
     @Test
     @AsbSecurityTest(cveBugId = 73136824)
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testRevokePermission() {
         PersistableBundle config;
 
@@ -565,7 +560,6 @@ public class CarrierConfigManagerTest {
     }
 
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testGetConfigForSubId() {
         PersistableBundle config =
                 mConfigManager.getConfigForSubId(SubscriptionManager.getDefaultSubscriptionId());
@@ -590,7 +584,6 @@ public class CarrierConfigManagerTest {
     }
 
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testGetConfigForSubId_withValidSingleKey() {
         final int defaultSubId = SubscriptionManager.getDefaultSubscriptionId();
         PersistableBundle allConfigs = mConfigManager.getConfigForSubId(defaultSubId);
@@ -604,7 +597,6 @@ public class CarrierConfigManagerTest {
     }
 
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testGetConfigForSubId_withValidMultipleKeys() {
         final int defaultSubId = SubscriptionManager.getDefaultSubscriptionId();
         PersistableBundle allConfigs = mConfigManager.getConfigForSubId(defaultSubId);
@@ -665,7 +657,6 @@ public class CarrierConfigManagerTest {
      * correctly overrides the Carrier Name (SPN) string.
      */
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testCarrierConfigNameOverride() throws Exception {
         if (!isSimCardPresent()
                 || mTelephonyManager.getServiceState().getState() != STATE_IN_SERVICE) {
@@ -763,7 +754,6 @@ public class CarrierConfigManagerTest {
     }
 
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testGetConfigByComponentForSubId() {
         PersistableBundle config =
                 mConfigManager.getConfigByComponentForSubId(
@@ -848,7 +838,6 @@ public class CarrierConfigManagerTest {
     @ApiTest(apis = {"android.telephony"
             + ".CarrierConfigManager#KEY_CELLULAR_SERVICE_CAPABILITIES_INT_ARRAY",
             "android.telephony.SubscriptionInfo#getServiceCapabilities"})
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testCellularServiceCapabilitiesOverride() throws Exception {
         if (!isSimCardPresent()
                 || mTelephonyManager.getServiceState().getState() != STATE_IN_SERVICE) {
