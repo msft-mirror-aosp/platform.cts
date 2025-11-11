@@ -16,7 +16,6 @@
 
 package com.android.cts.input
 
-import android.graphics.PointF
 import android.view.MotionEvent
 import android.view.MotionEvent.PointerCoords
 import android.view.MotionEvent.PointerProperties
@@ -37,8 +36,6 @@ class PointerBuilder(val id: Int, val toolType: Int) {
     fun y(y: Float): PointerBuilder {
         return axis(MotionEvent.AXIS_Y, y)
     }
-
-    fun xy(point: PointF) = x(point.x).y(point.y)
 
     fun axis(axis: Int, value: Float): PointerBuilder {
         coords.setAxisValue(axis, value)
