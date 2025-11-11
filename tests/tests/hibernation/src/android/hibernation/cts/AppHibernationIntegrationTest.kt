@@ -141,7 +141,8 @@ class AppHibernationIntegrationTest {
 
         // Wake up the device
         runShellCommandOrThrow("input keyevent KEYCODE_WAKEUP")
-        runShellCommandOrThrow("input keyevent 82")
+        runShellCommandOrThrow("input keyevent KEYCODE_MENU")
+        runShellCommandOrThrow("input keyevent KEYCODE_HOME")
         runShellCommandOrThrow("am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS")
 
         resetJob(context)
