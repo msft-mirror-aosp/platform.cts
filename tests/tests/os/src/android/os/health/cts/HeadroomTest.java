@@ -34,7 +34,6 @@ import android.os.CpuHeadroomParams;
 import android.os.Flags;
 import android.os.GpuHeadroomParams;
 import android.os.health.SystemHealthManager;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -58,7 +57,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Provides test cases for android.os.health.SystemHealthManager headroom APIs.
  */
 @RunWith(AndroidJUnit4.class)
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class HeadroomTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =

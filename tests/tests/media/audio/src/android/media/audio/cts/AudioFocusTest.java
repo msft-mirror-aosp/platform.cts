@@ -63,7 +63,6 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Vibrator;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -96,8 +95,6 @@ import java.util.concurrent.TimeUnit;
 
 @RunWith(BedsteadJUnit4.class)
 @FrameworkSpecificTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-
 public class AudioFocusTest {
     private static final String TAG = "AudioFocusTest";
 

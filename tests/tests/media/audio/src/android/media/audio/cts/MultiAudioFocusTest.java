@@ -37,7 +37,6 @@ import android.media.AudioManager.OnAudioFocusChangeListener;
 import android.media.cts.Utils;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
@@ -62,8 +61,6 @@ import java.util.concurrent.TimeUnit;
 
 @RunWith(BedsteadJUnit4.class)
 @FrameworkSpecificTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-
 public class MultiAudioFocusTest {
     private static final String TAG = "MultiAudioFocusTest";
 

@@ -24,7 +24,6 @@ import android.Manifest;
 import android.content.Context;
 import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
@@ -43,7 +42,6 @@ import org.junit.runner.RunWith;
  */
 @RunWith(BedsteadJUnit4.class)
 @AppModeFull(reason = "Cannot query other apps if instant")
-@AppModeNonSdkSandbox(reason = "SDK sandboxes cannot query other apps")
 @EnsureHasCloneProfile
 public class UninstallationWithCloneProfileTest extends UninstallationTestBase {
 

@@ -15,11 +15,10 @@
  */
 package android.os.cts;
 
-import junit.framework.TestCase;
 import android.os.RemoteException;
-import android.platform.test.annotations.AppModeSdkSandbox;
 
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
+import junit.framework.TestCase;
+
 public class RemoteExceptionTest extends TestCase {
 
     public void testRemoteException() throws Exception {

@@ -36,7 +36,6 @@ import android.media.audiopolicy.AudioMix;
 import android.media.audiopolicy.AudioMixingRule;
 import android.media.audiopolicy.AudioPolicy;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Log;
 
 import androidx.test.filters.FlakyTest;
@@ -63,7 +62,6 @@ import java.util.concurrent.TimeUnit;
  * Test suite derived from GTS DevicesForAttributesTest.java
  */
 @FrameworkSpecificTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 @FlakyTest(bugId = 326206728)
 @AppModeFull(reason = "Fails on infra with instant, for unknown reasons")

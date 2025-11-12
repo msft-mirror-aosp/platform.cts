@@ -103,7 +103,6 @@ import android.os.HandlerThread;
 import android.os.SystemClock;
 import android.os.Vibrator;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -157,7 +156,6 @@ import java.util.stream.IntStream;
 @FrameworkSpecificTest
 @AppModeFull(reason = "Waiting for volume/zen mode changes requires receiving intents. " +
         "Several API calls require MODIFY_AUDIO_SETTINGS.")
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class AudioManagerTest {
     private static final String TAG = "AudioManagerTest";
