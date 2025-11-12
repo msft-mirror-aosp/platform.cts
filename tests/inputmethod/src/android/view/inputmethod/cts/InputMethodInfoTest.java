@@ -37,10 +37,14 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.pm.ServiceInfo;
 import android.icu.util.ULocale;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.util.Printer;
 import android.view.inputmethod.InputMethod;
+import android.view.inputmethod.Flags;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
@@ -54,6 +58,7 @@ import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.PropertyUtil;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.xmlpull.v1.XmlPullParserException;
 
@@ -66,6 +71,9 @@ public final class InputMethodInfoTest {
     private static final String MOCK_IME_ID = "com.android.cts.mockime/.MockIme";
     private static final String HIDDEN_FROM_PICKER_IME_ID =
             "com.android.cts.hiddenfrompickerime/.HiddenFromPickerIme";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Context mContext;
     private InputMethodManager mImManager;
@@ -364,5 +372,30 @@ public final class InputMethodInfoTest {
         assertEquals("zh-CN", subtype.getLanguageTag());
         assertEquals(new ULocale("en-US"), subtype.getPhysicalKeyboardHintLanguageTag());
         assertEquals("qwerty", subtype.getPhysicalKeyboardHintLayoutType());
+    }
+
+    @ApiTest(apis = {"android.view.inputmethod.InputMethodSubtype#getSubtypeShortLabel"})
+    @RequiresFlagsEnabled(Flags.FLAG_IME_SUBTYPE_SHORT_LABEL)
+    @Test
+    public void testParsingShortLabelAttribute() throws Exception {
+        final ServiceInfo serviceInfo = new ServiceInfo();
+        serviceInfo.applicationInfo = mContext.getApplicationInfo();
+        serviceInfo.packageName = mContext.getPackageName();
+        serviceInfo.name = "TestIme";
+        serviceInfo.metaData = new Bundle();
+        serviceInfo.metaData.putInt(InputMethod.SERVICE_META_DATA, R.xml.ime_meta_subtypes);
+        final ResolveInfo resolveInfo = new ResolveInfo();
+        resolveInfo.serviceInfo = serviceInfo;
+        final InputMethodInfo imi = new InputMethodInfo(mContext, resolveInfo);
+
+        assertEquals(2, imi.getSubtypeCount());
+
+        InputMethodSubtype subtype = imi.getSubtypeAt(0);
+        assertEquals("en-US", subtype.getLanguageTag());
+        assertThat(subtype.getSubtypeShortLabel().toString()).isEmpty();
+
+        subtype = imi.getSubtypeAt(1);
+        assertEquals("zh-CN", subtype.getLanguageTag());
+        assertThat(subtype.getSubtypeShortLabel().toString()).isEqualTo("拼");
     }
 }
