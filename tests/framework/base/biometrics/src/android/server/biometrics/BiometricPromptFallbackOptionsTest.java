@@ -66,7 +66,6 @@ import java.util.regex.Pattern;
 public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
     private static final String TAG = "BiometricPromptFallbackOptionsTest";
     private static final int MAX_FALLBACK_OPTIONS = 4;
-    private static final int TIMEOUT_MS = 3000;
 
     final BiometricPrompt.AuthenticationCallback mCallback =
             mock(BiometricPrompt.AuthenticationCallback.class);
@@ -167,10 +166,9 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
 
                 // Wait for transition between pages
                 final BySelector credentialSelector = By.res(FALLBACK_PAGE_CREDENTIAL_BUTTON);
-                mDevice.wait(Until.hasObject(credentialSelector), TIMEOUT_MS);
+                UiObject2 credentialButton =
+                        mDevice.wait(Until.findObject(credentialSelector), VIEW_WAIT_TIME_MS);
 
-                // Verify credential button is first option
-                final UiObject2 credentialButton = mDevice.findObject(credentialSelector);
                 assertThat(credentialButton).isNotNull();
                 assertThat(credentialButton.getVisibleBounds()).isNotNull();
 
@@ -278,7 +276,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
                 final Pattern fallbackPattern =
                         Pattern.compile(Pattern.quote(fallbackText), Pattern.CASE_INSENSITIVE);
                 final BySelector fallbackSelector = By.text(fallbackPattern);
-                mDevice.wait(Until.hasObject(fallbackSelector), TIMEOUT_MS);
+                mDevice.wait(Until.hasObject(fallbackSelector), VIEW_WAIT_TIME_MS);
                 final UiObject2 fallbackButton = mDevice.findObject(fallbackSelector);
                 assertThat(fallbackButton).isNotNull();
                 assertThat(fallbackButton.getText()).matches(fallbackPattern);
@@ -343,7 +341,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
 
                     // Test each fallback button
                     final BySelector fallbackSelector = By.text(fallbackTexts[i]);
-                    mDevice.wait(Until.hasObject(fallbackSelector), TIMEOUT_MS);
+                    mDevice.wait(Until.hasObject(fallbackSelector), VIEW_WAIT_TIME_MS);
                     final UiObject2 fallbackButton = mDevice.findObject(fallbackSelector);
                     assertThat(fallbackButton).isNotNull();
                     fallbackButton.click();
@@ -433,7 +431,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
             final Pattern fallbackPattern =
                     Pattern.compile(Pattern.quote(fallbackText), Pattern.CASE_INSENSITIVE);
             final BySelector fallbackSelector = By.text(fallbackPattern);
-            mDevice.wait(Until.hasObject(fallbackSelector), TIMEOUT_MS);
+            mDevice.wait(Until.hasObject(fallbackSelector), VIEW_WAIT_TIME_MS);
             final UiObject2 fallbackButton = mDevice.findObject(fallbackSelector);
             assertThat(fallbackButton).isNotNull();
             assertThat(fallbackButton.getText()).matches(fallbackPattern);
@@ -480,7 +478,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
 
             // Find first fallback
             final BySelector fallbackSelector = By.text(fallbackTexts[0]);
-            mDevice.wait(Until.hasObject(fallbackSelector), TIMEOUT_MS);
+            mDevice.wait(Until.hasObject(fallbackSelector), VIEW_WAIT_TIME_MS);
             final UiObject2 fallbackButton = mDevice.findObject(fallbackSelector);
             assertThat(fallbackButton).isNotNull();
 
