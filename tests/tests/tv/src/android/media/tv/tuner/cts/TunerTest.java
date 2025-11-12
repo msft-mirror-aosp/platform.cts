@@ -296,20 +296,25 @@ public class TunerTest {
         }
 
         private void updateCapCounts(int caps) {
-            int mask = 1;
-            for (int i = 0; i < Integer.SIZE - 1; i++) {
-                if (mask > caps) {
-                    break;
-                }
-                if ((caps & mask) == mask) {
+            // updating cap counts.
+            for (int i = 0; i < Integer.SIZE; i++) {
+                int mask = 1 << i;
+                if ((mask & caps) != 0) {
                     int newCount = mCapCounts.get(mask, 0) + 1;
                     mCapCounts.put(mask, newCount);
-                    if (newCount < mRunningMinCount) {
-                        mRunningMinCount = newCount;
-                        mLeastFrequentCap = mask;
-                    }
                 }
-                mask = mask << 1;
+            }
+
+            // finding and updating the least frequent cap.
+            mLeastFrequentCap = 0;
+            mRunningMinCount = Integer.MAX_VALUE;
+            for (int i = 0; i < Integer.SIZE; i++) {
+                int mask = 1 << i;
+                int count = mCapCounts.get(mask, 0);
+                if (0 < count && count < mRunningMinCount) {
+                    mRunningMinCount = count;
+                    mLeastFrequentCap = mask;
+                }
             }
         }
 
