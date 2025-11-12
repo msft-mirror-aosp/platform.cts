@@ -1664,7 +1664,7 @@ public abstract class AppSearchSessionCtsTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DELETE_PROPAGATION_TYPE)
     public void testGetSchema_deletePropagationTypePropagateFrom_notSupported() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.JOIN_SPEC_AND_QUALIFIED_ID));
-        assumeTrue(mDb1.getFeatures().isFeatureSupported(
+        assumeFalse(mDb1.getFeatures().isFeatureSupported(
                 Features.SCHEMA_STRING_PROPERTY_CONFIG_DELETE_PROPAGATION_TYPE_PROPAGATE_FROM));
 
         AppSearchSchema inSchema =
