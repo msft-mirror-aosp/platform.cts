@@ -46,6 +46,7 @@ import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.PropertyUtil;
 import com.android.ex.camera2.blocking.BlockingStateCallback;
+import com.android.internal.camera.flags.Flags;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -645,6 +646,7 @@ public class CameraManagerTest extends Camera2ParameterizedTestCase {
 
         final LinkedBlockingQueue<String> onCameraOpenedEventQueue = new LinkedBlockingQueue<>();
         final LinkedBlockingQueue<String> onCameraClosedEventQueue = new LinkedBlockingQueue<>();
+        final LinkedBlockingQueue<String> onCameraRemovedEventQueue = new LinkedBlockingQueue<>();
 
         CameraManager.AvailabilityCallback ac = new CameraManager.AvailabilityCallback() {
             @Override
@@ -691,6 +693,13 @@ public class CameraManagerTest extends Camera2ParameterizedTestCase {
                 onCameraClosedEventQueue.offer(cameraId);
             }
 
+            @Override
+            public void onCameraRemoved(String cameraId) {
+                super.onCameraClosed(cameraId);
+                if (Flags.deviceRemovedCallback()) {
+                    onCameraRemovedEventQueue.offer(cameraId);
+                }
+            }
         };
 
         if (useExecutor) {
@@ -881,6 +890,12 @@ public class CameraManagerTest extends Camera2ParameterizedTestCase {
 
             mCameraManager.unregisterAvailabilityCallback(ac);
         }
+
+        if (Flags.deviceRemovedCallback()) {
+            assertTrue("Camera removed events received unexpectedly",
+                    onCameraRemovedEventQueue.size() == 0);
+        }
+
     } // testCameraManagerListenerCallbacks
 
     /**
