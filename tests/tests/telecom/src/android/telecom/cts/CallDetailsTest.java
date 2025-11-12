@@ -1415,7 +1415,7 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
 
         Phone phone = mInCallService.getPhone();
         phone.canAddCall();
-        phone.getCallAudioState();
+        phone.getAudioState();
         phone.getCallAudioState();
         phone.getCalls();
         phone.setMuted(false);
@@ -1429,6 +1429,9 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
 
         AudioState audioState =
                 new AudioState(false, AudioState.ROUTE_EARPIECE, AudioState.ROUTE_EARPIECE);
+        assertEquals(AudioState.ROUTE_EARPIECE, audioState.getRoute());
+        assertEquals(AudioState.ROUTE_EARPIECE, audioState.getSupportedRouteMask());
+        assertNotNull(audioState.audioRouteToString(AudioState.ROUTE_EARPIECE));
         AudioState copiedState = new AudioState(audioState);
         CallAudioState callAudioState =
                 new CallAudioState(

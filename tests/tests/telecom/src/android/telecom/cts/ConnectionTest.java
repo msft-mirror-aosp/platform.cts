@@ -18,8 +18,7 @@ package android.telecom.cts;
 
 import static android.telecom.cts.TestUtils.shouldTestTelecom;
 
-import com.android.compatibility.common.util.ApiLevelUtil;
-
+import android.content.ComponentName;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -28,6 +27,8 @@ import android.telecom.DisconnectCause;
 import android.telecom.StatusHints;
 import android.telecom.TelecomManager;
 import android.test.AndroidTestCase;
+
+import com.android.compatibility.common.util.ApiLevelUtil;
 
 import java.util.Arrays;
 import java.util.List;
@@ -356,6 +357,26 @@ public class ConnectionTest extends AndroidTestCase {
         final StatusHints statusHints = new StatusHints("Test", null, null);
         connection.setStatusHints(statusHints);
         assertEquals(statusHints, connection.getStatusHints());
+
+        // Deprecated constructor, not used.
+        final StatusHints statusHints2 =
+                new StatusHints(new ComponentName("test", "test"), "test", 0, null);
+        connection.setStatusHints(statusHints2);
+        assertEquals(statusHints2, connection.getStatusHints());
+
+        // Deprecated, not used.
+        assertEquals(0, statusHints2.getIconResId());
+
+        // Deprecated, not used.
+        try {
+            assertNull(statusHints2.getIcon(mContext));
+        } catch (NullPointerException npe) {
+            // <sigh> This isn't used any more, and it turns out `getIcon(context)` doesn't check
+            // if there is a valid icon present when it is called, so it will NPE.
+        }
+
+        // This method does nothing.
+        statusHints2.getPackageName();
     }
 
     public void testSetAndGetRingbackRequested() {

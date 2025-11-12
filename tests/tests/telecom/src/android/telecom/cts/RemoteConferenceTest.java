@@ -23,7 +23,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
+import android.telecom.AudioState;
 import android.telecom.Call;
+import android.telecom.CallAudioState;
 import android.telecom.Connection;
 import android.telecom.ConnectionRequest;
 import android.telecom.DisconnectCause;
@@ -424,7 +426,29 @@ public class RemoteConferenceTest extends BaseRemoteTelecomTest {
         assertEquals(mRemoteConferenceObject, callbackInvoker.getArgs(0)[0]);
         assertEquals(properties, callbackInvoker.getArgs(0)[1]);
         assertEquals(properties, mRemoteConference.getConnectionProperties());
+        assertEquals(properties, mRemoteConferenceObject.getConnectionProperties());
         mRemoteConferenceObject.unregisterCallback(callback);
+    }
+
+    public void testRemoteConferenceCallbacks_CallAudioState() {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
+            return;
+        }
+
+        addRemoteConferenceCall();
+        verifyRemoteConferenceObject(mRemoteConferenceObject, mRemoteConference, mConference);
+
+        mRemoteConferenceObject.setCallAudioState(
+                new CallAudioState(
+                        false, CallAudioState.ROUTE_EARPIECE, CallAudioState.ROUTE_EARPIECE));
+        mRemoteConference.mOnCallAudioStateChanged.waitForCount(
+                1, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        CallAudioState passedState =
+                (CallAudioState) (mRemoteConference.mOnCallAudioStateChanged.getArgs(0)[0]);
+        assertEquals(CallAudioState.ROUTE_EARPIECE, passedState.getRoute());
+
+        // Method not used, "cover" it.
+        mRemoteConferenceObject.setAudioState(new AudioState(false, 0, 0));
     }
 
     public void testRemoteConferenceCallbacks_ConferenceableConnections() {
