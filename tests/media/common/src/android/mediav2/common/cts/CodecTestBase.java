@@ -1452,7 +1452,7 @@ public abstract class CodecTestBase {
     // same, resetContext() is called here. This default initializes all the fields of the test
     // before configuring the component. If the test intends to use a value different from
     // default value then explicit initialization is required.
-    protected void configureCodecCommon(MediaFormat format, boolean isAsync,
+    protected final void configureCodecCommon(MediaFormat format, boolean isAsync,
             boolean signalEOSWithLastFrame, boolean isEncoder, int flags) {
         if (IS_AT_LEAST_R && ((flags & MediaCodec.CONFIGURE_FLAG_USE_BLOCK_MODEL) != 0)) {
             if (!isAsync) {
@@ -1483,7 +1483,7 @@ public abstract class CodecTestBase {
         mTestEnv.append("Component configure flags :- ").append(flags).append("\n");
     }
 
-    protected void configureCodec(MediaFormat format, boolean isAsync,
+    protected final void configureCodec(MediaFormat format, boolean isAsync,
             boolean cryptoCallAndSignalEosWithLastFrame, boolean isEncoder) {
         configureCodec(format, isAsync, cryptoCallAndSignalEosWithLastFrame,
                 isEncoder, 0 /* flags */);
