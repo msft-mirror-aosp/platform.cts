@@ -66,6 +66,7 @@ import android.permission.PermissionManager;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.view.Display;
+import android.virtualdevice.cts.common.AudioInjector;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import com.android.compatibility.common.util.FeatureUtil;
