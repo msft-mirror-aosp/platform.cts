@@ -58,11 +58,13 @@ class BluetoothGattConnectionSettingsTest {
                 .setTransport(BluetoothDevice.TRANSPORT_AUTO)
                 .setAutoConnectEnabled(true)
                 .setOpportunisticEnabled(true)
+                .setAutomaticMtuEnabled(false)
                 .build()
         expect.that(settings.getTransport()).isEqualTo(BluetoothDevice.TRANSPORT_AUTO)
         expect.that(settings.isAutoConnectEnabled()).isTrue()
         expect.that(settings.isOpportunisticEnabled()).isTrue()
         expect.that(settings.getBluetoothGattCallback()).isEqualTo(callback)
+        expect.that(settings.isAutomaticMtuEnabled()).isFalse()
     }
 
     @Test
@@ -74,6 +76,7 @@ class BluetoothGattConnectionSettingsTest {
         expect.that(settings.isAutoConnectEnabled()).isFalse()
         expect.that(settings.isOpportunisticEnabled()).isFalse()
         expect.that(settings.getBluetoothGattCallback()).isEqualTo(callback)
+        expect.that(settings.isAutomaticMtuEnabled()).isTrue()
     }
 
     companion object {

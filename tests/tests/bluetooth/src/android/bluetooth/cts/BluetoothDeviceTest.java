@@ -910,6 +910,7 @@ public class BluetoothDeviceTest {
                         .setTransport(BluetoothDevice.TRANSPORT_LE)
                         .setAutoConnectEnabled(false)
                         .setOpportunisticEnabled(false)
+                        .setAutomaticMtuEnabled(true)
                         .build();
         BluetoothGatt gatt = mFakeDevice.connectGatt(settings);
         assertThat(gatt).isNotNull();
