@@ -127,6 +127,7 @@ public final class UserControlDisabledPackagesTest {
 
     @CanSetPolicyTest(policy = UserControlDisabledPackages.class)
     @Postsubmit(reason = "b/181993922 automatically marked flaky")
+    @Ignore("b/460509405 flaky test")
     public void setUserControlDisabledPackages_toOneProtectedPackage() {
         dpc(sDeviceState).devicePolicyManager().setUserControlDisabledPackages(
                 dpc(sDeviceState).componentName(), List.of(PACKAGE_NAME));
@@ -158,6 +159,7 @@ public final class UserControlDisabledPackagesTest {
     @EnsureHasPermission(value = permission.FORCE_STOP_PACKAGES)
     @PolicyAppliesTest(policy = UserControlDisabledPackages.class)
     @Postsubmit(reason = "b/181993922 automatically marked flaky")
+    @Ignore("b/460509405 flaky test")
     public void setUserControlDisabledPackages_launchActivity_verifyPackageNotStopped()
             throws Exception {
         Assume.assumeTrue("Needs to launch activity",
@@ -185,6 +187,7 @@ public final class UserControlDisabledPackagesTest {
     @EnsureHasPermission(value = permission.FORCE_STOP_PACKAGES)
     @PolicyDoesNotApplyTest(policy = UserControlDisabledPackages.class)
     @Postsubmit(reason = "new test")
+    @Ignore("b/460509405 flaky test")
     public void setUserControlDisabledPackages_launchActivity_verifyPackageStopped()
             throws Exception {
         Assume.assumeTrue("Needs to launch activity",
