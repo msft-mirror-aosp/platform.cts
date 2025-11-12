@@ -16,6 +16,7 @@
 
 package android.security.cts.advancedprotection;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
@@ -23,9 +24,12 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.Manifest;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.security.advancedprotection.AdvancedProtectionFeature;
 import android.security.advancedprotection.AdvancedProtectionManager;
+import android.security.Flags;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
@@ -34,6 +38,7 @@ import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSec
 import com.android.bedstead.nene.TestApis;
 import com.android.compatibility.common.util.ApiTest;
 
+import java.util.List;
 import org.junit.Assume;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -46,17 +51,18 @@ import java.util.concurrent.TimeUnit;
 
 @RunWith(BedsteadJUnit4.class)
 public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
-    @ClassRule @Rule
-    public static final DeviceState sDeviceState = new DeviceState();
+    @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final int TIMEOUT_S = 3;
 
-    @ApiTest(apis = {
-            "android.security.advancedprotection.AdvancedProtectionManager"
-                    + "#setAdvancedProtectionEnabled"})
+    @ApiTest(
+            apis = {
+                "android.security.advancedprotection.AdvancedProtectionManager"
+                        + "#setAdvancedProtectionEnabled"
+            })
     @Test
     @IncludeRunOnPrimaryUser
     public void testEnableProtection() {
@@ -64,9 +70,11 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
         assertTrue(mManager.isAdvancedProtectionEnabled());
     }
 
-    @ApiTest(apis = {
-            "android.security.advancedprotection.AdvancedProtectionManager"
-                    + "#setAdvancedProtectionEnabled"})
+    @ApiTest(
+            apis = {
+                "android.security.advancedprotection.AdvancedProtectionManager"
+                        + "#setAdvancedProtectionEnabled"
+            })
     @Test
     @IncludeRunOnPrimaryUser
     public void testDisableProtection() {
@@ -74,9 +82,11 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
         assertFalse(mManager.isAdvancedProtectionEnabled());
     }
 
-    @ApiTest(apis = {
-            "android.security.advancedprotection.AdvancedProtectionManager"
-                    + "#setAdvancedProtectionEnabled"})
+    @ApiTest(
+            apis = {
+                "android.security.advancedprotection.AdvancedProtectionManager"
+                        + "#setAdvancedProtectionEnabled"
+            })
     @Test
     @IncludeRunOnSecondaryUser
     public void testEnableProtection_secondaryUser_throws() {
@@ -84,9 +94,11 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
         assertThrows(SecurityException.class, () -> mManager.setAdvancedProtectionEnabled(true));
     }
 
-    @ApiTest(apis = {
-            "android.security.advancedprotection.AdvancedProtectionManager"
-                    + "#registerAdvancedProtectionCallback"})
+    @ApiTest(
+            apis = {
+                "android.security.advancedprotection.AdvancedProtectionManager"
+                        + "#registerAdvancedProtectionCallback"
+            })
     @Test
     @IncludeRunOnPrimaryUser
     @IncludeRunOnSecondaryUser
@@ -94,15 +106,16 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
         // Called once on register, then on set
         CountDownLatch onRegister = new CountDownLatch(1);
         CountDownLatch onSet = new CountDownLatch(1);
-        AdvancedProtectionManager.Callback callback = enabled -> {
-            if (onRegister.getCount() > 0) {
-                assertTrue(enabled);
-                onRegister.countDown();
-            } else {
-                assertFalse(enabled);
-                onSet.countDown();
-            }
-        };
+        AdvancedProtectionManager.Callback callback =
+                enabled -> {
+                    if (onRegister.getCount() > 0) {
+                        assertTrue(enabled);
+                        onRegister.countDown();
+                    } else {
+                        assertFalse(enabled);
+                        onSet.countDown();
+                    }
+                };
 
         setAdvancedProtectionEnabled(true);
 
@@ -120,9 +133,11 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
         mManager.unregisterAdvancedProtectionCallback(callback);
     }
 
-    @ApiTest(apis = {
-            "android.security.advancedprotection.AdvancedProtectionManager"
-                    + "#unregisterAdvancedProtectionCallback"})
+    @ApiTest(
+            apis = {
+                "android.security.advancedprotection.AdvancedProtectionManager"
+                        + "#unregisterAdvancedProtectionCallback"
+            })
     @Test
     @IncludeRunOnPrimaryUser
     @IncludeRunOnSecondaryUser
@@ -131,13 +146,14 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
         CountDownLatch onRegister = new CountDownLatch(1);
         CountDownLatch onSet = new CountDownLatch(1);
 
-        AdvancedProtectionManager.Callback callback = state -> {
-            if (onRegister.getCount() > 0) {
-                onRegister.countDown();
-            } else {
-                onSet.countDown();
-            }
-        };
+        AdvancedProtectionManager.Callback callback =
+                state -> {
+                    if (onRegister.getCount() > 0) {
+                        onRegister.countDown();
+                    } else {
+                        onSet.countDown();
+                    }
+                };
 
         setAdvancedProtectionEnabled(true);
 
@@ -156,9 +172,11 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
         }
     }
 
-    @ApiTest(apis = {
-            "android.security.advancedprotection.AdvancedProtectionManager"
-                    + "#getAdvancedProtectionFeatures"})
+    @ApiTest(
+            apis = {
+                "android.security.advancedprotection.AdvancedProtectionManager"
+                        + "#getAdvancedProtectionFeatures"
+            })
     @Test
     @IncludeRunOnPrimaryUser
     @IncludeRunOnSecondaryUser
@@ -166,43 +184,166 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
         assertNotNull(mManager.getAdvancedProtectionFeatures());
     }
 
-    @ApiTest(apis = {
-            "android.security.advancedprotection.AdvancedProtectionManager"
-                    + "#setAdvancedProtectionEnabled"})
+    @RequiresFlagsEnabled(Flags.FLAG_AAPM_API_V2)
+    @ApiTest(
+            apis = {
+                "android.security.advancedprotection.AdvancedProtectionManager"
+                        + "#updateAdvancedProtectionFeaturesProvisioning"
+            })
+    @Test
+    @IncludeRunOnPrimaryUser
+    public void testUpdateAdvancedProtectionFeaturesProvisioning_provisioned() {
+        List<AdvancedProtectionFeature> features =
+                mManager.updateAdvancedProtectionFeaturesProvisioning(
+                        new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G},
+                        null);
+        assertProvisioningMode(
+                features,
+                AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G,
+                AdvancedProtectionFeature.PROVISIONING_MODE_PROVISIONED_BY_FEATURE_ADMIN);
+
+        features = mManager.getAdvancedProtectionFeatures();
+        assertProvisioningMode(
+                features,
+                AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G,
+                AdvancedProtectionFeature.PROVISIONING_MODE_PROVISIONED_BY_FEATURE_ADMIN);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_AAPM_API_V2)
+    @ApiTest(
+            apis = {
+                "android.security.advancedprotection.AdvancedProtectionManager"
+                        + "#updateAdvancedProtectionFeaturesProvisioning"
+            })
+    @Test
+    @IncludeRunOnPrimaryUser
+    public void testUpdateAdvancedProtectionFeaturesProvisioning_deprovisioned() {
+        List<AdvancedProtectionFeature> features =
+                mManager.updateAdvancedProtectionFeaturesProvisioning(
+                        new int[] {},
+                        new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G});
+        assertProvisioningMode(
+                features,
+                AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G,
+                AdvancedProtectionFeature.PROVISIONING_MODE_DEPROVISIONED_BY_FEATURE_ADMIN);
+
+        features = mManager.getAdvancedProtectionFeatures();
+        assertProvisioningMode(
+                features,
+                AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G,
+                AdvancedProtectionFeature.PROVISIONING_MODE_DEPROVISIONED_BY_FEATURE_ADMIN);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_AAPM_API_V2)
+    @ApiTest(
+            apis = {
+                "android.security.advancedprotection.AdvancedProtectionManager"
+                        + "#updateAdvancedProtectionFeaturesProvisioning"
+            })
+    @Test
+    @IncludeRunOnPrimaryUser
+    public void testUpdateAdvancedProtectionFeaturesProvisioning_nullFeatures() {
+        List<AdvancedProtectionFeature> features =
+                mManager.updateAdvancedProtectionFeaturesProvisioning(null, null);
+        assertTrue(features.isEmpty());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_AAPM_API_V2)
+    @ApiTest(
+            apis = {
+                "android.security.advancedprotection.AdvancedProtectionManager"
+                        + "#updateAdvancedProtectionFeaturesProvisioning"
+            })
+    @Test
+    @IncludeRunOnPrimaryUser
+    public void testUpdateAdvancedProtectionFeaturesProvisioning_emptyFeatures() {
+        List<AdvancedProtectionFeature> features =
+                mManager.updateAdvancedProtectionFeaturesProvisioning(new int[] {}, new int[] {});
+        assertTrue(features.isEmpty());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_AAPM_API_V2)
+    @ApiTest(
+            apis = {
+                "android.security.advancedprotection.AdvancedProtectionManager"
+                        + "#updateAdvancedProtectionFeaturesProvisioning"
+            })
+    @Test
+    @IncludeRunOnPrimaryUser
+    public void testUpdateAdvancedProtectionFeaturesProvisioning_doesntUpdateOtherFeatures() {
+        mManager.updateAdvancedProtectionFeaturesProvisioning(
+                new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G}, null);
+
+        mManager.updateAdvancedProtectionFeaturesProvisioning(null, null);
+
+        List<AdvancedProtectionFeature> features = mManager.getAdvancedProtectionFeatures();
+        assertProvisioningMode(
+                features,
+                AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G,
+                AdvancedProtectionFeature.PROVISIONING_MODE_PROVISIONED_BY_FEATURE_ADMIN);
+    }
+
+    @ApiTest(
+            apis = {
+                "android.security.advancedprotection.AdvancedProtectionManager"
+                        + "#setAdvancedProtectionEnabled"
+            })
     @Test
     public void testSetProtection_withoutPermission() {
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
         assertThrows(SecurityException.class, () -> mManager.setAdvancedProtectionEnabled(true));
 
-        mInstrumentation.getUiAutomation()
+        mInstrumentation
+                .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.MANAGE_ADVANCED_PROTECTION_MODE);
         assertDoesNotThrow(() -> mManager.setAdvancedProtectionEnabled(true));
     }
 
-    @ApiTest(apis = {
-            "android.security.advancedprotection.AdvancedProtectionManager"
-                    + "#isAdvancedProtectionEnabled"})
+    @ApiTest(
+            apis = {
+                "android.security.advancedprotection.AdvancedProtectionManager"
+                        + "#isAdvancedProtectionEnabled"
+            })
     @Test
     public void testGetProtection_withoutPermission() {
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
         assertThrows(SecurityException.class, () -> mManager.isAdvancedProtectionEnabled());
 
-        mInstrumentation.getUiAutomation()
+        mInstrumentation
+                .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.QUERY_ADVANCED_PROTECTION_MODE);
         assertDoesNotThrow(() -> mManager.isAdvancedProtectionEnabled());
     }
 
-    @ApiTest(apis = {
-            "android.security.advancedprotection.AdvancedProtectionManager"
-                    + "#getAdvancedProtectionFeatures"})
+    @ApiTest(
+            apis = {
+                "android.security.advancedprotection.AdvancedProtectionManager"
+                        + "#getAdvancedProtectionFeatures"
+            })
     @Test
     public void testGetFeatures_withoutPermission() {
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
         assertThrows(SecurityException.class, () -> mManager.getAdvancedProtectionFeatures());
 
-        mInstrumentation.getUiAutomation()
+        mInstrumentation
+                .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.MANAGE_ADVANCED_PROTECTION_MODE);
         assertDoesNotThrow(() -> mManager.getAdvancedProtectionFeatures());
+    }
+
+    @ApiTest(
+            apis = {
+                "android.security.advancedprotection.AdvancedProtectionManager"
+                        + "#updateAdvancedProtectionFeaturesProvisioning"
+            })
+    @Test
+    public void testUpdateAdvancedProtectionFeaturesProvisioning_withoutPermission() {
+        mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+        assertThrows(
+                SecurityException.class,
+                () ->
+                        mManager.updateAdvancedProtectionFeaturesProvisioning(
+                                new int[] {1}, new int[] {2}));
     }
 
     private static void assertDoesNotThrow(ThrowingRunnable runnable) {
@@ -211,5 +352,13 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
         } catch (Throwable e) {
             fail("Should not have thrown " + e);
         }
+    }
+
+    private void assertProvisioningMode(
+            List<AdvancedProtectionFeature> features, int featureId, int provisioningMode) {
+        AdvancedProtectionFeature feature =
+                features.stream().filter(f -> f.getId() == featureId).findFirst().get();
+        assertEquals(featureId, feature.getId());
+        assertEquals(provisioningMode, feature.getProvisioningMode());
     }
 }
