@@ -625,7 +625,6 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
 
     @AppModeFull
     @RequiresDevice
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PREVENTION_OF_KEEP_ALIVE_ROUTE_PROVIDERS)
     @Test
     public void providerService_doesNotAutoBindAfterCrashing() throws Throwable {
         try {
@@ -668,7 +667,6 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
 
     @AppModeFull
     @RequiresDevice
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PREVENTION_OF_KEEP_ALIVE_ROUTE_PROVIDERS)
     @Test
     public void packageManagerSpammingProviderService_doesNotAutoBindAfterCrashing()
             throws Throwable {
