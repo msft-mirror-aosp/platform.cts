@@ -38,7 +38,6 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.os.Messenger;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -92,6 +91,7 @@ public class DisplayEventDeliveryTest {
     private static final String TEST_ACTIVITY = TEST_PACKAGE + ".DisplayEventActivity";
     private static final String TEST_DISPLAYS = "DISPLAYS";
     private static final String TEST_MESSENGER = "MESSENGER";
+    private static final String TEST_EVENT_MASK = "EVENT_MASK";
 
     private final Object mLock = new Object();
 
@@ -290,7 +290,6 @@ public class DisplayEventDeliveryTest {
      * false in non-cached mode
      */
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_DISPLAY_LISTENER_SNAPSHOT)
     public void testDisplayEvents() {
         testDisplayEventsInternal(/* isSnapshotEnabled= */ false);
     }
@@ -304,7 +303,11 @@ public class DisplayEventDeliveryTest {
     private void testDisplayEventsInternal(boolean isSnapshotEnabled) {
         Log.d(TAG, "Start test testDisplayEvents " + mDisplayCount + " " + mCached);
         // Launch DisplayEventActivity and start listening to display events
-        launchTestActivity();
+        launchTestActivity(
+                /* eventMask= */ DisplayManager.EVENT_TYPE_DISPLAY_ADDED
+                        | DisplayManager.EVENT_TYPE_DISPLAY_CHANGED
+                        | DisplayManager.EVENT_TYPE_DISPLAY_REMOVED
+                        | ((isSnapshotEnabled) ? DisplayManager.EVENT_TYPE_DISPLAY_SNAPSHOT : 0));
 
         if (isSnapshotEnabled) {
             mSnapshotBundle.waitDisplayEvent(DISPLAY_SNAPSHOT);
@@ -376,10 +379,13 @@ public class DisplayEventDeliveryTest {
     }
 
     /** Launch the test activity that would listen to display events */
-    private void launchTestActivity() {
+    private void launchTestActivity(long eventMask) {
         Intent intent = new Intent(Intent.ACTION_MAIN);
         intent.setClassName(TEST_PACKAGE, TEST_ACTIVITY);
         intent.putExtra(TEST_MESSENGER, mMessenger);
+        if (eventMask != 0) {
+            intent.putExtra(TEST_EVENT_MASK, eventMask);
+        }
         intent.putExtra(TEST_DISPLAYS, mDisplayCount);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         SystemUtil.runWithShellPermissionIdentity(
