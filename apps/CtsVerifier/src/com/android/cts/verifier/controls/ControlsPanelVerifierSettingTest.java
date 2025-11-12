@@ -28,7 +28,6 @@ import android.widget.Toast;
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
 
-
 /**
  * This tests verify that the correct value of the Setting is passed through the extra
  * {@link android.service.controls.ControlsProviderService#EXTRA_LOCKSCREEN_ALLOW_TRIVIAL_CONTROLS}.
@@ -76,10 +75,13 @@ public abstract class ControlsPanelVerifierSettingTest extends PassFailButtons.A
 
         Button button = findViewById(R.id.button);
         button.setText(R.string.controls_panel_settings_test_open_lockscreen_settings);
-        button.setOnClickListener(v -> {
-            Intent intent = new Intent(Settings.ACTION_SETTINGS);
-            startActivity(intent);
-        });
+        button.setOnClickListener(
+                v -> {
+                    Intent intent =
+                            new Intent(Settings.ACTION_SETTINGS)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                });
     }
 
     /**
