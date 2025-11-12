@@ -56,7 +56,8 @@ public class PropertyDeviceInfo extends DeviceInfo {
     }
 
     private void parseProps(String stdout, HostInfoStore store) throws Exception {
-        Pattern pattern = Pattern.compile("\\[(ro.+)\\]: \\[(.+)\\]");
+        Pattern pattern =
+                Pattern.compile("\\[(ro.+|partition\\..+\\.verified\\.root_digest)\\]: \\[(.+)\\]");
         if (stdout == null) stdout = "";
         boolean hasMatched = false;
         try (Scanner scanner = new Scanner(stdout)) {
@@ -77,7 +78,8 @@ public class PropertyDeviceInfo extends DeviceInfo {
         }
         if (!hasMatched) {
             throw new IllegalStateException(
-                    "Unable to find any read-only properties. Output is " + stdout);
+                    "Unable to find any read-only properties or partition digests. Output is "
+                            + stdout);
         }
     }
 }
