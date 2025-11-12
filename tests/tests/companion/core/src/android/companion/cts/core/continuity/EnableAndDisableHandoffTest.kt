@@ -21,10 +21,13 @@ import android.companion.cts.common.RecordingHandoffFeatureStateListener
 import android.companion.cts.common.SIMPLE_EXECUTOR
 import android.companion.cts.core.CoreTestBase
 import android.companion.datatransfer.continuity.TaskContinuityManager
+import android.os.UserManager
 import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.xts.root.annotations.RequireAdbRoot
+import com.android.bedstead.nene.TestApis
 import kotlin.test.assertFailsWith
 import kotlin.time.Duration.Companion.seconds
 import org.junit.Assert.assertEquals
@@ -44,8 +47,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class EnableAndDisableHandoffTest : CoreTestBase() {
 
-    @get:Rule
-    val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+    @get:Rule val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @Test
     fun testEnableHandoffForDevice_requiresPermission() {
@@ -53,6 +55,34 @@ class EnableAndDisableHandoffTest : CoreTestBase() {
         assertFailsWith(SecurityException::class) {
             taskContinuityManager.enableHandoffForDevice(true)
         }
+    }
+
+    @Test
+    @RequireAdbRoot(reason = "b/322830652 Required for TestApis to set user restriction")
+    fun testDisableHandoffByPolicy_setsHandoffDisabled() {
+        TestApis.devicePolicy().userRestrictions().set(UserManager.DISALLOW_HANDOFF, true)
+
+        withShellPermissionIdentity(
+            Manifest.permission.READ_HANDOFF_SETTINGS,
+            Manifest.permission.MODIFY_HANDOFF_SETTINGS,
+        ) {
+            val listener = RecordingHandoffFeatureStateListener()
+            val taskContinuityManager =
+                context.getSystemService(TaskContinuityManager::class.java)!!
+            taskContinuityManager.enableHandoffForDevice(true)
+
+            listener.assertInvokedByActions {
+                taskContinuityManager.registerHandoffFeatureStateListener(SIMPLE_EXECUTOR, listener)
+            }
+            assertEquals(listener.invocations.size, 1)
+            assertEquals(
+                TaskContinuityManager.HANDOFF_AVAILABILITY_STATUS_DISABLED_BY_POLICY,
+                listener.invocations[0].handoffAvailabilityStatus,
+            )
+            listener.clearRecordedInvocations()
+        }
+
+        TestApis.devicePolicy().userRestrictions().set(UserManager.DISALLOW_HANDOFF, false)
     }
 
     @Test

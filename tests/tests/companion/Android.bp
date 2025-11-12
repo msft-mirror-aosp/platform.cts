@@ -55,6 +55,7 @@ android_test {
         "compatibility-device-util-axt",
         "cts-companion-common",
         "ctstestrunner-axt",
+        "bedstead-enterprise",
         "junit",
         "kotlin-test",
     ],
