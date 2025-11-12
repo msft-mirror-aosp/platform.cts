@@ -120,7 +120,7 @@ class NotificationSizeVerifierHostTest : CompatChangeGatingTestCase() {
         }
     }
 
-    private fun runDeviceTest(methodName: String, compatChangeEnabledForTestPkg: Boolean) {
+    private fun runDeviceTest(methodName: String, compatChangeEnabledForTestPkg: Boolean = false) {
         // TODO: b/448528742 - Use assumeTrue for flag check to skip tests instead of passing the
         // test by default.
         if (!isFlagEnabled) {
@@ -128,7 +128,10 @@ class NotificationSizeVerifierHostTest : CompatChangeGatingTestCase() {
             return
         }
 
-        clearAllNotifications()
+        // Resource value verification test, does not need an explicit notification cleanup.
+        if (!methodName.equals("config_NotificationStripSizeBytes_VerifyValue")) {
+            clearAllNotifications()
+        }
 
         val userId = device.currentUser
         val enabledChanges: Set<Long> =
@@ -197,6 +200,9 @@ class NotificationSizeVerifierHostTest : CompatChangeGatingTestCase() {
         }
     }
 
+    fun testConfig_NotificationStripSizeBytes_VerifyValue() {
+        runDeviceTest("config_NotificationStripSizeBytes_VerifyValue")
+    }
     fun testBitmapOverLimit_ChangeEnabled() {
         runDeviceTest("bitmapOverLimit_ChangeEnabled", true)
     }
