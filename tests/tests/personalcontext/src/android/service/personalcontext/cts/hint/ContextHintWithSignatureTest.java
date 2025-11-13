@@ -79,9 +79,9 @@ public class ContextHintWithSignatureTest {
     public void testParcelAndUnparcel() throws GeneralSecurityException {
         final SecretKeySpec key = generateSignedHintKey();
         final ComponentName origin = new ComponentName("com.whatever", "com.whatever.Code");
-        final BundleHint hint = new BundleHint();
-        final BundleHint attributedHint1 = new BundleHint();
-        final BundleHint attributedHint2 = new BundleHint();
+        final BundleHint hint = new BundleHint.Builder().build();
+        final BundleHint attributedHint1 = new BundleHint.Builder().build();
+        final BundleHint attributedHint2 = new BundleHint.Builder().build();
         final RenderToken renderToken =
                 new RenderToken.RenderTokenBuilder()
                         .setRendererComponentId(UUID.randomUUID())
@@ -147,9 +147,9 @@ public class ContextHintWithSignatureTest {
     @Test
     public void testParcelAndUnparcelWithoutOrigin() throws GeneralSecurityException {
         final SecretKeySpec key = generateSignedHintKey();
-        final BundleHint hint = new BundleHint();
-        final BundleHint attributedHint1 = new BundleHint();
-        final BundleHint attributedHint2 = new BundleHint();
+        final BundleHint hint = new BundleHint.Builder().build();
+        final BundleHint attributedHint1 = new BundleHint.Builder().build();
+        final BundleHint attributedHint2 = new BundleHint.Builder().build();
         final RenderToken renderToken =
                 new RenderToken.RenderTokenBuilder()
                         .setRendererComponentId(UUID.randomUUID())
@@ -214,9 +214,9 @@ public class ContextHintWithSignatureTest {
     public void testParcelAndUnparcelWithoutRenderToken() throws GeneralSecurityException {
         final SecretKeySpec key = generateSignedHintKey();
         final ComponentName origin = new ComponentName("com.whatever", "com.whatever.Code");
-        final BundleHint hint = new BundleHint();
-        final BundleHint attributedHint1 = new BundleHint();
-        final BundleHint attributedHint2 = new BundleHint();
+        final BundleHint hint = new BundleHint.Builder().build();
+        final BundleHint attributedHint1 = new BundleHint.Builder().build();
+        final BundleHint attributedHint2 = new BundleHint.Builder().build();
 
         final ContextHintWithSignature signedAttributedHint1 =
                 new ContextHintWithSignature.Builder(attributedHint1, key).build();
@@ -270,7 +270,7 @@ public class ContextHintWithSignatureTest {
     public void testParcelAndUnparcelWithoutAttribution() throws GeneralSecurityException {
         final SecretKeySpec key = generateSignedHintKey();
         final ComponentName origin = new ComponentName("com.whatever", "com.whatever.Code");
-        final BundleHint hint = new BundleHint();
+        final BundleHint hint = new BundleHint.Builder().build();
         final RenderToken renderToken =
                 new RenderToken.RenderTokenBuilder()
                         .setRendererComponentId(UUID.randomUUID())
@@ -308,7 +308,7 @@ public class ContextHintWithSignatureTest {
             })
     @Test
     public void testSignatureWrongKey() throws GeneralSecurityException {
-        final BundleHint hint = new BundleHint();
+        final BundleHint hint = new BundleHint.Builder().build();
 
         final ContextHintWithSignature signedHint =
                 (new ContextHintWithSignature.Builder(hint, generateSignedHintKey()).build());
@@ -326,7 +326,7 @@ public class ContextHintWithSignatureTest {
     @Test
     public void testSignatureBadHash() throws GeneralSecurityException {
         final SecretKeySpec key = generateSignedHintKey();
-        final BundleHint hint = new BundleHint();
+        final BundleHint hint = new BundleHint.Builder().build();
 
         final Parcel parcel = Parcel.obtain();
         new ContextHintWithSignature.Builder(hint, key).build().writeToParcel(parcel, 0);
