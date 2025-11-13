@@ -61,6 +61,7 @@ android_test {
     aaptflags: ["-0 .policy"],
     min_sdk_version: "29",
     per_testcase_directory: true,
+    privileged: true,
 }
 
 test_module_config {
