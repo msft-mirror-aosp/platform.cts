@@ -31,6 +31,7 @@ import static org.junit.Assert.fail;
 
 import android.media.AudioFormat;
 import android.media.MediaCodec;
+import android.media.MediaCodecInfo;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.cts.TestUtils;
@@ -129,6 +130,37 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
         mWidth = width;
         mHeight = height;
         mSupportRequirements = supportRequirements;
+    }
+
+    private static List<Object[]> getTvUHDParams() {
+        List<Object[]> uhdParams = new ArrayList<>(Arrays.asList(new Object[][] {
+                // @CddTest(requirements = {"2.3.2/5.3.5/T-2-1"})
+                {MEDIA_TYPE_HEVC, new String[] {"bbb_3840x2160_60fps_hevc_main10_l5.mp4"}, null,
+                        -1.0f, 3762286888L, -1, -1, 3840, 2160},
+                // @CddTest(requirements = {"2.3.2/5.3.7/T-2-1"})
+                {MEDIA_TYPE_VP9, new String[] {"bbb_3840x2160_60fps_vp9_profile0.webm"}, null,
+                        -1.0f, 2669556628L, -1, -1, 3840, 2160},
+        }));
+        List<Object[]> uhdParamsWithComponent =
+                prepareParamList(uhdParams, false, false, true, false);
+        List<Object[]> uhdParamsFinal = new ArrayList<>();
+        for (Object[] param : uhdParamsWithComponent) {
+            Object[] paramWithSupportClass = new Object[param.length + 1];
+            System.arraycopy(param, 0, paramWithSupportClass, 0, param.length - 1);
+            String codecName = (String) param[0];
+            if (MediaUtils.isTv() && isHardwareAcceleratedCodec(codecName)) {
+                String mediaType = (String) param[1];
+                MediaCodecInfo.CodecCapabilities caps = getCodecCapabilities(codecName, mediaType);
+                MediaCodecInfo.VideoCapabilities videoCaps = caps.getVideoCapabilities();
+                paramWithSupportClass[param.length - 1] =
+                        videoCaps.isSizeSupported(3840, 2160) ? CODEC_HW : CODEC_OPTIONAL;
+            } else {
+                paramWithSupportClass[param.length - 1] = CODEC_OPTIONAL;
+            }
+            paramWithSupportClass[param.length] = paramToString(paramWithSupportClass);
+            uhdParamsFinal.add(paramWithSupportClass);
+        }
+        return uhdParamsFinal;
     }
 
     @Parameterized.Parameters(name = "{index}_{0}_{1}")
@@ -241,10 +273,6 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
                 {MEDIA_TYPE_HEVC, new String[]{"bbb_1920x1080_60fps_hevc_main_l41.mp4"}, null,
                         -1.0f, 694223139L, -1, -1, 1920, 1080,
                         MediaUtils.isTv() ? CODEC_HW : CODEC_OPTIONAL},
-                // @CddTest(requirements = {"2.3.2/5.3.5/T-2-1"})
-                {MEDIA_TYPE_HEVC, new String[]{"bbb_3840x2160_60fps_hevc_main10_l5.mp4"}, null,
-                        -1.0f, 3762286888L, -1, -1, 3840, 2160,
-                        MediaUtils.isTv() ? CODEC_HW : CODEC_OPTIONAL},
 
                 // @CddTest(requirement="5.3.6/C-1-1")
                 {MEDIA_TYPE_VP8, new String[]{"bbb_320x180_30fps_vp8.mkv"}, null, -1.0f,
@@ -266,10 +294,6 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
                 // @CddTest(requirements = {"2.3.2/5.3.7/T-1-1"})
                 {MEDIA_TYPE_VP9, new String[]{"bbb_1920x1080_60fps_vp9_profile0.webm"}, null, -1.0f,
                         3443986074L, -1, -1, 1920, 1080,
-                        MediaUtils.isTv() ? CODEC_HW : CODEC_OPTIONAL},
-                // @CddTest(requirements = {"2.3.2/5.3.7/T-2-1"})
-                {MEDIA_TYPE_VP9, new String[]{"bbb_3840x2160_60fps_vp9_profile0.webm"}, null, -1.0f,
-                        2669556628L, -1, -1, 3840, 2160,
                         MediaUtils.isTv() ? CODEC_HW : CODEC_OPTIONAL},
 
                 // @CddTest(requirement="5.3.9/C-1-1")
@@ -874,7 +898,10 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
             }));
         }
         exhaustiveArgsList.addAll(getDvTestParams(CodecDecoderValidationTest.class));
-        return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, false);
+        List<Object[]> testParams =
+                prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, false);
+        testParams.addAll(getTvUHDParams());
+        return testParams;
     }
 
     /**
