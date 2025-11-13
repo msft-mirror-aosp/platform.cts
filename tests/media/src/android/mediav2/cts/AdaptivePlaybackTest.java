@@ -234,6 +234,9 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
                             "cosmat_640x360_24fps_crf22_vp9_10bit.mkv",
                             "bbb_1280x720_1mbps_30fps_vp9.webm",
                             "cosmat_800x640_24fps_crf22_vp9_10bit.mkv"}, CODEC_OPTIONAL},
+                    // even though av1 decoders MUST support 10-bit, it is not expected to
+                    // support clips with hdr10, hdr10+ profiles. As the current list contains
+                    // hdr10 profile clip, set SupportClass to optional.
                     {MediaFormat.MIMETYPE_VIDEO_AV1, new String[]{
                             "bbb_640x360_512kbps_30fps_av1.webm",
                             "cosmat_1280x720_24fps_1200kbps_av1_10bit.mkv",
@@ -242,8 +245,7 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
                             "cosmat_640x360_24fps_512kbps_av1_10bit.mkv",
                             "bbb_1280x720_1mbps_30fps_av1.webm",
                             "cosmat_352x288_hdr10plus_av1.mkv",
-                            "cosmat_800x640_24fps_768kbps_av1_10bit.mkv"},
-                            MAX_DISPLAY_HEIGHT_LAND >= 720 ? CODEC_HW : CODEC_OPTIONAL},
+                            "cosmat_800x640_24fps_768kbps_av1_10bit.mkv"}, CODEC_OPTIONAL},
             });
             argsList.addAll(prepareParamList(dynamicColorAspectsArgs, isEncoder, needAudio,
                     needVideo, false /* mustTestAllCodecs */, ComponentClass.ALL,
