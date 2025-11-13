@@ -5441,7 +5441,8 @@
         <activity android:name=".audio.HifiUltrasoundSpeakerTestActivity"
                 android:label="@string/hifi_ultrasound_speaker_test"
                 android:exported="true"
-                android:screenOrientation="locked">
+                android:screenOrientation="locked"
+                android:enableOnBackInvokedCallback="false">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.cts.intent.category.MANUAL_TEST" />
