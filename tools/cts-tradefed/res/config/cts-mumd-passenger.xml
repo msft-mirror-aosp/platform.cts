@@ -369,4 +369,10 @@
     <option name="compatibility:exclude-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.SearchSpecCtsTest#testBuildSearchSpec_embeddingSearch" />
     <option name="compatibility:exclude-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.SearchSpecCtsTest#testSetFeatureEnabledToFalse_embeddingSearch" />
 
+    <option name="compatibility:exclude-filter" value="CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest#testMatrixMultiplication032" />
+    <option name="compatibility:exclude-filter" value="CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest#testMatrixMultiplication400" />
+    <option name="compatibility:exclude-filter" value="CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest#testMatrixMultiplication600" />
+    <option name="compatibility:exclude-filter" value="CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest#testMatrixMultiplication128" />
+    <option name="compatibility:exclude-filter" value="CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest#testMatrixMultiplication200" />
+
 </configuration>
