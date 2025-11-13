@@ -203,7 +203,7 @@ class CodecEncoderGLSurface extends CodecTestBase {
 
     @Override
     protected void configureCodec(MediaFormat format, boolean isAsync,
-            boolean cryptoCallAndSignalEosWithLastFrame, boolean isEncoder) {
+            boolean cryptoCallAndSignalEosWithLastFrame, boolean isEncoder, int flags) {
         if (!isAsync) {
             throw new RuntimeException("CodecEncoderGLSurface methods are written for asynchronous"
                     + " mode of operation, update the implementation or use async mode");
@@ -216,8 +216,8 @@ class CodecEncoderGLSurface extends CodecTestBase {
         if (!isEncoder) {
             throw new RuntimeException("expects isEncoder parameter to be true, received false");
         }
-        configureCodecCommon(format, true, false, true, 0);
-        mCodec.configure(format, null, MediaCodec.CONFIGURE_FLAG_ENCODE, null);
+        configureCodecCommon(format, true, false, true, flags);
+        mCodec.configure(format, null, flags, null);
         if (mCodec.getInputFormat().containsKey(MediaFormat.KEY_LATENCY)) {
             mReviseLatency = true;
             mLatency = mCodec.getInputFormat().getInteger(MediaFormat.KEY_LATENCY);
@@ -280,7 +280,7 @@ class CodecEncoderGLSurface extends CodecTestBase {
         mOutputBuff = new OutputManager();
         MediaFormat format = mEncCfgParams.getFormat();
         format.setInteger(MediaFormat.KEY_PRIORITY, 0);
-        configureCodec(format, true, false, true);
+        configureCodec(format, true, false, true, MediaCodec.CONFIGURE_FLAG_ENCODE);
         mCodec.start();
     }
 
@@ -416,7 +416,7 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
         Assume.assumeTrue("Codec: " + mCodecName + " doesn't support format: " + format,
                 areFormatsSupported(mCodecName, mMediaType, formats));
         mOutputBuff = new OutputManager();
-        configureCodec(format, true, false, true);
+        configureCodec(format, true, false, true, MediaCodec.CONFIGURE_FLAG_ENCODE);
         validateGetCodecResources(List.of(Pair.create(mCodec, CodecState.CONFIGURED)),
                 GLOBAL_AVBL_RESOURCES, String.format(Locale.getDefault(),
                         "getRequiredResources() failed in %s state \n", CodecState.CONFIGURED)

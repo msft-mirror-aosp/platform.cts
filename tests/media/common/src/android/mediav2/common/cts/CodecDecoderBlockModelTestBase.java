@@ -101,14 +101,14 @@ public class CodecDecoderBlockModelTestBase extends CodecDecoderTestBase {
 
     @Override
     protected void configureCodec(MediaFormat format, boolean isAsyncUnUsed,
-            boolean signalEOSWithLastFrame, boolean isEncoder) {
+            boolean signalEOSWithLastFrame, boolean isEncoder, int flags) {
         if (ENABLE_LOGS) {
             if (!isAsyncUnUsed) {
                 Log.d(LOG_TAG, "Ignoring synchronous mode of operation request");
             }
         }
-        configureCodec(format, true, signalEOSWithLastFrame, isEncoder,
-                MediaCodec.CONFIGURE_FLAG_USE_BLOCK_MODEL);
+        super.configureCodec(format, true, signalEOSWithLastFrame, isEncoder,
+                flags | MediaCodec.CONFIGURE_FLAG_USE_BLOCK_MODEL);
     }
 
     @Override
