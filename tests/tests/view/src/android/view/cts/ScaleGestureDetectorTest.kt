@@ -21,8 +21,16 @@ import android.graphics.PointF
 import android.os.Handler
 import android.os.Looper
 import android.platform.test.annotations.AppModeSdkSandbox
+import android.platform.test.annotations.RequiresFlagsDisabled
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.CheckFlagsRule
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.view.InputDevice
+import android.view.InputDevice.SOURCE_MOUSE
 import android.view.MotionEvent
+import android.view.MotionEvent.ACTION_DOWN
+import android.view.MotionEvent.ACTION_POINTER_DOWN
+import android.view.MotionEvent.AXIS_GESTURE_PINCH_SCALE_FACTOR
 import android.view.MotionEvent.TOOL_TYPE_FINGER
 import android.view.ScaleGestureDetector
 import android.view.ScaleGestureDetector.OnScaleGestureListener
@@ -49,6 +57,7 @@ import com.android.cts.input.hasScaleFactor
 import com.android.cts.input.hasTimeDelta
 import com.android.cts.input.hasType
 import com.android.cts.input.isInProgress
+import com.android.hardware.input.Flags.FLAG_SCALE_GESTURE_DETECTOR_USE_EVENTS_CLASSIFICATION
 import com.google.common.truth.Truth.assertThat
 import java.time.Duration.ofMillis
 import kotlin.math.PI
@@ -87,6 +96,9 @@ class ScaleGestureDetectorTest {
     @get:Rule(order = 1)
     val virtualDisplayRule =
         VirtualDisplayActivityScenario.Rule<ScaleGestureDetectorActivity>(TestName())
+
+    @get:Rule
+    val mCheckFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @Before
     fun setup() {
@@ -1058,6 +1070,649 @@ class ScaleGestureDetectorTest {
         )
         assertThat(listener.events).isEmpty()
         assertThat(detector.isInProgress).isFalse()
+    }
+
+    @RequiresFlagsEnabled(FLAG_SCALE_GESTURE_DETECTOR_USE_EVENTS_CLASSIFICATION)
+    @Test
+    fun classifiedPinch_down_pointerDown_startsStream() {
+        val listener = TestScaleGestureListener()
+        val detector = createDetector(listener)
+        val cursor = PointF(100f, 200f)
+        val pointer0 = cursor.withOffset(-2f, 0f)
+        val pointer1 = cursor.withOffset(2f, 0f)
+
+        detector.onTouchEvent(
+            MotionEventBuilder(ACTION_DOWN, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1f)
+                )
+                .eventTime(113)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(
+                ACTION_POINTER_DOWN,
+                SOURCE_MOUSE
+            )
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1))
+                .pointerIndex(1)
+                .eventTime(113)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+
+        val expectedSpan = PointF(pointer1.x - pointer0.x, 0f)
+        assertThat(
+            listener.pollEvent(),
+            allOf(
+                hasType(ScaleEventType.SCALE_BEGIN),
+                isInProgress(false),
+                hasFocus(cursor),
+                hasScaleFactor(1f),
+                hasCurrentSpan(expectedSpan.hypot()),
+                hasCurrentSpanXY(expectedSpan),
+                hasPreviousSpan(expectedSpan.hypot()),
+                hasPreviousSpanXY(expectedSpan),
+                hasEventTime(113),
+                hasTimeDelta(0),
+            ),
+        )
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isTrue()
+    }
+
+    @RequiresFlagsEnabled(FLAG_SCALE_GESTURE_DETECTOR_USE_EVENTS_CLASSIFICATION)
+    @Test
+    fun classifiedPinch_onScaleBeginReturnsFalse_doesNotStartStream() {
+        val listener = TestScaleGestureListener(onScaleBeginReturnValue = false)
+        val detector = createDetector(listener)
+        val cursor = PointF(500f, 600f)
+        val pointer0 = cursor.withOffset(-400f, 0f)
+        val pointer1 = cursor.withOffset(400f, 0f)
+
+        detector.onTouchEvent(
+            MotionEventBuilder(ACTION_DOWN, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1f)
+                )
+                .eventTime(100)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        assertThat(listener.events).isEmpty()
+
+        detector.onTouchEvent(
+            MotionEventBuilder(
+                ACTION_POINTER_DOWN,
+                SOURCE_MOUSE
+            )
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1))
+                .pointerIndex(1)
+                .eventTime(113)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_BEGIN))
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isFalse()
+    }
+
+    @RequiresFlagsEnabled(FLAG_SCALE_GESTURE_DETECTOR_USE_EVENTS_CLASSIFICATION)
+    @Test
+    fun classifiedPinch_multipleMoves_callsOnScale_setPrevAndCurrSpanTimeAndFocus() {
+        val listener = TestScaleGestureListener()
+        val detector = createDetector(listener)
+        val cursor = PointF(150f, 200f)
+        val pointer0Down = cursor.withOffset(-50f, 0f)
+        val pointer1Down = cursor.withOffset(50f, 0f)
+        val pointer0InitialMove = cursor.withOffset(-55f, 0f)
+        val pointer1InitialMove = cursor.withOffset(55f, 0f)
+        val pointer0FinalMove = cursor.withOffset(-62f, 0f)
+        val pointer1FinalMove = cursor.withOffset(62f, 0f)
+        detector.onTouchEvent(
+            MotionEventBuilder(ACTION_DOWN, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0Down)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1f)
+                )
+                .eventTime(100)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(
+                ACTION_POINTER_DOWN,
+                SOURCE_MOUSE
+            )
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0Down)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Down))
+                .pointerIndex(1)
+                .eventTime(113)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_BEGIN))
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isTrue()
+
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0InitialMove)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1.678f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1InitialMove))
+                .eventTime(137)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+
+        val expectedInitialPrevSpan = PointF(pointer1Down.x - pointer0Down.x, 0f)
+        val expectedInitialSpan = PointF(pointer1InitialMove.x - pointer0InitialMove.x, 0f)
+        assertThat(
+            listener.pollEvent(),
+            allOf(
+                hasType(ScaleEventType.SCALE),
+                isInProgress(true),
+                hasFocus(cursor),
+                hasScaleFactor(1.678f),
+                hasCurrentSpan(expectedInitialSpan.x),
+                hasCurrentSpanXY(expectedInitialSpan),
+                hasPreviousSpan(expectedInitialPrevSpan.x),
+                hasPreviousSpanXY(expectedInitialPrevSpan),
+                hasEventTime(137),
+                hasTimeDelta(24),
+            ),
+        )
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isTrue()
+
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0FinalMove)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 0.789f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1FinalMove))
+                .eventTime(142)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+
+        val expectedFinalPrevSpan = PointF(pointer1InitialMove.x - pointer0InitialMove.x, 0f)
+        val expectedFinalSpan = PointF(pointer1FinalMove.x - pointer0FinalMove.x, 0f)
+        assertThat(
+            listener.pollEvent(),
+            allOf(
+                hasType(ScaleEventType.SCALE),
+                isInProgress(true),
+                hasFocus(cursor),
+                hasScaleFactor(0.789f),
+                hasCurrentSpan(expectedFinalSpan.x),
+                hasCurrentSpanXY(expectedFinalSpan),
+                hasPreviousSpan(expectedFinalPrevSpan.x),
+                hasPreviousSpanXY(expectedFinalPrevSpan),
+                hasEventTime(142),
+                hasTimeDelta(5),
+            ),
+        )
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isTrue()
+    }
+
+    @RequiresFlagsEnabled(FLAG_SCALE_GESTURE_DETECTOR_USE_EVENTS_CLASSIFICATION)
+    @Test
+    fun classifiedPinch_multipleMoves_onScaleReturnsFalse_doesNotUpdatePrevSpan() {
+        val listener = TestScaleGestureListener(onScaleReturnValue = false)
+        val detector = createDetector(listener)
+        val cursor = PointF(150f, 200f)
+        val pointer0Down = cursor.withOffset(-50f, 0f)
+        val pointer1Down = cursor.withOffset(50f, 0f)
+        val pointer0InitialMove = cursor.withOffset(-57f, 0f)
+        val pointer1InitialMove = cursor.withOffset(57f, 0f)
+        val pointer0FinalMove = cursor.withOffset(-80f, 0f)
+        val pointer1FinalMove = cursor.withOffset(80f, 0f)
+        detector.onTouchEvent(
+            MotionEventBuilder(ACTION_DOWN, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0Down)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1f)
+                )
+                .eventTime(100)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(
+                ACTION_POINTER_DOWN,
+                SOURCE_MOUSE
+            )
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0Down)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Down))
+                .pointerIndex(1)
+                .eventTime(113)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0InitialMove)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1.678f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1InitialMove))
+                .eventTime(137)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_BEGIN))
+        assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE))
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isTrue()
+
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0FinalMove)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 0.789f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1FinalMove))
+                .eventTime(142)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+
+        val expectedPrevSpan = PointF(pointer1Down.x - pointer0Down.x, 0f)
+        val expectedSpan = PointF(pointer1FinalMove.x - pointer0FinalMove.x, 0f)
+        assertThat(
+            listener.pollEvent(),
+            allOf(
+                hasType(ScaleEventType.SCALE),
+                isInProgress(true),
+                hasFocus(cursor),
+                hasScaleFactor(0.789f),
+                hasCurrentSpan(expectedSpan.x),
+                hasCurrentSpanXY(expectedSpan),
+                hasPreviousSpan(expectedPrevSpan.x),
+                hasPreviousSpanXY(expectedPrevSpan),
+                hasEventTime(142),
+                hasTimeDelta(29),
+            ),
+        )
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isTrue()
+    }
+
+    @RequiresFlagsEnabled(FLAG_SCALE_GESTURE_DETECTOR_USE_EVENTS_CLASSIFICATION)
+    @Test
+    fun classifiedPinch_pointerUp_up_endsStream() {
+        val listener = TestScaleGestureListener()
+        val detector = createDetector(listener)
+        val cursor = PointF(102f, 196f)
+        val pointer0Down = cursor.withOffset(-2f, 0f)
+        val pointer1Down = cursor.withOffset(2f, 0f)
+        val pointer0Move = cursor.withOffset(-8f, 0f)
+        val pointer1Move = cursor.withOffset(8f, 0f)
+        detector.onTouchEvent(
+            MotionEventBuilder(ACTION_DOWN, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0Down)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1f)
+                )
+                .eventTime(200)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(
+                ACTION_POINTER_DOWN,
+                SOURCE_MOUSE
+            )
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0Down)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Down))
+                .pointerIndex(1)
+                .eventTime(227)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0Move)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 0.925f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Move))
+                .eventTime(250)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_BEGIN))
+        assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE))
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isTrue()
+
+        detector.onTouchEvent(
+            MotionEventBuilder(
+                MotionEvent.ACTION_POINTER_UP,
+                SOURCE_MOUSE
+            )
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0Move)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 2.897f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Move))
+                .pointerIndex(1)
+                .eventTime(351)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_UP, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0Move)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1.923f)
+                )
+                .eventTime(351)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+
+        val expectedSpan = PointF(pointer1Move.x - pointer0Move.x, 0f)
+        assertThat(
+            listener.pollEvent(),
+            allOf(
+                hasType(ScaleEventType.SCALE_END),
+                isInProgress(true),
+                hasFocus(cursor),
+                hasScaleFactor(0.925f),
+                hasCurrentSpan(expectedSpan.x),
+                hasCurrentSpanXY(expectedSpan),
+                hasPreviousSpan(expectedSpan.x),
+                hasPreviousSpanXY(expectedSpan),
+                hasEventTime(351),
+                hasTimeDelta(101),
+            ),
+        )
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isFalse()
+    }
+
+    @RequiresFlagsEnabled(FLAG_SCALE_GESTURE_DETECTOR_USE_EVENTS_CLASSIFICATION)
+    @Test
+    fun classifiedPinch_interruptedByNonPinchEvent_endsStream() {
+        val listener = TestScaleGestureListener()
+        val detector = createDetector(listener)
+        val cursor = PointF(100f, 200f)
+        val pointer0Down = cursor.withOffset(-50f, 0f)
+        val pointer1Down = cursor.withOffset(50f, 0f)
+        val pointer1Move = cursor.withOffset(250f, 300f)
+        detector.onTouchEvent(
+            MotionEventBuilder(ACTION_DOWN, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0Down)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1f)
+                )
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(
+                ACTION_POINTER_DOWN,
+                SOURCE_MOUSE
+            )
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0Down)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Down))
+                .pointerIndex(1)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_BEGIN))
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isTrue()
+
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, SOURCE_MOUSE)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0Down))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Move))
+                .eventTime(150)
+                .classification(MotionEvent.CLASSIFICATION_NONE)
+                .build()
+        )
+
+        assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_END))
+    }
+
+    @RequiresFlagsEnabled(FLAG_SCALE_GESTURE_DETECTOR_USE_EVENTS_CLASSIFICATION)
+    @Test
+    fun classifiedPinch_interruptsNonPinchStream_endsStream() {
+        val listener = TestScaleGestureListener()
+        val detector = createDetector(listener)
+        val pointer0 = PointF(100f, 200f)
+        val pointer1Down = pointer0.withOffset(minSpan.toFloat(), 0f)
+        val pointer1Move = pointer1Down.withOffset(spanSlop.toFloat(), 1f)
+
+        // Start a regular two-finger scale gesture
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(100)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_POINTER_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(110)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Down))
+                .pointerIndex(1)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(120)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Move))
+                .build()
+        )
+        assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_BEGIN))
+        assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE))
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isTrue()
+
+        // Interrupt with a classified pinch event
+        val pointer1Pinch = pointer1Move.withOffset(50f, 50f)
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1.227f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Pinch))
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+
+        assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_END))
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isFalse()
+    }
+
+    @RequiresFlagsEnabled(FLAG_SCALE_GESTURE_DETECTOR_USE_EVENTS_CLASSIFICATION)
+    @Test
+    fun classifiedPinch_cancel_endsStream() {
+        val listener = TestScaleGestureListener()
+        val detector = createDetector(listener)
+        val cursor = PointF(100f, 200f)
+        val pointer0 = cursor.withOffset(-5f, 0f)
+        val pointer1 = cursor.withOffset(5f, 0f)
+        detector.onTouchEvent(
+            MotionEventBuilder(ACTION_DOWN, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1f)
+                )
+                .eventTime(100)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(
+                ACTION_POINTER_DOWN,
+                SOURCE_MOUSE
+            )
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1.453f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1))
+                .pointerIndex(1)
+                .eventTime(113)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_BEGIN))
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isTrue()
+
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_CANCEL, SOURCE_MOUSE)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1))
+                .eventTime(120)
+                .build()
+        )
+
+        assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_END))
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isFalse()
+    }
+
+    @RequiresFlagsDisabled(FLAG_SCALE_GESTURE_DETECTOR_USE_EVENTS_CLASSIFICATION)
+    @Test
+    fun classifiedPinch_flagDisabled_handledAsTwoFingerGesture() {
+        val listener = TestScaleGestureListener()
+        val detector = createDetector(listener)
+        val cursor = PointF(100f, 200f)
+        val pointer0Down = cursor.withOffset(-minSpan - 100f, 0f)
+        val pointer1Down = cursor.withOffset(minSpan + 100f, 0f)
+        val pointer0Move = pointer0Down.withOffset(-spanSlop - 10f, 0f)
+        val pointer1Move = pointer1Down.withOffset(spanSlop + 10f, 0f)
+
+        detector.onTouchEvent(
+            MotionEventBuilder(ACTION_DOWN, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0Down)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1f)
+                )
+                .eventTime(100)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(
+                ACTION_POINTER_DOWN,
+                SOURCE_MOUSE
+            )
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0Down)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1.453f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Down))
+                .pointerIndex(1)
+                .eventTime(113)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isFalse()
+
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0Move)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1.678f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Move))
+                .eventTime(137)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+
+        assertThat(
+            listener.pollEvent(),
+            allOf(
+                hasType(ScaleEventType.SCALE_BEGIN),
+                isInProgress(false),
+                hasFocus(cursor),
+                hasScaleFactor(1f),
+                hasCurrentSpan(distance(pointer0Move, pointer1Move).hypot()),
+                hasCurrentSpanXY(distance(pointer0Move, pointer1Move)),
+                hasPreviousSpan(distance(pointer0Move, pointer1Move).hypot()),
+                hasPreviousSpanXY(distance(pointer0Move, pointer1Move)),
+            ),
+        )
+        assertThat(
+            listener.pollEvent(),
+            allOf(
+                hasType(ScaleEventType.SCALE),
+                isInProgress(true),
+                hasFocus(cursor),
+                hasScaleFactor(1f),
+                hasCurrentSpan(distance(pointer0Move, pointer1Move).hypot()),
+                hasCurrentSpanXY(distance(pointer0Move, pointer1Move)),
+                hasPreviousSpan(distance(pointer0Move, pointer1Move).hypot()),
+                hasPreviousSpanXY(distance(pointer0Move, pointer1Move)),
+            ),
+        )
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isTrue()
     }
 
     @Test
