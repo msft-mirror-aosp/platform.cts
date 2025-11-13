@@ -21,11 +21,13 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
 import android.content.Context;
 import android.graphics.PixelFormat;
+import android.graphics.Color;
 import android.hardware.tv.mediaquality.IMediaQuality;
 import android.media.quality.ActiveProcessingPicture;
 import android.media.quality.AmbientBacklightEvent;
@@ -626,6 +628,22 @@ public class MediaQualityTest {
         when(mMediaQuality.isAutoPqSupported()).thenReturn(true);
         when(mMediaQuality.getAutoPqEnabled()).thenReturn(false);
         assertFalse(mManager.isAutoPictureQualityEnabled());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW_C)
+    @Test
+    public void testSetMutedColor() throws RemoteException {
+        assumeTrue(mMediaQuality != null);
+        doNothing().when(mMediaQuality).setMutedColor(anyInt());
+        mManager.setMutedColor(Color.RED);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW_C)
+    @Test
+    public void testSetColorMuteEnabled() throws RemoteException {
+        assumeTrue(mMediaQuality != null);
+        doNothing().when(mMediaQuality).setColorMuteEnabled(anyBoolean());
+        mManager.setColorMuteEnabled(true);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
