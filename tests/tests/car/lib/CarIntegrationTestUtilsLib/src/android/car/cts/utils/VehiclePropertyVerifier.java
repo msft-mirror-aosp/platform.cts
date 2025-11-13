@@ -1326,6 +1326,8 @@ public class VehiclePropertyVerifier<T> {
             verifyPropertyNotAvailableException(e);
         } catch (CarInternalErrorException e) {
             verifyInternalErrorException(e);
+        } catch (IllegalArgumentException e) {
+            verifyIllegalArgumentException(e);
         } catch (Exception e) {
             assertWithMessage("Unexpected exception thrown when trying to setProperty on "
                     + mPropertyName + ": " + e).fail();
@@ -1910,6 +1912,20 @@ public class VehiclePropertyVerifier<T> {
         int vendorErrorCode = e.getVendorErrorCode();
         assertThat(vendorErrorCode).isAtLeast(VENDOR_ERROR_CODE_MINIMUM_VALUE);
         assertThat(vendorErrorCode).isAtMost(VENDOR_ERROR_CODE_MAXIMUM_VALUE);
+    }
+
+    /**
+     * CarService may throw IllegalArgumentException for multiple reasons including failed
+     * preconditions or as a result of StatusCode.INVALID_ARG returned from VHAL. The only valid
+     * IllegalArgumentException is the latter case. CarService does not wrap the
+     * ServiceSpecificException, but it does append it to the error message starting Android T. See
+     * {@link android.os.ServiceSpecificException#toString()} and {@link
+     * com.android.car.hal.VehicleHal#set(HalPropValue)}.
+     */
+    private static void verifyIllegalArgumentException(IllegalArgumentException e) {
+        assertWithMessage("Invalid IllegalArgumentException thrown: " + e)
+                .that(e.getMessage())
+                .contains("ServiceSpecificException");
     }
 
     private void verifyCarPropertyValue(CarPropertyValue<?> carPropertyValue, int expectedAreaId,
@@ -3041,6 +3057,9 @@ public class VehiclePropertyVerifier<T> {
         } catch (CarInternalErrorException e) {
             verifyInternalErrorException(e);
             sExceptionClassOnSet = e.getClass();
+            return null;
+        } catch (IllegalArgumentException e) {
+            verifyIllegalArgumentException(e);
             return null;
         }
 
