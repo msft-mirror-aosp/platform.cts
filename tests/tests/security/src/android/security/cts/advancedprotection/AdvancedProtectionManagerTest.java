@@ -39,6 +39,7 @@ import com.android.bedstead.nene.TestApis;
 import com.android.compatibility.common.util.ApiTest;
 
 import java.util.List;
+import java.util.function.Consumer;
 import org.junit.Assume;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -182,6 +183,40 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
     @IncludeRunOnSecondaryUser
     public void testGetFeatures_notNull() {
         assertNotNull(mManager.getAdvancedProtectionFeatures());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_AAPM_API_V2)
+    @ApiTest(
+            apis = {
+                "android.security.advancedprotection.AdvancedProtectionManager"
+                        + "#getAdvancedProtectionFeatures"
+            })
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    public void testGetFeatures_withFeatureIds_returnsOnlyRequestedFeatures() {
+        List<AdvancedProtectionFeature> features =
+                mManager.getAdvancedProtectionFeatures(
+                        new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G});
+
+        assertEquals(1, features.size());
+        assertEquals(
+                AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G, features.get(0).getId());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_AAPM_API_V2)
+    @ApiTest(
+            apis = {
+                "android.security.advancedprotection.AdvancedProtectionManager"
+                        + "#getAdvancedProtectionFeatures"
+            })
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    public void testGetFeatures_withFeatureIds_throwsExceptionForInvalidFeatureId() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> mManager.getAdvancedProtectionFeatures(new int[] {-1}));
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_AAPM_API_V2)
@@ -344,6 +379,24 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
                 () ->
                         mManager.updateAdvancedProtectionFeaturesProvisioning(
                                 new int[] {1}, new int[] {2}));
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_AAPM_API_V2)
+    @ApiTest(
+            apis = {
+                "android.security.advancedprotection.AdvancedProtectionManager"
+                        + "#getAdvancedProtectionFeatures"
+            })
+    @Test
+    public void testGetFeatures_withFeatureIds_withoutPermission() {
+        mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+        assertThrows(
+                SecurityException.class,
+                () ->
+                        mManager.getAdvancedProtectionFeatures(
+                                new int[] {
+                                    AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G
+                                }));
     }
 
     private static void assertDoesNotThrow(ThrowingRunnable runnable) {
