@@ -49,7 +49,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
+import android.app.ActivityOptions;
 import android.app.Instrumentation;
+import android.app.WindowConfiguration;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.platform.test.annotations.Presubmit;
@@ -107,6 +109,7 @@ public class ActivityLifecycleLegacySplitScreenTests extends ActivityLifecycleCl
         mTaskOrganizer.setLaunchRoot(mTaskOrganizer.getSecondarySplitTaskId());
         new Launcher(ThirdActivity.class)
                 .setFlags(FLAG_ACTIVITY_MULTIPLE_TASK | FLAG_ACTIVITY_NEW_TASK)
+                .setOptions(createOptionsForMultiWindowMode())
                 .launch();
 
         // Finish top activity
@@ -139,6 +142,7 @@ public class ActivityLifecycleLegacySplitScreenTests extends ActivityLifecycleCl
         mTaskOrganizer.setLaunchRoot(mTaskOrganizer.getSecondarySplitTaskId());
         new Launcher(ThirdActivity.class)
                 .setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_MULTIPLE_TASK)
+                .setOptions(createOptionsForMultiWindowMode())
                 .launch();
         waitAndAssertActivityStates(state(sideActivity, ON_STOP));
     }
@@ -162,6 +166,7 @@ public class ActivityLifecycleLegacySplitScreenTests extends ActivityLifecycleCl
         mTaskOrganizer.setLaunchRoot(mTaskOrganizer.getSecondarySplitTaskId());
         new Launcher(TranslucentActivity.class)
                 .setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_MULTIPLE_TASK)
+                .setOptions(createOptionsForMultiWindowMode())
                 .launch();
         waitAndAssertActivityStates(state(sideActivity, ON_PAUSE));
     }
@@ -223,9 +228,11 @@ public class ActivityLifecycleLegacySplitScreenTests extends ActivityLifecycleCl
 
         // Start an activity in separate task (will be placed in secondary stack)
         mTaskOrganizer.setLaunchRoot(mTaskOrganizer.getSecondarySplitTaskId());
-        final Activity newTaskActivity = new Launcher(ThirdActivity.class)
-                .setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_MULTIPLE_TASK)
-                .launch();
+        final Activity newTaskActivity =
+                new Launcher(ThirdActivity.class)
+                        .setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_MULTIPLE_TASK)
+                        .setOptions(createOptionsForMultiWindowMode())
+                        .launch();
 
         // Launch second activity, first become stopped
         getTransitionLog().clear();
@@ -437,6 +444,12 @@ public class ActivityLifecycleLegacySplitScreenTests extends ActivityLifecycleCl
 
         assertTransitionNotObserved(getTransitionLog(),
                 transition(ShowImeActivity.class, ON_DESTROY), "showingIme");
+    }
+
+    private ActivityOptions createOptionsForMultiWindowMode() {
+        final ActivityOptions options = ActivityOptions.makeBasic();
+        options.setLaunchWindowingMode(WindowConfiguration.WINDOWING_MODE_MULTI_WINDOW);
+        return options;
     }
 
     public static class ShowImeActivity extends LifecycleTrackingActivity {
