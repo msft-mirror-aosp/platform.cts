@@ -897,12 +897,13 @@ public class MediaQualityTest {
         @Override
         public void onParameterCapabilitiesChanged(
                 String profileId, List<ParameterCapability> updatedCaps) {
-            boolean isSupported;
+            boolean isSupported, isMutable;
             int paramType;
             for (ParameterCapability paramCap : updatedCaps) {
                 assertNotNull("param cap name is null", paramCap.getParameterName());
                 assertNotNull("param cap is null", paramCap.getCapabilities());
                 isSupported = paramCap.isSupported();
+                isMutable = paramCap.isMutable();
                 paramType = paramCap.getParameterType();
             }
             super.onParameterCapabilitiesChanged(profileId, updatedCaps);
@@ -933,12 +934,13 @@ public class MediaQualityTest {
         @Override
         public void onParameterCapabilitiesChanged(
                 String profileId, List<ParameterCapability> updatedCaps) {
-            boolean isSupported;
+            boolean isSupported, isMutable;
             int paramType;
             for (ParameterCapability paramCap : updatedCaps) {
                 assertNotNull("param cap name is null", paramCap.getParameterName());
                 assertNotNull("param cap is null", paramCap.getCapabilities());
                 isSupported = paramCap.isSupported();
+                isMutable = paramCap.isMutable();
                 paramType = paramCap.getParameterType();
             }
             super.onParameterCapabilitiesChanged(profileId, updatedCaps);
