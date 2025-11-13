@@ -47,6 +47,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
@@ -393,6 +394,7 @@ public class StartActivityTests extends ActivityManagerTestBase {
      * Test the activity launched with ActivityOptions#setLaunchBounds should be launched with the
      * requested bounds.
      */
+    // TODO: b/460421521 - revisit when and how the API should be used.
     @Test
     @ApiTest(apis = {"android.app.ActivityOptions#setLaunchBounds"})
     public void testStartActivityWithLaunchBounds() {
@@ -428,6 +430,13 @@ public class StartActivityTests extends ActivityManagerTestBase {
                         .setComponent(TEST_ACTIVITY);
         mContext.startActivity(intent, options.toBundle());
         waitAndAssertResumedActivity(TEST_ACTIVITY);
+
+        // Skip if the task is managed by a created-by-organizer task.
+        WindowManagerState.Task parent = mWmState.getActivity(TEST_ACTIVITY).getTask();
+        while (parent != null) {
+            assumeFalse(parent.isCreatedByOrganizer());
+            parent = parent.getParentTask();
+        }
 
         // Ensure the bounds are updated.
         assertEquals(
