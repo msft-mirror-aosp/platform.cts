@@ -132,6 +132,20 @@ def analyze_qr_code(img, file_stem_with_suffix):
                   _QR_CODE_VALUE)
     return qr_code, 0.0, contour_length
   else:
+    wechat_qr_detector = cv2.wechat_qrcode_WeChatQRCode('', '', '', '')
+    detection_results, _ = wechat_qr_detector.detectAndDecode(tile)
+    logging.debug('detection_results: %s', detection_results)
+    # detectAndDecode can return a nested tuple
+    # e.g. detection_results = ((('RESULT',),),).
+    # We should continuously unpack the first element.
+    result, = detection_results
+    while isinstance(result, tuple):
+      result, = result
+    if detection_results and _QR_CODE_VALUE in result:
+      logging.debug('Decoded correct QR code: %s '
+                    'using WeChat detector without contrast changes',
+                    _QR_CODE_VALUE)
+      return _QR_CODE_VALUE, 0.0, contour_length
     qr_code, _ = qr_detector.detect(tile)
     if qr_code:
       detection_object = qr_code
