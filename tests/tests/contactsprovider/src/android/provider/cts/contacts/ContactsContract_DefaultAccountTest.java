@@ -16,8 +16,6 @@
 
 package android.provider.cts.contacts;
 
-import static android.provider.Flags.FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED;
-
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -32,9 +30,6 @@ import android.accounts.AccountManager;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.os.Build;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.ContactsContract;
 import android.provider.ContactsContract.RawContacts.DefaultAccount;
 import android.provider.ContactsContract.RawContacts.DefaultAccount.DefaultAccountAndState;
@@ -49,7 +44,6 @@ import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -74,9 +68,6 @@ public class ContactsContract_DefaultAccountTest {
     private static final String SIM_ACCT_TYPE = "sim account type for DAT test";
     private static final Account SIM_ACCT = new Account(SIM_ACCT_NAME, SIM_ACCT_TYPE);
     private static final int SIM_SLOT_0 = 0;
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
     private Context mContext;
     private ContentResolver mResolver;
     private AccountManager mAccountManager;
@@ -110,14 +101,12 @@ public class ContactsContract_DefaultAccountTest {
         });
     }
 
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
     @Test
     public void testInitialDefaultAccountState() {
         DefaultAccountAndState defaultAccountAndState = getDefaultAccountForNewContacts();
         assertEquals(DefaultAccountAndState.ofNotSet(), defaultAccountAndState);
     }
 
-    @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     @Test
     public void testDefaultAccountInLocalState() {
         SystemUtil.runWithShellPermissionIdentity(() -> {
@@ -126,7 +115,6 @@ public class ContactsContract_DefaultAccountTest {
         assertEquals(DefaultAccountAndState.ofLocal(), getDefaultAccountForNewContacts());
     }
 
-    @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     @Test
     public void testDefaultAccount_cloud_accountIsNotSignedIn() {
         SystemUtil.runWithShellPermissionIdentity(() -> {
@@ -136,7 +124,6 @@ public class ContactsContract_DefaultAccountTest {
         assertEquals(DefaultAccountAndState.ofNotSet(), getDefaultAccountForNewContacts());
     }
 
-    @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     @Test
     public void testDefaultAccount_cloud_accountIsSignedIn() {
         SystemUtil.runWithShellPermissionIdentity(
@@ -144,7 +131,6 @@ public class ContactsContract_DefaultAccountTest {
         assertEquals(DefaultAccountAndState.ofCloud(ACCT_1), getDefaultAccountForNewContacts());
     }
 
-    @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     @Test
     public void testDefaultAccount_cloud_invalidCloudAccounts() {
         // SIM_ACCT is not a SIM account, which cannot be set as default account with the state SIM.
@@ -155,7 +141,6 @@ public class ContactsContract_DefaultAccountTest {
         assertEquals(DefaultAccountAndState.ofNotSet(), getDefaultAccountForNewContacts());
     }
 
-    @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     @Test
     public void testDefaultAccount_sim() {
         SystemUtil.runWithShellPermissionIdentity(() -> {
@@ -164,7 +149,6 @@ public class ContactsContract_DefaultAccountTest {
         assertEquals(DefaultAccountAndState.ofSim(SIM_ACCT), getDefaultAccountForNewContacts());
     }
 
-    @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     @Test
     public void testDefaultAccount_sim_invalidSimAccount() {
         // ACCT_1 is not a SIM account, which cannot be set as default account with the state SIM.
@@ -175,7 +159,6 @@ public class ContactsContract_DefaultAccountTest {
         assertEquals(DefaultAccountAndState.ofNotSet(), getDefaultAccountForNewContacts());
     }
 
-    @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     @Test
     public void testDefaultAccount_getCloudEligibleAccounts() {
         HashSet<String> eligibleCloudAccountTypes = new HashSet<>(
@@ -214,7 +197,6 @@ public class ContactsContract_DefaultAccountTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     public void testRawContactAndGroupInsert_whenDefaultAccountIsCloud() throws Exception {
         assumeTrue(
                 "Skipped if the config_rawContactsAccountRestrictionEnabled is set to false",
@@ -272,7 +254,6 @@ public class ContactsContract_DefaultAccountTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     public void testRawContactAndGroupInsert_whenDefaultAccountIsLocal() throws Exception {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> setDefaultAccountForNewContacts(DefaultAccountAndState.ofLocal()));
@@ -315,7 +296,6 @@ public class ContactsContract_DefaultAccountTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     public void testRawContactAndGroupInsert_whenDefaultAccountIsSim() throws Exception {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> setDefaultAccountForNewContacts(DefaultAccountAndState.ofSim(SIM_ACCT)));
@@ -358,7 +338,6 @@ public class ContactsContract_DefaultAccountTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     public void testRawContactAndGroupInsert_whenDefaultAccountIsNotSet() throws Exception {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> setDefaultAccountForNewContacts(DefaultAccountAndState.ofNotSet()));
@@ -384,7 +363,6 @@ public class ContactsContract_DefaultAccountTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     public void testRawContactAndGroupAccountUpdate_whenDefaultAccountIsCloud() throws Exception {
         assumeTrue(
                 "Skipped if the config_rawContactsAccountRestrictionEnabled is set to false",
@@ -451,7 +429,6 @@ public class ContactsContract_DefaultAccountTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     public void testRawContactAndGroupAccountUpdate_whenDefaultAccountIsLocal() throws Exception {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> setDefaultAccountForNewContacts(DefaultAccountAndState.ofLocal()));
@@ -498,7 +475,6 @@ public class ContactsContract_DefaultAccountTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     public void testRawContactAndGroupAccountUpdate_whenDefaultAccountIsSim() throws Exception {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> setDefaultAccountForNewContacts(DefaultAccountAndState.ofSim(SIM_ACCT)));
@@ -545,7 +521,6 @@ public class ContactsContract_DefaultAccountTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     public void testRawContactAndGroupAccountUpdate_whenDefaultAccountIsNotSet() throws Exception {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> setDefaultAccountForNewContacts(DefaultAccountAndState.ofNotSet()));
