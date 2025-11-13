@@ -20,20 +20,23 @@ import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
+import android.os.PersistableBundle;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.telephony.AccessNetworkConstants;
 import android.telephony.CarrierConfigManager;
-
 import android.telephony.NetworkRegistrationInfo;
+import android.telephony.ServiceState;
+import android.telephony.SignalThresholdInfo;
 import android.telephony.SubscriptionManager;
+import android.telephony.TelephonyCallback;
 import android.telephony.mockmodem.MockModemConfigBase;
 import android.telephony.satellite.SatelliteManager;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import java.util.ArrayList;
-import java.util.List;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -42,6 +45,10 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatelliteTestBase {
@@ -53,6 +60,7 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
 
     /**
      * Setup before all tests.
+     *
      * @throws Exception exception
      */
     @BeforeClass
@@ -68,6 +76,7 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
 
     /**
      * Cleanup resources after all tests.
+     *
      * @throws Exception exception
      */
     @AfterClass
@@ -82,7 +91,7 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
         logd(TAG, "setUp()");
         if (!shouldTestSatelliteWithMockService()) return;
         setUpAutoConnectTestEnvironment(
-            SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT, PHONE_NUMBER_0, true);
+                SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT, PHONE_NUMBER_0, true);
     }
 
     @After
@@ -135,8 +144,8 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
     public void testQuerySatelliteEntitlementService_success() throws Exception {
         logd(TAG, "testQuerySatelliteEntitlementService_success");
         if (!shouldTestSatelliteWithMockService()) return;
-        testQuerySatelliteEntitlementService_success(SLOT_ID_0,
-            CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC);
+        testQuerySatelliteEntitlementService_success(
+                SLOT_ID_0, CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC);
     }
 
     @Test
@@ -162,7 +171,8 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             throws Exception {
         logd(TAG, "testNoConstrainedNetworkConnection");
         if (!shouldTestSatelliteWithMockService()) return;
-        testNoSatelliteConstrainedNetworkConnection_WithBandwidthNotConstrainedCapability(SLOT_ID_0);
+        testNoSatelliteConstrainedNetworkConnection_WithBandwidthNotConstrainedCapability(
+                SLOT_ID_0);
     }
 
     @Test
@@ -187,8 +197,10 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
                     SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_ENTITLEMENT);
             waitForSatelliteDisabledForCarrier(SLOT_ID_0);
             // Verify that the PLMN list come from carrier config.
-            String satellitePlmn = sMockModemManager.getSimInfo(SLOT_ID_0,
-                MockModemConfigBase.SimInfoChangedResult.SIM_INFO_TYPE_MCC_MNC);
+            String satellitePlmn =
+                    sMockModemManager.getSimInfo(
+                            SLOT_ID_0,
+                            MockModemConfigBase.SimInfoChangedResult.SIM_INFO_TYPE_MCC_MNC);
             List<String> expectedTelephonyCarrierPlmnList = new ArrayList<>();
             List<String> expectedConfiguredCarrierPlmnList = new ArrayList<>();
             expectedTelephonyCarrierPlmnList.add(satellitePlmn);
@@ -214,10 +226,466 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             waitForCarrierPlmnListAvailableInTelephony(subId, expectedTelephonyCarrierPlmnList);
         } finally {
             logd(TAG, "testConfigureEmergencyAndDisasterPlmns: restore test environment");
-            sMockSatelliteServiceManager
-                .overrideSatelliteEntilementQueryConditions(false, false);
-            sMockSatelliteServiceManager
-                .overrideSatelliteEntilementStatusResponseForCtsTest(null, false);
+            sMockSatelliteServiceManager.overrideSatelliteEntilementQueryConditions(false, false);
+            sMockSatelliteServiceManager.overrideSatelliteEntilementStatusResponseForCtsTest(
+                    null, false);
+        }
+    }
+
+    private PersistableBundle createBundle(String key, int[] value) {
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putIntArray(key, value);
+        return bundle;
+    }
+
+    /**
+     * Validates if SignalThresholdInfo build for NGRAN succeeds or fails as expected.
+     *
+     * @param signalMeasurementType The signal measurement type.
+     * @param thresholds The thresholds to test.
+     * @param expectException True if build() should throw IllegalArgumentException.
+     * @return True if the build() behavior matches expectException, false otherwise.
+     */
+    public static boolean validateThresholds(
+            int signalMeasurementType, int[] thresholds, boolean expectException) {
+        String testCaseDescription =
+                "Type="
+                        + signalMeasurementType
+                        + ", Thresh="
+                        + Arrays.toString(thresholds)
+                        + ", ExpectException="
+                        + expectException;
+        try {
+            new SignalThresholdInfo.Builder()
+                    .setRadioAccessNetworkType(AccessNetworkConstants.AccessNetworkType.NGRAN)
+                    .setSignalMeasurementType(signalMeasurementType)
+                    .setThresholds(thresholds)
+                    .setHysteresisMs(0)
+                    .setHysteresisDb(0)
+                    .build();
+            if (expectException) {
+                loge("IllegalArgumentException was expected for " + testCaseDescription);
+                return false;
+            } else {
+                return true;
+            }
+        } catch (IllegalArgumentException e) {
+            if (expectException) {
+                return true;
+            } else {
+                loge(
+                        "IllegalArgumentException was not expected for "
+                                + testCaseDescription
+                                + ", but got: "
+                                + e.getMessage());
+                return false;
+            }
+        } catch (Exception e) {
+            loge("Unexpected exception for " + testCaseDescription + ", " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Tests the validation(e.g., length, out of bounds) of {@link
+     * CarrierConfigManager#KEY_NTN_5G_NR_SSRSRQ_THRESHOLDS_INT_ARRAY}.
+     */
+    @Test
+    public void testNtn5gNrSsrsrpThresholdsValidCheck() throws Exception {
+        if (!shouldTestSatelliteWithMockService()) {
+            logd(TAG, "Skipping testNtn5gNrSsrsrpThresholds: Mock service not available.");
+            return;
+        }
+
+        int subId = SubscriptionManager.getSubscriptionId(SLOT_ID_0);
+        if (!isActiveSubId(subId)) {
+            logd(
+                    TAG,
+                    "Skipping testNtn5gNrSsrsrpThresholds: No active subscription on slot "
+                            + SLOT_ID_0);
+            return;
+        }
+
+        CarrierConfigManager carrierConfigManager =
+                getContext().getSystemService(CarrierConfigManager.class);
+        assertTrue("CarrierConfigManager should not be null", carrierConfigManager != null);
+
+        try {
+            int[] validThresholds = new int[] {-120, -110, -100, -90};
+            logd(TAG, "Testing valid values: " + Arrays.toString(validThresholds));
+            overrideCarrierConfig(
+                    subId,
+                    createBundle(
+                            CarrierConfigManager.KEY_NTN_5G_NR_SSRSRP_THRESHOLDS_INT_ARRAY,
+                            validThresholds));
+            assertTrue(
+                    validateThresholds(
+                            SignalThresholdInfo.SIGNAL_MEASUREMENT_TYPE_SSRSRP,
+                            carrierConfigManager
+                                    .getConfigForSubId(subId)
+                                    .getIntArray(
+                                            CarrierConfigManager
+                                                    .KEY_NTN_5G_NR_SSRSRP_THRESHOLDS_INT_ARRAY),
+                            false));
+            overrideCarrierConfig(subId, null);
+
+            int[] boundaryThresholds = new int[] {-140, -100, -60, -44};
+            logd("Testing boundary values: " + Arrays.toString(boundaryThresholds));
+            overrideCarrierConfig(
+                    subId,
+                    createBundle(
+                            CarrierConfigManager.KEY_NTN_5G_NR_SSRSRP_THRESHOLDS_INT_ARRAY,
+                            boundaryThresholds));
+            assertTrue(
+                    validateThresholds(
+                            SignalThresholdInfo.SIGNAL_MEASUREMENT_TYPE_SSRSRP,
+                            carrierConfigManager
+                                    .getConfigForSubId(subId)
+                                    .getIntArray(
+                                            CarrierConfigManager
+                                                    .KEY_NTN_5G_NR_SSRSRP_THRESHOLDS_INT_ARRAY),
+                            false));
+            overrideCarrierConfig(subId, null);
+
+            int[] outOfBoundsLower = new int[] {-141, -110, -100, -90};
+            logd(TAG, "Testing out of bounds lower: " + Arrays.toString(outOfBoundsLower));
+            overrideCarrierConfig(
+                    subId,
+                    createBundle(
+                            CarrierConfigManager.KEY_NTN_5G_NR_SSRSRP_THRESHOLDS_INT_ARRAY,
+                            outOfBoundsLower));
+            assertTrue(
+                    validateThresholds(
+                            SignalThresholdInfo.SIGNAL_MEASUREMENT_TYPE_SSRSRP,
+                            carrierConfigManager
+                                    .getConfigForSubId(subId)
+                                    .getIntArray(
+                                            CarrierConfigManager
+                                                    .KEY_NTN_5G_NR_SSRSRP_THRESHOLDS_INT_ARRAY),
+                            true));
+            overrideCarrierConfig(subId, null);
+
+            int[] outOfBoundsUpper = new int[] {-120, -110, -100, -43};
+            logd(TAG, "Testing out of bounds upper: " + Arrays.toString(outOfBoundsUpper));
+            overrideCarrierConfig(
+                    subId,
+                    createBundle(
+                            CarrierConfigManager.KEY_NTN_5G_NR_SSRSRP_THRESHOLDS_INT_ARRAY,
+                            outOfBoundsUpper));
+            assertTrue(
+                    validateThresholds(
+                            SignalThresholdInfo.SIGNAL_MEASUREMENT_TYPE_SSRSRP,
+                            carrierConfigManager
+                                    .getConfigForSubId(subId)
+                                    .getIntArray(
+                                            CarrierConfigManager
+                                                    .KEY_NTN_5G_NR_SSRSRP_THRESHOLDS_INT_ARRAY),
+                            true));
+            overrideCarrierConfig(subId, null);
+        } finally {
+            // Final restoration to ensure defaults are set
+            overrideCarrierConfig(subId, null);
+            logd(TAG, "Test finished, restored default carrier config.");
+        }
+    }
+
+    /**
+     * Tests the validation(e.g., length, out of bounds) of {@link
+     * CarrierConfigManager#KEY_NTN_5G_NR_SSSINR_THRESHOLDS_INT_ARRAY}.
+     */
+    @Test
+    public void testNtn5gNrSssinrThresholdsValidCheck() throws Exception {
+        if (!shouldTestSatelliteWithMockService()) {
+            logd(TAG, "Skipping testNtn5gNrSssinrThresholds: Mock service not available.");
+            return;
+        }
+
+        int subId = SubscriptionManager.getSubscriptionId(SLOT_ID_0);
+        if (!isActiveSubId(subId)) {
+            logd(
+                    TAG,
+                    "Skipping testNtn5gNrSssinrThresholds: No active subscription on slot "
+                            + SLOT_ID_0);
+            return;
+        }
+
+        CarrierConfigManager carrierConfigManager =
+                getContext().getSystemService(CarrierConfigManager.class);
+        assertTrue("CarrierConfigManager should not be null", carrierConfigManager != null);
+
+        try {
+            int[] validThresholds = new int[] {-20, 0, 15, 35};
+            logd(TAG, "Testing valid values: " + Arrays.toString(validThresholds));
+            overrideCarrierConfig(
+                    subId,
+                    createBundle(
+                            CarrierConfigManager.KEY_NTN_5G_NR_SSSINR_THRESHOLDS_INT_ARRAY,
+                            validThresholds));
+            assertTrue(
+                    validateThresholds(
+                            SignalThresholdInfo.SIGNAL_MEASUREMENT_TYPE_SSSINR,
+                            carrierConfigManager
+                                    .getConfigForSubId(subId)
+                                    .getIntArray(
+                                            CarrierConfigManager
+                                                    .KEY_NTN_5G_NR_SSSINR_THRESHOLDS_INT_ARRAY),
+                            false));
+            overrideCarrierConfig(subId, null);
+
+            int[] boundaryThresholds = new int[] {-23, 0, 20, 40};
+            logd("Testing boundary values: " + Arrays.toString(boundaryThresholds));
+            overrideCarrierConfig(
+                    subId,
+                    createBundle(
+                            CarrierConfigManager.KEY_NTN_5G_NR_SSSINR_THRESHOLDS_INT_ARRAY,
+                            boundaryThresholds));
+            assertTrue(
+                    validateThresholds(
+                            SignalThresholdInfo.SIGNAL_MEASUREMENT_TYPE_SSSINR,
+                            carrierConfigManager
+                                    .getConfigForSubId(subId)
+                                    .getIntArray(
+                                            CarrierConfigManager
+                                                    .KEY_NTN_5G_NR_SSSINR_THRESHOLDS_INT_ARRAY),
+                            false));
+            overrideCarrierConfig(subId, null);
+
+            int[] outOfBoundsLower = new int[] {-24, 0, 15, 35};
+            logd(TAG, "Testing out of bounds lower: " + Arrays.toString(outOfBoundsLower));
+            overrideCarrierConfig(
+                    subId,
+                    createBundle(
+                            CarrierConfigManager.KEY_NTN_5G_NR_SSSINR_THRESHOLDS_INT_ARRAY,
+                            outOfBoundsLower));
+            assertTrue(
+                    validateThresholds(
+                            SignalThresholdInfo.SIGNAL_MEASUREMENT_TYPE_SSSINR,
+                            carrierConfigManager
+                                    .getConfigForSubId(subId)
+                                    .getIntArray(
+                                            CarrierConfigManager
+                                                    .KEY_NTN_5G_NR_SSSINR_THRESHOLDS_INT_ARRAY),
+                            true));
+            overrideCarrierConfig(subId, null);
+
+            int[] outOfBoundsUpper = new int[] {-20, 0, 15, 41};
+            logd(TAG, "Testing out of bounds upper: " + Arrays.toString(outOfBoundsUpper));
+            overrideCarrierConfig(
+                    subId,
+                    createBundle(
+                            CarrierConfigManager.KEY_NTN_5G_NR_SSSINR_THRESHOLDS_INT_ARRAY,
+                            outOfBoundsUpper));
+            assertTrue(
+                    validateThresholds(
+                            SignalThresholdInfo.SIGNAL_MEASUREMENT_TYPE_SSSINR,
+                            carrierConfigManager
+                                    .getConfigForSubId(subId)
+                                    .getIntArray(
+                                            CarrierConfigManager
+                                                    .KEY_NTN_5G_NR_SSSINR_THRESHOLDS_INT_ARRAY),
+                            true));
+            overrideCarrierConfig(subId, null);
+        } finally {
+            // Final restoration to ensure defaults are set
+            overrideCarrierConfig(subId, null);
+            logd(TAG, "Test finished, restored default carrier config.");
+        }
+    }
+
+    /**
+     * Tests the validation(e.g., length, out of bounds) of {@link
+     * CarrierConfigManager#KEY_NTN_5G_NR_SSRSRQ_THRESHOLDS_INT_ARRAY}.
+     */
+    @Test
+    public void testNtn5gNrSsrsrqThresholdsValidCheck() throws Exception {
+        if (!shouldTestSatelliteWithMockService()) {
+            logd(TAG, "Skipping testNtn5gNrSsrsrqThresholds: Mock service not available.");
+            return;
+        }
+
+        int subId = SubscriptionManager.getSubscriptionId(SLOT_ID_0);
+        if (!isActiveSubId(subId)) {
+            logd(
+                    TAG,
+                    "Skipping testNtn5gNrSsrsrqThresholds: No active subscription on slot "
+                            + SLOT_ID_0);
+            return;
+        }
+
+        CarrierConfigManager carrierConfigManager =
+                getContext().getSystemService(CarrierConfigManager.class);
+        assertTrue("CarrierConfigManager should not be null", carrierConfigManager != null);
+
+        try {
+            int[] validThresholds = new int[] {-40, -30, -10, 10};
+            logd(TAG, "Testing valid values: " + Arrays.toString(validThresholds));
+            overrideCarrierConfig(
+                    subId,
+                    createBundle(
+                            CarrierConfigManager.KEY_NTN_5G_NR_SSRSRQ_THRESHOLDS_INT_ARRAY,
+                            validThresholds));
+            assertTrue(
+                    validateThresholds(
+                            SignalThresholdInfo.SIGNAL_MEASUREMENT_TYPE_SSRSRQ,
+                            carrierConfigManager
+                                    .getConfigForSubId(subId)
+                                    .getIntArray(
+                                            CarrierConfigManager
+                                                    .KEY_NTN_5G_NR_SSRSRQ_THRESHOLDS_INT_ARRAY),
+                            false));
+            overrideCarrierConfig(subId, null);
+
+            int[] boundaryThresholds = new int[] {-43, -20, 0, 20};
+            logd("Testing boundary values: " + Arrays.toString(boundaryThresholds));
+            overrideCarrierConfig(
+                    subId,
+                    createBundle(
+                            CarrierConfigManager.KEY_NTN_5G_NR_SSRSRQ_THRESHOLDS_INT_ARRAY,
+                            boundaryThresholds));
+            assertTrue(
+                    validateThresholds(
+                            SignalThresholdInfo.SIGNAL_MEASUREMENT_TYPE_SSRSRQ,
+                            carrierConfigManager
+                                    .getConfigForSubId(subId)
+                                    .getIntArray(
+                                            CarrierConfigManager
+                                                    .KEY_NTN_5G_NR_SSRSRQ_THRESHOLDS_INT_ARRAY),
+                            false));
+            overrideCarrierConfig(subId, null);
+
+            int[] outOfBoundsLower = new int[] {-44, -30, -20, -10};
+            logd(TAG, "Testing out of bounds lower: " + Arrays.toString(outOfBoundsLower));
+            overrideCarrierConfig(
+                    subId,
+                    createBundle(
+                            CarrierConfigManager.KEY_NTN_5G_NR_SSRSRQ_THRESHOLDS_INT_ARRAY,
+                            outOfBoundsLower));
+            assertTrue(
+                    validateThresholds(
+                            SignalThresholdInfo.SIGNAL_MEASUREMENT_TYPE_SSRSRQ,
+                            carrierConfigManager
+                                    .getConfigForSubId(subId)
+                                    .getIntArray(
+                                            CarrierConfigManager
+                                                    .KEY_NTN_5G_NR_SSRSRQ_THRESHOLDS_INT_ARRAY),
+                            true));
+            overrideCarrierConfig(subId, null);
+
+            int[] outOfBoundsUpper = new int[] {-40, -30, -10, 21};
+            logd(TAG, "Testing out of bounds upper: " + Arrays.toString(outOfBoundsUpper));
+            overrideCarrierConfig(
+                    subId,
+                    createBundle(
+                            CarrierConfigManager.KEY_NTN_5G_NR_SSRSRQ_THRESHOLDS_INT_ARRAY,
+                            outOfBoundsUpper));
+            assertTrue(
+                    validateThresholds(
+                            SignalThresholdInfo.SIGNAL_MEASUREMENT_TYPE_SSRSRQ,
+                            carrierConfigManager
+                                    .getConfigForSubId(subId)
+                                    .getIntArray(
+                                            CarrierConfigManager
+                                                    .KEY_NTN_5G_NR_SSRSRQ_THRESHOLDS_INT_ARRAY),
+                            true));
+            overrideCarrierConfig(subId, null);
+        } finally {
+            // Final restoration to ensure defaults are set
+            overrideCarrierConfig(subId, null);
+            logd(TAG, "Test finished, restored default carrier config.");
+        }
+    }
+
+    /**
+     * Test that NetworkRegistrationInfo.isNonTerrestrialNetwork() reflects the state set in the
+     * MockModemService.
+     */
+    @Test
+    public void testIsNonTerrestrialNetworkState() throws Exception {
+        logd("testIsNonTerrestrialNetworkState: satellite plmn registered, set network ntn=false");
+        sMockModemManager.setNetworkIsNtn(SLOT_ID_0, false);
+        ServiceState serviceState = sTelephonyManager.getServiceStateForSlot(SLOT_ID_0);
+        if (serviceState != null) {
+            NetworkRegistrationInfo nri =
+                    serviceState.getNetworkRegistrationInfo(
+                            NetworkRegistrationInfo.DOMAIN_PS,
+                            AccessNetworkConstants.TRANSPORT_TYPE_WWAN);
+
+            if (nri != null) {
+                logd("testIsNonTerrestrialNetworkState: nri.isNonTerrestrialNetwork()");
+                assertTrue(nri.isNonTerrestrialNetwork());
+            }
+        }
+
+        logd("testIsNonTerrestrialNetworkState: remove registered satellite plmn");
+        disableSatellitePlmns(SLOT_ID_0);
+
+        logd("testIsNonTerrestrialNetworkState: set network ntn=false");
+        NtnStateCallback ntnCallbackFalse = new NtnStateCallback(false);
+        sTelephonyManager.registerTelephonyCallback(
+                getContext().getMainExecutor(), ntnCallbackFalse);
+        try {
+            sMockModemManager.setNetworkIsNtn(SLOT_ID_0, false);
+            assertTrue(
+                    "Failed to receive ntn=false state change",
+                    ntnCallbackFalse.awaitStateChange(TIMEOUT));
+        } finally {
+            sTelephonyManager.unregisterTelephonyCallback(ntnCallbackFalse);
+        }
+
+        logd("testIsNonTerrestrialNetworkState: set network ntn=true");
+        NtnStateCallback ntnCallbackTrue = new NtnStateCallback(true);
+        sTelephonyManager.registerTelephonyCallback(
+                getContext().getMainExecutor(), ntnCallbackTrue);
+        try {
+            sMockModemManager.setNetworkIsNtn(SLOT_ID_0, true);
+            assertTrue(
+                    "Failed to receive ntn=true state change",
+                    ntnCallbackTrue.awaitStateChange(TIMEOUT));
+        } finally {
+            sTelephonyManager.unregisterTelephonyCallback(ntnCallbackTrue);
+        }
+    }
+
+    protected static class NtnStateCallback extends TelephonyCallback
+            implements TelephonyCallback.ServiceStateListener {
+        private final boolean mExpectedState;
+        private final CountDownLatch mLatch = new CountDownLatch(1);
+
+        NtnStateCallback(boolean expectedState) {
+            super();
+            mExpectedState = expectedState;
+        }
+
+        @Override
+        public void onServiceStateChanged(ServiceState serviceState) {
+            if (serviceState == null) return;
+            logd("NtnStateCallback:onServiceStateChanged: " + serviceState);
+
+            NetworkRegistrationInfo nri =
+                    serviceState.getNetworkRegistrationInfo(
+                            NetworkRegistrationInfo.DOMAIN_PS,
+                            AccessNetworkConstants.TRANSPORT_TYPE_WWAN);
+
+            if (nri != null) {
+                logd(
+                        "NtnStateCallback: isNonTerrestrialNetwork: "
+                                + nri.isNonTerrestrialNetwork()
+                                + ", Expected: "
+                                + mExpectedState);
+                if (nri.isNonTerrestrialNetwork() == mExpectedState) {
+                    if (mLatch.getCount() > 0) {
+                        mLatch.countDown();
+                    }
+                }
+            } else {
+                logd("NtnStateCallback: NetworkRegistrationInfo is null");
+            }
+        }
+
+        public boolean awaitStateChange(long timeoutMillis) throws InterruptedException {
+            boolean result = mLatch.await(timeoutMillis, TimeUnit.MILLISECONDS);
+            logd("NtnStateCallback: awaitStateChange: result is " + result);
+            return result;
         }
     }
 }
