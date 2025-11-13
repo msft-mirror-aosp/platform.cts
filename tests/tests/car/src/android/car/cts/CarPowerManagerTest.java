@@ -121,6 +121,12 @@ public final class CarPowerManagerTest extends AbstractCarTestCase {
      */
     @Test
     public void testApplyNewPowerPolicy() throws Exception {
+        // Apply a different power policy initially to ensure that when the test policy is applied
+        // later, it triggers the power policy change listeners.
+        String policyIdTest = "audio_off_wifi_on";
+        definePowerPolicy(policyIdTest, "WIFI", "AUDIO");
+        applyPowerPolicy(policyIdTest);
+
         PowerPolicyListenerImpl listenerAudioOne = new PowerPolicyListenerImpl();
         PowerPolicyListenerImpl listenerAudioTwo = new PowerPolicyListenerImpl();
         PowerPolicyListenerImpl listenerWifi = new PowerPolicyListenerImpl();
