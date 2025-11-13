@@ -22,7 +22,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
+import android.Manifest;
+import android.accessibilityservice.AccessibilityService;
+import android.app.Flags;
+import android.app.ShowPowerMenuCallback;
 import android.app.StatusBarManager;
 import android.app.StatusBarManager.DisableInfo;
 import android.app.UiAutomation;
@@ -38,6 +43,9 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 
@@ -47,6 +55,9 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 // TODO(b/375675436): Remove this annotation after control of the status bar for visible background
 // users is allowed.
@@ -308,5 +319,54 @@ public class StatusBarManagerTest {
         mStatusBarManager.removeIcon(SLOT_MUTE);
 
         assertThrows(IllegalArgumentException.class, () -> mStatusBarManager.getIcon(SLOT_MUTE));
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_STATUSBAR_API_SHOW_POWER_MENU)
+    @ApiTest(apis = {"android.app.StatusBarManager#showPowerMenu"})
+    @EnsureDoesNotHavePermission(Manifest.permission.SHOW_POWER_MENU)
+    @Test
+    public void testShowPowerMenu_noPermission_securityException() throws Exception {
+        ShowPowerMenuCallback callback =
+                new ShowPowerMenuCallback() {
+                    @Override
+                    public void onPowerMenuShown(boolean showing) {
+                        fail("onPowerMenuShown");
+                    }
+
+                    @Override
+                    public void onError(int error) {
+                        fail("onError");
+                    }
+                };
+        assertThrows(
+                SecurityException.class,
+                () -> mStatusBarManager.showPowerMenu(Runnable::run, callback));
+    }
+
+    @ApiTest(apis = {"android.app.StatusBarManager#showPowerMenu"})
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_STATUSBAR_API_SHOW_POWER_MENU)
+    public void testShowPowerMenu_hasPermission_succeeds() throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
+        ShowPowerMenuCallback callback =
+                new ShowPowerMenuCallback() {
+                    @Override
+                    public void onPowerMenuShown(boolean showing) {
+                        assertTrue(showing);
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(int error) {
+                        fail("onError");
+                    }
+                };
+        try (PermissionContext ignored =
+                TestApis.permissions().withPermission(Manifest.permission.SHOW_POWER_MENU)) {
+            mStatusBarManager.showPowerMenu(Runnable::run, callback);
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
+        } finally {
+            mUiAutomation.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME);
+        }
     }
 }
