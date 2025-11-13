@@ -72,8 +72,7 @@ public class ChoreographerNativeTest {
 
     private static native long nativeGetChoreographer();
 
-    private static native boolean nativePrepareChoreographerTests(
-            long ptr, long[] refreshPeriods, boolean isRefreshRateUpdateSupportedIsFlagEnabled);
+    private static native boolean nativePrepareChoreographerTests(long ptr, long[] refreshPeriods);
 
     private static native void nativeTestPostCallbackWithoutDelayEventuallyRunsCallbacks(long ptr);
     private static native void nativeTestPostCallbackWithDelayEventuallyRunsCallbacks(long ptr);
@@ -123,30 +122,18 @@ public class ChoreographerNativeTest {
         assertTrue(defaultDisplayOpt.isPresent());
         mDefaultDisplay = defaultDisplayOpt.get();
 
-        if (com.android.graphics.surfaceflinger.flags.Flags.supportedRefreshRateUpdate()) {
-            float[] refreshRates = mDefaultDisplay.getSupportedRefreshRates();
-            mSupportedPeriods =
-                    IntStream.range(0, refreshRates.length)
-                            .mapToLong(
-                                    i -> (long) (Duration.ofSeconds(1).toNanos() / refreshRates[i]))
-                            .distinct()
-                            .toArray();
-        } else {
-            mSupportedPeriods =
-                    Arrays.stream(mDefaultDisplay.getSupportedModes())
-                            .mapToLong(
-                                    mode ->
-                                            (long)
-                                                    (Duration.ofSeconds(1).toNanos()
-                                                            / mode.getRefreshRate()))
-                            .distinct()
-                            .toArray();
-        }
+        float[] refreshRates = mDefaultDisplay.getSupportedRefreshRates();
+        mSupportedPeriods =
+                IntStream.range(0, refreshRates.length)
+                        .mapToLong(
+                                i -> (long) (Duration.ofSeconds(1).toNanos() / refreshRates[i]))
+                        .distinct()
+                        .toArray();
+
         mChoreographerPtr = nativeGetChoreographer();
         if (!nativePrepareChoreographerTests(
                 mChoreographerPtr,
-                mSupportedPeriods,
-                com.android.graphics.surfaceflinger.flags.Flags.supportedRefreshRateUpdate())) {
+                mSupportedPeriods)) {
             fail("Failed to setup choreographer tests");
         }
     }
