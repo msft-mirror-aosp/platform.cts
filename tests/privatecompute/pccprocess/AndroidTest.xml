@@ -39,8 +39,5 @@
         <option name="instrument-in-pcc" value="true" />
         <!-- TODO(438428601) - Remove when package visibility rules are fixed. -->
         <option name="use-test-storage" value="false" />
-        <!-- TODO(458616568) - Reenable once figured out the root cause for
-             pcc instrumentation failures with reruns enabled. -->
-        <option name="rerun" value="false" />
     </test>
 </configuration>
