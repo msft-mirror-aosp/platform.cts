@@ -38,6 +38,7 @@ import static org.junit.Assert.assertThrows;
 import android.app.admin.DevicePolicyManager;
 import android.app.admin.ManagedProfileProvisioningParams;
 import android.app.admin.ProvisioningException;
+import android.app.role.RoleManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.os.UserHandle;
@@ -63,6 +64,7 @@ import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.devicepolicy.DeviceOwner;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.packages.Package;
+import com.android.bedstead.nene.roles.RoleContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.users.UserType;
 import com.android.bedstead.nene.utils.Poll;
@@ -379,6 +381,30 @@ public class DevicePolicyManagementRoleHolderTest {
                 .isTrue();
     }
 
+    @Test
+    @EnsureHasNoDpc
+    @EnsureHasNoAccounts
+    @EnsureHasPermission(android.Manifest.permission.MANAGE_ROLE_HOLDERS)
+    public void verifyManuallySettingTestAppAsDmrh() {
+        TestApp dpc =
+                sTestAppProvider
+                        .query()
+                        .wherePackageName()
+                        .isEqualTo("com.android.DevicePolicyManagerRoleHolder")
+                        .whereTestOnly()
+                        .isEqualTo(true)
+                        .get();
+
+        try (TestAppInstance ignored = dpc.install();
+                RoleContext ignored1 =
+                        TestApis.devicePolicy().setDevicePolicyManagementRoleHolder(dpc.pkg())) {
+            assertThat(TestApis.roles().getRoleHolders(RoleManager.ROLE_DEVICE_POLICY_MANAGEMENT))
+                    .contains(dpc.packageName());
+        }
+        assertThat(TestApis.roles().getRoleHolders(RoleManager.ROLE_DEVICE_POLICY_MANAGEMENT))
+                .doesNotContain(dpc.packageName());
+    }
+
     /**
      * Verifies that the checks for adding a DMRH cannot be bypassed when a non-test-only DO exists
      * on the device.
@@ -490,4 +516,6 @@ public class DevicePolicyManagementRoleHolderTest {
                 sDevicePolicyManager.shouldAllowBypassingDevicePolicyManagementRoleQualification();
         assertThat(bypassed).isEqualTo(expected);
     }
+
+
 }
