@@ -18,6 +18,8 @@ package com.android.server.inputmethod.concurrentmultiuser;
 
 import static android.Manifest.permission.ACCESS_SURFACE_FLINGER;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
+import static android.Manifest.permission.TEST_INPUT_METHOD;
+import static android.Manifest.permission.WRITE_SECURE_SETTINGS;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
@@ -119,7 +121,10 @@ public final class ConcurrentMultiUserTest {
         mActivityScenario.onActivity(activity -> mActivity = activity);
         WindowUtil.waitForFocus(mActivity);
         mUiAutomation.adoptShellPermissionIdentity(
-                INTERACT_ACROSS_USERS_FULL, ACCESS_SURFACE_FLINGER);
+                INTERACT_ACROSS_USERS_FULL,
+                ACCESS_SURFACE_FLINGER,
+                TEST_INPUT_METHOD,
+                WRITE_SECURE_SETTINGS);
 
         // Set up user handles and builders
         mDriverUser = UserHandle.of(mContext.getUserId());
@@ -393,8 +398,7 @@ public final class ConcurrentMultiUserTest {
     private void enableDisableImeForUser(@NonNull UserHandle user1, @NonNull UserHandle user2) {
         List<InputMethodInfo> user2EnabledImeList =
                 mInputMethodManager.getEnabledInputMethodListAsUser(user2);
-        SystemUtil.runShellCommandOrThrow(
-                "ime enable --user " + user1.getIdentifier() + " " + MOCKIME_ID);
+        mInputMethodManager.enableInputMethodForTesting(MOCKIME_ID, user1.getIdentifier());
         List<InputMethodInfo> user1EnabledImeList =
                 mInputMethodManager.getEnabledInputMethodListAsUser(user1);
         PollingCheck.waitFor(
@@ -404,10 +408,9 @@ public final class ConcurrentMultiUserTest {
                                 .map(InputMethodInfo::getId)
                                 .toList()
                                 .contains(MOCKIME_ID),
-                "enable shell command failed.");
+                "enable IME test API failed.");
         // Disable an IME for user1.
-        SystemUtil.runShellCommandOrThrow(
-                "ime disable --user " + user1.getIdentifier() + " " + MOCKIME_ID);
+        mInputMethodManager.disableInputMethodForTesting(MOCKIME_ID, user1.getIdentifier());
         List<InputMethodInfo> user1EnabledImeList2 =
                 mInputMethodManager.getEnabledInputMethodListAsUser(user1);
         List<InputMethodInfo> user2EnabledImeList2 =
@@ -419,7 +422,7 @@ public final class ConcurrentMultiUserTest {
                                 .map(InputMethodInfo::getId)
                                 .toList()
                                 .contains(MOCKIME_ID),
-                "disable shell command failed.");
+                "disable IME test API failed.");
 
         assertWithMessage("User " + user1.getIdentifier() + "'s MockIme should be disabled")
                 .that(
@@ -439,8 +442,7 @@ public final class ConcurrentMultiUserTest {
                 .isTrue();
 
         // Enable the IME.
-        SystemUtil.runShellCommandOrThrow(
-                "ime enable --user " + user1.getIdentifier() + " " + MOCKIME_ID);
+        mInputMethodManager.enableInputMethodForTesting(MOCKIME_ID, user1.getIdentifier());
         PollingCheck.waitFor(
                 TIMEOUT_MILLIS,
                 () ->
@@ -448,7 +450,7 @@ public final class ConcurrentMultiUserTest {
                                 .map(InputMethodInfo::getId)
                                 .toList()
                                 .contains(MOCKIME_ID),
-                "enable shell command failed.");
+                "enable IME test API failed.");
         List<InputMethodInfo> user1EnabledImeList3 =
                 mInputMethodManager.getEnabledInputMethodListAsUser(user1);
         List<InputMethodInfo> user2EnabledImeList3 =
@@ -477,7 +479,7 @@ public final class ConcurrentMultiUserTest {
      */
     private void setImeForUser(@NonNull UserHandle user1, @NonNull UserHandle user2) {
         // Reset IME for user1.
-        SystemUtil.runShellCommandOrThrow("ime reset --user " + user1.getIdentifier());
+        mInputMethodManager.resetInputMethodsForTesting(user1.getIdentifier());
         List<InputMethodInfo> user1EnabledImeList =
                 mInputMethodManager.getEnabledInputMethodListAsUser(user1);
         assumeTrue("There must be at least two IME to test", user1EnabledImeList.size() >= 2);
@@ -491,13 +493,16 @@ public final class ConcurrentMultiUserTest {
                 anotherIme = info;
             }
         }
-        SystemUtil.runShellCommandOrThrow(
-                "ime set --user " + user1.getIdentifier() + " " + anotherIme.getId());
+        mInputMethodManager.setInputMethodForTesting(anotherIme.getId(), user1.getIdentifier());
         final String anotherImeId = anotherIme.getId();
         PollingCheck.waitFor(
                 TIMEOUT_MILLIS,
-                () -> mInputMethodManager.getCurrentInputMethodInfoAsUser(user1).getId().equals(anotherImeId),
-                "set shell command failed.");
+                () ->
+                        mInputMethodManager
+                                .getCurrentInputMethodInfoAsUser(user1)
+                                .getId()
+                                .equals(anotherImeId),
+                "set IME test API failed.");
         InputMethodInfo user1Ime2 = mInputMethodManager.getCurrentInputMethodInfoAsUser(user1);
         InputMethodInfo user2Ime2 = mInputMethodManager.getCurrentInputMethodInfoAsUser(user2);
         assertWithMessage("The current IME for user " + user1.getIdentifier() + " is wrong")
@@ -508,7 +513,15 @@ public final class ConcurrentMultiUserTest {
                 .isEqualTo(user2Ime);
 
         // Reset IME for user1.
-        SystemUtil.runShellCommandOrThrow("ime reset --user " + user1.getIdentifier());
+        mInputMethodManager.resetInputMethodsForTesting(user1.getIdentifier());
+        PollingCheck.waitFor(
+                TIMEOUT_MILLIS,
+                () ->
+                        mInputMethodManager
+                                .getCurrentInputMethodInfoAsUser(user1)
+                                .getId()
+                                .equals(user1Ime.getId()),
+                "reset IME test API failed.");
         InputMethodInfo user1Ime3 = mInputMethodManager.getCurrentInputMethodInfoAsUser(user1);
         InputMethodInfo user2Ime3 = mInputMethodManager.getCurrentInputMethodInfoAsUser(user2);
         assertWithMessage("The current IME for user " + user1.getIdentifier() + " is wrong")
