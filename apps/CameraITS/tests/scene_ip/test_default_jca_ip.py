@@ -48,6 +48,7 @@ _AWB_DIFF_THRESHOLD = 4
 _BRIGHTNESS_DIFF_THRESHOLD = 10
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _COMMON_IMG_ARS_ATOL = 0.01
+_COLOR_DIFF_THRESHOLD = 6
 
 
 def get_jca_ar(default_capture_path):
@@ -440,9 +441,21 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       jca_cropped_color_cells = ce.get_cropped_color_cells(
           jca_capture_path, self.log_path, 'jca')
 
-      ip_metrics_utils.get_color_rendering_variation(
+      mean_delta_ab_diff, _ = ip_metrics_utils.get_color_rendering_variation(
           default_cropped_color_cells, jca_cropped_color_cells, gainmap_present)
-
+      # logging for data collection
+      print(f'{_NAME}mean_delta_ab_diff: {mean_delta_ab_diff}')
+      logging.debug('mean_delta_ab_diff: %.2f', mean_delta_ab_diff)
+      if abs(mean_delta_ab_diff) > _COLOR_DIFF_THRESHOLD:
+        e_msg.append('Device fails the color rendering difference criteria.')
+      # Check for marginal pass for color rendering check
+      marginal_color_pass = False
+      if (abs(mean_delta_ab_diff) > (
+          _COLOR_DIFF_THRESHOLD * its_session_utils.MARGINAL_PASS_FACTOR)
+          and
+          abs(mean_delta_ab_diff) <= (_COLOR_DIFF_THRESHOLD)):
+        marginal_color_pass = True
+        marginal_pass_msg.append('Marginally passing color rendering check.')
       # logging for data collection
       print(f'{_NAME}_mean_white_balance_diff: {mean_white_balance_diff}')
       logging.debug('mean_white_balance_diff: %f', mean_white_balance_diff)
@@ -450,6 +463,7 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
         e_msg.append('Device fails the white balance difference criteria.')
       if not fov_match:
         e_msg.append('Device fails the FOV match check.')
+
       if e_msg:
         if first_api_level <= its_session_utils.ANDROID17_API_LEVEL:
           raise AssertionError(
@@ -457,7 +471,8 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
         else:
           raise AssertionError(e_msg)  # Checks mandated starting Android 17
       else:  # Check for marginal pass
-        if (marginal_brightness_pass or marginal_while_balance_pass):
+        if (marginal_brightness_pass or marginal_while_balance_pass or
+            marginal_color_pass):
           logging.warning('%s\n %s', its_session_utils.MARGINAL_PASSING_MESSAGE,
                           marginal_pass_msg)
 
