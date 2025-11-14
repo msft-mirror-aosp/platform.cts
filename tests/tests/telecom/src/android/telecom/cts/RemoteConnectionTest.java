@@ -275,6 +275,54 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
         }
     }
 
+    public void testRemoteConnectionRingbackRequested() {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
+            return;
+        }
+        addRemoteConnectionOutgoingCall();
+        mRemoteConnection.setRingbackRequested(true);
+
+        assertTrue(
+                "Expected ringback requested on remote connection.",
+                waitForCondition(
+                        new Condition() {
+                            @Override
+                            public Object expected() {
+                                return true;
+                            }
+
+                            @Override
+                            public Object actual() {
+                                return mRemoteConnectionObject.isRingbackRequested();
+                            }
+                        },
+                        WAIT_FOR_STATE_CHANGE_TIMEOUT_MS));
+    }
+
+    public void testRemoteConnectionVoipMode() {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
+            return;
+        }
+        addRemoteConnectionOutgoingCall();
+        mRemoteConnection.setAudioModeIsVoip(true);
+
+        assertTrue(
+                "Expected to be informed of voip audio mode on remote connection.",
+                waitForCondition(
+                        new Condition() {
+                            @Override
+                            public Object expected() {
+                                return true;
+                            }
+
+                            @Override
+                            public Object actual() {
+                                return mRemoteConnectionObject.isVoipAudioMode();
+                            }
+                        },
+                        WAIT_FOR_STATE_CHANGE_TIMEOUT_MS));
+    }
+
     public void testRemoteConnectionDTMFTone() {
         if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
@@ -437,6 +485,12 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
         callbackInvoker.waitForCount(1, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
         assertEquals(mRemoteConnectionObject, callbackInvoker.getArgs(0)[0]);
         assertEquals(postDialSequence, callbackInvoker.getArgs(0)[1]);
+
+        mRemoteConnectionObject.postDialContinue(true);
+        final InvokeCounter counter =
+                mRemoteConnection.getInvokeCounter(MockConnection.ON_POST_DIAL_WAIT);
+        counter.waitForCount(1, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+
         mRemoteConnectionObject.unregisterCallback(callback);
     }
 

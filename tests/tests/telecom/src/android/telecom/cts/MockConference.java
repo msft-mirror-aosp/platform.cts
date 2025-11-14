@@ -48,6 +48,8 @@ public class MockConference extends Conference {
     private String mDtmfString = "";
     public TestUtils.InvokeCounter mOnExtrasChanged =
             new TestUtils.InvokeCounter("onExtrasChanged");
+    public TestUtils.InvokeCounter mOnCallAudioStateChanged =
+            new TestUtils.InvokeCounter("mOnCallAudioStateChanged");
     public TestUtils.InvokeCounter mCurrentCallEndpoint =
             new TestUtils.InvokeCounter("mCurrentCallEndpoint");
     public List<Uri> mParticipants = new ArrayList<>();
@@ -266,6 +268,7 @@ public class MockConference extends Conference {
     @Override
     public void onCallAudioStateChanged(CallAudioState state) {
         super.onCallAudioStateChanged(state);
+        mOnCallAudioStateChanged.invoke(state);
     }
 
     // Note: Note possible to test this as we can't change the available endpoints in CTS.

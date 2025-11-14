@@ -121,6 +121,7 @@ public class CtsSelfManagedConnectionService extends ConnectionService {
     @Override
     public Connection onCreateIncomingHandoverConnection(PhoneAccountHandle fromPhoneAccountHandle,
             ConnectionRequest request) {
+        super.onCreateIncomingHandoverConnection(fromPhoneAccountHandle, request);
         mOnCreateIncomingHandoverConnectionCounter.invoke(fromPhoneAccountHandle, request);
         return createSelfManagedConnection(request, true /* incoming */);
     }
@@ -128,6 +129,7 @@ public class CtsSelfManagedConnectionService extends ConnectionService {
     @Override
     public Connection onCreateOutgoingHandoverConnection(PhoneAccountHandle fromPhoneAccountHandle,
             ConnectionRequest request) {
+        super.onCreateOutgoingHandoverConnection(fromPhoneAccountHandle, request);
         mOnCreateOutgoingHandoverConnectionCounter.invoke(fromPhoneAccountHandle, request);
         return createSelfManagedConnection(request, false /* incoming */);
     }
