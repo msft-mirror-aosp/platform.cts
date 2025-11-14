@@ -50,6 +50,7 @@ import android.bluetooth.BluetoothGattConnectionSettings;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothSinkAudioPolicy;
 import android.bluetooth.BluetoothStatusCodes;
+import android.bluetooth.BondStatus;
 import android.bluetooth.EncryptionStatus;
 import android.bluetooth.OobData;
 import android.bluetooth.test_utils.BlockingBluetoothAdapter;
@@ -962,6 +963,43 @@ public class BluetoothDeviceTest {
         assertThat(encryptionStatus.getAlgorithm())
                 .isEqualTo(BluetoothDevice.ENCRYPTION_ALGORITHM_AES);
         assertThat(encryptionStatus.getKeySize()).isEqualTo(mFakeKeySize);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_GET_BOND_STATUS)
+    @Test
+    public void getBondStatus() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
+        // Device is not bonded.
+        mFakeDevice = mAdapter.getRemoteDevice("AB:11:22:AA:BB:DE");
+        // For an unbonded device, this should return null.
+        assertThat(mFakeDevice.getBondStatus(BluetoothDevice.TRANSPORT_BREDR)).isNull();
+        assertThat(mFakeDevice.getBondStatus(BluetoothDevice.TRANSPORT_LE)).isNull();
+
+        // TRANSPORT_AUTO is not a valid transport for getBondStatus.
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> mFakeDevice.getBondStatus(BluetoothDevice.TRANSPORT_AUTO));
+
+        mUiAutomation.dropShellPermissionIdentity();
+        assertThrows(
+                SecurityException.class,
+                () -> mFakeDevice.getBondStatus(BluetoothDevice.TRANSPORT_BREDR));
+        assertThrows(
+                SecurityException.class,
+                () -> mFakeDevice.getBondStatus(BluetoothDevice.TRANSPORT_LE));
+        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
+
+        // Create a fake bond status and verify the getters.
+        BondStatus bondStatus =
+                new BondStatus(
+                        BluetoothDevice.PAIRING_ALGORITHM_BREDR_SSP,
+                        BluetoothDevice.PAIRING_VARIANT_PASSKEY_CONFIRMATION);
+        assertThat(bondStatus.getPairingVariant())
+                .isEqualTo(BluetoothDevice.PAIRING_VARIANT_PASSKEY_CONFIRMATION);
+        assertThat(bondStatus.getPairingAlgorithm())
+                .isEqualTo(BluetoothDevice.PAIRING_ALGORITHM_BREDR_SSP);
     }
 
     /*Testcases for BluetoothDevice#connectGatt(BluetoothGattConnectionSettings)*/
