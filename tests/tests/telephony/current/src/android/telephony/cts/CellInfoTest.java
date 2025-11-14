@@ -31,7 +31,6 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Parcel;
 import android.os.SystemClock;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.AccessNetworkConstants;
@@ -88,8 +87,6 @@ import java.util.concurrent.Executor;
  * </ul>
  *
  */
-@AppModeNonSdkSandbox(
-        reason = "SDK sandboxes are not allowed to access cell info - no location permission")
 public class CellInfoTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =

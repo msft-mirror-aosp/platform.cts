@@ -25,7 +25,6 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.os.Looper;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.CellLocation;
@@ -42,7 +41,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-@AppModeNonSdkSandbox(reason = "SDK sandboxes do not have location permission")
 public class CellLocationTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =

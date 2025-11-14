@@ -21,7 +21,6 @@ import static androidx.test.InstrumentationRegistry.getInstrumentation;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.PersistableBundle;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.service.carrier.CarrierIdentifier;
 import android.service.carrier.CarrierService;
 import android.telephony.SubscriptionManager;
@@ -31,7 +30,6 @@ import android.util.Log;
 
 import com.android.compatibility.common.util.CarrierPrivilegeUtils;
 
-@AppModeNonSdkSandbox(reason = "SDK sandboxes do not have carrier privileges.")
 public class CarrierServiceTest extends ServiceTestCase<CarrierServiceTest.TestCarrierService> {
     private static final String TAG = CarrierServiceTest.class.getSimpleName();
 
