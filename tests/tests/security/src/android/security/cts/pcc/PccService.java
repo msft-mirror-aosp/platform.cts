@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package android.security.cts;
+package android.security.cts.pcc;
 
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
 import android.os.Process;
-import android.os.SELinux;
 
 public class PccService extends Service {
     private final IPccService.Stub mBinder =
@@ -36,7 +35,9 @@ public class PccService extends Service {
 
                 @Override
                 public String getSeLinuxContext() {
-                    return SELinux.getContext();
+                    // TODO(b/455472559) getting access to the SELinux context is hard from the
+                    // public SDK
+                    return null;
                 }
             };
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package android.security.cts;
+package android.security.cts.pcc;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -35,6 +35,7 @@ import junit.framework.Assert;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -42,8 +43,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
-public class PccProcessTest {
-    static final String TAG = PccProcessTest.class.getSimpleName();
+public class PccProcessSecurityTest {
+    static final String TAG = PccProcessSecurityTest.class.getSimpleName();
 
     private static final long BIND_SERVICE_TIMEOUT = 5000;
 
@@ -71,7 +72,7 @@ public class PccProcessTest {
     @Before
     public void setUp() throws InterruptedException {
         mLatch = new CountDownLatch(1);
-        Intent serviceIntent = new Intent("android.security.cts.PccProcessTest");
+        Intent serviceIntent = new Intent("android.security.cts.pcc.PccProcessSecurityTest");
         serviceIntent.setPackage(getInstrumentation().getContext().getPackageName());
         getInstrumentation()
                 .getContext()
@@ -96,6 +97,7 @@ public class PccProcessTest {
 
     @Test
     @RequiresFlagsEnabled(android.app.privatecompute.flags.Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT)
+    @Ignore("b/455472559")
     public void testCorrectSelinuxDomain() throws RemoteException {
         final String selinuxContext = mService.getSeLinuxContext();
         assertThat(selinuxContext).contains("u:r:pcc_component");
