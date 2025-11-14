@@ -32,6 +32,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 import android.annotation.TargetApi;
 import android.app.job.JobInfo;
@@ -43,7 +44,6 @@ import android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver;
 import android.os.SystemClock;
 import android.os.Temperature;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
@@ -63,6 +63,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -515,6 +516,15 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASON_STATS_API)
+    public void testPendingJobReasonStats_noJob() {
+        assertThrows(
+                "Expected IllegalArgumentException for an invalid job id",
+                IllegalArgumentException.class,
+                () -> mJobScheduler.getPendingJobReasonStats(JOB_ID));
+    }
+
+    @Test
     public void testPendingJobReason_alreadyRunning() throws Exception {
         JobInfo jobInfo =
                 new JobInfo.Builder(JOB_ID, kJobServiceComponent).setExpedited(true).build();
@@ -952,6 +962,37 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
         List<PendingJobReasonsInfo> newReasons = mJobScheduler.getPendingJobReasonsHistory(JOB_ID);
         assertThat(newReasons.size()).isGreaterThan(initialSize);
         assertThat(newReasons).hasSize(10);
+    }
+
+    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASON_STATS_API)
+    @Test
+    public void testPendingJobReasonStats() throws Exception {
+        if (!BatteryUtils.hasBattery()) {
+            // Can't test while the device doesn't have battery
+            return;
+        }
+        setBatteryState(false, 100);
+
+        JobInfo jobInfo =
+                new JobInfo.Builder(JOB_ID, kJobServiceComponent)
+                        .setMinimumLatency(HOUR_IN_MILLIS)
+                        .setRequiresCharging(true)
+                        .build();
+        mJobScheduler.schedule(jobInfo);
+        long enqueueTime = SystemClock.elapsedRealtime();
+
+        Map<Integer, Duration> stats = mJobScheduler.getPendingJobReasonStats(JOB_ID);
+        assertThat(stats).isNotNull();
+        assertTrue(stats.containsKey(JobScheduler.PENDING_JOB_REASON_CONSTRAINT_CHARGING));
+
+        // Set the constraint met time before changing the constraint for some assertion buffer.
+        long constraintMet = SystemClock.elapsedRealtime();
+        setBatteryState(true, 100); // trigger a constraint change
+
+        Map<Integer, Duration> newStats = mJobScheduler.getPendingJobReasonStats(JOB_ID);
+        assertTrue(newStats.containsKey(JobScheduler.PENDING_JOB_REASON_CONSTRAINT_CHARGING));
+        assertThat(newStats.get(JobScheduler.PENDING_JOB_REASON_CONSTRAINT_CHARGING))
+                .isAtLeast(Duration.ofMillis(constraintMet - enqueueTime));
     }
 
     @Test
