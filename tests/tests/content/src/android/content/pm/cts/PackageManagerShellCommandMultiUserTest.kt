@@ -1077,6 +1077,9 @@ class PackageManagerShellCommandMultiUserTest {
                             0
                     )
                     try {
+                        // Clean the mime group first
+                        contextPrimaryUser.packageManager.setMimeGroup(MIME_GROUP, emptySet())
+
                         contextPrimaryUser.registerReceiver(
                                 changedBroadcastReceiverForPrimaryUser,
                                 intentFilter,
@@ -1178,6 +1181,9 @@ class PackageManagerShellCommandMultiUserTest {
                             0
                     )
                     try {
+                        // Clean the mime group first
+                        contextPrimaryUser.packageManager.setMimeGroup(MIME_GROUP, emptySet())
+
                         contextPrimaryUser.registerReceiver(
                                 changedBroadcastReceiverForPrimaryUser,
                                 intentFilter,
