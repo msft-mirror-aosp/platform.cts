@@ -19,6 +19,7 @@ package android.view.accessibility.cts;
 import static androidx.test.InstrumentationRegistry.getContext;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -50,11 +51,13 @@ import android.text.style.ForegroundColorSpan;
 import android.text.style.ImageSpan;
 import android.text.style.ReplacementSpan;
 import android.util.ArrayMap;
+import android.util.TypedValue;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction;
 import android.view.accessibility.AccessibilityNodeInfo.CollectionInfo;
 import android.view.accessibility.AccessibilityNodeInfo.CollectionItemInfo;
+import android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo;
 import android.view.accessibility.AccessibilityNodeInfo.RangeInfo;
 import android.view.accessibility.AccessibilityNodeInfo.TouchDelegateInfo;
 import android.view.accessibility.Flags;
@@ -89,6 +92,7 @@ public class AccessibilityNodeInfoTest {
 
     @SmallTest
     @Test
+    @ApiTest(apis = {"android.view.accessibility.AccessibilityNodeInfo#setExtraRenderingInfo"})
     public void testMarshaling() throws Exception {
         // fully populate the node info to marshal
         AccessibilityNodeInfo sentInfo = AccessibilityNodeInfo.obtain(new View(getContext()));
@@ -531,10 +535,11 @@ public class AccessibilityNodeInfoTest {
 
     @SmallTest
     @Test
-    @ApiTest(apis = {
-            "android.view.accessibility.AccessibilityNodeInfo.CollectionItemInfo#getSortDirection",
-            "android.view.accessibility.AccessibilityNodeInfo.CollectionItemInfo.Builder#setSortDirection"
-    })
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityNodeInfo.CollectionItemInfo#getSortDirection",
+                "android.view.accessibility.AccessibilityNodeInfo.CollectionItemInfo.Builder#setSortDirection"
+            })
     @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_A11Y_SORT_DIRECTION_API)
     public void testSortDirection_setInvalidExpectException() {
         CollectionItemInfo.Builder infoBuilder = new CollectionItemInfo.Builder();
@@ -685,6 +690,10 @@ public class AccessibilityNodeInfoTest {
 
         // Populate 1 field
         populateSelection(info);
+
+        if (Flags.a11yExtraRenderingInfoColorAdditions()) {
+            populateExtraRenderingInfo(info);
+        }
     }
 
     /**
@@ -719,6 +728,20 @@ public class AccessibilityNodeInfoTest {
         }
     }
 
+    private void populateExtraRenderingInfo(AccessibilityNodeInfo info) {
+        info.setExtraRenderingInfo(
+                new ExtraRenderingInfo.Builder()
+                        .setLayoutSize(100, 200)
+                        .setTextSizeInPx(20f)
+                        .setTextSizeUnit(TypedValue.COMPLEX_UNIT_SP)
+                        .setTextColor(Color.RED)
+                        .setHintTextColor(Color.BLUE)
+                        .setLinkTextColor(Color.GREEN)
+                        .setBackgroundColor(Color.YELLOW)
+                        .setAlpha(0.5f)
+                        .build());
+    }
+
     private static void assertEqualsTouchDelegateInfo(String message,
             AccessibilityNodeInfo.TouchDelegateInfo expected,
             AccessibilityNodeInfo.TouchDelegateInfo actual) {
@@ -737,6 +760,38 @@ public class AccessibilityNodeInfoTest {
                 }
             }
             assertTrue(message, matched);
+        }
+    }
+
+    private static void assertEqualsExtraRenderingInfo(
+            String message, ExtraRenderingInfo expected, ExtraRenderingInfo actual) {
+        if (expected == actual) return;
+        assertWithMessage(message, " layoutSize")
+                .that(actual.getLayoutSize())
+                .isEqualTo(expected.getLayoutSize());
+        assertWithMessage(message, " textSizeInPx")
+                .that(actual.getTextSizeInPx())
+                .isWithin(0.001f)
+                .of(expected.getTextSizeInPx());
+        assertWithMessage(message, " textSizeUnit")
+                .that(actual.getTextSizeUnit())
+                .isEqualTo(expected.getTextSizeUnit());
+        if (Flags.a11yExtraRenderingInfoColorAdditions()) {
+            assertWithMessage(message, " textColor")
+                    .that(actual.getTextColor())
+                    .isEqualTo(expected.getTextColor());
+            assertWithMessage(message, " hintTextColor")
+                    .that(actual.getHintTextColor())
+                    .isEqualTo(expected.getHintTextColor());
+            assertWithMessage(message, " linkTextColor")
+                    .that(actual.getLinkTextColor())
+                    .isEqualTo(expected.getLinkTextColor());
+            assertWithMessage(message, " backgroundColor")
+                    .that(actual.getBackgroundColor())
+                    .isEqualTo(expected.getBackgroundColor());
+            assertWithMessage(message, " alpha")
+                    .that(actual.getAlpha())
+                    .isEqualTo(expected.getAlpha());
         }
     }
 
@@ -999,6 +1054,11 @@ public class AccessibilityNodeInfoTest {
         if (Flags.a11ySelectionApi()) {
             assertEquals(expectedInfo.getSelection(), receivedInfo.getSelection());
         }
+
+        assertEqualsExtraRenderingInfo(
+                "Extra rendering info has incorrect value %s",
+                expectedInfo.getExtraRenderingInfo(),
+                receivedInfo.getExtraRenderingInfo());
     }
 
     /**
