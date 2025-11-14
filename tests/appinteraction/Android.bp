@@ -32,6 +32,8 @@ android_test {
         "platform-test-annotations",
         "truth",
         "android.app.appfunctions.flags-aconfig-java",
+        "bedstead-enterprise",
+        "bedstead-root",
         "testng",
     ],
     manifest: "AndroidManifest.xml",

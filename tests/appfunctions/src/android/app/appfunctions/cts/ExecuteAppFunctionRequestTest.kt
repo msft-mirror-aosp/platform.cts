@@ -16,7 +16,7 @@
 
 package android.app.appfunctions.cts
 
-import android.app.appfunctions.AppFunctionAttribution
+import android.app.AppInteractionAttribution
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.flags.Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER
 import android.app.appsearch.GenericDocument
@@ -173,9 +173,8 @@ class ExecuteAppFunctionRequestTest {
                 .setPropertyLong("testLong", 23)
                 .build()
         val attribution =
-            AppFunctionAttribution.Builder(AppFunctionAttribution.INTERACTION_TYPE_OTHER)
+            AppInteractionAttribution.Builder(AppInteractionAttribution.INTERACTION_TYPE_OTHER)
                 .setCustomInteractionType("CustomInteractionType")
-                .setThreadId("ThreadId")
                 .setInteractionUri(Uri.parse("content://com.example/android"))
                 .build()
         val request =
