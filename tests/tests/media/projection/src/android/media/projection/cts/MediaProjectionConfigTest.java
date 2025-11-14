@@ -166,7 +166,7 @@ public class MediaProjectionConfigTest {
     public void builder_setSelfContentEnabled() {
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
         MediaProjectionConfig config =
-                new MediaProjectionConfig.Builder().setOwnAppContentProvided(context, true).build();
+                new MediaProjectionConfig.Builder().setOwnAppContentProvided(true).build();
         assertThat(config.isOwnAppContentProvided()).isTrue();
     }
 }
