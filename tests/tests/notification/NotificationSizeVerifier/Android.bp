@@ -16,7 +16,7 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-android_test {
+android_test_helper_app {
     name: "CtsNotificationSizeVerifierDeviceTest",
     defaults: ["cts_defaults"],
     static_libs: [
@@ -30,12 +30,5 @@ android_test {
     ],
     srcs: ["src/**/*.kt"],
     sdk_version: "current",
-    // This APK is not part of the main CtsVerifier suites in the traditional sense,
-    // but is instead loaded and run by the host-side test.
-    // Marking it as cts-v-host ensures it's built when cts-v-host is built.
-    test_suites: [
-        "cts-v-host",
-    ],
-    test_config: "InteractiveAndroidTest.xml",
     resource_dirs: ["res"],
 }
