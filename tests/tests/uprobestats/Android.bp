@@ -40,5 +40,8 @@ android_test {
         "cts",
         "device-tests",
     ],
-    jni_libs: ["libdynamic_instrumentation_manager_test_jni"],
+    jni_libs: [
+        "libcts_jni",
+        "libdynamic_instrumentation_manager_test_jni",
+    ],
 }
