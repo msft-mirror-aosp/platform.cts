@@ -120,7 +120,7 @@ public class DynamicInstrumentationManagerTest {
     @EnsureHasPermission(DYNAMIC_INSTRUMENTATION)
     @RequiresFlagsEnabled(com.android.art.rw.flags.Flags.FLAG_DYNAMIC_INSTRUMENTATION_METHOD_ENTRY_HOOK)
     public void jitCompiled() {
-        assumeTrue(CpuFeatures.isArm64Cpu());
+        assumeTrue(CpuFeatures.isArm64Cpu() && !CpuFeatures.isNativeBridgedCpu());
         OffsetsWithStatusCode result = getOffsetsWithStatusCode(
                 FQCN_NOT_IN_ART_PROFILE, METHOD_NOT_IN_ART_PROFILE, PARAMS_NOT_IN_ART_PROFILE);
         assertThat(result.statusCode).isEqualTo(0);
