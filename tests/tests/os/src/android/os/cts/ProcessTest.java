@@ -363,17 +363,17 @@ public class ProcessTest {
         assertFalse(Process.isIsolatedUid(APP_UID));
     }
 
-    /** Tests for {@link Process#isPccUid() (boolean)} */
+    /** Tests for {@link Process#isPrivateComputeCoreUid() (boolean)} */
     @Test
     @RequiresFlagsEnabled(android.app.privatecompute.flags.Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT)
     public void testPccUids() {
-        assertTrue(Process.isPccUid(FIRST_PCC_UID));
-        assertTrue(Process.isPccUid((FIRST_PCC_UID + LAST_PCC_UID) / 2));
-        assertTrue(Process.isPccUid(LAST_PCC_UID));
-        assertFalse(Process.isPccUid(Process.FIRST_APPLICATION_UID));
-        assertFalse(Process.isPccUid(Process.ROOT_UID));
-        assertFalse(Process.isPccUid(Process.PHONE_UID));
-        assertFalse(Process.isPccUid(Process.INVALID_UID));
+        assertTrue(Process.isPrivateComputeCoreUid(FIRST_PCC_UID));
+        assertTrue(Process.isPrivateComputeCoreUid((FIRST_PCC_UID + LAST_PCC_UID) / 2));
+        assertTrue(Process.isPrivateComputeCoreUid(LAST_PCC_UID));
+        assertFalse(Process.isPrivateComputeCoreUid(Process.FIRST_APPLICATION_UID));
+        assertFalse(Process.isPrivateComputeCoreUid(Process.ROOT_UID));
+        assertFalse(Process.isPrivateComputeCoreUid(Process.PHONE_UID));
+        assertFalse(Process.isPrivateComputeCoreUid(Process.INVALID_UID));
     }
 
     @Test
