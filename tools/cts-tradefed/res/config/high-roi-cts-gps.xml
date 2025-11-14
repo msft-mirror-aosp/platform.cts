@@ -16,7 +16,6 @@
 <configuration description="Run high ROI CTS gps tests.">
     <include name="cts-automated"/>
     <!-- CtsLocationGnssTestCases -->
-    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssAntennaInfoTest#testGnssAntennaInfoValues"/>
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssLocationRateChangeTest#testVariedRates"/>
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssLocationRateChangeTest#testVariedRatesOnOff"/>
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssLocationRateChangeTest#testVariedRatesRepetitive"/>
@@ -27,29 +26,29 @@
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssPseudorangeVerificationTest#testPseudoPosition"/>
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssStatusTest#testGnssStatusChanges"/>
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssStatusTest#testGnssStatusValues"/>
+    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssStatusTest#testGnssStatusValuesWithCodetype"/>
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssTtffTests#testTtffWithNetwork"/>
+    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssTtffTests#testTtffWithNetwork_registerGnssMeasurementFirst"/>
     <!-- CtsLocationGnssTestCases[foldable:1:HALF_OPENED] -->
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases[foldable:1:HALF_OPENED] android.location.cts.gnss.GnssLocationValuesTest#testRequestWhenLocationSettingOff"/>
-    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases[foldable:1:HALF_OPENED] android.location.cts.gnss.GnssPseudorangeVerificationTest#testPseudoPosition"/>
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases[foldable:1:HALF_OPENED] android.location.cts.gnss.GnssStatusTest#testGnssStatusChanges"/>
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases[foldable:1:HALF_OPENED] android.location.cts.gnss.GnssStatusTest#testGnssStatusValues"/>
-    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases[foldable:1:HALF_OPENED] android.location.cts.gnss.GnssTtffTests#testTtffWithNetwork"/>
+    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases[foldable:1:HALF_OPENED] android.location.cts.gnss.GnssTtffTests#testTtffWithNetwork_registerGnssMeasurementFirst"/>
     <!-- CtsLocationGnssTestCases[foldable:2:OPENED] -->
-    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases[foldable:2:OPENED] android.location.cts.gnss.GnssPseudorangeVerificationTest#testPseudoPosition"/>
+    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases[foldable:2:OPENED] android.location.cts.gnss.GnssLocationValuesTest#testRequestWhenLocationSettingOff"/>
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases[foldable:2:OPENED] android.location.cts.gnss.GnssStatusTest#testGnssStatusChanges"/>
-    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases[foldable:2:OPENED] android.location.cts.gnss.GnssTtffTests#testTtffWithNetwork"/>
+    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases[foldable:2:OPENED] android.location.cts.gnss.GnssTtffTests#testTtffWithNetwork_registerGnssMeasurementFirst"/>
     <!-- CtsLocationGnssTestCases[foldable:3:REAR_DISPLAY_STATE] -->
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases[foldable:3:REAR_DISPLAY_STATE] android.location.cts.gnss.GnssLocationValuesTest#testRequestWhenLocationSettingOff"/>
-    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases[foldable:3:REAR_DISPLAY_STATE] android.location.cts.gnss.GnssPseudorangeVerificationTest#testPseudoPosition"/>
-    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases[foldable:3:REAR_DISPLAY_STATE] android.location.cts.gnss.GnssTtffTests#testTtffWithNetwork"/>
+    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases[foldable:3:REAR_DISPLAY_STATE] android.location.cts.gnss.GnssTtffTests#testTtffWithNetwork_registerGnssMeasurementFirst"/>
     <!-- CtsLocationGnssTestCases[foldable:5:REAR_DISPLAY_OUTER_DEFAULT] -->
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases[foldable:5:REAR_DISPLAY_OUTER_DEFAULT] android.location.cts.gnss.GnssLocationValuesTest#testRequestWhenLocationSettingOff"/>
-    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases[foldable:5:REAR_DISPLAY_OUTER_DEFAULT] android.location.cts.gnss.GnssPseudorangeVerificationTest#testPseudoPosition"/>
-    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases[foldable:5:REAR_DISPLAY_OUTER_DEFAULT] android.location.cts.gnss.GnssTtffTests#testTtffWithNetwork"/>
+    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases[foldable:5:REAR_DISPLAY_OUTER_DEFAULT] android.location.cts.gnss.GnssTtffTests#testTtffWithNetwork_registerGnssMeasurementFirst"/>
     <!-- CtsLocationGnssTestCases[instant] -->
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases[instant] android.location.cts.gnss.GnssLocationValuesTest#testRequestWhenLocationSettingOff"/>
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases[instant] android.location.cts.gnss.GnssMeasurementValuesTest#testListenForGnssMeasurements"/>
     <!-- CtsLocationPrivilegedTestCases -->
+    <option name="compatibility:include-filter" value="CtsLocationPrivilegedTestCases android.location.cts.privileged.CorrelationVectorTest#testCorrelationVectorDescribeContents"/>
     <option name="compatibility:include-filter" value="CtsLocationPrivilegedTestCases android.location.cts.privileged.GnssAssistanceProviderBaseTest#testGetBinder"/>
     <option name="compatibility:include-filter" value="CtsLocationPrivilegedTestCases android.location.cts.privileged.GnssAssistanceProviderBaseTest#testRequest"/>
     <option name="compatibility:include-filter" value="CtsLocationPrivilegedTestCases android.location.cts.privileged.GnssMeasurementValuesTest#testListenForGnssMeasurements"/>
