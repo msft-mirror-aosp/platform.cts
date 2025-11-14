@@ -640,6 +640,7 @@ class ProvisioningTest {
     @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionFullyManagedDevice"])
+    @Ignore("b/430674175 - Causes order-dependent failures in DreamManagerServiceTests")
     fun provisionFullyManagedDevice_setsProvisioningStateWhenDemoDeviceIsRequested() {
         SetupCompleteResource(setupComplete = false, user = TestApis.users().system()).use {
             DeviceOwnerResource().use {
@@ -688,6 +689,7 @@ class ProvisioningTest {
     @EnsureDoesNotHavePermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionFullyManagedDevice"])
+    @Ignore("b/430674175 - Causes order-dependent failures in DreamManagerServiceTests")
     fun provisionFullyManagedDevice_withProvisionDemoDevicePermissionForDemoDevice_doesNotThrowException() {
         SetupCompleteResource(setupComplete = false, user = TestApis.users().system()).use {
             DeviceOwnerResource().use {
