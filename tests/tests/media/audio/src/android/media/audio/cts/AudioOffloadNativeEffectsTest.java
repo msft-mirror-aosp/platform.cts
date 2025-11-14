@@ -54,12 +54,14 @@ public class AudioOffloadNativeEffectsTest {
     private static final String TAG = "AudioOffloadNativeEffectsTest";
 
     private static final int STATUS_OK = 0;
-    private static final float AUDIOTRACK_DEFAULT_FREQUENCY_HZ = 910;
+    private static final float AUDIOTRACK_DEFAULT_FREQUENCY_HZ = 910.0f;
+    private static final float AUDIOTRACK_TEST_FREQUENCY_HZ = 100.0f;
     private static final int AUDIOTRACK_DEFAULT_SAMPLE_RATE = 48000;
     private static final int PER_TEST_TIMEOUT_LARGE_TEST_MS = 300000;
     private static final int PER_TEST_TIMEOUT_SMALL_TEST_MS = 60000;
     private static final int PLAYBACK_COMPLETION_DELAY_MS = 10000;
     private static final int VISUALIZER_SILENCE_MB = -9600; // RMS value for silence in millibels
+    private static final float[] DP_TEST_GAINS_DB = {-24.0f, -12.0f, -6.0f, 0f, 6.0f, 12.0f, 24.0f};
 
     private final int mStreamType = AudioManager.STREAM_MUSIC;
     private AudioManager mAudioManager = null;
@@ -228,6 +230,79 @@ public class AudioOffloadNativeEffectsTest {
         }
     }
 
+    /**
+     * Helper to test the EQ stages (PreEQ or PostEQ) of DynamicsProcessing.
+     *
+     * @param isPreEq true to test PreEQ, false to test PostEQ.
+     */
+    private void runDynamicsProcessingEqStageTest(boolean isPreEq) throws InterruptedException {
+        final int channelCount = 2;
+        final int bandCount = 4; // Divide spectrum into 4 bands
+        final int testBandIndex = 0; // Ensure test frequency falls within this band
+
+        DynamicsProcessing.Config.Builder configBuilder =
+                new DynamicsProcessing.Config.Builder(
+                        DynamicsProcessing.VARIANT_FAVOR_FREQUENCY_RESOLUTION,
+                        channelCount,
+                        isPreEq /* preEqInUse */,
+                        (isPreEq ? bandCount : 0),
+                        false /* mbcInUse */,
+                        0,
+                        !isPreEq /* postEqInUse */,
+                        (!isPreEq ? bandCount : 0),
+                        false /* limiterInUse */);
+
+        mDynamicsProcessing = new DynamicsProcessing(0, mSessionId, configBuilder.build());
+        assertNotNull("Failed to create DynamicsProcessing", mDynamicsProcessing);
+        mDynamicsProcessing.setEnabled(true);
+
+        DynamicsProcessing.EqBand bassBand;
+        if (isPreEq) {
+            bassBand = mDynamicsProcessing.getPreEqBandByChannelIndex(0, 0); // Ch 0, Band 0
+        } else {
+            bassBand = mDynamicsProcessing.getPostEqBandByChannelIndex(0, 0);
+        }
+
+        // Set cutoff to 200Hz to ensure Band 0 includes AUDIOTRACK_TEST_FREQUENCY_HZ.
+        bassBand.setCutoffFrequency(AUDIOTRACK_TEST_FREQUENCY_HZ * 2);
+
+        if (isPreEq) {
+            mDynamicsProcessing.setPreEqBandAllChannelsTo(0, bassBand);
+        } else {
+            mDynamicsProcessing.setPostEqBandAllChannelsTo(0, bassBand);
+        }
+
+        // Initialize the Visualizer to capture and measure the rms of audio output.
+        setupVisualizer();
+
+        int prevRmsMb = Integer.MIN_VALUE;
+        for (final float gainDb : DP_TEST_GAINS_DB) {
+            DynamicsProcessing.EqBand bandConfig;
+            if (isPreEq) {
+                bandConfig = mDynamicsProcessing.getPreEqBandByChannelIndex(0, testBandIndex);
+                bandConfig.setGain(gainDb);
+                mDynamicsProcessing.setPreEqBandAllChannelsTo(testBandIndex, bandConfig);
+            } else {
+                bandConfig = mDynamicsProcessing.getPostEqBandByChannelIndex(0, testBandIndex);
+                bandConfig.setGain(gainDb);
+                mDynamicsProcessing.setPostEqBandAllChannelsTo(testBandIndex, bandConfig);
+            }
+
+            final int currRmsMb = playAndGetRms(AUDIOTRACK_TEST_FREQUENCY_HZ);
+            assumeTrue(
+                    "Curr Rms ( "
+                            + currRmsMb
+                            + " ) at gain "
+                            + gainDb
+                            + " should be more than Prev Rms ( "
+                            + prevRmsMb
+                            + " )",
+                    currRmsMb > prevRmsMb);
+
+            prevRmsMb = currRmsMb;
+        }
+    }
+
     @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
     public void testMmapPcmOffload() throws InterruptedException {
         assertEquals(
@@ -292,7 +367,7 @@ public class AudioOffloadNativeEffectsTest {
     }
 
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    public void testMmapPcmOffloadWithDynamicsProcessingEffect() throws InterruptedException {
+    public void testMmapPcmOffloadWithDynamicsProcessingInputGain() throws InterruptedException {
         // Create a "pass-through" config with all internal stages disabled.
         DynamicsProcessing.Config.Builder configBuilder =
                 new DynamicsProcessing.Config.Builder(
@@ -312,25 +387,34 @@ public class AudioOffloadNativeEffectsTest {
         // Initialize the Visualizer to capture and measure the rms of audio output.
         setupVisualizer();
 
-        final float testFrequencyHz = 100.0f;
-        final float[] testIncreasingInputGain = {-24.0f, -12.0f, -6.0f, 0f, 6.0f, 12.0f, 24.0f};
         int prevRmsMb = Integer.MIN_VALUE;
+        for (float gainDb : DP_TEST_GAINS_DB) {
+            mDynamicsProcessing.setInputGainAllChannelsTo(gainDb);
 
-        for (float gain : testIncreasingInputGain) {
-            mDynamicsProcessing.setInputGainAllChannelsTo(gain);
-
-            final int currRmsMb = playAndGetRms(testFrequencyHz);
+            final int currRmsMb = playAndGetRms(AUDIOTRACK_TEST_FREQUENCY_HZ);
             assumeTrue(
                     "Curr Rms ( "
                             + currRmsMb
                             + " ) at gain "
-                            + gain
+                            + gainDb
                             + " should be more than Prev Rms ( "
                             + prevRmsMb
                             + " )",
                     currRmsMb > prevRmsMb);
             prevRmsMb = currRmsMb;
         }
+    }
+
+    @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
+    public void testMmapPcmOffloadWithDynamicsProcessingPreEq() throws InterruptedException {
+        // Run the test for the Pre-Equalizer stage
+        runDynamicsProcessingEqStageTest(true);
+    }
+
+    @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
+    public void testMmapPcmOffloadWithDynamicsProcessingPostEq() throws InterruptedException {
+        // Run the test for the Post-Equalizer stage
+        runDynamicsProcessingEqStageTest(false);
     }
 
     private static native long nativeOpenStream(int supportedOffloadFormat);
