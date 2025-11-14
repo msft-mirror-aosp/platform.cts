@@ -416,6 +416,9 @@ class ItsSession(object):
     proc = subprocess.Popen(
         self.adb.split() + ['logcat'], stdout=subprocess.PIPE)
     logcat = proc.stdout
+    if logcat is None:
+      raise error_util.CameraItsError(self._device_id,
+                                      'Failed to get logcat output stream.')
 
     its_device_utils.run(
         f'{self.adb} shell am force-stop --user cur {self.PACKAGE}')
@@ -518,7 +521,7 @@ class ItsSession(object):
     data, _ = self.__read_response_from_socket()
     if data[_TAG_STR] != 'resolved':
       raise error_util.CameraItsError('Invalid command response')
-    return data[_OBJ_VALUE_STR]['resolved'] == 'true'
+    return data[_STR_VALUE_STR] == 'true'
 
   def get_camera_properties(self):
     """Get the camera properties object for the device.

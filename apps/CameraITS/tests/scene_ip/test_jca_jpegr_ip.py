@@ -163,7 +163,7 @@ class JcaJpegRImageParityClassTest(its_base_test.ItsBaseTest):
           is_primary_camera and
           (
             first_api_level >= its_session_utils.ANDROID17_API_LEVEL or
-            its_session_utils.get_backported_issue_is_fixed(_KNOWN_ISSUE_398591036)
+            cam.is_backported_issue_resolved(_KNOWN_ISSUE_398591036)
           ) and
           supports_hdr
       )
@@ -246,7 +246,7 @@ class JcaJpegRImageParityClassTest(its_base_test.ItsBaseTest):
       if e_msg:
         if (
             first_api_level < its_session_utils.ANDROID17_API_LEVEL
-            and not its_session_utils.get_backported_issue_is_fixed(_KNOWN_ISSUE_398591036)
+            and not cam.is_backported_issue_resolved(_KNOWN_ISSUE_398591036)
         ):
           raise AssertionError(
               f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}\n'
