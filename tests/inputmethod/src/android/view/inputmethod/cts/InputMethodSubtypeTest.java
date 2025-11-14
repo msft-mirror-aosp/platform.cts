@@ -26,9 +26,13 @@ import android.content.Context;
 import android.graphics.Color;
 import android.icu.util.ULocale;
 import android.os.Parcel;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
+import android.view.inputmethod.Flags;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
 
@@ -38,6 +42,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Objects;
@@ -52,6 +57,9 @@ public final class InputMethodSubtypeTest {
     private static final String NONEXISTENCE_PACKAGE = "com.android.cts.ime.nonexistentpackage";
 
     private static final String NONEXISTENCE_RELATIVE_NAME = ".NonexistentIme";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @NonNull
     private final InputMethodManager mImm = Objects.requireNonNull(
@@ -336,6 +344,56 @@ public final class InputMethodSubtypeTest {
                 context, context.getApplicationInfo()).toString();
 
         assertThat(actualLayoutLabel).isEqualTo("new_subtype_layout_name");
+    }
+
+    /**
+     * Verifies that
+     * {@link InputMethodSubtype.InputMethodSubtypeBuilder#setSubtypeShortLabel(CharSequence)} can
+     * correctly set the short label for the subtype.
+     */
+    @ApiTest(apis = {
+            "android.view.inputmethod.InputMethodSubtype#getSubtypeShortLabel",
+            "android.view.inputmethod.InputMethodSubtype.InputMethodSubtypeBuilder#"
+                    + "setSubtypeShortLabel",
+    })
+    @RequiresFlagsEnabled(Flags.FLAG_IME_SUBTYPE_SHORT_LABEL)
+    @Test
+    public void testSetSubtypeShortLabel() {
+        final CharSequence expectedShortLabel = "EN";
+        final InputMethodSubtype newSubtype =
+                new InputMethodSubtype.InputMethodSubtypeBuilder()
+                        .setSubtypeShortLabel(expectedShortLabel)
+                        .build();
+
+        assertThat(newSubtype.getSubtypeShortLabel().toString())
+                .isEqualTo(expectedShortLabel.toString());
+    }
+
+    /**
+     * Verifies the subtype with a short label can be parcelled and un-parcelled correctly.
+     */
+    @ApiTest(apis = {
+            "android.view.inputmethod.InputMethodSubtype#getSubtypeShortLabel",
+            "android.view.inputmethod.InputMethodSubtype.InputMethodSubtypeBuilder#"
+                    + "setSubtypeShortLabel",
+    })
+    @RequiresFlagsEnabled(Flags.FLAG_IME_SUBTYPE_SHORT_LABEL)
+    @Test
+    public void testSubtypeShortLabelParcel() {
+        final CharSequence expectedShortLabel = "EN";
+        final InputMethodSubtype newSubtype =
+                new InputMethodSubtype.InputMethodSubtypeBuilder()
+                        .setSubtypeShortLabel(expectedShortLabel)
+                        .build();
+
+        final Parcel parcel = Parcel.obtain();
+        newSubtype.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+        final CharSequence shortLabel =
+                InputMethodSubtype.CREATOR.createFromParcel(parcel).getSubtypeShortLabel();
+        parcel.recycle();
+
+        assertThat(shortLabel.toString()).isEqualTo(expectedShortLabel.toString());
     }
 
     /**

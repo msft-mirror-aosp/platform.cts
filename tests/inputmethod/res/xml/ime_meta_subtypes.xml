@@ -26,5 +26,6 @@
         android:languageTag="zh-CN"
         android:imeSubtypeMode="keyboard"
         android:physicalKeyboardHintLanguageTag="en-US"
-        android:physicalKeyboardHintLayoutType="qwerty" />
+        android:physicalKeyboardHintLayoutType="qwerty"
+        android:shortLabel="拼" />
 </input-method>
