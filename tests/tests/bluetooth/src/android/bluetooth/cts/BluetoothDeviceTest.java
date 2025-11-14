@@ -989,7 +989,6 @@ public class BluetoothDeviceTest {
         assertThrows(
                 SecurityException.class,
                 () -> mFakeDevice.getBondStatus(BluetoothDevice.TRANSPORT_LE));
-        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
 
         // Create a fake bond status and verify the getters.
         BondStatus bondStatus =
