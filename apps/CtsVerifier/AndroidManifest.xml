@@ -183,6 +183,26 @@
                        android:value="single_display_mode" />
         </activity>
 
+        <activity
+            android:name=".audio.AudioCommunicationLatencyActivity"
+            android:label="@string/audio_communication_latency_test"
+            android:exported="true"
+            android:configChanges="keyboardHidden|orientation|screenSize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data
+                android:name="test_category"
+                android:value="@string/test_category_audio" />
+            <meta-data
+                android:name="test_required_features"
+                android:value="android.hardware.telephony" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.media.AudioManager#setCommunicationDevice|android.media.AudioManager#getAvailableCommunicationDevices|android.media.AudioManager.OnCommunicationDeviceChangedListener#onCommunicationDeviceChanged" />
+            <!-- TODO(b/462491901): Add CDD metadata when available -->
+        </activity>
+
         <activity android:name=".admin.tapjacking.DeviceAdminTapjackingTestActivity"
                   android:label="@string/da_tapjacking_test"
                   android:exported="true"

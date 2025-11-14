@@ -64,6 +64,62 @@
 
     <!-- Strings for TestListActivity -->
     <string name="test_category_audio">Audio</string>
+    <string name="audio_communication_latency_test">Audio Communication Latency Test</string>
+    <string name="audio_communication_latency_test_info">
+        This test measures the time it takes to switch between different audio communication
+        devices. A low latency is important for a seamless user experience when switching between
+        speakerphone, earpiece, Bluetooth headsets, etc. during a call.
+
+        \n\nInstructions:
+        \n1. Ensure all relevant audio communication devices are connected (e.g., wired headset, Bluetooth SCO headset, USB headset).
+        \n2. The application will display a list of available and supported audio communication devices. This list may include Built-in Speaker, Earpiece, Wired Headset, Bluetooth SCO, USB Headset, and any other communication devices detected.
+        \n3. For each device in the list, press the \"Run Test\" button to measure its communication latency.
+        \n4. Follow any on-screen instructions for connecting or activating devices that are supported but not currently available.
+        \n5. Once all desired devices have been tested, review the results displayed for each device.
+        \n6. The \"Pass\" button will become enabled when all supported devices have either passed their test or are marked as not supported.
+    </string>
+    <string name="audio_communication_no_support">Device does not support communication output. Test passed.</string>
+    <string name="audio_communication_latency_progress_format">Testing device: %1$s (Run %2$d of %3$d)</string>
+    <string name="audio_communication_latency_start_text">Starting audio communication latency test...</string>
+    <string name="audio_communication_latency_finished_text">Test finished.</string>
+    <string name="audio_communication_latency_skipping_device">Skipping current communication device: <xliff:g id="device_name">%1$s</xliff:g></string>
+    <string name="audio_communication_latency_testing_device">Testing device: <xliff:g id="device_name">%1$s</xliff:g></string>
+    <string name="audio_communication_latency_run_failed">Run <xliff:g id="run_count">%1$d</xliff:g>: setCommunicationDevice failed.</string>
+    <string name="audio_communication_latency_run_timeout">Run <xliff:g id="run_count">%1$d</xliff:g>: Callback timed out waiting for <xliff:g id="device_name">%2$s</xliff:g>.</string>
+    <string name="audio_communication_latency_run_mismatch">Run <xliff:g id="run_count">%1$d</xliff:g>: Callback device mismatch. Expected <xliff:g id="expected_device">%2$s</xliff:g> but got <xliff:g id="actual_device">%3$s</xliff:g>.</string>
+    <string name="audio_communication_latency_run_success">Run <xliff:g id="run_count">%1$d</xliff:g>: <xliff:g id="latency">%2$d</xliff:g> ms</string>
+    <string name="audio_communication_latency_run_exception">Run <xliff:g id="run_count">%1$d</xliff:g>: Exception: <xliff:g id="exception_message">%2$s</xliff:g></string>
+    <string name="audio_communication_latency_avg">-Average latency: <xliff:g id="average_latency">%.2f</xliff:g> ms</string>
+    <string name="audio_communication_latency_std_dev">-Standard deviation: <xliff:g id="std_dev">%.2f</xliff:g> ms</string>
+    <string name="audio_communication_latency_min">-Min latency: <xliff:g id="min_latency">%d</xliff:g> ms</string>
+    <string name="audio_communication_latency_max">-Max latency: <xliff:g id="max_latency">%d</xliff:g> ms</string>
+    <string name="audio_communication_latency_overall_failed">  FAILED: Average latency is too high.</string>
+<string name="audio_communication_latency_test_skipped">Test for this device was skipped as it could not be properly tested.</string>
+    <string name="audio_communication_latency_no_valid_runs">No valid test runs were completed for this device.</string>
+    <string name="audio_communication_latency_overall_passed">  PASSED</string>
+
+    <!-- Audio Communication Latency Test -->
+    <string name="audio_communication_latency_device_speaker">Built-In Speaker</string>
+    <string name="audio_communication_latency_device_earpiece">Earpiece</string>
+    <string name="audio_communication_latency_device_wired_headset">Wired Headset</string>
+    <string name="audio_communication_latency_device_bt_sco">Bluetooth SCO</string>
+    <string name="audio_communication_latency_device_usb_headset">USB Headset</string>
+    <string name="audio_communication_latency_device_unknown">Unknown Device</string>
+    <string name="audio_communication_latency_device_instructions_speaker">Ensure nothing is plugged into the audio jack or USB port.</string>
+    <string name="audio_communication_latency_device_instructions_earpiece">Ensure nothing is plugged into the audio jack or USB port.</string>
+    <string name="audio_communication_latency_device_instructions_wired_headset">Plug in a wired headset.</string>
+    <string name="audio_communication_latency_device_instructions_bt_sco">Connect a Bluetooth headset that supports SCO.</string>
+    <string name="audio_communication_latency_device_instructions_usb_headset">Connect a USB headset.</string>
+    <string name="audio_communication_latency_already_comm_device">%s is already the communication device. Trying to switch to speaker to proceed with the test.</string>
+    <string name="audio_communication_latency_setting_speaker">Setting speaker as communication device.</string>
+    <string name="audio_communication_latency_setting_earpiece">Setting earpiece as communication device.</string>
+    <string name="audio_communication_latency_set_speaker_failed">Failed to set speaker as communication device.</string>
+    <string name="audio_communication_latency_running">Test is running...</string>
+    <string name="audio_communication_latency_pass">PASS: %s</string>
+    <string name="audio_communication_latency_fail">FAIL: %s</string>
+    <string name="audio_communication_latency_not_supported">Not supported</string>
+    <string name="audio_communication_latency_test_button">Run Test</string>
+    <string name="audio_communication_latency_device_not_available">Device not available.</string>
     <string name="test_category_camera">Camera</string>
     <string name="test_category_car">Car</string>
     <string name="test_category_device_admin">Device Administration</string>
