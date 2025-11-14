@@ -15,6 +15,7 @@
 -->
 <configuration description="Config for CTS Notification Size Verifier Host Test">
     <option name="test-suite-tag" value="cts-v-host" />
+    <option name="config-descriptor:metadata" key="subplan" value="cts-v-host-interactive" />
 
     <option name="config-descriptor:metadata" key="component" value="sysui" />
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />

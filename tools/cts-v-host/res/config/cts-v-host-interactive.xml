@@ -13,14 +13,13 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<configuration description="Runs CTS-V host-side tests from a pre-existing CTS-V installation">
+<configuration description="Runs only CTS-V host-side interactive test modules.">
 
-    <include name="everything" />
-    <include name="cts-v-host-known-failures" />
-    <include name="cts-v-host-preconditions" />
+    <include name="cts-v-host" />
 
-    <option name="plan" value="cts-v-host" />
+    <option name="plan" value="cts-v-host-interactive" />
 
-    <option name="compatibility:run-suite-tag" value="cts-v-host" />
+    <!-- Include all interactive test modules. -->
+    <option name="compatibility:module-metadata-include-filter" key="subplan" value="cts-v-host-interactive" />
 
 </configuration>

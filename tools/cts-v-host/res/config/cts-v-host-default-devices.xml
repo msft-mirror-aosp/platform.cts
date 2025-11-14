@@ -21,5 +21,6 @@
 
     <!-- Exclude modules that do not use the default 2-device setup.-->
     <option name="compatibility:exclude-filter" value="CtsNfcHceMultiDeviceTestCases" />
+    <option name="compatibility:module-metadata-exclude-filter" key="subplan" value="cts-v-host-interactive" />
 
 </configuration>
