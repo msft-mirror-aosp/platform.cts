@@ -46,9 +46,6 @@ class AppHelper(
     fun setLocalMetadata(feature: String, key: String, value: String) =
             runShellCommand("cmd companiondevice set-local-metadata $userId $feature $key $value")
 
-    fun getLocalMetadata(feature: String, key: String) =
-            runShellCommand("cmd companiondevice get-local-metadata $userId $feature $key").trim()
-
     fun clearLocalMetadata() =
             runShellCommand("cmd companiondevice clear-local-metadata $userId")
 

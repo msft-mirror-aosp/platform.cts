@@ -16,6 +16,7 @@
 
 package android.companion.cts.core
 
+import android.Manifest.permission.MANAGE_COMPANION_DEVICES
 import android.annotation.UserIdInt
 import android.companion.AssociationInfo
 import android.companion.AssociationRequest.DEVICE_PROFILE_WATCH
@@ -62,28 +63,32 @@ class BackupAndRestoreTest : CoreTestBase() {
     }
 
     @Test
-    fun test_applyRestoredPayload_restoresLocalMetadata() {
+    fun test_applyRestoredPayload_restoresLocalMetadata() =
+            withShellPermissionIdentity(MANAGE_COMPANION_DEVICES) {
         // Set local metadata and back up
         targetApp.clearLocalMetadata()
         targetApp.setLocalMetadata("feat1", "key", "value")
         targetApp.setLocalMetadata("feat2", "key", "value")
-        assertEquals("value", targetApp.getLocalMetadata("feat1", "key"))
-        assertEquals("value", targetApp.getLocalMetadata("feat2", "key"))
+        val localMetadata = cdm.getLocalMetadata(userId)
+        assertEquals("value", localMetadata.getPersistableBundle("feat1")?.getString("key"))
+        assertEquals("value", localMetadata.getPersistableBundle("feat2")?.getString("key"))
         val payload = getBackupPayload(userId)
 
         // Delete local metadata and set new metadata
         targetApp.clearLocalMetadata()
         targetApp.setLocalMetadata("feat2", "key", "value-new")
         targetApp.setLocalMetadata("feat3", "key", "value")
-        assertEquals("", targetApp.getLocalMetadata("feat1", "key"))
-        assertEquals("value-new", targetApp.getLocalMetadata("feat2", "key"))
-        assertEquals("value", targetApp.getLocalMetadata("feat3", "key"))
+        val newMetadata = cdm.getLocalMetadata(userId)
+        assertEquals(null, newMetadata.getPersistableBundle("feat1")?.getString("key"))
+        assertEquals("value-new", newMetadata.getPersistableBundle("feat2")?.getString("key"))
+        assertEquals("value", newMetadata.getPersistableBundle("feat3")?.getString("key"))
 
         // Assert that local metadata is restored without loss of existing metadata
         applyRestoredPayload(payload, userId)
-        assertEquals("value", targetApp.getLocalMetadata("feat1", "key"))
-        assertEquals("value-new", targetApp.getLocalMetadata("feat2", "key"))
-        assertEquals("value", targetApp.getLocalMetadata("feat3", "key"))
+        val restoredMetadata = cdm.getLocalMetadata(userId)
+        assertEquals("value", restoredMetadata.getPersistableBundle("feat1")?.getString("key"))
+        assertEquals("value-new", restoredMetadata.getPersistableBundle("feat2")?.getString("key"))
+        assertEquals("value", restoredMetadata.getPersistableBundle("feat3")?.getString("key"))
     }
 
     @Test
