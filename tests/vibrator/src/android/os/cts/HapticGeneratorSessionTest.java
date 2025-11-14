@@ -264,16 +264,24 @@ public class HapticGeneratorSessionTest {
                 "android.os.Vibrator#isHapticGeneratorSupported",
                 "android.os.Vibrator.HapticGeneratorSession#Config",
             })
-    public void testStartHapticGeneratorSession_invalidAudioFormatEncoding_fails()
-            throws Exception {
+    public void testHapticGeneratorSessionConfig_invalidSampleRate_fails() throws Exception {
         assumeTrue(mVibrator.isHapticGeneratorSupported());
 
         assertThrows(
                 IllegalArgumentException.class,
                 () -> {
                     createConfig(
-                            AudioFormat.ENCODING_AAC_HE_V2,
-                            48000,
+                            AudioFormat.ENCODING_PCM_16BIT,
+                            /* sampleRate= */ 0,
+                            AudioFormat.CHANNEL_OUT_HAPTIC_A);
+                });
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> {
+                    createConfig(
+                            AudioFormat.ENCODING_PCM_16BIT,
+                            /* sampleRate= */ -1,
                             AudioFormat.CHANNEL_OUT_HAPTIC_A);
                 });
     }
@@ -284,15 +292,20 @@ public class HapticGeneratorSessionTest {
                 "android.os.Vibrator#isHapticGeneratorSupported",
                 "android.os.Vibrator.HapticGeneratorSession#Config",
             })
-    public void testStartHapticGeneratorSession_invalidSampleRate_fails() throws Exception {
+    public void testHapticGeneratorSessionConfig_invalidEmptyChannelMask_fails() throws Exception {
         assumeTrue(mVibrator.isHapticGeneratorSupported());
+
+        AudioFormat formatWithoutMask =
+                new AudioFormat.Builder()
+                        .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                        .setSampleRate(48000)
+                        // .setChannelMask() is skipped, defaults to 0 (INVALID)
+                        .build();
 
         assertThrows(
                 IllegalArgumentException.class,
                 () -> {
-                    // -1 is an invalid sample rate
-                    createConfig(
-                            AudioFormat.ENCODING_PCM_16BIT, -1, AudioFormat.CHANNEL_OUT_HAPTIC_A);
+                    new HapticGeneratorSession.Config(formatWithoutMask, null);
                 });
     }
 
@@ -302,16 +315,22 @@ public class HapticGeneratorSessionTest {
                 "android.os.Vibrator#isHapticGeneratorSupported",
                 "android.os.Vibrator.HapticGeneratorSession#Config",
             })
-    public void testStartHapticGeneratorSession_invalidChannelMask_fails() throws Exception {
+    public void testHapticGeneratorSessionConfig_invalidChannelMaskButValidIndexMask_succeeds()
+            throws Exception {
         assumeTrue(mVibrator.isHapticGeneratorSupported());
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> {
-                    // STEREO is not a valid haptic channel mask
-                    createConfig(
-                            AudioFormat.ENCODING_PCM_16BIT, 48000, AudioFormat.CHANNEL_OUT_STEREO);
-                });
+        AudioFormat formatWithIndexMask =
+                new AudioFormat.Builder()
+                        .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                        .setSampleRate(48000)
+                        // .setChannelMask() is skipped, defaults to 0 (INVALID)
+                        .setChannelIndexMask(0x3)
+                        .build();
+
+        HapticGeneratorSession.Config config =
+                new HapticGeneratorSession.Config(formatWithIndexMask, null);
+
+        assertThat(config).isNotNull();
     }
 
     @Test
@@ -394,6 +413,48 @@ public class HapticGeneratorSessionTest {
                 // Ensure bytesRead are >= 0 for data, or -1 for EOF.
                 assertThat(bytesRead).isAtLeast(-1);
             }
+        }
+    }
+
+    @Test
+    @ApiTest(
+            apis = {
+                "android.os.Vibrator#isHapticGeneratorSupported",
+                "android.os.Vibrator#startHapticGeneratorSession",
+                "android.os.Vibrator.HapticGeneratorSession#generateHapticChannelStream",
+                "android.os.Vibrator.HapticGeneratorSession#close",
+                "android.os.Vibrator.HapticGeneratorChannelStream#read",
+                "android.os.Vibrator.HapticGeneratorChannelStream#close",
+            })
+    public void testHapticChannelStream_sequentialStreams_produceIdenticalOutput()
+            throws Exception {
+        assumeTrue(mVibrator.isHapticGeneratorSupported());
+
+        try (HapticGeneratorSession session =
+                startSessionAndWait(createValidConfig(), new HapticGeneratorOutcomeReceiver())) {
+
+            VibrationEffect effect =
+                    VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE);
+
+            int readSize = 128;
+            byte[] output1 = new byte[readSize];
+            byte[] output2 = new byte[readSize];
+
+            try (HapticGeneratorChannelStream stream1 =
+                    session.generateHapticChannelStream(effect)) {
+                assertThat(stream1).isNotNull();
+                int bytesRead = stream1.read(output1);
+                assertThat(bytesRead).isEqualTo(readSize);
+            }
+
+            try (HapticGeneratorChannelStream stream2 =
+                    session.generateHapticChannelStream(effect)) {
+                assertThat(stream2).isNotNull();
+                int bytesRead = stream2.read(output2);
+                assertThat(bytesRead).isEqualTo(readSize);
+            }
+
+            assertThat(output1).isEqualTo(output2);
         }
     }
 
