@@ -64,6 +64,7 @@ import com.android.compatibility.common.util.PollingCheck;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.mockito.Mockito;
@@ -72,6 +73,7 @@ import java.util.function.Consumer;
 
 @Presubmit
 public class BlurTests extends WindowManagerTestBase {
+
     private static final int BACKGROUND_BLUR_PX = 80;
     private static final int BLUR_BEHIND_PX = 40;
     private static final int NO_BLUR_BACKGROUND_COLOR = 0xFF550055;
@@ -96,45 +98,50 @@ public class BlurTests extends WindowManagerTestBase {
     private final ActivityTestRule<BackgroundActivity> mBackgroundActivity =
             new ActivityTestRule<>(BackgroundActivity.class, false, false);
 
-    @Rule
+    private final TestRule mSetupRule = new ExternalResource() {
+        @Override
+        protected void before() throws Throwable {
+            assumeTrue(supportsBlur());
+
+            ComponentName cn = mBackgroundActivity.launchActivity(null).getComponentName();
+            waitAndAssertResumedActivity(cn, cn + " must be resumed");
+            mBackgroundActivity.getActivity().waitAndAssertWindowFocusState(true);
+
+            // Use the background activity's bounds when taking the device screenshot.
+            // This is needed for multi-screen devices (foldables) where
+            // the launched activity covers just one screen
+            WindowManagerState.WindowState windowState = mWmState.getWindowState(cn);
+            WindowManagerState.Activity act = mWmState.getActivity(cn);
+            mBackgroundActivityBounds = act.getBounds();
+
+            // Wait for the first frame *after* the splash screen is removed to take screenshots.
+            // Currently there isn't a definite event / callback for this.
+            mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
+            waitForActivityIdle(mBackgroundActivity.getActivity());
+
+            insetGivenFrame(windowState,
+                    insetsSource -> (insetsSource.is(WindowInsets.Type.captionBar())),
+                    mBackgroundActivityBounds);
+
+            // Exclude rounded corners from screenshot comparisons.
+            mPixelTestBounds = new Rect(mBackgroundActivityBounds);
+            mPixelTestBounds.inset(mBackgroundActivity.getActivity().getInsetsToBeIgnored());
+
+            // Basic checks common to all tests
+            verifyOnlyBackgroundImageVisible();
+            assertTrue(mContext.getSystemService(WindowManager.class).isCrossWindowBlurEnabled());
+        }
+    };
+
+    @Rule(order = 1)
     public final TestRule methodRules = RuleChain.outerRule(mDumpOnFailure)
             .around(mEnableBlurRule)
             .around(mDisableTransitionAnimationRule)
-            .around(mBackgroundActivity);
+            .around(mBackgroundActivity)
+            .around(mSetupRule);
 
-    @Before
-    @Override
-    public void setUp() throws Exception {
-        assumeTrue(supportsBlur());
-        super.setUp();
-
-        ComponentName cn = mBackgroundActivity.launchActivity(null).getComponentName();
-        waitAndAssertResumedActivity(cn, cn + " must be resumed");
-        mBackgroundActivity.getActivity().waitAndAssertWindowFocusState(true);
-
-        // Use the background activity's bounds when taking the device screenshot.
-        // This is needed for multi-screen devices (foldables) where
-        // the launched activity covers just one screen
-        WindowManagerState.WindowState windowState = mWmState.getWindowState(cn);
-        WindowManagerState.Activity act = mWmState.getActivity(cn);
-        mBackgroundActivityBounds = act.getBounds();
-
-        // Wait for the first frame *after* the splash screen is removed to take screenshots.
-        // Currently there isn't a definite event / callback for this.
-        mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
-        waitForActivityIdle(mBackgroundActivity.getActivity());
-
-        insetGivenFrame(windowState,
-                insetsSource -> (insetsSource.is(WindowInsets.Type.captionBar())),
-                mBackgroundActivityBounds);
-
-        // Exclude rounded corners from screenshot comparisons.
-        mPixelTestBounds = new Rect(mBackgroundActivityBounds);
-        mPixelTestBounds.inset(mBackgroundActivity.getActivity().getInsetsToBeIgnored());
-
-        // Basic checks common to all tests
-        verifyOnlyBackgroundImageVisible();
-        assertTrue(mContext.getSystemService(WindowManager.class).isCrossWindowBlurEnabled());
+    public BlurTests() {
+        setUseRuleForSetup();
     }
 
     @Test

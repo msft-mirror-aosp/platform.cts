@@ -190,6 +190,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ErrorCollector;
+import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
@@ -283,12 +284,30 @@ public abstract class ActivityManagerTestBase {
      */
     private final TombstoneCollectorRule mTombstoneCollectorRule = new TombstoneCollectorRule();
 
+    private boolean mUseRuleForSetup;
+
+    public void setUseRuleForSetup() {
+        mUseRuleForSetup = true;
+    }
+
     /** The necessary procedures of set up and tear down. */
     @Rule
     public final TestRule mBaseRule =
             RuleChain.outerRule(mPostAssertionRule)
                     .around(mTombstoneCollectorRule)
-                    .around(new WrapperRule(null /* before */, this::tearDownBase));
+                    .around(new ExternalResource() {
+                        @Override
+                        protected void before() throws Exception {
+                            if (mUseRuleForSetup) {
+                                setUpBase();
+                            }
+                        }
+
+                        @Override
+                        protected void after() {
+                            tearDownBase();
+                        }
+                    });
 
     /** Indicate to wait for all non-home activities to be destroyed when test finished. */
     protected boolean mShouldWaitForAllNonHomeActivitiesToDestroyed = false;
@@ -705,6 +724,12 @@ public abstract class ActivityManagerTestBase {
 
     @Before
     public void setUp() throws Exception {
+        if (!mUseRuleForSetup) {
+            setUpBase();
+        }
+    }
+
+    private void setUpBase() throws Exception {
         UiDeviceUtils.wakeUpAndUnlock(mContext);
         if (isKeyguardLocked()) {
             unlockUnexpectedLockedKeyguard();
@@ -2375,40 +2400,7 @@ public abstract class ActivityManagerTestBase {
         return new ActivityScenarioRule<>(clazz, options.toBundle());
     }
 
-    /**
-     * The actions which wraps a test method. It is used to set necessary rules that cannot be
-     * overridden by subclasses. It executes in the outer scope of {@link Before} and {@link After}.
-     */
-    protected class WrapperRule implements TestRule {
-        private final Runnable mBefore;
-        private final Runnable mAfter;
 
-        protected WrapperRule(Runnable before, Runnable after) {
-            mBefore = before;
-            mAfter = after;
-        }
-
-        @Override
-        public Statement apply(final Statement base, final Description description) {
-            return new Statement() {
-                @Override
-                public void evaluate()  {
-                    if (mBefore != null) {
-                        mBefore.run();
-                    }
-                    try {
-                        base.evaluate();
-                    } catch (Throwable e) {
-                        mPostAssertionRule.addError(e);
-                    } finally {
-                        if (mAfter != null) {
-                            mAfter.run();
-                        }
-                    }
-                }
-            };
-        }
-    }
 
     /**
      * The post assertion to ensure all test methods don't violate the generic rule. It is also used
