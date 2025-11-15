@@ -48,7 +48,6 @@ import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.SystemUtil;
-import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
 import org.junit.Before;
@@ -64,7 +63,6 @@ public class ClipboardManagerTest {
     private Context mContext;
     private ClipboardManager mClipboardManager;
     private UiDevice mUiDevice;
-    private UserHelper mUserHelper;
 
     @Before
     public void setUp() throws Exception {
@@ -73,14 +71,13 @@ public class ClipboardManagerTest {
 
         mContext = InstrumentationRegistry.getTargetContext();
         mClipboardManager = mContext.getSystemService(ClipboardManager.class);
-        mUserHelper = new UserHelper(mContext);
 
         if (!RavenwoodRule.isOnRavenwood()) {
             mUiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
             mUiDevice.wakeUp();
 
             // Clear any dialogs and launch an activity as focus is needed to access clipboard.
-            launchHome();
+            mUiDevice.pressHome();
             mUiDevice.pressBack();
             launchActivity(MockActivity.class);
         }
@@ -284,8 +281,8 @@ public class ClipboardManagerTest {
                 new String[] {ClipDescription.MIMETYPE_TEXT_PLAIN},
                 new ExpectedClipItem("Text1", null, null));
 
-        // Launch home to unfocus the app.
-        launchHome();
+        // Press the home button to unfocus the app.
+        mUiDevice.pressHome();
         mUiDevice.wait(Until.gone(By.pkg(MockActivity.class.getPackageName())), 5000);
 
         // We should see an empty clipboard now.
@@ -321,8 +318,8 @@ public class ClipboardManagerTest {
         ClipData clip = ClipData.newPlainText("TextLabel", "Text1");
         mClipboardManager.setPrimaryClip(clip);
 
-        // Launch home to unfocus the app.
-        launchHome();
+        // Press the home button to unfocus the app.
+        mUiDevice.pressHome();
         mUiDevice.wait(Until.gone(By.pkg(MockActivity.class.getPackageName())), 5000);
 
         // Without the READ_CLIPBOARD_IN_BACKGROUND permission, we should see an empty clipboard.
@@ -370,18 +367,6 @@ public class ClipboardManagerTest {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         mContext.startActivity(intent);
         mUiDevice.wait(Until.hasObject(By.pkg(clazz.getPackageName())), 15000);
-    }
-
-    private void launchHome() {
-        // For a visible background user, send HOME intent instead of sending a key event.
-        if (mUserHelper.isVisibleBackgroundUser()) {
-            Intent intent = new Intent(Intent.ACTION_MAIN);
-            intent.addCategory(Intent.CATEGORY_HOME);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            mContext.startActivityAsUser(intent, mUserHelper.getUser());
-        } else {
-            mUiDevice.pressHome();
-        }
     }
 
     private class ExpectedClipItem {
