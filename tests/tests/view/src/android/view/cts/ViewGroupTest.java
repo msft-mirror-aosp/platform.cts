@@ -16,7 +16,10 @@
 
 package android.view.cts;
 
+import static android.view.accessibility.AccessibilityNodeInfo.EXTRA_DATA_RENDERING_INFO_KEY;
 import static android.view.flags.Flags.FLAG_TOOLKIT_VIEWGROUP_SET_REQUESTED_FRAME_RATE_API;
+
+import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -42,11 +45,13 @@ import android.content.res.XmlResourceParser;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Insets;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.Region;
 import android.graphics.drawable.BitmapDrawable;
+import android.os.Bundle;
 import android.os.Parcelable;
 import android.os.SystemClock;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -71,6 +76,8 @@ import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
 import android.view.WindowInsets;
 import android.view.WindowManager;
+import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.Animation.AnimationListener;
@@ -91,6 +98,7 @@ import androidx.test.filters.LargeTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CTSResult;
 import com.android.compatibility.common.util.PollingCheck;
 
@@ -3168,6 +3176,39 @@ public class ViewGroupTest implements CTSResult {
         assertEquals(60f, vg5.getRequestedFrameRate(), 0);
         assertEquals(60f, f1.getRequestedFrameRate(), 0);
         assertEquals(60f, f2.getRequestedFrameRate(), 0);
+    }
+
+    @UiThreadTest
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityNodeInfo#getExtraRenderingInfo",
+                "android.view.accessibility.AccessibilityNodeInfo#getAvailableExtraData",
+                "android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo#getLayoutSize",
+                "android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo#getBackgroundColor",
+                "android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo#getAlpha"
+            })
+    @RequiresFlagsEnabled(
+            android.view.accessibility.Flags.FLAG_A11Y_EXTRA_RENDERING_INFO_COLOR_ADDITIONS)
+    @Test
+    public void testAddExtraDataToAccessibilityNodeInfo_populatesExtraRenderingInfo() {
+        mMockViewGroup.setLayoutParams(new LayoutParams(100, 200));
+        mMockViewGroup.setBackgroundColor(Color.YELLOW);
+        mMockViewGroup.setAlpha(0.5f);
+
+        // ExtraRenderingInfo is initially null but available.
+        final AccessibilityNodeInfo info = mMockViewGroup.createAccessibilityNodeInfo();
+        assertThat(info.getAvailableExtraData()).contains(EXTRA_DATA_RENDERING_INFO_KEY);
+        assertThat(info.getExtraRenderingInfo()).isNull();
+
+        // Obtains expected values for ExtraRenderingInfo.
+        mMockViewGroup.addExtraDataToAccessibilityNodeInfo(
+                info, EXTRA_DATA_RENDERING_INFO_KEY, new Bundle());
+        final ExtraRenderingInfo extraRenderingInfo = info.getExtraRenderingInfo();
+        assertThat(extraRenderingInfo).isNotNull();
+        assertThat(extraRenderingInfo.getLayoutSize().getWidth()).isEqualTo(100);
+        assertThat(extraRenderingInfo.getLayoutSize().getHeight()).isEqualTo(200);
+        assertThat(extraRenderingInfo.getBackgroundColor()).isEqualTo(Color.YELLOW);
+        assertThat(extraRenderingInfo.getAlpha()).isEqualTo(0.5f);
     }
 
     static class MockTextView extends TextView {

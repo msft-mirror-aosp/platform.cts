@@ -16,9 +16,12 @@
 
 package android.view.cts;
 
+import static android.view.accessibility.AccessibilityNodeInfo.EXTRA_DATA_RENDERING_INFO_KEY;
 import static android.view.accessibility.Flags.FLAG_REQUEST_RECTANGLE_WITH_SOURCE;
 import static android.view.flags.Flags.FLAG_TOOLKIT_SET_FRAME_RATE_READ_ONLY;
 import static android.view.flags.Flags.FLAG_VIEW_VELOCITY_API;
+
+import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -105,6 +108,8 @@ import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.view.WindowMetrics;
 import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.cts.util.EventUtils;
@@ -123,6 +128,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CtsMouseUtil;
 import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.PollingCheck;
@@ -5690,6 +5696,36 @@ public class ViewTest {
         assertFalse(clipToOutlineTrueView.getClipToOutline());
         clipToOutlineTrueView.setClipToOutline(true);
         assertTrue(clipToOutlineTrueView.getClipToOutline());
+    }
+
+    @UiThreadTest
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityNodeInfo#getExtraRenderingInfo",
+                "android.view.accessibility.AccessibilityNodeInfo#getAvailableExtraData",
+                "android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo#getLayoutSize",
+                "android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo#getBackgroundColor",
+                "android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo#getAlpha"
+            })
+    @RequiresFlagsEnabled(
+            android.view.accessibility.Flags.FLAG_A11Y_EXTRA_RENDERING_INFO_COLOR_ADDITIONS)
+    public void testAddExtraDataToAccessibilityNodeInfo_populatesExtraRenderingInfo() {
+        MockView view = (MockView) mActivity.findViewById(R.id.mock_view);
+        view.setBackgroundColor(Color.YELLOW);
+        view.setAlpha(0.5f);
+
+        // ExtraRenderingInfo is initially null but available.
+        final AccessibilityNodeInfo info = view.createAccessibilityNodeInfo();
+        assertThat(info.getAvailableExtraData()).contains(EXTRA_DATA_RENDERING_INFO_KEY);
+        assertThat(info.getExtraRenderingInfo()).isNull();
+
+        // Obtains expected values for ExtraRenderingInfo.
+        view.addExtraDataToAccessibilityNodeInfo(info, EXTRA_DATA_RENDERING_INFO_KEY, new Bundle());
+        final ExtraRenderingInfo extraRenderingInfo = info.getExtraRenderingInfo();
+        assertThat(extraRenderingInfo).isNotNull();
+        assertThat(extraRenderingInfo.getBackgroundColor()).isEqualTo(Color.YELLOW);
+        assertThat(extraRenderingInfo.getAlpha()).isEqualTo(0.5f);
     }
 
     private static class MockDrawable extends Drawable {

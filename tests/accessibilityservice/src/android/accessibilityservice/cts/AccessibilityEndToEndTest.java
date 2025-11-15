@@ -95,6 +95,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.graphics.Color;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.Region;
@@ -2887,13 +2888,28 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
                 "android.view.accessibility.AccessibilityNodeInfo#getAvailableExtraData",
                 "android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo#getLayoutSize",
                 "android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo#getTextSizeInPx",
-                "android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo#getTextSizeUnit"
+                "android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo#getTextSizeUnit",
+                "android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo#getBackgroundColor",
+                "android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo#getTextColor",
+                "android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo#getHintTextColor",
+                "android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo#getLinkTextColor",
+                "android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo#getAlpha"
             })
     @RequiresFlagsEnabled(
             android.view.accessibility.Flags.FLAG_A11Y_EXTRA_RENDERING_INFO_COLOR_ADDITIONS)
     public void testExtraRenderingInfoReportedToAccessibility() throws Exception {
         final TextView textView =
                 (TextView) getOnMain(sInstrumentation, () -> mActivity.findViewById(R.id.text));
+        mActivity.runOnUiThread(
+                () -> {
+                    textView.setBackgroundColor(Color.GREEN);
+                    textView.setTextColor(Color.RED);
+                    textView.setHintTextColor(Color.BLUE);
+                    textView.setLinkTextColor(Color.YELLOW);
+                    textView.setAlpha(0.5f);
+                });
+        sUiAutomation.waitForIdle(DEFAULT_IDLE_TIMEOUT_MS, DEFAULT_GLOBAL_TIMEOUT_MS);
+
         // Make sure the TextView was populated properly from xml
         final float textViewTextSize = getOnMain(sInstrumentation, textView::getTextSize);
         final int textViewTextSizeUnit = getOnMain(sInstrumentation, textView::getTextSizeUnit);
@@ -2923,6 +2939,11 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         assertThat(extraRenderingInfo.getTextSizeUnit()).isEqualTo(textViewTextSizeUnit);
         assertThat(extraRenderingInfo.getLayoutSize().getWidth()).isEqualTo(layoutParams.width);
         assertThat(extraRenderingInfo.getLayoutSize().getHeight()).isEqualTo(layoutParams.height);
+        assertThat(extraRenderingInfo.getBackgroundColor()).isEqualTo(Color.GREEN);
+        assertThat(extraRenderingInfo.getTextColor()).isEqualTo(Color.RED);
+        assertThat(extraRenderingInfo.getHintTextColor()).isEqualTo(Color.BLUE);
+        assertThat(extraRenderingInfo.getLinkTextColor()).isEqualTo(Color.YELLOW);
+        assertThat(extraRenderingInfo.getAlpha()).isWithin(0.001f).of(0.5f);;
     }
 
     private static class LabelNodeProviderTest extends AccessibilityNodeProvider {
