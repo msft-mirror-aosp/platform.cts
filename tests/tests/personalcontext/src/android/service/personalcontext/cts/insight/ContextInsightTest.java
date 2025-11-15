@@ -23,15 +23,19 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.personalcontext.Flags;
+import android.service.personalcontext.PersonalContextManager;
+import android.service.personalcontext.Token;
 import android.service.personalcontext.hint.BundleHint;
 import android.service.personalcontext.hint.ContextHintWithSignature;
 import android.service.personalcontext.insight.BundleInsight;
 import android.service.personalcontext.insight.ContextInsight;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -55,6 +59,16 @@ public class ContextInsightTest {
         return new SecretKeySpec(key, ContextHintWithSignature.HMAC_ALGORITHM);
     }
 
+    private PersonalContextManager mPersonalContextManager;
+
+    @Before
+    public void setUp() throws Exception {
+        mPersonalContextManager =
+                InstrumentationRegistry.getInstrumentation()
+                        .getTargetContext()
+                        .getSystemService(PersonalContextManager.class);
+    }
+
     // Tests bundling and unbundling fields on the base ContextInsight.
     @ApiTest(
             apis = {
@@ -65,9 +79,11 @@ public class ContextInsightTest {
             })
     @Test
     public void testContextInsightBundleUnbundle() throws GeneralSecurityException {
+        final Token tokenA = mPersonalContextManager.mintToken();
+        final Token tokenB = mPersonalContextManager.mintToken();
         final int inputValue = 1234;
         final String dataKey = "test-key";
-        final BundleHint hint = new BundleHint();
+        final BundleHint hint = new BundleHint.Builder().build();
         hint.getDataBundle().putInt(dataKey, inputValue);
         final ContextHintWithSignature signedHint =
                 new ContextHintWithSignature.Builder(hint, generateSignedHintKey()).build();
@@ -75,14 +91,14 @@ public class ContextInsightTest {
         final BundleInsight insight =
                 new BundleInsight.Builder()
                         .addOriginHint(signedHint)
-                        .addTag("test1")
-                        .addTag("test2")
+                        .addToken(tokenA)
+                        .addToken(tokenB)
                         .build();
         ContextInsight outputInsight = bundleUnbundle(insight);
 
         assertThat(outputInsight).isInstanceOf(BundleInsight.class);
         assertThat(insight.getInsightId()).isEqualTo(outputInsight.getInsightId());
-        assertThat(insight.getTags()).containsExactly("test1", "test2");
+        assertThat(insight.getTokens()).containsExactly(tokenA, tokenB);
 
         assertThat(outputInsight.getOriginHints().size()).isEqualTo(1);
 

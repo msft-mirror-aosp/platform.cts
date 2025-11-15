@@ -63,7 +63,8 @@ public class PersonalContextManagerTest {
             })
     @Test
     public void testPublishTriggeringHintWithRenderToken() {
-        final List<ContextHint> hints = List.of(new BundleHint(), new BundleHint());
+        final List<ContextHint> hints = List.of(
+                new BundleHint.Builder().build(), new BundleHint.Builder().build());
 
         final RenderToken renderToken =
                 new RenderToken.RenderTokenBuilder()

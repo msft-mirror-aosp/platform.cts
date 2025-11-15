@@ -22,13 +22,17 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.personalcontext.Flags;
+import android.service.personalcontext.PersonalContextManager;
+import android.service.personalcontext.Token;
 import android.service.personalcontext.hint.BundleHint;
 import android.service.personalcontext.hint.ContextHint;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -40,19 +44,35 @@ public class ContextHintTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
+    private PersonalContextManager mPersonalContextManager;
+
+    @Before
+    public void setUp() throws Exception {
+        mPersonalContextManager =
+                InstrumentationRegistry.getInstrumentation()
+                        .getTargetContext()
+                        .getSystemService(PersonalContextManager.class);
+    }
+
     // Tests bundling and unbundling fields on the base ContextHint.
     @ApiTest(
             apis = {
                 "android.service.personalcontext.hint.ContextHint#getHintType",
                 "android.service.personalcontext.hint.ContextHint#getHintId",
+                "android.service.personalcontext.hint.ContextHint#getTags",
             })
     @Test
     public void testContextHintBundleUnbundle() {
-        final BundleHint hint = new BundleHint();
+        Token tokenA = mPersonalContextManager.mintToken();
+        Token tokenB = mPersonalContextManager.mintToken();
+
+        final BundleHint hint = new BundleHint.Builder().addToken(tokenA).addToken(tokenB).build();
+
         final ContextHint outputHint = bundleUnbundle(hint);
 
         assertThat(outputHint).isInstanceOf(BundleHint.class);
         assertThat(hint.getHintId()).isEqualTo(outputHint.getHintId());
+        assertThat(hint.getTokens()).containsExactly(tokenA, tokenB);
     }
 
     /** Bundles then unbundles the given {@link ContextHint}. */
