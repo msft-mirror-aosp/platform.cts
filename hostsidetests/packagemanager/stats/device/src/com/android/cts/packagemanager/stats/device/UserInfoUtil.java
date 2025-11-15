@@ -24,6 +24,7 @@ import static android.os.UserManager.USER_TYPE_FULL_SYSTEM;
 import static android.os.UserManager.USER_TYPE_PROFILE_CLONE;
 import static android.os.UserManager.USER_TYPE_PROFILE_MANAGED;
 import static android.os.UserManager.USER_TYPE_PROFILE_PRIVATE;
+import static android.os.UserManager.USER_TYPE_PROFILE_SUPERVISING;
 import static android.os.UserManager.USER_TYPE_SYSTEM_HEADLESS;
 
 import com.android.internal.util.FrameworkStatsLog;
@@ -61,6 +62,9 @@ public class UserInfoUtil {
             case USER_TYPE_PROFILE_PRIVATE:
                 return FrameworkStatsLog
                         .USER_LIFECYCLE_JOURNEY_REPORTED__USER_TYPE__PROFILE_PRIVATE;
+            case USER_TYPE_PROFILE_SUPERVISING:
+                return FrameworkStatsLog
+                        .USER_LIFECYCLE_JOURNEY_REPORTED__USER_TYPE__PROFILE_SUPERVISING;
             default:
                 return FrameworkStatsLog.USER_LIFECYCLE_JOURNEY_REPORTED__USER_TYPE__TYPE_UNKNOWN;
         }
