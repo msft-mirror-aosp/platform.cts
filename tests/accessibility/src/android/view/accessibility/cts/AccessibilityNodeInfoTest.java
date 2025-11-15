@@ -73,7 +73,6 @@ import org.junit.runner.RunWith;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -550,6 +549,64 @@ public class AccessibilityNodeInfoTest {
                 });
     }
 
+    @SmallTest
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityNodeInfo#setStructuredDataInfo",
+                "android.view.accessibility.AccessibilityNodeInfo#getStructuredDataInfo",
+                "android.view.accessibility.AccessibilityNodeInfo#MathInfo",
+            })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_A11Y_MATH_API)
+    public void testSetGetMathInfo() {
+        AccessibilityNodeInfo.MathInfo mathInfo =
+                new AccessibilityNodeInfo.MathInfo(
+                        AccessibilityNodeInfo.MathInfo.MATH_TAG_FRACTION);
+        mathInfo.addAttribute(AccessibilityNodeInfo.MathInfo.MATH_ATTRIBUTE_INTENT, "division");
+        assertThat(mathInfo.getTag()).isEqualTo(AccessibilityNodeInfo.MathInfo.MATH_TAG_FRACTION);
+        assertThat(mathInfo.getAttribute(AccessibilityNodeInfo.MathInfo.MATH_ATTRIBUTE_INTENT))
+                .isEqualTo("division");
+
+        AccessibilityNodeInfo node = new AccessibilityNodeInfo();
+        node.setStructuredDataInfo(mathInfo);
+        AccessibilityNodeInfo.MathInfo retrievedMathInfo =
+                (AccessibilityNodeInfo.MathInfo) node.getStructuredDataInfo();
+        assertThat(retrievedMathInfo).isEqualTo(mathInfo);
+
+        mathInfo.removeAttribute(AccessibilityNodeInfo.MathInfo.MATH_ATTRIBUTE_INTENT);
+        assertThat(mathInfo.getAttribute(AccessibilityNodeInfo.MathInfo.MATH_ATTRIBUTE_INTENT))
+                .isNull();
+    }
+
+    @SmallTest
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityNodeInfo#setStructuredDataInfo",
+                "android.view.accessibility.AccessibilityNodeInfo#getStructuredDataInfo",
+                "android.view.accessibility.AccessibilityNodeInfo#MathInfo",
+            })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_A11Y_MATH_API)
+    public void testMathInfoParceling() {
+        AccessibilityNodeInfo.MathInfo mathInfo =
+                new AccessibilityNodeInfo.MathInfo(AccessibilityNodeInfo.MathInfo.MATH_TAG_ROOT);
+        mathInfo.addAttribute(AccessibilityNodeInfo.MathInfo.MATH_ATTRIBUTE_INTENT, "sqrt");
+
+        AccessibilityNodeInfo node = new AccessibilityNodeInfo();
+        node.setStructuredDataInfo(mathInfo);
+
+        Parcel parcel = Parcel.obtain();
+        node.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+        AccessibilityNodeInfo unparceledNode =
+                AccessibilityNodeInfo.CREATOR.createFromParcel(parcel);
+        parcel.recycle();
+
+        AccessibilityNodeInfo.MathInfo unparceledMathInfo =
+                (AccessibilityNodeInfo.MathInfo) unparceledNode.getStructuredDataInfo();
+        assertThat(unparceledMathInfo).isEqualTo(mathInfo);
+    }
+
     /**
      * Fully populates the {@link AccessibilityNodeInfo} to marshal.
      *
@@ -605,7 +662,7 @@ public class AccessibilityNodeInfoTest {
         info.setTextSelection(3, 7);
         info.setLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
 
-        // Populate 11 fields
+        // Populate 12 fields
         Bundle extras = info.getExtras();
         extras.putBoolean("areCassowariesAwesome", true);
         info.setInputType(InputType.TYPE_CLASS_TEXT);
@@ -626,6 +683,13 @@ public class AccessibilityNodeInfoTest {
         info.setTraversalBefore(new View(getContext()));
         info.setTraversalAfter(new View(getContext()));
         info.setMinDurationBetweenContentChanges(Duration.ofMillis(200));
+        if (Flags.a11yMathApi()) {
+            AccessibilityNodeInfo.MathInfo mathInfo =
+                    new AccessibilityNodeInfo.MathInfo(
+                            AccessibilityNodeInfo.MathInfo.MATH_TAG_FRACTION);
+            mathInfo.addAttribute(AccessibilityNodeInfo.MathInfo.MATH_ATTRIBUTE_INTENT, "division");
+            info.setStructuredDataInfo(mathInfo);
+        }
 
         // Populate 4 fields
         info.setLabeledBy(new View(getContext()));
@@ -882,7 +946,7 @@ public class AccessibilityNodeInfoTest {
         assertEquals("InputType has incorrect value", expectedInfo.getInputType(),
                 receivedInfo.getInputType());
 
-        // Check 3 fields with sub-objects
+        // Check 4 fields with sub-objects
         RangeInfo expectedRange = expectedInfo.getRangeInfo();
         RangeInfo receivedRange = receivedInfo.getRangeInfo();
         assertEquals("Range info has incorrect value", (expectedRange != null),
@@ -938,6 +1002,21 @@ public class AccessibilityNodeInfoTest {
             assertThat(expectedItemInfo.getRowTitle()).isEqualTo(receivedItemInfo.getRowTitle());
             assertThat(
                     expectedItemInfo.getColumnTitle()).isEqualTo(receivedItemInfo.getColumnTitle());
+        }
+
+        if (Flags.a11yMathApi()) {
+            AccessibilityNodeInfo.StructuredDataInfo expectedStructuredDataInfo =
+                    expectedInfo.getStructuredDataInfo();
+            AccessibilityNodeInfo.StructuredDataInfo receivedStructuredDataInfo =
+                    receivedInfo.getStructuredDataInfo();
+            assertThat(receivedStructuredDataInfo != null).isEqualTo(
+                    expectedStructuredDataInfo != null);
+            if (expectedStructuredDataInfo != null) {
+                assertThat(receivedStructuredDataInfo.getTag()).isEqualTo(
+                        expectedStructuredDataInfo.getTag());
+                assertThat(receivedStructuredDataInfo.getAttributes()).isEqualTo(
+                        expectedStructuredDataInfo.getAttributes());
+            }
         }
 
         // Check 1 field
