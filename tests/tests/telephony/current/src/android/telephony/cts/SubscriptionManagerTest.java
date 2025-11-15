@@ -520,6 +520,306 @@ public class SubscriptionManagerTest {
         }
     }
 
+    /**
+     * Verifies the lifecycle of adding and removing two remote SIMs, with the second remote SIM
+     * being removed first.
+     *
+     * <p>Tests that the following work correctly with multiple remote SIMs:
+     *
+     * <ul>
+     *   <li>addSubscriptionInfoRecord and removeSubscriptionInfoRecord
+     *   <li>getSubscriptionId returns the last inserted remote SIM subscription ID
+     *   <li>getActiveSubscriptionIdList contains all inserted remote SIM subscription IDs
+     *   <li>getActiveSubscriptionInfoList contains all inserted remote SIM subscriptions
+     * </ul>
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_REMOTE_SIM_SUB_ID_SET)
+    public void testTwoRemoteSims_afterRemovingSecondRemoteSim() {
+        assumeTrue("Remote SIM is only supported on automotive", isAutomotive());
+
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+
+        final String uniqueId1 = "00:01:02:03:04:05";
+        final String uniqueId2 = "05:04:03:02:01:00";
+        final String displayName1 = "device_name1";
+        final String displayName2 = "device_name2";
+        uiAutomation.adoptShellPermissionIdentity();
+        try {
+            int[] subIdList;
+            List<SubscriptionInfo> subInfoList;
+
+            // Initial state: No remote SIMs
+            // Verify getSubscriptionId does not return a remote SIM
+            assertEquals(
+                    SubscriptionManager.INVALID_SUBSCRIPTION_ID,
+                    SubscriptionManager.getSubscriptionId(
+                            SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB));
+
+            // Insert first remote SIM
+            mSm.addSubscriptionInfoRecord(
+                    uniqueId1,
+                    displayName1,
+                    SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB,
+                    SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
+            SubscriptionInfo subInfo1 = mSm.getActiveSubscriptionInfoForIcc(uniqueId1);
+            assertNotNull(subInfo1);
+            // Verify getSubscriptionId returns the first remote SIM
+            int subId1 = subInfo1.getSubscriptionId();
+            assertEquals(
+                    subId1,
+                    SubscriptionManager.getSubscriptionId(
+                            SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB));
+            // Verify getActiveSubscriptionIdList contains the first remote SIM
+            subIdList = mSm.getActiveSubscriptionIdList();
+            assertNotNull(subIdList);
+            assertTrue(ArrayUtils.contains(subIdList, subId1));
+            // Verify getActiveSubscriptionInfoList contains the first remote SIM
+            subInfoList = mSm.getActiveSubscriptionInfoList();
+            assertNotNull(subInfoList);
+            assertTrue(ArrayUtils.contains(subInfoList, subInfo1));
+
+            // Insert second remote SIM
+            mSm.addSubscriptionInfoRecord(
+                    uniqueId2,
+                    displayName2,
+                    SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB,
+                    SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
+            SubscriptionInfo subInfo2 = mSm.getActiveSubscriptionInfoForIcc(uniqueId2);
+            assertNotNull(subInfo2);
+            // Verify getSubscriptionId returns the second remote SIM (last inserted)
+            int subId2 = subInfo2.getSubscriptionId();
+            assertEquals(
+                    subId2,
+                    SubscriptionManager.getSubscriptionId(
+                            SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB));
+            // Verify getActiveSubscriptionIdList contains both remote SIMs
+            subIdList = mSm.getActiveSubscriptionIdList();
+            assertNotNull(subIdList);
+            assertTrue(ArrayUtils.contains(subIdList, subId1));
+            assertTrue(ArrayUtils.contains(subIdList, subId2));
+            // Verify getActiveSubscriptionInfoList contains both remote SIMs
+            subInfoList = mSm.getActiveSubscriptionInfoList();
+            assertNotNull(subInfoList);
+            assertTrue(ArrayUtils.contains(subInfoList, subInfo1));
+            assertTrue(ArrayUtils.contains(subInfoList, subInfo2));
+
+            // Remove second remote SIM
+            mSm.removeSubscriptionInfoRecord(
+                    uniqueId2, SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
+            assertNull(mSm.getActiveSubscriptionInfoForIcc(uniqueId2));
+            // Verify getSubscriptionId now returns the first remote SIM (last inserted)
+            assertEquals(
+                    subId1,
+                    SubscriptionManager.getSubscriptionId(
+                            SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB));
+            // Verify getActiveSubscriptionIdList contains the first remote SIM, but not the second
+            subIdList = mSm.getActiveSubscriptionIdList();
+            assertNotNull(subIdList);
+            assertTrue(ArrayUtils.contains(subIdList, subId1));
+            assertFalse(ArrayUtils.contains(subIdList, subId2));
+            // Verify getActiveSubscriptionInfoList contains the first remote SIM, but not the
+            // second
+            subInfoList = mSm.getActiveSubscriptionInfoList();
+            assertNotNull(subInfoList);
+            assertTrue(ArrayUtils.contains(subInfoList, subInfo1));
+            assertFalse(ArrayUtils.contains(subInfoList, subInfo2));
+
+            // Remove first remote SIM
+            mSm.removeSubscriptionInfoRecord(
+                    uniqueId1, SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
+            assertNull(mSm.getActiveSubscriptionInfoForIcc(uniqueId1));
+            // Verify getSubscriptionId does not return a remote SIM
+            assertEquals(
+                    SubscriptionManager.INVALID_SUBSCRIPTION_ID,
+                    SubscriptionManager.getSubscriptionId(
+                            SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB));
+            // Verify getActiveSubscriptionIdList does not contain either remote SIM
+            subIdList = mSm.getActiveSubscriptionIdList();
+            assertNotNull(subIdList);
+            assertFalse(ArrayUtils.contains(subIdList, subId1));
+            assertFalse(ArrayUtils.contains(subIdList, subId2));
+            // Verify getActiveSubscriptionInfoList does not contain either remote SIM
+            subInfoList = mSm.getActiveSubscriptionInfoList();
+            assertNotNull(subInfoList);
+            assertFalse(ArrayUtils.contains(subInfoList, subInfo1));
+            assertFalse(ArrayUtils.contains(subInfoList, subInfo2));
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+
+        // Testing permission fail
+        try {
+            mSm.addSubscriptionInfoRecord(
+                    uniqueId1,
+                    displayName1,
+                    SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB,
+                    SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
+            mSm.addSubscriptionInfoRecord(
+                    uniqueId2,
+                    displayName2,
+                    SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB,
+                    SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
+            mSm.removeSubscriptionInfoRecord(
+                    uniqueId1, SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
+            mSm.removeSubscriptionInfoRecord(
+                    uniqueId2, SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
+            fail("SecurityException should be thrown without MODIFY_PHONE_STATE");
+        } catch (SecurityException expected) {
+            // expected
+        }
+    }
+
+    /**
+     * Verifies the lifecycle of adding and removing two remote SIMs, with the first remote SIM
+     * being removed first.
+     *
+     * <p>Tests that the following work correctly with multiple remote SIMs:
+     *
+     * <ul>
+     *   <li>addSubscriptionInfoRecord and removeSubscriptionInfoRecord
+     *   <li>getSubscriptionId returns the last inserted remote SIM subscription ID
+     *   <li>getActiveSubscriptionIdList contains all inserted remote SIM subscription IDs
+     *   <li>getActiveSubscriptionInfoList contains all inserted remote SIM subscriptions
+     * </ul>
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_REMOTE_SIM_SUB_ID_SET)
+    public void testTwoRemoteSims_afterRemovingFirstRemoteSim() {
+        assumeTrue("Remote SIM is only supported on automotive", isAutomotive());
+
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+
+        final String uniqueId1 = "00:01:02:03:04:05";
+        final String uniqueId2 = "05:04:03:02:01:00";
+        final String displayName1 = "device_name1";
+        final String displayName2 = "device_name2";
+        uiAutomation.adoptShellPermissionIdentity();
+        try {
+            int[] subIdList;
+            List<SubscriptionInfo> subInfoList;
+
+            // Initial state: No remote SIMs
+            // Verify getSubscriptionId does not return a remote SIM
+            assertEquals(
+                    SubscriptionManager.INVALID_SUBSCRIPTION_ID,
+                    SubscriptionManager.getSubscriptionId(
+                            SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB));
+
+            // Insert first remote SIM
+            mSm.addSubscriptionInfoRecord(
+                    uniqueId1,
+                    displayName1,
+                    SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB,
+                    SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
+            SubscriptionInfo subInfo1 = mSm.getActiveSubscriptionInfoForIcc(uniqueId1);
+            assertNotNull(subInfo1);
+            // Verify getSubscriptionId returns the first remote SIM
+            int subId1 = subInfo1.getSubscriptionId();
+            assertEquals(
+                    subId1,
+                    SubscriptionManager.getSubscriptionId(
+                            SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB));
+            // Verify getActiveSubscriptionIdList contains the first remote SIM
+            subIdList = mSm.getActiveSubscriptionIdList();
+            assertNotNull(subIdList);
+            assertTrue(ArrayUtils.contains(subIdList, subId1));
+            // Verify getActiveSubscriptionInfoList contains the first remote SIM
+            subInfoList = mSm.getActiveSubscriptionInfoList();
+            assertNotNull(subInfoList);
+            assertTrue(ArrayUtils.contains(subInfoList, subInfo1));
+
+            // Insert second remote SIM
+            mSm.addSubscriptionInfoRecord(
+                    uniqueId2,
+                    displayName2,
+                    SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB,
+                    SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
+            SubscriptionInfo subInfo2 = mSm.getActiveSubscriptionInfoForIcc(uniqueId2);
+            assertNotNull(subInfo2);
+            // Verify getSubscriptionId returns the second remote SIM (last inserted)
+            int subId2 = subInfo2.getSubscriptionId();
+            assertEquals(
+                    subId2,
+                    SubscriptionManager.getSubscriptionId(
+                            SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB));
+            // Verify getActiveSubscriptionIdList contains both remote SIMs
+            subIdList = mSm.getActiveSubscriptionIdList();
+            assertNotNull(subIdList);
+            assertTrue(ArrayUtils.contains(subIdList, subId1));
+            assertTrue(ArrayUtils.contains(subIdList, subId2));
+            // Verify getActiveSubscriptionInfoList contains both remote SIMs
+            subInfoList = mSm.getActiveSubscriptionInfoList();
+            assertNotNull(subInfoList);
+            assertTrue(ArrayUtils.contains(subInfoList, subInfo1));
+            assertTrue(ArrayUtils.contains(subInfoList, subInfo2));
+
+            // Remove first remote SIM
+            mSm.removeSubscriptionInfoRecord(
+                    uniqueId1, SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
+            assertNull(mSm.getActiveSubscriptionInfoForIcc(uniqueId1));
+            // Verify getSubscriptionId still returns the second remote SIM (last inserted)
+            assertEquals(
+                    subId2,
+                    SubscriptionManager.getSubscriptionId(
+                            SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB));
+            // Verify getActiveSubscriptionIdList contains the second remote SIM, but not the first
+            subIdList = mSm.getActiveSubscriptionIdList();
+            assertNotNull(subIdList);
+            assertFalse(ArrayUtils.contains(subIdList, subId1));
+            assertTrue(ArrayUtils.contains(subIdList, subId2));
+            // Verify getActiveSubscriptionInfoList contains the second remote SIM, but not the
+            // first
+            subInfoList = mSm.getActiveSubscriptionInfoList();
+            assertNotNull(subInfoList);
+            assertFalse(ArrayUtils.contains(subInfoList, subInfo1));
+            assertTrue(ArrayUtils.contains(subInfoList, subInfo2));
+
+            // Remove second remote SIM
+            mSm.removeSubscriptionInfoRecord(
+                    uniqueId2, SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
+            assertNull(mSm.getActiveSubscriptionInfoForIcc(uniqueId2));
+            // Verify getSubscriptionId does not return a remote SIM
+            assertEquals(
+                    SubscriptionManager.INVALID_SUBSCRIPTION_ID,
+                    SubscriptionManager.getSubscriptionId(
+                            SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB));
+            // Verify getActiveSubscriptionIdList does not contain either remote SIM
+            subIdList = mSm.getActiveSubscriptionIdList();
+            assertNotNull(subIdList);
+            assertFalse(ArrayUtils.contains(subIdList, subId1));
+            assertFalse(ArrayUtils.contains(subIdList, subId2));
+            // Verify getActiveSubscriptionInfoList does not contain either remote SIM
+            subInfoList = mSm.getActiveSubscriptionInfoList();
+            assertNotNull(subInfoList);
+            assertFalse(ArrayUtils.contains(subInfoList, subInfo1));
+            assertFalse(ArrayUtils.contains(subInfoList, subInfo2));
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+
+        // Testing permission fail
+        try {
+            mSm.addSubscriptionInfoRecord(
+                    uniqueId1,
+                    displayName1,
+                    SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB,
+                    SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
+            mSm.addSubscriptionInfoRecord(
+                    uniqueId2,
+                    displayName2,
+                    SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB,
+                    SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
+            mSm.removeSubscriptionInfoRecord(
+                    uniqueId1, SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
+            mSm.removeSubscriptionInfoRecord(
+                    uniqueId2, SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
+            fail("SecurityException should be thrown without MODIFY_PHONE_STATE");
+        } catch (SecurityException expected) {
+            // expected
+        }
+    }
+
     @Test
     public void testSetDefaultVoiceSubId() {
         // Only make sense to set default sub if the device supports more than 1 modem.
