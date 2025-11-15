@@ -52,10 +52,10 @@ class SupervisionPolicyTest : BaseSupervisionTest() {
         apis =
             [
                 "android.app.supervision.SupervisionManager#setPolicy",
-                "android.app.supervision.PackageUsagePolicy.Builder#setVersion",
                 "android.app.supervision.PackageUsagePolicy.Builder#setPackageName",
                 "android.app.supervision.PackageUsagePolicy.Builder#setType",
-                "android.app.supervision.PackageUsagePolicy.Builder#build",
+                "android.app.supervision.Policy.Builder#setVersion",
+                "android.app.supervision.Policy.Builder#build",
             ]
     )
     fun setPolicy_packagePolicy_blocked_successfullyHidesApp() {
@@ -75,10 +75,10 @@ class SupervisionPolicyTest : BaseSupervisionTest() {
         apis =
             [
                 "android.app.supervision.SupervisionManager#setPolicy",
-                "android.app.supervision.PackageUsagePolicy.Builder#setVersion",
                 "android.app.supervision.PackageUsagePolicy.Builder#setPackageName",
                 "android.app.supervision.PackageUsagePolicy.Builder#setType",
-                "android.app.supervision.PackageUsagePolicy.Builder#build",
+                "android.app.supervision.Policy.Builder#setVersion",
+                "android.app.supervision.Policy.Builder#build",
             ]
     )
     fun setPolicy_packagePolicy_allowed_successfullyUnhidesApp() {
@@ -103,7 +103,7 @@ class SupervisionPolicyTest : BaseSupervisionTest() {
 
             val expectedHiddenState =
                 when (type) {
-                    PackageUsagePolicy.TYPE_BLOCKED -> false
+                    PackageUsagePolicy.TYPE_BLOCKED -> true
                     else -> true
                 }
             assertThat(devicePolicyManager.isApplicationHidden(null, EMPTY_TEST_APP_PACKAGE_NAME))
