@@ -279,6 +279,7 @@
       {"android.logicalMultiCamera.sensorSyncType", ACAMERA_LOGICAL_MULTI_CAMERA_SENSOR_SYNC_TYPE},
       {"android.logicalMultiCamera.activePhysicalId", ACAMERA_LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID},
       {"android.logicalMultiCamera.activePhysicalSensorCropRegion", ACAMERA_LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_SENSOR_CROP_REGION},
+      {"android.logicalMultiCamera.additionalResults", ACAMERA_LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS},
       {"android.distortionCorrection.mode", ACAMERA_DISTORTION_CORRECTION_MODE},
       {"android.distortionCorrection.availableModes", ACAMERA_DISTORTION_CORRECTION_AVAILABLE_MODES},
       {"android.heic.availableHeicStreamConfigurations", ACAMERA_HEIC_AVAILABLE_HEIC_STREAM_CONFIGURATIONS},
