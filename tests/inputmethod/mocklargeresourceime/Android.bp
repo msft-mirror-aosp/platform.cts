@@ -20,6 +20,7 @@ package {
 android_test_helper_app {
     name: "CtsMockLargeResourceInputMethod",
     defaults: ["cts_defaults"],
+    srcs: ["src/**/*.kt"],
     optimize: {
         enabled: false,
     },
