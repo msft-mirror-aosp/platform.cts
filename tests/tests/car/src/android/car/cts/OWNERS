@@ -8,11 +8,11 @@ per-file CarInputTest.java=kanant@google.com
 per-file CarDisplayInputLockTest.java=gauravbhola@google.com,xiangw@google.com
 
 # Mainline CTS files
-per-file ApiVersionTest.java=gargmayank@google.com
-per-file CarServiceHelperServiceUpdatableTest.java=gargmayank@google.com
+per-file ApiVersionTest.java=hubertmis@google.com
+per-file CarServiceHelperServiceUpdatableTest.java=hubertmis@google.com
 
 # OEM CTS files
-per-file OemCarServiceImplTest.java=gargmayank@google.com
+per-file OemCarServiceImplTest.java=hubertmis@google.com
 
 # Rotary CTS files
 per-file CarRotaryImeTest.java=yabinh@google.com
@@ -28,21 +28,21 @@ per-file CarOccupantConnectionManagerTest.java=yabinh@google.com,xiangw@google.c
 per-file CarRemoteDeviceManagerTest.java=yabinh@google.com
 
 # Platform related CTS files
-per-file PlatformVersionMismatchExceptionTest.java=gargmayank@google.com
-per-file PlatformVersionTest.java=gargmayank@google.com
+per-file PlatformVersionMismatchExceptionTest.java=hubertmis@google.com
+per-file PlatformVersionTest.java=hubertmis@google.com
 
 # Power and Performance CTS files
-per-file CarPowerManagerTest.java=ericjeong@google.com
-per-file CarPerformanceManagerTest.java=lakshmana@google.com,shanyu@google.com
+per-file CarPowerManagerTest.java=hubertmis@google.com
+per-file CarPerformanceManagerTest.java=lakshmana@google.com,jahdiel@google.com
 
 # Media related CTS files
 per-file CarMediaManagerTest.java=bkchoi@google.com
 
 # PackageManager related CTS files
-per-file CarPackageManagerTest.java=gauravbhola@google.com,gargmayank@google.com
+per-file CarPackageManagerTest.java=gauravbhola@google.com
 
 # Remote Access related CTS files
-per-file CarRemoteAccessManagerTest.java=ericjeong@google.com,shanyu@google.com
+per-file CarRemoteAccessManagerTest.java=hubertmis@google.com
 
 # Car Watchdog related CTS files
 per-file CarWatchdogDaemonTest.java=lakshmana@google.com,jahdiel@google.com
@@ -69,7 +69,7 @@ per-file UserSwitchRequestTest.java=xiangw@google.com
 # Miscellaneous
 # TODO(b/282199666): Find an owner for  CarAppFocusManagerTest
 # per-file CarAppFocusManagerTest.java=
-per-file CarSensorManagerTest.java=tylertrephan@google.com
+per-file CarSensorManagerTest.java=evaschen@google.com,aaqibismail@google.com
 per-file CarUxRestrictionsManagerTest.java=xiangw@google.com,gauravbhola@google.com
-per-file ExceptionsTest.java=ericjeong@google.com
-per-file SyncResultCallbackTest.java=gargmayank@google.com
+per-file ExceptionsTest.java=hubertmis@google.com
+per-file SyncResultCallbackTest.java=hubertmis@google.com
