@@ -16,6 +16,7 @@
 
 package android.mediav2.common.cts;
 
+import static android.media.MediaMuxer.OutputFormat.MUXER_OUTPUT_WEBM;
 import static android.mediav2.common.cts.MuxerUtils.getMuxerFormatsListForMediaType;
 import static android.mediav2.common.cts.MuxerUtils.getTempFilePath;
 import static android.mediav2.common.cts.MuxerUtils.muxOutput;
@@ -39,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 /**
  * Wrapper class for testing HDR support in video encoder components
@@ -130,6 +132,9 @@ public class HDREncoderTestBase extends CodecEncoderTestBase {
 
         setUpSource(mActiveRawRes.mFileName);
 
+        int[] muxerFormats = getMuxerFormatsListForMediaType(mMediaType);
+        assertTrue("no muxers available for media Type : " + mMediaType + "\n" + mTestConfig
+                        + mTestEnv, muxerFormats.length > 0);
         int frameLimit = 4;
         if (mHdrDynamicInfo != null) {
             mTotalMetadataQueued = new ArrayList<>();
@@ -139,12 +144,21 @@ public class HDREncoderTestBase extends CodecEncoderTestBase {
                             .getKey();
             frameLimit = (int) (lastHdr10PlusFramePts * mActiveEncCfg.mFrameRate / 1000000L) + 10;
         }
-        int maxNumFrames =
+        // WebM writers in pre-U versions suffered from a race condition that MAY result in last
+        // few frames to be omitted from the final muxed output. If 1 to 2 frames were encoded and
+        // muxed, it is possible that writer does not write any frame and closes the file. For
+        // details refer b/267933226. This was fixed. But, as muxer is not a mainline module, this
+        // fix may not be present on older revisions. To avoid faiures on older revisions, encode
+        // 10 frames and mux.
+        if (IS_BEFORE_U && IntStream.of(muxerFormats).anyMatch(x -> x == MUXER_OUTPUT_WEBM)) {
+            frameLimit = Math.max(frameLimit, 10);
+        }
+        int framesInRawResource =
                 mInputData.length / getVideoFrameSize(mActiveRawRes.mWidth, mActiveRawRes.mHeight,
                         mActiveRawRes.mColorFormat);
         assertTrue("HDR info tests require input file with at least " + frameLimit + " frames. "
-                + mActiveRawRes.mFileName + " has " + maxNumFrames + " frames. \n" + mTestConfig
-                + mTestEnv, frameLimit <= maxNumFrames);
+                + mActiveRawRes.mFileName + " has " + framesInRawResource + " frames. \n"
+                + mTestConfig + mTestEnv, frameLimit <= framesInRawResource);
 
         mOutputBuff = new OutputManager();
         mSaveToMem = true;
@@ -201,9 +215,6 @@ public class HDREncoderTestBase extends CodecEncoderTestBase {
 
         // write the output with all muxers and verify if the muxed file contains HDR metadata as
         // expected
-        int[] muxerFormats = getMuxerFormatsListForMediaType(mMediaType);
-        assertTrue("no muxers available for media Type : " + mMediaType + "\n" + mTestConfig
-                        + mTestEnv, muxerFormats.length > 0);
         for (int muxFormat : muxerFormats) {
             String tmpPath = getTempFilePath((mActiveEncCfg.mInputBitDepth == 10) ? "10bit" : "");
             mTmpFiles.add(tmpPath);
