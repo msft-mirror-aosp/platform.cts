@@ -294,6 +294,47 @@ public class CarrierConfigManagerTest {
             assertFalse("KEY_SATELLITE_P2P_SMS_SUPPORTED_BOOL "
                             + "doesn't match static default.",
                     config.getBoolean(KEY_SATELLITE_ROAMING_P2P_SMS_SUPPORTED_BOOL));
+            assertFalse(
+                    "KEY_CARRIER_ROAMING_SATELLITE_UPSELL_SUPPORTED_BOOL "
+                            + "doesn't match static default.",
+                    config.getBoolean(
+                            CarrierConfigManager
+                                    .KEY_CARRIER_ROAMING_SATELLITE_UPSELL_SUPPORTED_BOOL));
+            assertEquals(
+                    "KEY_CARRIER_RAOMING_SATELLITE_UPSELL_NOTIFICATION_HYSTERESIS_SEC_INT "
+                            + "doesn't match static default.",
+                    config.getInt(
+                            CarrierConfigManager
+                                    .KEY_CARRIER_ROAMING_SATELLITE_UPSELL_NOTIFICATION_HYSTERESIS_SEC_INT),
+                    900);
+            assertEquals(
+                    "KEY_CARRIER_ROAMING_SATELLITE_UPSELL_NOTIFICATION_THROTTLE_HOURS_INT "
+                            + "doesn't match static default.",
+                    config.getInt(
+                            CarrierConfigManager
+                                    .KEY_CARRIER_ROAMING_SATELLITE_UPSELL_NOTIFICATION_THROTTLE_HOURS_INT),
+                    24);
+            assertEquals(
+                    "KEY_CARRIER_ROAMING_SATELLITE_UPSELL_NOTIFICATION_MAXIMUM_DAILY_COUNT_INT "
+                            + "doesn't match static default.",
+                    config.getInt(
+                            CarrierConfigManager
+                                    .KEY_CARRIER_ROAMING_SATELLITE_UPSELL_NOTIFICATION_MAXIMUM_DAILY_COUNT_INT),
+                    5);
+            assertEquals(
+                    "KEY_CARRIER_ROAMING_SATELLITE_UPSELL_NOTIFICATION_MAXIMUM_MONTHLY_COUNT_INT "
+                            + "doesn't match static default.",
+                    config.getInt(
+                            CarrierConfigManager
+                                    .KEY_CARRIER_ROAMING_SATELLITE_UPSELL_NOTIFICATION_MAXIMUM_MONTHLY_COUNT_INT),
+                    20);
+            assertEquals(
+                    "KEY_CARRIER_ROAMING_SATELLITE_PURCHASE_MODE_TIMEOUT_SEC_INT "
+                            + "doesn't match static default.",
+                    config.getInt(
+                            CarrierConfigManager
+                                    .KEY_CARRIER_ROAMING_SATELLITE_PURCHASE_MODE_TIMEOUT_SEC_INT),
+                    300);
             assertEquals("KEY_CARRIER_ROAMING_NTN_CONNECT_TYPE_INT doesn't match static default.",
                     config.getInt(KEY_CARRIER_ROAMING_NTN_CONNECT_TYPE_INT),
                     CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC);
