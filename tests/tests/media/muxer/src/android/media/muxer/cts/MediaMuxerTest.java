@@ -24,6 +24,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
@@ -35,6 +36,7 @@ import android.media.MediaMetadataRetriever;
 import android.media.MediaMuxer;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
+import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -45,6 +47,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.Preconditions;
 
 import com.google.android.exoplayer2.Format;
@@ -174,6 +177,11 @@ public class MediaMuxerTest {
     @Test
     @RequiresFlagsEnabled({FLAG_EXTRACTOR_MP4_ENABLE_APV})
     public void testAPVVideoOnlyOutputInMP4() throws Exception {
+        assumeTrue(
+                "Device does not have APV decoder and is not a Google device or emulator",
+                MediaUtils.hasDecoder(MediaFormat.MIMETYPE_VIDEO_APV)
+                        || Build.MANUFACTURER.equals("Google")
+                        || isEmulator());
         final String source = "pattern_640x480_30fps_16mbps_apv_10bit.mp4";
         String outputFilePath =
                 File.createTempFile("testAPVVideoOnlyOutputInMP4", ".mp4").getAbsolutePath();
@@ -233,6 +241,11 @@ public class MediaMuxerTest {
     private static MediaFormat filterOutNonDolbyVisionFormat(MediaFormat format) {
         String mime = format.getString(MediaFormat.KEY_MIME);
         return mime.equals(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION) ? format : null;
+    }
+
+    private static boolean isEmulator() {
+        return SystemProperties.getBoolean("ro.boot.qemu", false)
+                || SystemProperties.getBoolean("ro.kernel.qemu", false);
     }
 
     /**

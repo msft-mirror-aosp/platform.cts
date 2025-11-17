@@ -44,6 +44,7 @@ import android.media.cts.TestMediaDataSource;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.os.PersistableBundle;
+import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -60,6 +61,7 @@ import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
+import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.Preconditions;
 
 import org.junit.After;
@@ -127,6 +129,11 @@ public class MediaExtractorTest {
         return ds;
     }
 
+    private static boolean isEmulator() {
+        return SystemProperties.getBoolean("ro.boot.qemu", false)
+                || SystemProperties.getBoolean("ro.kernel.qemu", false);
+    }
+
     @Test
     @FrameworkSpecificTest
     public void testExtractorFrameworkStub() throws Exception {
@@ -149,6 +156,11 @@ public class MediaExtractorTest {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     @Test
     public void testApvMediaExtractor() throws Exception {
+        assumeTrue(
+                "Device does not have APV decoder and is not a Google device or emulator",
+                MediaUtils.hasDecoder(MediaFormat.MIMETYPE_VIDEO_APV)
+                        || Build.MANUFACTURER.equals("Google")
+                        || isEmulator());
         String testFileName = "pattern_640x480_30fps_16mbps_apv_10bit.mp4";
         Preconditions.assertTestFileExists(mInpPrefix + testFileName);
 
