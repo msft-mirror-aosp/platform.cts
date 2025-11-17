@@ -1576,8 +1576,8 @@ public class SingleDeviceTest extends WifiJUnit4TestBase {
         }
 
         if (rttSupported) {
-            assertEquals(MAX_DISTANCE_MM, subscribeConfig.getEgressDistanceMm());
-            assertEquals(MIN_DISTANCE_MM, subscribeConfig.getIngressDistanceMm());
+            assertEquals(MIN_DISTANCE_MM, subscribeConfig.getEgressDistanceMm());
+            assertEquals(MAX_DISTANCE_MM, subscribeConfig.getIngressDistanceMm());
         }
 
         discoverySession.updateSubscribe(subscribeConfig);
