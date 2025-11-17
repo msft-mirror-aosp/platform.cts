@@ -38,7 +38,6 @@ import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.mock;
 
-import android.annotation.RequiresApi;
 import android.net.MacAddress;
 import android.net.wifi.OuiKeyedData;
 import android.net.wifi.ScanResult;
@@ -1669,7 +1668,7 @@ public class WifiRttTest extends TestBase {
     }
 
     /** Test setProximityDetectionDeviceName API */
-    @RequiresApi(37)
+    @SdkSuppress(minSdkVersion = 37)
     @RequiresFlagsEnabled(Flags.FLAG_PROXIMITY_RANGING)
     @Test
     @ApiTest(
@@ -1709,7 +1708,7 @@ public class WifiRttTest extends TestBase {
      * <p>Verifies that a valid, locally-administered, unicast MAC address is returned when
      * Proximity Detection is supported.
      */
-    @RequiresApi(37)
+    @SdkSuppress(minSdkVersion = 37)
     @RequiresFlagsEnabled(Flags.FLAG_PROXIMITY_RANGING)
     @Test
     @ApiTest(
@@ -1741,7 +1740,7 @@ public class WifiRttTest extends TestBase {
     }
 
     /** Test that ProximityDetectionMacAddressCallback receives MacAddress changed callback. */
-    @RequiresApi(37)
+    @SdkSuppress(minSdkVersion = 37)
     @RequiresFlagsEnabled(Flags.FLAG_PROXIMITY_RANGING)
     @Test
     @ApiTest(
@@ -1783,7 +1782,7 @@ public class WifiRttTest extends TestBase {
      * Test Wi-Fi RTT continuous ranging operation. - Build Responder configuration - Start
      * continuous RTT operations - Stop continuous RTT
      */
-    @RequiresApi(37)
+    @SdkSuppress(minSdkVersion = 37)
     @RequiresFlagsEnabled(Flags.FLAG_PROXIMITY_RANGING)
     @Test
     @ApiTest(
