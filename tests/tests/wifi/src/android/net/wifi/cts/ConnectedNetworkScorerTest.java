@@ -545,6 +545,8 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
         public Integer stopSessionId;
         public WifiManager.ScoreUpdateObserver scoreUpdateObserver;
         public boolean isUserSelected;
+        public boolean isPreEvaluationActive;
+        public boolean isCarrierNetwork;
 
         TestConnectedNetworkScorer(CountDownLatch countDownLatch) {
             mCountDownLatch = countDownLatch;
@@ -607,11 +609,10 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
             synchronized (mCountDownLatch) {
                 startSessionId = sessionInfo.getSessionId();
                 isUserSelected = sessionInfo.isUserSelected();
-                // Build a WifiConnectedSessionInfo object
-                WifiConnectedSessionInfo.Builder sessionBuilder =
-                        new WifiConnectedSessionInfo.Builder(startSessionId.intValue())
-                                .setUserSelected(isUserSelected);
-                sessionBuilder.build();
+                if (sFeatureFlags.feedMoreDataToExternalScorer()) {
+                    isPreEvaluationActive = sessionInfo.isPreEvaluationActive();
+                    isCarrierNetwork = sessionInfo.isCarrierNetwork();
+                }
                 mCountDownLatch.countDown();
             }
         }
@@ -726,12 +727,21 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
             assertThat(connectedNetworkScorer.stopSessionId)
                     .isEqualTo(connectedNetworkScorer.startSessionId);
             // Verify that onStart() and onStop() set internal variables correctly.
-            connectedNetworkScorer.onStart(
-                    new WifiConnectedSessionInfo.Builder(100)
-                            .setUserSelected(false)
-                            .build());
+            WifiConnectedSessionInfo.Builder sessionBuilder =
+                    new WifiConnectedSessionInfo.Builder(100).setUserSelected(false);
+            if (sFeatureFlags.feedMoreDataToExternalScorer()) {
+                sessionBuilder.setPreEvaluationActive(false);
+                sessionBuilder.setCarrierNetwork(true);
+            }
+            connectedNetworkScorer.onStart(sessionBuilder.build());
             assertEquals(100, connectedNetworkScorer.startSessionId.intValue());
-            assertEquals(false, connectedNetworkScorer.isUserSelected);
+            if (connectedNetworkScorer instanceof TestConnectedNetworkScorerWithSessionInfo) {
+                assertEquals(false, connectedNetworkScorer.isUserSelected);
+                if (sFeatureFlags.feedMoreDataToExternalScorer()) {
+                    assertEquals(false, connectedNetworkScorer.isPreEvaluationActive);
+                    assertEquals(true, connectedNetworkScorer.isCarrierNetwork);
+                }
+            }
             connectedNetworkScorer.onStop(200);
             assertEquals(200, connectedNetworkScorer.stopSessionId.intValue());
         } finally {
