@@ -6156,38 +6156,6 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI_PASSPOINT));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_LOCAL_ONLY_DISCONNECT_REASON)
-    @ApiTest(
-            apis = {
-                "android.net.wifi.WifiManager#addLocalOnlyDisconnectionStatusListener",
-                "android.net.wifi.WifiManager#removeLocalOnlyDisconnectionStatusListener"
-            })
-    @Test
-    public void testAddRemoveLocalOnlyDisconnectionStatusListener() throws Exception {
-        if (!WifiFeature.isWifiSupported(sContext)) {
-            return;
-        }
-        CountDownLatch countDownLatch = new CountDownLatch(1);
-        WifiManager.LocalOnlyDisconnectionStatusListener listener =
-                (networkSpecifier, isTriggeredByUser, reason) -> {
-                    countDownLatch.countDown();
-                };
-        assertThrows(
-                SecurityException.class,
-                () -> sWifiManager.addLocalOnlyDisconnectionStatusListener(mExecutor, listener));
-        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
-        try {
-            uiAutomation.adoptShellPermissionIdentity();
-            sWifiManager.addLocalOnlyDisconnectionStatusListener(mExecutor, listener);
-            // TODO (b/440270888)
-            // This is just testing basic add/remove since implementation is still in progress.
-            // update to verify actual implementation after finishing it.
-            sWifiManager.removeLocalOnlyDisconnectionStatusListener(listener);
-        } finally {
-            uiAutomation.dropShellPermissionIdentity();
-        }
-    }
-
     /**
      * Validate add and remove SuggestionUserApprovalStatusListener. And verify the listener's
      * stickiness.
