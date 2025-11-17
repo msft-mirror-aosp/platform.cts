@@ -120,6 +120,9 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
 
     @After
     public void tearDown() {
+        // Finish all the existing transitions first. Otherwise, the subsequent force stop
+        // operations could unexpectedly trigger "self-kill recovery on display move".
+        mWmState.waitForAppTransitionIdleOnDisplay(getMainDisplayId());
         android.server.wm.third.Components.forceStopPackage();
         android.server.wm.second.Components.forceStopPackage();
         android.server.wm.app.Components.forceStopPackage();
