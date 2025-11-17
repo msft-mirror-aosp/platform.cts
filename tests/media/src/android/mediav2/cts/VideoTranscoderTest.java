@@ -22,6 +22,7 @@ import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.FIRST_SDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_B;
 import static android.mediav2.common.cts.CodecTestBase.checkFormatSupport;
+import static android.mediav2.common.cts.MuxerUtils.getMuxerFormatsListForMediaType;
 import static android.mediav2.common.cts.MuxerUtils.getTempFilePath;
 
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
@@ -33,8 +34,8 @@ import android.media.MediaFormat;
 import android.mediav2.common.cts.CodecEncoderSurfaceTestBase;
 import android.mediav2.common.cts.CodecEncoderTestBase;
 import android.mediav2.common.cts.CodecTestBase;
-import android.mediav2.common.cts.EncoderConfigParams;
 import android.mediav2.common.cts.CodecTestBase.SupportClass;
+import android.mediav2.common.cts.EncoderConfigParams;
 import android.mediav2.common.cts.OutputManager;
 
 import androidx.test.filters.LargeTest;
@@ -207,10 +208,7 @@ public class VideoTranscoderTest extends CodecEncoderSurfaceTestBase {
     @LargeTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
     public void testTranscode() throws IOException, InterruptedException {
-        boolean muxOutput = true;
-        if (mEncMediaType.equals(MediaFormat.MIMETYPE_VIDEO_AV1) && CodecTestBase.IS_BEFORE_U) {
-            muxOutput = false;
-        }
+        boolean muxOutput = getMuxerFormatsListForMediaType(mEncMediaType).length > 0;
         if (mEncMediaType.equals(MediaFormat.MIMETYPE_VIDEO_APV)) {
             assumeFalse(
                     "skip tonemap tests for APV encoders as they don't support 8-bit output",

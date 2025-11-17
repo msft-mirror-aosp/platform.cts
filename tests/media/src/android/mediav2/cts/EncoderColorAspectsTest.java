@@ -22,9 +22,10 @@ import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420F
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
 import static android.media.codec.Flags.apvSupport;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
-import static android.mediav2.common.cts.MuxerUtils.getMuxerFormatForMediaType;
+import static android.mediav2.common.cts.MuxerUtils.getMuxerFormatsListForMediaType;
 import static android.mediav2.common.cts.MuxerUtils.getTempFilePath;
 import static android.mediav2.common.cts.MuxerUtils.muxOutput;
+import static android.mediav2.common.cts.MuxerUtils.muxerFormatToString;
 
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
@@ -401,31 +402,39 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
             mCodec.stop();
             mCodec.release();
 
-            // TODO(b/361213055) muxOutput on all supported writers instead of just first.
+            MediaCodecList codecList = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
+            String decoder = codecList.findDecoderForFormat(outFormat);
+            assertNotNull("Device advertises support for encoding " + outFormat + " but not "
+                    + "decoding it. \n" + mTestConfig + mTestEnv, decoder);
+
+            // write the output with all muxers and verify if the muxed file contains
+            // color-aspects as expected
             if (mTestingContainerColorAspects) {
-                int muxerFormat = getMuxerFormatForMediaType(mMediaType);
-                String tmpPath = getTempFilePath((mActiveEncCfg.mInputBitDepth == 10) ? "10bit"
-                                                                                      : "");
-                mTmpFiles.add(tmpPath);
-                muxOutput(tmpPath, muxerFormat, outFormat, mOutputBuff.getBuffer(), mInfoList);
-
-                // verify if the muxed file contains color aspects as expected
-                MediaCodecList codecList = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
-                String decoder = codecList.findDecoderForFormat(outFormat);
-                assertNotNull("Device advertises support for encoding " + outFormat + " but not "
-                        + "decoding it. \n" + mTestConfig + mTestEnv, decoder);
-                CodecDecoderTestBase cdtb = new CodecDecoderTestBase(decoder, mMediaType, tmpPath,
-                        mAllTestParams);
-                cdtb.validateColorAspects(mActiveEncCfg.mRange, mActiveEncCfg.mStandard,
-                        mActiveEncCfg.mTransfer, false);
-
-                // if color metadata can also be signalled via elementary stream then verify if the
-                // elementary stream contains color aspects as expected
-                if (IGNORE_COLOR_BOX_LIST.contains(mMediaType)) {
+                int[] muxerFormats = getMuxerFormatsListForMediaType(mMediaType);
+                assertTrue("no muxers available for media Type : " + mMediaType + "\n" + mTestConfig
+                                + mTestEnv, muxerFormats.length > 0);
+                for (int muxFormat : muxerFormats) {
+                    String tmpPath =
+                            getTempFilePath((mActiveEncCfg.mInputBitDepth == 10) ? "10bit" : "");
+                    mTmpFiles.add(tmpPath);
+                    muxOutput(tmpPath, muxFormat, outFormat, mOutputBuff.getBuffer(), mInfoList);
+                    String testParamsExtended = String.format(
+                            "\nTest Parameters Extended :- [ muxer format: %s, file: %s ]",
+                            muxerFormatToString(muxFormat), tmpPath);
+                    CodecDecoderTestBase cdtb = new CodecDecoderTestBase(
+                            decoder, mMediaType, tmpPath, mAllTestParams + testParamsExtended);
+                    cdtb.setUpCodecDecoderTestBase();
+                    cdtb.setUpCodecTestBase();
                     cdtb.validateColorAspects(mActiveEncCfg.mRange, mActiveEncCfg.mStandard,
-                            mActiveEncCfg.mTransfer, true);
+                            mActiveEncCfg.mTransfer, false);
+
+                    // if color metadata can also be signalled via elementary stream then verify
+                    // if the elementary stream contains color aspects as expected
+                    if (IGNORE_COLOR_BOX_LIST.contains(mMediaType)) {
+                        cdtb.validateColorAspects(mActiveEncCfg.mRange, mActiveEncCfg.mStandard,
+                                mActiveEncCfg.mTransfer, true);
+                    }
                 }
-                new File(tmpPath).delete();
             }
         }
     }

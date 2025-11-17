@@ -16,6 +16,11 @@
 
 package android.mediav2.common.cts;
 
+import static android.mediav2.common.cts.MuxerUtils.getMuxerFormatsListForMediaType;
+import static android.mediav2.common.cts.MuxerUtils.getTempFilePath;
+import static android.mediav2.common.cts.MuxerUtils.muxOutput;
+import static android.mediav2.common.cts.MuxerUtils.muxerFormatToString;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -24,8 +29,10 @@ import android.media.MediaCodec;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
 
+import org.junit.After;
 import org.junit.Assume;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -43,10 +50,20 @@ public class HDREncoderTestBase extends CodecEncoderTestBase {
     private Map<Long, String> mHdrDynamicInfo;
     private ArrayList<Long> mTotalMetadataQueued;
     private Map<Long, String> mHdrDynamicInfoReceived;
+    private final ArrayList<String> mTmpFiles = new ArrayList<>();
 
     public HDREncoderTestBase(String encoderName, String mediaType,
             EncoderConfigParams encCfgParams, String allTestParams) {
         super(encoderName, mediaType, new EncoderConfigParams[]{encCfgParams}, allTestParams);
+    }
+
+    @After
+    public void tearDownHDREncoderTestBase() {
+        for (String tmpFile : mTmpFiles) {
+            File tmp = new File(tmpFile);
+            if (tmp.exists()) assertTrue("unable to delete file " + tmpFile, tmp.delete());
+        }
+        mTmpFiles.clear();
     }
 
     private String getMetadataForPts(Map<Long, String> dynamicInfoList, Long pts) {
@@ -130,7 +147,8 @@ public class HDREncoderTestBase extends CodecEncoderTestBase {
                 + mTestEnv, frameLimit <= maxNumFrames);
 
         mOutputBuff = new OutputManager();
-        mMuxOutput = true;
+        mSaveToMem = true;
+        mMuxOutput = false;
         mCodec = MediaCodec.createByCodecName(mCodecName);
         configureCodec(format, true, true, true);
         mCodec.start();
@@ -170,23 +188,38 @@ public class HDREncoderTestBase extends CodecEncoderTestBase {
             }
         }
 
-        // verify if the muxed file contains HDR metadata as expected
         MediaCodecList codecList = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
         String decoder = codecList.findDecoderForFormat(outFormat);
         assertNotNull("Device advertises support for encoding " + outFormat + " but not "
                 + "decoding it \n" +  mTestConfig + mTestEnv, decoder);
 
-        HDRDecoderTestBase decoderTest =
-                new HDRDecoderTestBase(decoder, mMediaType, mMuxedOutputFile, mAllTestParams);
-        if (FIRST_SDK_IS_AT_LEAST_V && mHdrDynamicInfoReceived != null) {
+        Map<Long, String> hdrDynamicInfoStream = mHdrDynamicInfo;
+        if (FIRST_SDK_IS_AT_LEAST_V && mHdrDynamicInfo != null) {
             mHdrDynamicInfoReceived.putAll(mHdrDynamicInfo);
+            hdrDynamicInfoStream = mHdrDynamicInfoReceived;
         }
-        decoderTest.validateHDRInfo(hdrStaticInfo, hdrStaticInfo,
-                FIRST_SDK_IS_AT_LEAST_V ? mHdrDynamicInfoReceived : mHdrDynamicInfo,
-                FIRST_SDK_IS_AT_LEAST_V ? mHdrDynamicInfoReceived : mHdrDynamicInfo);
-        if (HDR_INFO_IN_BITSTREAM_CODECS.contains(mMediaType)) {
-            decoderTest.validateHDRInfo(hdrStaticInfo, null,
-                    FIRST_SDK_IS_AT_LEAST_V ? mHdrDynamicInfoReceived : mHdrDynamicInfo, null);
+
+        // write the output with all muxers and verify if the muxed file contains HDR metadata as
+        // expected
+        int[] muxerFormats = getMuxerFormatsListForMediaType(mMediaType);
+        assertTrue("no muxers available for media Type : " + mMediaType + "\n" + mTestConfig
+                        + mTestEnv, muxerFormats.length > 0);
+        for (int muxFormat : muxerFormats) {
+            String tmpPath = getTempFilePath((mActiveEncCfg.mInputBitDepth == 10) ? "10bit" : "");
+            mTmpFiles.add(tmpPath);
+            muxOutput(tmpPath, muxFormat, outFormat, mOutputBuff.getBuffer(), mInfoList);
+            String testParamsExtended =
+                    String.format("\nTest Parameters Extended :- [ muxer format: %s, file: %s ]",
+                            muxerFormatToString(muxFormat), tmpPath);
+            HDRDecoderTestBase decoderTest = new HDRDecoderTestBase(
+                    decoder, mMediaType, tmpPath, mAllTestParams + testParamsExtended);
+            decoderTest.setUpCodecDecoderTestBase();
+            decoderTest.setUpCodecTestBase();
+            decoderTest.validateHDRInfo(hdrStaticInfo, hdrStaticInfo, hdrDynamicInfoStream,
+                    hdrDynamicInfoStream);
+            if (HDR_INFO_IN_BITSTREAM_CODECS.contains(mMediaType)) {
+                decoderTest.validateHDRInfo(hdrStaticInfo, null, hdrDynamicInfoStream, null);
+            }
         }
     }
 }
