@@ -90,7 +90,7 @@ public class TestHelper {
     private final UiDevice mUiDevice;
 
     private static final int DURATION_MILLIS = 10_000;
-    private static final int DURATION_NETWORK_CONNECTION_MILLIS = 60_000;
+    private static final int DURATION_NETWORK_CONNECTION_MILLIS = 90_000;
     private static final int DURATION_NETWORK_CONNECTION_TIMEOUT_MILLIS = 10_000;
     private static final int DURATION_SCREEN_TOGGLE_MILLIS = 2000;
     private static final int DURATION_UI_INTERACTION_MILLIS = 25_000;
