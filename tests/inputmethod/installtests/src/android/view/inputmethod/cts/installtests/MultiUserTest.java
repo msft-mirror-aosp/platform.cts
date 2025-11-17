@@ -54,7 +54,6 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
-import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.packages.CommonPackages;
 import com.android.bedstead.nene.packages.Package;
@@ -76,7 +75,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @LargeTest
-@RequireMultiUserSupport
 @RunWith(BedsteadJUnit4.class)
 public class MultiUserTest {
     private static final String TAG = "MultiUserTest";

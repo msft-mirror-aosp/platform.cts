@@ -37,7 +37,6 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.enterprise.policies.DisallowAddPrivateProfile;
 import com.android.bedstead.multiuser.annotations.EnsureHasNoPrivateProfile;
-import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport;
 import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
 import com.android.bedstead.multiuser.annotations.RequirePrivateSpaceSupported;
 import com.android.bedstead.nene.TestApis;
@@ -64,7 +63,6 @@ public final class PrivateProfileTest {
     @Test
     @EnsureHasDeviceOwner
     @RequireRunOnInitialUser
-    @RequireMultiUserSupport
     @EnsureHasNoPrivateProfile
     public void hasDeviceOwner_disallowAddPrivateProfileIsSet() {
         assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_ADD_PRIVATE_PROFILE)).isTrue();
@@ -78,7 +76,6 @@ public final class PrivateProfileTest {
     @EnsureHasNoDeviceOwner
     @EnsureHasNoPrivateProfile
     @RequireRunOnInitialUser
-    @RequireMultiUserSupport
     public void hasWorkProfile_disallowAddPrivateProfileIsNotSet() {
         assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_ADD_PRIVATE_PROFILE)).isFalse();
     }
@@ -91,7 +88,6 @@ public final class PrivateProfileTest {
     @EnsureHasNoDeviceOwner
     @EnsureHasNoPrivateProfile
     @RequireRunOnInitialUser
-    @RequireMultiUserSupport
     public void hasOrganizationOwnedWorkProfile_disallowAddPrivateProfileIsNotSet() {
         assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_ADD_PRIVATE_PROFILE)).isFalse();
     }
@@ -122,7 +118,6 @@ public final class PrivateProfileTest {
     @EnsureHasNoDeviceOwner
     @EnsureHasNoPrivateProfile
     @RequireRunOnInitialUser
-    @RequireMultiUserSupport
     @EnsureDoesNotHaveUserRestriction(DISALLOW_ADD_PRIVATE_PROFILE)
     public void addPrivateProfile_disallowAddPrivateProfileIsNotSet_addsPrivateProfile() {
         try (UserReference privateProfile = createPrivateProfile()) {
@@ -138,7 +133,6 @@ public final class PrivateProfileTest {
     @EnsureHasNoDeviceOwner
     @EnsureHasNoPrivateProfile
     @RequireRunOnInitialUser
-    @RequireMultiUserSupport
     @EnsureHasUserRestriction(DISALLOW_ADD_PRIVATE_PROFILE)
     public void addPrivateProfile_disallowAddPrivateProfileIsSet_throwsException() {
         assertThrows(NeneException.class, () -> createPrivateProfile());

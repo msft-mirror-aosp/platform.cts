@@ -33,7 +33,6 @@ import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
     AnnotationTarget.CLASS
 )
 @Retention(AnnotationRetention.RUNTIME)
-@RequireMultiUserSupport
 @UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
 annotation class EnsureOnlySpecifiedUsersExist (
     /**
