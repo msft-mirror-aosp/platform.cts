@@ -328,6 +328,7 @@ package android.app {
   }
 
   public class Notification implements android.os.Parcelable {
+    method @FlaggedApi("android.app.api_notification_chip") public static void addFieldsFromContext(@NonNull android.content.pm.ApplicationInfo, @NonNull android.app.Notification);
     method public boolean isUserInitiatedJob();
     method public boolean shouldShowForegroundImmediately();
     field public static final String EXTRA_MEDIA_REMOTE_DEVICE = "android.mediaRemoteDevice";
@@ -341,8 +342,14 @@ package android.app {
     field public static final int DEFAULT_MIN_FRACTION_DIGITS = 0; // 0x0
   }
 
+  @FlaggedApi("android.app.api_projected_extender") public static final class Notification.ProjectedExtender implements android.app.Notification.Extender {
+    field public static final String EXTRA_PROJECTED_EXTENDER = "android.projected.EXTENSIONS";
+    field public static final String KEY_CONTENT_INTENT = "content_intent";
+  }
+
   public final class NotificationChannel implements android.os.Parcelable {
     method @NonNull public android.app.NotificationChannel copy();
+    method @FlaggedApi("android.app.nm_contextual_display") public boolean isBundleChannel();
     method public boolean isImportanceLockedByCriticalDeviceFunction();
     method public void lockFields(int);
     method public void setDeleted(boolean);
@@ -414,7 +421,7 @@ package android.app {
     method public void clickNotification(@Nullable String, int, int, boolean);
     method @RequiresPermission(android.Manifest.permission.STATUS_BAR) public void collapsePanels();
     method public void expandNotificationsPanel();
-    method @FlaggedApi("com.android.server.telecom.flags.resolve_hidden_dependencies_two") @DrawableRes @RequiresPermission(android.Manifest.permission.STATUS_BAR) public int getIcon(@NonNull String);
+    method @FlaggedApi("android.telecom.flags.release_icon_as_api") @DrawableRes @RequiresPermission(android.Manifest.permission.STATUS_BAR) public int getIcon(@NonNull String);
     method @RequiresPermission(android.Manifest.permission.STATUS_BAR) public int getLastSystemKey();
     method @RequiresPermission(android.Manifest.permission.STATUS_BAR) public void handleSystemKey(@NonNull android.view.KeyEvent);
     method public void sendNotificationFeedback(@Nullable String, @Nullable android.os.Bundle);
@@ -923,6 +930,7 @@ package android.companion {
     method @NonNull public android.companion.AssociationInfo.Builder setSelfManaged(boolean);
     method @NonNull public android.companion.AssociationInfo.Builder setSystemDataSyncFlags(int);
     method @NonNull public android.companion.AssociationInfo.Builder setTimeApproved(long);
+    method @FlaggedApi("android.companion.enable_data_sync") @NonNull public android.companion.AssociationInfo.Builder setTimeMetadataSent(long);
     method @NonNull public android.companion.AssociationInfo.Builder setTransportFlags(int);
   }
 
@@ -960,7 +968,12 @@ package android.companion.virtual {
   }
 
   public final class VirtualDeviceParams implements android.os.Parcelable {
+    method public boolean isLocalDeviceOnly();
     field public static final int DEVICE_POLICY_INVALID = -1; // 0xffffffff
+  }
+
+  public static final class VirtualDeviceParams.Builder {
+    method @NonNull public android.companion.virtual.VirtualDeviceParams.Builder setLocalDeviceOnly(boolean);
   }
 
 }
@@ -1282,7 +1295,7 @@ package android.content.pm {
   }
 
   @FlaggedApi("android.permission.flags.ppd_manifest_enabled") public final class UsesPermissionPurposeInfo implements android.os.Parcelable {
-    ctor @FlaggedApi("android.permission.flags.ppd_manifest_enabled") public UsesPermissionPurposeInfo(@NonNull String, @NonNull java.util.Set<java.lang.String>);
+    ctor @FlaggedApi("android.permission.flags.ppd_manifest_enabled") public UsesPermissionPurposeInfo(@NonNull String, @NonNull java.util.Set<java.lang.String>, @StringRes int);
   }
 
   @FlaggedApi("android.permission.flags.ppd_manifest_enabled") public final class ValidGeneralPurposeInfo implements android.os.Parcelable {
@@ -1599,15 +1612,18 @@ package android.graphics.fonts {
   public class FontManager {
     method @NonNull @RequiresPermission(android.Manifest.permission.UPDATE_FONTS) public android.text.FontConfig getFontConfig();
     method @FlaggedApi("com.android.text.flags.insert_font_family") @RequiresPermission(android.Manifest.permission.UPDATE_FONTS) public int insertFontFamilyBefore(@NonNull android.graphics.fonts.FontFamilyUpdateRequest, @NonNull String, @IntRange(from=0) int);
+    method @FlaggedApi("com.android.text.flags.insert_font_family") @RequiresPermission(android.Manifest.permission.UPDATE_FONTS) public int updateFontFallbacks(@NonNull java.util.List<android.graphics.fonts.FallbackFontUpdateRequest>);
     method @RequiresPermission(android.Manifest.permission.UPDATE_FONTS) public int updateFontFamily(@NonNull android.graphics.fonts.FontFamilyUpdateRequest, @IntRange(from=0) int);
     field public static final int RESULT_ERROR_DOWNGRADING = -5; // 0xfffffffb
     field public static final int RESULT_ERROR_FAILED_TO_WRITE_FONT_FILE = -1; // 0xffffffff
     field public static final int RESULT_ERROR_FAILED_UPDATE_CONFIG = -6; // 0xfffffffa
     field public static final int RESULT_ERROR_FONT_NOT_FOUND = -9; // 0xfffffff7
     field public static final int RESULT_ERROR_FONT_UPDATER_DISABLED = -7; // 0xfffffff9
+    field @FlaggedApi("com.android.text.flags.insert_font_family") public static final int RESULT_ERROR_INVALID_ARGUMENT = -11; // 0xfffffff5
     field @FlaggedApi("com.android.text.flags.insert_font_family") public static final int RESULT_ERROR_INVALID_FONT_FAMILY_NAME_TO_INSERT_BEFORE = -10; // 0xfffffff6
     field public static final int RESULT_ERROR_INVALID_FONT_FILE = -3; // 0xfffffffd
     field public static final int RESULT_ERROR_INVALID_FONT_NAME = -4; // 0xfffffffc
+    field @FlaggedApi("com.android.text.flags.insert_font_family") public static final int RESULT_ERROR_INVALID_PRIORITY = -12; // 0xfffffff4
     field public static final int RESULT_ERROR_VERIFICATION_FAILURE = -2; // 0xfffffffe
     field public static final int RESULT_ERROR_VERSION_MISMATCH = -8; // 0xfffffff8
     field public static final int RESULT_SUCCESS = 0; // 0x0
@@ -1863,6 +1879,7 @@ package android.hardware.display {
 
   public static interface DisplayManager.DisplayListener {
     method public default void onDisplayConnected(int);
+    method @FlaggedApi("com.android.server.display.feature.flags.display_listener_snapshot") public default void onDisplayConnectedSnapshot(@NonNull int[]);
     method public default void onDisplayDisconnected(int);
   }
 
@@ -1926,16 +1943,20 @@ package android.hardware.input {
   public final class InputManager {
     method @FlaggedApi("com.android.input.flags.device_associations") @RequiresPermission("android.permission.ASSOCIATE_INPUT_DEVICE_TO_DISPLAY") public void addUniqueIdAssociationByDescriptor(@NonNull String, @NonNull String);
     method @RequiresPermission("android.permission.ASSOCIATE_INPUT_DEVICE_TO_DISPLAY") public void addUniqueIdAssociationByPort(@NonNull String, @NonNull String);
-    method @FlaggedApi("com.android.hardware.input.controller_remapping") @RequiresPermission("android.permission.CONTROLLER_REMAPPING") public void clearAllControllerButtonRemapping(@NonNull android.hardware.input.InputDeviceIdentifier);
+    method @FlaggedApi("com.android.hardware.input.controller_remapping") @RequiresPermission("android.permission.CONTROLLER_REMAPPING") public void clearAllControllerAxisRemappings(@NonNull android.hardware.input.InputDeviceIdentifier);
+    method @FlaggedApi("com.android.hardware.input.controller_remapping") @RequiresPermission("android.permission.CONTROLLER_REMAPPING") public void clearAllControllerButtonRemappings(@NonNull android.hardware.input.InputDeviceIdentifier);
     method @RequiresPermission(android.Manifest.permission.REMAP_MODIFIER_KEYS) public void clearAllModifierKeyRemappings();
-    method @FlaggedApi("com.android.hardware.input.controller_remapping") @NonNull @RequiresPermission("android.permission.CONTROLLER_REMAPPING") public java.util.Map<java.lang.Integer,java.lang.Integer> getControllerButtonRemapping(@NonNull android.hardware.input.InputDeviceIdentifier);
+    method @FlaggedApi("com.android.hardware.input.controller_remapping") @NonNull @RequiresPermission("android.permission.CONTROLLER_REMAPPING") public java.util.Map<java.lang.Integer,java.lang.Integer> getControllerAxisRemappings(@NonNull android.hardware.input.InputDeviceIdentifier);
+    method @FlaggedApi("com.android.hardware.input.controller_remapping") @NonNull @RequiresPermission("android.permission.CONTROLLER_REMAPPING") public java.util.Map<java.lang.Integer,java.lang.Integer> getControllerButtonRemappings(@NonNull android.hardware.input.InputDeviceIdentifier);
     method @Nullable @RequiresPermission(android.Manifest.permission.INJECT_EVENTS) public android.graphics.PointF getCursorPosition(int);
     method @NonNull public java.util.List<java.lang.String> getKeyboardLayoutDescriptors();
     method @NonNull public String getKeyboardLayoutTypeForLayoutDescriptor(@NonNull String);
     method @NonNull @RequiresPermission(android.Manifest.permission.REMAP_MODIFIER_KEYS) public java.util.Map<java.lang.Integer,java.lang.Integer> getModifierKeyRemapping();
     method public int getMousePointerSpeed();
+    method @FlaggedApi("com.android.hardware.input.controller_remapping") @RequiresPermission("android.permission.CONTROLLER_REMAPPING") public void remapControllerAxis(@NonNull android.hardware.input.InputDeviceIdentifier, int, int);
     method @FlaggedApi("com.android.hardware.input.controller_remapping") @RequiresPermission("android.permission.CONTROLLER_REMAPPING") public void remapControllerButton(@NonNull android.hardware.input.InputDeviceIdentifier, int, int);
     method @RequiresPermission(android.Manifest.permission.REMAP_MODIFIER_KEYS) public void remapModifierKey(int, int);
+    method @FlaggedApi("com.android.hardware.input.controller_remapping") @RequiresPermission("android.permission.CONTROLLER_REMAPPING") public void removeControllerAxisRemapping(@NonNull android.hardware.input.InputDeviceIdentifier, int);
     method @FlaggedApi("com.android.hardware.input.controller_remapping") @RequiresPermission("android.permission.CONTROLLER_REMAPPING") public void removeControllerButtonRemapping(@NonNull android.hardware.input.InputDeviceIdentifier, int);
     method @FlaggedApi("com.android.input.flags.device_associations") @RequiresPermission("android.permission.ASSOCIATE_INPUT_DEVICE_TO_DISPLAY") public void removeUniqueIdAssociationByDescriptor(@NonNull String);
     method @RequiresPermission("android.permission.ASSOCIATE_INPUT_DEVICE_TO_DISPLAY") public void removeUniqueIdAssociationByPort(@NonNull String);
@@ -1976,6 +1997,7 @@ package android.hardware.lights {
   }
 
   public abstract class LightsManager {
+    method @FlaggedApi("com.android.server.lights.feature.flags.enable_light_animations") @Nullable public abstract android.hardware.lights.ColorSequence getLightSequence(@NonNull android.hardware.lights.Light);
     method @NonNull public abstract android.hardware.lights.LightsManager.LightsSession openSession(int);
   }
 
@@ -1987,6 +2009,15 @@ package android.hardware.location {
     method @NonNull @RequiresPermission(android.Manifest.permission.ACCESS_CONTEXT_HUB) public boolean disableTestMode();
     method @NonNull @RequiresPermission(android.Manifest.permission.ACCESS_CONTEXT_HUB) public boolean enableTestMode();
     method @NonNull @RequiresPermission(android.Manifest.permission.ACCESS_CONTEXT_HUB) public long[] getPreloadedNanoAppIds(@NonNull android.hardware.location.ContextHubInfo);
+  }
+
+}
+
+package android.hardware.serial {
+
+  @FlaggedApi("android.hardware.serial.flags.enable_wired_serial_api") public final class SerialManager {
+    method @RequiresPermission("android.permission.MANAGE_SERIAL_PORTS") public void grantSerialPortAccess(@NonNull String, int, @Nullable android.os.IBinder);
+    method @RequiresPermission("android.permission.MANAGE_SERIAL_PORTS") public void revokeSerialPortAccess(@NonNull String, int, @Nullable android.os.IBinder);
   }
 
 }
@@ -2105,6 +2136,8 @@ package android.media {
     method public static int channelCountFromOutChannelMask(int);
     method public static int getBytesPerSample(int);
     method public static boolean isEncodingLinearPcm(int);
+    field @FlaggedApi("android.os.vibrator.haptic_pcm_generation") public static final int CHANNEL_OUT_HAPTIC_A = 536870912; // 0x20000000
+    field @FlaggedApi("android.os.vibrator.haptic_pcm_generation") public static final int CHANNEL_OUT_HAPTIC_B = 268435456; // 0x10000000
   }
 
   public final class AudioHalVersionInfo implements java.lang.Comparable<android.media.AudioHalVersionInfo> android.os.Parcelable {
@@ -3434,6 +3467,20 @@ package android.service.personalcontext.hint {
     method @NonNull public android.os.Bundle toBundle();
   }
 
+  @FlaggedApi("android.service.personalcontext.enable_personal_context_service") public final class ContextHintWithSignature implements android.os.Parcelable {
+    method public boolean isSignatureValid(@NonNull javax.crypto.spec.SecretKeySpec) throws java.security.GeneralSecurityException;
+    field public static final String HMAC_ALGORITHM = "HmacSHA256";
+  }
+
+  public static final class ContextHintWithSignature.Builder {
+    ctor public ContextHintWithSignature.Builder(@NonNull android.service.personalcontext.hint.ContextHint, @NonNull javax.crypto.spec.SecretKeySpec);
+    method @NonNull public android.service.personalcontext.hint.ContextHintWithSignature.Builder addAttributionHint(@NonNull android.service.personalcontext.hint.ContextHintWithSignature);
+    method @NonNull public android.service.personalcontext.hint.ContextHintWithSignature.Builder addAttributionHints(@NonNull java.util.Collection<android.service.personalcontext.hint.ContextHintWithSignature>);
+    method @NonNull public android.service.personalcontext.hint.ContextHintWithSignature build() throws java.security.GeneralSecurityException;
+    method @NonNull public android.service.personalcontext.hint.ContextHintWithSignature.Builder setOriginatingComponent(@Nullable android.content.ComponentName);
+    method @NonNull public android.service.personalcontext.hint.ContextHintWithSignature.Builder setRenderToken(@Nullable android.service.personalcontext.RenderToken);
+  }
+
 }
 
 package android.service.personalcontext.insight {
@@ -3735,6 +3782,7 @@ package android.text {
     method @NonNull public java.util.List<android.text.FontConfig.Font> getFontList();
     method @NonNull public android.os.LocaleList getLocaleList();
     method @Deprecated @Nullable public String getName();
+    method @FlaggedApi("com.android.text.flags.insert_font_family") public int getPriority();
     method public int getVariant();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
     field @NonNull public static final android.os.Parcelable.Creator<android.text.FontConfig.FontFamily> CREATOR;
@@ -4287,6 +4335,8 @@ package android.view.inputmethod {
 
   public final class InputMethodManager {
     method @RequiresPermission(android.Manifest.permission.TEST_INPUT_METHOD) public void addVirtualStylusIdForTestSession();
+    method @RequiresPermission(allOf={android.Manifest.permission.WRITE_SECURE_SETTINGS, android.Manifest.permission.TEST_INPUT_METHOD, android.Manifest.permission.INTERACT_ACROSS_USERS_FULL}, conditional=true) public boolean disableInputMethodForTesting(@NonNull String, int);
+    method @RequiresPermission(allOf={android.Manifest.permission.WRITE_SECURE_SETTINGS, android.Manifest.permission.TEST_INPUT_METHOD, android.Manifest.permission.INTERACT_ACROSS_USERS_FULL}, conditional=true) public boolean enableInputMethodForTesting(@NonNull String, int);
     method @RequiresPermission(android.Manifest.permission.TEST_INPUT_METHOD) public void finishTrackingPendingRequests();
     method public int getDisplayId();
     method @NonNull @RequiresPermission(value=android.Manifest.permission.INTERACT_ACROSS_USERS_FULL, conditional=true) public java.util.List<android.view.inputmethod.InputMethodInfo> getEnabledInputMethodListAsUser(@NonNull android.os.UserHandle);
@@ -4298,7 +4348,9 @@ package android.view.inputmethod {
     method public boolean isImeBoundForTesting();
     method @RequiresPermission(android.Manifest.permission.TEST_INPUT_METHOD) public boolean isInputMethodPickerShown();
     method @NonNull @RequiresPermission(value=android.Manifest.permission.INTERACT_ACROSS_USERS_FULL, conditional=true) public boolean isStylusHandwritingAvailableAsUser(@NonNull android.os.UserHandle);
+    method @RequiresPermission(allOf={android.Manifest.permission.WRITE_SECURE_SETTINGS, android.Manifest.permission.TEST_INPUT_METHOD, android.Manifest.permission.INTERACT_ACROSS_USERS_FULL}, conditional=true) public void resetInputMethodsForTesting(int);
     method @FlaggedApi("android.view.inputmethod.enforce_device_policy_ime") @RequiresPermission(android.Manifest.permission.TEST_INPUT_METHOD) public void setAllowedImesByPolicyForTest(@Nullable java.util.List<java.lang.String>);
+    method @RequiresPermission(allOf={android.Manifest.permission.WRITE_SECURE_SETTINGS, android.Manifest.permission.TEST_INPUT_METHOD, android.Manifest.permission.INTERACT_ACROSS_USERS_FULL}, conditional=true) public boolean setInputMethodForTesting(@NonNull String, int);
     method @RequiresPermission(android.Manifest.permission.TEST_INPUT_METHOD) public void setStylusWindowIdleTimeoutForTest(long);
     method @RequiresPermission(android.Manifest.permission.TEST_INPUT_METHOD) public boolean shouldShowImeSwitcherButtonForTest();
     method @RequiresPermission(android.Manifest.permission.TEST_INPUT_METHOD) public void waitUntilNoPendingRequests(long);
