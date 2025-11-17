@@ -36,7 +36,7 @@ import com.android.bedstead.multiuser.annotations.RequireGuestUserIsEphemeral
 import com.android.bedstead.multiuser.annotations.RequireGuestUserIsNotEphemeral
 import com.android.bedstead.multiuser.annotations.RequireHasMainUser
 import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode
-import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport
+import com.android.bedstead.multiuser.annotations.RequireSwitchableUserSupport
 import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode
 import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsers
 import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsersOnDefaultDisplay
@@ -70,7 +70,7 @@ import org.junit.runner.RunWith
 class MultiUserAnnotationExecutorTest {
 
     @EnsureCanAddUser(value = SECONDARY_USER_TYPE_NAME, number = 2)
-    @RequireMultiUserSupport
+    @RequireSwitchableUserSupport
     @Test
     fun ensureCanAddSecondaryUser_canAddUsers() {
         users().createUser().create().use { _ ->

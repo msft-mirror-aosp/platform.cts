@@ -26,7 +26,7 @@ import com.android.bedstead.multiuser.annotations.EnsureHasCloneProfile
 import com.android.bedstead.multiuser.annotations.EnsureHasNoCloneProfile
 import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
 import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode
-import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport
+import com.android.bedstead.multiuser.annotations.RequireSwitchableUserSupport
 import com.android.bedstead.multiuser.annotations.RequireRunNotOnSecondaryUser
 import com.android.bedstead.multiuser.annotations.RequireRunOnPrimaryUser
 import com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser
@@ -91,7 +91,7 @@ class UsersTest {
     }
 
     @Test
-    @RequireMultiUserSupport
+    @RequireSwitchableUserSupport
     @EnsureCanAddUser(value = UserType.SECONDARY_USER_TYPE_NAME, number = 2)
     fun all_userAddedSinceLastCallToUsers_containsNewUser() {
         val user = TestApis.users().createUser().create()

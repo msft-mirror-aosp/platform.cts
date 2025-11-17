@@ -52,7 +52,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport;
+import com.android.bedstead.multiuser.annotations.RequireSwitchableUserSupport;
 import com.android.media.flags.Flags;
 
 import org.junit.After;
@@ -215,7 +215,7 @@ public class MediaRouter2DeviceTest {
         assertThat(onUnbindConditionVariable.block(TIMEOUT_MS)).isTrue();
     }
 
-    @RequireMultiUserSupport
+    @RequireSwitchableUserSupport
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CROSS_USER_ROUTING_IN_MEDIA_ROUTER2)
     @Test
     public void getInstance_acrossUsers_withInteractAcrossUsersFull_returnsInstance() {
@@ -242,7 +242,7 @@ public class MediaRouter2DeviceTest {
                 .isNotNull();
     }
 
-    @RequireMultiUserSupport
+    @RequireSwitchableUserSupport
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CROSS_USER_ROUTING_IN_MEDIA_ROUTER2)
     @Test
     public void getInstance_acrossUsers_withoutInteractAcrossUsersFull_throwsSecurityException() {
@@ -262,7 +262,7 @@ public class MediaRouter2DeviceTest {
                                 UserHandle.of(targetUserId)));
     }
 
-    @RequireMultiUserSupport
+    @RequireSwitchableUserSupport
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CROSS_USER_ROUTING_IN_MEDIA_ROUTER2)
     @SuppressLint("MissingPermission")
     @Test
