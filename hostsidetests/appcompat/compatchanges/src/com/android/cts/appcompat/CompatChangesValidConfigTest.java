@@ -110,6 +110,7 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
                     "OVERRIDE_ENABLE_COMPAT_IGNORE_REQUESTED_ORIENTATION",
                     "OVERRIDE_ENABLE_EXPECTED_PRSENTATION_TIME",
                     "OVERRIDE_ENABLE_INSETS_DECOUPLED_CONFIGURATION",
+                    "OVERRIDE_ENABLE_VIRTUAL_GAMEPAD",
                     "OVERRIDE_EXCLUDE_CAPTION_INSETS_FROM_APP_BOUNDS",
                     "OVERRIDE_HANDLE_ABANDONED_JOBS",
                     "OVERRIDE_LANDSCAPE_ORIENTATION_TO_REVERSE_LANDSCAPE",
