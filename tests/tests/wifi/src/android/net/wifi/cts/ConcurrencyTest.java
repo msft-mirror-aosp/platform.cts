@@ -33,7 +33,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
-import android.annotation.RequiresApi;
 import android.app.UiAutomation;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -1801,7 +1800,7 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
                 "android.net.wifi.p2p.WifiP2pConnectionInfo#getTxNss",
                 "android.net.wifi.p2p.WifiP2pConnectionInfo#getRxNss"
             })
-    @RequiresApi(37)
+    @SdkSuppress(minSdkVersion = 37)
     @RequiresFlagsEnabled(Flags.FLAG_WIFI_P2P_CONNECTION_INFO)
     @Test
     public void testGetWifiP2pGroupClientConnectionInfo() {
