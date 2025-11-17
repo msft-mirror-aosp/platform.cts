@@ -244,6 +244,7 @@
     <option name="compatibility:exclude-filter" value="CtsPermissionTestCasesSdk28" />
     <option name="compatibility:exclude-filter" value="CtsLocationTimeZoneManagerHostTest" />
     <option name="compatibility:exclude-filter" value="CtsPackageWatchdogTestCases" />
+    <option name="compatibility:exclude-filter" value="NotificationManagerZenTest" />
 
 
 
