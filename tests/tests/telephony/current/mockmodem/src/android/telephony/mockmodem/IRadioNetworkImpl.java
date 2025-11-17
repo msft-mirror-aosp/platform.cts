@@ -458,7 +458,11 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
         // TODO: support accessTechnologySpecificInfo
         dataRegResponse.accessTechnologySpecificInfo =
                 android.hardware.radio.network.AccessTechnologySpecificInfo.noinit(true);
-        dataRegResponse.isNonTerrestrialNetwork = mIsNonTerrestrialNetwork.get();
+        try {
+            dataRegResponse.isNonTerrestrialNetwork = mIsNonTerrestrialNetwork.get();
+        } catch (NoSuchFieldError e) {
+            Log.e(mTag, "Failed to set isNonTerrestrialNetwork" + e);
+        }
 
         RadioResponseInfo rsp = mService.makeSolRsp(serial);
         try {
