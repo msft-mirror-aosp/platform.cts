@@ -516,9 +516,9 @@ public class CtsWindowInfoUtils {
                     boolean waitForExpectedOrder() throws InterruptedException {
                         var ignored = mLatch.await(timeout.toMillis(), TimeUnit.MILLISECONDS);
                         synchronized (this) {
-                            if (!mSatisfied) {
-                                dumpWindows(TAG, "(waitForNthWindowFromTop)", mLastWindowInfos);
-                            }
+                            final String message =
+                                    "(waitForNthWindowFromTop), mSatisfied=" + mSatisfied;
+                            dumpWindows(TAG, message, mLastWindowInfos);
                             return mSatisfied;
                         }
                     }
@@ -983,15 +983,13 @@ public class CtsWindowInfoUtils {
     }
 
     /**
-     * Assert the condition and dump the window states if the condition fails.
+     * Assert the condition and dump the window states as well as the condition.
      */
     public static void assertAndDumpWindowState(String tag, String message, boolean condition)
             throws InterruptedException {
-        if (!condition) {
-            dumpWindowsOnScreen(tag, message);
-        }
-
-        assertTrue(message, condition);
+        final String messageWithCondition = message + ", condition=" + condition;
+        dumpWindowsOnScreen(tag, messageWithCondition);
+        assertTrue(messageWithCondition, condition);
     }
 
     /**
