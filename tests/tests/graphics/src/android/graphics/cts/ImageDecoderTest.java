@@ -2852,6 +2852,28 @@ public class ImageDecoderTest {
         ImageDecoder.decodeDrawable(src);
     }
 
+    @Test
+    public void testDng_b456471487() throws IOException {
+        AssetManager assets = getResources().getAssets();
+        Bitmap result =
+                ImageDecoder.decodeBitmap(
+                        ImageDecoder.createSource(assets, "dng-RefMapArea16-ubsan.png"));
+        assertNotNull(result);
+        assertEquals(600, result.getWidth());
+        assertEquals(338, result.getHeight());
+    }
+
+    @Test
+    public void testDng_b456471290() throws IOException {
+        AssetManager assets = getResources().getAssets();
+        Bitmap result =
+                ImageDecoder.decodeBitmap(
+                        ImageDecoder.createSource(assets, "dng_opcode_MapTable_ProcessArea.png"));
+        assertNotNull(result);
+        assertEquals(600, result.getWidth());
+        assertEquals(338, result.getHeight());
+    }
+
     private static boolean has10BitHEVCDecoder() {
         MediaFormat format = new MediaFormat();
         format.setString(MediaFormat.KEY_MIME, "video/hevc");
