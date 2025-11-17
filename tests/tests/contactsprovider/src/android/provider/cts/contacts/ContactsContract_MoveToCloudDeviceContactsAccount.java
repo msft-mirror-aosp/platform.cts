@@ -261,7 +261,6 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
     @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testGetNumberOfMovableLocalContactsWithNoLocalContacts() throws Exception {
         if (shouldSkip()) {
@@ -369,7 +368,6 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
     @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG,
             FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
     public void testGetNumberOfMovableSimContactsWithSimContacts() throws Exception {
@@ -392,8 +390,7 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED,
-            FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
+    @RequiresFlagsEnabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testGetNumberOfMovableSimContactsWithSimContacts_flagsOff() throws Exception {
         if (shouldSkip()) {
             return;
@@ -408,7 +405,6 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
     @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG,
             FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
     public void testMoveSimContactsToCloudDefaultAccount() throws Exception {
@@ -436,8 +432,7 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED,
-            FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
+    @RequiresFlagsEnabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testMoveSimContactsToCloudDefaultAccount_flagsOff() throws Exception {
         if (shouldSkip()) {
             return;
@@ -478,7 +473,6 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
     @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testMoveLocalContactsToLocalDefaultAccount() throws Exception {
         if (shouldSkip()) {
@@ -489,7 +483,6 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
     @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testMoveLocalContactsToNotSetDefaultAccount() throws Exception {
         if (shouldSkip()) {
@@ -500,7 +493,6 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
     @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testMoveLocalContactsToSimDefaultAccount() throws Exception {
         if (shouldSkip()) {
