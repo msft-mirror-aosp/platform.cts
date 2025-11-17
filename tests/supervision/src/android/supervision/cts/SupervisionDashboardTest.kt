@@ -36,6 +36,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.annotations.RequireNotAutomotive
 import com.android.bedstead.harrier.annotations.RequireNotTv
 import com.android.bedstead.harrier.annotations.RequireNotWatch
+import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.compatibility.common.util.ApiTest
@@ -72,6 +73,9 @@ class SupervisionDashboardTest : BaseSupervisionTest() {
     @RequireNotAutomotive(reason = "Supervision Settings Activity not present on automotive")
     @RequireNotTv(reason = "Redirected to a different activity in TV")
     @RequireNotWatch(reason = "Redirected to a different activity in watch")
+    @RequireNotHeadlessSystemUserMode(
+        reason = "b/434645293 - SYSTEM_SUPERVISION role qualification bypass does not support HSUM"
+    )
     @EnsureHasPermission(BYPASS_ROLE_QUALIFICATION, MANAGE_ROLE_HOLDERS, OBSERVE_ROLE_HOLDERS)
     fun supervisionAppSettingsIntent_withSupervisionRoleHeld() {
         withSupervisionRoleHeld {
