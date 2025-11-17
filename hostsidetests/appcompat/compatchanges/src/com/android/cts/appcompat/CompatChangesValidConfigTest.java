@@ -58,7 +58,6 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
                     "DEFAULT_RESCIND_BAL_FG_PRIVILEGES_BOUND_SERVICE",
                     "DEFAULT_RESCIND_BAL_PRIVILEGES_FROM_PENDING_INTENT_SENDER",
                     "DEFER_BOOT_COMPLETED_BROADCAST_CHANGE_ID",
-                    "DEPRECATE_USES_CLEARTEXT_TRAFFIC",
                     "DOWNSCALED",
                     "DOWNSCALED_INVERSE",
                     "DOWNSCALE_30",
