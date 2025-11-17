@@ -17,6 +17,7 @@
 package android.widget.cts;
 
 import static android.content.pm.ApplicationInfo.PRIVATE_FLAG_EXT_ENABLE_ON_BACK_INVOKED_CALLBACK;
+import static android.view.accessibility.AccessibilityNodeInfo.EXTRA_DATA_RENDERING_INFO_KEY;
 import static android.view.accessibility.Flags.FLAG_REQUEST_RECTANGLE_WITH_SOURCE;
 
 import static com.android.text.flags.Flags.FLAG_FIX_NULL_TYPEFACE_BOLDING;
@@ -144,6 +145,7 @@ import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo;
 import android.view.inputmethod.BaseInputConnection;
 import android.view.inputmethod.CompletionInfo;
 import android.view.inputmethod.CorrectionInfo;
@@ -7990,6 +7992,80 @@ public class TextViewTest {
                 info.isLongClickable());
         assertTrue("info should have ACTION_LONG_CLICK",
                 actionList.contains(AccessibilityNodeInfo.AccessibilityAction.ACTION_LONG_CLICK));
+    }
+
+    @UiThreadTest
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityNodeInfo#getExtraRenderingInfo",
+                "android.view.accessibility.AccessibilityNodeInfo#getAvailableExtraData",
+                "android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo#getLayoutSize",
+                "android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo#getTextSizeInPx",
+                "android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo#getTextSizeUnit",
+                "android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo#getTextColor",
+                "android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo#getHintTextColor",
+                "android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo#getLinkTextColor",
+                "android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo#getBackgroundColor",
+                "android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo#getAlpha"
+            })
+    @RequiresFlagsEnabled(
+            android.view.accessibility.Flags.FLAG_A11Y_EXTRA_RENDERING_INFO_COLOR_ADDITIONS)
+    @Test
+    public void testAddExtraDataToAccessibilityNodeInfo_populatesExtraRenderingInfo() {
+        final TextView textView = createTextView(mActivity);
+        textView.setText("Hello World");
+        textView.setLayoutParams(new LayoutParams(100, 200));
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+        textView.setTextColor(Color.RED);
+        textView.setHintTextColor(Color.BLUE);
+        textView.setLinkTextColor(Color.GREEN);
+        textView.setBackgroundColor(Color.YELLOW);
+        textView.setAlpha(0.5f);
+
+        // ExtraRenderingInfo is initially null but available.
+        final AccessibilityNodeInfo info = textView.createAccessibilityNodeInfo();
+        assertThat(info.getAvailableExtraData()).contains(EXTRA_DATA_RENDERING_INFO_KEY);
+        assertThat(info.getExtraRenderingInfo()).isNull();
+
+        // Obtains expected values for ExtraRenderingInfo.
+        textView.addExtraDataToAccessibilityNodeInfo(
+                info, EXTRA_DATA_RENDERING_INFO_KEY, new Bundle());
+        final ExtraRenderingInfo extraRenderingInfo = info.getExtraRenderingInfo();
+        assertThat(extraRenderingInfo).isNotNull();
+        assertThat(extraRenderingInfo.getLayoutSize().getWidth()).isEqualTo(100);
+        assertThat(extraRenderingInfo.getLayoutSize().getHeight()).isEqualTo(200);
+        assertThat(extraRenderingInfo.getTextSizeInPx()).isEqualTo(textView.getTextSize());
+        assertThat(extraRenderingInfo.getTextSizeUnit()).isEqualTo(TypedValue.COMPLEX_UNIT_SP);
+        assertThat(extraRenderingInfo.getTextColor()).isEqualTo(Color.RED);
+        assertThat(extraRenderingInfo.getHintTextColor()).isEqualTo(Color.BLUE);
+        assertThat(extraRenderingInfo.getLinkTextColor()).isEqualTo(Color.GREEN);
+        assertThat(extraRenderingInfo.getBackgroundColor()).isEqualTo(Color.YELLOW);
+        assertThat(extraRenderingInfo.getAlpha()).isEqualTo(0.5f);
+    }
+
+    @UiThreadTest
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityNodeInfo#getExtraRenderingInfo",
+                "android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo#getAlpha"
+            })
+    @RequiresFlagsEnabled(
+            android.view.accessibility.Flags.FLAG_A11Y_EXTRA_RENDERING_INFO_COLOR_ADDITIONS)
+    @Test
+    public void testExtraRenderingInfo_hasExpectedDefaultAlpha() {
+        final TextView textView = createTextView(mActivity);
+        textView.setText("Hello World");
+        textView.setLayoutParams(new LayoutParams(100, 200));
+        textView.setTextColor(Color.RED);
+
+        final AccessibilityNodeInfo info = textView.createAccessibilityNodeInfo();
+        textView.addExtraDataToAccessibilityNodeInfo(
+                info, EXTRA_DATA_RENDERING_INFO_KEY, new Bundle());
+        final ExtraRenderingInfo extraRenderingInfo = info.getExtraRenderingInfo();
+        assertThat(extraRenderingInfo.getTextColor()).isEqualTo(Color.RED);
+
+        // Alpha defaults to 1.0.
+        assertThat(extraRenderingInfo.getAlpha()).isEqualTo(1.0f);
     }
 
     @ApiTest(apis = {"android.view.View#setAccessibilityDataSensitive",
