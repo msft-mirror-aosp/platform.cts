@@ -67,23 +67,25 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import androidx.annotation.NonNull;
 import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.ActivitiesWatcher.ActivityWatcher;
 import com.android.compatibility.common.util.DoubleVisitor;
 
+import java.util.List;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 @AppModeFull(reason = "BlankWithTitleActivityTest is enough")
 public class LoginActivityTest
         extends AbstractContentCaptureIntegrationAutoActivityLaunchTest<LoginActivity> {
+
 
     private static final String TAG = LoginActivityTest.class.getSimpleName();
 
@@ -712,6 +714,7 @@ public class LoginActivityTest
     }
 
     @Test
+    @RequiresFlagsDisabled("android.view.contentcapture.deprecate_set_content_capture_enabled")
     public void testDisabledByApp() throws Exception {
         enableService();
         final ActivityWatcher watcher = startWatcher();
@@ -745,6 +748,77 @@ public class LoginActivityTest
     }
 
     @Test
+    @RequiresFlagsEnabled("android.view.contentcapture.flags.deprecate_set_content_capture_enabled")
+    public void testSetContentCaptureEnabledFalseIsNoOp() throws Exception {
+        enableService();
+        final ActivityWatcher watcher = startWatcher();
+
+        LoginActivity.onRootView((activity, rootView) -> {
+            activity.getContentCaptureManager().setContentCaptureEnabled(false);
+            assertThat(activity.getContentCaptureManager().isContentCaptureEnabled()).isTrue();
+        });
+
+        final LoginActivity activity = launchActivity();
+        watcher.waitFor(RESUMED);
+
+        activity.syncRunOnUiThread(() -> activity.mUsername.setText("D'OH"));
+        sleep();
+
+        activity.finish();
+        watcher.waitFor(DESTROYED);
+
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
+        assertThat((session.context.getFlags()
+                & ContentCaptureContext.FLAG_DISABLED_BY_APP) == 0).isTrue();
+        final ContentCaptureSessionId sessionId = session.id;
+        Log.v(TAG, "session id: " + sessionId);
+
+        assertRightActivity(session, sessionId, activity);
+
+        final EventsAssertor assertor = activity.assertInitialViewsAppeared(session);
+        assertor.assertViewTextChanged(activity.mUsername.getAutofillId(), "D'OH");
+    }
+
+    @Test
+    @RequiresFlagsEnabled("android.view.contentcapture.flags.deprecate_set_content_capture_enabled")
+    public void testSetContentCaptureEnabledTrueIsNoOp() throws Exception {
+        enableService();
+        final ActivityWatcher watcher = startWatcher();
+
+        LoginActivity.onRootView((activity, rootView) -> {
+            activity.getContentCaptureManager().setContentCaptureEnabled(true);
+            assertThat(activity.getContentCaptureManager().isContentCaptureEnabled()).isTrue();
+        });
+
+        final LoginActivity activity = launchActivity();
+        watcher.waitFor(RESUMED);
+
+        activity.syncRunOnUiThread(() -> activity.mUsername.setText("D'OH"));
+        sleep();
+
+        activity.finish();
+        watcher.waitFor(DESTROYED);
+
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
+        assertThat((session.context.getFlags()
+                & ContentCaptureContext.FLAG_DISABLED_BY_APP) == 0).isTrue();
+        final ContentCaptureSessionId sessionId = session.id;
+        Log.v(TAG, "session id: " + sessionId);
+
+        assertRightActivity(session, sessionId, activity);
+
+        final EventsAssertor assertor = activity.assertInitialViewsAppeared(session);
+        assertor.assertViewTextChanged(activity.mUsername.getAutofillId(), "D'OH");
+    }
+
+    @Test
+    @RequiresFlagsDisabled("android.view.contentcapture.flags.deprecate_set_content_capture_enabled")
     public void testDisabledFlagSecureAndByApp() throws Exception {
         enableService();
         final ActivityWatcher watcher = startWatcher();
@@ -769,6 +843,43 @@ public class LoginActivityTest
                         .getOnlyFinishedSession();
         assertThat((session.context.getFlags()
                 & ContentCaptureContext.FLAG_DISABLED_BY_APP) != 0).isTrue();
+        assertThat((session.context.getFlags()
+                & ContentCaptureContext.FLAG_DISABLED_BY_FLAG_SECURE) != 0).isTrue();
+        final ContentCaptureSessionId sessionId = session.id;
+        Log.v(TAG, "session id: " + sessionId);
+
+        assertRightActivity(session, sessionId, activity);
+
+        final List<ContentCaptureEvent> events = session.getEvents();
+        assertThat(events).isEmpty();
+    }
+
+    @Test
+    @RequiresFlagsEnabled("android.view.contentcapture.deprecate_set_content_capture_enabled")
+    public void testSetContentCaptureEnabledIsNoOp_withFlagSecure() throws Exception {
+        enableService();
+        final ActivityWatcher watcher = startWatcher();
+
+        LoginActivity.onRootView((activity, rootView) -> {
+            activity.getContentCaptureManager().setContentCaptureEnabled(false);
+            activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
+        });
+
+        final LoginActivity activity = launchActivity();
+        watcher.waitFor(RESUMED);
+
+        assertThat(activity.getContentCaptureManager().isContentCaptureEnabled()).isFalse();
+        activity.syncRunOnUiThread(() -> activity.mUsername.setText("D'OH"));
+
+        activity.finish();
+        watcher.waitFor(DESTROYED);
+
+        final Session session =
+                CtsContentCaptureService.getServiceWatcher()
+                        .getCurrentServiceInstance()
+                        .getOnlyFinishedSession();
+        assertThat((session.context.getFlags()
+                & ContentCaptureContext.FLAG_DISABLED_BY_APP) == 0).isTrue();
         assertThat((session.context.getFlags()
                 & ContentCaptureContext.FLAG_DISABLED_BY_FLAG_SECURE) != 0).isTrue();
         final ContentCaptureSessionId sessionId = session.id;
