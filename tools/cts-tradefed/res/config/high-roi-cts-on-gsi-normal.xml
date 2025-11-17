@@ -1917,8 +1917,6 @@
     <option name="compatibility:include-filter" value="CtsSafetyCenterTestCases android.safetycenter.cts.SafetyCenterStaticEntryTest#equalsHashCodeToString_whenOpenSafetyCenterApisEnabled_usingEqualsHashCodeToStringTester"/>
     <option name="compatibility:include-filter" value="CtsSafetyCenterTestCases android.safetycenter.cts.SafetyCenterStaticEntryTest#getSafetySourceId_returnsSafetySourceId"/>
     <option name="compatibility:include-filter" value="CtsSafetyCenterTestCases android.safetycenter.cts.SafetyCenterStaticEntryTest#getUser_returnsUser"/>
-    <!-- CtsSandboxedFledgeManagerTests -->
-    <option name="compatibility:include-filter" value="CtsSandboxedFledgeManagerTests com.android.tests.sandbox.fledge.SandboxedFledgeManagerTest#loadSdkAndRunFledgeFlow"/>
     <!-- CtsScopedStorageDeviceOnlyTest -->
     <option name="compatibility:include-filter" value="CtsScopedStorageDeviceOnlyTest android.scopedstorage.cts.device.StorageOtherAndOwnedFilesTest#test_latestSelectionOnly_withOwnedAndGrantedItems"/>
     <!-- CtsSdkExtensionsTestCases -->
