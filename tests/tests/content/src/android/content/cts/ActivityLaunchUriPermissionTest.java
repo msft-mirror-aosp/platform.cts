@@ -21,7 +21,9 @@ import static android.security.Flags.FLAG_IMPLICIT_URI_GRANTS_RESTRICTED_FOR_SEN
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
 import android.app.AppGlobals;
@@ -31,7 +33,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Process;
+import android.os.StrictMode;
+import android.os.strictmode.ImplicitUriPermissionGrantViolation;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -46,13 +51,17 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 @AppModeFull
 @RunWith(AndroidJUnit4.class)
@@ -63,6 +72,9 @@ public class ActivityLaunchUriPermissionTest {
     private Instrumentation mInstrumentation;
 
     private IntentRetriever mRetriever;
+
+    private static LinkedBlockingQueue<StrictMode.ViolationInfo> sViolations;
+    private static StrictMode.VmPolicy sOldVmPolicy;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -108,6 +120,20 @@ public class ActivityLaunchUriPermissionTest {
         }
     }
 
+    @BeforeClass
+    public static void setupClass() {
+        sOldVmPolicy = StrictMode.getVmPolicy();
+        sViolations = new LinkedBlockingQueue<>();
+        StrictMode.setViolationLogger(sViolations::offer);
+        enableStrictMode();
+    }
+
+    @AfterClass
+    public static void tearDownClass() {
+        StrictMode.setVmPolicy(sOldVmPolicy);
+        StrictMode.setViolationLogger(null);
+    }
+
     @Before
     public void setup() throws Exception {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
@@ -128,6 +154,7 @@ public class ActivityLaunchUriPermissionTest {
         mRetriever = new IntentRetriever();
         final var filter = new IntentFilter(ACTION_RECEIVING_INTENT);
         mContext.registerReceiver(mRetriever, filter, Context.RECEIVER_EXPORTED);
+        sViolations.clear();
     }
 
     @After
@@ -137,6 +164,40 @@ public class ActivityLaunchUriPermissionTest {
             SystemUtil.runShellCommand("cmd deviceidle whitelist -" + testApp);
         }
         mContext.unregisterReceiver(mRetriever);
+    }
+
+    private static boolean isStrictModeFeatureEnabled() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN
+                && android.security.Flags.strictModeViolationForImplicitUriGrantsEnabled();
+    }
+
+    private static void enableStrictMode() {
+        if (!isStrictModeFeatureEnabled()) {
+            return;
+        }
+        var policy =
+                new StrictMode.VmPolicy.Builder()
+                        .detectImplicitUriPermissionGrant()
+                        .penaltyLog()
+                        .build();
+        StrictMode.setVmPolicy(policy);
+    }
+
+    private void assertViolation(int expectedViolationCount) throws InterruptedException {
+        if (!isStrictModeFeatureEnabled()) {
+            return;
+        }
+        for (int i = 0; i < expectedViolationCount; i++) {
+            StrictMode.ViolationInfo violation = sViolations.poll(5, TimeUnit.SECONDS);
+            assertNotNull(violation);
+            assertEquals(
+                    ImplicitUriPermissionGrantViolation.class.getName(),
+                    violation.getViolationClass().getName());
+        }
+        // Ensure there are no more violations
+        assertTrue(
+                "Expected " + expectedViolationCount + " violations, but more were found.",
+                sViolations.isEmpty());
     }
 
     private Intent createImageCaptureActionIntent() {
@@ -196,74 +257,80 @@ public class ActivityLaunchUriPermissionTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_IMPLICIT_URI_GRANTS_RESTRICTED_FOR_SENDMULTIPLE_IMAGECAPTURE_ACTIONS)
-    public void testImplicitGrantForImageCaptureActionRestricted() {
+    public void testImplicitGrantForImageCaptureActionRestricted() throws InterruptedException {
         Intent intent = createImageCaptureActionIntent();
         Intent receivedIntent = startActivityAndGetReceivedIntent(intent);
 
         assertEquals(MediaStore.ACTION_IMAGE_CAPTURE, receivedIntent.getAction());
         assertFalse(hasReadPermission(receivedIntent.getFlags()));
         assertFalse(hasWritePermission(receivedIntent.getFlags()));
+        assertViolation(2);
     }
 
     @Test
     @RequiresFlagsEnabled(FLAG_IMPLICIT_URI_GRANTS_RESTRICTED_FOR_SENDMULTIPLE_IMAGECAPTURE_ACTIONS)
-    public void testImplicitGrantForSendMultipleActionRestricted() {
+    public void testImplicitGrantForSendMultipleActionRestricted() throws InterruptedException {
         Intent intent = createSendMultipleActionIntent();
         Intent receivedIntent = startActivityAndGetReceivedIntent(intent);
 
         assertEquals(Intent.ACTION_SEND_MULTIPLE, mRetriever.mIntent.getAction());
         assertFalse(hasReadPermission(receivedIntent.getFlags()));
         assertFalse(hasWritePermission(receivedIntent.getFlags()));
+        assertViolation(1);
     }
 
     @Test
     @RequiresFlagsEnabled(FLAG_IMPLICIT_URI_GRANTS_RESTRICTED_FOR_SEND_ACTION)
-    public void testImplicitGrantForSendActionRestricted() {
+    public void testImplicitGrantForSendActionRestricted() throws InterruptedException {
         Intent intent = createSendActionIntent();
         Intent receivedIntent = startActivityAndGetReceivedIntent(intent);
 
         assertEquals(Intent.ACTION_SEND, receivedIntent.getAction());
         assertFalse(hasReadPermission(receivedIntent.getFlags()));
         assertFalse(hasWritePermission(receivedIntent.getFlags()));
+        assertViolation(1);
     }
 
     @Test
     @RequiresFlagsDisabled(
             FLAG_IMPLICIT_URI_GRANTS_RESTRICTED_FOR_SENDMULTIPLE_IMAGECAPTURE_ACTIONS)
-    public void testImplicitGrantForImageCaptureActionUnRestricted() {
+    public void testImplicitGrantForImageCaptureActionUnRestricted() throws InterruptedException {
         Intent intent = createImageCaptureActionIntent();
         Intent receivedIntent = startActivityAndGetReceivedIntent(intent);
 
         assertEquals(MediaStore.ACTION_IMAGE_CAPTURE, receivedIntent.getAction());
         assertTrue(hasReadPermission(receivedIntent.getFlags()));
         assertTrue(hasWritePermission(receivedIntent.getFlags()));
+        assertViolation(2);
     }
 
     @Test
     @RequiresFlagsDisabled(
             FLAG_IMPLICIT_URI_GRANTS_RESTRICTED_FOR_SENDMULTIPLE_IMAGECAPTURE_ACTIONS)
-    public void testImplicitGrantForSendMultipleActionUnRestricted() {
+    public void testImplicitGrantForSendMultipleActionUnRestricted() throws InterruptedException {
         Intent intent = createSendMultipleActionIntent();
         Intent receivedIntent = startActivityAndGetReceivedIntent(intent);
 
         assertEquals(Intent.ACTION_SEND_MULTIPLE, mRetriever.mIntent.getAction());
         assertTrue(hasReadPermission(receivedIntent.getFlags()));
         assertFalse(hasWritePermission(receivedIntent.getFlags()));
+        assertViolation(1);
     }
 
     @Test
     @RequiresFlagsDisabled(FLAG_IMPLICIT_URI_GRANTS_RESTRICTED_FOR_SEND_ACTION)
-    public void testImplicitGrantForSendActionUnRestricted() {
+    public void testImplicitGrantForSendActionUnRestricted() throws InterruptedException {
         Intent intent = createSendActionIntent();
         Intent receivedIntent = startActivityAndGetReceivedIntent(intent);
 
         assertEquals(Intent.ACTION_SEND, receivedIntent.getAction());
         assertTrue(hasReadPermission(receivedIntent.getFlags()));
         assertFalse(hasWritePermission(receivedIntent.getFlags()));
+        assertViolation(1);
     }
 
     @Test
-    public void testExplicitGrantForImageCaptureAction() {
+    public void testExplicitGrantForImageCaptureAction() throws InterruptedException {
         Intent intent = createImageCaptureActionIntent();
         intent.addFlags(
                 Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
@@ -273,10 +340,11 @@ public class ActivityLaunchUriPermissionTest {
 
         assertTrue(hasReadPermission(receivedIntent.getFlags()));
         assertTrue(hasWritePermission(receivedIntent.getFlags()));
+        assertViolation(0);
     }
 
     @Test
-    public void testExplicitGrantForSendMultipleAction() {
+    public void testExplicitGrantForSendMultipleAction() throws InterruptedException {
         Intent intent = createSendMultipleActionIntent();
         intent.addFlags(
                 Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
@@ -286,10 +354,11 @@ public class ActivityLaunchUriPermissionTest {
 
         assertTrue(hasReadPermission(receivedIntent.getFlags()));
         assertTrue(hasWritePermission(receivedIntent.getFlags()));
+        assertViolation(0);
     }
 
     @Test
-    public void testExplicitGrantForSendAction() {
+    public void testExplicitGrantForSendAction() throws InterruptedException {
         Intent intent = createSendActionIntent();
         intent.addFlags(
                 Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
@@ -299,5 +368,34 @@ public class ActivityLaunchUriPermissionTest {
 
         assertTrue(hasReadPermission(receivedIntent.getFlags()));
         assertTrue(hasWritePermission(receivedIntent.getFlags()));
+        assertViolation(0);
+    }
+
+    @Test
+    public void testStrictModePermit() throws InterruptedException {
+        assumeTrue(isStrictModeFeatureEnabled());
+
+        var builder =
+                new StrictMode.VmPolicy.Builder().detectImplicitUriPermissionGrant().penaltyLog();
+
+        builder.permitImplicitUriPermissionGrant();
+        StrictMode.setVmPolicy(builder.build());
+
+        startActivityAndGetReceivedIntent(createSendActionIntent());
+        assertViolation(0);
+    }
+
+    @Test
+    public void testStrictModeDetectAll() throws InterruptedException {
+        assumeTrue(isStrictModeFeatureEnabled());
+
+        StrictMode.VmPolicy sOldVmPolicy = StrictMode.getVmPolicy();
+        try {
+            var builder = new StrictMode.VmPolicy.Builder().detectAll().penaltyLog();
+            StrictMode.setVmPolicy(builder.build());
+            assertTrue(StrictMode.vmImplicitUriPermissionGrantEnabled());
+        } finally {
+            StrictMode.setVmPolicy(sOldVmPolicy);
+        }
     }
 }
