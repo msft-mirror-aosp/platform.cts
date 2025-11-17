@@ -5747,8 +5747,6 @@
     <option name="compatibility:include-filter" value="CtsSampleHostTestCases android.sample.cts.SampleHostJUnit4DeviceTest#testRunDeviceTestsFailsFull"/>
     <option name="compatibility:include-filter" value="CtsSampleHostTestCases android.sample.cts.SampleHostJUnit4DeviceTest#testRunDeviceTestsPassesFull"/>
     <option name="compatibility:include-filter" value="CtsSampleHostTestCases android.sample.cts.SampleHostJUnit4Test#testLogcat"/>
-    <!-- CtsSandboxedFledgeManagerTests -->
-    <option name="compatibility:include-filter" value="CtsSandboxedFledgeManagerTests com.android.tests.sandbox.fledge.SandboxedFledgeManagerTest#loadSdkAndRunFledgeFlow"/>
     <!-- CtsSaxTestCases -->
     <option name="compatibility:include-filter" value="CtsSaxTestCases android.sax.cts.ElementTest#testParse"/>
     <!-- CtsScopedStorageBypassDatabaseOperationsTest -->

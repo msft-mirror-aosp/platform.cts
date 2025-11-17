@@ -253,8 +253,6 @@
     <option name="compatibility:include-filter" value="CtsRsBlasTestCases" />
     <option name="compatibility:include-filter" value="CtsRsCppTestCases" />
     <option name="compatibility:include-filter" value="CtsSampleDeviceTestCases" />
-    <option name="compatibility:include-filter" value="CtsSandboxedAdIdManagerTests" />
-    <option name="compatibility:include-filter" value="CtsSandboxedAppSetIdManagerTests" />
     <option name="compatibility:include-filter" value="CtsSaxTestCases" />
     <option name="compatibility:include-filter" value="CtsScopedStorageRedactUriTest" />
     <option name="compatibility:include-filter" value="CtsSdkExtensionsTestCases" />
