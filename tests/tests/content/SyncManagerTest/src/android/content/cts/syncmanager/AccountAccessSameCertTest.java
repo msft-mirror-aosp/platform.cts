@@ -33,7 +33,6 @@ import android.content.AbstractThreadedSyncAdapter;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
@@ -53,7 +52,6 @@ import org.junit.runner.RunWith;
 /** Tests whether a sync adapter can access accounts. */
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "Sync manager not supported")
-@AppModeNonSdkSandbox(reason = "Sync adapter not supported since sandboxes cannot declare services")
 public final class AccountAccessSameCertTest {
     private static final String THREAD_NAME = "AccountAccessSameCertTestBackgroundThread";
     @Rule public final TestRule mFlakyTestTRule = new FlakyTestRule(3);

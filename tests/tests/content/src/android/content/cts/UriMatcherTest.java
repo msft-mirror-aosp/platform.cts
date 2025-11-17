@@ -21,7 +21,6 @@ import static org.junit.Assert.fail;
 
 import android.content.UriMatcher;
 import android.net.Uri;
-import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.test.runner.AndroidJUnit4;
 
@@ -30,7 +29,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class UriMatcherTest {
     UriMatcher mUriMatcher;
 

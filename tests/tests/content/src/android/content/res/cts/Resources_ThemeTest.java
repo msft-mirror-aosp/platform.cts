@@ -32,7 +32,6 @@ import android.content.res.Resources.Theme;
 import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.util.Xml;
@@ -49,7 +48,6 @@ import org.xmlpull.v1.XmlPullParser;
 
 import java.util.Locale;
 
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class Resources_ThemeTest {
     private Context getContext() {

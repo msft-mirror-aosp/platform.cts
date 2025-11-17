@@ -870,6 +870,10 @@ public class CarrierApiTest extends BaseCarrierApiTest {
 
     @Test
     public void testIccOpenTooManyLogicalChannels() throws IOException {
+        boolean isItEmulator =
+                MediaUtils.onCuttlefish() || Build.IS_EMULATOR || MediaUtils.gsiOnCuttleFish();
+        assumeFalse("CuttleFish do not support this test case", isItEmulator);
+
         Set<Integer> channels = new HashSet<Integer>();
         boolean failedOnce = false;
         try {
@@ -878,12 +882,10 @@ public class CarrierApiTest extends BaseCarrierApiTest {
                         mTelephonyManager.iccOpenLogicalChannel("");
                 int channel = response.getChannel();
                 if (channel > 0) {
-                    // TODO(b/375102360): CF should implement handling more than one logical channel
-                    assumeFalse(
-                            channels.contains(channel)
-                                    && (MediaUtils.onCuttlefish() || Build.IS_EMULATOR));
+                    assumeFalse(channels.contains(channel));
                     assertWithMessage("Logical channel " + channel + " was returned twice")
-                            .that(channels.add(channel)).isTrue();
+                            .that(channels.add(channel))
+                            .isTrue();
                 }
                 if (response.getStatus() == STATUS_MISSING_RESOURCE) {
                     assertThat(response.getSelectResponse()).isNull();
@@ -893,8 +895,8 @@ public class CarrierApiTest extends BaseCarrierApiTest {
                 }
                 assertThat(response.getStatus()).isEqualTo(STATUS_NO_ERROR);
                 assertThat(response.getSelectResponse()).isEqualTo(STATUS_NORMAL);
-                assertThat(channel).isIn(Range.closed(MIN_LOGICAL_CHANNEL,
-                        MAX_LOGICAL_CHANNEL_EXTENDED));
+                assertThat(channel)
+                        .isIn(Range.closed(MIN_LOGICAL_CHANNEL, MAX_LOGICAL_CHANNEL_EXTENDED));
             }
         } finally {
             for (Integer channel : channels) {
@@ -1227,6 +1229,10 @@ public class CarrierApiTest extends BaseCarrierApiTest {
      */
     @Test
     public void testApduFileReadTwoChannels() throws IOException {
+        boolean isItEmulator =
+                MediaUtils.onCuttlefish() || Build.IS_EMULATOR || MediaUtils.gsiOnCuttleFish();
+        assumeFalse("CuttleFish do not support this test case", isItEmulator);
+
         int channel1 = INVALID_CHANNEL;
         int channel2 = INVALID_CHANNEL;
         try {
@@ -1237,9 +1243,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
             IccOpenLogicalChannelResponse channel2rsp = openLogicalChannelWithRetries("");
             verifyValidIccOpenLogicalChannelResponse(channel2rsp);
             channel2 = channel2rsp.getChannel();
-
-            // TODO(b/375102360): CF should implement handling more than one logical channel
-            assumeFalse(channel1 == channel2 && (MediaUtils.onCuttlefish() || Build.IS_EMULATOR));
+            assumeFalse(channel1 == channel2);
             assertWithMessage("Two concurrently opened channels should be different")
                     .that(channel2).isNotEqualTo(channel1);
 

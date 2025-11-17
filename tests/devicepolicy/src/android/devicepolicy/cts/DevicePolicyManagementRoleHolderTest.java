@@ -38,6 +38,7 @@ import static org.junit.Assert.assertThrows;
 import android.app.admin.DevicePolicyManager;
 import android.app.admin.ManagedProfileProvisioningParams;
 import android.app.admin.ProvisioningException;
+import android.app.role.RoleManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.os.UserHandle;
@@ -50,6 +51,7 @@ import com.android.bedstead.deviceadminapp.DeviceAdminApp;
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
 import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder;
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile;
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
@@ -62,7 +64,9 @@ import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.devicepolicy.DeviceOwner;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.packages.Package;
+import com.android.bedstead.nene.roles.RoleContext;
 import com.android.bedstead.nene.users.UserReference;
+import com.android.bedstead.nene.users.UserType;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
@@ -223,9 +227,10 @@ public class DevicePolicyManagementRoleHolderTest {
     @RequireMultiUserSupport
     @EnsureHasNoAccounts(onUser = ANY)
     @EnsureCanAddSecondaryUser
-    public void shouldAllowBypassingDevicePolicyManagementRoleQualification_withNonTestUsers_returnsFalse()
+    public void shouldAllowBypassingDevicePolicyManagementRoleQualification_withNonTestUsers_false()
             throws Exception {
-        TestApis.devicePolicy().resetShouldAllowBypassingDevicePolicyManagementRoleQualificationState();
+        TestApis.devicePolicy()
+                .resetShouldAllowBypassingDevicePolicyManagementRoleQualificationState();
         try (UserReference user =
                 TestApis.users()
                         .createUser()
@@ -369,10 +374,35 @@ public class DevicePolicyManagementRoleHolderTest {
     @EnsureHasDevicePolicyManagerRoleHolder(onUser = WORK_PROFILE)
     @Test
     public void workProfileDmrhCantBeUninstalledFromWork() {
-        assertThrows(NeneException.class, () ->
-                dpmRoleHolder(sDeviceState).pkg().uninstall(workProfile(sDeviceState)));
+        assertThrows(
+                NeneException.class,
+                () -> dpmRoleHolder(sDeviceState).pkg().uninstall(workProfile(sDeviceState)));
         assertThat(dpmRoleHolder(sDeviceState).pkg().installedOnUser(workProfile(sDeviceState)))
                 .isTrue();
+    }
+
+    @Test
+    @EnsureHasNoDpc
+    @EnsureHasNoAccounts
+    @EnsureHasPermission(android.Manifest.permission.MANAGE_ROLE_HOLDERS)
+    public void verifyManuallySettingTestAppAsDmrh() {
+        TestApp dpc =
+                sTestAppProvider
+                        .query()
+                        .wherePackageName()
+                        .isEqualTo("com.android.DevicePolicyManagerRoleHolder")
+                        .whereTestOnly()
+                        .isEqualTo(true)
+                        .get();
+
+        try (TestAppInstance ignored = dpc.install();
+                RoleContext ignored1 =
+                        TestApis.devicePolicy().setDevicePolicyManagementRoleHolder(dpc.pkg())) {
+            assertThat(TestApis.roles().getRoleHolders(RoleManager.ROLE_DEVICE_POLICY_MANAGEMENT))
+                    .contains(dpc.packageName());
+        }
+        assertThat(TestApis.roles().getRoleHolders(RoleManager.ROLE_DEVICE_POLICY_MANAGEMENT))
+                .doesNotContain(dpc.packageName());
     }
 
     /**
@@ -413,6 +443,58 @@ public class DevicePolicyManagementRoleHolderTest {
         }
     }
 
+    /**
+     * Verifies that the checks for adding a DMRH cannot be bypassed when a non-test-only PO exists
+     * on a managed profile.
+     */
+    @Test
+    @EnsureHasNoDpc
+    @EnsureHasNoAccounts
+    @EnsureHasNoWorkProfile
+    @EnsureHasPermission(android.Manifest.permission.MANAGE_ROLE_HOLDERS)
+    @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING)
+    public void nonTestOnlyProfileOwner_shouldAllowBypassing_false() {
+        TestApp dpc = getDeviceAdminTestApp(/* isTestOnly */ false);
+        ComponentName adminComponent = getDeviceAdminComponentName(dpc);
+
+        try (UserReference profileUser = createAndStartProfile()) {
+            TestAppInstance ignored = dpc.install(profileUser);
+            TestApis.devicePolicy().setProfileOwner(profileUser, adminComponent);
+
+            assertAllowsBypassingRoleQualification(/* expected */ false);
+        }
+    }
+
+    /**
+     * Verifies that the checks for adding a DMRH can be bypassed when a test-only PO exists on a
+     * managed profile.
+     */
+    @Test
+    @EnsureHasNoDpc
+    @EnsureHasNoAccounts
+    @EnsureHasNoWorkProfile
+    @EnsureHasPermission(android.Manifest.permission.MANAGE_ROLE_HOLDERS)
+    @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING)
+    public void testOnlyProfileOwner_shouldAllowBypassing_true() {
+        TestApp dpc = getDeviceAdminTestApp(/* isTestOnly */ true);
+        ComponentName adminComponent = getDeviceAdminComponentName(dpc);
+
+        try (UserReference profileUser = createAndStartProfile()) {
+            TestAppInstance ignored = dpc.install(profileUser);
+            TestApis.devicePolicy().setProfileOwner(profileUser, adminComponent);
+
+            assertAllowsBypassingRoleQualification(/* expected */ true);
+        }
+    }
+
+    private static UserReference createAndStartProfile() {
+        return TestApis.users()
+                .createUser()
+                .parent(TestApis.users().instrumented())
+                .type(TestApis.users().supportedType(UserType.MANAGED_PROFILE_TYPE_NAME))
+                .createAndStart();
+    }
+
     private static TestApp getDeviceAdminTestApp(boolean isTestOnly) {
         return sTestAppProvider
                 .query()
@@ -434,4 +516,6 @@ public class DevicePolicyManagementRoleHolderTest {
                 sDevicePolicyManager.shouldAllowBypassingDevicePolicyManagementRoleQualification();
         assertThat(bypassed).isEqualTo(expected);
     }
+
+
 }

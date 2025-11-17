@@ -22,7 +22,6 @@ import static android.os.cts.BuildTest.runTestCpuAbiCommon;
 
 import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 
@@ -35,7 +34,6 @@ import org.junit.Test;
  * This class contains tests that do require a {@link RavenwoodRule}. See {@link BuildTest}
  * for more details.
  */
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class BuildExtTest {
     @Rule
     public RavenwoodRule mRavenwood = new RavenwoodRule();

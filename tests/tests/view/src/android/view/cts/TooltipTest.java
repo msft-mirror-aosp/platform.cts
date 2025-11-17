@@ -30,7 +30,6 @@ import android.app.Activity;
 import android.app.Instrumentation;
 import android.os.IBinder;
 import android.os.SystemClock;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.InputDevice;
@@ -64,7 +63,6 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 @LargeTest
 @RunWith(AndroidJUnit4.class)
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class TooltipTest {
     private static final String LOG_TAG = "TooltipTest";
 
@@ -87,7 +85,6 @@ public class TooltipTest {
             new AdoptShellPermissionsRule(
                     androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
                             .getUiAutomation(),
-                    Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX,
                     Manifest.permission.ACCESS_SURFACE_FLINGER);
 
     @Rule(order = 1)

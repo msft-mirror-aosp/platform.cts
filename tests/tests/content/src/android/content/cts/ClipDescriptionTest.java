@@ -28,8 +28,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Process;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.text.SpannableString;
@@ -60,7 +58,6 @@ import java.util.Calendar;
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 //@AppModeFull // TODO(Instant) Should clip board data be visible?
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ClipDescriptionTest {
     private UiDevice mUiDevice;
     private Context mContext;
@@ -85,7 +82,6 @@ public class ClipDescriptionTest {
     @UiThreadTest
     @Test
     @DisabledOnRavenwood(blockedBy = ClipboardManager.class)
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes cannot access ClipboardManager.")
     public void testGetTimestamp() {
         final ClipboardManager clipboardManager = (ClipboardManager)
                 InstrumentationRegistry.getTargetContext().getSystemService(
@@ -105,7 +101,6 @@ public class ClipDescriptionTest {
 
     @Test
     @DisabledOnRavenwood(blockedBy = ClipboardManager.class)
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes cannot access ClipboardManager.")
     public void testIsStyledText() {
         ClipDescription clipDescription = new ClipDescription(
                 "label", new String[] { ClipDescription.MIMETYPE_TEXT_PLAIN });
@@ -133,7 +128,6 @@ public class ClipDescriptionTest {
 
     @Test
     @DisabledOnRavenwood(blockedBy = ClipboardManager.class)
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes cannot access ClipboardManager.")
     public void testNotStyledText() {
         ClipDescription clipDescription = new ClipDescription(
                 "label", new String[] { ClipDescription.MIMETYPE_TEXT_PLAIN });
@@ -172,7 +166,6 @@ public class ClipDescriptionTest {
 
     @Test
     @DisabledOnRavenwood(blockedBy = ClipboardManager.class)
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes cannot access ClipboardManager.")
     public void testClassificationNotPerformedForVeryLongText() {
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < 100; i++) {
@@ -194,7 +187,6 @@ public class ClipDescriptionTest {
 
     @Test
     @DisabledOnRavenwood(blockedBy = ClipboardManager.class)
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes cannot access ClipboardManager.")
     public void testClassificationConfidenceValuesAreValid() throws InterruptedException {
         ClipData clipData = ClipData.newPlainText(
                 "label", "Hi Sam, try www.android.com on 05/04/2021 then visit "

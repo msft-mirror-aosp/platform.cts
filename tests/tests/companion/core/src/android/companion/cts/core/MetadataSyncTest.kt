@@ -21,6 +21,7 @@ import android.annotation.CallSuper
 import android.companion.CompanionDeviceManager.FEATURE_CROSS_DEVICE_SYNC
 import android.companion.CompanionDeviceManager.MESSAGE_REQUEST_METADATA_UPDATE
 import android.companion.Flags
+import android.companion.cts.common.CdmMessage
 import android.companion.cts.common.MAC_ADDRESS_A
 import android.companion.cts.common.MessageDemuxer
 import android.companion.cts.common.MessageFeeder
@@ -132,14 +133,12 @@ class MetadataSyncTest : CoreTestBase()  {
 
         // Simulate metadata update reception message from the remote device
         // and wait for ACK
-        val metadata = ByteArrayOutputStream()
-        PersistableBundle().apply {
+        val metadata = PersistableBundle().apply {
             putPersistableBundle(FEATURE_CROSS_DEVICE_SYNC, PersistableBundle().apply {
                 putString("lorem", "ipsum")
             })
-            writeToStream(metadata)
         }
-        input.feedMessage(MESSAGE_REQUEST_METADATA_UPDATE, metadata.toByteArray())
+        input.feedMessage(CdmMessage.forMetadataUpdate(metadata))
         output.getNextMessage(MESSAGE_RESPONSE_SUCCESS) ?: {
             fail("Metadata update was not acknowledged")
         }
@@ -183,12 +182,10 @@ class MetadataSyncTest : CoreTestBase()  {
         cdm.attachSystemDataTransport(associationId, input, output)
 
         // Simulate metadata update reception message from the remote device
-        val metadata = ByteArrayOutputStream()
-        PersistableBundle().apply {
+        val metadata = PersistableBundle().apply {
             putPersistableBundle(FEATURE_CROSS_DEVICE_SYNC, PersistableBundle())
-            writeToStream(metadata)
         }
-        input.feedMessage(MESSAGE_REQUEST_METADATA_UPDATE, metadata.toByteArray())
+        input.feedMessage(CdmMessage.forMetadataUpdate(metadata))
         output.getNextMessage(MESSAGE_RESPONSE_SUCCESS)
 
         // Assert remote metadata timestamp is updated

@@ -27,7 +27,6 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Parcel;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.DisabledOnRavenwood;
 import android.util.StringBuilderPrinter;
 
@@ -41,7 +40,6 @@ import org.junit.runner.RunWith;
  * Test {@link ActivityInfo}.
  */
 @RunWith(AndroidJUnit4.class)
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ActivityInfoTest {
 
     private static final String TEST_PKG = "android.content.cts";

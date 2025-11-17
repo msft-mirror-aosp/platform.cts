@@ -27,7 +27,6 @@ import android.content.res.AssetFileDescriptor;
 import android.content.res.Flags;
 import android.graphics.Color;
 import android.os.ParcelFileDescriptor;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -44,7 +43,6 @@ import org.junit.Test;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(JUnitParamsRunner.class)
 public class FabricatedOverlayTest {
     private Context mContext;

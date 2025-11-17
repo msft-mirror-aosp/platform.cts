@@ -75,7 +75,6 @@ import android.os.Process;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.os.UserManager;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -714,7 +713,7 @@ public class TelephonyManagerTest {
 
     @Test
     @RequiresFlagsEnabled(
-            com.android.server.telecom.flags.Flags.FLAG_MOVE_GET_TTY_MODE_TO_TELEPHONY_MANAGER)
+            android.telecom.flags.Flags.FLAG_MOVE_GET_TTY_MODE_TO_TELEPHONY_MANAGER)
     public void testGetCurrentTtyMode() {
         assumeTrue("Test requires Telephony feature",
                 mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
@@ -2356,7 +2355,6 @@ public class TelephonyManagerTest {
      * exception.
      */
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testNetworkRegistrationInfoIsRoaming() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
@@ -2374,7 +2372,6 @@ public class TelephonyManagerTest {
      * @see ServiceState.RoamingType
      */
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testNetworkRegistrationInfoGetRoamingType() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
@@ -4920,8 +4917,6 @@ public class TelephonyManagerTest {
     }
 
     @Test
-    @AppModeNonSdkSandbox(
-            reason = "SDK sandboxes are not allowed to access cell info - no location permission")
     public void testGetAllCellInfo() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
@@ -6009,7 +6004,6 @@ public class TelephonyManagerTest {
             "android.telephony.TelephonyManager#requestRadioPowerOffForReason",
             "android.telephony.TelephonyManager#clearRadioPowerOffForReason",
             "android.telephony.TelephonyManager#getRadioPowerOffReasons"})
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have MODIFY_PHONE_STATE permission")
     public void testSetRadioPowerForReasonNearbyDevice() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         ServiceStateRadioStateListener callback = new ServiceStateRadioStateListener(
@@ -6922,7 +6916,6 @@ public class TelephonyManagerTest {
     @ApiTest(apis = {"android.telephony.TelephonyManager#persistEmergencyCallDiagnosticData"})
     @RequiresFlagsEnabled(
             com.android.server.telecom.flags.Flags.FLAG_TELECOM_RESOLVE_HIDDEN_DEPENDENCIES)
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_DROPBOX_DATA permission")
     public void testPersistEmergencyCallDiagnosticData() throws Exception {
         long startTime = SystemClock.elapsedRealtime();
         getContext().registerReceiver(new BroadcastReceiver() {
@@ -7078,8 +7071,6 @@ public class TelephonyManagerTest {
     }
 
     @Test
-    @AppModeNonSdkSandbox(
-            reason = "SDK sandboxes do not have READ_PRIVILEGED_PHONE_STATE permission")
     public void testGetServiceStateForSlot() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 

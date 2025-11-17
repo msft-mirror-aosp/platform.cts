@@ -25,7 +25,9 @@ import static android.devicepolicy.cts.utils.PolicyEngineUtils.TRUE_MORE_RESTRIC
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpcOnly;
 import static com.android.bedstead.harrier.components.BroadcastReceiversComponentKt.registerBroadcastReceiverForAllUsers;
+import static com.android.bedstead.harrier.components.BroadcastReceiversComponentKt.registerBroadcastReceiverForUser;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApp;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -53,6 +55,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
 import com.android.bedstead.harrier.annotations.Postsubmit;
+import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.enterprise.policies.ApplicationHidden;
 import com.android.bedstead.enterprise.policies.ApplicationHiddenSystemOnly;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
@@ -593,5 +596,47 @@ public class ApplicationHiddenTest {
     private Function<Intent, Boolean> isSchemeSpecificPart(String part) {
         return (intent) -> intent.getData() != null
                 && intent.getData().getSchemeSpecificPart().equals(part);
+    }
+
+    @Test
+    @Postsubmit(reason = "new test")
+    @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setApplicationHidden",
+            "android.app.admin.DevicePolicyManager#isApplicationHidden"})
+    @PolicyAppliesTest(policy = ApplicationHidden.class)
+    public void setApplicationHidden_install_isImmediatelyHidden() throws Exception {
+        TestApp testApp = testApps(sDeviceState).any();
+        try {
+            // 1. Ensure app is not installed.
+            testApp.pkg().uninstallFromAllUsers();
+
+            // 2. Set the policy to hide the app.
+            dpc(sDeviceState).devicePolicyManager().setApplicationHidden(
+                    dpc(sDeviceState).componentName(), testApp.packageName(),
+                    /* hidden= */ true);
+
+            // 3. Install the app and 4. wait for it to be hidden.
+            try (BlockingBroadcastReceiver broadcastReceiver =
+                         registerBroadcastReceiverForUser(
+                                 sDeviceState,
+                                 TestApis.users().instrumented(),
+                                 sPackageRemovedIntentFilter,
+                                 isSchemeSpecificPart(testApp.packageName()))) {
+                testApp.install(TestApis.users().instrumented());
+                // After installation, DPMS will re-apply the hidden policy, which will trigger
+                // a package removed broadcast.
+                broadcastReceiver.awaitForBroadcastOrFail();
+            }
+
+            // 5. App should be hidden after being installed.
+            assertWithMessage("App should be hidden after being installed")
+                    .that(testApp.pkg().installedOnUser()).isFalse();
+            assertWithMessage("App should still exist on device after being installed and hidden")
+                    .that(testApp.pkg().exists()).isTrue();
+        } finally {
+            testApp.pkg().uninstallFromAllUsers();
+            dpc(sDeviceState).devicePolicyManager().setApplicationHidden(
+                    dpc(sDeviceState).componentName(), testApp.packageName(),
+                    /* hidden= */ false);
+        }
     }
 }

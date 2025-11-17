@@ -103,7 +103,6 @@ import android.os.HandlerThread;
 import android.os.SystemClock;
 import android.os.Vibrator;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -157,7 +156,6 @@ import java.util.stream.IntStream;
 @FrameworkSpecificTest
 @AppModeFull(reason = "Waiting for volume/zen mode changes requires receiving intents. " +
         "Several API calls require MODIFY_AUDIO_SETTINGS.")
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class AudioManagerTest {
     private static final String TAG = "AudioManagerTest";
@@ -1242,28 +1240,29 @@ public class AudioManagerTest {
                 "AudioManagerTest testAssistantVolume() skipping volume test on automotive",
                 mSkipAutoVolumeTests);
 
-        getInstrumentation()
-                .getUiAutomation()
-                .adoptShellPermissionIdentity(
-                        Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED,
-                        Manifest.permission.MODIFY_AUDIO_ROUTING);
-        int originalAssistantVolume = mAudioManager.getStreamVolume(STREAM_ASSISTANT);
-        mAudioManager.setStreamVolume(
-                STREAM_ASSISTANT, mAudioManager.getStreamMaxVolume(STREAM_ASSISTANT), 0);
-        mAudioManager.setMode(MODE_ASSISTANT_CONVERSATION);
+        try (PermissionContext ignored =
+                TestApis.permissions()
+                        .withPermission(
+                                Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED,
+                                Manifest.permission.MODIFY_AUDIO_ROUTING)) {
+            int originalAssistantVolume = mAudioManager.getStreamVolume(STREAM_ASSISTANT);
+            mAudioManager.setStreamVolume(
+                    STREAM_ASSISTANT, mAudioManager.getStreamMaxVolume(STREAM_ASSISTANT), 0);
+            mAudioManager.setMode(MODE_ASSISTANT_CONVERSATION);
 
-        assertCallChangesStreamVolume(
-                () ->
-                        mAudioManager.adjustSuggestedStreamVolume(
-                                ADJUST_LOWER, USE_DEFAULT_STREAM_TYPE, 0),
-                STREAM_ASSISTANT,
-                mAudioManager.getStreamVolume(STREAM_ASSISTANT) - getVolumeDelta(STREAM_ASSISTANT),
-                "Adjusting default stream should change STREAM_ASSISTANT");
+            assertCallChangesStreamVolume(
+                    () ->
+                            mAudioManager.adjustSuggestedStreamVolume(
+                                    ADJUST_LOWER, USE_DEFAULT_STREAM_TYPE, 0),
+                    STREAM_ASSISTANT,
+                    mAudioManager.getStreamVolume(STREAM_ASSISTANT)
+                            - getVolumeDelta(STREAM_ASSISTANT),
+                    "Adjusting default stream should change STREAM_ASSISTANT");
 
-        mAudioManager.setMode(MODE_NORMAL);
+            mAudioManager.setMode(MODE_NORMAL);
 
-        mAudioManager.setStreamVolume(STREAM_ASSISTANT, originalAssistantVolume, 0);
-        getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+            mAudioManager.setStreamVolume(STREAM_ASSISTANT, originalAssistantVolume, 0);
+        }
     }
 
     @Test
@@ -3226,12 +3225,28 @@ public class AudioManagerTest {
             .that(initVol)
             .isNotEqualTo(expectedVolume);
 
-        var future = mCancelRule.registerFuture(getFutureForIntent(
-                            mContext,
-                            AudioManager.ACTION_VOLUME_CHANGED,
-                            i -> (i != null)
-                                && i.getIntExtra(AudioManager.EXTRA_VOLUME_STREAM_TYPE, -1)
-                                        == stream));
+        // MODIFY_AUDIO_SETTINGS_PRIVILEGED is needed for getStreamTypeAlias().
+        int aliasStream = stream;
+        try (PermissionContext ignored =
+                TestApis.permissions()
+                        .withPermission(Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED)) {
+            aliasStream = mAudioManager.getStreamTypeAlias(stream);
+        }
+
+        final int finalAliasStream = aliasStream;
+        // The ACTION_VOLUME_CHANGED intent will be sent with the aliasStream in extra.
+        var future =
+                mCancelRule.registerFuture(
+                        getFutureForIntent(
+                                mContext,
+                                AudioManager.ACTION_VOLUME_CHANGED,
+                                i ->
+                                        (i != null)
+                                                && i.getIntExtra(
+                                                                AudioManager
+                                                                        .EXTRA_VOLUME_STREAM_TYPE,
+                                                                -1)
+                                                        == finalAliasStream));
         r.run();
         var intent = future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
         String assertMessage = "Unexpected volume for stream " + stream + ". "

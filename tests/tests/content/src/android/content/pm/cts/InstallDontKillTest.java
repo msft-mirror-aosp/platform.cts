@@ -22,13 +22,9 @@ import static com.google.common.truth.Truth.assertThat;
 
 import android.app.Instrumentation;
 import android.content.Context;
-import android.content.pm.Flags;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.ApplicationInfoFlags;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
@@ -47,7 +43,6 @@ import org.junit.runner.RunWith;
 import java.io.File;
 
 @AppModeFull
-@AppModeNonSdkSandbox
 @RunWith(AndroidJUnit4.class)
 public class InstallDontKillTest {
     private static final String TMP_PATH = "/data/local/tmp/cts/content/";

@@ -20,6 +20,8 @@ package android.media.audio.cts;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.assertEquals;
+
 import android.annotation.Nullable;
 import android.annotation.RawRes;
 import android.content.Context;
@@ -29,8 +31,8 @@ import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
+import android.media.audio.Flags;
 import android.os.SystemClock;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -41,7 +43,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.media.audioserver.Flags;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -59,7 +60,6 @@ import java.util.stream.IntStream;
 import javax.annotation.concurrent.GuardedBy;
 
 @FrameworkSpecificTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class AudioTrackOffloadTest {
     private static final String TAG = "AudioTrackOffloadTest";
@@ -251,6 +251,29 @@ public class AudioTrackOffloadTest {
         final int bitRateInKbps = sampleRate * format.getFrameSizeInBytes() * 8 / 1024;
         testAudioTrackOffload(R.raw.sinesweepraw,  // 6 seconds stereo
                 bitRateInKbps, format);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_PARTIAL_FLUSH_FOR_PCM_OFFLOAD)
+    @Test
+    public void testFlushFromFrame() throws Exception {
+        // TODO: b/456196601 - add detailed tests when the HAL is ready.
+        final int sampleRate = 44100;
+        final AudioFormat format =
+                new AudioFormat.Builder()
+                        .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                        .setSampleRate(sampleRate)
+                        .setChannelMask(AudioFormat.CHANNEL_OUT_STEREO)
+                        .build();
+        // Average kbps for 44.1kHz 16b stereo = 1378 kbps
+        final int bitRateInKbps = sampleRate * format.getFrameSizeInBytes() * 8 / 1024;
+        AudioTrack track =
+                getOffloadAudioTrack(bitRateInKbps, format, /* testName= */ "testFlushFromFrame");
+        if (track == null) {
+            Log.i(TAG, "testFlushFromFrame skipped due to PCM offload not supported");
+            return;
+        }
+        assertEquals(0, track.flushFromFrame(0, AudioTrack.FLUSH_FROM_ACCURACY_BEST_EFFORT));
+        assertEquals(0, track.flushFromFrame(0, AudioTrack.FLUSH_FROM_ACCURACY_EXACT));
     }
 
     @CddTest(requirements = {"5.5.4/C-SR-2"})

@@ -29,7 +29,6 @@ import android.content.om.OverlayManager;
 import android.content.om.OverlayManagerTransaction;
 import android.content.pm.PackageManager;
 import android.content.res.Flags;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -53,7 +52,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@AppModeNonSdkSandbox(reason = "SDK sandbox does not have access to OverlayManager")
 @RunWith(AndroidJUnit4.class)
 public class OverlayManagerTransactionTest {
     @Rule

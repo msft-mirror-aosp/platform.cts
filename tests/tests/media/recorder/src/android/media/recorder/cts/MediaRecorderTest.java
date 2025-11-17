@@ -22,6 +22,7 @@ import static android.media.MediaCodecInfo.CodecProfileLevel.AVCProfileConstrain
 import static android.media.MediaCodecInfo.CodecProfileLevel.AVCProfileConstrainedHigh;
 import static android.media.MediaCodecInfo.CodecProfileLevel.AVCProfileHigh;
 import static android.media.mediarecorder.Flags.FLAG_APV_RECORDING_SUPPORT;
+import static android.media.mediarecorder.Flags.FLAG_QUALITY_SETTING_SUPPORT;
 import static android.media.mediarecorder.Flags.apvRecordingSupport;
 
 import static org.junit.Assert.assertEquals;
@@ -29,11 +30,13 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.pm.PackageManager;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.hardware.Camera;
 import android.media.AudioFormat;
 import android.media.AudioManager;
@@ -173,6 +176,33 @@ public class MediaRecorderTest extends MediaTestBase {
 
     private boolean mIsAtLeastR = ApiLevelUtil.isAtLeast(Build.VERSION_CODES.R);
     private boolean mIsAtLeastS = ApiLevelUtil.isAtLeast(Build.VERSION_CODES.S);
+
+    private static Color COLOR_BLOCK = Color.valueOf(1.0f, 1.0f, 1.0f);
+    private static Color[] COLOR_BARS = {
+        Color.valueOf(0.0f, 0.0f, 0.0f),
+        Color.valueOf(0.0f, 0.0f, 0.64f),
+        Color.valueOf(0.0f, 0.64f, 0.0f),
+        Color.valueOf(0.0f, 0.64f, 0.64f),
+        Color.valueOf(0.64f, 0.0f, 0.0f),
+        Color.valueOf(0.64f, 0.0f, 0.64f),
+        Color.valueOf(0.64f, 0.64f, 0.0f),
+    };
+    private static int BORDER_WIDTH = 16;
+
+    private static Rect getColorBarRect(int index, int width, int height) {
+        int barWidth = (width - BORDER_WIDTH * 2) / COLOR_BARS.length;
+        return new Rect(
+                BORDER_WIDTH + barWidth * index,
+                BORDER_WIDTH,
+                BORDER_WIDTH + barWidth * (index + 1),
+                height - BORDER_WIDTH);
+    }
+
+    private static Rect getColorBlockRect(int index, int width, int height) {
+        int blockCenterX = (width / 5) * (index % 4 + 1);
+        return new Rect(
+                blockCenterX - width / 10, height / 6, blockCenterX + width / 10, height / 3);
+    }
 
     public MediaRecorderTest() {
         OUTPUT_PATH = new File(Environment.getExternalStorageDirectory(),
@@ -935,6 +965,33 @@ public class MediaRecorderTest extends MediaTestBase {
         GLES20.glEnable(GLES20.GL_SCISSOR_TEST);
         GLES20.glScissor(startX, startY, width / 4, height / 2);
         GLES20.glClearColor(TEST_R1 / 255.0f, TEST_G1 / 255.0f, TEST_B1 / 255.0f, 1.0f);
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+    }
+
+    /** Generates a frame of color bars using GL commands. */
+    private void generateSurfaceFrameBars(int frameIndex, int width, int height) {
+        GLES20.glViewport(0, 0, width, height);
+        GLES20.glDisable(GLES20.GL_SCISSOR_TEST);
+        GLES20.glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+        GLES20.glEnable(GLES20.GL_SCISSOR_TEST);
+
+        for (int i = 0; i < COLOR_BARS.length; i++) {
+            Rect r = getColorBarRect(i, width, height);
+
+            GLES20.glScissor(r.left, r.top, r.width(), r.height());
+            final Color color = COLOR_BARS[i];
+            GLES20.glClearColor(color.red(), color.green(), color.blue(), 1.0f);
+            GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+        }
+
+        Rect r = getColorBlockRect(frameIndex, width, height);
+        GLES20.glScissor(r.left, r.top, r.width(), r.height());
+        GLES20.glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+        r.inset(BORDER_WIDTH, BORDER_WIDTH);
+        GLES20.glScissor(r.left, r.top, r.width(), r.height());
+        GLES20.glClearColor(COLOR_BLOCK.red(), COLOR_BLOCK.green(), COLOR_BLOCK.blue(), 1.0f);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
     }
 
@@ -1941,6 +1998,69 @@ public class MediaRecorderTest extends MediaTestBase {
             command.run();
         }
     };
+
+    @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.CINNAMON_BUN)
+    @RequiresFlagsEnabled({FLAG_APV_RECORDING_SUPPORT, FLAG_QUALITY_SETTING_SUPPORT})
+    public void testAPVEncodingQuality() throws Exception {
+        assumeTrue("no APV codecs", hasAPV());
+
+        final int width = 320;
+        final int height = 240;
+        final int frameRate = 30;
+        final int qualityLow = 10;
+        final int qualityHigh = 90;
+
+        long lowQualityFileSize =
+                recordWithQuality(qualityLow, width, height, frameRate, OUTPUT_PATH + ".mp4");
+        long highQualityFileSize =
+                recordWithQuality(qualityHigh, width, height, frameRate, OUTPUT_PATH2 + ".mp4");
+
+        assertTrue(
+                "File size with higher quality should be bigger. Size HI: "
+                        + highQualityFileSize
+                        + ", Size LO: "
+                        + lowQualityFileSize,
+                highQualityFileSize > lowQualityFileSize);
+    }
+
+    private long recordWithQuality(
+            int quality, int width, int height, int frameRate, String outputPath) throws Exception {
+        mMediaRecorder.reset();
+        Surface surface = MediaCodec.createPersistentInputSurface();
+        InputSurface encSurface = new InputSurface(surface);
+        mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
+        mMediaRecorder.setInputSurface(encSurface.getSurface());
+        mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+        mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.APV);
+        mMediaRecorder.setOutputFile(outputPath);
+        mMediaRecorder.setVideoSize(width, height);
+        mMediaRecorder.setVideoFrameRate(frameRate);
+        mMediaRecorder.setVideoEncodingQuality(quality);
+        mMediaRecorder.prepare();
+        encSurface.updateSize(width, height);
+        mMediaRecorder.start();
+
+        long startNsec = System.nanoTime();
+
+        for (int i = 0; i < NUM_FRAMES; i++) {
+            encSurface.makeCurrent();
+            generateSurfaceFrameBars(i, width, height);
+            long time = startNsec + computePresentationTime(0, i, frameRate) * 1000;
+            encSurface.setPresentationTime(time);
+            encSurface.swapBuffers();
+        }
+
+        mMediaRecorder.stop();
+
+        File outFile = new File(outputPath);
+        assertTrue(outFile.exists());
+        long fileSize = outFile.length();
+        assertTrue(fileSize > 0);
+        outFile.delete();
+        encSurface.release();
+        return fileSize;
+    }
 
     private static void checkRecordingConfig(AudioRecordingConfiguration config) {
         assertNotNull(config);

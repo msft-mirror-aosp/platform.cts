@@ -39,7 +39,6 @@ import android.content.res.loader.ResourcesLoader;
 import android.content.res.loader.ResourcesProvider;
 import android.graphics.Color;
 import android.os.UserHandle;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -57,7 +56,6 @@ import org.junit.rules.TestName;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-@AppModeNonSdkSandbox(reason = "SDK sandbox does not have access to OverlayManager.")
 @DisabledOnRavenwood(blockedBy = OverlayManager.class)
 public class ResourcesProviderTest {
     @Rule

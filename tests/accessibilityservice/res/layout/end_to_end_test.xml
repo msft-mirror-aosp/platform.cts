@@ -57,6 +57,15 @@
                       android:accessibilityTraversalAfter="@+id/buttonWithTooltip">
             </EditText>
 
+            <TextView android:id="@+id/text"
+                      android:text="@string/foo_bar_baz"
+                      android:layout_height="wrap_content"
+                      android:layout_width="fill_parent"
+                      android:textSize="11sp"
+                      android:textStyle="normal"
+                      android:fontFamily="sans-serif">
+            </TextView>
+
             <LinearLayout android:id="@+id/containerView"
                           android:contentDescription="@string/container_desc"
                           android:layout_width="fill_parent"

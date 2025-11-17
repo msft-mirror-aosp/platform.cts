@@ -38,7 +38,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 
@@ -60,7 +59,6 @@ import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
 //@AppModeFull // TODO(Instant) Should clip board data be visible?
-@AppModeNonSdkSandbox(reason = "SDK sandboxes cannot access ClipboardManager.")
 public class ClipboardManagerTest {
     private Context mContext;
     private ClipboardManager mClipboardManager;
@@ -68,7 +66,8 @@ public class ClipboardManagerTest {
 
     @Before
     public void setUp() throws Exception {
-        assumeTrue("Skipping Test: Wear-Os does not support ClipboardService", hasAutoFillFeature());
+        assumeTrue(
+                "Skipping Test: Wear-Os does not support ClipboardService", hasAutoFillFeature());
 
         mContext = InstrumentationRegistry.getTargetContext();
         mClipboardManager = mContext.getSystemService(ClipboardManager.class);

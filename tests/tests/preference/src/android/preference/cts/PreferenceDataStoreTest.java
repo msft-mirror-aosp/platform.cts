@@ -20,7 +20,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.AdditionalMatchers.or;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyFloat;
@@ -28,7 +27,6 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atLeastOnce;
@@ -48,8 +46,6 @@ import android.preference.PreferenceScreen;
 import androidx.test.filters.SmallTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
-
-import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -74,13 +70,6 @@ public class PreferenceDataStoreTest {
     private static final String TEST_STR = "Test";
     private static final String TEST_DEFAULT_STR = "TestDefault";
     private static final String TEST_WRONG_STR = "TestFromSharedPref";
-
-    @Rule(order = 0)
-    public AdoptShellPermissionsRule mAdoptShellPermissionsRule =
-            new AdoptShellPermissionsRule(
-                    androidx.test.platform.app.InstrumentationRegistry
-                            .getInstrumentation().getUiAutomation(),
-                    android.Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
 
     @Rule(order = 1)
     public ActivityTestRule<PreferenceFragmentActivity> mActivityRule =

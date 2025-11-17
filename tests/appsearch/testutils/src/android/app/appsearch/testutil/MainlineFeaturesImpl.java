@@ -109,6 +109,10 @@ public class MainlineFeaturesImpl implements Features {
             case Features.SET_SCHEMA_REQUEST_SCHEMA_TYPE_DISPLAYED_BY_SYSTEM:
                 return true;
 
+            // Features which are supported on T+ devices only.
+            case Features.ENTERPRISE_GLOBAL_SEARCH_SESSION:
+                return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU;
+
             // Features which are supported on U+ devices only.
             case Features.SET_SCHEMA_CIRCULAR_REFERENCES:
                 // fall through
@@ -123,6 +127,19 @@ public class MainlineFeaturesImpl implements Features {
                         && SystemProperties.getBoolean(
                                 "ro.appsearch.feature.enable_isolated_storage", /* def= */ false)
                         && (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
+
+            // Features which are supported on Cinnamon Bun+ devices only.
+            case Features.SCHEMA_JOINABLE_REPEATED_PROPERTIES:
+                // Currently, this feature is rollback incompatible to older AppSearch versions.
+                // Therefore, restrict this feature on C+ only.
+                // - AppSearch propagates this boolean value (with C+ SDK_INT check) to Icing in
+                //   IcingOptionsConfig.
+                // - Icing rejects a schema with repeated joinable fields if the feature is not
+                //   enabled. This ensures rollback compatibility.
+                //
+                // TODO(b/457496944): change Icing backup schema to cover repeated joinable fields
+                //   and modify SDK_INT check here if we decide to support this feature on T.
+                return Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN;
         }
         throw new IllegalArgumentException("Unhandled Features string: " + feature);
     }

@@ -91,6 +91,7 @@ android_test_helper_app {
         "kotlinx-coroutines-android",
     ],
 
+    compile_multilib: "both",
     min_sdk_version: "30",
     target_sdk_version: "30",
     manifest: "AndroidManifestProxy.xml",

@@ -38,7 +38,6 @@ import android.os.Process;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.Presubmit;
 import android.provider.DeviceConfig;
 import android.service.dataloader.DataLoaderService;
@@ -98,7 +97,6 @@ import java.util.stream.Stream;
 
 @RunWith(AndroidJUnit4.class)
 @AppModeFull
-@AppModeNonSdkSandbox
 @LargeTest
 @Presubmit
 public class PackageManagerShellCommandIncrementalTest {

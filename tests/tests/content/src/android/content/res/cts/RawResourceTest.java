@@ -21,7 +21,6 @@ import static junit.framework.TestCase.assertEquals;
 import android.content.Context;
 import android.content.cts.R;
 import android.content.res.Resources;
-import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
@@ -34,7 +33,6 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.io.InputStream;
 
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class RawResourceTest {
     private Context getContext() {

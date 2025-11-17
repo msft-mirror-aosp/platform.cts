@@ -31,7 +31,6 @@ import android.media.audio.Flags;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -51,7 +50,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 @FrameworkSpecificTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class UtilsTest {
     @Rule

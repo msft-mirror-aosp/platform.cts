@@ -26,7 +26,6 @@ import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.os.LocaleList;
 import android.os.Parcel;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.view.View;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -37,7 +36,6 @@ import org.junit.runner.RunWith;
 
 import java.util.Locale;
 
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class ConfigurationTest {
     private Configuration mConfigDefault;

@@ -29,7 +29,6 @@ import android.os.IBinder;
 import android.os.IInterface;
 import android.os.ParcelFileDescriptor;
 import android.os.Process;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.DisabledOnRavenwood;
 
 import org.junit.Before;
@@ -42,7 +41,6 @@ import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class BinderTest {
     private static final String DESCRIPTOR_GOOGLE = "google";
     private static final String DESCRIPTOR_ANDROID = "android";

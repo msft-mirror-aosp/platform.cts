@@ -32,7 +32,6 @@ import android.net.ConnectivityManager;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -385,7 +384,6 @@ public class PhoneStateListenerTest {
      */
 
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testOnMessageWaitingIndicatorChanged() throws Throwable {
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING));
         assertFalse(mOnMessageWaitingIndicatorChangedCalled);
@@ -533,7 +531,6 @@ public class PhoneStateListenerTest {
     }
 
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testOnRadioPowerStateChanged() throws Throwable {
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         assertThat(mOnRadioPowerStateChangedCalled).isFalse();
@@ -675,7 +672,6 @@ public class PhoneStateListenerTest {
     }
 
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK Sandboxes do not have READ_PHONE_STATE permission")
     public void testOnCallForwardingIndicatorChanged() throws Throwable {
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
         assertFalse(mOnCallForwardingIndicatorChangedCalled);
@@ -703,7 +699,6 @@ public class PhoneStateListenerTest {
     }
 
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have location permission")
     public void testOnCellLocationChanged() throws Throwable {
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         assertFalse(mOnCellLocationChangedCalled);
@@ -731,7 +726,6 @@ public class PhoneStateListenerTest {
     }
 
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK Sandboxes do not have location permission")
     public void testOnCallStateChanged() throws Throwable {
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
         assertFalse(mOnCallStateChangedCalled);
@@ -828,7 +822,6 @@ public class PhoneStateListenerTest {
     }
 
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK Sandboxes do not have location permission")
     public void testOnCellInfoChanged() throws Throwable {
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         assertFalse(mOnDataActivityCalled);
@@ -936,7 +929,6 @@ public class PhoneStateListenerTest {
     }
 
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testOnActiveDataSubscriptionIdChanged() throws Throwable {
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         assertFalse(mOnActiveDataSubscriptionIdChanged);

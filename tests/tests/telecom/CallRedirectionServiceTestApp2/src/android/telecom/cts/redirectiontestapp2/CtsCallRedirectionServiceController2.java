@@ -151,6 +151,7 @@ public class CtsCallRedirectionServiceController2 extends Service {
     @Override
     public boolean onUnbind(Intent intent) {
         sCallRedirectionServiceController = null;
+        super.onUnbind(intent);
         return false;
     }
 

@@ -25,7 +25,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 
 import androidx.test.InstrumentationRegistry;
 
@@ -43,7 +42,6 @@ import org.junit.runner.RunWith;
 
 import java.util.List;
 
-@AppModeNonSdkSandbox
 @RunWith(BedsteadJUnit4.class)
 public class SystemPackageDefaultStoppedStateTest {
 

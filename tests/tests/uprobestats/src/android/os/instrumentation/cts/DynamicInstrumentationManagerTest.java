@@ -19,6 +19,8 @@ import static android.Manifest.permission.DYNAMIC_INSTRUMENTATION;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeTrue;
+
 import android.os.Build;
 import android.os.Process;
 import android.platform.test.annotations.RequiresFlagsDisabled;
@@ -33,6 +35,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
+import com.android.compatibility.common.util.CpuFeatures;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -117,6 +120,7 @@ public class DynamicInstrumentationManagerTest {
     @EnsureHasPermission(DYNAMIC_INSTRUMENTATION)
     @RequiresFlagsEnabled(com.android.art.rw.flags.Flags.FLAG_DYNAMIC_INSTRUMENTATION_METHOD_ENTRY_HOOK)
     public void jitCompiled() {
+        assumeTrue(CpuFeatures.isArm64Cpu() && !CpuFeatures.isNativeBridgedCpu());
         OffsetsWithStatusCode result = getOffsetsWithStatusCode(
                 FQCN_NOT_IN_ART_PROFILE, METHOD_NOT_IN_ART_PROFILE, PARAMS_NOT_IN_ART_PROFILE);
         assertThat(result.statusCode).isEqualTo(0);

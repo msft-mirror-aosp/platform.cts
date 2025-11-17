@@ -29,7 +29,6 @@ import android.content.res.Resources;
 import android.content.res.Resources.Theme;
 import android.graphics.Color;
 import android.os.Parcel;
-import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.core.graphics.ColorUtils;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -39,7 +38,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class ColorStateListTest {
     private Context getContext() {

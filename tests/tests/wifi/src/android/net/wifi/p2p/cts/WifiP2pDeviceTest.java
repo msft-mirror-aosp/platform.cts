@@ -18,7 +18,9 @@ package android.net.wifi.p2p.cts;
 
 import static org.junit.Assert.assertFalse;
 
+import android.annotation.RequiresApi;
 import android.net.wifi.cts.WifiJUnit4TestBase;
+import android.net.wifi.p2p.WifiP2pConnectionInfo;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -88,5 +90,27 @@ public class WifiP2pDeviceTest extends WifiJUnit4TestBase {
         dev.isPassphraseKeypadBootstrappingMethodSupported();
         dev.isPinCodeDisplayBootstrappingMethodSupported();
         dev.isPinCodeKeypadBootstrappingMethodSupported();
+    }
+
+    @ApiTest(
+            apis = {
+                "android.net.wifi.p2p.WifiP2pDevice#getWifiP2pConnectionInfo",
+                "android.net.wifi.p2p.WifiP2pConnectionInfo#getWifiStandard",
+                "android.net.wifi.p2p.WifiP2pConnectionInfo#getChannelWidth",
+                "android.net.wifi.p2p.WifiP2pConnectionInfo#getTxNss",
+                "android.net.wifi.p2p.WifiP2pConnectionInfo#getRxNss"
+            })
+    @RequiresApi(37)
+    @RequiresFlagsEnabled(Flags.FLAG_WIFI_P2P_CONNECTION_INFO)
+    @Test
+    public void testGetWifiP2pConnectionInfo() {
+        WifiP2pDevice dev = new WifiP2pDevice();
+        WifiP2pConnectionInfo connectionInfo = dev.getWifiP2pConnectionInfo();
+        if (connectionInfo != null) {
+            connectionInfo.getWifiStandard();
+            connectionInfo.getChannelWidth();
+            connectionInfo.getTxNss();
+            connectionInfo.getRxNss();
+        }
     }
 }

@@ -43,6 +43,7 @@ import static android.view.accessibility.AccessibilityEvent.TYPE_VIEW_ACCESSIBIL
 import static android.view.accessibility.AccessibilityEvent.TYPE_VIEW_CLICKED;
 import static android.view.accessibility.AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS;
 import static android.view.accessibility.AccessibilityNodeInfo.ACTION_ARGUMENT_SCROLL_AMOUNT_FLOAT;
+import static android.view.accessibility.AccessibilityNodeInfo.EXTRA_DATA_RENDERING_INFO_KEY;
 import static android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction.ACTION_HIDE_TOOLTIP;
 import static android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_IN_DIRECTION;
 import static android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction.ACTION_SHOW_TOOLTIP;
@@ -110,16 +111,19 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.text.TextUtils;
+import android.util.TypedValue;
 import android.util.Log;
 import android.view.InputDevice;
 import android.view.MotionEvent;
 import android.view.TouchDelegate;
 import android.view.View;
+import android.view.ViewGroup.LayoutParams;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo;
 import android.view.accessibility.AccessibilityNodeProvider;
 import android.view.accessibility.AccessibilityWindowInfo;
 import android.view.accessibility.Flags;
@@ -2873,6 +2877,52 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
                         event -> equalsAccessibilityEvent(event, expected),
                         DEFAULT_TIMEOUT_MS);
         assertNotNull("Did not receive expected event: " + expected, awaitedEvent);
+    }
+
+    @MediumTest
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityNodeInfo#getExtraRenderingInfo",
+                "android.view.accessibility.AccessibilityNodeInfo#getAvailableExtraData",
+                "android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo#getLayoutSize",
+                "android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo#getTextSizeInPx",
+                "android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo#getTextSizeUnit"
+            })
+    @RequiresFlagsEnabled(
+            android.view.accessibility.Flags.FLAG_A11Y_EXTRA_RENDERING_INFO_COLOR_ADDITIONS)
+    public void testExtraRenderingInfoReportedToAccessibility() throws Exception {
+        final TextView textView =
+                (TextView) getOnMain(sInstrumentation, () -> mActivity.findViewById(R.id.text));
+        // Make sure the TextView was populated properly from xml
+        final float textViewTextSize = getOnMain(sInstrumentation, textView::getTextSize);
+        final int textViewTextSizeUnit = getOnMain(sInstrumentation, textView::getTextSizeUnit);
+        final LayoutParams layoutParams = getOnMain(sInstrumentation, textView::getLayoutParams);
+        assertThat(textViewTextSize).isGreaterThan(11f); // 11sp might be 27px
+        assertThat(textViewTextSizeUnit).isEqualTo(TypedValue.COMPLEX_UNIT_SP);
+        assertThat(layoutParams.width).isEqualTo(LayoutParams.MATCH_PARENT);
+        assertThat(layoutParams.height).isEqualTo(LayoutParams.WRAP_CONTENT);
+
+        // ExtraRenderingInfo is initially null but available.
+        final AccessibilityNodeInfo textViewNode =
+                sUiAutomation
+                        .getRootInActiveWindow()
+                        .findAccessibilityNodeInfosByViewId(
+                                "android.accessibilityservice.cts:id/text")
+                        .get(0);
+        ExtraRenderingInfo extraRenderingInfo = textViewNode.getExtraRenderingInfo();
+        assertThat(extraRenderingInfo).isNull();
+        assertThat(textViewNode.getAvailableExtraData()).contains(EXTRA_DATA_RENDERING_INFO_KEY);
+
+        // Refresh with ExtraRenderingInfo has expected values.
+        assertThat(textViewNode.refreshWithExtraData(EXTRA_DATA_RENDERING_INFO_KEY, new Bundle()))
+                .isTrue();
+        extraRenderingInfo = textViewNode.getExtraRenderingInfo();
+        assertThat(extraRenderingInfo).isNotNull();
+        assertThat(extraRenderingInfo.getTextSizeInPx()).isEqualTo(textViewTextSize);
+        assertThat(extraRenderingInfo.getTextSizeUnit()).isEqualTo(textViewTextSizeUnit);
+        assertThat(extraRenderingInfo.getLayoutSize().getWidth()).isEqualTo(layoutParams.width);
+        assertThat(extraRenderingInfo.getLayoutSize().getHeight()).isEqualTo(layoutParams.height);
     }
 
     private static class LabelNodeProviderTest extends AccessibilityNodeProvider {

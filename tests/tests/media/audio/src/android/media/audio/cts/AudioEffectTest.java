@@ -39,6 +39,7 @@ import android.util.Log;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
+import com.android.compatibility.common.util.PollingCheck;
 
 import org.junit.After;
 import org.junit.Test;
@@ -61,6 +62,12 @@ public class AudioEffectTest extends PostProcTestBase {
     private final static int SAMPLING_RATE = 44100;
 
     private final static int MAX_LOOPER_WAIT_COUNT = 10;
+
+    /**
+     * Timeout for PollingCheck to wait for async AudioFlinger callbacks. 2s is a robust value to
+     * prevent flakes during CTS runs under heavy load.
+     */
+    private static final long ASYNC_CALLBACK_TIMEOUT_MS = 2000;
 
     private AudioEffect mEffect = null;
     private AudioEffect mEffect2 = null;
@@ -694,13 +701,32 @@ public class AudioEffectTest extends PostProcTestBase {
             assertNotNull("could not create AudioEffect", effect1);
             assertNotNull("could not create AudioEffect", effect2);
 
+            // Create final variables for the PollingCheck inner classes
+            final AudioEffect finalEffect1 = effect1;
+
+            // Wait for max 2 seconds for effect1 to lose control
+            new PollingCheck(ASYNC_CALLBACK_TIMEOUT_MS) {
+                @Override
+                protected boolean check() {
+                    try {
+                        return !finalEffect1.hasControl();
+                    } catch (IllegalStateException e) {
+                        // If effect is released, it doesn't have control
+                        return true;
+                    }
+                }
+            }.run();
+
             assertTrue("Effect2 does not have control", effect2.hasControl());
             assertFalse("Effect1 has control", effect1.hasControl());
+
             assertTrue("Effect1 can enable",
                     effect1.setEnabled(true) == AudioEffect.ERROR_INVALID_OPERATION);
             // Note: all effects under test are disabled at setup
             assertFalse("Effect1 has enabled", effect2.getEnabled());
 
+        } catch (IllegalStateException e) {
+            fail("Effect operation failed: " + e.getMessage());
         } catch (IllegalArgumentException e) {
             fail("Effect not found");
         } catch (UnsupportedOperationException e) {

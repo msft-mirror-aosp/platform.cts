@@ -25,7 +25,6 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.res.Configuration;
 import android.os.Bundle;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.Presubmit;
 import android.view.Display;
 import android.view.WindowManager;
@@ -61,7 +60,6 @@ import java.util.concurrent.TimeoutException;
  */
 @Presubmit
 @SmallTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ContextGetDisplayTest extends ContextTestBase {
     @Test(expected = UnsupportedOperationException.class)
     public void testGetDisplayFromApplication() {

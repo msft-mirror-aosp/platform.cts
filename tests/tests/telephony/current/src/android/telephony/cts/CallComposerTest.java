@@ -27,7 +27,6 @@ import android.os.OutcomeReceiver;
 import android.os.ParcelFileDescriptor;
 import android.os.ParcelUuid;
 import android.os.UserHandle;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.telephony.cts.util.TelephonyUtils;
@@ -57,7 +56,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-@AppModeNonSdkSandbox(reason = "SDK sandboxes cannot fill ROLE_DIALER role")
 public class CallComposerTest {
     private static final String TEST_FILE_NAME = "red_velvet_cupcake.png";
     private static final String TEST_FILE_CONTENT_TYPE = "image/png";

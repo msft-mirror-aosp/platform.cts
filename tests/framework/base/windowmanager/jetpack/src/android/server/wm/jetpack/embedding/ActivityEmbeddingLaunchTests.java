@@ -442,9 +442,6 @@ public class ActivityEmbeddingLaunchTests extends ActivityEmbeddingTestBase {
      * same container, the new activity should be launched successfully.
      */
     @Test
-    @RequiresFlagsEnabled(
-            com.android.window.flags.Flags
-                    .FLAG_ACTIVITY_EMBEDDING_DELAY_TASK_FRAGMENT_FINISH_FOR_ACTIVITY_LAUNCH)
     public void testActivityFinishAndLaunchNewActivity() {
         // Set up a split between the primary activity and the secondary activity.
         final Activity primaryActivity =

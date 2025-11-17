@@ -31,15 +31,17 @@ import android.autofillservice.cts.testcore.Helper;
 import android.autofillservice.cts.testcore.InstrumentedAutoFillService.FillRequest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import org.junit.Test;
-
 
 /**
  * This is the test cases about fade-in animation for the fill dialog UI.
  */
 public class FadeInActivityTest extends AutoFillServiceTestCase.ManualActivityLaunch {
 
+    @RequiresFlagsDisabled("android.service.autofill.expressive_fill_dialog")
     @Test
     public void testShowFillDialog_withFadeInAnimation() throws Exception {
         // EditText will autofocus when running in TV target, fill dialog doesn't support
@@ -74,6 +76,48 @@ public class FadeInActivityTest extends AutoFillServiceTestCase.ManualActivityLa
 
         // Set expected value, then select dataset
         mUiBot.assertFillDialogDatasets("Dialog Presentation");
+    }
+
+    @RequiresFlagsEnabled("android.service.autofill.expressive_fill_dialog")
+    @Test
+    public void testShowExpressiveFillDialog_withFadeInAnimation() throws Exception {
+        // EditText will autofocus when running in TV target, fill dialog doesn't support
+        // for autofocus case, skip test op TV target
+        assumeFalse("Skip test on TV. Does not support autofocus for fill dialog", isTv());
+
+        // Enable feature and test service
+        enableFillDialogFeature(sContext);
+        enableService();
+
+        // Set response
+        final CannedFillResponse.Builder builder =
+                new CannedFillResponse.Builder()
+                        .addDataset(
+                                new CannedDataset.Builder()
+                                        .setField(ID_PASSWORD, "sweet")
+                                        .setPresentation(
+                                                createPresentation("Dropdown Presentation"))
+                                        .setDialogPresentation(
+                                                createPresentation("Dialog Presentation"))
+                                        .build())
+                        .setDialogHeader(createPresentation("Dialog Header"))
+                        .setDialogTriggerIds(ID_PASSWORD);
+        sReplier.addResponse(builder.build());
+
+        // Start activity
+        startFadeInActivity();
+
+        // Check onFillRequest has the flag: FLAG_SUPPORTS_FILL_DIALOG
+        final FillRequest fillRequest = sReplier.getNextFillRequest();
+        assertHasFlags(fillRequest.flags, FLAG_SUPPORTS_FILL_DIALOG);
+
+        // Click on password field to trigger fill dialog
+        mUiBot.selectByRelativeId(ID_PASSWORD);
+        mUiBot.waitForIdleSync();
+
+        // Set expected value, then select dataset. In expressive fill dialog, the header becomes
+        // part of the list.
+        mUiBot.assertFillDialogDatasets("Dialog Header", "Dialog Presentation");
     }
 
     private void startFadeInActivity() throws Exception {

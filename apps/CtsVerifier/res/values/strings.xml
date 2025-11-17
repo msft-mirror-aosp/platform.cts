@@ -6997,7 +6997,10 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="bubbles_test_dismiss_title">Drag and dismiss bubble</string>
     <string name="bubbles_test_dismiss_verify">Click the button below and verify that the bubble
         is still on screen, and the notification is visible in the notification shade.\n\n
-        Drag the bubble, while dragging a UI affordance should show. Verify that: \n\n
+        If the bubble is hidden under the bar in the corner (bubble bar), slowly swipe up
+        from the center of the display to show the bubble, where you can dismiss it easily.\n\n
+        Drag the bubble (long press bubble to start drag), while dragging a UI affordance should
+        show. Verify that: \n\n
         1. Dragging and dropping the bubble on that UI affordance removes it from the screen.\n\n
         2. The notification should remain in the notification shade.</string>
     <string name="bubbles_test_dismiss_button">Update bubble to show notification</string>
@@ -7882,6 +7885,7 @@ You should be prompted to select credentials; choose the ones you just installed
         <item>CtsWifiAwareTests</item>
         <item>CtsWifiSoftApTestCases</item>
         <item>CtsWifiDirectTests</item>
+        <item>CtsNotificationSizeVerifierHostTest</item>
     </string-array>
 
     <!-- Strings for Audio Workload Test. -->

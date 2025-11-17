@@ -27,7 +27,6 @@ import androidx.test.filters.SmallTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.PollingCheck;
 
 import org.junit.Before;
@@ -45,13 +44,6 @@ public class PreferenceRecycleTest {
     private PreferencesFromXmlRecycle mActivity;
 
     private static final int TIMEOUT_MS = 5000;
-
-    @Rule(order = 0)
-    public AdoptShellPermissionsRule mAdoptShellPermissionsRule =
-            new AdoptShellPermissionsRule(
-                    androidx.test.platform.app.InstrumentationRegistry
-                            .getInstrumentation().getUiAutomation(),
-                    android.Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
 
     @Rule(order = 1)
     public ActivityTestRule<PreferencesFromXmlRecycle> mActivityRule =

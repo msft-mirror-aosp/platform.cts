@@ -28,7 +28,6 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
-import android.Manifest;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.os.Handler;
@@ -50,7 +49,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.CtsKeyEventUtil;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.UserHelper;
@@ -96,11 +94,6 @@ public class PasswordTransformationMethodTest {
     private PasswordTransformationMethod mMethod;
     private EditText mEditText;
     private CharSequence mTransformedText;
-
-    @Rule(order = 0)
-    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
-            InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
 
     @Rule(order = 1)
     public ActivityScenarioRule<CtsActivity> mActivityRule = new ActivityScenarioRule<>(

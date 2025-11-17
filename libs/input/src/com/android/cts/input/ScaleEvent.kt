@@ -18,6 +18,7 @@ package com.android.cts.input
 
 import android.graphics.PointF
 import android.view.ScaleGestureDetector
+import kotlin.math.abs
 import org.hamcrest.Description
 import org.hamcrest.Matcher
 import org.hamcrest.TypeSafeMatcher
@@ -82,7 +83,7 @@ fun isInProgress(isInProgress: Boolean) =
 fun hasFocus(focus: PointF): Matcher<ScaleEvent> =
     object : TypeSafeMatcher<ScaleEvent>() {
         override fun matchesSafely(event: ScaleEvent): Boolean {
-            return (event.focus.x - focus.x) < EPSILON && (event.focus.y - focus.y) < EPSILON
+            return abs(event.focus.x - focus.x) < EPSILON && abs(event.focus.y - focus.y) < EPSILON
         }
 
         override fun describeTo(description: Description) {
@@ -93,7 +94,7 @@ fun hasFocus(focus: PointF): Matcher<ScaleEvent> =
 fun hasScaleFactor(scaleFactor: Float): Matcher<ScaleEvent> =
     object : TypeSafeMatcher<ScaleEvent>() {
         override fun matchesSafely(event: ScaleEvent): Boolean {
-            return (event.scaleFactor - scaleFactor) < EPSILON
+            return abs(event.scaleFactor - scaleFactor) < EPSILON
         }
 
         override fun describeTo(description: Description) {
@@ -116,8 +117,8 @@ fun hasScaleFactor(matcher: Matcher<Float>): Matcher<ScaleEvent> =
 fun hasCurrentSpanXY(currentSpanXY: PointF): Matcher<ScaleEvent> =
     object : TypeSafeMatcher<ScaleEvent>() {
         override fun matchesSafely(event: ScaleEvent): Boolean {
-            return (event.currentSpanXY.x - currentSpanXY.x) < EPSILON &&
-                (event.currentSpanXY.y - currentSpanXY.y) < EPSILON
+            return abs(event.currentSpanXY.x - currentSpanXY.x) < EPSILON &&
+                abs(event.currentSpanXY.y - currentSpanXY.y) < EPSILON
         }
 
         override fun describeTo(description: Description) {
@@ -128,7 +129,7 @@ fun hasCurrentSpanXY(currentSpanXY: PointF): Matcher<ScaleEvent> =
 fun hasCurrentSpan(currentSpan: Float): Matcher<ScaleEvent> =
     object : TypeSafeMatcher<ScaleEvent>() {
         override fun matchesSafely(event: ScaleEvent): Boolean {
-            return (event.currentSpan - currentSpan) < EPSILON
+            return abs(event.currentSpan - currentSpan) < EPSILON
         }
 
         override fun describeTo(description: Description) {
@@ -139,8 +140,8 @@ fun hasCurrentSpan(currentSpan: Float): Matcher<ScaleEvent> =
 fun hasPreviousSpanXY(previousSpanXY: PointF): Matcher<ScaleEvent> =
     object : TypeSafeMatcher<ScaleEvent>() {
         override fun matchesSafely(event: ScaleEvent): Boolean {
-            return (event.previousSpanXY.x - previousSpanXY.x) < EPSILON &&
-                (event.previousSpanXY.y - previousSpanXY.y) < EPSILON
+            return abs(event.previousSpanXY.x - previousSpanXY.x) < EPSILON &&
+                abs(event.previousSpanXY.y - previousSpanXY.y) < EPSILON
         }
 
         override fun describeTo(description: Description) {
@@ -151,7 +152,7 @@ fun hasPreviousSpanXY(previousSpanXY: PointF): Matcher<ScaleEvent> =
 fun hasPreviousSpan(previousSpan: Float): Matcher<ScaleEvent> =
     object : TypeSafeMatcher<ScaleEvent>() {
         override fun matchesSafely(event: ScaleEvent): Boolean {
-            return (event.previousSpan - previousSpan) < EPSILON
+            return abs(event.previousSpan - previousSpan) < EPSILON
         }
 
         override fun describeTo(description: Description) {

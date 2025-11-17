@@ -44,7 +44,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import android.Manifest;
 import android.app.Instrumentation;
 import android.content.ClipData;
 import android.content.Context;
@@ -71,7 +70,6 @@ import android.os.SystemClock;
 import android.os.VibrationAttributes;
 import android.os.Vibrator;
 import android.os.vibrator.HapticFeedbackRequest;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -125,7 +123,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 
-import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.CtsMouseUtil;
 import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.PollingCheck;
@@ -154,7 +151,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @MediumTest
 @RunWith(AndroidJUnit4.class)
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ViewTest {
     /** timeout delta when wait in case the system is sluggish */
     private static final long TIMEOUT_DELTA = 10000;
@@ -168,12 +164,6 @@ public class ViewTest {
     private Resources mResources;
     private MockViewParent mMockParent;
     private Context mContext;
-
-    @Rule(order = 0)
-    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
-            androidx.test.platform.app.InstrumentationRegistry
-                    .getInstrumentation().getUiAutomation(),
-            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
 
     @Rule(order = 1)
     public ActivityTestRule<ViewTestCtsActivity> mActivityRule =

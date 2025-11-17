@@ -50,6 +50,8 @@ import static android.app.admin.SecurityLog.TAG_MAX_PASSWORD_ATTEMPTS_SET;
 import static android.app.admin.SecurityLog.TAG_MAX_SCREEN_LOCK_TIMEOUT_SET;
 import static android.app.admin.SecurityLog.TAG_MEDIA_MOUNT;
 import static android.app.admin.SecurityLog.TAG_MEDIA_UNMOUNT;
+import static android.app.admin.SecurityLog.TAG_NFC_DISABLED;
+import static android.app.admin.SecurityLog.TAG_NFC_ENABLED;
 import static android.app.admin.SecurityLog.TAG_OS_SHUTDOWN;
 import static android.app.admin.SecurityLog.TAG_OS_STARTUP;
 import static android.app.admin.SecurityLog.TAG_PASSWORD_CHANGED;
@@ -169,6 +171,8 @@ public class SecurityLoggingTest extends BaseDeviceAdminTest {
                     .put(TAG_PASSWORD_CHANGED, of(I, I))
                     .put(TAG_BLUETOOTH_CONNECTION, of(S, I, S))
                     .put(TAG_BLUETOOTH_DISCONNECTION, of(S, S))
+                    .put(TAG_NFC_DISABLED, of())
+                    .put(TAG_NFC_ENABLED, of())
                     .build();
 
     private static final String GENERATED_KEY_ALIAS = "generated_key_alias";

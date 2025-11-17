@@ -33,7 +33,6 @@ import androidx.test.filters.LargeTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.CddTest;
 
 import org.junit.Before;
@@ -64,12 +63,6 @@ public class OpenGlEsVersionTest {
     private static final int EGL_OPENGL_ES3_BIT_KHR = 0x0040;
 
     private OpenGlEsVersionCtsActivity mActivity;
-
-    @Rule(order = 0)
-    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
-            androidx.test.platform.app.InstrumentationRegistry
-                    .getInstrumentation().getUiAutomation(),
-            android.Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
 
     @Rule(order = 1)
     public ActivityTestRule<OpenGlEsVersionCtsActivity> mActivityRule =

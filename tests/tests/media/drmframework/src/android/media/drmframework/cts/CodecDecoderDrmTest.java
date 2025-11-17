@@ -18,13 +18,13 @@ package android.media.drmframework.cts;
 
 import static org.junit.Assert.fail;
 
+import android.media.MediaCodec;
 import android.media.MediaCryptoException;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.NotProvisionedException;
 import android.media.ResourceBusyException;
 import android.media.UnsupportedSchemeException;
-import android.media.cts.TestUtils;
 import android.mediav2.common.cts.CodecDecoderBlockModelDrmTestBase;
 import android.mediav2.common.cts.CodecDecoderDrmTestBase;
 import android.mediav2.common.cts.OutputManager;
@@ -117,6 +117,7 @@ public class CodecDecoderDrmTest extends CodecDecoderDrmTestBase {
     @ApiTest(apis = {"android.media.MediaCodec#configure",
             "android.media.MediaCodec#queueSecureInputBuffer",
             "android.media.MediaCodec#CONFIGURE_FLAG_USE_BLOCK_MODEL",
+            "android.media.MediaCodec#CONFIGURE_FLAG_USE_CRYPTO_ASYNC",
             "android.media.MediaCodec.Request#setEncryptedLinearBlock"})
     @LargeTest
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
@@ -129,21 +130,41 @@ public class CodecDecoderDrmTest extends CodecDecoderDrmTestBase {
         decoder.decodeToMemory(mTestFile, mCodecName, 0, MediaExtractor.SEEK_TO_CLOSEST_SYNC,
                 Integer.MAX_VALUE);
         decoder.tearDownCrypto();
-
-        if (IS_AT_LEAST_R) {
-            OutputManager ref = decoder.getOutputManager();
-            CodecDecoderBlockModelDrmTestBase decoderBlockModel =
-                    new CodecDecoderBlockModelDrmTestBase(mCodecName, mMediaType, null,
-                    mAllTestParams);
-            OutputManager test = new OutputManager(ref.getSharedErrorLogs());
-            decoderBlockModel.setUpCrypto(CLEAR_KEY_IDENTIFIER, DRM_INIT_DATA,
+        OutputManager ref = decoder.getOutputManager();
+        if (IS_AT_LEAST_U) {
+            CodecDecoderDrmTestBase decoderCrypto =
+                    new CodecDecoderDrmTestBase(mCodecName, mMediaType, null, mAllTestParams);
+            OutputManager testCrypto = new OutputManager(ref.getSharedErrorLogs());
+            decoderCrypto.setUpCrypto(CLEAR_KEY_IDENTIFIER, DRM_INIT_DATA,
                     new byte[][]{CLEAR_KEY_CENC});
-            decoderBlockModel.decodeToMemory(mTestFile, mCodecName, test, 0,
-                    MediaExtractor.SEEK_TO_CLOSEST_SYNC, Integer.MAX_VALUE);
-            decoderBlockModel.tearDownCrypto();
-            if (!ref.equals(test)) {
-                fail("Output in block model mode is not same as output in normal mode. \n"
-                        + mTestConfig + mTestEnv + test.getErrMsg());
+            decoderCrypto.decodeToMemory(mTestFile, mCodecName, testCrypto, true /* saveToMem */,
+                    0 /* pts */, MediaExtractor.SEEK_TO_CLOSEST_SYNC, Integer.MAX_VALUE,
+                    true  /* isAsync */, true  /* signalledEos */,
+                    MediaCodec.CONFIGURE_FLAG_USE_CRYPTO_ASYNC);
+            decoderCrypto.tearDownCrypto();
+            if (!ref.equals(testCrypto)) {
+                fail("Output with CRYPTO_ASYNC flag is not same as baseline. \n"
+                        + mTestConfig + mTestEnv + testCrypto.getErrMsg());
+            }
+        }
+        if (IS_AT_LEAST_R) {
+            int[] configureFlags = IS_AT_LEAST_U ?
+                    new int[]{0, MediaCodec.CONFIGURE_FLAG_USE_CRYPTO_ASYNC} : new int[]{0};
+            for (int flag : configureFlags) {
+                CodecDecoderBlockModelDrmTestBase decoderBlockModel =
+                        new CodecDecoderBlockModelDrmTestBase(mCodecName, mMediaType, null,
+                                mAllTestParams);
+                OutputManager test = new OutputManager(ref.getSharedErrorLogs());
+                decoderBlockModel.setUpCrypto(CLEAR_KEY_IDENTIFIER, DRM_INIT_DATA,
+                        new byte[][]{CLEAR_KEY_CENC});
+                decoderBlockModel.decodeToMemory(mTestFile, mCodecName, test, true /* saveToMem */,
+                        0 /* pts */, MediaExtractor.SEEK_TO_CLOSEST_SYNC, Integer.MAX_VALUE,
+                        true  /* isAsync */, true  /* signalledEos */, flag);
+                decoderBlockModel.tearDownCrypto();
+                if (!ref.equals(test)) {
+                    fail("Output in block model mode is not same as output in normal mode. \n"
+                            + mTestConfig + mTestEnv + test.getErrMsg());
+                }
             }
         }
     }

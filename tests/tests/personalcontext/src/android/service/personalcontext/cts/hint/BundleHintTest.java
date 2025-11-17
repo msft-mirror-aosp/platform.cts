@@ -49,7 +49,7 @@ public class BundleHintTest {
         final Bundle data = new Bundle();
         data.putInt(dataKey, inputValue);
 
-        final BundleHint hint = new BundleHint();
+        final BundleHint hint = new BundleHint.Builder().build();
         hint.getDataBundle().putAll(data);
 
         final ContextHint outputHint = bundleUnbundle(hint);

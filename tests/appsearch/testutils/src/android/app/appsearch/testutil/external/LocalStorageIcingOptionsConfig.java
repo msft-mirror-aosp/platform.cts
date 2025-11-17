@@ -16,6 +16,7 @@
 
 package com.android.server.appsearch.external.localstorage;
 
+import com.android.appsearch.flags.Flags;
 
 import org.jspecify.annotations.NonNull;
 
@@ -127,5 +128,10 @@ public class LocalStorageIcingOptionsConfig implements IcingOptionsConfig {
     @Override
     public int getEmbeddingIndexNumShards() {
         return DEFAULT_EMBEDDING_INDEX_NUM_SHARDS;
+    }
+
+    @Override
+    public boolean enableRepeatedFieldJoins() {
+        return Flags.enableRepeatedFieldJoins();
     }
 }

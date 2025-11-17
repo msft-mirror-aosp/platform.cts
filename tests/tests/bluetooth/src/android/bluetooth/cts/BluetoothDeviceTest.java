@@ -50,6 +50,7 @@ import android.bluetooth.BluetoothGattConnectionSettings;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothSinkAudioPolicy;
 import android.bluetooth.BluetoothStatusCodes;
+import android.bluetooth.BondStatus;
 import android.bluetooth.EncryptionStatus;
 import android.bluetooth.OobData;
 import android.bluetooth.test_utils.BlockingBluetoothAdapter;
@@ -522,6 +523,77 @@ public class BluetoothDeviceTest {
                                 null));
     }
 
+    /**
+     * Test method for {@link BluetoothDevice#fetchUuids(int)}. This test requires the
+     * FLAG_EXPLICIT_UUID_TRANSPORT_API to be enabled.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_EXPLICIT_UUID_TRANSPORT_API)
+    @Test
+    public void fetchUuids() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
+        // --- Tests below run WITH BLUETOOTH_CONNECT ---
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT)) {
+
+            // 2. Test with different Transports
+            assertThat(mFakeDevice.fetchUuids(TRANSPORT_AUTO)).isTrue();
+            assertThat(mFakeDevice.fetchUuids(TRANSPORT_BREDR)).isTrue();
+            assertThat(mFakeDevice.fetchUuids(TRANSPORT_LE)).isTrue();
+
+            // 3. Test with Bluetooth Disabled
+            assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
+            assertThat(mFakeDevice.fetchUuids(TRANSPORT_AUTO)).isFalse();
+            assertThat(mFakeDevice.fetchUuids(TRANSPORT_BREDR)).isFalse();
+        } // Permissions.withPermissions() restores original permission state here.
+    }
+
+    /**
+     * Test method for {@link BluetoothDevice#fetchUuids(int)}. This test requires the
+     * FLAG_EXPLICIT_UUID_TRANSPORT_API to be enabled.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_EXPLICIT_UUID_TRANSPORT_API)
+    @Test
+    public void fetchUuidsInvalidTransport() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT)) {
+
+            // Test with a clearly out-of-range negative value
+            int invalidTransportNegative = -1;
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> mFakeDevice.fetchUuids(invalidTransportNegative));
+
+            // Test with a value greater than defined transports
+            int invalidTransportPositive = 3; // Assuming valid are 0, 1, 2
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> mFakeDevice.fetchUuids(invalidTransportPositive));
+
+            // Example of another out-of-range value
+            int anotherInvalidTransport = 100;
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> mFakeDevice.fetchUuids(anotherInvalidTransport));
+        }
+    }
+
+    /**
+     * Test method for {@link BluetoothDevice#fetchUuids(int)}. Tests that SecurityException is
+     * thrown when calling fetchUuids without BLUETOOTH_CONNECT permission.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_EXPLICIT_UUID_TRANSPORT_API)
+    @Test
+    public void fetchUuidsPermissionEnforcement() {
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
+        // setUp() adopts BLUETOOTH_CONNECT, so drop it to test enforcement.
+        mUiAutomation.dropShellPermissionIdentity();
+        assertThrows(SecurityException.class, () -> mFakeDevice.fetchUuids(TRANSPORT_BREDR));
+    }
+
     @Test
     public void fetchUuidsWithSdp() {
         // Skip the test if bluetooth or companion device are not present.
@@ -893,6 +965,42 @@ public class BluetoothDeviceTest {
         assertThat(encryptionStatus.getKeySize()).isEqualTo(mFakeKeySize);
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_GET_BOND_STATUS)
+    @Test
+    public void getBondStatus() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
+        // Device is not bonded.
+        mFakeDevice = mAdapter.getRemoteDevice("AB:11:22:AA:BB:DE");
+        // For an unbonded device, this should return null.
+        assertThat(mFakeDevice.getBondStatus(BluetoothDevice.TRANSPORT_BREDR)).isNull();
+        assertThat(mFakeDevice.getBondStatus(BluetoothDevice.TRANSPORT_LE)).isNull();
+
+        // TRANSPORT_AUTO is not a valid transport for getBondStatus.
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> mFakeDevice.getBondStatus(BluetoothDevice.TRANSPORT_AUTO));
+
+        mUiAutomation.dropShellPermissionIdentity();
+        assertThrows(
+                SecurityException.class,
+                () -> mFakeDevice.getBondStatus(BluetoothDevice.TRANSPORT_BREDR));
+        assertThrows(
+                SecurityException.class,
+                () -> mFakeDevice.getBondStatus(BluetoothDevice.TRANSPORT_LE));
+
+        // Create a fake bond status and verify the getters.
+        BondStatus bondStatus =
+                new BondStatus(
+                        BluetoothDevice.PAIRING_ALGORITHM_BREDR_SSP,
+                        BluetoothDevice.PAIRING_VARIANT_PASSKEY_CONFIRMATION);
+        assertThat(bondStatus.getPairingVariant())
+                .isEqualTo(BluetoothDevice.PAIRING_VARIANT_PASSKEY_CONFIRMATION);
+        assertThat(bondStatus.getPairingAlgorithm())
+                .isEqualTo(BluetoothDevice.PAIRING_ALGORITHM_BREDR_SSP);
+    }
+
     /*Testcases for BluetoothDevice#connectGatt(BluetoothGattConnectionSettings)*/
     @Test(expected = NullPointerException.class)
     @RequiresFlagsEnabled(Flags.FLAG_GATT_CONN_SETTINGS)
@@ -910,6 +1018,7 @@ public class BluetoothDeviceTest {
                         .setTransport(BluetoothDevice.TRANSPORT_LE)
                         .setAutoConnectEnabled(false)
                         .setOpportunisticEnabled(false)
+                        .setAutomaticMtuEnabled(true)
                         .build();
         BluetoothGatt gatt = mFakeDevice.connectGatt(settings);
         assertThat(gatt).isNotNull();

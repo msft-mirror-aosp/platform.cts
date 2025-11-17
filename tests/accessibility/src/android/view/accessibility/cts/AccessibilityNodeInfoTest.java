@@ -19,6 +19,7 @@ package android.view.accessibility.cts;
 import static androidx.test.InstrumentationRegistry.getContext;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -50,11 +51,13 @@ import android.text.style.ForegroundColorSpan;
 import android.text.style.ImageSpan;
 import android.text.style.ReplacementSpan;
 import android.util.ArrayMap;
+import android.util.TypedValue;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction;
 import android.view.accessibility.AccessibilityNodeInfo.CollectionInfo;
 import android.view.accessibility.AccessibilityNodeInfo.CollectionItemInfo;
+import android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo;
 import android.view.accessibility.AccessibilityNodeInfo.RangeInfo;
 import android.view.accessibility.AccessibilityNodeInfo.TouchDelegateInfo;
 import android.view.accessibility.Flags;
@@ -70,7 +73,6 @@ import org.junit.runner.RunWith;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -89,6 +91,7 @@ public class AccessibilityNodeInfoTest {
 
     @SmallTest
     @Test
+    @ApiTest(apis = {"android.view.accessibility.AccessibilityNodeInfo#setExtraRenderingInfo"})
     public void testMarshaling() throws Exception {
         // fully populate the node info to marshal
         AccessibilityNodeInfo sentInfo = AccessibilityNodeInfo.obtain(new View(getContext()));
@@ -531,10 +534,11 @@ public class AccessibilityNodeInfoTest {
 
     @SmallTest
     @Test
-    @ApiTest(apis = {
-            "android.view.accessibility.AccessibilityNodeInfo.CollectionItemInfo#getSortDirection",
-            "android.view.accessibility.AccessibilityNodeInfo.CollectionItemInfo.Builder#setSortDirection"
-    })
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityNodeInfo.CollectionItemInfo#getSortDirection",
+                "android.view.accessibility.AccessibilityNodeInfo.CollectionItemInfo.Builder#setSortDirection"
+            })
     @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_A11Y_SORT_DIRECTION_API)
     public void testSortDirection_setInvalidExpectException() {
         CollectionItemInfo.Builder infoBuilder = new CollectionItemInfo.Builder();
@@ -543,6 +547,64 @@ public class AccessibilityNodeInfoTest {
                 () -> {
                     infoBuilder.setSortDirection(CollectionItemInfo.SORT_DIRECTION_OTHER + 1);
                 });
+    }
+
+    @SmallTest
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityNodeInfo#setStructuredDataInfo",
+                "android.view.accessibility.AccessibilityNodeInfo#getStructuredDataInfo",
+                "android.view.accessibility.AccessibilityNodeInfo#MathInfo",
+            })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_A11Y_MATH_API)
+    public void testSetGetMathInfo() {
+        AccessibilityNodeInfo.MathInfo mathInfo =
+                new AccessibilityNodeInfo.MathInfo(
+                        AccessibilityNodeInfo.MathInfo.MATH_TAG_FRACTION);
+        mathInfo.addAttribute(AccessibilityNodeInfo.MathInfo.MATH_ATTRIBUTE_INTENT, "division");
+        assertThat(mathInfo.getTag()).isEqualTo(AccessibilityNodeInfo.MathInfo.MATH_TAG_FRACTION);
+        assertThat(mathInfo.getAttribute(AccessibilityNodeInfo.MathInfo.MATH_ATTRIBUTE_INTENT))
+                .isEqualTo("division");
+
+        AccessibilityNodeInfo node = new AccessibilityNodeInfo();
+        node.setStructuredDataInfo(mathInfo);
+        AccessibilityNodeInfo.MathInfo retrievedMathInfo =
+                (AccessibilityNodeInfo.MathInfo) node.getStructuredDataInfo();
+        assertThat(retrievedMathInfo).isEqualTo(mathInfo);
+
+        mathInfo.removeAttribute(AccessibilityNodeInfo.MathInfo.MATH_ATTRIBUTE_INTENT);
+        assertThat(mathInfo.getAttribute(AccessibilityNodeInfo.MathInfo.MATH_ATTRIBUTE_INTENT))
+                .isNull();
+    }
+
+    @SmallTest
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityNodeInfo#setStructuredDataInfo",
+                "android.view.accessibility.AccessibilityNodeInfo#getStructuredDataInfo",
+                "android.view.accessibility.AccessibilityNodeInfo#MathInfo",
+            })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_A11Y_MATH_API)
+    public void testMathInfoParceling() {
+        AccessibilityNodeInfo.MathInfo mathInfo =
+                new AccessibilityNodeInfo.MathInfo(AccessibilityNodeInfo.MathInfo.MATH_TAG_ROOT);
+        mathInfo.addAttribute(AccessibilityNodeInfo.MathInfo.MATH_ATTRIBUTE_INTENT, "sqrt");
+
+        AccessibilityNodeInfo node = new AccessibilityNodeInfo();
+        node.setStructuredDataInfo(mathInfo);
+
+        Parcel parcel = Parcel.obtain();
+        node.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+        AccessibilityNodeInfo unparceledNode =
+                AccessibilityNodeInfo.CREATOR.createFromParcel(parcel);
+        parcel.recycle();
+
+        AccessibilityNodeInfo.MathInfo unparceledMathInfo =
+                (AccessibilityNodeInfo.MathInfo) unparceledNode.getStructuredDataInfo();
+        assertThat(unparceledMathInfo).isEqualTo(mathInfo);
     }
 
     /**
@@ -600,7 +662,7 @@ public class AccessibilityNodeInfoTest {
         info.setTextSelection(3, 7);
         info.setLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
 
-        // Populate 11 fields
+        // Populate 12 fields
         Bundle extras = info.getExtras();
         extras.putBoolean("areCassowariesAwesome", true);
         info.setInputType(InputType.TYPE_CLASS_TEXT);
@@ -621,6 +683,13 @@ public class AccessibilityNodeInfoTest {
         info.setTraversalBefore(new View(getContext()));
         info.setTraversalAfter(new View(getContext()));
         info.setMinDurationBetweenContentChanges(Duration.ofMillis(200));
+        if (Flags.a11yMathApi()) {
+            AccessibilityNodeInfo.MathInfo mathInfo =
+                    new AccessibilityNodeInfo.MathInfo(
+                            AccessibilityNodeInfo.MathInfo.MATH_TAG_FRACTION);
+            mathInfo.addAttribute(AccessibilityNodeInfo.MathInfo.MATH_ATTRIBUTE_INTENT, "division");
+            info.setStructuredDataInfo(mathInfo);
+        }
 
         // Populate 4 fields
         info.setLabeledBy(new View(getContext()));
@@ -685,6 +754,10 @@ public class AccessibilityNodeInfoTest {
 
         // Populate 1 field
         populateSelection(info);
+
+        if (Flags.a11yExtraRenderingInfoColorAdditions()) {
+            populateExtraRenderingInfo(info);
+        }
     }
 
     /**
@@ -719,6 +792,20 @@ public class AccessibilityNodeInfoTest {
         }
     }
 
+    private void populateExtraRenderingInfo(AccessibilityNodeInfo info) {
+        info.setExtraRenderingInfo(
+                new ExtraRenderingInfo.Builder()
+                        .setLayoutSize(100, 200)
+                        .setTextSizeInPx(20f)
+                        .setTextSizeUnit(TypedValue.COMPLEX_UNIT_SP)
+                        .setTextColor(Color.RED)
+                        .setHintTextColor(Color.BLUE)
+                        .setLinkTextColor(Color.GREEN)
+                        .setBackgroundColor(Color.YELLOW)
+                        .setAlpha(0.5f)
+                        .build());
+    }
+
     private static void assertEqualsTouchDelegateInfo(String message,
             AccessibilityNodeInfo.TouchDelegateInfo expected,
             AccessibilityNodeInfo.TouchDelegateInfo actual) {
@@ -737,6 +824,38 @@ public class AccessibilityNodeInfoTest {
                 }
             }
             assertTrue(message, matched);
+        }
+    }
+
+    private static void assertEqualsExtraRenderingInfo(
+            String message, ExtraRenderingInfo expected, ExtraRenderingInfo actual) {
+        if (expected == actual) return;
+        assertWithMessage(message, " layoutSize")
+                .that(actual.getLayoutSize())
+                .isEqualTo(expected.getLayoutSize());
+        assertWithMessage(message, " textSizeInPx")
+                .that(actual.getTextSizeInPx())
+                .isWithin(0.001f)
+                .of(expected.getTextSizeInPx());
+        assertWithMessage(message, " textSizeUnit")
+                .that(actual.getTextSizeUnit())
+                .isEqualTo(expected.getTextSizeUnit());
+        if (Flags.a11yExtraRenderingInfoColorAdditions()) {
+            assertWithMessage(message, " textColor")
+                    .that(actual.getTextColor())
+                    .isEqualTo(expected.getTextColor());
+            assertWithMessage(message, " hintTextColor")
+                    .that(actual.getHintTextColor())
+                    .isEqualTo(expected.getHintTextColor());
+            assertWithMessage(message, " linkTextColor")
+                    .that(actual.getLinkTextColor())
+                    .isEqualTo(expected.getLinkTextColor());
+            assertWithMessage(message, " backgroundColor")
+                    .that(actual.getBackgroundColor())
+                    .isEqualTo(expected.getBackgroundColor());
+            assertWithMessage(message, " alpha")
+                    .that(actual.getAlpha())
+                    .isEqualTo(expected.getAlpha());
         }
     }
 
@@ -827,7 +946,7 @@ public class AccessibilityNodeInfoTest {
         assertEquals("InputType has incorrect value", expectedInfo.getInputType(),
                 receivedInfo.getInputType());
 
-        // Check 3 fields with sub-objects
+        // Check 4 fields with sub-objects
         RangeInfo expectedRange = expectedInfo.getRangeInfo();
         RangeInfo receivedRange = receivedInfo.getRangeInfo();
         assertEquals("Range info has incorrect value", (expectedRange != null),
@@ -883,6 +1002,21 @@ public class AccessibilityNodeInfoTest {
             assertThat(expectedItemInfo.getRowTitle()).isEqualTo(receivedItemInfo.getRowTitle());
             assertThat(
                     expectedItemInfo.getColumnTitle()).isEqualTo(receivedItemInfo.getColumnTitle());
+        }
+
+        if (Flags.a11yMathApi()) {
+            AccessibilityNodeInfo.StructuredDataInfo expectedStructuredDataInfo =
+                    expectedInfo.getStructuredDataInfo();
+            AccessibilityNodeInfo.StructuredDataInfo receivedStructuredDataInfo =
+                    receivedInfo.getStructuredDataInfo();
+            assertThat(receivedStructuredDataInfo != null).isEqualTo(
+                    expectedStructuredDataInfo != null);
+            if (expectedStructuredDataInfo != null) {
+                assertThat(receivedStructuredDataInfo.getTag()).isEqualTo(
+                        expectedStructuredDataInfo.getTag());
+                assertThat(receivedStructuredDataInfo.getAttributes()).isEqualTo(
+                        expectedStructuredDataInfo.getAttributes());
+            }
         }
 
         // Check 1 field
@@ -999,6 +1133,11 @@ public class AccessibilityNodeInfoTest {
         if (Flags.a11ySelectionApi()) {
             assertEquals(expectedInfo.getSelection(), receivedInfo.getSelection());
         }
+
+        assertEqualsExtraRenderingInfo(
+                "Extra rendering info has incorrect value %s",
+                expectedInfo.getExtraRenderingInfo(),
+                receivedInfo.getExtraRenderingInfo());
     }
 
     /**

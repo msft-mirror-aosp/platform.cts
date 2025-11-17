@@ -23,7 +23,6 @@ import static org.junit.Assert.fail;
 import android.content.ContentUris;
 import android.net.Uri;
 import android.net.Uri.Builder;
-import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.test.runner.AndroidJUnit4;
 
@@ -31,7 +30,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ContentUrisTest {
     private static final String AUTHORITY = "ctstest";
     private static final String PATH1 = "testPath1";

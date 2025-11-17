@@ -831,7 +831,12 @@ public final class UserManagerTest {
             final UserManager userUm = userContext.getSystemService(UserManager.class);
 
             assertThat(userUm.isRestrictedProfile()).isTrue();
-            assertThat(userUm.getRestrictedProfileParent().isSystem()).isTrue();
+
+            final UserHandle expectedParent = sContext.getUser();
+            assertThat(userUm.getRestrictedProfileParent()).isEqualTo(expectedParent);
+            assertThat(sContext.createPackageContextAsUser("system", 0,
+                    expectedParent).getSystemService(UserManager.class).isAdminUser())
+                    .isTrue();
         } finally {
             removeUser(user);
         }

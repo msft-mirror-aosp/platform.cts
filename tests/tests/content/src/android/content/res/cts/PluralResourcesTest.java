@@ -20,7 +20,6 @@ import android.content.Context;
 import android.content.cts.R;
 import android.content.res.Configuration;
 import android.content.res.Resources;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -35,7 +34,6 @@ import org.junit.runner.RunWith;
 
 import java.util.Locale;
 
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class PluralResourcesTest {
     private Context getContext() {

@@ -1484,6 +1484,14 @@ public class MediaUtils {
         String systemModel = PropertyUtil.getProperty("ro.product.system.model");
         String systemProduct = PropertyUtil.getProperty("ro.product.system.name");
 
+        Log.i(
+                TAG,
+                "systemBrand = "
+                        + systemBrand
+                        + " systemModel = "
+                        + systemModel
+                        + " systemProduct = "
+                        + systemProduct);
         // not all devices may have system_ext partition, but if they do use that
         {
             String systemExtProduct = PropertyUtil.getProperty("ro.product.system_ext.name");
@@ -1512,13 +1520,20 @@ public class MediaUtils {
         return false;
     }
 
+    /** It returns {@code true} in case it is GSI image running on cuttlefish. */
+    public static boolean gsiOnCuttleFish() {
+        String name = SystemProperties.get("ro.product.name", "");
+        Log.i(TAG, "gsiOnCuttleFish :: name = " + name);
+        return name.startsWith("gsi_x86_64");
+    }
+
     /**
      *  Function to identify if the device is a cuttlefish instance
      */
     public static boolean onCuttlefish() throws IOException {
         String device = SystemProperties.get("ro.product.device", "");
         String name = SystemProperties.get("ro.product.name", "");
-
+        Log.i(TAG, "onCuttlefish :: device = " + device + " name = " + name);
         if (!device.startsWith("vsoc_")) {
             return false;
         }

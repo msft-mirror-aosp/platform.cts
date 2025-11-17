@@ -18,9 +18,11 @@ package android.telecom.cts;
 
 import android.net.Uri;
 import android.os.Bundle;
+import android.telecom.AudioState;
 import android.telecom.CallAudioState;
 import android.telecom.CallEndpoint;
 import android.telecom.Conference;
+import android.telecom.Conferenceable;
 import android.telecom.Connection;
 import android.telecom.DisconnectCause;
 import android.telecom.PhoneAccountHandle;
@@ -46,12 +48,16 @@ public class MockConference extends Conference {
     private String mDtmfString = "";
     public TestUtils.InvokeCounter mOnExtrasChanged =
             new TestUtils.InvokeCounter("onExtrasChanged");
+    public TestUtils.InvokeCounter mOnCallAudioStateChanged =
+            new TestUtils.InvokeCounter("mOnCallAudioStateChanged");
     public TestUtils.InvokeCounter mCurrentCallEndpoint =
             new TestUtils.InvokeCounter("mCurrentCallEndpoint");
     public List<Uri> mParticipants = new ArrayList<>();
     public CompletableFuture<Void> mLock = new CompletableFuture<>();
     private int mVideoState = VideoProfile.STATE_AUDIO_ONLY;
-    private LinkedBlockingQueue<Conference> mOnMergeQueue;
+    private LinkedBlockingQueue<Conferenceable> mOnMergeQueue;
+    private LinkedBlockingQueue<Connection> mOnConnectionAddedQueue;
+    private LinkedBlockingQueue<Boolean> mOnMuteSateChanged;
 
     public MockConference(PhoneAccountHandle phoneAccount) {
         super(phoneAccount);
@@ -118,14 +124,57 @@ public class MockConference extends Conference {
         }
     }
 
+    @Override
+    public void onMerge(Connection connection) {
+        super.onMerge(connection);
+        if (mOnMergeQueue != null) {
+            mOnMergeQueue.offer(connection);
+        }
+    }
+
     /**
      * Use this to provide a queue which will receive the results of {@link #onMerge(Conference)}
      * for this {@link Conference}.
      *
      * @param onMergeQueue the queue.
      */
-    public void setOnMergeQueue(LinkedBlockingQueue<Conference> onMergeQueue) {
+    public void setOnMergeQueue(LinkedBlockingQueue<Conferenceable> onMergeQueue) {
         this.mOnMergeQueue = onMergeQueue;
+    }
+
+    @Override
+    public void onConnectionAdded(Connection connection) {
+        super.onConnectionAdded(connection);
+        if (mOnConnectionAddedQueue != null) {
+            mOnConnectionAddedQueue.offer(connection);
+        }
+    }
+
+    /**
+     * Use to provide a queue which will receive the results of {@link
+     * #onConnectionAdded(Connection)}.
+     *
+     * @param queue The queue.
+     */
+    public void setOnConnectionAddedQueue(LinkedBlockingQueue<Connection> queue) {
+        mOnConnectionAddedQueue = queue;
+    }
+
+    /**
+     * Notifies the {@link Conference} that its audio mute state has been changed.
+     *
+     * @param isMuted The new mute state.
+     */
+    @Override
+    public void onMuteStateChanged(boolean isMuted) {
+        super.onMuteStateChanged(isMuted);
+        if (mOnMuteSateChanged != null) {
+            mOnMuteSateChanged.offer(isMuted);
+        }
+    }
+
+    public void setOnMuteSateChangedQueue(LinkedBlockingQueue<Boolean> queue) {
+        mOnMuteSateChanged = queue;
     }
 
     /***
@@ -210,9 +259,22 @@ public class MockConference extends Conference {
         mLock.complete(null);
     }
 
+    // Deprecated and not used, pass through for coverage.
+    @Override
+    public void onAudioStateChanged(AudioState state) {
+        super.onAudioStateChanged(state);
+    }
+
     @Override
     public void onCallAudioStateChanged(CallAudioState state) {
         super.onCallAudioStateChanged(state);
+        mOnCallAudioStateChanged.invoke(state);
+    }
+
+    // Note: Note possible to test this as we can't change the available endpoints in CTS.
+    @Override
+    public void onAvailableCallEndpointsChanged(List<CallEndpoint> availableEndpoints) {
+        super.onAvailableCallEndpointsChanged(availableEndpoints);
     }
 
     public void setRemoteConference(RemoteConference remoteConference) {
@@ -237,12 +299,14 @@ public class MockConference extends Conference {
 
     @Override
     public void onExtrasChanged(Bundle extras) {
+        super.onExtrasChanged(extras);
         setExtras(extras);
         mOnExtrasChanged.invoke(extras);
     }
 
     @Override
     public void onCallEndpointChanged(CallEndpoint callEndpoint) {
+        super.onCallEndpointChanged(callEndpoint);
         mCurrentCallEndpoint.invoke(callEndpoint);
     }
 

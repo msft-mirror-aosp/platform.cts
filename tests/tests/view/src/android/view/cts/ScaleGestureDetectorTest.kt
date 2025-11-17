@@ -21,8 +21,16 @@ import android.graphics.PointF
 import android.os.Handler
 import android.os.Looper
 import android.platform.test.annotations.AppModeSdkSandbox
+import android.platform.test.annotations.RequiresFlagsDisabled
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.CheckFlagsRule
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.view.InputDevice
+import android.view.InputDevice.SOURCE_MOUSE
 import android.view.MotionEvent
+import android.view.MotionEvent.ACTION_DOWN
+import android.view.MotionEvent.ACTION_POINTER_DOWN
+import android.view.MotionEvent.AXIS_GESTURE_PINCH_SCALE_FACTOR
 import android.view.MotionEvent.TOOL_TYPE_FINGER
 import android.view.ScaleGestureDetector
 import android.view.ScaleGestureDetector.OnScaleGestureListener
@@ -49,6 +57,7 @@ import com.android.cts.input.hasScaleFactor
 import com.android.cts.input.hasTimeDelta
 import com.android.cts.input.hasType
 import com.android.cts.input.isInProgress
+import com.android.hardware.input.Flags.FLAG_SCALE_GESTURE_DETECTOR_USE_EVENTS_CLASSIFICATION
 import com.google.common.truth.Truth.assertThat
 import java.time.Duration.ofMillis
 import kotlin.math.PI
@@ -87,6 +96,9 @@ class ScaleGestureDetectorTest {
     @get:Rule(order = 1)
     val virtualDisplayRule =
         VirtualDisplayActivityScenario.Rule<ScaleGestureDetectorActivity>(TestName())
+
+    @get:Rule
+    val mCheckFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @Before
     fun setup() {
@@ -130,13 +142,26 @@ class ScaleGestureDetectorTest {
         val pointer0 = PointF(100f, 200f)
         val pointer1Down = pointer0.withOffset(minSpan.toFloat(), 0f)
         val pointer1Move = pointer1Down.withOffset(spanSlop.toFloat(), 1f)
-        detector.onTouchEvent(down(pointer0))
-        detector.onTouchEvent(pointerDown(index = 1, listOf(pointer0, pointer1Down)))
-
-        detector.isQuickScaleEnabled
-
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_POINTER_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Down))
+                .pointerIndex(1)
+                .build()
+        )
         assertThat(listener.events).isEmpty()
-        detector.onTouchEvent(move(listOf(pointer0, pointer1Move)))
+
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Move))
+                .build()
+        )
 
         assertThat(
             listener.pollEvent(),
@@ -176,15 +201,35 @@ class ScaleGestureDetectorTest {
         val pointer1Down = pointer0.withOffset(minSpan.toFloat(), 0f)
         val pointer1InitialMove = pointer1Down.withOffset(5f * spanSlop, 4f * spanSlop)
         val pointer1FinalMove = pointer1InitialMove.withOffset(-2f * spanSlop, -3f * spanSlop)
-        detector.onTouchEvent(down(pointer0))
-        detector.onTouchEvent(pointerDown(index = 1, listOf(pointer0, pointer1Down)))
-        detector.onTouchEvent(move(listOf(pointer0, pointer1InitialMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_POINTER_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Down))
+                .pointerIndex(1)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1InitialMove))
+                .build()
+        )
         assertThat(listener.pollEvent(), allOf(hasType(ScaleEventType.SCALE_BEGIN)))
         assertThat(listener.pollEvent(), allOf(hasType(ScaleEventType.SCALE)))
         assertThat(listener.events).isEmpty()
         assertThat(detector.isInProgress).isTrue()
 
-        detector.onTouchEvent(move(listOf(pointer0, pointer1FinalMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1FinalMove))
+                .build()
+        )
 
         val initialSpan = distance(pointer0, pointer1InitialMove)
         val finalSpan = distance(pointer0, pointer1FinalMove)
@@ -213,15 +258,35 @@ class ScaleGestureDetectorTest {
         val pointer1Down = pointer0.withOffset(minSpan.toFloat(), 0f)
         val pointer1InitialMove = pointer1Down.withOffset(5f * spanSlop, 4f * spanSlop)
         val pointer1FinalMove = pointer1InitialMove.withOffset(2f * spanSlop, 3f * spanSlop)
-        detector.onTouchEvent(down(pointer0))
-        detector.onTouchEvent(pointerDown(index = 1, listOf(pointer0, pointer1Down)))
-        detector.onTouchEvent(move(listOf(pointer0, pointer1InitialMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_POINTER_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Down))
+                .pointerIndex(1)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1InitialMove))
+                .build()
+        )
         assertThat(listener.pollEvent(), allOf(hasType(ScaleEventType.SCALE_BEGIN)))
         assertThat(listener.pollEvent(), allOf(hasType(ScaleEventType.SCALE)))
         assertThat(listener.events).isEmpty()
         assertThat(detector.isInProgress).isTrue()
 
-        detector.onTouchEvent(move(listOf(pointer0, pointer1FinalMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1FinalMove))
+                .build()
+        )
 
         val initialSpan = distance(pointer0, pointer1InitialMove)
         val finalSpan = distance(pointer0, pointer1FinalMove)
@@ -252,17 +317,42 @@ class ScaleGestureDetectorTest {
         val pointer1InitialMove = pointer1Down.withOffset(10f * spanSlop, 10f * spanSlop)
         val pointer1IntermediateMove = pointer1InitialMove.withOffset(1f * spanSlop, 2f * spanSlop)
         val pointer1FinalMove = pointer1IntermediateMove.withOffset(3f * spanSlop, 4f * spanSlop)
-        detector.onTouchEvent(down(pointer0))
-        detector.onTouchEvent(pointerDown(index = 1, listOf(pointer0, pointer1Down)))
-        detector.onTouchEvent(move(listOf(pointer0, pointer1InitialMove)))
-        detector.onTouchEvent(move(listOf(pointer0, pointer1IntermediateMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_POINTER_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Down))
+                .pointerIndex(1)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1InitialMove))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1IntermediateMove))
+                .build()
+        )
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_BEGIN))
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE))
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE))
         assertThat(listener.events).isEmpty()
         assertThat(detector.isInProgress).isTrue()
 
-        detector.onTouchEvent(move(listOf(pointer0, pointer1FinalMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1FinalMove))
+                .build()
+        )
 
         val intermediateSpan = distance(pointer0, pointer1IntermediateMove)
         val finalSpan = distance(pointer0, pointer1FinalMove)
@@ -289,13 +379,29 @@ class ScaleGestureDetectorTest {
         val pointer0 = PointF(100f, 200f)
         val pointer1Down = pointer0.withOffset(minSpan.toFloat(), 0f)
         val pointer1Move = pointer1Down.withOffset(spanSlop.toFloat(), 1f)
-        detector.onTouchEvent(down(pointer0, eventTime = 100))
         detector.onTouchEvent(
-            pointerDown(index = 1, listOf(pointer0, pointer1Down), eventTime = 113)
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(100)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_POINTER_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(113)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Down))
+                .pointerIndex(1)
+                .build()
         )
         assertThat(listener.events).isEmpty()
 
-        detector.onTouchEvent(move(listOf(pointer0, pointer1Move), eventTime = 137))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(137)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Move))
+                .build()
+        )
 
         assertThat(
             listener.pollEvent(),
@@ -307,7 +413,13 @@ class ScaleGestureDetectorTest {
         )
         assertThat(listener.events).isEmpty()
 
-        detector.onTouchEvent(move(listOf(pointer0, pointer1Move), eventTime = 239))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(239)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Move))
+                .build()
+        )
 
         assertThat(
             listener.pollEvent(),
@@ -315,7 +427,14 @@ class ScaleGestureDetectorTest {
         )
         assertThat(listener.events).isEmpty()
 
-        detector.onTouchEvent(pointerUp(index = 1, listOf(pointer0, pointer1Move), eventTime = 250))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_POINTER_UP, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(250)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Move))
+                .pointerIndex(1)
+                .build()
+        )
 
         assertThat(
             listener.pollEvent(),
@@ -331,14 +450,35 @@ class ScaleGestureDetectorTest {
         val pointer0 = PointF(100f, 200f)
         val pointer1Down = pointer0.withOffset(minSpan.toFloat(), 0f)
         val pointer1Move = pointer1Down.withOffset(spanSlop.toFloat(), 1f)
-        detector.onTouchEvent(down(pointer0))
-        detector.onTouchEvent(pointerDown(index = 1, listOf(pointer0, pointer1Down)))
-        detector.onTouchEvent(move(listOf(pointer0, pointer1Move)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_POINTER_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Down))
+                .pointerIndex(1)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Move))
+                .build()
+        )
         assertThat(listener.events).isNotEmpty()
         assertThat(detector.isInProgress).isTrue()
         listener.events.clear()
 
-        detector.onTouchEvent(pointerUp(index = 1, listOf(pointer0, pointer1Move)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_POINTER_UP, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Move))
+                .pointerIndex(1)
+                .build()
+        )
 
         assertThat(
             listener.pollEvent(),
@@ -364,12 +504,27 @@ class ScaleGestureDetectorTest {
         val pointer0 = PointF(100f, 200f)
         val pointer1Down = pointer0.withOffset(0f, minSpan - spanSlop - 2f)
         val pointer1Move = pointer0.withOffset(0f, minSpan - 1f)
-        detector.onTouchEvent(down(pointer0))
-        detector.onTouchEvent(pointerDown(index = 1, listOf(pointer0, pointer1Down)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_POINTER_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Down))
+                .pointerIndex(1)
+                .build()
+        )
         assertThat(listener.events).isEmpty()
 
         // Move by > spanSlop however making currentSpan < minSpan.
-        detector.onTouchEvent(move(listOf(pointer0, pointer1Move)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Move))
+                .build()
+        )
 
         assertThat(listener.events).isEmpty()
         assertThat(detector.isInProgress).isFalse()
@@ -383,15 +538,35 @@ class ScaleGestureDetectorTest {
         val pointer1Down = pointer0.withOffset(0f, minSpan.toFloat())
         val pointer1InitialMove = pointer0.withOffset(0f, minSpan + spanSlop + 1f)
         val pointer1FinalMove = pointer0.withOffset(0f, minSpan - 1f)
-        detector.onTouchEvent(down(pointer0))
-        detector.onTouchEvent(pointerDown(index = 1, listOf(pointer0, pointer1Down)))
-        detector.onTouchEvent(move(listOf(pointer0, pointer1InitialMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_POINTER_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Down))
+                .pointerIndex(1)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1InitialMove))
+                .build()
+        )
         assertThat(listener.pollEvent(), allOf(hasType(ScaleEventType.SCALE_BEGIN)))
         assertThat(listener.pollEvent(), allOf(hasType(ScaleEventType.SCALE)))
         assertThat(listener.events).isEmpty()
         assertThat(detector.isInProgress).isTrue()
 
-        detector.onTouchEvent(move(listOf(pointer0, pointer1FinalMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1FinalMove))
+                .build()
+        )
 
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_END))
         assertThat(detector.isInProgress).isFalse()
@@ -405,11 +580,32 @@ class ScaleGestureDetectorTest {
         val pointer1Down = pointer0.withOffset(4f * minSpan, 0f)
         val pointer1InitialMove = pointer1Down.withOffset(5f * spanSlop, 7f * spanSlop)
         val pointer1FinalMove = pointer1InitialMove.withOffset(10f * spanSlop, 10f * spanSlop)
-        detector.onTouchEvent(down(pointer0))
-        detector.onTouchEvent(pointerDown(index = 1, listOf(pointer0, pointer1Down)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_POINTER_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Down))
+                .pointerIndex(1)
+                .build()
+        )
         assertThat(listener.events).isEmpty()
-        detector.onTouchEvent(move(listOf(pointer0, pointer1InitialMove)))
-        detector.onTouchEvent(pointerUp(index = 1, listOf(pointer0, pointer1FinalMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1InitialMove))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_POINTER_UP, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1FinalMove))
+                .pointerIndex(1)
+                .build()
+        )
 
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_BEGIN))
         assertThat(listener.events).isEmpty()
@@ -425,17 +621,42 @@ class ScaleGestureDetectorTest {
         val pointer1InitialMove = pointer1Down.withOffset(10f * spanSlop, 10f * spanSlop)
         val pointer1IntermediateMove = pointer1InitialMove.withOffset(1f * spanSlop, 2f * spanSlop)
         val pointer1FinalMove = pointer1IntermediateMove.withOffset(3f * spanSlop, 4f * spanSlop)
-        detector.onTouchEvent(down(pointer0))
-        detector.onTouchEvent(pointerDown(index = 1, listOf(pointer0, pointer1Down)))
-        detector.onTouchEvent(move(listOf(pointer0, pointer1InitialMove)))
-        detector.onTouchEvent(move(listOf(pointer0, pointer1IntermediateMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_POINTER_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Down))
+                .pointerIndex(1)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1InitialMove))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1IntermediateMove))
+                .build()
+        )
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_BEGIN))
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE))
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE))
         assertThat(listener.events).isEmpty()
         assertThat(detector.isInProgress).isTrue()
 
-        detector.onTouchEvent(move(listOf(pointer0, pointer1FinalMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1FinalMove))
+                .build()
+        )
 
         val initialSpan = distance(pointer0, pointer1InitialMove)
         val finalSpan = distance(pointer0, pointer1FinalMove)
@@ -474,11 +695,34 @@ class ScaleGestureDetectorTest {
                 cos(PI / 6).toFloat() * radius,
                 cos(PI / 3).toFloat() * radius,
             )
-        detector.onTouchEvent(down(pointer0Down))
-        detector.onTouchEvent(pointerDown(index = 1, listOf(pointer0Down, pointer1)))
-        detector.onTouchEvent(pointerDown(index = 2, listOf(pointer0Down, pointer1, pointer2)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0Down))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_POINTER_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0Down))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1))
+                .pointerIndex(1)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_POINTER_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0Down))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1))
+                .pointer(PointerBuilder(2, TOOL_TYPE_FINGER).xy(pointer2))
+                .pointerIndex(2)
+                .build()
+        )
 
-        detector.onTouchEvent(move(listOf(pointer0Move, pointer1, pointer2)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0Move))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1))
+                .pointer(PointerBuilder(2, TOOL_TYPE_FINGER).xy(pointer2))
+                .build()
+        )
 
         val expectedSpanXY = PointF(2 * sqrt(3f) * radius / 3, 2 * 2 * radius / 3)
         assertThat(
@@ -518,22 +762,47 @@ class ScaleGestureDetectorTest {
         val pointer0 = PointF(100f, 200f)
         val pointer1 = pointer0.withOffset(4f * minSpan, 0f)
         val pointer2 = pointer0.withOffset(0f, 4f * minSpan)
-        detector.onTouchEvent(down(pointer0))
-        detector.onTouchEvent(pointerDown(index = 1, listOf(pointer0, pointer1)))
-        detector.onTouchEvent(pointerDown(index = 2, listOf(pointer0, pointer1, pointer2)))
         detector.onTouchEvent(
-            move(
-                listOf(
-                    pointer0,
-                    pointer1,
-                    pointer2.withOffset(-4f * spanSlop.toFloat(), -4f * spanSlop.toFloat()),
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_POINTER_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1))
+                .pointerIndex(1)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_POINTER_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1))
+                .pointer(PointerBuilder(2, TOOL_TYPE_FINGER).xy(pointer2))
+                .pointerIndex(2)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1))
+                .pointer(
+                    PointerBuilder(2, TOOL_TYPE_FINGER)
+                        .xy(pointer2.withOffset(-4f * spanSlop.toFloat(), -4f * spanSlop.toFloat()))
                 )
-            )
+                .build()
         )
         assertThat(listener.events).isNotEmpty()
         listener.events.clear()
 
-        detector.onTouchEvent(pointerUp(index = 2, listOf(pointer0, pointer1, pointer2)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_POINTER_UP, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1))
+                .pointer(PointerBuilder(2, TOOL_TYPE_FINGER).xy(pointer2))
+                .pointerIndex(2)
+                .build()
+        )
 
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_END))
         assertThat(
@@ -560,22 +829,47 @@ class ScaleGestureDetectorTest {
         val pointer0 = PointF(100f, 200f)
         val pointer1 = pointer0.withOffset(minSpan - 1f, 0f)
         val pointer2 = pointer0.withOffset(4f * minSpan, 4f * minSpan)
-        detector.onTouchEvent(down(pointer0))
-        detector.onTouchEvent(pointerDown(index = 1, listOf(pointer0, pointer1)))
-        detector.onTouchEvent(pointerDown(index = 2, listOf(pointer0, pointer1, pointer2)))
         detector.onTouchEvent(
-            move(
-                listOf(
-                    pointer0,
-                    pointer1,
-                    pointer2.withOffset(-4f * spanSlop.toFloat(), -4f * spanSlop.toFloat()),
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_POINTER_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1))
+                .pointerIndex(1)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_POINTER_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1))
+                .pointer(PointerBuilder(2, TOOL_TYPE_FINGER).xy(pointer2))
+                .pointerIndex(2)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1))
+                .pointer(
+                    PointerBuilder(2, TOOL_TYPE_FINGER)
+                        .xy(pointer2.withOffset(-4f * spanSlop.toFloat(), -4f * spanSlop.toFloat()))
                 )
-            )
+                .build()
         )
         assertThat(listener.events).isNotEmpty()
         listener.events.clear()
 
-        detector.onTouchEvent(pointerUp(index = 2, listOf(pointer0, pointer1, pointer2)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_POINTER_UP, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1))
+                .pointer(PointerBuilder(2, TOOL_TYPE_FINGER).xy(pointer2))
+                .pointerIndex(2)
+                .build()
+        )
 
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_END))
         assertThat(listener.events).isEmpty()
@@ -590,10 +884,29 @@ class ScaleGestureDetectorTest {
         val pointerDown = PointF(100f, 200f)
         val pointerMove = pointerDown.withOffset(move)
 
-        detector.onTouchEvent(down(pointerDown))
-        detector.onTouchEvent(up(pointerDown))
-        detector.onTouchEvent(down(pointerDown, eventTime = doubleTapMinTimeMillis))
-        detector.onTouchEvent(move(listOf(pointerMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(0)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_UP, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(0)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(doubleTapMinTimeMillis)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerMove))
+                .build()
+        )
         assertThat(
             listener.pollEvent(),
             allOf(
@@ -632,10 +945,29 @@ class ScaleGestureDetectorTest {
         val pointerDown = PointF(100f, 200f)
         val pointerMove = pointerDown.withOffset(move)
 
-        detector.onTouchEvent(down(pointerDown))
-        detector.onTouchEvent(up(pointerDown))
-        detector.onTouchEvent(down(pointerDown, eventTime = doubleTapMinTimeMillis))
-        detector.onTouchEvent(move(listOf(pointerMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(0)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_UP, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(0)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(doubleTapMinTimeMillis)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerMove))
+                .build()
+        )
 
         assertThat(listener.events).isEmpty()
         assertThat(detector.isInProgress).isFalse()
@@ -650,16 +982,39 @@ class ScaleGestureDetectorTest {
         val pointerDown = PointF(100f, 200f)
         val pointerInitialMove = pointerDown.withOffset(initialMove)
         val pointerFinalMove = pointerDown.withOffset(finalMove)
-        detector.onTouchEvent(down(pointerDown))
-        detector.onTouchEvent(up(pointerDown))
-        detector.onTouchEvent(down(pointerDown, eventTime = doubleTapMinTimeMillis))
-        detector.onTouchEvent(move(listOf(pointerInitialMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(0)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_UP, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(0)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(doubleTapMinTimeMillis)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerInitialMove))
+                .build()
+        )
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_BEGIN))
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE))
         assertThat(listener.events).isEmpty()
         assertThat(detector.isInProgress).isTrue()
 
-        detector.onTouchEvent(move(listOf(pointerFinalMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerFinalMove))
+                .build()
+        )
 
         assertThat(
             listener.pollEvent(),
@@ -688,16 +1043,39 @@ class ScaleGestureDetectorTest {
         val pointerDown = PointF(100f, 200f)
         val pointerInitialMove = pointerDown.withOffset(initialMove)
         val pointerFinalMove = pointerDown.withOffset(finalMove)
-        detector.onTouchEvent(down(pointerDown))
-        detector.onTouchEvent(up(pointerDown))
-        detector.onTouchEvent(down(pointerDown, eventTime = doubleTapMinTimeMillis))
-        detector.onTouchEvent(move(listOf(pointerInitialMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(0)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_UP, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(0)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(doubleTapMinTimeMillis)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerInitialMove))
+                .build()
+        )
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_BEGIN))
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE))
         assertThat(listener.events).isEmpty()
         assertThat(detector.isInProgress).isTrue()
 
-        detector.onTouchEvent(move(listOf(pointerFinalMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerFinalMove))
+                .build()
+        )
 
         assertThat(
             listener.pollEvent(),
@@ -726,16 +1104,39 @@ class ScaleGestureDetectorTest {
         val pointerDown = PointF(100f, 200f)
         val pointerInitialMove = pointerDown.withOffset(initialMove)
         val pointerFinalMove = pointerDown.withOffset(finalMove)
-        detector.onTouchEvent(down(pointerDown))
-        detector.onTouchEvent(up(pointerDown))
-        detector.onTouchEvent(down(pointerDown, eventTime = doubleTapMinTimeMillis))
-        detector.onTouchEvent(move(listOf(pointerInitialMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(0)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_UP, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(0)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(doubleTapMinTimeMillis)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerInitialMove))
+                .build()
+        )
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_BEGIN))
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE))
         assertThat(listener.events).isEmpty()
         assertThat(detector.isInProgress).isTrue()
 
-        detector.onTouchEvent(move(listOf(pointerFinalMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerFinalMove))
+                .build()
+        )
 
         assertThat(
             listener.pollEvent(),
@@ -764,16 +1165,39 @@ class ScaleGestureDetectorTest {
         val pointerDown = PointF(300f, 400f)
         val pointerInitialMove = pointerDown.withOffset(initialMove)
         val pointerFinalMove = pointerDown.withOffset(finalMove)
-        detector.onTouchEvent(down(pointerDown))
-        detector.onTouchEvent(up(pointerDown))
-        detector.onTouchEvent(down(pointerDown, eventTime = doubleTapMinTimeMillis))
-        detector.onTouchEvent(move(listOf(pointerInitialMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(0)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_UP, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(0)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(doubleTapMinTimeMillis)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerInitialMove))
+                .build()
+        )
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_BEGIN))
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE))
         assertThat(listener.events).isEmpty()
         assertThat(detector.isInProgress).isTrue()
 
-        detector.onTouchEvent(move(listOf(pointerFinalMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerFinalMove))
+                .build()
+        )
 
         assertThat(
             listener.pollEvent(),
@@ -802,17 +1226,44 @@ class ScaleGestureDetectorTest {
         val pointerDown = PointF(100f, 200f)
         val pointerInitialMove = pointerDown.withOffset(initialMove)
         val pointerFinalMove = pointerDown.withOffset(finalMove)
-        detector.onTouchEvent(down(pointerDown))
-        detector.onTouchEvent(up(pointerDown))
-        detector.onTouchEvent(down(pointerDown, eventTime = doubleTapMinTimeMillis))
-        detector.onTouchEvent(move(listOf(pointerInitialMove)))
-        detector.onTouchEvent(move(listOf(pointerFinalMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(0)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_UP, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(0)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(doubleTapMinTimeMillis)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerInitialMove))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerFinalMove))
+                .build()
+        )
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_BEGIN))
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE))
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE))
         assertThat(listener.events).isEmpty()
 
-        detector.onTouchEvent(up(pointerFinalMove))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_UP, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerFinalMove))
+                .build()
+        )
 
         assertThat(
             listener.pollEvent(),
@@ -838,16 +1289,39 @@ class ScaleGestureDetectorTest {
         val pointerDown = PointF(100f, 200f)
         val pointerInitialMove = pointerDown.withOffset(0f, spanSlopRadius.toFloat() + 100)
         val pointerFinalMove = pointerDown.withOffset(0f, 1f)
-        detector.onTouchEvent(down(pointerDown))
-        detector.onTouchEvent(up(pointerDown))
-        detector.onTouchEvent(down(pointerDown, eventTime = doubleTapMinTimeMillis))
-        detector.onTouchEvent(move(listOf(pointerInitialMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(0)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_UP, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(0)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(doubleTapMinTimeMillis)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerInitialMove))
+                .build()
+        )
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_BEGIN))
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE))
         assertThat(listener.events).isEmpty()
         assertThat(detector.isInProgress).isTrue()
 
-        detector.onTouchEvent(move(listOf(pointerFinalMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerFinalMove))
+                .build()
+        )
 
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE))
         assertThat(listener.events).isEmpty()
@@ -862,18 +1336,45 @@ class ScaleGestureDetectorTest {
         val pointerInitialMove = pointerDown.withOffset(0f, spanSlopRadius + 10f)
         val pointerSecondMove = pointerDown.withOffset(0f, spanSlopRadius - 1f)
         val pointerFinalMove = pointerDown.withOffset(0f, spanSlopRadius + 10f)
-        detector.onTouchEvent(down(pointerDown))
-        detector.onTouchEvent(up(pointerDown))
-        detector.onTouchEvent(down(pointerDown, eventTime = doubleTapMinTimeMillis))
-        detector.onTouchEvent(move(listOf(pointerInitialMove)))
-        detector.onTouchEvent(move(listOf(pointerSecondMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(0)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_UP, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(0)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(doubleTapMinTimeMillis)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerInitialMove))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerSecondMove))
+                .build()
+        )
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_BEGIN))
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE))
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE))
         assertThat(listener.events).isEmpty()
         listener.events.clear()
 
-        detector.onTouchEvent(move(listOf(pointerFinalMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerFinalMove))
+                .build()
+        )
 
         assertThat(listener.pollEvent().scaleFactor).isEqualTo(1f)
         assertThat(listener.events).isEmpty()
@@ -891,18 +1392,45 @@ class ScaleGestureDetectorTest {
         val pointerInitialMove = pointerDown.withOffset(initialMove)
         val pointerSecondMove = pointerDown.withOffset(secondMove)
         val pointerFinalMove = pointerDown.withOffset(finalMove)
-        detector.onTouchEvent(down(pointerDown))
-        detector.onTouchEvent(up(pointerDown))
-        detector.onTouchEvent(down(pointerDown, eventTime = doubleTapMinTimeMillis))
-        detector.onTouchEvent(move(listOf(pointerInitialMove)))
-        detector.onTouchEvent(move(listOf(pointerSecondMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(0)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_UP, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(0)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(doubleTapMinTimeMillis)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerInitialMove))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerSecondMove))
+                .build()
+        )
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_BEGIN))
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE))
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE))
         assertThat(listener.events).isEmpty()
         listener.events.clear()
 
-        detector.onTouchEvent(move(listOf(pointerFinalMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerFinalMove))
+                .build()
+        )
 
         assertThat(
             listener.pollEvent(),
@@ -926,11 +1454,30 @@ class ScaleGestureDetectorTest {
         val detector = createDetector(listener)
         val pointerDown = PointF(100f, 200f)
         val pointerInitialMove = pointerDown.withOffset(0f, 100f + spanSlopRadius)
-        detector.onTouchEvent(down(pointerDown))
-        detector.onTouchEvent(up(pointerDown))
-        detector.onTouchEvent(down(pointerDown, eventTime = doubleTapMinTimeMillis))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(0)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_UP, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(0)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(doubleTapMinTimeMillis)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
 
-        detector.onTouchEvent(move(listOf(pointerInitialMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerInitialMove))
+                .build()
+        )
 
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_BEGIN))
         assertThat(listener.events).isEmpty()
@@ -945,10 +1492,29 @@ class ScaleGestureDetectorTest {
         val pointerDown = PointF(100f, 200f)
         val pointerMove = pointerDown.withOffset(345f, spanSlopRadius + 10f)
 
-        detector.onTouchEvent(down(pointerDown))
-        detector.onTouchEvent(up(pointerDown))
-        detector.onTouchEvent(down(pointerDown, eventTime = doubleTapMinTimeMillis))
-        detector.onTouchEvent(move(listOf(pointerMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(0)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_UP, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(0)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(doubleTapMinTimeMillis)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerMove))
+                .build()
+        )
 
         assertThat(detector.isQuickScaleEnabled).isFalse()
         assertThat(listener.events).isEmpty()
@@ -962,12 +1528,20 @@ class ScaleGestureDetectorTest {
         val pointerDown = PointF(100f, 200f)
         val pointerMove = pointerDown.withOffset(0f, spanSlopRadius + 1f)
 
-        detector.onTouchEvent(down(pointerDown, buttonState = MotionEvent.BUTTON_STYLUS_PRIMARY))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .buttonState(MotionEvent.BUTTON_STYLUS_PRIMARY)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
         assertThat(listener.events).isEmpty()
         assertThat(detector.isInProgress).isFalse()
 
         detector.onTouchEvent(
-            move(listOf(pointerMove), buttonState = MotionEvent.BUTTON_STYLUS_PRIMARY)
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .buttonState(MotionEvent.BUTTON_STYLUS_PRIMARY)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerMove))
+                .build()
         )
 
         val expectedSpan = 2 * (pointerMove.y - pointerDown.y)
@@ -1010,12 +1584,20 @@ class ScaleGestureDetectorTest {
         val pointerDown = PointF(100f, 200f)
         val pointerMove = pointerDown.withOffset(0f, spanSlopRadius + 200f)
 
-        detector.onTouchEvent(down(pointerDown, buttonState = MotionEvent.BUTTON_STYLUS_PRIMARY))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .buttonState(MotionEvent.BUTTON_STYLUS_PRIMARY)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
         assertThat(listener.events).isEmpty()
         assertThat(detector.isInProgress).isFalse()
 
         detector.onTouchEvent(
-            move(listOf(pointerMove), buttonState = MotionEvent.BUTTON_STYLUS_PRIMARY)
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .buttonState(MotionEvent.BUTTON_STYLUS_PRIMARY)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerMove))
+                .build()
         )
 
         assertThat(detector.isStylusScaleEnabled).isFalse()
@@ -1029,17 +1611,28 @@ class ScaleGestureDetectorTest {
         val detector = createDetector(listener)
         val pointerDown = PointF(100f, 200f)
         val pointerMove = pointerDown.withOffset(0f, spanSlopRadius + 1f)
-        val pointerFinalMove = pointerDown.withOffset(0f, 2 * spanSlopRadius + 50f)
-        detector.onTouchEvent(down(pointerDown, buttonState = MotionEvent.BUTTON_STYLUS_PRIMARY))
         detector.onTouchEvent(
-            move(listOf(pointerMove), buttonState = MotionEvent.BUTTON_STYLUS_PRIMARY)
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .buttonState(MotionEvent.BUTTON_STYLUS_PRIMARY)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerDown))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .buttonState(MotionEvent.BUTTON_STYLUS_PRIMARY)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerMove))
+                .build()
         )
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_BEGIN))
         assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE))
         assertThat(listener.events).isEmpty()
         assertThat(detector.isInProgress).isTrue()
 
-        detector.onTouchEvent(move(listOf(pointerMove)))
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointerMove))
+                .build()
+        )
 
         val expectedSpan = 2 * (pointerMove.y - pointerDown.y)
         val expectedSpanXY = PointF(0f, expectedSpan)
@@ -1058,6 +1651,649 @@ class ScaleGestureDetectorTest {
         )
         assertThat(listener.events).isEmpty()
         assertThat(detector.isInProgress).isFalse()
+    }
+
+    @RequiresFlagsEnabled(FLAG_SCALE_GESTURE_DETECTOR_USE_EVENTS_CLASSIFICATION)
+    @Test
+    fun classifiedPinch_down_pointerDown_startsStream() {
+        val listener = TestScaleGestureListener()
+        val detector = createDetector(listener)
+        val cursor = PointF(100f, 200f)
+        val pointer0 = cursor.withOffset(-2f, 0f)
+        val pointer1 = cursor.withOffset(2f, 0f)
+
+        detector.onTouchEvent(
+            MotionEventBuilder(ACTION_DOWN, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1f)
+                )
+                .eventTime(113)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(
+                ACTION_POINTER_DOWN,
+                SOURCE_MOUSE
+            )
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1))
+                .pointerIndex(1)
+                .eventTime(113)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+
+        val expectedSpan = PointF(pointer1.x - pointer0.x, 0f)
+        assertThat(
+            listener.pollEvent(),
+            allOf(
+                hasType(ScaleEventType.SCALE_BEGIN),
+                isInProgress(false),
+                hasFocus(cursor),
+                hasScaleFactor(1f),
+                hasCurrentSpan(expectedSpan.hypot()),
+                hasCurrentSpanXY(expectedSpan),
+                hasPreviousSpan(expectedSpan.hypot()),
+                hasPreviousSpanXY(expectedSpan),
+                hasEventTime(113),
+                hasTimeDelta(0),
+            ),
+        )
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isTrue()
+    }
+
+    @RequiresFlagsEnabled(FLAG_SCALE_GESTURE_DETECTOR_USE_EVENTS_CLASSIFICATION)
+    @Test
+    fun classifiedPinch_onScaleBeginReturnsFalse_doesNotStartStream() {
+        val listener = TestScaleGestureListener(onScaleBeginReturnValue = false)
+        val detector = createDetector(listener)
+        val cursor = PointF(500f, 600f)
+        val pointer0 = cursor.withOffset(-400f, 0f)
+        val pointer1 = cursor.withOffset(400f, 0f)
+
+        detector.onTouchEvent(
+            MotionEventBuilder(ACTION_DOWN, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1f)
+                )
+                .eventTime(100)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        assertThat(listener.events).isEmpty()
+
+        detector.onTouchEvent(
+            MotionEventBuilder(
+                ACTION_POINTER_DOWN,
+                SOURCE_MOUSE
+            )
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1))
+                .pointerIndex(1)
+                .eventTime(113)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_BEGIN))
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isFalse()
+    }
+
+    @RequiresFlagsEnabled(FLAG_SCALE_GESTURE_DETECTOR_USE_EVENTS_CLASSIFICATION)
+    @Test
+    fun classifiedPinch_multipleMoves_callsOnScale_setPrevAndCurrSpanTimeAndFocus() {
+        val listener = TestScaleGestureListener()
+        val detector = createDetector(listener)
+        val cursor = PointF(150f, 200f)
+        val pointer0Down = cursor.withOffset(-50f, 0f)
+        val pointer1Down = cursor.withOffset(50f, 0f)
+        val pointer0InitialMove = cursor.withOffset(-55f, 0f)
+        val pointer1InitialMove = cursor.withOffset(55f, 0f)
+        val pointer0FinalMove = cursor.withOffset(-62f, 0f)
+        val pointer1FinalMove = cursor.withOffset(62f, 0f)
+        detector.onTouchEvent(
+            MotionEventBuilder(ACTION_DOWN, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0Down)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1f)
+                )
+                .eventTime(100)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(
+                ACTION_POINTER_DOWN,
+                SOURCE_MOUSE
+            )
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0Down)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Down))
+                .pointerIndex(1)
+                .eventTime(113)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_BEGIN))
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isTrue()
+
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0InitialMove)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1.678f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1InitialMove))
+                .eventTime(137)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+
+        val expectedInitialPrevSpan = PointF(pointer1Down.x - pointer0Down.x, 0f)
+        val expectedInitialSpan = PointF(pointer1InitialMove.x - pointer0InitialMove.x, 0f)
+        assertThat(
+            listener.pollEvent(),
+            allOf(
+                hasType(ScaleEventType.SCALE),
+                isInProgress(true),
+                hasFocus(cursor),
+                hasScaleFactor(1.678f),
+                hasCurrentSpan(expectedInitialSpan.x),
+                hasCurrentSpanXY(expectedInitialSpan),
+                hasPreviousSpan(expectedInitialPrevSpan.x),
+                hasPreviousSpanXY(expectedInitialPrevSpan),
+                hasEventTime(137),
+                hasTimeDelta(24),
+            ),
+        )
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isTrue()
+
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0FinalMove)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 0.789f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1FinalMove))
+                .eventTime(142)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+
+        val expectedFinalPrevSpan = PointF(pointer1InitialMove.x - pointer0InitialMove.x, 0f)
+        val expectedFinalSpan = PointF(pointer1FinalMove.x - pointer0FinalMove.x, 0f)
+        assertThat(
+            listener.pollEvent(),
+            allOf(
+                hasType(ScaleEventType.SCALE),
+                isInProgress(true),
+                hasFocus(cursor),
+                hasScaleFactor(0.789f),
+                hasCurrentSpan(expectedFinalSpan.x),
+                hasCurrentSpanXY(expectedFinalSpan),
+                hasPreviousSpan(expectedFinalPrevSpan.x),
+                hasPreviousSpanXY(expectedFinalPrevSpan),
+                hasEventTime(142),
+                hasTimeDelta(5),
+            ),
+        )
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isTrue()
+    }
+
+    @RequiresFlagsEnabled(FLAG_SCALE_GESTURE_DETECTOR_USE_EVENTS_CLASSIFICATION)
+    @Test
+    fun classifiedPinch_multipleMoves_onScaleReturnsFalse_doesNotUpdatePrevSpan() {
+        val listener = TestScaleGestureListener(onScaleReturnValue = false)
+        val detector = createDetector(listener)
+        val cursor = PointF(150f, 200f)
+        val pointer0Down = cursor.withOffset(-50f, 0f)
+        val pointer1Down = cursor.withOffset(50f, 0f)
+        val pointer0InitialMove = cursor.withOffset(-57f, 0f)
+        val pointer1InitialMove = cursor.withOffset(57f, 0f)
+        val pointer0FinalMove = cursor.withOffset(-80f, 0f)
+        val pointer1FinalMove = cursor.withOffset(80f, 0f)
+        detector.onTouchEvent(
+            MotionEventBuilder(ACTION_DOWN, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0Down)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1f)
+                )
+                .eventTime(100)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(
+                ACTION_POINTER_DOWN,
+                SOURCE_MOUSE
+            )
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0Down)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Down))
+                .pointerIndex(1)
+                .eventTime(113)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0InitialMove)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1.678f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1InitialMove))
+                .eventTime(137)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_BEGIN))
+        assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE))
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isTrue()
+
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0FinalMove)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 0.789f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1FinalMove))
+                .eventTime(142)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+
+        val expectedPrevSpan = PointF(pointer1Down.x - pointer0Down.x, 0f)
+        val expectedSpan = PointF(pointer1FinalMove.x - pointer0FinalMove.x, 0f)
+        assertThat(
+            listener.pollEvent(),
+            allOf(
+                hasType(ScaleEventType.SCALE),
+                isInProgress(true),
+                hasFocus(cursor),
+                hasScaleFactor(0.789f),
+                hasCurrentSpan(expectedSpan.x),
+                hasCurrentSpanXY(expectedSpan),
+                hasPreviousSpan(expectedPrevSpan.x),
+                hasPreviousSpanXY(expectedPrevSpan),
+                hasEventTime(142),
+                hasTimeDelta(29),
+            ),
+        )
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isTrue()
+    }
+
+    @RequiresFlagsEnabled(FLAG_SCALE_GESTURE_DETECTOR_USE_EVENTS_CLASSIFICATION)
+    @Test
+    fun classifiedPinch_pointerUp_up_endsStream() {
+        val listener = TestScaleGestureListener()
+        val detector = createDetector(listener)
+        val cursor = PointF(102f, 196f)
+        val pointer0Down = cursor.withOffset(-2f, 0f)
+        val pointer1Down = cursor.withOffset(2f, 0f)
+        val pointer0Move = cursor.withOffset(-8f, 0f)
+        val pointer1Move = cursor.withOffset(8f, 0f)
+        detector.onTouchEvent(
+            MotionEventBuilder(ACTION_DOWN, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0Down)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1f)
+                )
+                .eventTime(200)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(
+                ACTION_POINTER_DOWN,
+                SOURCE_MOUSE
+            )
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0Down)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Down))
+                .pointerIndex(1)
+                .eventTime(227)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0Move)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 0.925f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Move))
+                .eventTime(250)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_BEGIN))
+        assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE))
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isTrue()
+
+        detector.onTouchEvent(
+            MotionEventBuilder(
+                MotionEvent.ACTION_POINTER_UP,
+                SOURCE_MOUSE
+            )
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0Move)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 2.897f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Move))
+                .pointerIndex(1)
+                .eventTime(351)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_UP, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0Move)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1.923f)
+                )
+                .eventTime(351)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+
+        val expectedSpan = PointF(pointer1Move.x - pointer0Move.x, 0f)
+        assertThat(
+            listener.pollEvent(),
+            allOf(
+                hasType(ScaleEventType.SCALE_END),
+                isInProgress(true),
+                hasFocus(cursor),
+                hasScaleFactor(0.925f),
+                hasCurrentSpan(expectedSpan.x),
+                hasCurrentSpanXY(expectedSpan),
+                hasPreviousSpan(expectedSpan.x),
+                hasPreviousSpanXY(expectedSpan),
+                hasEventTime(351),
+                hasTimeDelta(101),
+            ),
+        )
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isFalse()
+    }
+
+    @RequiresFlagsEnabled(FLAG_SCALE_GESTURE_DETECTOR_USE_EVENTS_CLASSIFICATION)
+    @Test
+    fun classifiedPinch_interruptedByNonPinchEvent_endsStream() {
+        val listener = TestScaleGestureListener()
+        val detector = createDetector(listener)
+        val cursor = PointF(100f, 200f)
+        val pointer0Down = cursor.withOffset(-50f, 0f)
+        val pointer1Down = cursor.withOffset(50f, 0f)
+        val pointer1Move = cursor.withOffset(250f, 300f)
+        detector.onTouchEvent(
+            MotionEventBuilder(ACTION_DOWN, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0Down)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1f)
+                )
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(
+                ACTION_POINTER_DOWN,
+                SOURCE_MOUSE
+            )
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0Down)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Down))
+                .pointerIndex(1)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_BEGIN))
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isTrue()
+
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, SOURCE_MOUSE)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0Down))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Move))
+                .eventTime(150)
+                .classification(MotionEvent.CLASSIFICATION_NONE)
+                .build()
+        )
+
+        assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_END))
+    }
+
+    @RequiresFlagsEnabled(FLAG_SCALE_GESTURE_DETECTOR_USE_EVENTS_CLASSIFICATION)
+    @Test
+    fun classifiedPinch_interruptsNonPinchStream_endsStream() {
+        val listener = TestScaleGestureListener()
+        val detector = createDetector(listener)
+        val pointer0 = PointF(100f, 200f)
+        val pointer1Down = pointer0.withOffset(minSpan.toFloat(), 0f)
+        val pointer1Move = pointer1Down.withOffset(spanSlop.toFloat(), 1f)
+
+        // Start a regular two-finger scale gesture
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(100)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_POINTER_DOWN, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(110)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Down))
+                .pointerIndex(1)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, InputDevice.SOURCE_TOUCHSCREEN)
+                .eventTime(120)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Move))
+                .build()
+        )
+        assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_BEGIN))
+        assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE))
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isTrue()
+
+        // Interrupt with a classified pinch event
+        val pointer1Pinch = pointer1Move.withOffset(50f, 50f)
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1.227f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Pinch))
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+
+        assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_END))
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isFalse()
+    }
+
+    @RequiresFlagsEnabled(FLAG_SCALE_GESTURE_DETECTOR_USE_EVENTS_CLASSIFICATION)
+    @Test
+    fun classifiedPinch_cancel_endsStream() {
+        val listener = TestScaleGestureListener()
+        val detector = createDetector(listener)
+        val cursor = PointF(100f, 200f)
+        val pointer0 = cursor.withOffset(-5f, 0f)
+        val pointer1 = cursor.withOffset(5f, 0f)
+        detector.onTouchEvent(
+            MotionEventBuilder(ACTION_DOWN, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1f)
+                )
+                .eventTime(100)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(
+                ACTION_POINTER_DOWN,
+                SOURCE_MOUSE
+            )
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1.453f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1))
+                .pointerIndex(1)
+                .eventTime(113)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_BEGIN))
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isTrue()
+
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_CANCEL, SOURCE_MOUSE)
+                .pointer(PointerBuilder(0, TOOL_TYPE_FINGER).xy(pointer0))
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1))
+                .eventTime(120)
+                .build()
+        )
+
+        assertThat(listener.pollEvent(), hasType(ScaleEventType.SCALE_END))
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isFalse()
+    }
+
+    @RequiresFlagsDisabled(FLAG_SCALE_GESTURE_DETECTOR_USE_EVENTS_CLASSIFICATION)
+    @Test
+    fun classifiedPinch_flagDisabled_handledAsTwoFingerGesture() {
+        val listener = TestScaleGestureListener()
+        val detector = createDetector(listener)
+        val cursor = PointF(100f, 200f)
+        val pointer0Down = cursor.withOffset(-minSpan - 100f, 0f)
+        val pointer1Down = cursor.withOffset(minSpan + 100f, 0f)
+        val pointer0Move = pointer0Down.withOffset(-spanSlop - 10f, 0f)
+        val pointer1Move = pointer1Down.withOffset(spanSlop + 10f, 0f)
+
+        detector.onTouchEvent(
+            MotionEventBuilder(ACTION_DOWN, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0Down)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1f)
+                )
+                .eventTime(100)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        detector.onTouchEvent(
+            MotionEventBuilder(
+                ACTION_POINTER_DOWN,
+                SOURCE_MOUSE
+            )
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0Down)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1.453f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Down))
+                .pointerIndex(1)
+                .eventTime(113)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isFalse()
+
+        detector.onTouchEvent(
+            MotionEventBuilder(MotionEvent.ACTION_MOVE, SOURCE_MOUSE)
+                .pointer(
+                    PointerBuilder(0, TOOL_TYPE_FINGER)
+                        .xy(pointer0Move)
+                        .axis(AXIS_GESTURE_PINCH_SCALE_FACTOR, 1.678f)
+                )
+                .pointer(PointerBuilder(1, TOOL_TYPE_FINGER).xy(pointer1Move))
+                .eventTime(137)
+                .classification(MotionEvent.CLASSIFICATION_PINCH)
+                .build()
+        )
+
+        assertThat(
+            listener.pollEvent(),
+            allOf(
+                hasType(ScaleEventType.SCALE_BEGIN),
+                isInProgress(false),
+                hasFocus(cursor),
+                hasScaleFactor(1f),
+                hasCurrentSpan(distance(pointer0Move, pointer1Move).hypot()),
+                hasCurrentSpanXY(distance(pointer0Move, pointer1Move)),
+                hasPreviousSpan(distance(pointer0Move, pointer1Move).hypot()),
+                hasPreviousSpanXY(distance(pointer0Move, pointer1Move)),
+            ),
+        )
+        assertThat(
+            listener.pollEvent(),
+            allOf(
+                hasType(ScaleEventType.SCALE),
+                isInProgress(true),
+                hasFocus(cursor),
+                hasScaleFactor(1f),
+                hasCurrentSpan(distance(pointer0Move, pointer1Move).hypot()),
+                hasCurrentSpanXY(distance(pointer0Move, pointer1Move)),
+                hasPreviousSpan(distance(pointer0Move, pointer1Move).hypot()),
+                hasPreviousSpanXY(distance(pointer0Move, pointer1Move)),
+            ),
+        )
+        assertThat(listener.events).isEmpty()
+        assertThat(detector.isInProgress).isTrue()
     }
 
     @Test
@@ -1139,61 +2375,6 @@ class ScaleGestureDetectorTest {
             ),
         )
         assertThat(listener.events).isEmpty()
-    }
-
-    private fun down(pointer: PointF, eventTime: Long = 0, buttonState: Int = 0) =
-        motionEvent(
-            MotionEvent.ACTION_DOWN,
-            listOf(pointer),
-            eventTime = eventTime,
-            buttonState = buttonState,
-        )
-
-    private fun pointerDown(index: Int, pointers: List<PointF>, eventTime: Long = 0) =
-        motionEvent(
-            MotionEvent.ACTION_POINTER_DOWN or (index shl MotionEvent.ACTION_POINTER_INDEX_SHIFT),
-            pointers,
-            eventTime = eventTime,
-        )
-
-    private fun move(pointers: List<PointF>, eventTime: Long = 0, buttonState: Int = 0) =
-        motionEvent(
-            MotionEvent.ACTION_MOVE,
-            pointers,
-            eventTime = eventTime,
-            buttonState = buttonState,
-        )
-
-    private fun pointerUp(index: Int, pointers: List<PointF>, eventTime: Long = 0) =
-        motionEvent(
-            MotionEvent.ACTION_POINTER_UP or (index shl MotionEvent.ACTION_POINTER_INDEX_SHIFT),
-            pointers,
-            eventTime = eventTime,
-        )
-
-    private fun up(pointer: PointF, eventTime: Long = 0, buttonState: Int = 0) =
-        motionEvent(
-            MotionEvent.ACTION_UP,
-            listOf(pointer),
-            eventTime = eventTime,
-            buttonState = buttonState,
-        )
-
-    private fun motionEvent(
-        action: Int,
-        pointers: List<PointF>,
-        eventTime: Long = 0L,
-        buttonState: Int = 0,
-    ): MotionEvent {
-        return MotionEventBuilder(action, InputDevice.SOURCE_TOUCHSCREEN)
-            .apply {
-                pointers.forEachIndexed { id, pointer ->
-                    pointer(PointerBuilder(id, TOOL_TYPE_FINGER).x(pointer.x).y(pointer.y))
-                }
-                eventTime(eventTime)
-                buttonState(buttonState)
-            }
-            .build()
     }
 
     fun PointF.hypot() = kotlin.math.hypot(this.x, this.y)

@@ -30,6 +30,7 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.WindowManagerState;
 import android.server.wm.second.Components;
+import android.view.WindowManager;
 
 import androidx.annotation.Nullable;
 
@@ -84,6 +85,10 @@ public abstract class ActivityRecordInputSinkTestsBase extends ActivityManagerTe
     }
 
     void touchButtonsAndAssert(boolean expectTouchesToReachActivity, boolean waitForAnimation) {
+        mWmState.waitAndAssert(
+                ActivityRecordInputSinkTestsBase::hasNoStartingWindows,
+                "Splash screens aren't dismissed on time.");
+
         final WindowManagerState.Activity activity = mWmState.getActivity(mTestActivity);
         final int displayId = activity.getTask().mDisplayId;
         final Rect bounds = activity.getBounds();
@@ -100,5 +105,10 @@ public abstract class ActivityRecordInputSinkTestsBase extends ActivityManagerTe
         mInstrumentation.waitForIdleSync();
         assertThat(ActivityRecordInputSinkTestsActivity.sButtonClickCount.get())
                 .isEqualTo(mTouchCount);
+    }
+
+    private static boolean hasNoStartingWindows(WindowManagerState state) {
+        return state.findFirstWindowWithType(WindowManager.LayoutParams.TYPE_APPLICATION_STARTING)
+                == null;
     }
 }

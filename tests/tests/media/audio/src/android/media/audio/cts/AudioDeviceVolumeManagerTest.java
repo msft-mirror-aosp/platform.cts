@@ -39,7 +39,6 @@ import android.media.AudioDeviceVolumeManager;
 import android.media.AudioManager;
 import android.media.VolumeInfo;
 import android.media.audio.cts.AudioTestUtil.SleepAssertIntEquals;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -66,7 +65,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @FrameworkSpecificTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class AudioDeviceVolumeManagerTest {
     private static final String TAG = "AudioDeviceVolumeManagerTest";

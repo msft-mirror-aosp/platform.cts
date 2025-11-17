@@ -33,7 +33,6 @@ import android.annotation.NonNull;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -151,7 +150,6 @@ public class CellularSecurityCallbackTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SECURITY_ALGORITHMS_UPDATE_INDICATIONS)
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnSecurityAlgorithmsChangedListener() throws Throwable {
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         // Inserting a SIM is necessary otherwise mockmodem will crash
@@ -203,7 +201,6 @@ public class CellularSecurityCallbackTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CELLULAR_IDENTIFIER_DISCLOSURE_INDICATIONS)
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnCellularIdentifierDisclosedChangedListener() throws Throwable {
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 

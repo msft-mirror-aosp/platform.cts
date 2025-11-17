@@ -16,7 +16,10 @@
 
 package android.companion.cts.common
 
+import android.companion.CompanionDeviceManager.MESSAGE_REQUEST_METADATA_UPDATE
+import android.os.PersistableBundle
 import android.util.Base64
+import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.ByteBuffer
@@ -47,6 +50,17 @@ data class CdmMessage(val type: Int, val payload: ByteArray) {
 
     override fun toString(): String {
         return "CdmMessage(type=0x${Integer.toHexString(type)}, payload=${Base64.encodeToString(payload, Base64.DEFAULT)})"
+    }
+
+    companion object {
+        fun forMetadataUpdate(metadata: PersistableBundle): CdmMessage {
+            val bytes = ByteArrayOutputStream()
+            metadata.writeToStream(bytes)
+            return CdmMessage(
+                    MESSAGE_REQUEST_METADATA_UPDATE,
+                    bytes.toByteArray()
+            )
+        }
     }
 }
 

@@ -42,11 +42,14 @@ import android.os.UserHandle;
 import android.provider.CallLog;
 import android.provider.ContactsContract;
 import android.provider.ContactsContract.PhoneLookup;
+import android.telecom.AudioState;
 import android.telecom.Call;
+import android.telecom.CallAudioState;
 import android.telecom.Connection;
 import android.telecom.ConnectionRequest;
 import android.telecom.DisconnectCause;
 import android.telecom.GatewayInfo;
+import android.telecom.Phone;
 import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.StatusHints;
@@ -1256,6 +1259,36 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
         assertEquals(CallLog.Calls.FEATURES_VOLTE, features & CallLog.Calls.FEATURES_VOLTE);
     }
 
+    /** Tests whether the CallLogManager logs the features of a VoNR call correctly. */
+    public void testFeaturesVoNr() throws Exception {
+        if (!mShouldTestTelecom || !Flags.hdPlusCall()) {
+            return;
+        }
+
+        // Register content observer on call log and get latch
+        CountDownLatch callLogEntryLatch = getCallLogEntryLatch();
+
+        Bundle testBundle = new Bundle();
+        testBundle.putInt(TelecomManager.EXTRA_CALL_NETWORK_TYPE, TelephonyManager.NETWORK_TYPE_NR);
+        mConnection.putExtras(testBundle);
+
+        // Wait for the 2nd invocation; setExtras is called in the setup method.
+        mOnExtrasChangedCounter.waitForCount(2, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+
+        mCall.disconnect();
+
+        // Wait on the call log latch.
+        callLogEntryLatch.await(ASYNC_TIMEOUT, TimeUnit.MILLISECONDS);
+
+        // Verify the contents of the call log
+        Cursor callsCursor =
+                mContext.getContentResolver()
+                        .query(CallLog.Calls.CONTENT_URI, null, null, null, "_id DESC");
+        callsCursor.moveToFirst();
+        int features = callsCursor.getInt(callsCursor.getColumnIndex("features"));
+        assertEquals(CallLog.Calls.FEATURES_VONR, features & CallLog.Calls.FEATURES_VONR);
+    }
+
     /**
      * Tests whether the CallLogManager logs the features of a HD+ call correctly.
      *
@@ -1383,5 +1416,56 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
         assertEquals(TEST_PHONE_ACCOUNT_HANDLE_2, mConnection.getPhoneAccountHandle());
         mOnPhoneAccountChangedCounter.waitForCount(1, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
         assertEquals(TEST_PHONE_ACCOUNT_HANDLE_2, mOnPhoneAccountChangedCounter.getArgs(0)[1]);
+    }
+
+    /**
+     * These are system APIs that are LONG deprecated 🥀. They are NOT used outside of internal
+     * Telecom implementation, sooooooo....
+     *
+     * @throws Exception
+     */
+    public void testGetPhoneAndOtherAbandonedThings() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        Phone.Listener listener =
+                new Phone.Listener() {
+                    @Override
+                    public void onAudioStateChanged(Phone phone, AudioState audioState) {
+                        super.onAudioStateChanged(phone, audioState);
+                    }
+                };
+        listener.onAudioStateChanged(null, null);
+        listener.onBringToForeground(null, false);
+        listener.onCallAdded(null, null);
+        listener.onCallAudioStateChanged(null, null);
+        listener.onCallRemoved(null, null);
+        listener.onCanAddCallChanged(null, false);
+        listener.onSilenceRinger(null);
+
+        Phone phone = mInCallService.getPhone();
+        phone.canAddCall();
+        phone.getAudioState();
+        phone.getCallAudioState();
+        phone.getCalls();
+        phone.setMuted(false);
+        phone.addListener(listener);
+        phone.removeListener(listener);
+        phone.setAudioRoute(CallAudioState.ROUTE_EARPIECE);
+        phone.requestBluetoothAudio(null);
+
+        mInCallService.onPhoneCreated(null);
+        mInCallService.onPhoneDestroyed(null);
+
+        AudioState audioState =
+                new AudioState(false, AudioState.ROUTE_EARPIECE, AudioState.ROUTE_EARPIECE);
+        assertEquals(AudioState.ROUTE_EARPIECE, audioState.getRoute());
+        assertEquals(AudioState.ROUTE_EARPIECE, audioState.getSupportedRouteMask());
+        assertNotNull(audioState.audioRouteToString(AudioState.ROUTE_EARPIECE));
+        AudioState copiedState = new AudioState(audioState);
+        CallAudioState callAudioState =
+                new CallAudioState(
+                        false, CallAudioState.ROUTE_EARPIECE, CallAudioState.ROUTE_EARPIECE);
+        AudioState overCopiedState = new AudioState(callAudioState);
     }
 }

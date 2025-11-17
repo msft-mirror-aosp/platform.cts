@@ -22,9 +22,9 @@ import static android.content.IntentFilter.MATCH_CATEGORY_PATH;
 import static android.content.IntentFilter.MATCH_CATEGORY_SCHEME_SPECIFIC_PART;
 import static android.content.IntentFilter.MATCH_CATEGORY_TYPE;
 import static android.content.IntentFilter.NO_MATCH_DATA;
+import static android.content.UriRelativeFilter.FRAGMENT;
 import static android.content.UriRelativeFilter.PATH;
 import static android.content.UriRelativeFilter.QUERY;
-import static android.content.UriRelativeFilter.FRAGMENT;
 import static android.content.UriRelativeFilterGroup.ACTION_ALLOW;
 import static android.content.UriRelativeFilterGroup.ACTION_BLOCK;
 import static android.os.PatternMatcher.PATTERN_ADVANCED_GLOB;
@@ -56,7 +56,6 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.net.Uri;
 import android.os.Parcel;
 import android.os.PatternMatcher;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.PlatinumTest;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -91,7 +90,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 @RunWith(AndroidJUnit4.class)
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @PlatinumTest(focusArea = "pm")
 public class IntentFilterTest {
     @Rule

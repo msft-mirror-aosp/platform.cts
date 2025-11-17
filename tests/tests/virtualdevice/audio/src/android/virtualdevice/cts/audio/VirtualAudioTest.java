@@ -60,7 +60,8 @@ import android.media.audiopolicy.AudioPolicy;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.virtualdevice.cts.common.AudioInjector;
+import android.virtualdevice.cts.common.SignalObserver;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -85,7 +86,6 @@ import java.util.Set;
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
 public class VirtualAudioTest {
 
-    public static final int FREQUENCY = 264;
     public static final int SAMPLE_RATE = 44100;
     private static final Duration TIMEOUT = Duration.ofMillis(5000);
     private static final int AUDIO_PERMISSIONS_PROPAGATION_TIME_MS = 80;
@@ -297,14 +297,15 @@ public class VirtualAudioTest {
 
         AudioCapture audioCapture = mVirtualAudioDevice.startAudioCapture(CAPTURE_FORMAT);
 
-        try (SignalObserver signalObserver = new SignalObserver(audioCapture, Set.of(FREQUENCY))) {
+        try (SignalObserver signalObserver =
+                new SignalObserver(audioCapture, Set.of(SignalObserver.FREQUENCY))) {
             signalObserver.registerSignalChangeListener(mSignalChangeListener);
 
             AudioActivity activity = startAudioActivity();
             AudioTrack audioTrack = activity.playAudio();
 
-            verify(mSignalChangeListener, timeout(TIMEOUT.toMillis()).atLeastOnce()).onSignalChange(
-                    Set.of(FREQUENCY));
+            verify(mSignalChangeListener, timeout(TIMEOUT.toMillis()).atLeastOnce())
+                    .onSignalChange(Set.of(SignalObserver.FREQUENCY));
 
             audioTrack.stop();
             activity.finish();
@@ -324,8 +325,8 @@ public class VirtualAudioTest {
             AudioActivity audioActivity = startAudioActivity();
             audioActivity.recordAudio(mSignalChangeListener);
 
-            verify(mSignalChangeListener, timeout(TIMEOUT.toMillis()).atLeastOnce()).onSignalChange(
-                    Set.of(FREQUENCY));
+            verify(mSignalChangeListener, timeout(TIMEOUT.toMillis()).atLeastOnce())
+                    .onSignalChange(Set.of(SignalObserver.FREQUENCY));
         }
     }
 
@@ -366,7 +367,7 @@ public class VirtualAudioTest {
                 mSignalObserver.close();
             }
 
-            mSignalObserver = new SignalObserver(audioRecord, Set.of(FREQUENCY));
+            mSignalObserver = new SignalObserver(audioRecord, Set.of(SignalObserver.FREQUENCY));
             mSignalObserver.registerSignalChangeListener(signalChangeListener);
         }
 

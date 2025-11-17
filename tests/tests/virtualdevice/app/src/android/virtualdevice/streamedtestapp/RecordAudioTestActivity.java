@@ -39,8 +39,13 @@ import android.os.IBinder;
 import android.os.RemoteCallback;
 import android.os.SystemClock;
 import android.util.Log;
+import android.virtualdevice.cts.common.SignalObserver;
 
 import androidx.annotation.Nullable;
+
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Activity used for testing audio recording permissions on different devices. It needs to be in a
@@ -52,6 +57,7 @@ public class RecordAudioTestActivity extends Activity {
     private static final int SAMPLE_RATE = 48000;
     private static final int BUFFER_SIZE = 65536;
     private static final int AUDIO_PERMISSIONS_PROPAGATION_TIME_MS = 300;
+    private static final long WAIT_FOR_AUDIO_RECORDED_DATA_MS = 3000L;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -79,6 +85,7 @@ public class RecordAudioTestActivity extends Activity {
     static void recordAudio(Context context, RemoteCallback resultReceiver) {
         Bundle result = new Bundle();
         AudioRecord audioRecord = null;
+        boolean ret;
 
         try {
             Log.d(TAG, "Before recording on context device id " + context.getDeviceId()
@@ -88,16 +95,31 @@ public class RecordAudioTestActivity extends Activity {
             audioRecord = new AudioRecord(MediaRecorder.AudioSource.DEFAULT, SAMPLE_RATE,
                     AudioFormat.CHANNEL_IN_MONO, ENCODING_PCM_16BIT, BUFFER_SIZE);
 
-            audioRecord.startRecording();
+            if (audioRecord.getState() == AudioRecord.STATE_INITIALIZED) {
+                // check signal data only when running on a virtual device where we control the
+                // audio injection stream
+                if (context.getDeviceId() == Context.DEVICE_ID_DEFAULT) {
+                    audioRecord.startRecording();
+                    ret = true;
+                } else {
+                    ret = isAudioDataRecorded(audioRecord);
+                }
 
-            Log.d(TAG, "Recording audio in RecordAudioTestActivity... source: "
-                    + audioRecord.getAudioSource() + " address: "
-                    + audioRecord.getRoutedDevice().getAddress());
-
-            result.putBoolean(EXTRA_RECORD_AUDIO_SUCCESS, /* record succeeded */ true);
+                Log.d(
+                        TAG,
+                        "Recording audio in RecordAudioTestActivity... source: "
+                                + audioRecord.getAudioSource()
+                                + " address: "
+                                + audioRecord.getRoutedDevice().getAddress()
+                                + " isAudioDataRecorded: "
+                                + ret);
+            } else {
+                Log.d(TAG, "Could not initialize AudioRecord in RecordAudioTestActivity.");
+                ret = false;
+            }
         } catch (Exception e) {
             Log.d(TAG, "Could not start audio recording in RecordAudioTestActivity.");
-            result.putBoolean(EXTRA_RECORD_AUDIO_SUCCESS, /* record failed */ false);
+            ret = false;
         } finally {
             if (audioRecord != null) {
                 try {
@@ -112,7 +134,25 @@ public class RecordAudioTestActivity extends Activity {
         }
 
         if (resultReceiver != null) {
+            result.putBoolean(EXTRA_RECORD_AUDIO_SUCCESS, /* record success with data */ ret);
             resultReceiver.sendResult(result);
+        }
+    }
+
+    private static boolean isAudioDataRecorded(AudioRecord audioRecord) {
+        CountDownLatch recordedDataLatch = new CountDownLatch(1);
+        try (SignalObserver signalObserver =
+                new SignalObserver(audioRecord, Set.of(SignalObserver.FREQUENCY))) {
+            signalObserver.registerSignalChangeListener(
+                    frequencies -> {
+                        if (frequencies.contains(SignalObserver.FREQUENCY)) {
+                            recordedDataLatch.countDown();
+                        }
+                    });
+
+            return recordedDataLatch.await(WAIT_FOR_AUDIO_RECORDED_DATA_MS, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            return false;
         }
     }
 

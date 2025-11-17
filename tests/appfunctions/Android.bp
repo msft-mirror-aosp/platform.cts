@@ -57,9 +57,10 @@ android_test {
         "general-tests",
     ],
     data: [
-        ":CtsAppFunctionsTestHelper",
-        ":CtsAppFunctionsTestAgentHelper",
         ":CtsAppFunctionsSidecarTestHelper",
+        ":CtsAppFunctionsTestAgentHelper",
+        ":CtsAppFunctionsTestHelper",
+        ":CtsAppFunctionsTestHelperDynamicSchema",
         ":CtsAppSearchIndexerTestAppAV1",
         ":CtsAppSearchIndexerTestAppAV2",
         ":CtsAppSearchIndexerTestAppAV3",
@@ -117,4 +118,22 @@ android_test_helper_app {
         "general-tests",
     ],
     manifest: "helper-app/AndroidManifest_sidecar.xml",
+}
+
+android_test_helper_app {
+    name: "CtsAppFunctionsTestHelperDynamicSchema",
+    defaults: ["cts_defaults"],
+    static_libs: [
+        "CtsAppFunctionsTestUtils",
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+        "compatibility-device-util-axt",
+        "testng",
+    ],
+    test_suites: [
+        "general-tests",
+    ],
+    asset_dirs: ["helper-app-dynamic-schema/assets"],
+    manifest: "helper-app-dynamic-schema/AndroidManifest.xml",
+    min_sdk_version: "31",
 }

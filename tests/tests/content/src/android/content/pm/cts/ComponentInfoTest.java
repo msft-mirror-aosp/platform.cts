@@ -32,7 +32,6 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.os.Parcel;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.DisabledOnRavenwood;
 import android.util.Printer;
 import android.util.StringBuilderPrinter;
@@ -49,7 +48,6 @@ import org.junit.runner.RunWith;
  * Test {@link ComponentInfo}.
  */
 @RunWith(AndroidJUnit4.class)
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ComponentInfoTest {
 
     private final String PACKAGE_NAME = "android.content.cts";

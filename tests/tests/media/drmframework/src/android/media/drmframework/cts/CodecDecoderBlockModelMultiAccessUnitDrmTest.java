@@ -17,10 +17,7 @@
 package android.media.drmframework.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_MultipleFrames;
-import static android.media.codec.Flags.FLAG_LARGE_AUDIO_FRAME_FINISH;
 import static android.media.drmframework.cts.CodecDecoderDrmTest.convert;
-
-import static com.android.media.codec.flags.Flags.FLAG_LARGE_AUDIO_FRAME;
 
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
@@ -32,23 +29,18 @@ import android.media.MediaFormat;
 import android.media.NotProvisionedException;
 import android.media.ResourceBusyException;
 import android.media.UnsupportedSchemeException;
-import android.media.cts.TestUtils;
 import android.mediav2.common.cts.CodecDecoderBlockModelDrmTestBase;
 import android.mediav2.common.cts.CodecDecoderBlockModelMultiAccessUnitDrmTestBase;
 import android.mediav2.common.cts.OutputManager;
 import android.os.Build;
 import android.os.Process;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.filters.LargeTest;
 import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.ApiTest;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -70,7 +62,6 @@ import java.util.UUID;
  */
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @AppModeFull(reason = "Instant apps cannot access the SD card")
-@RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
 @LargeTest
 @RunWith(Parameterized.class)
 public class CodecDecoderBlockModelMultiAccessUnitDrmTest
@@ -110,9 +101,6 @@ public class CodecDecoderBlockModelMultiAccessUnitDrmTest
         super(decoder, mediaType, MEDIA_DIR + testFile, allTestParams);
     }
 
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
     @Parameterized.Parameters(name = "{index}_{0}_{1}")
     public static Collection<Object[]> input() {
         final boolean isEncoder = false;
@@ -134,6 +122,7 @@ public class CodecDecoderBlockModelMultiAccessUnitDrmTest
     @ApiTest(apis = {"android.media.MediaCodec#configure",
             "android.media.MediaCodec.Request#setEncryptedMultiFrameLinearBlock",
             "android.media.MediaCodec#CONFIGURE_FLAG_USE_BLOCK_MODEL",
+            "android.media.MediaCodec#CONFIGURE_FLAG_USE_CRYPTO_ASYNC",
             "android.media.MediaCodec.Request#setEncryptedLinearBlock",
             "android.media.MediaFormat#KEY_BUFFER_BATCH_MAX_OUTPUT_SIZE",
             "android.media.MediaFormat#KEY_BUFFER_BATCH_THRESHOLD_OUTPUT_SIZE",
@@ -158,6 +147,7 @@ public class CodecDecoderBlockModelMultiAccessUnitDrmTest
         codecDecoderBlockModelDrmtb.tearDownCrypto();
         OutputManager ref = codecDecoderBlockModelDrmtb.getOutputManager();
 
+        int[] additionalFlags = new int[] {0, MediaCodec.CONFIGURE_FLAG_USE_CRYPTO_ASYNC};
         boolean[] boolStates = {true, false};
         OutputManager testA = new OutputManager(ref.getSharedErrorLogs());
         OutputManager testB = new OutputManager(ref.getSharedErrorLogs());
@@ -165,32 +155,36 @@ public class CodecDecoderBlockModelMultiAccessUnitDrmTest
         MediaFormat format = setUpSource(mTestFile);
         int maxSampleSize = getMaxSampleSizeForMediaType(mTestFile, mMediaType);
         mCodec = MediaCodec.createByCodecName(mCodecName);
-        for (int[] outSizeInMs : OUT_SIZE_IN_MS) {
-            configureKeysForLargeAudioBlockModelFrameMode(format, maxSampleSize, outSizeInMs[0],
-                    outSizeInMs[1]);
-            for (boolean eosType : boolStates) {
-                mOutputBuff = eosType ? testA : testB;
-                mOutputBuff.reset();
-                setUpCrypto(CLEAR_KEY_IDENTIFIER, DRM_INIT_DATA, new byte[][]{CLEAR_KEY_CENC});
-                configureCodec(format, true, eosType, false);
-                mMaxInputLimitMs = outSizeInMs[0];
-                mCodec.start();
-                mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
-                doWork(Integer.MAX_VALUE);
-                queueEOS();
-                waitForAllOutputs();
-                mCodec.reset();
-                tearDownCrypto();
-                if (!ref.equalsByteOutput(mOutputBuff)) {
-                    fail("Output of decoder component when fed with multiple access units in single"
-                            + " enqueue call differs from output received when each access unit is"
-                            + "fed separately. \n" + mTestConfig + mTestEnv
-                            + mOutputBuff.getErrMsg());
+        // additional flags passed here are appending to
+        // MediaCodec.CONFIGURE_FLAG_USE_BLOCK_MODEL flag while configuring the decoder
+        for (int flag : additionalFlags) {
+            for (int[] outSizeInMs : OUT_SIZE_IN_MS) {
+                configureKeysForLargeAudioBlockModelFrameMode(format, maxSampleSize, outSizeInMs[0],
+                        outSizeInMs[1]);
+                for (boolean eosType : boolStates) {
+                    mOutputBuff = eosType ? testA : testB;
+                    mOutputBuff.reset();
+                    setUpCrypto(CLEAR_KEY_IDENTIFIER, DRM_INIT_DATA, new byte[][] {CLEAR_KEY_CENC});
+                    configureCodec(format, true, eosType, false, flag);
+                    mMaxInputLimitMs = outSizeInMs[0];
+                    mCodec.start();
+                    mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+                    doWork(Integer.MAX_VALUE);
+                    queueEOS();
+                    waitForAllOutputs();
+                    mCodec.reset();
+                    tearDownCrypto();
+                    if (!ref.equalsByteOutput(mOutputBuff)) {
+                        fail("Output of decoder component when fed with multiple access units in "
+                                + "single enqueue call differs from output received when each "
+                                + "access unit is fed separately. \n" + mTestConfig + mTestEnv
+                                + mOutputBuff.getErrMsg());
+                    }
                 }
-            }
-            if (!testA.equals(testB)) {
-                fail("Output of decoder component is not consistent across runs. \n" + mTestConfig
-                        + mTestEnv + testB.getErrMsg());
+                if (!testA.equals(testB)) {
+                    fail("Output of decoder component is not consistent across runs. \n"
+                            + mTestConfig + mTestEnv + testB.getErrMsg());
+                }
             }
         }
         mCodec.release();

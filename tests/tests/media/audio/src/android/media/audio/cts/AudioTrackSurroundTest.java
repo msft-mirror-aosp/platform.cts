@@ -18,9 +18,6 @@ package android.media.audio.cts;
 
 import android.annotation.RawRes;
 import android.content.Context;
-import android.content.pm.PackageManager;
-import android.content.res.AssetFileDescriptor;
-import android.content.res.Resources;
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioManager;
@@ -28,7 +25,6 @@ import android.media.AudioProfile;
 import android.media.AudioTimestamp;
 import android.media.AudioTrack;
 import android.media.audio.cts.R;
-import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Log;
 
 import com.android.compatibility.common.util.CtsAndroidTestCase;
@@ -50,7 +46,6 @@ import java.util.Random;
 // sample rate based on the AudioTimestamps.
 
 @FrameworkSpecificTest
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class AudioTrackSurroundTest extends CtsAndroidTestCase {
     private static final String TAG = "AudioTrackSurroundTest";
 

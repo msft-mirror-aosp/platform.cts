@@ -1430,9 +1430,8 @@ public class NotificationAssistantServiceTest {
                 TestApis.permissions()
                         .withPermission(android.Manifest.permission.STATUS_BAR_SERVICE)) {
             mNotificationManager.requestSystemAdjustments(List.of(adjustment));
+            assertTrue("Latch timed out", latch.await(SLEEP_TIME, TimeUnit.MILLISECONDS));
         }
-
-        assertTrue("Latch timed out", latch.await(SLEEP_TIME, TimeUnit.MILLISECONDS));
 
         assertThat(mAssistant.mSystemAdjustments).hasSize(1);
         assertThat(mAssistant.mSystemAdjustments.get(0).getKey()).isEqualTo(adjustment.getKey());
@@ -1472,9 +1471,8 @@ public class NotificationAssistantServiceTest {
                 TestApis.permissions()
                         .withPermission(android.Manifest.permission.STATUS_BAR_SERVICE)) {
             mNotificationManager.requestSystemAdjustments(List.of(adjustment1, adjustment2));
+            assertTrue("Latch timed out", latch.await(SLEEP_TIME, TimeUnit.MILLISECONDS));
         }
-
-        assertTrue("Latch timed out", latch.await(SLEEP_TIME, TimeUnit.MILLISECONDS));
 
         // The adjustments may come in any order, so we'll just check that we received both.
         List<String> adjustmentKeys =
@@ -1512,9 +1510,8 @@ public class NotificationAssistantServiceTest {
                 TestApis.permissions()
                         .withPermission(android.Manifest.permission.STATUS_BAR_SERVICE)) {
             mNotificationManager.requestSystemAdjustments(List.of(adjustment1, adjustment2));
+            assertTrue("Latch timed out", latch.await(SLEEP_TIME, TimeUnit.MILLISECONDS));
         }
-
-        assertTrue("Latch timed out", latch.await(SLEEP_TIME, TimeUnit.MILLISECONDS));
 
         assertThat(mAssistant.mSystemAdjustments).hasSize(1);
         assertThat(mAssistant.mSystemAdjustments.get(0).getKey()).isEqualTo(adjustment1.getKey());
@@ -1555,9 +1552,9 @@ public class NotificationAssistantServiceTest {
                     TestApis.permissions()
                             .withPermission(android.Manifest.permission.STATUS_BAR_SERVICE)) {
                 mNotificationManager.requestSystemAdjustments(List.of(adjustment));
+                assertTrue(systemAdjustmentLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS));
             }
 
-            assertTrue(systemAdjustmentLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS));
             assertThat(mAssistant.mSystemAdjustments).hasSize(1);
 
             // Now, assistant tries to apply the adjustment it received.
@@ -1569,10 +1566,13 @@ public class NotificationAssistantServiceTest {
             mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
             assertThat(out.getImportance()).isEqualTo(originalImportance);
         } finally {
+            CountDownLatch cleanupLatch = mAssistant.setAllowedAdjustmentCountdown(1);
             try (PermissionContext permission =
                     TestApis.permissions()
                             .withPermission(android.Manifest.permission.STATUS_BAR_SERVICE)) {
                 mNotificationManager.allowAssistantAdjustment(KEY_IMPORTANCE);
+                // Ensure the adjustment is allowed before we tear down the test.
+                cleanupLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
             }
         }
     }

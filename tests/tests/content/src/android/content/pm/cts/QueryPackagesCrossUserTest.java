@@ -33,7 +33,6 @@ import android.os.ConditionVariable;
 import android.os.RemoteCallback;
 import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -58,7 +57,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 @AppModeFull
-@AppModeNonSdkSandbox
 @EnsureHasWorkProfile
 @RunWith(AndroidJUnit4.class)
 public class QueryPackagesCrossUserTest {
