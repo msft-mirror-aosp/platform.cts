@@ -115,6 +115,13 @@
                         android:text="@string/pass_button_text"/>
 
                     <Button
+                        android:id="@+id/skip_button"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/skip_button_text"
+                        android:visibility="gone"/>
+
+                    <Button
                         android:id="@+id/test_step_failed"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
