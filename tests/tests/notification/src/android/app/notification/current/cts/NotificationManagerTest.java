@@ -3680,7 +3680,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.app.Flags.FLAG_BRIDGED_NOTIFICATIONS_API)
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_BRIDGED_NOTIFICATIONS)
     public void testSetBridgedNotificationMetadata_noPermission() throws Exception {
         int id = 99;
 
@@ -3705,7 +3705,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.app.Flags.FLAG_BRIDGED_NOTIFICATIONS_API)
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_BRIDGED_NOTIFICATIONS)
     public void testSetBridgedNotificationMetadata_hasPermission() throws Exception {
         int id = 99;
 
