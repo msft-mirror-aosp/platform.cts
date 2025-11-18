@@ -62,6 +62,8 @@ import android.media.Image;
 import android.media.ImageReader;
 import android.os.BatteryManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.ArraySet;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -76,6 +78,7 @@ import com.android.ex.camera2.blocking.BlockingSessionCallback;
 import com.android.ex.camera2.utils.StateWaiter;
 import com.android.internal.camera.flags.Flags;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -117,6 +120,9 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
         CameraDevice.TEMPLATE_ZERO_SHUTTER_LAG,
         CameraDevice.TEMPLATE_MANUAL,
     };
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Override
     public void setUp() throws Exception {

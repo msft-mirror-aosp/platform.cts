@@ -553,6 +553,10 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
                                     blackLevel[index], blackLevel[0]);
                             }
                         }
+                    } else if (key.equals(CaptureResult.LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS)) {
+                        errorCollector.expectEquals(msg,
+                                requestBuilder.get(CaptureRequest.LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS),
+                                result.get(CaptureResult.LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS));
                     } else {
                         // Only do non-null check for the rest of keys.
                         errorCollector.expectKeyValueNotNull(failMsg, result, key);
@@ -666,6 +670,12 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
             waiverKeys.add(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID);
         }
 
+        // LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS not required if key is not supported.
+        if (!staticInfo.isLogicalMultiCamera() ||
+                !staticInfo.isLogicalMultiCameraAdditionalResultsSupported()) {
+            waiverKeys.add(CaptureResult.LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS);
+        }
+
         //Keys not required if RAW is not supported
         if (!staticInfo.isCapabilitySupported(
                 CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_RAW)) {
@@ -684,9 +694,9 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
 
         // If any of distortion coefficients is reported in CameraCharacteristics, HAL must
         // also report (one of) them in CaptureResult
-        boolean distortionReported = 
+        boolean distortionReported =
                 staticInfo.areKeysAvailable(
-                        CameraCharacteristics.LENS_RADIAL_DISTORTION) || 
+                        CameraCharacteristics.LENS_RADIAL_DISTORTION) ||
                 staticInfo.areKeysAvailable(
                         CameraCharacteristics.LENS_DISTORTION);
 
