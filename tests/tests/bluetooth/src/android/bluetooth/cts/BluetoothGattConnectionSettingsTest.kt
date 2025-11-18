@@ -54,7 +54,7 @@ class BluetoothGattConnectionSettingsTest {
     @RequiresFlagsEnabled(Flags.FLAG_GATT_CONN_SETTINGS)
     fun validateBuilder() {
         val settings =
-            BluetoothGattConnectionSettings.Builder(executor, callback)
+            BluetoothGattConnectionSettings.Builder()
                 .setTransport(BluetoothDevice.TRANSPORT_AUTO)
                 .setAutoConnectEnabled(true)
                 .setOpportunisticEnabled(true)
@@ -63,19 +63,17 @@ class BluetoothGattConnectionSettingsTest {
         expect.that(settings.getTransport()).isEqualTo(BluetoothDevice.TRANSPORT_AUTO)
         expect.that(settings.isAutoConnectEnabled()).isTrue()
         expect.that(settings.isOpportunisticEnabled()).isTrue()
-        expect.that(settings.getBluetoothGattCallback()).isEqualTo(callback)
         expect.that(settings.isAutomaticMtuEnabled()).isFalse()
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_GATT_CONN_SETTINGS)
     fun validateDefaultBuilderValue() {
-        val settings = BluetoothGattConnectionSettings.Builder(executor, callback).build()
+        val settings = BluetoothGattConnectionSettings.Builder().build()
 
         expect.that(settings.getTransport()).isEqualTo(BluetoothDevice.TRANSPORT_LE)
         expect.that(settings.isAutoConnectEnabled()).isFalse()
         expect.that(settings.isOpportunisticEnabled()).isFalse()
-        expect.that(settings.getBluetoothGattCallback()).isEqualTo(callback)
         expect.that(settings.isAutomaticMtuEnabled()).isTrue()
     }
 
