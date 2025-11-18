@@ -1006,21 +1006,27 @@ public class BluetoothDeviceTest {
     @RequiresFlagsEnabled(Flags.FLAG_GATT_CONN_SETTINGS)
     public void illegalArgumentsToConnectGattWithNullConnectionSettings() {
         // No support for Gatt connection without Gatt Callback handler
-        mFakeDevice.connectGatt((BluetoothGattConnectionSettings) null);
+        mFakeDevice.connectGatt(
+                (BluetoothGattConnectionSettings) null,
+                mContext.getMainExecutor(),
+                new BluetoothGattCallback() {});
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_GATT_CONN_SETTINGS)
     public void connectGattUsingConnectionSettingsTest() {
         BluetoothGattConnectionSettings settings =
-                new BluetoothGattConnectionSettings.Builder(
-                                mContext.getMainExecutor(), new BluetoothGattCallback() {})
+                new BluetoothGattConnectionSettings.Builder()
                         .setTransport(BluetoothDevice.TRANSPORT_LE)
                         .setAutoConnectEnabled(false)
                         .setOpportunisticEnabled(false)
                         .setAutomaticMtuEnabled(true)
                         .build();
-        BluetoothGatt gatt = mFakeDevice.connectGatt(settings);
+
+        BluetoothGatt gatt =
+                mFakeDevice.connectGatt(
+                        settings, mContext.getMainExecutor(), new BluetoothGattCallback() {});
+
         assertThat(gatt).isNotNull();
     }
 }
