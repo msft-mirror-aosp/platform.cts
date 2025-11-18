@@ -3035,6 +3035,13 @@ public class StaticMetadata {
     }
 
     /**
+     * Check if logical multi camera additional results are supported.
+     */
+    public boolean isLogicalMultiCameraAdditionalResultsSupported() {
+        return areKeysAvailable(CaptureResult.LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS);
+    }
+
+    /**
      * Check if camera characteristic for shared session configuration is present.
      */
     public boolean sharedSessionConfigurationPresent() {
