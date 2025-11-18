@@ -66,7 +66,7 @@ specs {
   key: 31
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_12
-    specification: "same"
+    specification: "MUST have a tap-to-tone latency of less than 100 milliseconds using the OboeTester tap-to-tone test or CTS Verifier tap-to-tone test."
     required_values {
       key: "native_latency_ms"
       value {
@@ -123,7 +123,7 @@ specs {
   key: 35
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
-    specification: "same"
+    specification: "MUST have a tap-to-tone latency of 80 milliseconds or less using the CTS Verifier tap-to-tone test."
     required_values {
       key: "native_latency_ms"
       value {
@@ -142,7 +142,7 @@ specs {
   key: 37
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
-    specification: "same"
+    specification: "MUST have a tap-to-tone latency of 80 milliseconds or less using the CTS Verifier tap-to-tone test."
     required_values {
       key: "native_latency_ms"
       value {
