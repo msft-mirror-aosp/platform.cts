@@ -185,6 +185,11 @@ public class MediaExtractorTest {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     @Test
     public void testIamfAacMediaExtractor() throws Exception {
+        assumeTrue(
+                "Device does not have IAMF decoder and is not a Google device or emulator",
+                MediaUtils.hasDecoder(MediaFormat.MIMETYPE_AUDIO_IAMF)
+                        || Build.MANUFACTURER.equals("Google")
+                        || isEmulator());
         String testFileName = "7_1_4_IAMF_AAC.mp4";
         Preconditions.assertTestFileExists(mInpPrefix + testFileName);
 
@@ -208,6 +213,11 @@ public class MediaExtractorTest {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     @Test
     public void testIamfFlacMediaExtractor() throws Exception {
+        assumeTrue(
+                "Device does not have IAMF decoder and is not a Google device or emulator",
+                MediaUtils.hasDecoder(MediaFormat.MIMETYPE_AUDIO_IAMF)
+                        || Build.MANUFACTURER.equals("Google")
+                        || isEmulator());
         String testFileName = "7_1_4_IAMF_FLAC_48000.mp4";
         Preconditions.assertTestFileExists(mInpPrefix + testFileName);
 
@@ -231,6 +241,11 @@ public class MediaExtractorTest {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     @Test
     public void testIamfOpusMediaExtractor() throws Exception {
+        assumeTrue(
+                "Device does not have IAMF decoder and is not a Google device or emulator",
+                MediaUtils.hasDecoder(MediaFormat.MIMETYPE_AUDIO_IAMF)
+                        || Build.MANUFACTURER.equals("Google")
+                        || isEmulator());
         String testFileName = "7_1_4_IAMF_Opus_no_video.mp4";
         Preconditions.assertTestFileExists(mInpPrefix + testFileName);
 
@@ -254,6 +269,11 @@ public class MediaExtractorTest {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     @Test
     public void testIamfPcmMediaExtractor() throws Exception {
+        assumeTrue(
+                "Device does not have IAMF decoder and is not a Google device or emulator",
+                MediaUtils.hasDecoder(MediaFormat.MIMETYPE_AUDIO_IAMF)
+                        || Build.MANUFACTURER.equals("Google")
+                        || isEmulator());
         String testFileName = "7_1_4_IAMF_PCM16_48000_no_video.mp4";
         Preconditions.assertTestFileExists(mInpPrefix + testFileName);
 
@@ -277,6 +297,11 @@ public class MediaExtractorTest {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.CINNAMON_BUN)
     @Test
     public void testVvcMediaExtractor() throws Exception {
+        assumeTrue(
+                "Device does not have VVC decoder and is not a Google device or emulator",
+                MediaUtils.hasDecoder(MediaFormat.MIMETYPE_VIDEO_VVC)
+                        || Build.MANUFACTURER.equals("Google")
+                        || isEmulator());
         String testFileName = "bbb_320x180_360kbps_24fps_vvc_nob.mp4";
         Preconditions.assertTestFileExists(mInpPrefix + testFileName);
 
@@ -294,6 +319,11 @@ public class MediaExtractorTest {
     @CddTest(requirements = {"5.3.8/C-1-1", "5.3.8/C-1-3"})
     @Test
     public void testDolbyVisionMediaExtractorProfileDvheDtr() throws Exception {
+        assumeTrue(
+                "Device does not have Dolby Vision decoder and is not a Google device or emulator",
+                MediaUtils.hasDecoder(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION)
+                        || Build.MANUFACTURER.equals("Google")
+                        || isEmulator());
         TestMediaDataSource dataSource = setDataSource("video_dovi_1920x1080_30fps_dvhe_04.mp4");
 
         assertTrue("There should be either 1 or 2 tracks",
@@ -340,6 +370,11 @@ public class MediaExtractorTest {
     @CddTest(requirements = {"5.3.8/C-1-1", "5.3.8/C-1-3"})
     @Test
     public void testDolbyVisionMediaExtractorProfileDvheSt() throws Exception {
+        assumeTrue(
+                "Device does not have Dolby Vision decoder and is not a Google device or emulator",
+                MediaUtils.hasDecoder(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION)
+                        || Build.MANUFACTURER.equals("Google")
+                        || isEmulator());
         TestMediaDataSource dataSource = setDataSource("video_dovi_1920x1080_60fps_dvhe_08.mp4");
 
         assertTrue("There should be either 1 or 2 tracks",
@@ -386,6 +421,11 @@ public class MediaExtractorTest {
     @CddTest(requirements = {"5.3.8/C-1-1", "5.3.8/C-1-3"})
     @Test
     public void testDolbyVisionMediaExtractorProfileDvavSe() throws Exception {
+        assumeTrue(
+                "Device does not have Dolby Vision decoder and is not a Google device or emulator",
+                MediaUtils.hasDecoder(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION)
+                        || Build.MANUFACTURER.equals("Google")
+                        || isEmulator());
         TestMediaDataSource dataSource = setDataSource("video_dovi_1920x1080_60fps_dvav_09.mp4");
 
         assertTrue("There should be either 1 or 2 tracks",
@@ -433,6 +473,11 @@ public class MediaExtractorTest {
     @CddTest(requirements = {"5.3.8/C-1-1"})
     @Test
     public void testDolbyVisionMediaExtractorProfileDvav1() throws Exception {
+        assumeTrue(
+                "Device does not have Dolby Vision decoder and is not a Google device or emulator",
+                MediaUtils.hasDecoder(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION)
+                        || Build.MANUFACTURER.equals("Google")
+                        || isEmulator());
         TestMediaDataSource dataSource = setDataSource("video_dovi_3840x2160_30fps_dav1_10.mp4");
 
         assertEquals(1, mExtractor.getTrackCount());
@@ -455,6 +500,11 @@ public class MediaExtractorTest {
     @CddTest(requirements = {"5.3.8/C-1-1", "5.3.8/C-1-3"})
     @Test
     public void testDolbyVisionMediaExtractorProfileDvav1_2() throws Exception {
+        assumeTrue(
+                "Device does not have Dolby Vision decoder and is not a Google device or emulator",
+                MediaUtils.hasDecoder(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION)
+                        || Build.MANUFACTURER.equals("Google")
+                        || isEmulator());
         TestMediaDataSource dataSource = setDataSource("video_dovi_3840x2160_30fps_dav1_10_2.mp4");
 
         assertTrue("There should be either 1 or 2 tracks",
@@ -1048,6 +1098,11 @@ public class MediaExtractorTest {
 
     @Test
     public void testDolbyVisionInMP4() throws Exception {
+        assumeTrue(
+                "Device does not have Dolby Vision decoder and is not a Google device or emulator",
+                MediaUtils.hasDecoder(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION)
+                        || Build.MANUFACTURER.equals("Google")
+                        || isEmulator());
         setDataSource("video_dovi_3840x2160_30fps_dav1_10.mp4");
         readAllData();
     }
