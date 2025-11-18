@@ -30,11 +30,15 @@ import android.bluetooth.BluetoothQualityReport.BqrVsA2dpChoppy;
 import android.bluetooth.BluetoothQualityReport.BqrVsLsto;
 import android.bluetooth.BluetoothQualityReport.BqrVsScoChoppy;
 import android.os.Parcel;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+
+import com.android.bluetooth.flags.Flags;
 
 import com.google.common.truth.Expect;
 
@@ -648,6 +652,7 @@ public final class BluetoothQualityReportTest {
     }
 
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_BLUETOOTH_QUALITY_REPORT_V8)
     public void readWriteBqrParcel() {
         BQRParameters bqrp = BQRParameters.getInstance();
         assertThat(bqrp).isNotNull();
@@ -699,6 +704,7 @@ public final class BluetoothQualityReportTest {
     }
 
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_BLUETOOTH_QUALITY_REPORT_V8)
     public void readWriteBqrParcelV6Flag() {
         BQRParameters bqrp = BQRParameters.getInstance();
         assertThat(bqrp).isNotNull();
@@ -747,6 +753,58 @@ public final class BluetoothQualityReportTest {
                 case BluetoothQualityReport.QUALITY_REPORT_ID_RF_STATS:
                     assertBqrRfStats(bqrp, bqr);
                     break;
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_BLUETOOTH_QUALITY_REPORT_V8)
+    public void readWriteBqrParcelV8Flag() {
+        BQRParameters bqrp = BQRParameters.getInstance();
+        assertThat(bqrp).isNotNull();
+
+        for (int id : BQRParameters.QualityReportId) {
+            bqrp.setQualityReportId((byte) id);
+            assertThat(bqrp.getQualityReportId()).isEqualTo(id);
+
+            BluetoothQualityReport bqr =
+                    initBqrCommon(
+                            bqrp,
+                            mRemoteAddress,
+                            mLmpVer,
+                            mLmpSubVer,
+                            mManufacturerId,
+                            mRemoteName,
+                            mRemoteCoD);
+
+            Parcel parcel = Parcel.obtain();
+            bqr.writeToParcel(parcel, 0);
+            parcel.setDataPosition(0);
+
+            BluetoothQualityReport bqrFromParcel =
+                    BluetoothQualityReport.CREATOR.createFromParcel(parcel);
+
+            assertBqrV6Common(bqrp, bqrFromParcel);
+
+            switch (id) {
+                case BluetoothQualityReport.QUALITY_REPORT_ID_MONITOR -> {
+                    /* no-op */
+                }
+                case BluetoothQualityReport.QUALITY_REPORT_ID_APPROACH_LSTO ->
+                        assertBqrApproachLsto(bqrp, bqr);
+                case BluetoothQualityReport.QUALITY_REPORT_ID_A2DP_CHOPPY ->
+                        assertBqrA2dpChoppy(bqrp, bqr);
+                case BluetoothQualityReport.QUALITY_REPORT_ID_SCO_CHOPPY ->
+                        assertBqrScoChoppy(bqrp, bqr);
+                case BluetoothQualityReport.QUALITY_REPORT_ID_CONN_FAIL ->
+                        assertBqrConnectFail(bqrp, bqr);
+                case BluetoothQualityReport.QUALITY_REPORT_ID_ENERGY_MONITOR ->
+                        assertBqrEnergyMonitor(bqrp, bqr);
+                case BluetoothQualityReport.QUALITY_REPORT_ID_RF_STATS ->
+                        assertBqrRfStats(bqrp, bqr);
+                case BluetoothQualityReport.QUALITY_REPORT_ID_LEA_CHOPPY -> {
+                    /* no-op */
+                }
             }
         }
     }
@@ -996,6 +1054,30 @@ public final class BluetoothQualityReportTest {
         assertThat(bqrConnFailFromParcel.describeContents()).isEqualTo(0);
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_BLUETOOTH_QUALITY_REPORT_V8)
+    public void bqrLeaChoppy() {
+        BQRParameters bqrp = BQRParameters.getInstance();
+        assertThat(bqrp).isNotNull();
+
+        bqrp.setQualityReportId((byte) BluetoothQualityReport.QUALITY_REPORT_ID_LEA_CHOPPY);
+        assertThat(bqrp.getQualityReportId())
+                .isEqualTo(BluetoothQualityReport.QUALITY_REPORT_ID_LEA_CHOPPY);
+
+        BluetoothQualityReport bqr =
+                initBqrCommon(
+                        bqrp,
+                        mRemoteAddress,
+                        mLmpVer,
+                        mLmpSubVer,
+                        mManufacturerId,
+                        mRemoteName,
+                        mRemoteCoD);
+
+        assertThat(BluetoothQualityReport.qualityReportIdToString(bqr.getQualityReportId()))
+                .isEqualTo("LEA choppy");
+    }
+
     /**
      * Get the test object of BluetoothQualityReport based on given Quality Report Id.
      *
@@ -1166,6 +1248,15 @@ public final class BluetoothQualityReportTest {
             BluetoothQualityReport.QUALITY_REPORT_ID_ENERGY_MONITOR,
             BluetoothQualityReport.QUALITY_REPORT_ID_RF_STATS,
         };
+
+        static {
+            if (Flags.bluetoothQualityReportV8()) {
+                QualityReportId =
+                        java.util.Arrays.copyOf(QualityReportId, QualityReportId.length + 1);
+                QualityReportId[QualityReportId.length - 1] =
+                        BluetoothQualityReport.QUALITY_REPORT_ID_LEA_CHOPPY;
+            }
+        }
 
         private BQRParameters() {}
 
