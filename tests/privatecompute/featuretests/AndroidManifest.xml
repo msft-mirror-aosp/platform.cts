@@ -15,14 +15,22 @@
 -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.android.cts.pcc.apitests">
+    package="com.android.cts.pcc.featuretests">
     <application>
         <uses-library android:name="android.test.runner" />
+
+        <!-- Standard Android Service -->
+        <service android:name=".services.NonPccStorageService" android:exported="false" />
+
+        <service
+            android:name=".services.EmptyPccService"
+            android:exported="true"
+            android:isPrivateComputeCoreProcess="true"/>
     </application>
 
     <instrumentation
         android:name="androidx.test.runner.AndroidJUnitRunner"
-        android:targetPackage="com.android.cts.pcc.apitests"
-        android:label="CTS tests for PCC APIs accessible outside PCC sandbox"/>
+        android:targetPackage="com.android.cts.pcc.featuretests"
+        android:label="CTS tests for PCC features not instrumented to run in PCC" />
 </manifest>
 
