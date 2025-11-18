@@ -51,7 +51,8 @@ class MultiUserParameterizedTestGenerator(
     }
 
     override fun generateReplacementAnnotations(
-        annotation: Annotation
+        annotation: Annotation,
+        classAnnotations: List<Annotation>,
     ): List<DynamicParameterizedAnnotation> {
         return when (annotation) {
             is UserTest -> generateUserAnnotations(annotation)

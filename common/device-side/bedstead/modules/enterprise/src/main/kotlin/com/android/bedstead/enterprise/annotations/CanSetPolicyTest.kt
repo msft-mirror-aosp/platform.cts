@@ -51,7 +51,7 @@ annotation class CanSetPolicyTest(
      * Policy 2: APPLIED_BY_DEVICE_OWNER | APPLIES_TO_OWN_USER
      * policy: APPLIED_BY_DEVICE_OWNER | APPLIES_GLOBALLY, APPLIED_BY_PROFILE_OWNER | APPLIES_TO_OWN_USER
      *
-     * Only 1 of policy/policyUnion/policyIntersection must be set at a time
+     * Only 1 of policy/policyUnion/policyIntersection/scope must be set at a time
      *
      * This is used to calculate which states are required to be tested.
      */
@@ -71,7 +71,7 @@ annotation class CanSetPolicyTest(
      * Policy 2: APPLIED_BY_DEVICE_OWNER | APPLIES_TO_OWN_USER
      * policyUnion: APPLIED_BY_DEVICE_OWNER | APPLIES_GLOBALLY, APPLIED_BY_PROFILE_OWNER | APPLIES_TO_OWN_USER
      *
-     * Only 1 of policy/policyUnion/policyIntersection must be set at a time
+     * Only 1 of policy/policyUnion/policyIntersection/scope must be set at a time
      *
      * This is used to calculate which states are required to be tested.
      */
@@ -89,11 +89,25 @@ annotation class CanSetPolicyTest(
      * Policy 2: APPLIED_BY_DEVICE_OWNER | APPLIES_TO_OWN_USER
      * policyIntersection: APPLIED_BY_DEVICE_OWNER | APPLIES_TO_OWN_USER
      *
-     * Only 1 of policy/policyUnion/policyIntersection must be set at a time
+     * Only 1 of policy/policyUnion/policyIntersection/scope must be set at a time
      *
      * This is used to calculate which states are required to be tested.
      */
     val policyIntersection: Array<KClass<*>> = [],
+    /**
+     * The policy scope (POLICY_SCOPE_USER or POLICY_SCOPE_DEVICE or POLICY_SCOPE_PARENT_USER)
+     * being tested.
+     *
+     * Setting scope will inspect the parent class for the {@code UsesEnterprisePolicies} annotation
+     * to find the states where the policy can be set.
+     * It will then run the test in all states where the policy can be set.
+     *
+     * Only 1 of policy/policyUnion/policyIntersection/scope must be set at a time
+     *
+     * This is used to calculate which states are required to be tested.
+     */
+    val scope: Int = 0,
+
     /**
      * If true, this test will only be run in a single state.
      *
@@ -125,11 +139,13 @@ annotation class CanSetPolicyTest(
 fun canSetPolicyTest(
     policy: Array<Class<*>>? = emptyArray(),
     policyUnion: Array<Class<*>>? = emptyArray(),
-    policyIntersection: Array<Class<*>>? = emptyArray()
+    policyIntersection: Array<Class<*>>? = emptyArray(),
+    scope: Int = 0,
 ): CanSetPolicyTest {
     return AutoAnnotation_CanSetPolicyTestKt_canSetPolicyTest(
         policy,
         policyUnion,
-        policyIntersection
+        policyIntersection,
+        scope
     )
 }

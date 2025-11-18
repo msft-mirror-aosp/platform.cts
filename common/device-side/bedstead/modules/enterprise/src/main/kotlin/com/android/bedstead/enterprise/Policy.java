@@ -333,7 +333,7 @@ public final class Policy {
     }
 
     @AutoAnnotation
-    private static IncludeRunOnOrganizationOwnedProfileOwner includeRunOnOrganizationOwnedProfileOwner() {
+    public static IncludeRunOnOrganizationOwnedProfileOwner includeRunOnOrganizationOwnedProfileOwner() {
         return new AutoAnnotation_Policy_includeRunOnOrganizationOwnedProfileOwner();
     }
 
