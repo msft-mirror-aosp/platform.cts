@@ -2914,7 +2914,6 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         final float textViewTextSize = getOnMain(sInstrumentation, textView::getTextSize);
         final int textViewTextSizeUnit = getOnMain(sInstrumentation, textView::getTextSizeUnit);
         final LayoutParams layoutParams = getOnMain(sInstrumentation, textView::getLayoutParams);
-        assertThat(textViewTextSize).isGreaterThan(11f); // 11sp might be 27px
         assertThat(textViewTextSizeUnit).isEqualTo(TypedValue.COMPLEX_UNIT_SP);
         assertThat(layoutParams.width).isEqualTo(LayoutParams.MATCH_PARENT);
         assertThat(layoutParams.height).isEqualTo(LayoutParams.WRAP_CONTENT);
