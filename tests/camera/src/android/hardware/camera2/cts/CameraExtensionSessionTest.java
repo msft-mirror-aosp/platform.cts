@@ -471,8 +471,8 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                                     android.hardware.camera2.CameraDevice.TEMPLATE_PREVIEW);
                     if (Flags.vendorDefinedCameraExtensions()) {
                         CaptureRequest sessionParams = captureBuilder.build();
-                        configuration.setSessionParameters(sessionParams);
-                        assertEquals(sessionParams, configuration.getSessionParameters());
+                        configuration.setSessionWideParams(sessionParams);
+                        assertEquals(sessionParams, configuration.getSessionWideParams());
                     }
                     camera.createExtensionSession(configuration);
                     CameraExtensionSession extensionSession =
