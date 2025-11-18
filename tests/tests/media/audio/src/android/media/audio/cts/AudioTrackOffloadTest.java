@@ -255,7 +255,7 @@ public class AudioTrackOffloadTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_PARTIAL_FLUSH_FOR_PCM_OFFLOAD)
     @Test
-    public void testFlushFromFrame() throws Exception {
+    public void testFlushWrittenFramesFromPosition() throws Exception {
         // TODO: b/456196601 - add detailed tests when the HAL is ready.
         final int sampleRate = 44100;
         final AudioFormat format =
@@ -267,13 +267,22 @@ public class AudioTrackOffloadTest {
         // Average kbps for 44.1kHz 16b stereo = 1378 kbps
         final int bitRateInKbps = sampleRate * format.getFrameSizeInBytes() * 8 / 1024;
         AudioTrack track =
-                getOffloadAudioTrack(bitRateInKbps, format, /* testName= */ "testFlushFromFrame");
+                getOffloadAudioTrack(bitRateInKbps, format,
+                                     /* testName= */ "testFlushWrittenFramesFromPosition");
         if (track == null) {
-            Log.i(TAG, "testFlushFromFrame skipped due to PCM offload not supported");
+            Log.i(TAG, "testFlushWrittenFramesFromPosition skipped due to "
+                    + "PCM offload not supported");
             return;
         }
-        assertEquals(0, track.flushFromFrame(0, AudioTrack.FLUSH_FROM_ACCURACY_BEST_EFFORT));
-        assertEquals(0, track.flushFromFrame(0, AudioTrack.FLUSH_FROM_ACCURACY_EXACT));
+        assertEquals(0, track.flushWrittenFramesFromPosition(
+                0, AudioTrack.FLUSH_FROM_ACCURACY_BEST_EFFORT));
+        assertEquals(0, track.flushWrittenFramesFromPosition(
+                0, AudioTrack.FLUSH_FROM_ACCURACY_EXACT));
+
+        assertWithMessage("getWrittenFramesCount() equals "
+                + "successful return from flushWrittenFramesFromPosition()")
+                .that(track.getWrittenFramesCount())
+                .isEqualTo(0);
     }
 
     @CddTest(requirements = {"5.5.4/C-SR-2"})
