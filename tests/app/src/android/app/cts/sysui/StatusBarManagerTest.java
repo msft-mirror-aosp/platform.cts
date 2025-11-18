@@ -346,7 +346,35 @@ public class StatusBarManagerTest {
     @ApiTest(apis = {"android.app.StatusBarManager#showPowerMenu"})
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_STATUSBAR_API_SHOW_POWER_MENU)
-    public void testShowPowerMenu_hasPermission_succeeds() throws Exception {
+    public void testShowPowerMenu_hasPermissionPrivileged_succeeds() throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
+        ShowPowerMenuCallback callback =
+                new ShowPowerMenuCallback() {
+                    @Override
+                    public void onPowerMenuShown(boolean showing) {
+                        assertTrue(showing);
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(int error) {
+                        fail("onError");
+                    }
+                };
+        try (PermissionContext ignored =
+                TestApis.permissions()
+                        .withPermission(Manifest.permission.SHOW_POWER_MENU_PRIVILEGED)) {
+            mStatusBarManager.showPowerMenu(Runnable::run, callback);
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
+        } finally {
+            mUiAutomation.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME);
+        }
+    }
+
+    @ApiTest(apis = {"android.app.StatusBarManager#showPowerMenu"})
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_STATUSBAR_API_SHOW_POWER_MENU)
+    public void testShowPowerMenu_hasPermissionRole_succeeds() throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
         ShowPowerMenuCallback callback =
                 new ShowPowerMenuCallback() {
