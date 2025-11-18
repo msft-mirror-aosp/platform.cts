@@ -601,7 +601,14 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
      */
     @Test
     public void testIsNonTerrestrialNetworkState() throws Exception {
-        logd("testIsNonTerrestrialNetworkState: satellite plmn registered, set network ntn=false");
+        if (!shouldTestSatelliteWithMockService()) {
+            logd(TAG, "Skipping testIsNonTerrestrialNetworkState: Mock service not available.");
+            return;
+        }
+
+        logd(TAG,
+             "testIsNonTerrestrialNetworkState: satellite plmn registered, set network"
+                 + " ntn=false");
         sMockModemManager.setNetworkIsNtn(SLOT_ID_0, false);
         ServiceState serviceState = sTelephonyManager.getServiceStateForSlot(SLOT_ID_0);
         if (serviceState != null) {
@@ -616,10 +623,10 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             }
         }
 
-        logd("testIsNonTerrestrialNetworkState: remove registered satellite plmn");
+        logd(TAG, "testIsNonTerrestrialNetworkState: remove registered satellite plmn");
         disableSatellitePlmns(SLOT_ID_0);
 
-        logd("testIsNonTerrestrialNetworkState: set network ntn=false");
+        logd(TAG, "testIsNonTerrestrialNetworkState: set network ntn=false");
         NtnStateCallback ntnCallbackFalse = new NtnStateCallback(false);
         sTelephonyManager.registerTelephonyCallback(
                 getContext().getMainExecutor(), ntnCallbackFalse);
@@ -632,7 +639,7 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             sTelephonyManager.unregisterTelephonyCallback(ntnCallbackFalse);
         }
 
-        logd("testIsNonTerrestrialNetworkState: set network ntn=true");
+        logd(TAG, "testIsNonTerrestrialNetworkState: set network ntn=true");
         NtnStateCallback ntnCallbackTrue = new NtnStateCallback(true);
         sTelephonyManager.registerTelephonyCallback(
                 getContext().getMainExecutor(), ntnCallbackTrue);
