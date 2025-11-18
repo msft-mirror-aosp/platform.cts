@@ -451,18 +451,23 @@ public final class CarOccupantZoneManagerTest extends AbstractCarTestCase {
         List<DisplayConfig> configs = parseDisplayConfigsFromDump(dump);
         assumeTrue("No display config found for device", configs.size() > 0);
 
-        // Ensure that input types match the ones from dumpsys
-        for (DisplayConfig c : configs) {
-            Optional<OccupantZoneInfo> occupantZoneInfo = mAllZones.stream().filter(
-                    z -> z.zoneId == c.occupantZoneId).findFirst();
-            if (occupantZoneInfo.isEmpty()) {
-                // If occupant zone is not active then we skip
-                continue;
+        // Ensure that input types of active displays match the ones from dumpsys
+        for (OccupantZoneInfo occupantZone : mAllZones) {
+            List<Display> displays = mCarOccupantZoneManager.getAllDisplaysForOccupant(
+                    occupantZone);
+            for (Display display : displays) {
+                Optional<DisplayConfig> config = configs.stream().filter(c ->
+                        c.occupantZoneId == occupantZone.zoneId
+                        && c.displayType == display.getType()).findFirst();
+                if (config.isEmpty()) {
+                    // Display not found in dump
+                    continue;
+                }
+                List<Integer> inputTypes = mCarOccupantZoneManager.getSupportedInputTypes(
+                        occupantZone, display.getType());
+                assertWithMessage("Expected same input types").that(
+                    inputTypes).containsExactlyElementsIn(config.get().inputTypes);
             }
-            List<Integer> inputTypes = mCarOccupantZoneManager.getSupportedInputTypes(
-                    occupantZoneInfo.get(), c.displayType);
-            assertWithMessage("Expected same input types").that(
-                    inputTypes).containsExactlyElementsIn(c.inputTypes);
         }
     }
 
