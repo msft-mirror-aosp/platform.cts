@@ -91,7 +91,7 @@ public class PccProcessTest {
     @Test
     @RequiresFlagsEnabled(android.app.privatecompute.flags.Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT)
     public void testPccServiceUidRange() throws RemoteException {
-        Assert.assertTrue(Process.isPccUid(mService.getUid()));
+        Assert.assertTrue(Process.isPrivateComputeCoreUid(mService.getUid()));
     }
 
     @Test

@@ -55,7 +55,7 @@ public class PccHotwordDetectionService extends HotwordDetectionService {
                 == SCENARIO_VERIFY_PCC_PROPERTIES) {
             Log.d(TAG, "Received request to verify PCC properties");
             mVerifyPccProperties = true;
-            mPccUidResult = Process.isPccUid(Process.myUid())
+            mPccUidResult = Process.isPrivateComputeCoreUid(Process.myUid())
                     ? RESULT_CODE_PCC_UID_SUCCESS : RESULT_CODE_PCC_UID_FAILURE;
             mIsIsolatedResult = !Process.isIsolated()
                     ? RESULT_CODE_ISOLATED_SUCCESS : RESULT_CODE_ISOLATED_FAILURE;

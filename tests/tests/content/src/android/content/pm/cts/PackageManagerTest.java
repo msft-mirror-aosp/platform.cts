@@ -1939,7 +1939,7 @@ public class PackageManagerTest {
 
     @Test
     @RequiresFlagsEnabled(android.app.privatecompute.flags.Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT)
-    public void testGetAppUidForPccUid() throws Exception {
+    public void testGetAppUidForPrivateComputeCoreUid() throws Exception {
         installPackage(HELLO_WORLD_PCC);
         try {
             final ApplicationInfo appInfo =
@@ -1948,7 +1948,7 @@ public class PackageManagerTest {
             final int appUid = appInfo.uid;
             final int pccUid = appInfo.pccUid;
 
-            assertEquals(appUid, mPackageManager.getAppUidForPccUid(pccUid));
+            assertEquals(appUid, mPackageManager.getAppUidForPrivateComputeCoreUid(pccUid));
         } finally {
             uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
         }

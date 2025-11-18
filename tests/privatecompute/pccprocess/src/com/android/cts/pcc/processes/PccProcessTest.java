@@ -63,7 +63,9 @@ public class PccProcessTest {
 
     @Test
     public void testIsPccProcess() {
-        assertTrue("Process should be a PCC process", Process.isPccUid(Process.myUid()));
+        assertTrue(
+                "Process should be a PCC process",
+                Process.isPrivateComputeCoreUid(Process.myUid()));
     }
 
     @Test
@@ -89,7 +91,9 @@ public class PccProcessTest {
         assertTrue(
                 "Broadcast was not received by the PCC process within the timeout",
                 latch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));
-        assertTrue("Received UID should be a PCC UID", Process.isPccUid(receivedUid.get()));
+        assertTrue(
+                "Received UID should be a PCC UID",
+                Process.isPrivateComputeCoreUid(receivedUid.get()));
     }
 
     @Test
@@ -150,7 +154,7 @@ public class PccProcessTest {
                 latch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));
         assertTrue(
                 "Received UID from separate process should be a PCC UID",
-                Process.isPccUid(receivedUid.get()));
+                Process.isPrivateComputeCoreUid(receivedUid.get()));
     }
 
     @Test
@@ -161,7 +165,8 @@ public class PccProcessTest {
                         .call(uri, PccContentProvider.METHOD_GET_UID, null, null);
         assertNotNull("Result from content provider should not be null", result);
         int providerUid = result.getInt(PccContentProvider.KEY_UID);
-        assertTrue("Provider UID should be a PCC UID", Process.isPccUid(providerUid));
+        assertTrue(
+                "Provider UID should be a PCC UID", Process.isPrivateComputeCoreUid(providerUid));
         assertEquals(
                 "Provider should run in the same process as the test",
                 Process.myUid(),
@@ -176,6 +181,8 @@ public class PccProcessTest {
                         .call(uri, PccContentProvider.METHOD_GET_UID, null, null);
         assertNotNull("Result from second content provider should not be null", result);
         int providerUid = result.getInt(PccContentProvider.KEY_UID);
-        assertTrue("Second provider UID should be a PCC UID", Process.isPccUid(providerUid));
+        assertTrue(
+                "Second provider UID should be a PCC UID",
+                Process.isPrivateComputeCoreUid(providerUid));
     }
 }
