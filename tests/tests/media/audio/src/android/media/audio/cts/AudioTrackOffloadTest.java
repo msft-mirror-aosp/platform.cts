@@ -20,7 +20,9 @@ package android.media.audio.cts;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeThat;
 
 import android.annotation.Nullable;
 import android.annotation.RawRes;
@@ -280,6 +282,11 @@ public class AudioTrackOffloadTest {
                         .setSampleRate(sampleRate)
                         .setChannelMask(AudioFormat.CHANNEL_OUT_STEREO)
                         .build();
+        assumeThat(
+                "Skipping testFlushWrittenFramesFromPosition as it is not supported",
+                AudioTrack.getFlushWrittenFramesFromPositionSupport(format, DEFAULT_ATTR)
+                        & AudioTrack.FLUSH_WRITTEN_FRAMES_SUPPORTED,
+                is(AudioTrack.FLUSH_WRITTEN_FRAMES_SUPPORTED));
         // Average kbps for 44.1kHz 16b stereo = 1378 kbps
         final int bitRateInKbps = sampleRate * format.getFrameSizeInBytes() * 8 / 1024;
         AudioTrack track = getOffloadAudioTrack(
