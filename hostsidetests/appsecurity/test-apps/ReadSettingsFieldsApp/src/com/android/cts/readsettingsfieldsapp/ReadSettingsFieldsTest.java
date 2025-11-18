@@ -302,6 +302,27 @@ public class ReadSettingsFieldsTest extends AndroidTestCase {
         checkListResults("LIST_secure", Settings.Secure.class);
     }
 
+    public void testSecureBiometricAppOrKeyguardEnabledWithoutPermission() {
+        final String[] hiddenSettingsKeysRequiresPermissions = {
+                "biometric_keyguard_enabled",
+                "biometric_app_enabled",
+                "fingerprint_keyguard_enabled",
+                "fingerptint_app_enabled",
+                "face_keyguard_enabled",
+                "face_app_enabled"
+        };
+        for (String key : hiddenSettingsKeysRequiresPermissions) {
+            try {
+                callGetStringMethod(Settings.Secure.class, key);
+            } catch (SecurityException ex) {
+                assertTrue(ex.getMessage().contains("permission"));
+                continue;
+            }
+            fail("Reading hidden " + Settings.Secure.class.getSimpleName() + " settings key <" + key
+                    + "> should be protected with permission!");
+        }
+    }
+
     /**
      * Check the result of ContentResolver.call() and make sure all the settings keys in the result
      * is Readable.

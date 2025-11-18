@@ -202,4 +202,11 @@ public class ReadableSettingsFieldsTest extends BaseAppSecurityTest {
         runDeviceTests(TEST_PACKAGE, TEST_CLASS,
                 "testListSecureSettingsNoHiddenKeysWithoutAnnotation");
     }
+
+    @Test
+    public void testSecureBiometricAppOrKeyguardEnabledWithoutPermission() throws
+            DeviceNotAvailableException {
+        runDeviceTests(TEST_PACKAGE, TEST_CLASS,
+                "testSecureBiometricAppOrKeyguardEnabledWithoutPermission");
+    }
 }
