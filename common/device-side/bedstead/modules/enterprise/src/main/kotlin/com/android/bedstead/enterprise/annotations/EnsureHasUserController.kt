@@ -22,6 +22,7 @@ import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
 import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode
 import com.android.queryable.annotations.Query
+import java.lang.annotation.Repeatable
 
 /**
  * Mark that a test requires that a user controller is set.
@@ -49,6 +50,7 @@ import com.android.queryable.annotations.Query
 // TODO(b/461439459): Require feature flag when the API lands.
 @RequireHeadlessSystemUserMode(reason = "Multi-User Management assumes HSUM")
 @UsesAnnotationExecutor(UsesAnnotationExecutor.ENTERPRISE)
+@Repeatable(EnsureHasUserControllerGroup::class)
 annotation class EnsureHasUserController(
     val onUser: UserType = INSTRUMENTED_USER,
     val key: String = DEFAULT_KEY,
