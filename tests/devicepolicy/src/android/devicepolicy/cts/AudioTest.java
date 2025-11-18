@@ -16,7 +16,10 @@
 
 package android.devicepolicy.cts;
 
+import static android.os.UserManager.DISALLOW_ADJUST_VOLUME;
+
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.userController;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_UNMUTE_MICROPHONE;
 import static com.android.bedstead.permissions.CommonPermissions.MODIFY_AUDIO_SETTINGS;
 
@@ -28,19 +31,27 @@ import android.media.AudioManager;
 
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.EnsureDoesNotHaveUserRestriction;
+import com.android.bedstead.enterprise.annotations.EnsureHasUserController;
 import com.android.bedstead.enterprise.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.enterprise.policies.DisallowUnmuteMicrophone;
+import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
+import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.nene.types.OptionalBoolean;
+import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
+import com.android.bedstead.remotedpc.RemoteDpc;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -128,5 +139,48 @@ public final class AudioTest {
                 .await();
     }
 
+    @Test
+    @Ignore("b/461439459 Re-enable once either the feature flag is added or tests are moved to"
+            + "a different suite.")
+    @RequireRunOnInitialUser(switchedToUser = OptionalBoolean.FALSE)
+    @EnsureHasAdditionalUser(switchedToUser = OptionalBoolean.TRUE)
+    @EnsureHasUserController(onUser = UserType.INITIAL_USER)
+    @EnsureHasUserController(onUser = UserType.ADDITIONAL_USER)
+    @ApiTest(apis = "android.os.UserManager#DISALLOW_ADJUST_VOLUME")
+    public void disallowAdjustVolume_userSwitch_policyCorrectlyResets() {
+        RemoteDpc userControllerInitialUser = userController(sDeviceState, UserType.INITIAL_USER);
+        RemoteDpc userControllerAdditionalUser = userController(sDeviceState,
+                UserType.ADDITIONAL_USER);
+        try (var clearDisallowAdjustVolumeMultiUser =
+                     new ClearDisallowAdjustVolumeMultiUser(
+                             userControllerInitialUser)) {
+            userControllerInitialUser.devicePolicyManager().addUserRestriction(
+                    userControllerInitialUser.componentName(), DISALLOW_ADJUST_VOLUME);
+            userControllerAdditionalUser.devicePolicyManager().clearUserRestriction(
+                    userControllerAdditionalUser.componentName(), DISALLOW_ADJUST_VOLUME);
+            Poll.forValue("Global mute state", () -> sAudioManager.isMasterMute())
+                    .toBeEqualTo(false)
+                    .errorOnFail()
+                    .await();
+
+            UserReference initialUser = TestApis.users().initial();
+            initialUser.switchTo();
+
+            Poll.forValue("Global mute state", () -> sAudioManager.isMasterMute())
+                    .toBeEqualTo(true)
+                    .errorOnFail()
+                    .await();
+        }
+    }
+
     // TODO: Figure out where policy transparency for this control appears and add a test
+
+    private record ClearDisallowAdjustVolumeMultiUser(RemoteDpc userController) implements
+            AutoCloseable {
+        @Override
+        public void close() {
+            userController.devicePolicyManager().clearUserRestriction(
+                    userController.componentName(), DISALLOW_ADJUST_VOLUME);
+        }
+    }
 }
