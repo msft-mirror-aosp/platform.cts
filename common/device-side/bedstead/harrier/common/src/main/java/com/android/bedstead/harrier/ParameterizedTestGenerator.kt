@@ -26,9 +26,16 @@ package com.android.bedstead.harrier
 interface ParameterizedTestGenerator {
 
     /**
-     * Generates list of new annotations that correspond to the original [annotation]
+     * Generates list of new annotations that correspond to the original [annotation].
+     *
+     * @param annotation The annotation to generate replacements for.
+     * @param classAnnotations The annotations on the class of the test method. These should not be
+     *   replaced, but they can be used as context to resolve references in the test method
+     *   annotations.
+     * @return List of new annotations that correspond to the original [annotation].
      */
     fun generateReplacementAnnotations(
-        annotation: Annotation
+        annotation: Annotation,
+        classAnnotations: List<Annotation>,
     ): List<Annotation>
 }

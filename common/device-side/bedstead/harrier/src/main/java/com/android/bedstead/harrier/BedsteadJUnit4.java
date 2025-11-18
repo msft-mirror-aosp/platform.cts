@@ -17,7 +17,6 @@
 package com.android.bedstead.harrier;
 
 import androidx.annotation.Nullable;
-
 import com.android.bedstead.harrier.annotations.AnnotationCostRunPrecedence;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
@@ -35,21 +34,9 @@ import com.android.bedstead.multiuser.annotations.RequireRunOnPrimaryUser;
 import com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.types.OptionalBoolean;
-
 import com.google.auto.value.AutoAnnotation;
 import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
-
-import org.junit.Test;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runner.notification.RunNotifier;
-import org.junit.runners.BlockJUnit4ClassRunner;
-import org.junit.runners.model.FrameworkMethod;
-import org.junit.runners.model.InitializationError;
-import org.junit.runners.model.Statement;
-import org.junit.runners.model.TestClass;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Parameter;
@@ -68,6 +55,15 @@ import java.util.TreeMap;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runner.notification.RunNotifier;
+import org.junit.runners.BlockJUnit4ClassRunner;
+import org.junit.runners.model.FrameworkMethod;
+import org.junit.runners.model.InitializationError;
+import org.junit.runners.model.Statement;
+import org.junit.runners.model.TestClass;
 
 /**
  * A JUnit test runner for use with Bedstead.
@@ -437,7 +433,10 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         List<FrameworkMethod> modifiedTests = new ArrayList<>();
 
         for (FrameworkMethod m : basicTests) {
-            Set<Annotation> parameterizedAnnotations = getParameterizedAnnotations(m.getAnnotations());
+            Set<Annotation> parameterizedAnnotations =
+                    getParameterizedAnnotations(
+                            m.getAnnotations(),
+                            getClassAnnotationsRecursively(m.getDeclaringClass()));
 
             if (parameterizedAnnotations.isEmpty()) {
                 // Unparameterized, just add the original
@@ -663,18 +662,21 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     }
 
     /**
-     * Filters array of annotations and returns only annotations of type
-     * {@link ParameterizedAnnotation} and {@link DynamicParameterizedAnnotation}.
+     * Filters array of annotations and returns only annotations of type {@link
+     * ParameterizedAnnotation} and {@link DynamicParameterizedAnnotation}.
      *
      * @param methodAnnotations the array of annotations of test method
+     * @param classAnnotations the array of annotations of test class. These should not be filtered
+     *     or expanded, but they can be used to resolve references in the test method annotations.
      */
     @CanIgnoreReturnValue
-    public static Set<Annotation> getParameterizedAnnotations(Annotation[] methodAnnotations) {
+    public static Set<Annotation> getParameterizedAnnotations(
+            Annotation[] methodAnnotations, List<Annotation> classAnnotations) {
         Set<Annotation> parameterizedAnnotations = new HashSet<>();
         List<Annotation> annotations = new ArrayList<>(Arrays.asList(methodAnnotations));
 
         for (Annotation annotation : annotations) {
-            var replacements = generateReplacementAnnotations(annotation);
+            var replacements = generateReplacementAnnotations(annotation, classAnnotations);
             if (replacements != null) {
                 parameterizedAnnotations.addAll(replacements);
             }
@@ -694,18 +696,33 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
      */
     @Nullable
     static List<Annotation> generateReplacementAnnotations(
-            Annotation annotation) {
+            Annotation annotation, List<Annotation> classAnnotations) {
         Class<? extends Annotation> annotationType = annotation.annotationType();
         UsesParameterizedTestGenerator usesParameterizedTestGenerator =
                 annotationType.getAnnotation(UsesParameterizedTestGenerator.class);
         if (usesParameterizedTestGenerator != null) {
             ParameterizedTestGenerator generator =
                     mLocator.get(usesParameterizedTestGenerator.value());
-            var replacementAnnotations = generator.generateReplacementAnnotations(annotation);
+            var replacementAnnotations =
+                    generator.generateReplacementAnnotations(annotation, classAnnotations);
             replacementAnnotations.sort(BedsteadJUnit4::annotationSorter);
             return replacementAnnotations;
         }
         return null;
+    }
+
+    /**
+     * Collect all annotations from the class and its superclasses.
+     * Used to collect the list of class annotations to be passed into {@link
+     * #generateReplacementAnnotations(Annotation, List<Annotation>)}
+     */
+    public static List<Annotation> getClassAnnotationsRecursively(Class<?> clazz) {
+        List<Annotation> annotations = new ArrayList<>();
+        while (clazz != null) {
+            annotations.addAll(Arrays.asList(clazz.getAnnotations()));
+            clazz = clazz.getSuperclass();
+        }
+        return annotations;
     }
 
     HarrierRule getHarrierRule() {
