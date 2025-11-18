@@ -199,6 +199,11 @@ public class MediaMuxerTest {
      */
     @Test
     public void testDolbyVisionVideoOnlyP8() throws Exception {
+        assumeTrue(
+                "Device does not have Dolby Vision decoder and is not a Google device or emulator",
+                MediaUtils.hasDecoder(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION)
+                        || Build.MANUFACTURER.equals("Google")
+                        || isEmulator());
         final String source = "video_dovi_1920x1080_60fps_dvhe_08_04.mp4";
         String outputFilePath = File.createTempFile("MediaMuxerTest_dolbyvisionP8videoOnly", ".mp4")
                 .getAbsolutePath();
@@ -221,6 +226,11 @@ public class MediaMuxerTest {
      */
     @Test
     public void testDolbyVisionVideoOnlyP9() throws Exception {
+        assumeTrue(
+                "Device does not have Dolby Vision decoder and is not a Google device or emulator",
+                MediaUtils.hasDecoder(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION)
+                        || Build.MANUFACTURER.equals("Google")
+                        || isEmulator());
         final String source = "video_dovi_1920x1080_60fps_dvav_09_02.mp4";
         String outputFilePath = File.createTempFile("MediaMuxerTest_dolbyvisionP9videoOnly", ".mp4")
                 .getAbsolutePath();
