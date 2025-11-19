@@ -16,19 +16,10 @@
 
 package android.telecom.cts.redirectiontestapp;
 
-import android.content.ComponentName;
-import android.content.Intent;
 import android.net.Uri;
-import android.graphics.drawable.Icon;
-import android.os.IBinder;
-import android.telecom.Call;
 import android.telecom.CallRedirectionService;
 import android.telecom.PhoneAccountHandle;
-
-import android.text.TextUtils;
 import android.util.Log;
-
-import java.util.List;
 
 /**
  * Provides a CTS-test implementation of {@link CallRedirectionService}.
@@ -61,6 +52,10 @@ public class CtsCallRedirectionService extends CallRedirectionService {
                         controller.getTargetPhoneAccount(), controller.isConfirmFirst());
             }
             controller.onPlaceCallInvoked();
+
+            // "Covering" this method; it is final in CallRedirectionService where it overrides the
+            // base onUnbind method in Service; this one really painted us into a corner.
+            this.onUnbind(null);
         } else {
             Log.w(TAG, "onPlaceCall: No control interface.");
         }
