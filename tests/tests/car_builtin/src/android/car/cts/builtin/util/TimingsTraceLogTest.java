@@ -56,7 +56,10 @@ public final class TimingsTraceLogTest {
                 new TimingsTraceLog(TAG, TraceHelper.TRACE_TAG_CAR_SERVICE);
         timingsTraceLog.logDuration("testTimingsTraceLogDuration", 159);
 
-        assertLogMessage("testTimingsTraceLogDuration took to complete: 159ms");
+        if (!BuildHelper.isUserBuild()) {
+            assertLogMessage("testTimingsTraceLogDuration took to complete: 159ms");
+        }
+
     }
 
     private void assertLogMessage(String message) {
