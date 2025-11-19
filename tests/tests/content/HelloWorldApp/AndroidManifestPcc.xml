@@ -28,13 +28,12 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <private-compute>
-            <service android:name="android.security.cts.PccService"
-                     android:exported="true">
-                <intent-filter>
-                    <action android:name="android.security.cts.PccProcessTest" />
-                </intent-filter>
-            </service>
-        </private-compute>
+        <service android:name="android.security.cts.PccService"
+              android:exported="true"
+              android:isPrivateComputeCoreProcess="true">
+            <intent-filter>
+                <action android:name="android.security.cts.PccProcessTest" />
+            </intent-filter>
+        </service>
     </application>
 </manifest>
