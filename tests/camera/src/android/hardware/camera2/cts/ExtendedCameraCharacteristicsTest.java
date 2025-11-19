@@ -2420,8 +2420,12 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                                     arrDynamicRangeProfiles[0] == DynamicRangeProfiles.STANDARD);
                         }
 
+                        long currentMax = DynamicRangeProfiles.PUBLIC_MAX;
+                        if (Flags.newDynamicRangeProfiles()) {
+                            currentMax = DynamicRangeProfiles.CURRENT_MAX;
+                        }
                         for (Long dynamicRangeProfile = DynamicRangeProfiles.STANDARD;
-                                dynamicRangeProfile < DynamicRangeProfiles.PUBLIC_MAX;
+                                dynamicRangeProfile < currentMax;
                                 dynamicRangeProfile <<= 1) {
                             Set<ColorSpace.Named> compatibleColorSpaces =
                                     colorSpaceProfiles.getSupportedColorSpacesForDynamicRange(

@@ -259,6 +259,66 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
         }
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_NEW_DYNAMIC_RANGE_PROFILES)
+    @Test
+    public void testYUV420_888_StandardAGTM() throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            try {
+                Log.v(TAG, "Testing YUV Standard AGTM capture for Camera " + id);
+                openDevice(id);
+                if (!mStaticInfo.isCapabilitySupported(CameraCharacteristics.
+                        REQUEST_AVAILABLE_CAPABILITIES_DYNAMIC_RANGE_TEN_BIT)) {
+                    continue;
+                }
+
+                Set<Long> availableProfiles =
+                        mStaticInfo.getAvailableDynamicRangeProfilesChecked();
+                if (!availableProfiles.contains(DynamicRangeProfiles.STANDARD_AGTM)) {
+                    Log.v(TAG, "Standard AGTM dynamic range profile not supported skipping!");
+                    continue;
+                }
+
+                BufferFormatTestParam params = new BufferFormatTestParam(
+                        ImageFormat.YUV_420_888, /*repeating*/false);
+                params.mDynamicRangeProfile = DynamicRangeProfiles.STANDARD_AGTM;
+                params.mValidateImageData = true;
+                bufferFormatTestByCamera(params);
+            } finally {
+                closeDevice(id);
+            }
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_NEW_DYNAMIC_RANGE_PROFILES)
+    @Test
+    public void testHLG10_AGTM() throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            try {
+                Log.v(TAG, "Testing HLG10 AGTM capture for Camera " + id);
+                openDevice(id);
+                if (!mStaticInfo.isCapabilitySupported(CameraCharacteristics.
+                        REQUEST_AVAILABLE_CAPABILITIES_DYNAMIC_RANGE_TEN_BIT)) {
+                    continue;
+                }
+
+                Set<Long> availableProfiles =
+                        mStaticInfo.getAvailableDynamicRangeProfilesChecked();
+                if (!availableProfiles.contains(DynamicRangeProfiles.HLG10_AGTM)) {
+                    Log.v(TAG, "HLG10 AGTM dynamic range profile not supported skipping!");
+                    continue;
+                }
+
+                BufferFormatTestParam params = new BufferFormatTestParam(
+                        ImageFormat.YCBCR_P010, /*repeating*/false);
+                params.mDynamicRangeProfile = DynamicRangeProfiles.HLG10_AGTM;
+                params.mValidateImageData = true;
+                bufferFormatTestByCamera(params);
+            } finally {
+                closeDevice(id);
+            }
+        }
+    }
+
     @Test
     public void testP010() throws Exception {
         for (String id : getCameraIdsUnderTest()) {
