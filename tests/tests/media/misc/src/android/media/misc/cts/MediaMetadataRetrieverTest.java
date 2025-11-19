@@ -20,6 +20,7 @@ import static android.media.MediaMetadataRetriever.OPTION_CLOSEST;
 import static android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC;
 import static android.media.MediaMetadataRetriever.OPTION_NEXT_SYNC;
 import static android.media.MediaMetadataRetriever.OPTION_PREVIOUS_SYNC;
+import static android.media.codec.Flags.FLAG_MEDIAMETADATARETRIEVER_10_BIT_SUPPORT;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -49,6 +50,10 @@ import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresDevice;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.view.Display;
 
@@ -63,6 +68,7 @@ import com.android.compatibility.common.util.Preconditions;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -107,6 +113,8 @@ public class MediaMetadataRetrieverTest {
     };
     private boolean mIsAtLeastR = ApiLevelUtil.isAtLeast(Build.VERSION_CODES.R);
     private boolean mIsAtLeastS = ApiLevelUtil.isAtLeast(Build.VERSION_CODES.S);
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Context getContext() {
         return InstrumentationRegistry.getInstrumentation().getContext();
@@ -646,12 +654,14 @@ public class MediaMetadataRetrieverTest {
         }
     }
 
-    private void testThumbnail(final String res, int targetWdith, int targetHeight) {
-        testThumbnail(res, null /*outPath*/, targetWdith, targetHeight);
+    private void testThumbnail(final String res, int targetWidth, int targetHeight,
+            Bitmap.Config expectedColorFormat, boolean checkColorFormat) {
+        testThumbnail(res, null /*outPath*/, targetWidth, targetHeight, expectedColorFormat,
+                checkColorFormat);
     }
 
     private void testThumbnail(final String res, String outPath, int targetWidth,
-            int targetHeight) {
+            int targetHeight, Bitmap.Config expectedColorFormat, boolean checkColorFormat) {
         Stopwatch timer = new Stopwatch();
 
         setDataSourceFd(res);
@@ -673,7 +683,10 @@ public class MediaMetadataRetrieverTest {
             mRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH));
         assertEquals("Video height was other than expected", Integer.toString(targetHeight),
             mRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT));
-
+        if (checkColorFormat) {
+            assertEquals("Output color format was other than expected",
+                    expectedColorFormat, thumbnail.getConfig());
+        }
         // save output file if needed
         if (outPath != null) {
             FileOutputStream out = null;
@@ -699,12 +712,19 @@ public class MediaMetadataRetrieverTest {
         testThumbnail(
                 "bbb_s4_1280x720_mp4_h264_mp31_8mbps_30fps_aac_he_mono_40kbps_44100hz.mp4",
                 1280,
-                720);
+                720,
+                Bitmap.Config.ARGB_8888,
+                true /* checkColorFormat */);
     }
 
     @Test
     public void testThumbnailH263() {
-        testThumbnail("video_176x144_3gp_h263_56kbps_12fps_aac_mono_24kbps_11025hz.3gp", 176, 144);
+        testThumbnail(
+                "video_176x144_3gp_h263_56kbps_12fps_aac_mono_24kbps_11025hz.3gp",
+                176,
+                144,
+                Bitmap.Config.ARGB_8888,
+                true /* checkColorFormat */);
     }
 
     @Test
@@ -712,7 +732,9 @@ public class MediaMetadataRetrieverTest {
         testThumbnail(
                 "video_1280x720_mp4_mpeg4_1000kbps_25fps_aac_stereo_128kbps_44100hz.mp4",
                 1280,
-                720);
+                720,
+                Bitmap.Config.ARGB_8888,
+                true /* checkColorFormat */);
     }
 
     @Test
@@ -720,7 +742,9 @@ public class MediaMetadataRetrieverTest {
         testThumbnail(
                 "bbb_s1_640x360_webm_vp8_2mbps_30fps_vorbis_5ch_320kbps_48000hz.webm",
                 640,
-                360);
+                360,
+                Bitmap.Config.ARGB_8888,
+                true /* checkColorFormat */);
     }
 
     @Test
@@ -728,7 +752,9 @@ public class MediaMetadataRetrieverTest {
         testThumbnail(
                 "bbb_s1_640x360_webm_vp9_0p21_1600kbps_30fps_vorbis_stereo_128kbps_48000hz.webm",
                 640,
-                360);
+                360,
+                Bitmap.Config.ARGB_8888,
+                true /* checkColorFormat */);
     }
 
     @Test
@@ -736,10 +762,35 @@ public class MediaMetadataRetrieverTest {
         testThumbnail(
                 "bbb_s1_720x480_mp4_hevc_mp3_1600kbps_30fps_aac_he_6ch_240kbps_48000hz.mp4",
                 720,
-                480);
+                480,
+                Bitmap.Config.ARGB_8888,
+                true /* checkColorFormat */);
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_MEDIAMETADATARETRIEVER_10_BIT_SUPPORT)
+    public void testThumbnailVP9Hdr_with10BitSupport() {
+        if (!MediaUtils.check(mIsAtLeastR, "test needs Android 11")) return;
+
+        DisplayManager displayManager = getContext().getSystemService(DisplayManager.class);
+        int numberOfSupportedHdrTypes =
+            displayManager.getDisplay(Display.DEFAULT_DISPLAY).getHdrCapabilities()
+                .getSupportedHdrTypes().length;
+
+        if (numberOfSupportedHdrTypes == 0) {
+            MediaUtils.skipTest("No supported HDR display type");
+            return;
+        }
+
+        testThumbnail(
+                "video_1280x720_vp9_hdr_static_3mbps.mkv",
+                1280,
+                720,
+                Bitmap.Config.RGBA_1010102,
+                true /* checkColorFormat */);
+    }
+    @Test
+    @RequiresFlagsDisabled(FLAG_MEDIAMETADATARETRIEVER_10_BIT_SUPPORT)
     public void testThumbnailVP9Hdr() {
         if (!MediaUtils.check(mIsAtLeastR, "test needs Android 11")) return;
 
@@ -753,10 +804,38 @@ public class MediaMetadataRetrieverTest {
             return;
         }
 
-        testThumbnail("video_1280x720_vp9_hdr_static_3mbps.mkv", 1280, 720);
+        testThumbnail(
+              "video_1280x720_vp9_hdr_static_3mbps.mkv",
+              1280,
+              720,
+              Bitmap.Config.ARGB_8888,
+              false /* checkColorFormat */);
+    }
+    @Test
+    @RequiresFlagsEnabled(FLAG_MEDIAMETADATARETRIEVER_10_BIT_SUPPORT)
+    public void testThumbnailAV1Hdr_with10BitSupport() {
+        if (!MediaUtils.check(mIsAtLeastR, "test needs Android 11")) return;
+
+        DisplayManager displayManager = getContext().getSystemService(DisplayManager.class);
+        int numberOfSupportedHdrTypes =
+            displayManager.getDisplay(Display.DEFAULT_DISPLAY).getHdrCapabilities()
+                .getSupportedHdrTypes().length;
+
+        if (numberOfSupportedHdrTypes == 0) {
+            MediaUtils.skipTest("No supported HDR display type");
+            return;
+        }
+
+        testThumbnail(
+                "video_1280x720_av1_hdr_static_3mbps.webm",
+                1280,
+                720,
+                Bitmap.Config.RGBA_1010102,
+                true /* checkColorFormat */);
     }
 
     @Test
+    @RequiresFlagsDisabled(FLAG_MEDIAMETADATARETRIEVER_10_BIT_SUPPORT)
     public void testThumbnailAV1Hdr() {
         if (!MediaUtils.check(mIsAtLeastR, "test needs Android 11")) return;
 
@@ -770,15 +849,39 @@ public class MediaMetadataRetrieverTest {
             return;
         }
 
-        testThumbnail("video_1280x720_av1_hdr_static_3mbps.webm", 1280, 720);
+        testThumbnail(
+                "video_1280x720_av1_hdr_static_3mbps.webm",
+                1280,
+                720,
+                Bitmap.Config.ARGB_8888,
+                false /* checkColorFormat */);
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_MEDIAMETADATARETRIEVER_10_BIT_SUPPORT)
+    public void testThumbnailHDR10_with10BitSupport() {
+        if (!MediaUtils.check(mIsAtLeastR, "test needs Android 11")) return;
+
+        testThumbnail(
+                "video_1280x720_hevc_hdr10_static_3mbps.mp4",
+                1280,
+                720,
+                Bitmap.Config.RGBA_1010102,
+                true /* checkColorFormat */);
+    }
+
+    @Test
+    @RequiresFlagsDisabled(FLAG_MEDIAMETADATARETRIEVER_10_BIT_SUPPORT)
     public void testThumbnailHDR10() {
         if (!MediaUtils.check(mIsAtLeastR, "test needs Android 11")) return;
 
-        testThumbnail("video_1280x720_hevc_hdr10_static_3mbps.mp4", 1280, 720);
-    }
+        testThumbnail(
+                "video_1280x720_hevc_hdr10_static_3mbps.mp4",
+                1280,
+                720,
+                Bitmap.Config.ARGB_8888,
+                false /* checkColorFormat */);
+  }
 
     private void testThumbnailWithRotation(final String res, int targetRotation) {
         Stopwatch timer = new Stopwatch();
@@ -919,7 +1022,7 @@ public class MediaMetadataRetrieverTest {
     }
 
     private void testGetFrameAtTime(int option, int[][] testCases) {
-        testGetFrameAt(testCases, (r) -> {
+        testGetFrameAt("binary_counter_320x240_30fps_600frames.mp4", testCases, (r) -> {
             List<Bitmap> bitmaps = new ArrayList<>();
             for (int i = 0; i < testCases.length; i++) {
                 bitmaps.add(r.getFrameAtTime(testCases[i][0], option));
@@ -961,8 +1064,9 @@ public class MediaMetadataRetrieverTest {
     @Test
     public void testGetFrameAtIndex() {
         int[][] testCases = { { 60, 60 }, { 73, 73 }, { 76, 76 }, { 88, 88 }, { 94, 94} };
+        String source = "binary_counter_320x240_30fps_600frames.mp4";
 
-        testGetFrameAt(testCases, (r) -> {
+        testGetFrameAt(source, testCases, (r) -> {
             List<Bitmap> bitmaps = new ArrayList<>();
             for (int i = 0; i < testCases.length; i++) {
                 bitmaps.add(r.getFrameAtIndex(testCases[i][0]));
@@ -975,22 +1079,22 @@ public class MediaMetadataRetrieverTest {
         assertEquals("Failed to set preferred config",
                 Bitmap.Config.RGB_565, params.getPreferredConfig());
 
-        testGetFrameAt(testCases, (r) -> {
+        testGetFrameAt(source, testCases, (r) -> {
             List<Bitmap> bitmaps = new ArrayList<>();
             for (int i = 0; i < testCases.length; i++) {
                 Bitmap bitmap = r.getFrameAtIndex(testCases[i][0], params);
-                assertEquals(Bitmap.Config.RGB_565, params.getActualConfig());
                 bitmaps.add(bitmap);
             }
             return bitmaps;
-        });
+        }, Bitmap.Config.RGB_565);
     }
 
     @Test
     public void testGetFramesAtIndex() {
         int[][] testCases = { { 27, 27 }, { 28, 28 }, { 29, 29 }, { 30, 30 }, { 31, 31} };
+      String source = "binary_counter_320x240_30fps_600frames.mp4";
 
-        testGetFrameAt(testCases, (r) -> {
+        testGetFrameAt(source, testCases, (r) -> {
             return r.getFramesAtIndex(testCases[0][0], testCases.length);
         });
 
@@ -999,33 +1103,62 @@ public class MediaMetadataRetrieverTest {
         assertEquals("Failed to set preferred config",
                 Bitmap.Config.RGB_565, params.getPreferredConfig());
 
-        testGetFrameAt(testCases, (r) -> {
+        testGetFrameAt(source, testCases, (r) -> {
             List<Bitmap> bitmaps = r.getFramesAtIndex(testCases[0][0], testCases.length, params);
-            assertEquals(Bitmap.Config.RGB_565, params.getActualConfig());
             return bitmaps;
-        });
+        }, Bitmap.Config.RGB_565);
     }
 
-    private void testGetFrameAt(int[][] testCases,
-            Function<MediaMetadataRetriever, List<Bitmap>> bitmapRetriever) {
-        testGetFrameAt("binary_counter_320x240_30fps_600frames.mp4",
-                testCases, bitmapRetriever);
+    @Test
+    @RequiresFlagsEnabled(FLAG_MEDIAMETADATARETRIEVER_10_BIT_SUPPORT)
+    public void testGet10BitFrames() {
+        String source = "video_1280x720_hevc_hdr10_static_3mbps.mp4";
+        int[][] testCases = { { 5, 5 }, { 10, 10 }, { 15, 15 } };
+
+        testGetFrameAt(source, testCases, (r) -> {
+            return r.getFramesAtIndex(
+                    testCases[0][0], testCases.length);
+        }, Bitmap.Config.RGBA_1010102);
+
+        MediaMetadataRetriever.BitmapParams params = new MediaMetadataRetriever.BitmapParams();
+        params.setPreferredConfig(Bitmap.Config.RGB_565);
+        assertEquals("Failed to set preferred comaknfig",
+                Bitmap.Config.RGB_565, params.getPreferredConfig());
+
+        testGetFrameAt(source, testCases, (r) -> {
+            List<Bitmap> bitmaps = r.getFramesAtIndex(testCases[0][0], testCases.length, params);
+            return bitmaps;
+        }, Bitmap.Config.RGB_565);
+
+        params.setPreferredConfig(Bitmap.Config.ARGB_8888);
+        assertEquals("Failed to set preferred config",
+            Bitmap.Config.ARGB_8888, params.getPreferredConfig());
+
+        testGetFrameAt(source, testCases, (r) -> {
+          List<Bitmap> bitmaps = r.getFramesAtIndex(testCases[0][0], testCases.length, params);
+          return bitmaps;
+        }, Bitmap.Config.ARGB_8888);
     }
 
     private void testGetFrameAtEditList(int[][] testCases,
             Function<MediaMetadataRetriever, List<Bitmap>> bitmapRetriever) {
         testGetFrameAt("binary_counter_320x240_30fps_600frames_editlist.mp4",
-                testCases, bitmapRetriever);
+                testCases, bitmapRetriever, Bitmap.Config.ARGB_8888);
     }
 
     private void testGetFrameAtEmptyNormalEditList(int[][] testCases,
             Function<MediaMetadataRetriever, List<Bitmap>> bitmapRetriever) {
         testGetFrameAt("binary_counter_320x240_30fps_600frames_empty_normal_editlist_entries.mp4",
-                testCases, bitmapRetriever);
+                testCases, bitmapRetriever, Bitmap.Config.ARGB_8888);
     }
 
-    private void testGetFrameAt(final String res, int[][] testCases,
-            Function<MediaMetadataRetriever, List<Bitmap>> bitmapRetriever) {
+  private void testGetFrameAt(final String res, int[][] testCases,
+          Function<MediaMetadataRetriever, List<Bitmap>> bitmapRetriever) {
+      testGetFrameAt(res, testCases, bitmapRetriever, Bitmap.Config.ARGB_8888);
+  }
+  private void testGetFrameAt(final String res, int[][] testCases,
+            Function<MediaMetadataRetriever, List<Bitmap>> bitmapRetriever,
+            Bitmap.Config expectedColorFormat) {
 
         setDataSourceFd(res);
 
@@ -1036,16 +1169,22 @@ public class MediaMetadataRetrieverTest {
         }
 
         List<Bitmap> bitmaps = bitmapRetriever.apply(mRetriever);
+        boolean checkCounter = res.contains("binary_counter");
         for (int i = 0; i < testCases.length; i++) {
-            verifyVideoFrame(bitmaps.get(i), testCases[i]);
+            verifyVideoFrame(bitmaps.get(i), testCases[i], expectedColorFormat, checkCounter);
         }
     }
 
-    private void verifyVideoFrame(Bitmap bitmap, int[] testCase) {
+    private void verifyVideoFrame(Bitmap bitmap, int[] testCase,
+            Bitmap.Config expectedColorFormat, boolean checkCounter) {
         try {
             assertTrue("Failed to get bitmap for " + testCase[0], bitmap != null);
-            assertEquals("Counter value incorrect for " + testCase[0],
-                    testCase[1], CodecUtils.readBinaryCounterFromBitmap(bitmap));
+            if (checkCounter) {
+                 assertEquals("Counter value incorrect for " + testCase[0],
+                        testCase[1], CodecUtils.readBinaryCounterFromBitmap(bitmap));
+            }
+            assertEquals("Output color format for " + testCase[0],
+                    bitmap.getConfig(), expectedColorFormat);
 
             if (SAVE_BITMAP_OUTPUT) {
                 CodecUtils.saveBitmapToFile(bitmap, "test_" + testCase[0] + ".jpg");
