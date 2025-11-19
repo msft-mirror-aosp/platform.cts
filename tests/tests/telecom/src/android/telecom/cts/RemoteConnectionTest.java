@@ -486,9 +486,9 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
         assertEquals(mRemoteConnectionObject, callbackInvoker.getArgs(0)[0]);
         assertEquals(postDialSequence, callbackInvoker.getArgs(0)[1]);
 
-        mRemoteConnectionObject.postDialContinue(true);
         final InvokeCounter counter =
                 mRemoteConnection.getInvokeCounter(MockConnection.ON_POST_DIAL_WAIT);
+        mRemoteConnectionObject.postDialContinue(true);
         counter.waitForCount(1, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
 
         mRemoteConnectionObject.unregisterCallback(callback);
