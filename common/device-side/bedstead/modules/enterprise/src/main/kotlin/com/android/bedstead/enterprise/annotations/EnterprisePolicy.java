@@ -157,14 +157,17 @@ public @interface EnterprisePolicy {
     int APPLIED_BY_PARENT_INSTANCE_OF_PROFILE_OWNER_PROFILE =
             APPLIED_BY_PARENT_INSTANCE_OF_NON_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE | APPLIED_BY_PARENT_INSTANCE_OF_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE;
 
+    /** A policy that can be applied by a Multi-User Management User Controller. */
+    int APPLIED_BY_USER_CONTROLLER = 1 << 17;
+
     // Modifiers
     /** Internal use only. Do not use */
     // This is to be used to mark specific annotations as not generating PolicyDoesNotApply tests
-    int DO_NOT_APPLY_TO_POLICY_DOES_NOT_APPLY_TESTS = 1 << 17;
+    int DO_NOT_APPLY_TO_POLICY_DOES_NOT_APPLY_TESTS = 1 << 18;
 
     /** Internal use only. Do not use */
     // This is to be used to mark specific annotations as not generating PolicyDoesNotApply tests
-    int DO_NOT_APPLY_TO_CANNOT_SET_POLICY_TESTS = 1 << 18;
+    int DO_NOT_APPLY_TO_CANNOT_SET_POLICY_TESTS = 1 << 19;
 
     /**
      * A policy that the DPM Role Holder can use.
@@ -173,14 +176,14 @@ public @interface EnterprisePolicy {
      * is granted by some permission the role holder holds, do not use this flag and instead specify
      * the permission on the policy.
      */
-    int APPLIED_BY_DPM_ROLE_HOLDER = 1 << 19 | (DO_NOT_APPLY_TO_CANNOT_SET_POLICY_TESTS);
+    int APPLIED_BY_DPM_ROLE_HOLDER = 1 << 20 | (DO_NOT_APPLY_TO_CANNOT_SET_POLICY_TESTS);
 
     /**
      * A policy which applies even when the user is not in the foreground.
      *
      * <p>Note that lacking this flag does not mean a policy does not apply - to indicate that use
      * {@link DOES_NOT_APPLY_IN_BACKGROUND}. */
-    int APPLIES_IN_BACKGROUND = 1 << 20 | (DO_NOT_APPLY_TO_POLICY_DOES_NOT_APPLY_TESTS);
+    int APPLIES_IN_BACKGROUND = 1 << 21 | (DO_NOT_APPLY_TO_POLICY_DOES_NOT_APPLY_TESTS);
     /**
      * A policy which does not apply when the user is not in the foreground.
      *
@@ -188,21 +191,20 @@ public @interface EnterprisePolicy {
      *
      * <p>Note that lacking this flag does not mean a policy does apply - to indicate that use
      * {@link APPLIES_IN_BACKGROUND}. */
-    int DOES_NOT_APPLY_IN_BACKGROUND = 1 << 21;
-
+    int DOES_NOT_APPLY_IN_BACKGROUND = 1 << 22;
 
     /**
      * A policy which can be applied by a delegate.
      *
      * See {@link #delegatedScopes()} for the scopes which enable this.
      */
-    int CAN_BE_DELEGATED = 1 << 22;
+    int CAN_BE_DELEGATED = 1 << 23;
 
     /** A policy that can be applied by a financed device owner. */
-    int APPLIED_BY_FINANCED_DEVICE_OWNER = 1 << 23;
+    int APPLIED_BY_FINANCED_DEVICE_OWNER = 1 << 24;
 
     /** A policy that has not yet been migrated to allow for DPM Role holder access. */
-    int CANNOT_BE_APPLIED_BY_ROLE_HOLDER = 1 << 24;
+    int CANNOT_BE_APPLIED_BY_ROLE_HOLDER = 1 << 25;
 
     /** Flags indicating DPC states which can set the policy. */
     int[] dpc() default {};
