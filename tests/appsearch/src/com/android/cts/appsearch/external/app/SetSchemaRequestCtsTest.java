@@ -25,6 +25,7 @@ import android.app.appsearch.AppSearchSchema;
 import android.app.appsearch.GenericDocument;
 import android.app.appsearch.Migrator;
 import android.app.appsearch.PackageIdentifier;
+import android.app.appsearch.PropertyPath;
 import android.app.appsearch.SchemaVisibilityConfig;
 import android.app.appsearch.SetSchemaRequest;
 import android.app.appsearch.testutil.AppSearchEmail;
@@ -45,6 +46,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class SetSchemaRequestCtsTest {
     @Rule public final RuleChain mRuleChain = AppSearchTestUtils.createCommonTestRules();
@@ -1047,6 +1049,271 @@ public class SetSchemaRequestCtsTest {
         // Migrator not set.
         assertThat(request1).isNotEqualTo(request3);
         assertThat(request1.hashCode()).isNotEqualTo(request3.hashCode());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMAS_WIPEOUT_ACCOUNT_PROPERTY_PATHS)
+    public void testSetAndGetWipeoutAccountProperty() {
+        AppSearchSchema accountSchema = new AppSearchSchema.Builder("builtin:Account").build();
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("type1")
+                        .addProperty(
+                                new AppSearchSchema.DocumentPropertyConfig.Builder(
+                                                "account1", "builtin:Account")
+                                        .setCardinality(
+                                                AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setShouldIndexNestedProperties(false)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.DocumentPropertyConfig.Builder(
+                                                "account2", "builtin:Account")
+                                        .setCardinality(
+                                                AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setShouldIndexNestedProperties(false)
+                                        .build())
+                        .build();
+
+        SetSchemaRequest request =
+                new SetSchemaRequest.Builder()
+                        .addSchemas(accountSchema, schema)
+                        .setSchemaTypeWipeoutAccountPropertyPaths(
+                                "type1",
+                                ImmutableSet.of(new PropertyPath("account1")),
+                                /* autoWipeout= */ true)
+                        .setSchemaTypeWipeoutAccountPropertyPaths(
+                                "type1",
+                                ImmutableSet.of(new PropertyPath("account2")),
+                                /* autoWipeout= */ true)
+                        .setForceOverride(true)
+                        .setVersion(1)
+                        .build();
+
+        Map<String, Set<String>> accountPropertyPaths =
+                request.getSchemasWipeoutAccountPropertyPaths();
+        assertThat(accountPropertyPaths)
+                .containsExactly("type1", ImmutableSet.of("account1", "account2"));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMAS_WIPEOUT_ACCOUNT_PROPERTY_PATHS)
+    public void testSetNestedWipeoutAccountProperty() {
+        AppSearchSchema accountSchema = new AppSearchSchema.Builder("builtin:Account").build();
+        AppSearchSchema schema1 =
+                new AppSearchSchema.Builder("type1")
+                        .addProperty(
+                                new AppSearchSchema.DocumentPropertyConfig.Builder(
+                                                "nested", "type2")
+                                        .setCardinality(
+                                                AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setShouldIndexNestedProperties(false)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.DocumentPropertyConfig.Builder(
+                                                "account1", "builtin:Account")
+                                        .setCardinality(
+                                                AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setShouldIndexNestedProperties(false)
+                                        .build())
+                        .build();
+        AppSearchSchema schema2 =
+                new AppSearchSchema.Builder("type2")
+                        .addProperty(
+                                new AppSearchSchema.DocumentPropertyConfig.Builder(
+                                                "account2", "builtin:Account")
+                                        .setCardinality(
+                                                AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setShouldIndexNestedProperties(false)
+                                        .build())
+                        .build();
+
+        SetSchemaRequest request =
+                new SetSchemaRequest.Builder()
+                        .addSchemas(accountSchema, schema1, schema2)
+                        .setSchemaTypeWipeoutAccountPropertyPaths(
+                                "type1",
+                                ImmutableSet.of(new PropertyPath("account1")),
+                                /* autoWipeout= */ true)
+                        .setSchemaTypeWipeoutAccountPropertyPaths(
+                                "type1",
+                                ImmutableSet.of(new PropertyPath("nested.account2")),
+                                /* autoWipeout= */ true)
+                        .setForceOverride(true)
+                        .setVersion(1)
+                        .build();
+
+        Map<String, Set<String>> accountPropertyPaths =
+                request.getSchemasWipeoutAccountPropertyPaths();
+
+        assertThat(accountPropertyPaths)
+                .containsExactly("type1", ImmutableSet.of("account1", "nested.account2"));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMAS_WIPEOUT_ACCOUNT_PROPERTY_PATHS)
+    public void testRemoveSetWipeoutAccountProperty() {
+        AppSearchSchema accountSchema = new AppSearchSchema.Builder("builtin:Account").build();
+        AppSearchSchema schema = new AppSearchSchema.Builder("type1").build();
+
+        SetSchemaRequest request =
+                new SetSchemaRequest.Builder()
+                        .addSchemas(accountSchema, schema)
+                        .setSchemaTypeWipeoutAccountPropertyPaths(
+                                "type",
+                                ImmutableSet.of(new PropertyPath("account")),
+                                /* autoWipeout= */ true)
+                        .setSchemaTypeWipeoutAccountPropertyPaths(
+                                "type",
+                                ImmutableSet.of(new PropertyPath("account")),
+                                /* autoWipeout= */ false)
+                        .setForceOverride(true)
+                        .setVersion(1)
+                        .build();
+        Map<String, Set<String>> accountPropertyPaths =
+                request.getSchemasWipeoutAccountPropertyPaths();
+
+        assertThat(accountPropertyPaths).isEmpty();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMAS_WIPEOUT_ACCOUNT_PROPERTY_PATHS)
+    public void testRebuildSetWipeoutAccountProperty() {
+        AppSearchSchema accountSchema = new AppSearchSchema.Builder("builtin:Account").build();
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("type1")
+                        .addProperty(
+                                new AppSearchSchema.DocumentPropertyConfig.Builder(
+                                                "account1", "builtin:Account")
+                                        .setCardinality(
+                                                AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setShouldIndexNestedProperties(false)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.DocumentPropertyConfig.Builder(
+                                                "account2", "builtin:Account")
+                                        .setCardinality(
+                                                AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setShouldIndexNestedProperties(false)
+                                        .build())
+                        .build();
+
+        SetSchemaRequest.Builder builder =
+                new SetSchemaRequest.Builder()
+                        .addSchemas(accountSchema, schema)
+                        .setSchemaTypeWipeoutAccountPropertyPaths(
+                                "type1",
+                                ImmutableSet.of(new PropertyPath("account1")),
+                                /* autoWipeout= */ true)
+                        .setForceOverride(true)
+                        .setVersion(1);
+
+        SetSchemaRequest original = builder.build();
+
+        SetSchemaRequest rebuild =
+                builder.setSchemaTypeWipeoutAccountPropertyPaths(
+                                "type1",
+                                ImmutableSet.of(new PropertyPath("account1")),
+                                /* autoWipeout= */ false)
+                        .setSchemaTypeWipeoutAccountPropertyPaths(
+                                "type1",
+                                ImmutableSet.of(new PropertyPath("account2")),
+                                /* autoWipeout= */ true)
+                        .build();
+
+        assertThat(original.getSchemasWipeoutAccountPropertyPaths())
+                .containsExactly("type1", ImmutableSet.of("account1"));
+        assertThat(rebuild.getSchemasWipeoutAccountPropertyPaths())
+                .containsExactly("type1", ImmutableSet.of("account2"));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMAS_WIPEOUT_ACCOUNT_PROPERTY_PATHS)
+    public void testSetWipeoutAccountProperty_propertyNotExist() {
+        AppSearchSchema schema1 =
+                new AppSearchSchema.Builder("type1")
+                        .addProperty(
+                                new AppSearchSchema.DocumentPropertyConfig.Builder(
+                                                "nested", "type2")
+                                        .setCardinality(
+                                                AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setShouldIndexNestedProperties(false)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.DocumentPropertyConfig.Builder(
+                                                "account", "type3")
+                                        .setCardinality(
+                                                AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setShouldIndexNestedProperties(false)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.StringPropertyConfig.Builder("stringProp")
+                                        .setCardinality(
+                                                AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                AppSearchSchema.StringPropertyConfig
+                                                        .INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(
+                                                AppSearchSchema.StringPropertyConfig
+                                                        .TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .build();
+        AppSearchSchema schema2 = new AppSearchSchema.Builder("type2").build();
+
+        IllegalArgumentException exception =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () ->
+                                new SetSchemaRequest.Builder()
+                                        .addSchemas(schema1, schema2)
+                                        .setSchemaTypeWipeoutAccountPropertyPaths(
+                                                "type1",
+                                                ImmutableSet.of(new PropertyPath("account")),
+                                                /* autoWipeout= */ true)
+                                        .setForceOverride(true)
+                                        .setVersion(1)
+                                        .build());
+        assertThat(exception)
+                .hasMessageThat()
+                .contains(
+                        "The property path of: account is not the required property type:"
+                                + " builtin:Account");
+
+        exception =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () ->
+                                new SetSchemaRequest.Builder()
+                                        .addSchemas(schema1, schema2)
+                                        .setSchemaTypeWipeoutAccountPropertyPaths(
+                                                "type1",
+                                                ImmutableSet.of(new PropertyPath("nested")),
+                                                /* autoWipeout= */ true)
+                                        .setForceOverride(true)
+                                        .setVersion(1)
+                                        .build());
+        assertThat(exception)
+                .hasMessageThat()
+                .contains(
+                        "The property path of: nested is not the required property type:"
+                                + " builtin:Account");
+
+        exception =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () ->
+                                new SetSchemaRequest.Builder()
+                                        .addSchemas(schema1, schema2)
+                                        .setSchemaTypeWipeoutAccountPropertyPaths(
+                                                "type1",
+                                                ImmutableSet.of(new PropertyPath("stringProp")),
+                                                /* autoWipeout= */ true)
+                                        .setForceOverride(true)
+                                        .setVersion(1)
+                                        .build());
+        assertThat(exception)
+                .hasMessageThat()
+                .contains(
+                        "The property path of: stringProp is not the required property type: "
+                                + "builtin:Account");
     }
 
     /** Migrator that does nothing. */
