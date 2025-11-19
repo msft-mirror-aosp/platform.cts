@@ -30,7 +30,7 @@ def nicekey(v):
   This sorts using lower case, with numbers in numerical order first."""
   key = []
   num = False
-  for p in re.split('(\d+)', v.lower()):
+  for p in re.split(r'(\d+)', v.lower()):
     if num:
       key.append(('0', int(p)))
     elif p:
@@ -156,7 +156,7 @@ def genXml(data, A=None):
         p95, med, p5 = perc(data, P, math.floor), perc(data, 50, round), perc(data, 100 - P, math.ceil)
         geo = math.sqrt(p5 * p95)
         comment = ''
-        pub_lo, pub_hi = min(int(p95 * T), round(geo)), max(math.ceil(p5 / T), round(geo))
+        pub_lo, pub_hi = min(int(p5 / T), round(geo)), max(math.ceil(p95 * T), round(geo))
         if pub_lo > med:
           if pub_lo > med * 1.1:
             quality += 0.5
