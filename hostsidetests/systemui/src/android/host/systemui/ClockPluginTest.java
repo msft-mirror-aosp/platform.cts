@@ -19,29 +19,39 @@ package android.host.systemui;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.android.tradefed.device.DeviceNotAvailableException;
+import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceTestCase;
 import com.android.tradefed.util.ProcessInfo;
 import com.android.tradefed.util.RunUtil;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class ClockPluginTest extends DeviceTestCase {
     private static final String SYSUI_NAME = "com.android.systemui";
     private static final String SET_CLOCK_CMD =
             "settings put secure lock_screen_custom_clock_face '''{\"clockId\":\"%s\"}'''";
     private static final String SET_PROP_CMD = "setprop debug.sysui.plugins %b";
-    private static final String RESTART_SYSUI_CMD = "am crash com.android.systemui";
+    private static final String RESTART_SYSUI_CMD = "am crash " + SYSUI_NAME;
+    private static final String PID_SYSUI_CMD = "pidof " + SYSUI_NAME;
     private static final String DEFAULT_CLOCK_ID = "DEFAULT";
-    private static final int SETUP_WAIT_TIME = 1500;
+    private static final int SETUP_ATTEMPTS = 10;
+    private static final int SETUP_WAIT_TIME = 500;
     private static final int TEST_WAIT_TIME = 3000;
 
-    private ProcessInfo mSysUI;
+    private Set<Integer> mSysUIPids;
 
     @Override
     protected void setUp() throws Exception {
         super.setUp();
         setClock(DEFAULT_CLOCK_ID);
         setPluginDebugMode(true);
-        RunUtil.getDefault().sleep(SETUP_WAIT_TIME);
-        mSysUI = getDevice().getProcessByName(SYSUI_NAME);
+
+        for (int i = 0; i < SETUP_ATTEMPTS; i++) {
+            RunUtil.getDefault().sleep(SETUP_WAIT_TIME);
+            mSysUIPids = getSysuiPids();
+            if (mSysUIPids != null) return;
+        }
     }
 
     @Override
@@ -50,7 +60,27 @@ public class ClockPluginTest extends DeviceTestCase {
         setPluginDebugMode(false);
         setClock(DEFAULT_CLOCK_ID);
         RunUtil.getDefault().sleep(SETUP_WAIT_TIME);
-        mSysUI = null;
+        mSysUIPids = null;
+    }
+
+    private Set<Integer> getSysuiPids() throws Exception {
+        ProcessInfo sysUI = getDevice().getProcessByName(SYSUI_NAME);
+        if (sysUI != null) return Set.of(sysUI.getPid());
+
+        try {
+            String output = getDevice().executeShellCommand(PID_SYSUI_CMD).trim();
+            if (output.isEmpty()) return null;
+
+            String[] pids = output.split(" ");
+            Set<Integer> result = new HashSet<Integer>(pids.length);
+            for (int i = 0; i < pids.length; i++) {
+                result.add(Integer.parseInt(output));
+            }
+            return result;
+        } catch (NumberFormatException e) {
+            CLog.e(e);
+            return null;
+        }
     }
 
     private void setPluginDebugMode(boolean isEnabled) throws DeviceNotAvailableException {
@@ -63,13 +93,14 @@ public class ClockPluginTest extends DeviceTestCase {
     }
 
     private void assertSysuiUnchanged() throws Exception {
-        ProcessInfo sysUI = getDevice().getProcessByName(SYSUI_NAME);
-        assertThat(sysUI).isNotNull();
-        assertThat(sysUI.getPid()).isEqualTo(mSysUI.getPid());
+        Set<Integer> sysUIPids = getSysuiPids();
+        assertThat(sysUIPids).isNotNull();
+        assertThat(sysUIPids).isEqualTo(mSysUIPids);
     }
 
     private void testLoadClockPlugin(String clockId) throws Exception {
-        assertThat(mSysUI).isNotNull();
+        // Devices without system ui can skip this test
+        if (mSysUIPids == null) return;
         assertSysuiUnchanged();
 
         setClock(clockId);
