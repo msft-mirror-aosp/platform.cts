@@ -76,6 +76,8 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
 
     private static final String FEATURE_TV_OPERATOR_TIER = "com.google.android.tv.operator_tier";
 
+    private final DeviceFlagsValueProvider mFlagsValueProvider = new DeviceFlagsValueProvider();
+
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
@@ -369,7 +371,8 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
 
                                 final var editText = new EditText(activity);
                                 editText.setPrivateImeOptions(marker);
-                                if (enforceDevicePolicy) {
+                                if (mFlagsValueProvider.getBoolean(FLAG_ENFORCE_DEVICE_POLICY_IME)
+                                        && enforceDevicePolicy) {
                                     editText.setEnforceImePolicyUser(
                                             UserHandle.of(UserHandle.myUserId()));
                                 }
