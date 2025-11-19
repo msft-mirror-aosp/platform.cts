@@ -17,16 +17,25 @@ package com.android.bedstead.enterprise
 
 import com.android.bedstead.accounts.AccountsComponent
 import com.android.bedstead.enterprise.annotations.EnsureHasNoProfileOwner
+import com.android.bedstead.enterprise.annotations.EnsureHasNoUserController
+import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile
 import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
+import com.android.bedstead.enterprise.annotations.EnsureHasUserController
 import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.UserType
+import com.android.bedstead.harrier.UserType.ADDITIONAL_USER
+import com.android.bedstead.harrier.UserType.INITIAL_USER
+import com.android.bedstead.harrier.UserType.INSTRUMENTED_USER
+import com.android.bedstead.harrier.UserType.SECONDARY_USER
 import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled
 import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.harrier.components.UserTypeResolver
+import com.android.bedstead.multiuser.UsersComponent
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.devicepolicy.DevicePolicyController
+import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.utils.Versions
@@ -49,6 +58,7 @@ class ProfileOwnersComponent(locator: BedsteadServiceLocator) : DeviceStateCompo
     private val enterpriseComponent: EnterpriseComponent by locator
     private val testAppsComponent: TestAppsComponent by locator
     private val userRestrictionsComponent: UserRestrictionsComponent by locator
+    private val usersComponent: UsersComponent by locator
     private val accountsComponent: AccountsComponent by locator
     private val profileOwners: MutableMap<UserReference, DevicePolicyController?> = HashMap()
     private val changedProfileOwners: MutableMap<UserReference, DevicePolicyController?> = HashMap()
@@ -182,6 +192,51 @@ class ProfileOwnersComponent(locator: BedsteadServiceLocator) : DeviceStateCompo
         }
         devicePolicy().getProfileOwner(user)!!.remove()
         profileOwners.remove(user)
+    }
+
+    /**
+     * See [EnsureHasUserController].
+     */
+    fun ensureHasUserController(annotation: EnsureHasUserController) {
+        val userType = annotation.onUser
+        validateUserControllerPreconditions(userType)
+
+        usersComponent.ensureHasNoProfile(
+            EnsureHasNoWorkProfile.PROFILE_TYPE,
+            userType
+        )
+
+        val user: UserReference = userTypeResolver.toUser(userType)
+        ensureHasProfileOwner(
+            user = user,
+            isPrimary = annotation.isPrimary,
+            useParentInstance = false,
+            key = annotation.key,
+            dpcQuery = TestAppProvider().query(annotation.dpc)
+        )
+    }
+
+    fun ensureHasNoUserController(annotation: EnsureHasNoUserController) {
+        ensureHasNoProfileOwner(annotation.onUser)
+    }
+
+    private fun validateUserControllerPreconditions(userType: UserType) {
+        val supportedUserTypes =
+            arrayOf(SECONDARY_USER, INSTRUMENTED_USER, INITIAL_USER, ADDITIONAL_USER)
+        if (userType !in supportedUserTypes) {
+            throw NeneException("User controller cannot exist in user type $userType.")
+        }
+
+        val user: UserReference = userTypeResolver.toUser(userType)
+        if (user.parent() != null) {
+            throw NeneException("User controller cannot exist in profile.")
+        }
+    }
+
+    fun userController(onUserType: UserType): RemoteDpc {
+        validateUserControllerPreconditions(onUserType)
+
+        return profileOwner(onUserType)
     }
 
     override fun teardownShareableState() {
