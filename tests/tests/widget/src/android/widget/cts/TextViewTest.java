@@ -7342,7 +7342,6 @@ public class TextViewTest {
         assertTrue(mTextView.hasFocus());
     }
 
-    @RequiresFlagsEnabled(com.android.text.flags.Flags.FLAG_ESCAPE_CLEARS_FOCUS)
     @Test
     public void testEscapeStopsActionModeThenClearsFocus() throws Throwable {
         String text = "abcde";
@@ -7387,7 +7386,6 @@ public class TextViewTest {
         assertFalse(mTextView.hasFocus());
     }
 
-    @RequiresFlagsEnabled(com.android.text.flags.Flags.FLAG_ESCAPE_CLEARS_FOCUS)
     @Test
     public void testEscapeWithModifierDoesNotStopActionModeOrClearFocus() throws Throwable {
         String text = "abcde";
