@@ -308,6 +308,65 @@ public class MediaStoreUiTest {
     }
 
     @Test
+    public void testGetMediaUri_noPermissionOnDocumentUri() throws Exception {
+        assumeTrue(supportsHardware());
+
+        prepareFile("TEST");
+        clearDocumentsUi();
+        final Intent intent = new Intent();
+        intent.setAction(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*");
+        mActivity.startActivityForResult(intent, REQUEST_CODE);
+        mDevice.waitForIdle();
+
+        findDocument(mFile.getName()).click();
+        final Result result = mActivity.getResult();
+        final Uri uri = result.data.getData();
+        assertEquals(MEDIA_DOCUMENTS_PROVIDER_AUTHORITY, uri.getAuthority());
+        // Immediately revoke access to the document URI we just obtained.
+        revokeUriPermission(uri);
+
+        try {
+            MediaStore.getMediaUri(mActivity, uri);
+            fail("Expected getMediaUri to fail with SecurityException");
+        } catch (SecurityException e) {
+            // Expected
+        }
+    }
+
+    @Test
+    public void testGetMediaUri_asDocumentsManager() throws Exception {
+        assumeTrue(supportsHardware());
+
+        prepareFile("TEST");
+        clearDocumentsUi();
+        final Intent intent = new Intent();
+        intent.setAction(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*");
+        mActivity.startActivityForResult(intent, REQUEST_CODE);
+        mDevice.waitForIdle();
+
+        findDocument(mFile.getName()).click();
+        final Result result = mActivity.getResult();
+        final Uri uri = result.data.getData();
+        assertEquals(MEDIA_DOCUMENTS_PROVIDER_AUTHORITY, uri.getAuthority());
+        // Immediately revoke access to the document URI we just obtained.
+        revokeUriPermission(uri);
+
+        final UiAutomation uiAutomation =
+                InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity(MANAGE_DOCUMENTS);
+            final Uri mediaUri = MediaStore.getMediaUri(mActivity, uri);
+            assertNotNull(mediaUri);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
     public void testOpenFile_onMediaDocumentsProvider_success() throws Exception {
         assumeTrue(supportsHardware());
 
@@ -683,6 +742,17 @@ public class MediaStoreUiTest {
                 | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
         mActivity.getContentResolver().takePersistableUriPermission(resultUri, flags);
         return resultUri;
+    }
+
+    void revokeUriPermission(Uri uri) {
+        final UiAutomation uiAutomation =
+                InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity(MANAGE_DOCUMENTS);
+            mContext.revokeUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
     }
 
     private static String getTargetPackageName(Context context) {
