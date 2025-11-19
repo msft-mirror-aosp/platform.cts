@@ -32,6 +32,7 @@
     <string name="retry_button_text">Retry</string>
     <string name="finish_button_text">Finish</string>
     <string name="fail_and_next_button_text">Fail and Next</string>
+    <string name="skip_button_text">Skip</string>
     <string name="yes_string">Yes</string>
     <string name="no_string">No</string>
     <string name="search_label">TestListActivity</string>
@@ -7832,6 +7833,20 @@ You should be prompted to select credentials; choose the ones you just installed
         \n2. Press \"Send notification\". Verify the notification popup includes the text \"Sensitive Text\".
         \n3. End local recording and verify the recording output does not redact any content".
         \n4. If local screen recording is has content, click \"Pass\", otherwise (if blank) click \"Fail\".
+    </string>
+    <string name="notif_hiding_shade_local_screen_recorder_test_instructions_low_ram">
+        1. Start \"Screen record\", from Quick Settings then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
+        \n2. Press \"Send notification\". Verify the notification popup includes the text \"Sensitive Text\".
+        \n3. Open the notification shade, and verify there is a notification that includes the text \"Sensitive Text\".
+        \n4. If there is such a notification, click \"Pass\", otherwise click \"Fail\".
+        \n\nIf the device does not have a local screen recorder available in quick settings or on device, this test may be skipped.
+    </string>
+    <string name="notif_hiding_app_local_screen_recorder_test_instructions_low_ram">
+        1. Start \"Screen record\", from Quick Settings then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
+        \n2. Press \"Send notification\". Verify the notification popup includes the text \"Sensitive Text\".
+        \n3. End local recording and verify the recording output does not redact any content".
+        \n4. If local screen recording is has content, click \"Pass\", otherwise (if blank) click \"Fail\".
+        \n\nIf the device does not have a local screen recorder available in quick settings or on device, this test may be skipped.
     </string>
     <string name="notif_hiding_shade_disable_protections_test_instructions">
         1. Go to the "Disable screen share protections" developer setting. It is often located under \"Developer options\".

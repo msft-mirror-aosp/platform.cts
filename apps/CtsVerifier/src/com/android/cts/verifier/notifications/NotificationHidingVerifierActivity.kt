@@ -80,6 +80,7 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
     private var currentTestIdx = 0
     private var numFailures = 0
     private var supportsSms = true
+    private var isLowRamDevice: Boolean = false
     private var mediaProjection: MediaProjection? = null
     private val mediaProjectionCallback = object : MediaProjection.Callback() {}
     private var imageReader: ImageReader? = null
@@ -112,6 +113,9 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
             numFailures += 1
             showNextTestOrSummary()
         }
+        requireViewById<Button>(R.id.skip_button).setOnClickListener { _ ->
+            showNextTestOrSummary()
+        }
         requireViewById<Button>(R.id.send_notification_button).setOnClickListener { _ ->
             tests[currentTestIdx].sendNotification()
         }
@@ -129,6 +133,8 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
         }
         val am = getSystemService(ActivityManager::class.java)!!
 
+        isLowRamDevice = am.isLowRamDevice()
+
         var supportsBubble = false
         try {
             supportsBubble = resources.getBoolean(resources.getIdentifier(
@@ -137,7 +143,7 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
             // Assume device does not support bubble, no need to do anything.
         }
 
-        if (!am.isLowRamDevice && supportsBubble) {
+        if (!isLowRamDevice && supportsBubble) {
             // Only test bubbles if the device isn't a low ram device, and supports bubbles
             tests.add(notificationContentHiddenInBubblesTest)
             val shortcut =
@@ -188,9 +194,27 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
         if (currentTestIdx >= tests.size) {
             showCompletionSummary()
         } else {
-            title.setText(tests[currentTestIdx].getTestTitle())
-            instructions.setText(tests[currentTestIdx].getTestInstructions())
-            val testWarning = tests[currentTestIdx].getTestWarning()
+            val currentTest = tests[currentTestIdx]
+            title.setText(currentTest.getTestTitle())
+
+            val testInstructionsId = if (isLowRamDevice &&
+                currentTest.getLowRamTestInstructions() != ID_NULL) {
+                currentTest.getLowRamTestInstructions()
+            } else {
+                currentTest.getTestInstructions()
+            }
+            instructions.setText(testInstructionsId)
+
+            val skipButton = requireViewById<Button>(R.id.skip_button)
+            if (isLowRamDevice &&
+                (currentTest == notificationContentHiddenInShadeLocalScreenRecorderTest ||
+                 currentTest == notificationContentHiddenInAppLocalScreenRecorderTest)) {
+                skipButton.visibility = View.VISIBLE
+            } else {
+                skipButton.visibility = View.GONE
+            }
+
+            val testWarning = currentTest.getTestWarning()
             if (testWarning == ID_NULL) {
                 warning.visibility = View.GONE
             } else {
@@ -577,6 +601,10 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
                 return R.string.notif_hiding_shade_local_screen_recorder_test_instructions
             }
 
+            override fun getLowRamTestInstructions(): Int {
+                return R.string.notif_hiding_shade_local_screen_recorder_test_instructions_low_ram
+            }
+
             override fun getTestWarning(): Int {
                 return R.string.notif_hiding_no_local_screen_recorder_warning
             }
@@ -590,6 +618,10 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
 
             override fun getTestInstructions(): Int {
                 return R.string.notif_hiding_app_local_screen_recorder_test_instructions
+            }
+
+            override fun getLowRamTestInstructions(): Int {
+                return R.string.notif_hiding_app_local_screen_recorder_test_instructions_low_ram
             }
 
             override fun getTestWarning(): Int {
@@ -650,6 +682,9 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
 
         /** What the tester should do & look for to verify this step was successful.  */
         abstract fun getTestInstructions(): Int
+
+        /** What the tester should do & look for to verify this step was successful.  */
+        open fun getLowRamTestInstructions(): Int = ID_NULL
 
         /** Returns string resid for warnings associated with the test not passing prerequisites */
         open fun getTestWarning(): Int = ID_NULL
