@@ -39,6 +39,7 @@ import org.junit.rules.ErrorCollector;
 import org.junit.runner.RunWith;
 
 import perfetto.protos.PerfettoConfig.DataSourceDescriptor;
+import perfetto.protos.PerfettoConfig.GpuCounterDescriptor.GpuCounterGroup;
 import perfetto.protos.PerfettoConfig.GpuCounterDescriptor.GpuCounterSpec;
 import perfetto.protos.PerfettoConfig.TraceConfig;
 import perfetto.protos.PerfettoConfig.TracingServiceState;
@@ -57,6 +58,7 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
@@ -91,6 +93,8 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
     private static final String PROFILING_PROPERTY = "graphics.gpu.profiler.support";
     private static final String GPU_COUNTERS_CAPABILITY_PROPERTY =
             "graphics.gpu.profiler.support.gpu_counters";
+    private static final String GPU_COUNTERS_GROUPS_PROPERTY =
+            "graphics.gpu.profiler.support.gpu_counters.groups";
     private static final String LAYER_PACKAGE_PROPERTY = "graphics.gpu.profiler.vulkan_layer_apk";
     private static final String LAYER_NAME = "VkRenderStagesProducer";
     private static final String DEBUG_PROPERTY = "debug.graphics.gpu.profiler.perfetto";
@@ -242,6 +246,9 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                                     + "].",
                             spec.hasDescription() && !spec.getDescription().isEmpty(),
                             is(true));
+                }
+                if (getProperty(GPU_COUNTERS_GROUPS_PROPERTY)) {
+                    checkRequiredGroupsPresent(errorCollector, gpuCounterSpecsList);
                 }
 
                 List<Integer> counterIdsList =
@@ -458,6 +465,29 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
             }
         }
         return false;
+    }
+
+    private void checkRequiredGroupsPresent(
+            ErrorCollector errorCollector, List<GpuCounterSpec> gpuCounterSpecsList) {
+        Set<GpuCounterGroup> requiredGroups =
+                new HashSet<>(
+                        Arrays.asList(
+                                GpuCounterGroup.COMPUTE,
+                                GpuCounterGroup.FRAGMENTS,
+                                GpuCounterGroup.MEMORY,
+                                GpuCounterGroup.PRIMITIVES,
+                                GpuCounterGroup.VERTICES));
+        Set<GpuCounterGroup> foundGroups = new HashSet<>();
+        for (GpuCounterSpec spec : gpuCounterSpecsList) {
+            foundGroups.addAll(spec.getGroupsList());
+        }
+        errorCollector.checkThat(
+                "Required counter groups missing. Found: "
+                        + foundGroups
+                        + " Required: "
+                        + requiredGroups,
+                foundGroups.containsAll(requiredGroups),
+                is(true));
     }
 
     private void captureTrace(File configFile) throws Exception {
