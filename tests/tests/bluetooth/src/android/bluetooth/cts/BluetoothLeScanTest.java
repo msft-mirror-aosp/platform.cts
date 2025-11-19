@@ -136,7 +136,7 @@ public class BluetoothLeScanTest {
                 android.Manifest.permission.BLUETOOTH_CONNECT,
                 android.Manifest.permission.BLUETOOTH_SCAN);
         List<ScanFilter> filters = new ArrayList<>();
-        ScanFilter filter = createScanFilter();
+        ScanFilter filter = scanToCreateFilterForStrongestNearbyBeacon();
         if (filter == null) {
             Log.d(TAG, "no appropriate filter can be set");
             return;
@@ -216,7 +216,7 @@ public class BluetoothLeScanTest {
         ScanSettings regularScanSettings =
                 new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build();
         List<ScanFilter> filters = new ArrayList<>();
-        ScanFilter filter = createScanFilter();
+        ScanFilter filter = scanToCreateFilterForStrongestNearbyBeacon();
         if (filter != null) {
             filters.add(filter);
         } else {
@@ -307,7 +307,7 @@ public class BluetoothLeScanTest {
                         .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
                         .setReportDelay(0)
                         .build();
-        ScanFilter filter = createScanFilter();
+        ScanFilter filter = scanToCreateFilterForStrongestNearbyBeacon();
         ArrayList<ScanFilter> filters = null;
         if (filter != null) {
             filters = new ArrayList<>();
@@ -348,7 +348,7 @@ public class BluetoothLeScanTest {
     }
 
     // Create a scan filter based on the nearby beacon with highest signal strength.
-    private ScanFilter createScanFilter() {
+    private ScanFilter scanToCreateFilterForStrongestNearbyBeacon() {
         // Get a list of nearby beacons.
         List<ScanResult> scanResults = new ArrayList<>(scan());
         assertThat(scanResults).isNotEmpty();
