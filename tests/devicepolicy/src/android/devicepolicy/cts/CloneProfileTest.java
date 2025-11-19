@@ -29,7 +29,6 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.multiuser.annotations.EnsureHasNoCloneProfile;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
-import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport;
 import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
@@ -57,7 +56,6 @@ public final class CloneProfileTest {
     @EnsureHasDeviceOwner
     @EnsureHasPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @RequireRunOnInitialUser
-    @RequireMultiUserSupport
     @EnsureHasNoCloneProfile
     public void createCloneProfile_hasDeviceOwner_fails() {
         assertThrows(NeneException.class, () -> createCloneProfile());
@@ -71,7 +69,6 @@ public final class CloneProfileTest {
     @EnsureHasPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @EnsureHasNoCloneProfile
     @RequireRunOnInitialUser
-    @RequireMultiUserSupport
     public void createCloneProfile_noDeviceOwner_succeeds() {
         try (UserReference cloneUser = createCloneProfile()) {
             assertThat(cloneUser.exists()).isTrue();
@@ -83,7 +80,6 @@ public final class CloneProfileTest {
     @EnsureHasPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @EnsureHasNoCloneProfile
     @RequireRunOnInitialUser
-    @RequireMultiUserSupport
     public void createCloneProfile_deviceHasWorkProfile_succeeds() {
         try (UserReference cloneProfile = createCloneProfile()) {
             assertThat(cloneProfile.exists()).isTrue();
@@ -95,7 +91,6 @@ public final class CloneProfileTest {
     @EnsureHasPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @EnsureHasNoCloneProfile
     @RequireRunOnInitialUser
-    @RequireMultiUserSupport
     public void createCloneProfile_deviceHasOrganizationOwnedWorkProfile_succeeds() {
         try (UserReference cloneProfile = createCloneProfile()) {
             assertThat(cloneProfile.exists()).isTrue();

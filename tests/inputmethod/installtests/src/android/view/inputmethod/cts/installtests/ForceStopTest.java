@@ -38,7 +38,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
-import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport;
+import com.android.bedstead.multiuser.annotations.RequireSwitchableUserSupport;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.compatibility.common.util.PollingCheck;
@@ -111,7 +111,7 @@ public class ForceStopTest {
     /**
      * A regression test for Bug 333798837 (for background users).
      */
-    @RequireMultiUserSupport
+    @RequireSwitchableUserSupport
     @EnsureHasAdditionalUser
     @Test
     public void testImeRemainsEnabledAfterForceStopForBackgroundUser() {
@@ -119,7 +119,7 @@ public class ForceStopTest {
         testImeRemainsEnabledAfterForceStopMain(additionalUser, false /* selectIme */);
     }
 
-    @RequireMultiUserSupport
+    @RequireSwitchableUserSupport
     @EnsureHasAdditionalUser
     @Test
     public void testImeRemainsSelectedAndEnabledAfterForceStopForBackgroundUser() {

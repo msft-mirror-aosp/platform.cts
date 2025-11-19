@@ -29,7 +29,9 @@ import android.os.UserManager;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport;
+import com.android.bedstead.multiuser.annotations.EnsureCanAddSecondaryUser;
+import com.android.bedstead.multiuser.annotations.EnsureCanAddUser;
+import com.android.bedstead.nene.users.UserType;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.modules.utils.build.SdkLevel;
@@ -61,7 +63,7 @@ public class CrossProfileIntentFilterTest extends AppCloningDeviceTestBase {
      * CrossProfileIntentFilter , non-system user would face SecurityException.
      */
     @Test
-    @RequireMultiUserSupport
+    @EnsureCanAddUser(UserType.CLONE_PROFILE_TYPE_NAME)
     @ApiTest(apis = {"android.content.pm.PackageManager#addCrossProfileIntentFilter"})
     public void addCrossProfileIntentFilterForSystemAccessTest() {
 
@@ -89,7 +91,7 @@ public class CrossProfileIntentFilterTest extends AppCloningDeviceTestBase {
      * control as ALL. For ALL, any user can add/remove CrossProfileIntentFilter.
      */
     @Test
-    @RequireMultiUserSupport
+    @EnsureCanAddSecondaryUser
     @ApiTest(apis = {"android.content.pm.PackageManager#addCrossProfileIntentFilter"})
     public void addCrossProfileIntentFilterForAllAccessTest() {
         int userId = createAndStartUser("testUser",

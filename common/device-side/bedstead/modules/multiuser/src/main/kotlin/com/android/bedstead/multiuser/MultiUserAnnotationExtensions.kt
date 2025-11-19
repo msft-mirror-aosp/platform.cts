@@ -25,7 +25,7 @@ import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.multiuser.annotations.RequireHasMainUser
 import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode
-import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport
+import com.android.bedstead.multiuser.annotations.RequireSwitchableUserSupport
 import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode
 import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsers
 import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsersOnDefaultDisplay
@@ -47,7 +47,7 @@ import org.junit.AssumptionViolatedException
 
 fun RequireHasMainUser.logic() = assumeTrue(reason, users().main() != null)
 
-fun RequireMultiUserSupport.logic() {
+fun RequireSwitchableUserSupport.logic() {
     checkFailOrSkip(
         "This test is only supported on multi user devices",
         users().supportsMultipleUsers(),

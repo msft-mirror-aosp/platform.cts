@@ -59,7 +59,6 @@ import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.multiuser.annotations.EnsureCanAddSecondaryUser;
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
-import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.devicepolicy.DeviceOwner;
 import com.android.bedstead.nene.exceptions.NeneException;
@@ -224,7 +223,6 @@ public class DevicePolicyManagementRoleHolderTest {
     @Test
     @EnsureHasPermission(MANAGE_ROLE_HOLDERS)
     @EnsureHasNoDpc
-    @RequireMultiUserSupport
     @EnsureHasNoAccounts(onUser = ANY)
     @EnsureCanAddSecondaryUser
     public void shouldAllowBypassingDevicePolicyManagementRoleQualification_withNonTestUsers_false()
@@ -250,7 +248,6 @@ public class DevicePolicyManagementRoleHolderTest {
     @Test
     @EnsureHasPermission(MANAGE_ROLE_HOLDERS)
     @EnsureHasNoDpc
-    @RequireMultiUserSupport
     @EnsureHasNoAccounts(onUser = ANY)
     @EnsureCanAddSecondaryUser
     public void shouldAllowBypassingDevicePolicyManagementRoleQualification_withTestUsers_returnsTrue()

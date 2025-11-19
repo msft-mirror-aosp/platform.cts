@@ -92,7 +92,6 @@ import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser;
 import com.android.bedstead.multiuser.annotations.EnsureHasPrivateProfile;
 import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode;
-import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport;
 import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
 import com.android.bedstead.multiuser.annotations.RequirePrivateSpaceSupported;
 import com.android.bedstead.multiuser.annotations.RequireRunOnPrivateProfile;
@@ -450,7 +449,6 @@ public final class UserManagerTest {
     @Test
     @ApiTest(apis = {"android.os.UserManager#isCommunalProfile"})
     @RequiresFlagsEnabled(android.multiuser.Flags.FLAG_SUPPORT_COMMUNAL_PROFILE)
-    @RequireMultiUserSupport
     @EnsureHasPermission({QUERY_USERS, CREATE_USERS, INTERACT_ACROSS_USERS})
     public void testCommunalProfile() throws Exception {
         final UserHandle communalUser = mUserManager.getCommunalProfile();
@@ -478,7 +476,6 @@ public final class UserManagerTest {
     @Test
     @ApiTest(apis = {"android.os.UserManager#USER_TYPE_PROFILE_SUPERVISING"})
     @RequiresFlagsEnabled(android.multiuser.Flags.FLAG_ALLOW_SUPERVISING_PROFILE)
-    @RequireMultiUserSupport
     @EnsureHasPermission({QUERY_USERS, CREATE_USERS, INTERACT_ACROSS_USERS})
     public void testSupervisingProfile() throws Exception {
         UserInfo userInfo = null;
