@@ -1,0 +1,32 @@
+package {
+    default_team: "trendy_team_enterprise",
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+java_library_host {
+    name: "HarrierHost",
+    srcs: [
+        "src/main/java/**/*.java",
+        ":harrier-host-srcs",
+    ],
+    static_libs: [
+        "NeneHost",
+        "bedstead-core-annotations",
+        "junit",
+    ],
+}
+
+java_test_host {
+    name: "HarrierHostTests",
+    srcs: [
+        "src/test/**/*.java",
+        "src/test/**/*kt",
+    ],
+    static_libs: [
+        "HarrierHost",
+        "truth",
+    ],
+    test_options: {
+        unit_test: true,
+    },
+}
