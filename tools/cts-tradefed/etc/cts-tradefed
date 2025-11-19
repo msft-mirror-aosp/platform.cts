@@ -151,7 +151,7 @@ if [ "$USE_ATS" == "true" ]; then
       ${FASTBOOT_FLAGS} \
     "
 
-    LANG=en_US.UTF-8 TEST_TMPDIR=/tmp ${JAVA_BINARY} --add-opens=java.base/java.lang=ALL-UNNAMED -Xmx16g -XX:+HeapDumpOnOutOfMemoryError -DXTS_ROOT=${CTS_ROOT} -DXTS_TYPE=cts -DDEVICE_INFRA_SERVICE_FLAGS="${DEVICE_INFRA_SERVICE_FLAGS}" -jar ${ATS_CONSOLE_JAR} "$@"
+    LANG=en_US.UTF-8 TEST_TMPDIR=/tmp ${JAVA_BINARY} --add-opens=java.base/java.lang=ALL-UNNAMED -Xmx16g -XX:+HeapDumpOnOutOfMemoryError -DXTS_ROOT=${CTS_ROOT} -DXTS_TYPE=cts -DDEVICE_INFRA_SERVICE_FLAGS="${DEVICE_INFRA_SERVICE_FLAGS}" -cp ${ATS_CONSOLE_JAR}:${ATS_OLC_SERVER_JAR} com.google.devtools.mobileharness.infra.ats.console.AtsConsole "$@"
 else
     ${JAVA_BINARY} $RDBG_FLAG -Xmx16g -XX:+HeapDumpOnOutOfMemoryError -cp ${JAR_PATH} -DCTS_ROOT=${CTS_ROOT} com.android.compatibility.common.tradefed.command.CompatibilityConsole "$@"
 fi
