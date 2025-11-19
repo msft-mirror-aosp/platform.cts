@@ -134,6 +134,8 @@ android_test {
         ":AppWithAttributionInheritingFromExisting",
         ":AppThatExploitsAttributionTags",
         ":CtsAppThatUsesAppOpApi29",
+        ":SdkSandboxAppOpsProvider",
+        ":CtsAppThatLoadsSdkSandbox",
     ],
     per_testcase_directory: true,
 }
