@@ -192,40 +192,6 @@ public class BluetoothLeScanTest {
         assertThat(filterLeScanCallback.getScanResults()).isNotEmpty();
     }
 
-    // Create a scan filter based on the nearby beacon with highest signal strength.
-    private ScanFilter createScanFilter() {
-        // Get a list of nearby beacons.
-        List<ScanResult> scanResults = new ArrayList<>(scan());
-        assertThat(scanResults).isNotEmpty();
-        // Find the beacon with strongest signal strength, which is the target device for filter
-        // scan.
-        Collections.sort(scanResults, new RssiComparator());
-        ScanResult result = scanResults.get(0);
-        ScanRecord record = result.getScanRecord();
-        if (record == null) {
-            return null;
-        }
-        Map<ParcelUuid, byte[]> serviceData = record.getServiceData();
-        if (serviceData != null && !serviceData.isEmpty()) {
-            ParcelUuid uuid = serviceData.keySet().iterator().next();
-            return new ScanFilter.Builder()
-                    .setServiceData(uuid, new byte[] {0}, new byte[] {0})
-                    .build();
-        }
-        SparseArray<byte[]> manufacturerSpecificData = record.getManufacturerSpecificData();
-        if (manufacturerSpecificData != null && manufacturerSpecificData.size() > 0) {
-            return new ScanFilter.Builder()
-                    .setManufacturerData(
-                            manufacturerSpecificData.keyAt(0), new byte[] {0}, new byte[] {0})
-                    .build();
-        }
-        List<ParcelUuid> serviceUuids = record.getServiceUuids();
-        if (serviceUuids != null && !serviceUuids.isEmpty()) {
-            return new ScanFilter.Builder().setServiceUuid(serviceUuids.get(0)).build();
-        }
-        return null;
-    }
-
     /** Test of opportunistic BLE scans. */
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @MediumTest
@@ -361,6 +327,16 @@ public class BluetoothLeScanTest {
         assertThat(gotResults).isTrue();
     }
 
+    // Perform a BLE scan to get results of nearby BLE devices.
+    private Set<ScanResult> scan() {
+        BleScanCallback regularLeScanCallback = new BleScanCallback();
+        mScanner.startScan(regularLeScanCallback);
+        TestUtils.sleep(SCAN_DURATION_MILLIS);
+        mScanner.stopScan(regularLeScanCallback);
+        TestUtils.sleep(SCAN_STOP_TIMEOUT);
+        return regularLeScanCallback.getScanResults();
+    }
+
     // Verify timestamp of all scan results are within [scanStartMillis, scanEndMillis].
     private void verifyTimestamp(
             Collection<ScanResult> results, long scanStartMillis, long scanEndMillis) {
@@ -371,14 +347,38 @@ public class BluetoothLeScanTest {
         }
     }
 
-    // Perform a BLE scan to get results of nearby BLE devices.
-    private Set<ScanResult> scan() {
-        BleScanCallback regularLeScanCallback = new BleScanCallback();
-        mScanner.startScan(regularLeScanCallback);
-        TestUtils.sleep(SCAN_DURATION_MILLIS);
-        mScanner.stopScan(regularLeScanCallback);
-        TestUtils.sleep(SCAN_STOP_TIMEOUT);
-        return regularLeScanCallback.getScanResults();
+    // Create a scan filter based on the nearby beacon with highest signal strength.
+    private ScanFilter createScanFilter() {
+        // Get a list of nearby beacons.
+        List<ScanResult> scanResults = new ArrayList<>(scan());
+        assertThat(scanResults).isNotEmpty();
+        // Find the beacon with strongest signal strength, which is the target device for filter
+        // scan.
+        Collections.sort(scanResults, new RssiComparator());
+        ScanResult result = scanResults.get(0);
+        ScanRecord record = result.getScanRecord();
+        if (record == null) {
+            return null;
+        }
+        Map<ParcelUuid, byte[]> serviceData = record.getServiceData();
+        if (serviceData != null && !serviceData.isEmpty()) {
+            ParcelUuid uuid = serviceData.keySet().iterator().next();
+            return new ScanFilter.Builder()
+                    .setServiceData(uuid, new byte[] {0}, new byte[] {0})
+                    .build();
+        }
+        SparseArray<byte[]> manufacturerSpecificData = record.getManufacturerSpecificData();
+        if (manufacturerSpecificData != null && manufacturerSpecificData.size() > 0) {
+            return new ScanFilter.Builder()
+                    .setManufacturerData(
+                            manufacturerSpecificData.keyAt(0), new byte[] {0}, new byte[] {0})
+                    .build();
+        }
+        List<ParcelUuid> serviceUuids = record.getServiceUuids();
+        if (serviceUuids != null && !serviceUuids.isEmpty()) {
+            return new ScanFilter.Builder().setServiceUuid(serviceUuids.get(0)).build();
+        }
+        return null;
     }
 
     private boolean isBleBatchScanSupported() {
