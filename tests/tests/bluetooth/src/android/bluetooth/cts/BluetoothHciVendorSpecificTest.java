@@ -30,11 +30,14 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.bluetooth.test_utils.Permissions;
 import android.content.Context;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
+
+import com.android.bluetooth.flags.Flags;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -318,6 +321,208 @@ public final class BluetoothHciVendorSpecificTest {
         }
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_REPORT_VENDOR_EVENTS_FROM_ACL)
+    @Test
+    public void register_withAclHandleSet() {
+        BluetoothAdapter.BluetoothHciVendorSpecificCallback callback =
+                mock(BluetoothAdapter.BluetoothHciVendorSpecificCallback.class);
+
+        // Check permission
+        assertThrows(
+                SecurityException.class,
+                () ->
+                        sAdapter.registerBluetoothHciVendorSpecificCallback(
+                                Set.of(), Set.of(), sContext.getMainExecutor(), callback));
+
+        // Check nullability
+        try (var p = Permissions.withPermissions(BLUETOOTH_PRIVILEGED)) {
+            assertThrows(
+                    NullPointerException.class,
+                    () ->
+                            sAdapter.registerBluetoothHciVendorSpecificCallback(
+                                    null, Set.of(), sContext.getMainExecutor(), callback));
+
+            assertThrows(
+                    NullPointerException.class,
+                    () ->
+                            sAdapter.registerBluetoothHciVendorSpecificCallback(
+                                    Set.of(), Set.of(), null, callback));
+
+            assertThrows(
+                    NullPointerException.class,
+                    () ->
+                            sAdapter.registerBluetoothHciVendorSpecificCallback(
+                                    Set.of(), Set.of(), sContext.getMainExecutor(), null));
+            assertThrows(
+                    NullPointerException.class,
+                    () ->
+                            sAdapter.registerBluetoothHciVendorSpecificCallback(
+                                    Set.of(), null, sContext.getMainExecutor(), callback));
+        }
+
+        // Check event codes
+        try (var p = Permissions.withPermissions(BLUETOOTH_PRIVILEGED)) {
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () ->
+                            sAdapter.registerBluetoothHciVendorSpecificCallback(
+                                    Set.of(-1, 0x51, 0x60, 0xff),
+                                    Set.of(),
+                                    sContext.getMainExecutor(),
+                                    callback));
+
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () ->
+                            sAdapter.registerBluetoothHciVendorSpecificCallback(
+                                    Set.of(0, 0x52, 0x60, 0xff),
+                                    Set.of(),
+                                    sContext.getMainExecutor(),
+                                    callback));
+
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () ->
+                            sAdapter.registerBluetoothHciVendorSpecificCallback(
+                                    Set.of(0, 0x51, 0x5f, 0xff),
+                                    Set.of(),
+                                    sContext.getMainExecutor(),
+                                    callback));
+
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () ->
+                            sAdapter.registerBluetoothHciVendorSpecificCallback(
+                                    Set.of(0, 0x51, 0x60, 0x100),
+                                    Set.of(),
+                                    sContext.getMainExecutor(),
+                                    callback));
+        }
+
+        // Check acl handles
+        try (var p = Permissions.withPermissions(BLUETOOTH_PRIVILEGED)) {
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () ->
+                            sAdapter.registerBluetoothHciVendorSpecificCallback(
+                                    Set.of(),
+                                    Set.of(0, 0x123, 0x456, 0x789, 0xfff),
+                                    sContext.getMainExecutor(),
+                                    callback));
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () ->
+                            sAdapter.registerBluetoothHciVendorSpecificCallback(
+                                    Set.of(),
+                                    Set.of(-1, 0x123, 0x456, 0x789, 0xfff),
+                                    sContext.getMainExecutor(),
+                                    callback));
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () ->
+                            sAdapter.registerBluetoothHciVendorSpecificCallback(
+                                    Set.of(),
+                                    Set.of(0x001, 0x123, 0x456, 0x789, 0x1000),
+                                    sContext.getMainExecutor(),
+                                    callback));
+        }
+
+        // Check multiple registration
+        try (var p = Permissions.withPermissions(BLUETOOTH_PRIVILEGED)) {
+            sAdapter.registerBluetoothHciVendorSpecificCallback(
+                    Set.of(0, 0x51, 0x60, 0xff),
+                    Set.of(1, 0xfff),
+                    sContext.getMainExecutor(),
+                    callback);
+
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () ->
+                            sAdapter.registerBluetoothHciVendorSpecificCallback(
+                                    Set.of(),
+                                    sContext.getMainExecutor(),
+                                    mock(
+                                            BluetoothAdapter.BluetoothHciVendorSpecificCallback
+                                                    .class)));
+
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () ->
+                            sAdapter.registerBluetoothHciVendorSpecificCallback(
+                                    Set.of(),
+                                    Set.of(),
+                                    sContext.getMainExecutor(),
+                                    mock(
+                                            BluetoothAdapter.BluetoothHciVendorSpecificCallback
+                                                    .class)));
+
+            sAdapter.unregisterBluetoothHciVendorSpecificCallback(callback);
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_REPORT_VENDOR_EVENTS_FROM_ACL)
+    @Test
+    public void unregister_withAclHandleSetRegistered() {
+        BluetoothAdapter.BluetoothHciVendorSpecificCallback callback =
+                mock(BluetoothAdapter.BluetoothHciVendorSpecificCallback.class);
+        try (var p = Permissions.withPermissions(BLUETOOTH_PRIVILEGED)) {
+            sAdapter.registerBluetoothHciVendorSpecificCallback(
+                    Set.of(0x01), Set.of(0x001), sContext.getMainExecutor(), callback);
+        }
+        // check permission
+        assertThrows(
+                SecurityException.class,
+                () -> sAdapter.unregisterBluetoothHciVendorSpecificCallback(callback));
+
+        try (var p = Permissions.withPermissions(BLUETOOTH_PRIVILEGED)) {
+            sAdapter.unregisterBluetoothHciVendorSpecificCallback(callback);
+        }
+
+        // check nullability
+        try (var p = Permissions.withPermissions(BLUETOOTH_PRIVILEGED)) {
+            sAdapter.registerBluetoothHciVendorSpecificCallback(
+                    Set.of(), Set.of(), sContext.getMainExecutor(), callback);
+
+            assertThrows(
+                    NullPointerException.class,
+                    () -> sAdapter.unregisterBluetoothHciVendorSpecificCallback(null));
+
+            sAdapter.unregisterBluetoothHciVendorSpecificCallback(callback);
+        }
+
+        // check unknown unregistration
+        try (var p = Permissions.withPermissions(BLUETOOTH_PRIVILEGED)) {
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> sAdapter.unregisterBluetoothHciVendorSpecificCallback(callback));
+
+            sAdapter.registerBluetoothHciVendorSpecificCallback(
+                    Set.of(), Set.of(), sContext.getMainExecutor(), callback);
+
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () ->
+                            sAdapter.unregisterBluetoothHciVendorSpecificCallback(
+                                    mock(
+                                            BluetoothAdapter.BluetoothHciVendorSpecificCallback
+                                                    .class)));
+
+            sAdapter.unregisterBluetoothHciVendorSpecificCallback(callback);
+        }
+
+        // Check multiple unregistration
+        try (var p = Permissions.withPermissions(BLUETOOTH_PRIVILEGED)) {
+            sAdapter.registerBluetoothHciVendorSpecificCallback(
+                    Set.of(), Set.of(), sContext.getMainExecutor(), callback);
+
+            sAdapter.unregisterBluetoothHciVendorSpecificCallback(callback);
+
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> sAdapter.unregisterBluetoothHciVendorSpecificCallback(callback));
+        }
+    }
+
     // Android doesn't provide method without side-effect and therefore this is not testable in CTS
     // In order to trigger the callbacks, there is no alternative to a direct call on mock
     @Test
@@ -328,5 +533,6 @@ public final class BluetoothHciVendorSpecificTest {
 
         callback.onCommandStatus(0, 0);
         callback.onEvent(0, null);
+        callback.onAclEvent(0, null);
     }
 }
