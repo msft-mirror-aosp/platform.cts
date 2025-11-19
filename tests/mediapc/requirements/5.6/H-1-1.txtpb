@@ -142,17 +142,17 @@ specs {
   key: 37
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
-    specification: "MUST have a tap-to-tone latency of 80 milliseconds or less using the CTS Verifier tap-to-tone test."
+    specification: "MUST have a tap-to-tone latency of 50 milliseconds or less using the CTS Verifier tap-to-tone test."
     required_values {
       key: "native_latency_ms"
       value {
-        double_value: 80.0
+        double_value: 50.0
       }
     }
     required_values {
       key: "java_latency_ms"
       value {
-        double_value: 80.0
+        double_value: 50.0
       }
     }
   }
