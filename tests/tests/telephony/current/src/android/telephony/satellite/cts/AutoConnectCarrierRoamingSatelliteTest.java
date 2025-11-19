@@ -18,6 +18,8 @@ package android.telephony.satellite.cts;
 
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_CHT;
 
+import static junit.framework.Assert.assertEquals;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -26,6 +28,8 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.AccessNetworkConstants;
 import android.telephony.CarrierConfigManager;
+import android.telephony.ims.ImsManager;
+import android.telephony.ims.ImsMmTelManager;
 import android.telephony.NetworkRegistrationInfo;
 import android.telephony.ServiceState;
 import android.telephony.SignalThresholdInfo;
@@ -693,6 +697,35 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             boolean result = mLatch.await(timeoutMillis, TimeUnit.MILLISECONDS);
             logd("NtnStateCallback: awaitStateChange: result is " + result);
             return result;
+        }
+    }
+
+    @Test
+    public void testVoWiFiRoamingModeSettingUsingNonTerrestrialNetwork() throws Exception {
+        logd(TAG, "testVoWiFiRoamingModeSettingUsingNonTerrestrialNetwork");
+        if (!shouldTestSatelliteWithMockService()) return;
+
+        CarrierRoamingNtnListenerTest listener = new CarrierRoamingNtnListenerTest();
+        listener.clearModeChanges();
+
+        adoptShellIdentity();
+        sTelephonyManager.registerTelephonyCallback(getContext().getMainExecutor(), listener);
+        try {
+            // Get NTN mode immediately after registering
+            assertTrue(listener.waitForModeChanged(1));
+            assertTrue(listener.getNtnMode());
+
+            ImsManager imsManager = getContext().getSystemService(ImsManager.class);
+            int subId = SubscriptionManager.getSubscriptionId(SLOT_ID_0);
+            ImsMmTelManager imsMmTelManager = imsManager.getImsMmTelManager(subId);
+
+            // getVoWiFiRoamingModeSetting() should return WIFI_PREFERRED
+            // when device is connected to NTN
+            int wfcRoamingMode = imsMmTelManager.getVoWiFiRoamingModeSetting();
+            assertEquals(ImsMmTelManager.WIFI_MODE_WIFI_PREFERRED, wfcRoamingMode);
+        } finally {
+            sTelephonyManager.unregisterTelephonyCallback(listener);
+            dropShellIdentity();
         }
     }
 }

@@ -19,7 +19,6 @@ package android.telephony.ims.cts;
 import static junit.framework.TestCase.assertEquals;
 
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
@@ -36,9 +35,7 @@ import android.os.PersistableBundle;
 import android.telephony.AccessNetworkConstants;
 import android.telephony.CarrierConfigManager;
 import android.telephony.Rlog;
-import android.telephony.ServiceState;
 import android.telephony.SubscriptionManager;
-import android.telephony.TelephonyCallback;
 import android.telephony.TelephonyManager;
 import android.telephony.ims.ImsException;
 import android.telephony.ims.ImsManager;
@@ -55,13 +52,11 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
@@ -113,71 +108,6 @@ public class ImsMmTelManagerTest {
 
         void waitForCarrierConfigChanged() throws Exception {
             mLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
-        }
-    }
-
-    private static class ServiceStateListenerTest extends TelephonyCallback
-            implements TelephonyCallback.ServiceStateListener {
-
-        private final Semaphore mNonTerrestrialNetworkSemaphore = new Semaphore(0);
-        private final Semaphore mSemaphore = new Semaphore(0);
-        private ServiceState mServiceState;
-
-        @Override
-        public void onServiceStateChanged(ServiceState serviceState) {
-            logd("onServiceStateChanged: serviceState=" + serviceState);
-            mServiceState = serviceState;
-
-            try {
-                if (serviceState.isUsingNonTerrestrialNetwork()) {
-                    mNonTerrestrialNetworkSemaphore.release();
-                }
-            } catch (Exception e) {
-                loge("onServiceStateChanged: Got exception=" + e);
-            }
-
-            try {
-                mSemaphore.release();
-            } catch (Exception e) {
-                loge("onServiceStateChanged: Got exception, ex=" + e);
-            }
-        }
-
-        public boolean waitUntilServiceStateUpdate() {
-            try {
-                if (!mSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
-                    loge("Timeout to receive onServiceStateChanged");
-                    return false;
-                }
-            } catch (Exception ex) {
-                loge("onServiceStateChanged: Got exception=" + ex);
-                return false;
-            }
-
-            return true;
-        }
-
-        public boolean waitForNonTerrestrialNetworkConnection() {
-            try {
-                if (!mNonTerrestrialNetworkSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
-                    loge("Timeout to connect to non-terrestrial network");
-                    return false;
-                }
-            } catch (Exception e) {
-                loge("ServiceStateListenerTest waitForNonTerrestrialNetworkConnection: "
-                        + "Got exception=" + e);
-                return false;
-            }
-            return true;
-        }
-
-        public ServiceState getServiceState() {
-            return mServiceState;
-        }
-
-        public void clearServiceStateChanges() {
-            logd("clearServiceStateChanges()");
-            mNonTerrestrialNetworkSemaphore.drainPermits();
         }
     }
 
@@ -534,69 +464,6 @@ public class ImsMmTelManagerTest {
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mMmTelManager,
                 (m) -> m.setVoWiFiRoamingModeSetting(oldMode));
         overrideCarrierConfig(null);
-    }
-
-    @Test
-    @Ignore("b/441284325 - Need to fix and re-enable this test.")
-    public void testVoWiFiRoamingModeSettingUsingNonTerrestrialNetwork() throws Exception {
-        // Get original VoWiFi roaming mode
-        ImsManager imsManager = getContext().getSystemService(ImsManager.class);
-        ImsMmTelManager mMmTelManager = imsManager.getImsMmTelManager(sTestSub);
-        int oldMode = ShellIdentityUtils.invokeMethodWithShellPermissions(mMmTelManager,
-                ImsMmTelManager::getVoWiFiRoamingModeSetting);
-
-        // Register service state listener
-        ServiceStateListenerTest serviceStateListener = new ServiceStateListenerTest();
-        serviceStateListener.clearServiceStateChanges();
-        sTelephonyManager.registerTelephonyCallback(getContext().getMainExecutor(),
-                serviceStateListener);
-        serviceStateListener.waitUntilServiceStateUpdate();
-        ServiceState serviceState = serviceStateListener.getServiceState();
-        if (serviceState != null) {
-            assumeTrue(
-                    "skip test as subscription is not in service",
-                    serviceState.getState() == ServiceState.STATE_IN_SERVICE);
-        }
-
-        // Override carrier config
-        PersistableBundle bundle = new PersistableBundle();
-        bundle.putBoolean(KEY_SATELLITE_ATTACH_SUPPORTED_BOOL, true);
-        bundle.putBoolean(KEY_USE_WFC_HOME_NETWORK_MODE_IN_ROAMING_NETWORK_BOOL, false);
-        bundle.putBoolean(KEY_EDITABLE_WFC_ROAMING_MODE_BOOL, true);
-        bundle.putBoolean(KEY_OVERRIDE_WFC_ROAMING_MODE_WHILE_USING_NTN_BOOL, true);
-        String plmn = sTelephonyManager.getNetworkOperator(sTestSub);
-        PersistableBundle plmnBundle = new PersistableBundle();
-        int[] intArray1 = {3, 5};
-        plmnBundle.putIntArray(plmn, intArray1);
-        bundle.putPersistableBundle(
-                CarrierConfigManager.KEY_CARRIER_SUPPORTED_SATELLITE_SERVICES_PER_PROVIDER_BUNDLE,
-                plmnBundle);
-
-        try {
-            overrideCarrierConfig(bundle);
-            assertTrue(serviceStateListener.waitForNonTerrestrialNetworkConnection());
-
-            // Register Observer
-            Uri callingUri = Uri.withAppendedPath(
-                    SubscriptionManager.WFC_ROAMING_MODE_CONTENT_URI, "" + sTestSub);
-            CountDownLatch contentObservedLatch = new CountDownLatch(1);
-            ContentObserver observer = createObserver(callingUri, contentObservedLatch);
-
-            // Set VoWiFi roaming mode to CELLULAR_PREFERRED
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mMmTelManager,
-                    (m) -> m.setVoWiFiRoamingModeSetting(
-                            ImsMmTelManager.WIFI_MODE_CELLULAR_PREFERRED));
-            waitForLatch(contentObservedLatch, observer);
-
-            int newModeResult = ShellIdentityUtils.invokeMethodWithShellPermissions(mMmTelManager,
-                    ImsMmTelManager::getVoWiFiRoamingModeSetting);
-            assertEquals(ImsMmTelManager.WIFI_MODE_WIFI_PREFERRED, newModeResult);
-        } finally {
-            // Set back to default
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mMmTelManager,
-                    (m) -> m.setVoWiFiRoamingModeSetting(oldMode));
-            overrideCarrierConfig(null);
-        }
     }
 
     /**
