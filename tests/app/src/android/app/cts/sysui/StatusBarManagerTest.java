@@ -27,16 +27,17 @@ import static org.junit.Assert.fail;
 import android.Manifest;
 import android.accessibilityservice.AccessibilityService;
 import android.app.Flags;
-import android.app.ShowPowerMenuCallback;
 import android.app.StatusBarManager;
 import android.app.StatusBarManager.DisableInfo;
 import android.app.UiAutomation;
 import android.content.Context;
+import android.os.OutcomeReceiver;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.view.KeyEvent;
 
+import androidx.annotation.NonNull;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
@@ -326,21 +327,21 @@ public class StatusBarManagerTest {
     @EnsureDoesNotHavePermission(Manifest.permission.SHOW_POWER_MENU)
     @Test
     public void testShowPowerMenu_noPermission_securityException() throws Exception {
-        ShowPowerMenuCallback callback =
-                new ShowPowerMenuCallback() {
+        OutcomeReceiver receiver =
+                new OutcomeReceiver<Integer, Throwable>() {
                     @Override
-                    public void onPowerMenuShown(boolean showing) {
-                        fail("onPowerMenuShown");
+                    public void onResult(Integer result) {
+                        fail("onResult");
                     }
 
                     @Override
-                    public void onError(int error) {
+                    public void onError(@NonNull Throwable error) {
                         fail("onError");
                     }
                 };
         assertThrows(
                 SecurityException.class,
-                () -> mStatusBarManager.showPowerMenu(Runnable::run, callback));
+                () -> mStatusBarManager.showPowerMenu(Runnable::run, receiver));
     }
 
     @ApiTest(apis = {"android.app.StatusBarManager#showPowerMenu"})
@@ -348,23 +349,23 @@ public class StatusBarManagerTest {
     @RequiresFlagsEnabled(Flags.FLAG_STATUSBAR_API_SHOW_POWER_MENU)
     public void testShowPowerMenu_hasPermissionPrivileged_succeeds() throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
-        ShowPowerMenuCallback callback =
-                new ShowPowerMenuCallback() {
+        OutcomeReceiver receiver =
+                new OutcomeReceiver<Integer, Throwable>() {
                     @Override
-                    public void onPowerMenuShown(boolean showing) {
-                        assertTrue(showing);
+                    public void onResult(Integer result) {
+                        assertEquals(StatusBarManager.SHOW_POWER_MENU_RESULT_SHOWING, (int) result);
                         latch.countDown();
                     }
 
                     @Override
-                    public void onError(int error) {
+                    public void onError(@NonNull Throwable error) {
                         fail("onError");
                     }
                 };
         try (PermissionContext ignored =
                 TestApis.permissions()
                         .withPermission(Manifest.permission.SHOW_POWER_MENU_PRIVILEGED)) {
-            mStatusBarManager.showPowerMenu(Runnable::run, callback);
+            mStatusBarManager.showPowerMenu(Runnable::run, receiver);
             assertTrue(latch.await(5, TimeUnit.SECONDS));
         } finally {
             mUiAutomation.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME);
@@ -376,22 +377,22 @@ public class StatusBarManagerTest {
     @RequiresFlagsEnabled(Flags.FLAG_STATUSBAR_API_SHOW_POWER_MENU)
     public void testShowPowerMenu_hasPermissionRole_succeeds() throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
-        ShowPowerMenuCallback callback =
-                new ShowPowerMenuCallback() {
+        OutcomeReceiver receiver =
+                new OutcomeReceiver<Integer, Throwable>() {
                     @Override
-                    public void onPowerMenuShown(boolean showing) {
-                        assertTrue(showing);
+                    public void onResult(Integer result) {
+                        assertEquals(StatusBarManager.SHOW_POWER_MENU_RESULT_SHOWING, (int) result);
                         latch.countDown();
                     }
 
                     @Override
-                    public void onError(int error) {
+                    public void onError(@NonNull Throwable error) {
                         fail("onError");
                     }
                 };
         try (PermissionContext ignored =
                 TestApis.permissions().withPermission(Manifest.permission.SHOW_POWER_MENU)) {
-            mStatusBarManager.showPowerMenu(Runnable::run, callback);
+            mStatusBarManager.showPowerMenu(Runnable::run, receiver);
             assertTrue(latch.await(5, TimeUnit.SECONDS));
         } finally {
             mUiAutomation.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME);
