@@ -24,6 +24,7 @@ import static org.junit.Assert.assertTrue;
 
 import android.app.privatecompute.PccSandboxManager;
 import android.content.Context;
+import android.os.PersistableBundle;
 import android.os.Process;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -93,5 +94,24 @@ public class PccSandboxManagerTest {
         assertTrue(
                 "isPrivateComputeServicesUid should return true for UID with the permission",
                 mPccSandboxManager.isPrivateComputeServicesUid(testAppUid));
+    }
+
+    @Test
+    public void testWriteToAuditLog_exampleBundle_doesNotThrowsException() {
+        PersistableBundle data = new PersistableBundle();
+        data.putString("test_key", "test_value");
+
+        mPccSandboxManager.writeToAuditLog(data);
+
+        // By design, this API does not provide any feedback to the caller.
+        // We are just checking that it does not throw an exception.
+    }
+
+    @Test
+    public void testWriteToAuditLog_emptyBundle_doesNotThrowsException() {
+        mPccSandboxManager.writeToAuditLog(new PersistableBundle());
+
+        // By design, this API does not provide any feedback to the caller.
+        // We are just checking that it does not throw an exception.
     }
 }
