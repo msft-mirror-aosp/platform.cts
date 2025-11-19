@@ -26,6 +26,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.iterator
@@ -44,6 +45,7 @@ class AppOpsMemoryUsageTest {
     val attributionTag = "cts_test_tag"
     val proxiedPkg = "com.android.shell"
     val api29Pkg = "android.app.appops.cts.api29appops"
+    val sdkSandboxPkg = "android.app.appops.cts.appopssdksandboxloader"
     val rootPkg = "root"
     val proxiedUid = Process.SHELL_UID
     val op = AppOpsManager.OPSTR_VIBRATE
@@ -65,29 +67,6 @@ class AppOpsMemoryUsageTest {
     @AsbSecurityTest(cveBugId = [416491779])
     fun testCannotApplyArbitraryAttributionWithProxyOpForRoot() {
         assertAttrTagOverwrittenToNull(Process.ROOT_UID, rootPkg)
-    }
-
-    @Test
-    @AsbSecurityTest(cveBugId = [417987184])
-    fun testApi29AppCannotSupplyArbitraryAttribution() {
-        val notedLatch = CountDownLatch(1)
-        var tag: String? = null
-        runWithShellPermissionIdentity {
-            appOpsManager.startWatchingNoted(arrayOf(op)) { _, _, packageName, attrTag, _, _ ->
-                if (packageName == api29Pkg) {
-                    tag = attrTag
-                    notedLatch.countDown()
-                }
-            }
-        }
-        context.startActivity(
-            Intent(Intent.ACTION_MAIN)
-                .setPackage(api29Pkg)
-                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                .putExtra(intentExtra, op)
-        )
-        notedLatch.await()
-        assertNull("Expected a null attribution tag", tag)
     }
 
     private fun assertAttrTagOverwrittenToNull(proxiedUid: Int, proxiedPkg: String) {
@@ -127,6 +106,52 @@ class AppOpsMemoryUsageTest {
         }
         assertTrue("expected to find a running op with the null tag", foundNullAttrOp)
         finishOps()
+    }
+
+    @Test
+    @AsbSecurityTest(cveBugId = [417987184])
+    fun testApi29AppCannotSupplyArbitraryAttribution() {
+        val notedLatch = CountDownLatch(1)
+        var tag: String? = null
+        runWithShellPermissionIdentity {
+            appOpsManager.startWatchingNoted(arrayOf(op)) { _, _, packageName, attrTag, _, _ ->
+                if (packageName == api29Pkg) {
+                    tag = attrTag
+                    notedLatch.countDown()
+                }
+            }
+        }
+        context.startActivity(
+            Intent(Intent.ACTION_MAIN)
+                .setPackage(api29Pkg)
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .putExtra(intentExtra, op)
+        )
+        notedLatch.await()
+        assertNull("Expected a null attribution tag", tag)
+    }
+
+    @Test
+    @AsbSecurityTest(cveBugId = [443742082])
+    fun testSdkSandboxAppCannotSupplyArbitraryAttribution() {
+        val notedLatch = CountDownLatch(1)
+        var tag: String? = null
+        runWithShellPermissionIdentity {
+            appOpsManager.startWatchingNoted(arrayOf(op)) { _, uid, _, attrTag, _, _ ->
+                if (uid == Process.ROOT_UID) {
+                    tag = attrTag
+                    notedLatch.countDown()
+                }
+            }
+        }
+        context.startActivity(
+            Intent(Intent.ACTION_MAIN)
+                .setPackage(sdkSandboxPkg)
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .putExtra(intentExtra, op)
+        )
+        assertTrue("Timed out waiting for op to be noted", notedLatch.await(10, TimeUnit.SECONDS))
+        assertNull(tag)
     }
 
     @After

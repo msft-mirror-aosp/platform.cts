@@ -32,12 +32,17 @@
         <option name="test-file-name" value="AppThatCanBeForcedIntoForegroundStates.apk" />
         <option name="test-file-name" value="AppForDiscreteTest.apk" />
         <option name="test-file-name" value="CtsAppThatUsesAppOpApi29.apk" />
+        <option name="test-file-name" value="SdkSandboxAppOpsProvider.apk"/>
+        <option name="test-file-name" value="CtsAppThatLoadsSdkSandbox.apk" />
     </target_preparer>
 
     <!-- Create place to store apks -->
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <option name="run-command" value="mkdir -p /data/local/tmp/cts/appops" />
         <option name="teardown-command" value="rm -rf /data/local/tmp/cts" />
+                <!-- Enable sdk sandbox throughout the test duration -->
+        <option name="run-command" value="cmd sdk_sandbox set-state --enabled" />
+        <option name="teardown-command" value="cmd sdk_sandbox set-state --reset" />
     </target_preparer>
 
     <!-- Load additional APKs onto device -->
