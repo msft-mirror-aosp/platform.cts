@@ -18,10 +18,14 @@ package android.app.cts.wallpapers;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import android.app.Flags;
 import android.app.wallpaper.WallpaperDescription;
+import android.content.ComponentName;
 import android.net.Uri;
 import android.os.Parcel;
 import android.os.PersistableBundle;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
@@ -40,6 +44,8 @@ import java.util.List;
 public class WallpaperDescriptionTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    private final ComponentName mTestComponent = new ComponentName("fakePackage", "fakeClass");
 
     @Test
     public void equals_ignoresIrrelevantFields() {
@@ -64,6 +70,58 @@ public class WallpaperDescriptionTest {
     }
 
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_WALLPAPER_DESCRIPTION_SET_COMPONENT)
+    public void parcel_roundTripSucceeds_legacy() {
+        final Uri thumbnail = Uri.parse("http://www.bogus.com/thumbnail");
+        final List<CharSequence> description = List.of("line1", "line2");
+        final Uri contextUri = Uri.parse("http://www.bogus.com/contextUri");
+        final PersistableBundle content = makeDefaultContent();
+        WallpaperDescription source =
+                new WallpaperDescription.Builder()
+                        .setId("fakeId")
+                        .setThumbnail(thumbnail)
+                        .setTitle("Fake title")
+                        .setDescription(description)
+                        .setContextUri(contextUri)
+                        .setContextDescription("Context description")
+                        .setContent(content)
+                        .build();
+
+        Parcel parcel = Parcel.obtain();
+        source.writeToParcel(parcel, 0);
+        // Reset parcel for reading
+        parcel.setDataPosition(0);
+        WallpaperDescription destination = WallpaperDescription.CREATOR.createFromParcel(parcel);
+
+        assertThat(destination.getComponent()).isEqualTo(source.getComponent());
+        assertThat(destination.getId()).isEqualTo(source.getId());
+        assertThat(destination.getThumbnail()).isEqualTo(source.getThumbnail());
+        assertWithMessage("title mismatch")
+                .that(CharSequence.compare(destination.getTitle(), source.getTitle()))
+                .isEqualTo(0);
+        assertThat(destination.getDescription()).hasSize(source.getDescription().size());
+        for (int i = 0; i < destination.getDescription().size(); i++) {
+            CharSequence strDest = destination.getDescription().get(i);
+            CharSequence strSrc = source.getDescription().get(i);
+            assertWithMessage("description string mismatch")
+                    .that(CharSequence.compare(strDest, strSrc))
+                    .isEqualTo(0);
+        }
+        assertThat(destination.getContextUri()).isEqualTo(source.getContextUri());
+        assertWithMessage("context description mismatch")
+                .that(
+                        CharSequence.compare(
+                                destination.getContextDescription(),
+                                source.getContextDescription()))
+                .isEqualTo(0);
+        assertThat(destination.getContent()).isNotNull();
+        assertThat(destination.getContent().getString("ckey"))
+                .isEqualTo(source.getContent().getString("ckey"));
+        assertThat(destination.getCropHints()).isNotNull();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_WALLPAPER_DESCRIPTION_SET_COMPONENT)
     public void parcel_roundTripSucceeds() {
         final Uri thumbnail = Uri.parse("http://www.bogus.com/thumbnail");
         final List<CharSequence> description = List.of("line1", "line2");
@@ -71,6 +129,7 @@ public class WallpaperDescriptionTest {
         final PersistableBundle content = makeDefaultContent();
         WallpaperDescription source =
                 new WallpaperDescription.Builder()
+                        .setComponent(mTestComponent)
                         .setId("fakeId")
                         .setThumbnail(thumbnail)
                         .setTitle("Fake title")
@@ -137,6 +196,55 @@ public class WallpaperDescriptionTest {
     }
 
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_WALLPAPER_DESCRIPTION_SET_COMPONENT)
+    public void toBuilder_succeeds_legacy() {
+        final String sourceId = "sourceId";
+        final Uri thumbnail = Uri.parse("http://www.bogus.com/thumbnail");
+        final List<CharSequence> description = List.of("line1", "line2");
+        final Uri contextUri = Uri.parse("http://www.bogus.com/contextUri");
+        final PersistableBundle content = makeDefaultContent();
+        final String destinationId = "destinationId";
+        WallpaperDescription source =
+                new WallpaperDescription.Builder()
+                        .setId(sourceId)
+                        .setThumbnail(thumbnail)
+                        .setTitle("Fake title")
+                        .setDescription(description)
+                        .setContextUri(contextUri)
+                        .setContextDescription("Context description")
+                        .setContent(content)
+                        .build();
+
+        WallpaperDescription destination = source.toBuilder().setId(destinationId).build();
+
+        assertThat(destination.getComponent()).isEqualTo(source.getComponent());
+        assertThat(destination.getId()).isEqualTo(destinationId);
+        assertThat(destination.getThumbnail()).isEqualTo(source.getThumbnail());
+        assertWithMessage("title mismatch")
+                .that(CharSequence.compare(destination.getTitle(), source.getTitle()))
+                .isEqualTo(0);
+        assertThat(destination.getDescription()).hasSize(source.getDescription().size());
+        for (int i = 0; i < destination.getDescription().size(); i++) {
+            CharSequence strDest = destination.getDescription().get(i);
+            CharSequence strSrc = source.getDescription().get(i);
+            assertWithMessage("description string mismatch")
+                    .that(CharSequence.compare(strDest, strSrc))
+                    .isEqualTo(0);
+        }
+        assertThat(destination.getContextUri()).isEqualTo(source.getContextUri());
+        assertWithMessage("context description mismatch")
+                .that(
+                        CharSequence.compare(
+                                destination.getContextDescription(),
+                                source.getContextDescription()))
+                .isEqualTo(0);
+        assertThat(destination.getContent()).isNotNull();
+        assertThat(destination.getContent().getString("ckey"))
+                .isEqualTo(source.getContent().getString("ckey"));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_WALLPAPER_DESCRIPTION_SET_COMPONENT)
     public void toBuilder_succeeds() {
         final String sourceId = "sourceId";
         final Uri thumbnail = Uri.parse("http://www.bogus.com/thumbnail");
@@ -146,6 +254,7 @@ public class WallpaperDescriptionTest {
         final String destinationId = "destinationId";
         WallpaperDescription source =
                 new WallpaperDescription.Builder()
+                        .setComponent(mTestComponent)
                         .setId(sourceId)
                         .setThumbnail(thumbnail)
                         .setTitle("Fake title")
