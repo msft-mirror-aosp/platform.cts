@@ -83,6 +83,7 @@ android_test {
         "hwui_flags_java_lib",
         "ui-trace-collector",
         "collector-device-lib",
+        "lights_flags_lib",
     ],
     jni_libs: [
         "libctshardware_jni",
