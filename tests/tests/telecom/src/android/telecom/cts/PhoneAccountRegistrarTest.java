@@ -741,6 +741,9 @@ public class PhoneAccountRegistrarTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testPhoneAccountGroup() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
         PhoneAccountHandle existingDefault = null;
         TelecomManager tm = mContext.getSystemService(TelecomManager.class);
         try {
