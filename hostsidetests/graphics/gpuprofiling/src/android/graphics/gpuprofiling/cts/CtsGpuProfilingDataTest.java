@@ -110,6 +110,7 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
     private static final String FEATURE_WATCH = "android.hardware.type.watch";
     private static final String FEATURE_TELEVISION = "android.hardware.type.television";
     private static final String SUCCESS = "SUCCESS";
+    private static final String RAYTRACING_SUPPORT_EVENT = "CtsTestDeviceRayTracingSupport";
 
     private String initialDebugPropertyValue = null;
     private boolean mHasGpuCountersCapability = false;
@@ -211,6 +212,7 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
         boolean stagesSourceFound = false;
         Set<Integer> counterIds = null;
         Set<Integer> defaultCounterIds = null;
+        List<GpuCounterSpec> gpuCounterSpecsList = null;
 
         CommandResult queryStatus =
                 getDevice().executeShellV2Command("perfetto --query-raw | base64");
@@ -229,8 +231,7 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                                 + COUNTERS_SOURCE_NAME
                                 + ")",
                         descriptor.hasGpuCounterDescriptor());
-                List<GpuCounterSpec> gpuCounterSpecsList =
-                        descriptor.getGpuCounterDescriptor().getSpecsList();
+                gpuCounterSpecsList = descriptor.getGpuCounterDescriptor().getSpecsList();
                 for (GpuCounterSpec spec : gpuCounterSpecsList) {
                     errorCollector.checkThat(
                             "GpuCounterDescriptor must have a non-empty name. GPU counter id is"
@@ -246,9 +247,6 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                                     + "].",
                             spec.hasDescription() && !spec.getDescription().isEmpty(),
                             is(true));
-                }
-                if (getProperty(GPU_COUNTERS_GROUPS_PROPERTY)) {
-                    checkRequiredGroupsPresent(errorCollector, gpuCounterSpecsList);
                 }
 
                 List<Integer> counterIdsList =
@@ -308,6 +306,7 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
         }
 
         List<TracePacket> packetList = trace.getPacketList();
+
         foundValidGpuCounterEvent = containsValidGpuCounterEvent(packetList);
         foundAllDefaultCounters = containsAllCountersFromSet(packetList, defaultCounterIds);
         foundGpuFrequencyEvent = containsGpuFrequencyEvent(packetList);
@@ -349,6 +348,10 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                     "Trace failed to report one of the default GPU counter values.",
                     foundAllDefaultCounters,
                     is(true));
+            if (getProperty(GPU_COUNTERS_GROUPS_PROPERTY)) {
+                checkRequiredGroupsPresent(
+                        errorCollector, gpuCounterSpecsList, trace.getPacketList());
+            }
         }
 
         errorCollector.checkThat(
@@ -468,7 +471,9 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
     }
 
     private void checkRequiredGroupsPresent(
-            ErrorCollector errorCollector, List<GpuCounterSpec> gpuCounterSpecsList) {
+            ErrorCollector errorCollector,
+            List<GpuCounterSpec> gpuCounterSpecsList,
+            List<TracePacket> packetList) {
         Set<GpuCounterGroup> requiredGroups =
                 new HashSet<>(
                         Arrays.asList(
@@ -477,6 +482,9 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                                 GpuCounterGroup.MEMORY,
                                 GpuCounterGroup.PRIMITIVES,
                                 GpuCounterGroup.VERTICES));
+        if (deviceSupportsRayTracing(packetList)) {
+            requiredGroups.add(GpuCounterGroup.RAY_TRACING);
+        }
         Set<GpuCounterGroup> foundGroups = new HashSet<>();
         for (GpuCounterSpec spec : gpuCounterSpecsList) {
             foundGroups.addAll(spec.getGroupsList());
@@ -488,6 +496,24 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                         + requiredGroups,
                 foundGroups.containsAll(requiredGroups),
                 is(true));
+    }
+
+    private static boolean deviceSupportsRayTracing(List<TracePacket> packetList) {
+        for (TracePacket packet : packetList) {
+            if (!packet.hasFtraceEvents()) continue;
+
+            FtraceEventBundle eventBundle = packet.getFtraceEvents();
+            for (FtraceEvent event : eventBundle.getEventList()) {
+                if (!event.hasPrint()) continue;
+
+                String ftraceBuf = event.getPrint().getBuf();
+                if (ftraceBuf.contains(RAYTRACING_SUPPORT_EVENT)) {
+                    return ftraceBuf.endsWith("1");
+                }
+            }
+        }
+        Assert.fail("No raytracing status in trace! This is a native integration issue; aborting.");
+        return false;
     }
 
     private void captureTrace(File configFile) throws Exception {
@@ -524,7 +550,8 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                 .getConfigBuilder()
                 .setName(FTRACE_SOURCE_NAME)
                 .getFtraceConfigBuilder()
-                .addFtraceEvents(GPU_FREQ_FTRACE);
+                .addFtraceEvents(GPU_FREQ_FTRACE)
+                .addAtraceApps(APP);
         config.addDataSourcesBuilder().getConfigBuilder().setName(STAGES_SOURCE_NAME);
         return config.build();
     }

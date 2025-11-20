@@ -15,6 +15,7 @@
  */
 
 #include <android/native_window_jni.h>
+#include <android/trace.h>
 #include <android_native_app_glue.h>
 
 #include <chrono>
@@ -83,6 +84,10 @@ void android_main(struct android_app *app) {
             // High GPU usage period
             if (trianglesCount == 1) {
                 trianglesCount = 30;
+                // Since we don't know when the trace capture starts, report
+                // the raytracing support status every once in a while.
+                ATrace_setCounter("CtsTestDeviceRayTracingSupport",
+                                  appState.renderer.supportsRaytracing);
             }
             if (frame % 5 == 0) {
                 std::chrono::duration<double, std::milli> lastFrameTimeMs =
