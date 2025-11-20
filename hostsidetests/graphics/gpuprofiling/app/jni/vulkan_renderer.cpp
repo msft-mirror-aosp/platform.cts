@@ -182,6 +182,8 @@ void VulkanRenderer::init() {
     createCommandPool();
     createCommandBuffer();
     createSyncObjects();
+    supportsRaytracing = hasDeviceExtensionSupport(physicalDevice, rayTracingPipelineExtensions) ||
+            hasDeviceExtensionSupport(physicalDevice, rayQueryExtensions);
     initialized = true;
 }
 
