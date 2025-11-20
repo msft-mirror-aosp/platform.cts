@@ -18,6 +18,8 @@ package android.view.cts.surfacevalidator;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static android.view.WindowInsets.Type.systemBars;
+
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -26,6 +28,7 @@ import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.Insets;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.Environment;
@@ -39,6 +42,7 @@ import android.view.SurfaceControl;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsAnimation;
 import android.view.WindowManager;
@@ -154,7 +158,6 @@ public class ASurfaceControlTestActivity extends Activity {
 
     public void createSurface(SurfaceHolderCallback surfaceHolderCallback) {
         awaitReadyState();
-
         mHandler.post(() -> {
             mSurfaceView.getHolder().addCallback(surfaceHolderCallback);
             mParent.addView(mSurfaceView, mLayoutParams);
@@ -171,8 +174,9 @@ public class ASurfaceControlTestActivity extends Activity {
 
         final CountDownLatch countDownLatch = new CountDownLatch(1);
         UiAutomation uiAutomation = mInstrumentation.getUiAutomation();
+        Window window = getWindow();
         mHandler.post(() -> {
-            mScreenshot = uiAutomation.takeScreenshot(getWindow());
+            mScreenshot = uiAutomation.takeScreenshot(window);
             mParent.removeAllViews();
             countDownLatch.countDown();
         });
@@ -187,13 +191,12 @@ public class ASurfaceControlTestActivity extends Activity {
         Bitmap swBitmap = mScreenshot.copy(Bitmap.Config.ARGB_8888, false);
         mScreenshot.recycle();
 
-        int numMatchingPixels = pixelChecker.getNumMatchingPixels(swBitmap);
+        int numMatchingPixels = pixelChecker.getNumMatchingPixels(swBitmap, window);
 
         int checkedPixels = 0;
         for (Rect bounds : pixelChecker.getBoundsToCheck(swBitmap)) {
             checkedPixels += bounds.width() * bounds.height();
         }
-
         boolean success = pixelChecker.checkPixels(numMatchingPixels, swBitmap.getWidth(),
                 swBitmap.getHeight());
         if (!success) {
@@ -267,13 +270,16 @@ public class ASurfaceControlTestActivity extends Activity {
             mLogWhenNoMatch = logWhenNoMatch;
         }
 
-        int getNumMatchingPixels(Bitmap bitmap) {
+        int getNumMatchingPixels(Bitmap bitmap, Window window) {
             int numMatchingPixels = 0;
             int numErrorsLogged = 0;
+            Insets insets = window.getDecorView().getRootWindowInsets().getInsets(systemBars());
+            int offsetX = OFFSET_X + insets.left;
+            int offsetY = OFFSET_Y + insets.top;
             for (Rect boundsToCheck : getBoundsToCheck(bitmap)) {
                 for (int x = boundsToCheck.left; x < boundsToCheck.right; x++) {
                     for (int y = boundsToCheck.top; y < boundsToCheck.bottom; y++) {
-                        int color = bitmap.getPixel(x + OFFSET_X, y + OFFSET_Y);
+                        int color = bitmap.getPixel(x + offsetX, y + offsetY);
                         if (getExpectedColor(x, y).matchesColor(color)) {
                             numMatchingPixels++;
                         } else if (DEBUG && mLogWhenNoMatch && numErrorsLogged < 100) {
@@ -294,7 +300,6 @@ public class ASurfaceControlTestActivity extends Activity {
         }
 
         public abstract boolean checkPixels(int matchingPixelCount, int width, int height);
-
         public List<Rect> getBoundsToCheck(Bitmap bitmap) {
             return List.of(new Rect(1, 1, DEFAULT_LAYOUT_WIDTH - 1, DEFAULT_LAYOUT_HEIGHT - 1));
         }
