@@ -383,14 +383,6 @@
         <activity android:name="android.security.cts.BUG_406243581.EmptyActivity"
              android:exported="true" />
 
-        <private-compute>
-            <service android:name="android.security.cts.PccService"
-            android:exported="true">
-                <intent-filter>
-                <action android:name="android.security.cts.PccProcessTest" />
-                </intent-filter>
-            </service>
-        </private-compute>
     </application>
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
          android:targetPackage="android.security.cts"

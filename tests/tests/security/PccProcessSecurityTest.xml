@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2025 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<configuration description="Config for CTS PccSecurityTestCases">
+    <option name="test-suite-tag" value="cts" />
+    <option name="config-descriptor:metadata" key="component" value="security" />
+    <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
+    <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
+    <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
+    <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
+        <option name="cleanup-apks" value="true" />
+        <option name="test-file-name" value="CtsPccSecurityTestCases.apk" />
+    </target_preparer>
+    <object type="module_controller"
+        class="com.android.tradefed.testtype.suite.module.CommandSuccessModuleController">
+        <!--Skip the test if enable_pcc_framework_support is disabled - we can remove this
+            once XTS tests work with AFlagsTargetPreparer -->
+        <option name="run-command"
+            value="aflags list | grep 'android.app.privatecompute.flags.enable_pcc_framework_support' | awk '{print $2}' | grep 'enabled'" />
+    </object>
+    <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
+        <option name="package" value="android.security.cts.pcc" />
+        <option name="runner" value="androidx.test.runner.AndroidJUnitRunner" />
+        <option name="class" value="android.security.cts.pcc.PccProcessSecurityTest" />
+        <option name="instrument-in-pcc" value="true" />
+    </test>
+</configuration>
