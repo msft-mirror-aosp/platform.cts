@@ -124,6 +124,10 @@ public class BluetoothVolumeControlTest {
 
     @Test
     public void getConnectedDevices() {
+        Permissions.enforceEachPermissions(
+                () -> mService.getConnectedDevices(),
+                List.of(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED));
+
         assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
 
         // Verify returns empty list if bluetooth is not enabled
