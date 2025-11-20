@@ -91,6 +91,8 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
     private static final String FTRACE_SOURCE_NAME = "linux.ftrace";
     private static final String GPU_FREQ_FTRACE = "power/gpu_frequency";
     private static final String PROFILING_PROPERTY = "graphics.gpu.profiler.support";
+    private static final String GPU_FREQUENCY_CAPABILITY_PROPERTY =
+            "graphics.gpu.profiler.support.gpu_frequency";
     private static final String GPU_COUNTERS_CAPABILITY_PROPERTY =
             "graphics.gpu.profiler.support.gpu_counters";
     private static final String GPU_COUNTERS_GROUPS_PROPERTY =
@@ -354,8 +356,12 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
             }
         }
 
-        errorCollector.checkThat(
-                "Trace does not contain valid GPU frequency.", foundGpuFrequencyEvent, is(true));
+        if (getProperty(GPU_FREQUENCY_CAPABILITY_PROPERTY)) {
+            errorCollector.checkThat(
+                    "Trace does not contain valid GPU frequency.",
+                    foundGpuFrequencyEvent,
+                    is(true));
+        }
         errorCollector.checkThat(
                 "Trace does not contain valid GPU render stages.",
                 foundValidGpuRenderStageEvent,
