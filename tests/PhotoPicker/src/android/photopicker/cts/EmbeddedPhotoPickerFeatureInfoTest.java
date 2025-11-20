@@ -309,6 +309,22 @@ public class EmbeddedPhotoPickerFeatureInfoTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PICKER_LOCATION_METADATA_API)
+    public void testSetRequestLocationMetadata() {
+        // Suppress location metadata tests for wearables since the APIs aren't supported on
+        // wear devices
+        Assume.assumeTrue(isHardwareSupported());
+        final EmbeddedPhotoPickerFeatureInfo info =
+                new EmbeddedPhotoPickerFeatureInfo.Builder()
+                        .setRequestLocationMetadata(true)
+                        .build();
+
+        assertWithMessage("Expected highlight media query should be equal to input query")
+                .that(info.isLocationMetadataRequested())
+                .isTrue();
+    }
+
+    @Test
     public void testSetAccentColor_default() {
         final EmbeddedPhotoPickerFeatureInfo info =
                 new EmbeddedPhotoPickerFeatureInfo.Builder().build();
