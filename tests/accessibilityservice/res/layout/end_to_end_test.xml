@@ -143,6 +143,11 @@
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content">
             </android.accessibilityservice.cts.utils.ProviderCustomView>
+
+            <View android:id="@+id/mathView"
+                  android:layout_width="fill_parent"
+                  android:layout_height="wrap_content">
+            </View>
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

@@ -2950,6 +2950,44 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         assertThat(extraRenderingInfo.getAlpha()).isWithin(0.001f).of(0.5f);;
     }
 
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityNodeInfo#setStructuredDataInfo",
+                "android.view.accessibility.AccessibilityNodeInfo#getStructuredDataInfo",
+                "android.view.accessibility.AccessibilityNodeInfo#MathInfo",
+            })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_A11Y_MATH_API)
+    public void testMathInfo() {
+        AccessibilityNodeInfo.MathInfo mathInfo =
+                new AccessibilityNodeInfo.MathInfo(
+                        AccessibilityNodeInfo.MathInfo.MATH_TAG_FRACTION);
+        mathInfo.putAttribute(AccessibilityNodeInfo.MathInfo.MATH_ATTRIBUTE_INTENT, "division");
+
+        final View mathView = mActivity.findViewById(R.id.mathView);
+
+        mathView.setAccessibilityDelegate(
+                new View.AccessibilityDelegate() {
+                    @Override
+                    public void onInitializeAccessibilityNodeInfo(
+                            View host, AccessibilityNodeInfo info) {
+                        super.onInitializeAccessibilityNodeInfo(host, info);
+                        info.setStructuredDataInfo(mathInfo);
+                    }
+                });
+
+        AccessibilityNodeInfo foundInfo =
+                sUiAutomation
+                        .getRootInActiveWindow()
+                        .findAccessibilityNodeInfosByViewId(
+                                mActivity.getResources().getResourceName(R.id.mathView))
+                        .get(0);
+        AccessibilityNodeInfo.MathInfo foundMathInfo =
+                (AccessibilityNodeInfo.MathInfo) foundInfo.getStructuredDataInfo();
+
+        assertThat(foundMathInfo).isEqualTo(mathInfo);
+    }
+
     private static class LabelNodeProviderTest extends AccessibilityNodeProvider {
         static final int LABELED_ID = 1;
         static final int LABEL_ONE_ID = 2;
