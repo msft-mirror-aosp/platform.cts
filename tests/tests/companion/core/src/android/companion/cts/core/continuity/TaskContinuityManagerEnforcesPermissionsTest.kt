@@ -49,14 +49,14 @@ class TaskContinuityManagerEnforcesPermissionsTest : CoreTestBase() {
     @ApiTest(
         apis =
             [
-                "android.companion.datatransfer.continuity.TaskContinuityManager#enableHandoffForDevice"
+                "android.companion.datatransfer.continuity.TaskContinuityManager#setHandoffForDeviceEnabled"
             ]
     )
     @Test
-    fun testEnableHandoffForDevice_failsWithoutPermission() {
+    fun testSetHandoffForDeviceEnabled_failsWithoutPermission() {
         val taskContinuityManager = context.getSystemService(TaskContinuityManager::class.java)!!
         assertFailsWith(SecurityException::class) {
-            taskContinuityManager.enableHandoffForDevice(true)
+            taskContinuityManager.setHandoffForDeviceEnabled(true)
         }
     }
 
