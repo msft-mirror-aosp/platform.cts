@@ -24,6 +24,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.os.PersistableBundle;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.AccessNetworkConstants;
@@ -36,13 +37,17 @@ import android.telephony.SignalThresholdInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyCallback;
 import android.telephony.mockmodem.MockModemConfigBase;
+import android.telephony.satellite.PlmnSatelliteConfig;
 import android.telephony.satellite.SatelliteManager;
+
+import com.android.internal.telephony.flags.Flags;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -52,8 +57,10 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatelliteTestBase {
     @Rule
@@ -723,6 +730,52 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             // when device is connected to NTN
             int wfcRoamingMode = imsMmTelManager.getVoWiFiRoamingModeSetting();
             assertEquals(ImsMmTelManager.WIFI_MODE_WIFI_PREFERRED, wfcRoamingMode);
+        } finally {
+            sTelephonyManager.unregisterTelephonyCallback(listener);
+            dropShellIdentity();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_26Q2_APIS)
+    public void testGetPlmnSatelliteConfig() {
+        logd("testGetPlmnSatelliteConfig");
+        if (!shouldTestSatelliteWithMockService()) return;
+
+        int subId = SubscriptionManager.getSubscriptionId(SLOT_ID_0);
+
+        CarrierRoamingNtnListenerTest listener = new CarrierRoamingNtnListenerTest();
+        listener.clearModeChanges();
+
+        adoptShellIdentity();
+        sTelephonyManager.registerTelephonyCallback(getContext().getMainExecutor(), listener);
+        try {
+            // Get NTN available services immediately after registering
+            assertTrue(listener.waitForNtnAvailableServicesChanged(1));
+            listener.clearModeChanges();
+
+            PersistableBundle bundle = new PersistableBundle();
+            PersistableBundle plmnBundle = new PersistableBundle();
+            int[] intArray1 = {3, 5};
+            Set<Integer> setIntArray1 =
+                    Arrays.stream(intArray1).boxed().collect(Collectors.toSet());
+            int[] intArray2 = {3};
+            Set<Integer> setIntArray2 =
+                    Arrays.stream(intArray2).boxed().collect(Collectors.toSet());
+            plmnBundle.putIntArray("123411", intArray1);
+            plmnBundle.putIntArray("123412", intArray2);
+            bundle.putPersistableBundle(
+                    CarrierConfigManager
+                            .KEY_CARRIER_SUPPORTED_SATELLITE_SERVICES_PER_PROVIDER_BUNDLE,
+                    plmnBundle);
+            overrideCarrierConfig(subId, bundle);
+
+            assertTrue(listener.waitForNtnAvailableServicesChanged(1));
+
+            PlmnSatelliteConfig config = sSatelliteManager.getPlmnSatelliteConfig(subId, "123411");
+            Assert.assertEquals(setIntArray1, config.getSupportedServices());
+            config = sSatelliteManager.getPlmnSatelliteConfig(subId, "123412");
+            Assert.assertEquals(setIntArray2, config.getSupportedServices());
         } finally {
             sTelephonyManager.unregisterTelephonyCallback(listener);
             dropShellIdentity();
