@@ -184,7 +184,7 @@ public class BluetoothAdapterTest {
         assertThrows(SecurityException.class, () -> mAdapter.getAddress());
 
         String address;
-        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT)) {
+        try (var p = Permissions.with(BLUETOOTH_CONNECT)) {
             address = mAdapter.getAddress();
         }
 
@@ -206,7 +206,7 @@ public class BluetoothAdapterTest {
         BroadcastReceiver mockReceiver = mock(BroadcastReceiver.class);
         mContext.registerReceiver(mockReceiver, filter);
 
-        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT)) {
+        try (var p = Permissions.with(BLUETOOTH_CONNECT)) {
             String originalName = mAdapter.getName();
             assertThat(originalName).isNotNull();
 
@@ -236,7 +236,7 @@ public class BluetoothAdapterTest {
 
         assertThrows(SecurityException.class, () -> mAdapter.getBondedDevices());
 
-        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT)) {
+        try (var p = Permissions.with(BLUETOOTH_CONNECT)) {
             assertThat(mAdapter.getBondedDevices()).isNotNull();
         }
 
@@ -248,12 +248,12 @@ public class BluetoothAdapterTest {
     public void getProfileConnectionState() {
         assumeTrue(mHasBluetooth);
 
-        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT)) {
+        try (var p = Permissions.with(BLUETOOTH_CONNECT)) {
             assertThat(mAdapter.getProfileConnectionState(BluetoothProfile.A2DP))
                     .isEqualTo(BluetoothAdapter.STATE_DISCONNECTED);
         }
         assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
-        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT)) {
+        try (var p = Permissions.with(BLUETOOTH_CONNECT)) {
             assertThat(mAdapter.getProfileConnectionState(BluetoothProfile.A2DP))
                     .isEqualTo(BluetoothAdapter.STATE_DISCONNECTED);
         }
@@ -351,7 +351,7 @@ public class BluetoothAdapterTest {
 
         assertThrows(SecurityException.class, () -> mAdapter.isLeCocSocketOffloadSupported());
 
-        try (var p = Permissions.withPermissions(BLUETOOTH_PRIVILEGED)) {
+        try (var p = Permissions.with(BLUETOOTH_PRIVILEGED)) {
             assertThat(mAdapter.isLeCocSocketOffloadSupported()).isAnyOf(true, false);
         }
     }
@@ -362,7 +362,7 @@ public class BluetoothAdapterTest {
 
         assertThrows(SecurityException.class, () -> mAdapter.isRfcommSocketOffloadSupported());
 
-        try (var p = Permissions.withPermissions(BLUETOOTH_PRIVILEGED)) {
+        try (var p = Permissions.with(BLUETOOTH_PRIVILEGED)) {
             assertThat(mAdapter.isRfcommSocketOffloadSupported()).isAnyOf(true, false);
         }
     }
@@ -371,7 +371,7 @@ public class BluetoothAdapterTest {
     public void isDistanceMeasurementSupported() throws IOException {
         assumeTrue(mHasBluetooth);
 
-        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
+        try (var p = Permissions.with(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
             assertThat(mAdapter.isDistanceMeasurementSupported())
                     .isNotEqualTo(BluetoothStatusCodes.ERROR_UNKNOWN);
         }
@@ -391,7 +391,7 @@ public class BluetoothAdapterTest {
         assumeTrue(mHasBluetooth);
         assertThrows(SecurityException.class, () -> mAdapter.getMaxConnectedAudioDevices());
 
-        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT)) {
+        try (var p = Permissions.with(BLUETOOTH_CONNECT)) {
             // Range defined in com.android.bluetooth.btservice.AdapterProperties
             assertThat(mAdapter.getMaxConnectedAudioDevices()).isIn(Range.closed(1, 5));
         }
@@ -402,7 +402,7 @@ public class BluetoothAdapterTest {
         assumeTrue(mHasBluetooth);
 
         BluetoothServerSocket socket;
-        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT)) {
+        try (var p = Permissions.with(BLUETOOTH_CONNECT)) {
             socket = mAdapter.listenUsingRfcommWithServiceRecord("test", UUID.randomUUID());
         }
         assertThat(socket).isNotNull();
@@ -422,10 +422,10 @@ public class BluetoothAdapterTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> mAdapter.setDiscoverableTimeout(Duration.ofDays(25000)));
-        Permissions.enforceEachPermissions(
-                () -> mAdapter.setDiscoverableTimeout(minutes),
-                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_SCAN));
-        try (var p = Permissions.withPermissions(BLUETOOTH_SCAN, BLUETOOTH_PRIVILEGED)) {
+        Permissions.enforce(
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_SCAN),
+                () -> mAdapter.setDiscoverableTimeout(minutes));
+        try (var p = Permissions.with(BLUETOOTH_SCAN, BLUETOOTH_PRIVILEGED)) {
             assertThat(mAdapter.setDiscoverableTimeout(minutes))
                     .isEqualTo(BluetoothStatusCodes.SUCCESS);
             assertThat(mAdapter.getDiscoverableTimeout()).isEqualTo(minutes);
@@ -461,9 +461,10 @@ public class BluetoothAdapterTest {
     public void getUuids() {
         assumeTrue(mHasBluetooth);
 
+        Permissions.enforce(BLUETOOTH_CONNECT, mAdapter::getUuidsList);
         assertThrows(SecurityException.class, () -> mAdapter.getUuidsList());
 
-        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT)) {
+        try (var p = Permissions.with(BLUETOOTH_CONNECT)) {
             assertThat(mAdapter.getUuidsList()).isNotNull();
         }
 
@@ -513,7 +514,7 @@ public class BluetoothAdapterTest {
         callback.onDeviceConnected(null);
         callback.onDeviceDisconnected(null, BluetoothStatusCodes.ERROR_UNKNOWN);
 
-        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
+        try (var p = Permissions.with(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
             assertThat(mAdapter.registerBluetoothConnectionCallback(executor, callback)).isTrue();
             assertThat(mAdapter.unregisterBluetoothConnectionCallback(callback)).isTrue();
         }
@@ -551,8 +552,8 @@ public class BluetoothAdapterTest {
     public void clearBluetooth() {
         assumeTrue(mHasBluetooth);
 
-        Permissions.enforceEachPermissions(
-                () -> mAdapter.clearBluetooth(), List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
+        Permissions.enforce(
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT), () -> mAdapter.clearBluetooth());
 
         assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
         // Verify throws RuntimeException when trying to save sysprop for later (permission denied)
@@ -620,7 +621,7 @@ public class BluetoothAdapterTest {
         assertThrows(SecurityException.class, () -> mAdapter.isAutoOnEnabled());
         assertThrows(SecurityException.class, () -> mAdapter.setAutoOnEnabled(false));
 
-        try (var p = Permissions.withPermissions(BLUETOOTH_PRIVILEGED)) {
+        try (var p = Permissions.with(BLUETOOTH_PRIVILEGED)) {
             // Not all devices support the auto on feature
             assumeTrue(mAdapter.isAutoOnSupported());
 
@@ -641,7 +642,7 @@ public class BluetoothAdapterTest {
                 () -> mAdapter.setBluetoothHciSnoopLoggingMode(BT_SNOOP_LOG_MODE_FULL));
         assertThrows(SecurityException.class, () -> mAdapter.getBluetoothHciSnoopLoggingMode());
 
-        try (var p = Permissions.withPermissions(BLUETOOTH_PRIVILEGED)) {
+        try (var p = Permissions.with(BLUETOOTH_PRIVILEGED)) {
             assertThrows(
                     IllegalArgumentException.class,
                     () -> mAdapter.setBluetoothHciSnoopLoggingMode(-1));
@@ -703,14 +704,14 @@ public class BluetoothAdapterTest {
                 NullPointerException.class,
                 () -> mAdapter.setPreferredAudioProfiles(null, preferences));
 
-        Permissions.enforceEachPermissions(
-                () -> mAdapter.getPreferredAudioProfiles(device),
-                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
-        Permissions.enforceEachPermissions(
-                () -> mAdapter.setPreferredAudioProfiles(device, preferences),
-                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
+        Permissions.enforce(
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT),
+                () -> mAdapter.getPreferredAudioProfiles(device));
+        Permissions.enforce(
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT),
+                () -> mAdapter.setPreferredAudioProfiles(device, preferences));
         // Check what happens when the device is not bonded
-        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
+        try (var p = Permissions.with(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
             assertThat(mAdapter.getPreferredAudioProfiles(device).isEmpty()).isTrue();
             assertThat(mAdapter.setPreferredAudioProfiles(device, preferences))
                     .isEqualTo(BluetoothStatusCodes.ERROR_DEVICE_NOT_BONDED);
@@ -735,14 +736,14 @@ public class BluetoothAdapterTest {
                 NullPointerException.class,
                 () -> mAdapter.unregisterPreferredAudioProfilesChangedCallback(null));
 
-        Permissions.enforceEachPermissions(
-                () -> mAdapter.registerPreferredAudioProfilesChangedCallback(executor, callback),
-                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
+        Permissions.enforce(
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT),
+                () -> mAdapter.registerPreferredAudioProfilesChangedCallback(executor, callback));
         assertThrows(
                 IllegalArgumentException.class,
                 () -> mAdapter.unregisterPreferredAudioProfilesChangedCallback(callback));
 
-        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
+        try (var p = Permissions.with(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
             if (SystemProperties.getBoolean(ENABLE_DUAL_MODE_AUDIO, false)) {
                 assertThat(
                                 mAdapter.registerPreferredAudioProfilesChangedCallback(
@@ -796,14 +797,14 @@ public class BluetoothAdapterTest {
                 NullPointerException.class,
                 () -> mAdapter.unregisterBluetoothQualityReportReadyCallback(null));
 
-        Permissions.enforceEachPermissions(
-                () -> mAdapter.registerBluetoothQualityReportReadyCallback(executor, callback),
-                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
+        Permissions.enforce(
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT),
+                () -> mAdapter.registerBluetoothQualityReportReadyCallback(executor, callback));
         assertThrows(
                 IllegalArgumentException.class,
                 () -> mAdapter.unregisterBluetoothQualityReportReadyCallback(callback));
 
-        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
+        try (var p = Permissions.with(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
             assertThat(mAdapter.registerBluetoothQualityReportReadyCallback(executor, callback))
                     .isEqualTo(BluetoothStatusCodes.SUCCESS);
             assertThat(mAdapter.unregisterBluetoothQualityReportReadyCallback(callback))
@@ -858,7 +859,7 @@ public class BluetoothAdapterTest {
 
         assertThrows(SecurityException.class, () -> mAdapter.getSupportedGattOffloadCapabilities());
 
-        try (var p = Permissions.withPermissions(BLUETOOTH_PRIVILEGED)) {
+        try (var p = Permissions.with(BLUETOOTH_PRIVILEGED)) {
             assertThat(mAdapter.getSupportedGattOffloadCapabilities()).isNotNull();
             assertThat(mAdapter.getSupportedGattOffloadCapabilities().isClientOffloadSupported())
                     .isAnyOf(true, false);
