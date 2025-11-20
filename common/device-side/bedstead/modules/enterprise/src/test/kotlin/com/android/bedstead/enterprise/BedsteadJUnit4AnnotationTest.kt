@@ -305,12 +305,17 @@ class BedsteadJUnit4AnnotationTest {
     fun canSetPolicyTest_scopeAndPolicy_throws() {
         val policy = AppliedByDeviceOwnerOrProfileOwnerAppliesToOwnUserPolicy::class.java
 
-        assertThrows(IllegalStateException::class.java) {
-            BedsteadJUnit4.getParameterizedAnnotations(
-                arrayOf(canSetPolicyTest(policy = arrayOf(policy), scope = POLICY_SCOPE_USER)),
-                /* classAnnotations= */ listOf(),
-            )
-        }
+        val exception =
+            assertThrows(IllegalStateException::class.java) {
+                BedsteadJUnit4.getParameterizedAnnotations(
+                    arrayOf(canSetPolicyTest(policy = arrayOf(policy), scope = POLICY_SCOPE_USER)),
+                    /* classAnnotations= */ listOf(),
+                )
+            }
+
+        assertThat(exception)
+            .hasMessageThat()
+            .contains("Exactly 1 of policy/policyUnion/policyIntersection/scope must be set")
     }
 
     @Test
@@ -417,6 +422,121 @@ class BedsteadJUnit4AnnotationTest {
                 /* classAnnotations= */ listOf(),
             )
         }
+    }
+
+    @Test
+    fun cannotSetPolicyTest_missingUsesEnterprisePoliciesAnnotationOnParentClass_throws() {
+        val error =
+            assertThrows(IllegalStateException::class.java) {
+                BedsteadJUnit4.getParameterizedAnnotations(
+                    arrayOf(cannotSetPolicyTest(scope = POLICY_SCOPE_USER)),
+                    /* classAnnotations= */ listOf(),
+                )
+            }
+
+        assertThat(error)
+            .hasMessageThat()
+            .contains(
+                "UsesEnterprisePolicies annotation must be present on the parent class if scope is used"
+            )
+    }
+
+    @Test
+    fun cannotSetPolicyTest_scopeUser_returnsParameterizedAnnotations() {
+        val parameterizedAnnotations =
+            BedsteadJUnit4.getParameterizedAnnotations(
+                arrayOf(cannotSetPolicyTest(scope = POLICY_SCOPE_USER)),
+                /* classAnnotations= */ listOf(
+                    usesEnterprisePolicies(
+                        scopeUser = AppliedBySystemDeviceOwner::class.java,
+                        scopeDevice = AppliedByFinancedDeviceOwner::class.java,
+                        scopeParentUser = AppliedByOrganizationOwnedProfileOwnerProfile::class.java,
+                    )
+                ),
+            )
+
+        // It would be unmaintainable to check for all possible test cases here, so we check that
+        // there are some annotations and that the one of the scope is not there.
+        assertThat(parameterizedAnnotations).isNotEmpty()
+        assertThat(parameterizedAnnotations).doesNotContain(includeRunOnSystemDeviceOwnerUser())
+    }
+
+    @Test
+    fun cannotSetPolicyTest_scopeDevice_returnsParameterizedAnnotations() {
+        val parameterizedAnnotations =
+            BedsteadJUnit4.getParameterizedAnnotations(
+                arrayOf(cannotSetPolicyTest(scope = POLICY_SCOPE_DEVICE)),
+                /* classAnnotations= */ listOf(
+                    usesEnterprisePolicies(
+                        scopeUser = AppliedBySystemDeviceOwner::class.java,
+                        scopeDevice = AppliedByFinancedDeviceOwner::class.java,
+                        scopeParentUser = AppliedByOrganizationOwnedProfileOwnerProfile::class.java,
+                    )
+                ),
+            )
+
+        // It would be unmaintainable to check for all possible test cases here, so we check that
+        // there are some annotations and that the one of the scope is not there.
+        assertThat(parameterizedAnnotations).isNotEmpty()
+        assertThat(parameterizedAnnotations).doesNotContain(includeRunOnFinancedDeviceOwnerUser())
+    }
+
+    @Test
+    fun cannotSetPolicyTest_scopeParentUser_returnsParameterizedAnnotations() {
+        val parameterizedAnnotations =
+            BedsteadJUnit4.getParameterizedAnnotations(
+                arrayOf(cannotSetPolicyTest(scope = POLICY_SCOPE_PARENT_USER)),
+                /* classAnnotations= */ listOf(
+                    usesEnterprisePolicies(
+                        scopeUser = AppliedBySystemDeviceOwner::class.java,
+                        scopeDevice = AppliedByFinancedDeviceOwner::class.java,
+                        scopeParentUser = AppliedByOrganizationOwnedProfileOwnerProfile::class.java,
+                    )
+                ),
+            )
+
+        // It would be unmaintainable to check for all possible test cases here, so we check that
+        // there are some annotations and that the one of the scope is not there.
+        assertThat(parameterizedAnnotations).isNotEmpty()
+        assertThat(parameterizedAnnotations)
+            .doesNotContain(includeRunOnOrganizationOwnedProfileOwner())
+    }
+
+    @Test
+    fun cannotSetPolicyTest_invalidScope_throws() {
+        val error =
+            assertThrows(IllegalStateException::class.java) {
+                BedsteadJUnit4.getParameterizedAnnotations(
+                    arrayOf(cannotSetPolicyTest(scope = 123)),
+                    /* classAnnotations= */ listOf(
+                        usesEnterprisePolicies(
+                            scopeUser = AppliedBySystemDeviceOwner::class.java,
+                            scopeDevice = AppliedByFinancedDeviceOwner::class.java,
+                            scopeParentUser =
+                                AppliedByOrganizationOwnedProfileOwnerProfile::class.java,
+                        )
+                    ),
+                )
+            }
+
+        assertThat(error).hasMessageThat().contains("Invalid scope 123")
+    }
+
+    @Test
+    fun cannotSetPolicyTest_scopeAndPolicy_throws() {
+        val policy = AppliedByDeviceOwnerOrProfileOwnerAppliesToOwnUserPolicy::class.java
+
+        val exception =
+            assertThrows(IllegalStateException::class.java) {
+                BedsteadJUnit4.getParameterizedAnnotations(
+                    arrayOf(
+                        cannotSetPolicyTest(policy = arrayOf(policy), scope = POLICY_SCOPE_USER)
+                    ),
+                    /* classAnnotations= */ listOf(),
+                )
+            }
+
+        assertThat(exception).hasMessageThat().contains("Exactly 1 of policy/scope must be set")
     }
 
     @Test
