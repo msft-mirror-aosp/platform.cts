@@ -41,16 +41,35 @@ class EnterpriseParameterizedTestGenerator : ParameterizedTestGenerator {
             is PolicyDoesNotApplyTest ->
                 Policy.policyDoesNotApplyStates(unionPolicies(annotation.policy))
 
-            is CannotSetPolicyTest ->
-                Policy.cannotSetPolicyStates(
-                    unionPolicies(annotation.policy),
-                    annotation.includeDeviceAdminStates,
-                    annotation.includeNonDeviceAdminStates,
-                )
-
+            is CannotSetPolicyTest -> annotation.logic(classAnnotations)
             is CanSetPolicyTest -> annotation.logic(classAnnotations)
             else -> emptyList()
         }
+
+    private fun CannotSetPolicyTest.logic(classAnnotations: List<Annotation>): List<Annotation> {
+        validate()
+
+        val enterprisePolicy =
+            if (policy.isNotEmpty()) {
+                unionPolicies(policy)
+            } else {
+                check(scope != 0) { "validate() should have rejected this annotation" }
+                getPolicyWithScope(classAnnotations, scope)
+            }
+
+        return Policy.cannotSetPolicyStates(
+            enterprisePolicy,
+            includeDeviceAdminStates,
+            includeNonDeviceAdminStates,
+        )
+    }
+
+    private fun CannotSetPolicyTest.validate() {
+        var numberOfUniquePolicySet = 0
+        if (policy.isNotEmpty()) numberOfUniquePolicySet++
+        if (scope != 0) numberOfUniquePolicySet++
+        check(numberOfUniquePolicySet == 1) { "Exactly 1 of policy/scope must be set" }
+    }
 
     private fun CanSetPolicyTest.logic(classAnnotations: List<Annotation>): List<Annotation> {
         validate()
