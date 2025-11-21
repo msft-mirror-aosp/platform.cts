@@ -136,7 +136,8 @@ public class DefaultCtsPrintHelper implements ICtsPrintHelper {
 
     @Override
     public boolean canSubmitJob() {
-        return mDevice.hasObject(By.res("com.android.printspooler:id/print_button"));
+        UiObject2 button = mDevice.findObject(By.res("com.android.printspooler:id/print_button"));
+        return button != null && button.isEnabled();
     }
 
     @Override
