@@ -23,7 +23,9 @@ java_defaults {
     ],
     static_libs: [
         "androidx.annotation_annotation",
+        "androidx.test.ext.junit",
         "androidx.test.rules",
+        "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "core-test-rules", // for libcore.dalvik.system.CloseGuardSupport
         "ravenwood-junit",
@@ -58,6 +60,9 @@ android_ravenwood_test {
         "cts_defaults",
         "CtsUtilTestCasesDefaults",
     ],
+    ravenizer: {
+        strip_mockito: true,
+    },
     build_resources: true,
     exclude_srcs: [
         "src/**/InstallUtilTest.java",
