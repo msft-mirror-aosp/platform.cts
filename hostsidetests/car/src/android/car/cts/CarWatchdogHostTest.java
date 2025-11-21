@@ -16,7 +16,6 @@
 
 package android.car.cts;
 
-import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.cts.statsdatom.lib.ConfigUtils;
@@ -116,13 +115,13 @@ public class CarWatchdogHostTest extends CarHostJUnit4TestCase {
     /**
      * The command to get I/O overuse foreground bytes threshold in the adb shell.
      */
-    private static final String GET_IO_OVERUSE_FOREGROUNG_BYTES_CMD =
+    private static final String GET_IO_OVERUSE_FOREGROUND_BYTES_CMD =
             "cmd car_service watchdog-io-get-3p-foreground-bytes";
 
     /**
      * The command to set I/O overuse foreground bytes threshold in the adb shell.
      */
-    private static final String SET_IO_OVERUSE_FOREGROUNG_BYTES_CMD =
+    private static final String SET_IO_OVERUSE_FOREGROUND_BYTES_CMD =
             "cmd car_service watchdog-io-set-3p-foreground-bytes";
 
     private static final String DEFINE_ENABLE_DISPLAY_POWER_POLICY_CMD =
@@ -139,7 +138,12 @@ public class CarWatchdogHostTest extends CarHostJUnit4TestCase {
     private static final String APPLY_DISABLE_DISPLAY_POWER_POLICY_CMD =
             "cmd car_service apply-power-policy cts_car_watchdog_disable_display";
 
-    private static final String REBOOT_CMD = "cmd car_service power-off --skip-garagemode --reboot";
+    private static final String WATCHDOG_SHUTDOWN_PREPARE_CMD =
+            "cmd car_service watchdog-inject-power-state shutdown-prepare";
+
+    private static final String WATCHDOG_SHUTDOWN_ENTER_CMD =
+            "cmd car_service watchdog-inject-power-state shutdown-enter";
+
     public static final String PRIORITIZE_APP_PERFORMANCE_TEXT =
             "'Prioritize app performance' app settings is used to determine whether or not app "
                     + "performance should be prioritized over system stability or long-term "
@@ -197,9 +201,10 @@ public class CarWatchdogHostTest extends CarHostJUnit4TestCase {
         ReportUtils.clearReports(getDevice());
         executeCommand(DEFINE_ENABLE_DISPLAY_POWER_POLICY_CMD);
         executeCommand(DEFINE_DISABLE_DISPLAY_POWER_POLICY_CMD);
-        mOriginalForegroundBytes = parseForegroundBytesFromMessage(executeCommand(
-                GET_IO_OVERUSE_FOREGROUNG_BYTES_CMD));
-        executeCommand("%s %d", SET_IO_OVERUSE_FOREGROUNG_BYTES_CMD, TWO_HUNDRED_MEGABYTES);
+        mOriginalForegroundBytes =
+                parseForegroundBytesFromMessage(
+                        executeCommand(GET_IO_OVERUSE_FOREGROUND_BYTES_CMD));
+        executeCommand("%s %d", SET_IO_OVERUSE_FOREGROUND_BYTES_CMD, TWO_HUNDRED_MEGABYTES);
         executeCommand("logcat -c");
         startCustomCollection();
         executeCommand(RESET_RESOURCE_OVERUSE_CMD);
@@ -213,7 +218,7 @@ public class CarWatchdogHostTest extends CarHostJUnit4TestCase {
         // Enable the CTS packages by running the reset resource overuse command.
         executeCommand(RESET_RESOURCE_OVERUSE_CMD);
         executeCommand(STOP_CUSTOM_PERF_COLLECTION_CMD);
-        executeCommand("%s %d", SET_IO_OVERUSE_FOREGROUNG_BYTES_CMD, mOriginalForegroundBytes);
+        executeCommand("%s %d", SET_IO_OVERUSE_FOREGROUND_BYTES_CMD, mOriginalForegroundBytes);
     }
 
     @Test
@@ -531,18 +536,9 @@ public class CarWatchdogHostTest extends CarHostJUnit4TestCase {
     }
 
     private void rebootDeviceAndWait() throws Exception {
-        /* ADB doesn't trigger AAOS specific shutdown procedure on all devices when
-         * performing "adb reboot". CarWatchdog listens for shutdown/suspend enter and writes I/O
-         * overuse stats and user package settings to DB when state changes. Perform system reboot
-         * with |REBOOT_CMD|, which will trigger the system to enter garage mode, force suspend,
-         * and reboot.
-         *
-         * TODO(b/200084065): Use the regular reboot command, once it follows the AAOS shutdown
-         *  process.
-         */
-        executeCommand(REBOOT_CMD);
-        /* Check if device shows as unavailable (as expected after reboot). */
-        assertThat(getDevice().waitForDeviceNotAvailable(DEVICE_RESPONSE_TIMEOUT_MS)).isTrue();
+        getDevice().executeShellCommand(WATCHDOG_SHUTDOWN_PREPARE_CMD);
+        getDevice().executeShellCommand(WATCHDOG_SHUTDOWN_ENTER_CMD);
+        getDevice().reboot();
         getDevice().waitForDeviceAvailable(DEVICE_RESPONSE_TIMEOUT_MS);
     }
 
