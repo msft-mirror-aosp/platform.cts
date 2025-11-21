@@ -120,6 +120,9 @@ public class TimeManagerTest {
         int configureAutoDetectionEnabledCapability = mTimeManager.getTimeCapabilitiesAndConfig()
                 .getCapabilities().getConfigureAutoDetectionEnabledCapability();
         boolean userRestricted = configureAutoDetectionEnabledCapability == CAPABILITY_NOT_ALLOWED;
+        assumeFalse("Skip for a visible background user with restrictions, who is not allowed "
+                + "to update date/time configs.",
+                userRestricted && mUserHelper.isVisibleBackgroundUser());
         assertFalse(userRestricted);
     }
 
