@@ -744,6 +744,15 @@ public abstract class CodecTestBase {
         return false;
     }
 
+    public static CodecCapabilities getCodecCapabilities(String codecName, String mediaType) {
+        for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_ALL.getCodecInfos()) {
+            if (codecName.equals(codecInfo.getName())) {
+                return codecInfo.getCapabilitiesForType(mediaType);
+            }
+        }
+        return null;
+    }
+
     /**
      * Stop the current codec session and transfer component to uninitialized state.
      * <p>
