@@ -151,8 +151,7 @@ public class CallConnectedIndicatorTest extends BaseTelecomTestWithMockServices 
      * @return {@code true} if feature enabled.
      */
     private boolean isCallConnectedFeatureEnabled() {
-        return new com.android.server.telecom.flags.FeatureFlagsImpl()
-                .callConnectedIndicatorPreference();
+        return android.telecom.flags.Flags.callConnectedIndicatorPreference();
     }
 
     /**

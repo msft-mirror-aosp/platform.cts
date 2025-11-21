@@ -186,7 +186,8 @@ public class CallRedirectionServiceTest extends BaseTelecomTestWithMockServices 
     }
 
     public void testPlaceCallToAlternateNumber() throws Exception {
-        if (!shouldTestTelecom(mContext) || !Flags.placeCallToAlternateNumber()) {
+        if (!shouldTestTelecom(mContext) ||
+                !android.telecom.flags.Flags.placeCallToAlternateNumber()) {
             return;
         }
         mCallRedirectionServiceController.setPlaceCallToAlternateNumber(
@@ -210,7 +211,8 @@ public class CallRedirectionServiceTest extends BaseTelecomTestWithMockServices 
     }
 
     public void testPlaceCallToAlternateNumberWithPostDialDigits() throws Exception {
-        if (!shouldTestTelecom(mContext) || !Flags.placeCallToAlternateNumber()) {
+        if (!shouldTestTelecom(mContext)
+                || !android.telecom.flags.Flags.placeCallToAlternateNumber()) {
             return;
         }
         mCallRedirectionServiceController.setPlaceCallToAlternateNumber(
