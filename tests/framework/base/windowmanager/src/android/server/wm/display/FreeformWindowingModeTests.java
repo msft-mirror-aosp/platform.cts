@@ -31,6 +31,7 @@ import static android.server.wm.app.Components.TEST_ACTIVITY;
 import static android.view.WindowManager.DISPLAY_IME_POLICY_LOCAL;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -202,6 +203,30 @@ public class FreeformWindowingModeTests extends MultiDisplayTestBase {
         mBroadcastActionTrigger.doAction(ACTION_RESTORE_FREEFORM);
         mWmState.assertDoesNotContainStack("Must has no freeform stack.",
                 WINDOWING_MODE_FREEFORM, ACTIVITY_TYPE_STANDARD);
+    }
+
+    @Test
+    public void testMultiWindowFullscreenRequest_notTopFocused_rejected() throws Exception {
+        assumeTrue(
+                "Only test on device guaranteed with a freeform display",
+                supportsFreeform() && hasDeviceFeature(FEATURE_PC));
+        final int displayId = Display.DEFAULT_DISPLAY;
+        // Launch the request fullscren activity.
+        launchActivityOnDisplay(MULTI_WINDOW_FULLSCREEN_ACTIVITY, displayId);
+        mWmState.computeState(MULTI_WINDOW_FULLSCREEN_ACTIVITY);
+        mWmState.assertContainsStack(
+                "Must have a freeform stack.", WINDOWING_MODE_FREEFORM, ACTIVITY_TYPE_STANDARD);
+
+        // Launch another task so that the request fullscreen activity is not top focused.
+        launchActivityOnDisplay(FREEFORM_ACTIVITY, displayId);
+        mWmState.computeState(FREEFORM_ACTIVITY);
+        mWmState.assertContainsStack(
+                "Must have a freeform stack.", WINDOWING_MODE_FREEFORM, ACTIVITY_TYPE_STANDARD);
+
+        // Request fullscreen and verify it did not succeed.
+        mBroadcastActionTrigger.doAction(ACTION_REQUEST_FULLSCREEN);
+        mWmState.waitForAppTransitionIdleOnDisplay(displayId);
+        assertFalse(waitForEnterFullscreen(MULTI_WINDOW_FULLSCREEN_ACTIVITY));
     }
 
     @Test
