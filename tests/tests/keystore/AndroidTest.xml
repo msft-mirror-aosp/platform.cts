@@ -27,6 +27,11 @@
         <option name="install-arg" value="-t" />
         <option name="test-file-name" value="CtsKeystoreTestCases.apk" />
     </target_preparer>
+    <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <!-- CtsKeystoreTestCases requires wifi -->
+        <option name="run-command" value="settings put global wifi_on 1" />
+        <option name="run-command" value="svc wifi enable" />
+    </target_preparer>
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.keystore.cts" />
         <option name="runtime-hint" value="16m39s" />
