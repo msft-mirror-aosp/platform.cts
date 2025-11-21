@@ -30,12 +30,26 @@ import android.view.WindowManager;
 public class SimpleActivity extends Activity {
     public static String ACTIVITY_LAUNCHED_ACTION =
             "com.android.cts.launchertests.LauncherAppsTests.LAUNCHED_ACTION";
+    private static final int ACTION_ANR = 3;
+    private static final int ACTION_NONE = 0;
+    private static final String EXTRA_ACTION = "action";
+
 
     private static final String TAG = "SimpleActivity";
 
     @Override
     public void onCreate(Bundle icicle) {
         super.onCreate(icicle);
+
+        Intent intent = getIntent();
+        int action = intent.getIntExtra(EXTRA_ACTION, ACTION_NONE);
+        if (action == ACTION_ANR) {
+            try {
+                Thread.sleep(3600 * 1000);
+            } catch (InterruptedException e) {
+            }
+        }
+
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
         Log.i(TAG, "Created for user " + android.os.Process.myUserHandle());
     }

@@ -36,6 +36,7 @@ import android.app.ActivityManager.RunningAppProcessInfo;
 import android.app.AnrTypes;
 import android.app.ApplicationExitInfo;
 import android.app.ApplicationExitInfo.AnrInfo;
+import android.app.Flags;
 import android.app.Instrumentation;
 import android.app.stubs.shared.IHeartbeat;
 import android.app.tools.WatchUidRunner;
@@ -77,6 +78,7 @@ import android.util.DebugUtils;
 import android.util.KeyValueListParser;
 import android.util.Log;
 import android.util.Pair;
+import android.view.KeyEvent;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -1101,6 +1103,188 @@ public final class ActivityManagerAppExitInfoTest {
             assertTrue(trace.contains(Integer.toString(info.getPid())));
             assertTrue(trace.contains("Cmd line: " + STUB_PACKAGE_NAME));
             assertTrue(dboxTrace.contains(trace));
+        } finally {
+            monitor.finish();
+            mContext.unregisterReceiver(receiver);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_INCLUDE_ANR_INFO)
+    public void testInputDispatchAnr_focusedWindow() throws Exception {
+        final DropBoxManager dbox = mContext.getSystemService(DropBoxManager.class);
+        final CountDownLatch dboxLatch = new CountDownLatch(1);
+        final BroadcastReceiver receiver = getBroadcastReceiverWithLatch(dbox, dboxLatch);
+        mContext.registerReceiver(receiver,
+                new IntentFilter(DropBoxManager.ACTION_DROPBOX_ENTRY_ADDED));
+
+        // Launch the activity and wait for it to become visible and focused.
+        Intent activityIntent = new Intent();
+        activityIntent.setClassName(STUB_PACKAGE_NAME, STUB_PACKAGE_NAME + SIMPLE_ACTIVITY);
+        activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        mContext.startActivity(activityIntent);
+        sleep(1000);
+
+        // NOW, block the app's main thread by starting a service in the same process.
+        Intent anrIntent = new Intent(EXIT_ACTION);
+        anrIntent.setClassName(STUB_PACKAGE_NAME, STUB_SERVICE_NAME);
+        anrIntent.putExtra(EXTRA_ACTION, ACTION_ANR);
+        anrIntent.putExtra(EXTRA_MESSENGER, new Messenger(mHandler));
+        mContext.startServiceAsUser(anrIntent, mCurrentUserHandle);
+        sleep(WAITFOR_SETTLE_DOWN);
+
+        long now = System.currentTimeMillis();
+        AmMonitor monitor = new AmMonitor(mInstrumentation,
+                new String[]{AmMonitor.WAIT_FOR_CRASHED});
+        try {
+            // Inject an input event
+            mInstrumentation.sendKeySync(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_P));
+
+            final long anrTimeout = 5_000;
+            final long testTimeout = 5_000 * 3;
+
+            monitor.waitFor(AmMonitor.WAIT_FOR_EARLY_ANR, testTimeout);
+            monitor.sendCommand(AmMonitor.CMD_CONTINUE);
+            monitor.waitFor(AmMonitor.WAIT_FOR_ANR, testTimeout);
+            monitor.sendCommand(AmMonitor.CMD_KILL);
+            waitForGone(mWatcher);
+
+            long now2 = System.currentTimeMillis();
+
+            awaitForLatch(dboxLatch, "dropbox entry for focused window ANR");
+            assertNotNull(mAnrEntry);
+
+            // Retrieve and verify the exit information.
+            List<ApplicationExitInfo> list =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            STUB_PACKAGE_NAME,
+                            mStubPackagePid,
+                            1,
+                            mActivityManager::getHistoricalProcessExitReasons,
+                            android.Manifest.permission.DUMP);
+
+            assertNotNull(list);
+            assertEquals(1, list.size());
+
+            ApplicationExitInfo info = list.getFirst();
+            verify(
+                    info,
+                    mStubPackagePid,
+                    mStubPackageUid,
+                    STUB_PROCESS_NAME,
+                    ApplicationExitInfo.REASON_ANR,
+                    null,
+                    null,
+                    now,
+                    now2);
+
+            assertEquals(
+                    ApplicationExitInfo.SUBREASON_ANR_TYPE_INPUT_DISPATCHING_TIMEOUT,
+                    info.getSubReason());
+
+            verify(
+                    info.getAnrInfo(),
+                    AnrTypes.ANR_TYPE_INPUT_DISPATCH,
+                    /* isUserPerceptible= */ true,
+                    anrTimeout);
+
+        } finally {
+            monitor.finish();
+            mContext.unregisterReceiver(receiver);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_INCLUDE_ANR_INFO)
+    public void testInputDispatchAnr_noFocusedWindow() throws Exception {
+        final DropBoxManager dbox = mContext.getSystemService(DropBoxManager.class);
+        final CountDownLatch dboxLatch = new CountDownLatch(1);
+
+        /*
+         * Create a BroadcastReceiver that will listen for Dropbox broadcasts. The dropbox entry
+         * that is added during an ANR will be used to verify the service that was started has
+         * blocked main thread and ANR'd when processing the broadcast then the remainder of the
+         * test can proceed.
+         */
+        final BroadcastReceiver receiver = getBroadcastReceiverWithLatch(dbox, dboxLatch);
+        mContext.registerReceiver(
+                receiver, new IntentFilter(DropBoxManager.ACTION_DROPBOX_ENTRY_ADDED));
+
+        // Start a service in the same package to get the process PID.
+        startService(ACTION_NONE, STUB_SERVICE_NAME, false, false);
+        sleep(WAITFOR_MSEC);
+
+        AmMonitor monitor =
+                new AmMonitor(mInstrumentation, new String[]{AmMonitor.WAIT_FOR_CRASHED});
+
+        // Launch an activity and block its main thread in the onCreate() method to block activity
+        // launch
+        Intent activityIntent = new Intent();
+        activityIntent.setClassName(STUB_PACKAGE_NAME, STUB_PACKAGE_NAME + SIMPLE_ACTIVITY);
+        activityIntent.putExtra(EXTRA_ACTION, ACTION_ANR); // ACTION_ANR tells the app to block.
+        activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        mContext.startActivity(activityIntent);
+
+        // Wait a moment for the activity to launch and enter the ANR state.
+        sleep(WAITFOR_SETTLE_DOWN);
+
+        long now = System.currentTimeMillis();
+
+        try {
+            // Inject a key event. The Input Dispatcher will time out waiting for a window
+            // from the unresponsive app, triggering a "no focused window" ANR.
+            mInstrumentation.sendKeySync(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_P));
+
+            // Use AmMonitor to wait for the ANR, collect traces, and kill the process.
+            long anrTimeout = 5_000;
+            // Use 3 times the anrTimeout as test timeout
+            final long testTimeout = anrTimeout * 3; // Allow time for input timeout.
+            monitor.waitFor(AmMonitor.WAIT_FOR_EARLY_ANR, testTimeout);
+            monitor.sendCommand(AmMonitor.CMD_CONTINUE);
+            monitor.waitFor(AmMonitor.WAIT_FOR_ANR, testTimeout);
+            monitor.sendCommand(AmMonitor.CMD_KILL);
+            waitForGone(mWatcher);
+            long now2 = System.currentTimeMillis();
+
+            awaitForLatch(dboxLatch, "dropbox entry for input ANR");
+            assertNotNull(mAnrEntry);
+
+            // Retrieve the exit info for the process.
+            List<ApplicationExitInfo> list =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            STUB_PACKAGE_NAME,
+                            mStubPackagePid,
+                            1,
+                            mActivityManager::getHistoricalProcessExitReasons,
+                            android.Manifest.permission.DUMP);
+
+            assertNotNull(list);
+            assertEquals(1, list.size());
+
+            // Verify that the reason is ANR and the sub-reason is for input dispatching.
+            ApplicationExitInfo info = list.getFirst();
+            verify(
+                    info,
+                    mStubPackagePid,
+                    mStubPackageUid,
+                    STUB_PROCESS_NAME,
+                    ApplicationExitInfo.REASON_ANR,
+                    null,
+                    null,
+                    now,
+                    now2);
+
+            assertEquals(
+                    ApplicationExitInfo.SUBREASON_ANR_TYPE_INPUT_DISPATCHING_TIMEOUT_NO_FOCUSED_WINDOW,
+                    info.getSubReason());
+
+            // Verify ANR Info
+            verify(
+                    info.getAnrInfo(),
+                    AnrTypes.ANR_TYPE_INPUT_DISPATCH_NO_FOCUSED_WINDOW,
+                    /* isUserPerceptible= */ true,
+                    anrTimeout);
+
         } finally {
             monitor.finish();
             mContext.unregisterReceiver(receiver);
