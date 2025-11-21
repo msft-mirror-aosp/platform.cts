@@ -6771,6 +6771,48 @@ public class TelephonyManagerTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.telephony.TelephonyManager"
+                        + "#getSupportedNetworkAlertCategories",
+            })
+    @RequiresFlagsEnabled(Flags.FLAG_NETWORK_SECURITY_EVENT_INDICATIONS)
+    public void testGetSupportedNetworkAlertCategoriesPermissions() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        if (mNetworkHalVersion < RADIO_HAL_VERSION_2_4) {
+            Log.d(TAG,
+                    "Skipping test since modem does not support IRadioNetwork HAL v2.4");
+            return;
+        }
+
+        assertThrows(
+                "getSupportedNetworkAlertCategories",
+                SecurityException.class,
+                () -> mTelephonyManager.getSupportedNetworkAlertCategories());
+    }
+
+    @Test
+    @ApiTest(
+            apis = {
+                "android.telephony.TelephonyManager"
+                        + "#getSupportedNetworkAlertCategories",
+            })
+    @RequiresFlagsEnabled(Flags.FLAG_NETWORK_SECURITY_EVENT_INDICATIONS)
+    public void testGetSupportedNetworkAlertCategories() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        if (mNetworkHalVersion < RADIO_HAL_VERSION_2_4) {
+            Log.d(TAG,
+                    "Skipping test since modem does not support IRadioNetwork HAL v2.4");
+            return;
+        }
+
+        int[] supportedCategories =
+        ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                (tm) -> tm.getSupportedNetworkAlertCategories());
+        assertNotNull("Supported categories is null", supportedCategories);
+    }
+
+    @Test
     @ApiTest(apis = {"android.telephony.TelephonyManager#getLastKnownCellIdentity"})
     @RequiresFlagsEnabled(android.telecom.flags.Flags.FLAG_GET_LAST_KNOWN_CELL_IDENTITY)
     public void testGetLastKnownCellIdentity() {
