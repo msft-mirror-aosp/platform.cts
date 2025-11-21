@@ -16,6 +16,9 @@
 
 package com.android.cts.verifier.audio;
 
+import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
+import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
+
 import android.media.AudioDeviceInfo;
 import android.os.Bundle;
 import android.view.View;
@@ -31,6 +34,9 @@ import org.hyphonate.megaaudio.recorder.sinks.AppCallbackAudioSinkProvider;
 
 public class AudioDataPathsUSBInterfaceActivity extends AudioDataPathsBaseActivity {
     private static final String TAG = "AudioDataPathsUSBInterfaceActivity";
+
+    // ReportLog Schema
+    private static final String SECTION_DATA_PATHS_USB_INTERFACE = "data_paths_usb_interface";
 
     private int mUsbInterfaceSupport;
 
@@ -54,6 +60,11 @@ public class AudioDataPathsUSBInterfaceActivity extends AudioDataPathsBaseActivi
     @Override
     protected String getTestCategory() {
         return getString(R.string.audio_datapaths_USB_interface_test);
+    }
+
+    @Override
+    public String getReportSectionName() {
+        return setTestNameSuffix(sCurrentDisplayMode, SECTION_DATA_PATHS_USB_INTERFACE);
     }
 
     @Override
