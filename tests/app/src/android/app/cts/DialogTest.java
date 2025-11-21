@@ -15,8 +15,6 @@
  */
 package android.app.cts;
 
-import static com.android.window.flags.Flags.FLAG_PREDICTIVE_BACK_STOP_KEYCODE_BACK_FORWARDING;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -49,9 +47,6 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.os.SystemClock;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -74,7 +69,6 @@ import com.android.compatibility.common.util.WindowUtil;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -100,9 +94,6 @@ public class DialogTest {
     private DialogStubActivity mActivity;
 
     private final UserHelper mUserHelper = new UserHelper();
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setup() throws Throwable {
@@ -439,7 +430,6 @@ public class DialogTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_PREDICTIVE_BACK_STOP_KEYCODE_BACK_FORWARDING)
     public void testOnBackKeyDownKeyUpWithPredictiveBack() {
         startDialogActivity(DialogStubActivity.TEST_ONSTART_AND_ONSTOP);
         final TestDialog d = (TestDialog) mActivity.getDialog();
@@ -453,7 +443,6 @@ public class DialogTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_PREDICTIVE_BACK_STOP_KEYCODE_BACK_FORWARDING)
     public void testOnBackKeyDownKeyUpWithoutPredictiveBack() {
         mInstrumentation
                 .getTargetContext()
