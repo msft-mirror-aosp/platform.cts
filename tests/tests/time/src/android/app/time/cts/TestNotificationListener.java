@@ -19,6 +19,7 @@ package android.app.time.cts;
 import android.content.ComponentName;
 import android.content.Context;
 import android.os.ConditionVariable;
+import android.os.UserHandle;
 import android.service.notification.NotificationListenerService;
 import com.android.compatibility.common.util.SystemUtil;
 import java.time.Duration;
@@ -80,7 +81,8 @@ public class TestNotificationListener extends NotificationListenerService {
         ComponentName componentName = new ComponentName(context, TestNotificationListener.class);
         String verb = allowed ? "allow" : "disallow";
         SystemUtil.runShellCommand(
-                "cmd notification " + verb + "_listener " + componentName.flattenToString());
+                "cmd notification " + verb + "_listener " + componentName.flattenToString()
+                        + " " + UserHandle.myUserId());
 
         if (allowed) {
             requestRebind(componentName);
