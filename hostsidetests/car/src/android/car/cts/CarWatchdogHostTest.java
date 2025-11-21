@@ -18,6 +18,8 @@ package android.car.cts;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.fail;
+
 import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
@@ -43,6 +45,7 @@ import org.junit.runner.RunWith;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -112,17 +115,13 @@ public class CarWatchdogHostTest extends CarHostJUnit4TestCase {
     private static final String RESOURCE_OVERUSE_KILL_CMD =
             String.format("cmd car_service watchdog-resource-overuse-kill %s", WATCHDOG_TEST_PKG);
 
-    /**
-     * The command to get I/O overuse foreground bytes threshold in the adb shell.
-     */
+    /** The command to get I/O overuse foreground bytes threshold in the adb shell. */
     private static final String GET_IO_OVERUSE_FOREGROUND_BYTES_CMD =
             "cmd car_service watchdog-io-get-3p-foreground-bytes";
 
-    /**
-     * The command to set I/O overuse foreground bytes threshold in the adb shell.
-     */
+    /** The command to set I/O overuse foreground bytes threshold in the adb shell. */
     private static final String SET_IO_OVERUSE_FOREGROUND_BYTES_CMD =
-            "cmd car_service watchdog-io-set-3p-foreground-bytes";
+            "cmd car_service watchdog-io-set-3p-foreground-bytes %d";
 
     private static final String DEFINE_ENABLE_DISPLAY_POWER_POLICY_CMD =
             "cmd car_service define-power-policy cts_car_watchdog_enable_display "
@@ -144,12 +143,17 @@ public class CarWatchdogHostTest extends CarHostJUnit4TestCase {
     private static final String WATCHDOG_SHUTDOWN_ENTER_CMD =
             "cmd car_service watchdog-inject-power-state shutdown-enter";
 
+    private static final String PM_ENABLE_CMD = "pm enable --user %d %s";
+
     public static final String PRIORITIZE_APP_PERFORMANCE_TEXT =
             "'Prioritize app performance' app settings is used to determine whether or not app "
                     + "performance should be prioritized over system stability or long-term "
                     + "hardware stability.";
     private static final String START_CUSTOM_COLLECTION_SUCCESS_MSG =
             "Successfully started custom perf collection";
+    private static final String DEFINE_POWER_POLICY_SUCCESS_MSG = "is successfully defined.";
+    private static final String DEFINE_POWER_POLICY_ALREADY_REGISTERED_MSG =
+            "Already registered power policy ID";
     private static final String KEY_PACKAGES_DISABLED_ON_RESOURCE_OVERUSE =
             "android.car.KEY_PACKAGES_DISABLED_ON_RESOURCE_OVERUSE";
 
@@ -166,6 +170,30 @@ public class CarWatchdogHostTest extends CarHostJUnit4TestCase {
             "foregroundModeBytes = (\\d+)");
 
     private static final int BUILD_VERSION_CODE_TIRAMISU = 33;
+
+    private static final Map<String, List<String>> COMMAND_OUTPUT_MAP =
+            Map.of(
+                    APPLY_DISABLE_DISPLAY_POWER_POLICY_CMD, List.of("is successfully applied."),
+                    DEFINE_ENABLE_DISPLAY_POWER_POLICY_CMD,
+                            List.of(
+                                    DEFINE_POWER_POLICY_SUCCESS_MSG,
+                                    DEFINE_POWER_POLICY_ALREADY_REGISTERED_MSG),
+                    DEFINE_DISABLE_DISPLAY_POWER_POLICY_CMD,
+                            List.of(
+                                    DEFINE_POWER_POLICY_SUCCESS_MSG,
+                                    DEFINE_POWER_POLICY_ALREADY_REGISTERED_MSG),
+                    GET_IO_OVERUSE_FOREGROUND_BYTES_CMD,
+                            List.of("foregroundModeBytes = "),
+                    PM_ENABLE_CMD, List.of("new state: enabled"),
+                    RESOURCE_OVERUSE_KILL_CMD, List.of("Successfully killed package"),
+                    SET_IO_OVERUSE_FOREGROUND_BYTES_CMD,
+                            List.of("Successfully set third-party I/O overuse foreground "
+                                    + "threshold"),
+                    STOP_CUSTOM_PERF_COLLECTION_CMD,
+                            List.of(
+                                    "Successfully stopped custom perf collection",
+                                    "Failed to stop custom perf collection: No custom collection "
+                                            + "is running"));
 
     // System event performance data collections are extended for at least 30 seconds after
     // receiving the corresponding system event completion notification. During these periods
@@ -199,12 +227,12 @@ public class CarWatchdogHostTest extends CarHostJUnit4TestCase {
         mCurrentUser = getCurrentUserId();
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
-        executeCommand(DEFINE_ENABLE_DISPLAY_POWER_POLICY_CMD);
-        executeCommand(DEFINE_DISABLE_DISPLAY_POWER_POLICY_CMD);
+        executeAndCheckCommand(DEFINE_ENABLE_DISPLAY_POWER_POLICY_CMD);
+        executeAndCheckCommand(DEFINE_DISABLE_DISPLAY_POWER_POLICY_CMD);
         mOriginalForegroundBytes =
                 parseForegroundBytesFromMessage(
-                        executeCommand(GET_IO_OVERUSE_FOREGROUND_BYTES_CMD));
-        executeCommand("%s %d", SET_IO_OVERUSE_FOREGROUND_BYTES_CMD, TWO_HUNDRED_MEGABYTES);
+                        executeAndCheckCommand(GET_IO_OVERUSE_FOREGROUND_BYTES_CMD));
+        executeAndCheckCommand(SET_IO_OVERUSE_FOREGROUND_BYTES_CMD, TWO_HUNDRED_MEGABYTES);
         executeCommand("logcat -c");
         startCustomCollection();
         executeCommand(RESET_RESOURCE_OVERUSE_CMD);
@@ -214,11 +242,15 @@ public class CarWatchdogHostTest extends CarHostJUnit4TestCase {
     public void tearDown() throws Exception {
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
+        // Don't throw if the power policy id is not registered because some tests reboot which
+        // unregisters all power policy ids.
         executeCommand(APPLY_ENABLE_DISPLAY_POWER_POLICY_CMD);
         // Enable the CTS packages by running the reset resource overuse command.
         executeCommand(RESET_RESOURCE_OVERUSE_CMD);
+        // Don't throw if no custom collection was started because some tests reboot which ends
+        // custom collection.
         executeCommand(STOP_CUSTOM_PERF_COLLECTION_CMD);
-        executeCommand("%s %d", SET_IO_OVERUSE_FOREGROUND_BYTES_CMD, mOriginalForegroundBytes);
+        executeAndCheckCommand(SET_IO_OVERUSE_FOREGROUND_BYTES_CMD, mOriginalForegroundBytes);
     }
 
     @Test
@@ -271,7 +303,6 @@ public class CarWatchdogHostTest extends CarHostJUnit4TestCase {
                     .that(runDeviceTest("testVerifyResourceOveruseStatsAfterReboot")).isTrue();
         } finally {
             runDeviceTest("testDeleteTestFile");
-            executeCommand(STOP_CUSTOM_PERF_COLLECTION_CMD);
         }
     }
 
@@ -281,13 +312,13 @@ public class CarWatchdogHostTest extends CarHostJUnit4TestCase {
                 .that(readPackagesDisabledOnResourceOveruseSettings())
                 .doesNotContain(WATCHDOG_TEST_PKG);
 
-        executeCommand(RESOURCE_OVERUSE_KILL_CMD);
+        executeAndCheckCommand(RESOURCE_OVERUSE_KILL_CMD);
 
         assertWithMessage("%s settings value after killing test package due to resource overuse",
                 KEY_PACKAGES_DISABLED_ON_RESOURCE_OVERUSE)
                 .that(readPackagesDisabledOnResourceOveruseSettings()).contains(WATCHDOG_TEST_PKG);
 
-        String result = executeCommand("pm enable --user %d %s", mCurrentUser, WATCHDOG_TEST_PKG);
+        String result = executeAndCheckCommand(PM_ENABLE_CMD, mCurrentUser, WATCHDOG_TEST_PKG);
         assertWithMessage("Package enable command result").that(result).contains("enabled");
 
         // CarService updates KEY_PACKAGES_DISABLED_ON_RESOURCE_OVERUSE settings value on receiving
@@ -311,7 +342,7 @@ public class CarWatchdogHostTest extends CarHostJUnit4TestCase {
             ReportUtils.clearReports(getDevice());
         }
 
-        executeCommand(APPLY_DISABLE_DISPLAY_POWER_POLICY_CMD);
+        executeAndCheckCommand(APPLY_DISABLE_DISPLAY_POWER_POLICY_CMD);
 
         verifyTestAppsKilled(APP_PKG);
         verifyAtomKillStatsReported(APP_PKG, getTestRunningUserId());
@@ -330,7 +361,7 @@ public class CarWatchdogHostTest extends CarHostJUnit4TestCase {
             ReportUtils.clearReports(getDevice());
         }
 
-        executeCommand(APPLY_DISABLE_DISPLAY_POWER_POLICY_CMD);
+        executeAndCheckCommand(APPLY_DISABLE_DISPLAY_POWER_POLICY_CMD);
 
         verifyTestAppsKilled(WATCHDOG_APP_PKG, WATCHDOG_APP_PKG_2);
         verifyAtomKillStatsReported(WATCHDOG_APP_PKG, getTestRunningUserId());
@@ -540,6 +571,21 @@ public class CarWatchdogHostTest extends CarHostJUnit4TestCase {
         getDevice().executeShellCommand(WATCHDOG_SHUTDOWN_ENTER_CMD);
         getDevice().reboot();
         getDevice().waitForDeviceAvailable(DEVICE_RESPONSE_TIMEOUT_MS);
+    }
+
+    private String executeAndCheckCommand(String command, Object... args) throws Exception {
+        String output = executeCommand(command, args);
+        List<String> expectedOutputs = COMMAND_OUTPUT_MAP.get(command);
+        if (expectedOutputs == null) {
+            return output;
+        }
+        for (String expectedOutput : expectedOutputs) {
+            if (output.contains(expectedOutput)) {
+                return output;
+            }
+        }
+        fail(String.format("Command '%s' returned unexpected output: %s", command, output));
+        return null;
     }
 
     private boolean runDeviceTest(String testMethodName) throws DeviceNotAvailableException {
