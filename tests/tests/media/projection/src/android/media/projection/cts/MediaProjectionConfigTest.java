@@ -29,6 +29,7 @@ import static org.junit.Assert.fail;
 
 import android.content.Context;
 import android.media.projection.MediaProjectionConfig;
+import android.os.Parcel;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -79,6 +80,7 @@ public class MediaProjectionConfigTest {
         assertThat(config.getProjectionSources()).isEqualTo(DEFAULT_PROJECTION_SOURCES);
         assertThat(config.getInitiallySelectedSource()).isEqualTo(0);
         assertThat(config.isOwnAppContentProvided()).isEqualTo(false);
+        assertThat(config.isAudioRequested()).isEqualTo(false);
     }
 
     @Test
@@ -110,6 +112,7 @@ public class MediaProjectionConfigTest {
                         .setSourceEnabled(PROJECTION_SOURCE_APP_CONTENT, true)
                         .setRequesterHint("requesterHint")
                         .setInitiallySelectedSource(PROJECTION_SOURCE_APP)
+                        .setAudioRequested(true)
                         .build();
         assertThat(config.isSourceEnabled(PROJECTION_SOURCE_DISPLAY)).isTrue();
         assertThat(config.isSourceEnabled(PROJECTION_SOURCE_DISPLAY_REGION)).isTrue();
@@ -117,6 +120,7 @@ public class MediaProjectionConfigTest {
         assertThat(config.isSourceEnabled(PROJECTION_SOURCE_APP_CONTENT)).isTrue();
         assertThat(config.getRequesterHint()).isEqualTo("requesterHint");
         assertThat(config.getInitiallySelectedSource()).isEqualTo(PROJECTION_SOURCE_APP);
+        assertThat(config.isAudioRequested()).isEqualTo(true);
     }
 
     @Test
@@ -168,5 +172,33 @@ public class MediaProjectionConfigTest {
         MediaProjectionConfig config =
                 new MediaProjectionConfig.Builder().setOwnAppContentProvided(true).build();
         assertThat(config.isOwnAppContentProvided()).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APP_CONTENT_SHARING)
+    public void parcel_parcelUnparcel_isValid() {
+        MediaProjectionConfig config =
+                new MediaProjectionConfig.Builder()
+                        .setSourceEnabled(PROJECTION_SOURCE_APP, true)
+                        .setSourceEnabled(PROJECTION_SOURCE_DISPLAY, true)
+                        .setSourceEnabled(PROJECTION_SOURCE_DISPLAY_REGION, true)
+                        .setSourceEnabled(PROJECTION_SOURCE_APP_CONTENT, true)
+                        .setRequesterHint("requesterHint")
+                        .setInitiallySelectedSource(PROJECTION_SOURCE_APP)
+                        .setAudioRequested(true)
+                        .build();
+
+        Parcel parcelWrite = Parcel.obtain();
+        config.writeToParcel(parcelWrite, 0);
+        parcelWrite.setDataPosition(0);
+        byte[] marshalled = parcelWrite.marshall();
+        Parcel parcelRead = Parcel.obtain();
+        parcelRead.unmarshall(marshalled, 0, marshalled.length);
+        parcelRead.setDataPosition(0);
+
+        MediaProjectionConfig reconstructedConfig =
+                MediaProjectionConfig.CREATOR.createFromParcel(parcelWrite);
+
+        assertThat(reconstructedConfig).isEqualTo(config);
     }
 }

@@ -174,7 +174,7 @@ public class MediaProjectionAppContentTest {
                 true /* grantPermission */,
                 contentProjectionCallback ->
                         contentProjectionCallback.onLoopbackProjectionStarted(
-                                new IAppContentProjectionSession.Default(), 0));
+                                createStubSession(), 0, false));
         assertThat(MediaProjectionAppContentService.sState)
                 .isEqualTo(MediaProjectionAppContentService.State.SESSION_STARTED);
     }
@@ -192,7 +192,8 @@ public class MediaProjectionAppContentTest {
         withServiceConnected(
                 true /* grantPermission */,
                 contentProjectionCallback -> {
-                    contentProjectionCallback.onLoopbackProjectionStarted(createStubSession(), 0);
+                    contentProjectionCallback.onLoopbackProjectionStarted(
+                            createStubSession(), 0, false);
                     contentProjectionCallback.onSessionStopped();
                 });
 
@@ -207,7 +208,8 @@ public class MediaProjectionAppContentTest {
         withServiceConnected(
                 true /* grantPermission */,
                 contentProjectionCallback -> {
-                    contentProjectionCallback.onLoopbackProjectionStarted(projectionSession, 0);
+                    contentProjectionCallback.onLoopbackProjectionStarted(
+                            projectionSession, 0, false);
                     MediaProjectionAppContentService.stopSession();
                 });
 
@@ -228,7 +230,7 @@ public class MediaProjectionAppContentTest {
                             SecurityException.class,
                             () ->
                                     contentProjectionCallback.onLoopbackProjectionStarted(
-                                            createStubSession(), 0));
+                                            createStubSession(), 0, false));
                     Assert.expectThrows(
                             SecurityException.class,
                             contentProjectionCallback::onContentRequestCanceled);
@@ -237,6 +239,28 @@ public class MediaProjectionAppContentTest {
                 });
         assertThat(MediaProjectionAppContentService.sStartedSession).isNull();
         assertThat(MediaProjectionAppContentService.sStoppedSession).isNull();
+    }
+
+    @Test
+    public void isAudioRequested_returnsCorrectValue() throws Exception {
+        IAppContentProjectionSession projectionSession = mock(IAppContentProjectionSession.class);
+        withServiceConnected(
+                true /* grantPermission */,
+                contentProjectionCallback -> {
+                    contentProjectionCallback.onLoopbackProjectionStarted(
+                            projectionSession, 0, false);
+                    assertThat(MediaProjectionAppContentService.sStartedSession.isAudioRequested())
+                            .isFalse();
+                });
+
+        withServiceConnected(
+                true /* grantPermission */,
+                contentProjectionCallback -> {
+                    contentProjectionCallback.onLoopbackProjectionStarted(
+                            projectionSession, 1, true);
+                    assertThat(MediaProjectionAppContentService.sStartedSession.isAudioRequested())
+                            .isTrue();
+                });
     }
 
     private static IAppContentProjectionSession createStubSession() {
