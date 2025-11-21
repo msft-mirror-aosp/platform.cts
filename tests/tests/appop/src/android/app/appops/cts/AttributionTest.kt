@@ -28,13 +28,16 @@ import android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.os.Bundle
 import android.os.RemoteCallback
+import android.permission.PermissionManager
 import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.AsbSecurityTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.google.common.truth.Truth.assertThat
+import com.google.common.truth.Truth.assertWithMessage
 import java.lang.Thread.sleep
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
+import org.junit.After
 import org.junit.Before
 import org.junit.Ignore
 import org.junit.Test
@@ -56,12 +59,49 @@ private const val ATTRIBUTION_7 = "attribution7"
 class AttributionTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context = instrumentation.targetContext
+    private val myPackageName = context.packageName
     private val uiAutomation = instrumentation.getUiAutomation()
-    private val appOpsManager = context.getSystemService(AppOpsManager::class.java)
+    private val appOpsManager = context.getSystemService(AppOpsManager::class.java)!!
+    private val permissionManager = context.getSystemService(PermissionManager::class.java)!!
     private val appUid by lazy { context.packageManager.getPackageUid(APP_PKG, 0) }
 
+    private data class AppOpEvent(
+        val op: String,
+        val uid: Int,
+        val packageName: String,
+        val attributionTag: String?,
+        val active: Boolean,
+        val note: Boolean
+    )
+
+    private val seenAppopEvents = mutableSetOf<AppOpEvent>()
+
+    private val activeListener = object : AppOpsManager.OnOpActiveChangedListener {
+        override fun onOpActiveChanged(
+            op: String,
+            uid: Int,
+            packageName: String,
+            attributionTag: String?,
+            active: Boolean,
+            attributionFlags: Int,
+            attributionChainId: Int
+        ) {
+                seenAppopEvents.add(AppOpEvent(op, uid, packageName, attributionTag, active, false))
+        }
+
+        override fun onOpActiveChanged(op: String, uid: Int, packageName: String, active: Boolean) {
+            // do nothing, all events will go to the above method
+        }
+    }
+
+    private val notedListener =
+        AppOpsManager.OnOpNotedListener { op, uid, packageName, attributionTag, _, _ ->
+                seenAppopEvents.add(AppOpEvent(op, uid, packageName, attributionTag, false, true))
+        }
+
     private fun installApk(apk: String) {
-        val result = runCommand("pm install -r --force-queryable $APK_PATH$apk")
+        val result = runCommand(
+            "pm install --user ${context.userId} -r --force-queryable $APK_PATH$apk")
         assertThat(result.trim()).isEqualTo("Success")
     }
 
@@ -69,6 +109,18 @@ class AttributionTest {
     fun resetTestApp() {
         runCommand("pm uninstall $APP_PKG")
         installApk("CtsAppToBlame1.apk")
+        // We need to wait for the package installation broadcast to reach AppOpsService to update
+        // uidState. Can remove this once b/376345874 is fixed.
+        sleep(1000)
+        seenAppopEvents.clear()
+    }
+
+    @After
+    fun removeListeners() {
+        runWithShellPermissionIdentity {
+            appOpsManager.stopWatchingActive(activeListener)
+            appOpsManager.stopWatchingNoted(notedListener)
+        }
     }
 
     private fun noteForAttribution(attribution: String) {
@@ -106,18 +158,30 @@ class AttributionTest {
         eventually {
             // 1 and 2 should be attributed for the broadcast, 3 should not.
             val after = getOpEntry(uid, PKG, OPSTR_READ_CONTACTS)!!
-            assertThat(after.attributedOpEntries[ATTRIBUTION_1]!!
-                    .getLastAccessTime(OP_FLAGS_ALL))
-                    .isNotEqualTo(before.attributedOpEntries[ATTRIBUTION_1]!!
-                            .getLastAccessTime(OP_FLAGS_ALL))
-            assertThat(after.attributedOpEntries[ATTRIBUTION_2]!!
-                    .getLastAccessTime(OP_FLAGS_ALL))
-                    .isNotEqualTo(before.attributedOpEntries[ATTRIBUTION_2]!!
-                            .getLastAccessTime(OP_FLAGS_ALL))
-            assertThat(after.attributedOpEntries[ATTRIBUTION_3]!!
-                    .getLastAccessTime(OP_FLAGS_ALL))
-                    .isEqualTo(before.attributedOpEntries[ATTRIBUTION_3]!!
-                            .getLastAccessTime(OP_FLAGS_ALL))
+            assertThat(
+                after.attributedOpEntries[ATTRIBUTION_1]!!
+                    .getLastAccessTime(OP_FLAGS_ALL)
+            )
+                    .isNotEqualTo(
+                        before.attributedOpEntries[ATTRIBUTION_1]!!
+                            .getLastAccessTime(OP_FLAGS_ALL)
+                    )
+            assertThat(
+                after.attributedOpEntries[ATTRIBUTION_2]!!
+                    .getLastAccessTime(OP_FLAGS_ALL)
+            )
+                    .isNotEqualTo(
+                        before.attributedOpEntries[ATTRIBUTION_2]!!
+                            .getLastAccessTime(OP_FLAGS_ALL)
+                    )
+            assertThat(
+                after.attributedOpEntries[ATTRIBUTION_3]!!
+                    .getLastAccessTime(OP_FLAGS_ALL)
+            )
+                    .isEqualTo(
+                        before.attributedOpEntries[ATTRIBUTION_3]!!
+                            .getLastAccessTime(OP_FLAGS_ALL)
+                    )
         }
         runCommand("pm uninstall $PKG")
     }
@@ -137,28 +201,42 @@ class AttributionTest {
             val afterUpdate = getOpEntry(appUid, APP_PKG, OPSTR_WIFI_SCAN)!!
 
             // Attribution 1 is unchanged
-            assertThat(afterUpdate.attributedOpEntries[ATTRIBUTION_1]!!
-                    .getLastAccessTime(OP_FLAGS_ALL))
-                    .isEqualTo(beforeUpdate.attributedOpEntries[ATTRIBUTION_1]!!
-                            .getLastAccessTime(OP_FLAGS_ALL))
+            assertThat(
+                afterUpdate.attributedOpEntries[ATTRIBUTION_1]!!
+                    .getLastAccessTime(OP_FLAGS_ALL)
+            )
+                    .isEqualTo(
+                        beforeUpdate.attributedOpEntries[ATTRIBUTION_1]!!
+                            .getLastAccessTime(OP_FLAGS_ALL)
+                    )
 
             // Attribution 3 disappeared (i.e. was added into "null" attribution)
             assertThat(afterUpdate.attributedOpEntries[null]!!.getLastAccessTime(OP_FLAGS_ALL))
-                    .isEqualTo(beforeUpdate.attributedOpEntries[ATTRIBUTION_3]!!
-                            .getLastAccessTime(OP_FLAGS_ALL))
+                    .isEqualTo(
+                        beforeUpdate.attributedOpEntries[ATTRIBUTION_3]!!
+                            .getLastAccessTime(OP_FLAGS_ALL)
+                    )
 
             // Attribution 6 inherits from attribution 2
-            assertThat(afterUpdate.attributedOpEntries[ATTRIBUTION_6]!!
-                    .getLastAccessTime(OP_FLAGS_ALL))
-                    .isEqualTo(beforeUpdate.attributedOpEntries[ATTRIBUTION_2]!!
-                            .getLastAccessTime(OP_FLAGS_ALL))
+            assertThat(
+                afterUpdate.attributedOpEntries[ATTRIBUTION_6]!!
+                    .getLastAccessTime(OP_FLAGS_ALL)
+            )
+                    .isEqualTo(
+                        beforeUpdate.attributedOpEntries[ATTRIBUTION_2]!!
+                            .getLastAccessTime(OP_FLAGS_ALL)
+                    )
 
             // Attribution 7 inherits from attribution 4 and 5. 5 was noted after 4, hence 4 is
             // removed
-            assertThat(afterUpdate.attributedOpEntries[ATTRIBUTION_7]!!
-                    .getLastAccessTime(OP_FLAGS_ALL))
-                    .isEqualTo(beforeUpdate.attributedOpEntries[ATTRIBUTION_5]!!
-                            .getLastAccessTime(OP_FLAGS_ALL))
+            assertThat(
+                afterUpdate.attributedOpEntries[ATTRIBUTION_7]!!
+                    .getLastAccessTime(OP_FLAGS_ALL)
+            )
+                    .isEqualTo(
+                        beforeUpdate.attributedOpEntries[ATTRIBUTION_5]!!
+                            .getLastAccessTime(OP_FLAGS_ALL)
+                    )
         }
     }
 
@@ -282,6 +360,124 @@ class AttributionTest {
         } finally {
             runCommand("pm uninstall --user ${context.userId} $packageName")
         }
+    }
+
+    @Test
+    @AsbSecurityTest(cveBugId = [445917646])
+    fun startUntrustedProxyCantUseProxyAttribution() {
+        val attributedAppOps = context.createAttributionContext(TEST_ATTRIBUTION_TAG)
+            .getSystemService(AppOpsManager::class.java)!!
+        runWithShellPermissionIdentity {
+            attributedAppOps.startWatchingActive(
+                arrayOf(OPSTR_WIFI_SCAN),
+                context.mainExecutor,
+                activeListener
+            )
+        }
+        try {
+            val result = attributedAppOps.startProxyOp(
+                OPSTR_WIFI_SCAN,
+                appUid,
+                APP_PKG,
+                TEST_ATTRIBUTION_TAG,
+                null
+            )
+            assertThat(result).isEqualTo(AppOpsManager.MODE_ALLOWED)
+            eventually {
+                assertEventAbsent(APP_PKG, TEST_ATTRIBUTION_TAG, active = true)
+                assertEventPresent(APP_PKG, null, active = true)
+                assertEventPresent(myPackageName, TEST_ATTRIBUTION_TAG, active = true)
+            }
+            attributedAppOps.finishProxyOp(
+                OPSTR_WIFI_SCAN,
+                appUid,
+                APP_PKG,
+                TEST_ATTRIBUTION_TAG
+            )
+            eventually {
+                assertEventPresent(APP_PKG, null, active = false)
+                assertEventPresent(myPackageName, TEST_ATTRIBUTION_TAG, active = false)
+            }
+        } finally {
+            // in case any of the asserts above failed
+            attributedAppOps.finishProxyOp(
+                OPSTR_WIFI_SCAN,
+                appUid,
+                APP_PKG,
+                TEST_ATTRIBUTION_TAG
+            )
+            attributedAppOps.finishProxyOp(OPSTR_WIFI_SCAN, appUid, APP_PKG, null)
+        }
+    }
+
+    @Test
+    @AsbSecurityTest(cveBugId = [445917646])
+    fun noteUntrustedProxyCantUseProxyAttribution() {
+        val attributedAppOps = context.createAttributionContext(TEST_ATTRIBUTION_TAG)
+            .getSystemService(AppOpsManager::class.java)!!
+        runWithShellPermissionIdentity {
+            attributedAppOps.startWatchingNoted(
+                arrayOf(OPSTR_WIFI_SCAN),
+                context.mainExecutor,
+                notedListener
+            )
+        }
+            val result = attributedAppOps.noteProxyOp(
+                OPSTR_WIFI_SCAN,
+                APP_PKG,
+                appUid,
+                TEST_ATTRIBUTION_TAG,
+                null
+            )
+            assertThat(result).isEqualTo(AppOpsManager.MODE_ALLOWED)
+            eventually {
+                assertEventAbsent(APP_PKG, TEST_ATTRIBUTION_TAG, note = true)
+                assertEventPresent(APP_PKG, null, note = true)
+                assertEventPresent(myPackageName, TEST_ATTRIBUTION_TAG, note = true)
+            }
+    }
+
+    private fun assertEventPresent(
+        pkg: String,
+        attributionTag: String? = null,
+        op: String = OPSTR_WIFI_SCAN,
+        active: Boolean? = null,
+        note: Boolean? = null,
+    ) {
+        assertEventPresence(true, pkg, attributionTag, op, active, note)
+    }
+
+    private fun assertEventAbsent(
+        pkg: String,
+        attributionTag: String? = null,
+        op: String = OPSTR_WIFI_SCAN,
+        active: Boolean? = null,
+        note: Boolean? = null,
+    ) {
+        assertEventPresence(false, pkg, attributionTag, op, active, note)
+    }
+
+    private fun assertEventPresence(
+        shouldBePresent: Boolean,
+        pkg: String,
+        attributionTag: String? = null,
+        op: String = OPSTR_WIFI_SCAN,
+        active: Boolean? = null,
+        note: Boolean? = null,
+    ) {
+        val proxyString = if (pkg == myPackageName) "proxy" else "proxied"
+        val messageStart = if (shouldBePresent) "Failed to find" else "Unexpectedly found"
+        assertWithMessage(
+            "$messageStart $proxyString event with package: $pkg " +
+                "active: $active noted: $note attribution tag: $attributionTag"
+        )
+            .that(seenAppopEvents.any {
+                it.packageName == pkg &&
+                        it.attributionTag == attributionTag &&
+                        it.op == op &&
+                        (active == null || it.active == active) &&
+                        (note == null || it.note == note)
+            }).isEqualTo(shouldBePresent)
     }
 
     private fun noteProxyOpForAttribution(attributionForContextCreation: String, attributionForNoteOp: String) {
