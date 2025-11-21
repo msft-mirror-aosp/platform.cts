@@ -34,6 +34,7 @@ import android.media.AudioPresentation;
 import android.media.AudioSystem;
 import android.media.AudioTimestamp;
 import android.media.AudioTrack;
+import android.media.MediaFormat;
 import android.media.PlaybackParams;
 import android.media.cts.AudioHelper;
 import android.media.metrics.LogSessionId;
@@ -1538,6 +1539,32 @@ public class AudioTrackTest {
         }
         assertTrue(TEST_NAME, track.getNativeFrameCount() >= frameCount);
         assertEquals(TEST_NAME, track.getNativeFrameCount(), track.getBufferSizeInFrames());
+    }
+
+    @Test
+    public void testCodecProvenance() throws Exception {
+        // constants for test
+        final String testName = "testCodecProvenance";
+        final String validCodecProvenance = MediaFormat.MIMETYPE_AUDIO_IAMF;
+        final AudioTrack track =
+                new AudioTrack.Builder().setCodecProvenance(validCodecProvenance).build();
+        assertEquals(testName, validCodecProvenance, track.getCodecProvenance());
+    }
+
+    @Test
+    public void testInvalidCodecProvenance() throws Exception {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new AudioTrack.Builder().setCodecProvenance("video/avc").build());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new AudioTrack.Builder().setCodecProvenance("audio/").build());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new AudioTrack.Builder().setCodecProvenance("aud").build());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new AudioTrack.Builder().setCodecProvenance(null).build());
     }
 
     @Test
@@ -3272,7 +3299,8 @@ public class AudioTrackTest {
 
                 // Initially the start threshold must be the same as the buffer size in frames.
                 final int bufferSizeInFrames = audioTrack.getBufferSizeInFrames();
-                assertEquals("At start, getBufferSizeInFrames should equal getStartThresholdInFrames",
+                assertEquals(
+                        "At start, getBufferSizeInFrames should equal getStartThresholdInFrames",
                         bufferSizeInFrames,
                         audioTrack.getStartThresholdInFrames());
 
