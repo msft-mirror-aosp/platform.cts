@@ -45,13 +45,16 @@ public class TextClassificationHintTest {
             apis = {
                 "android.service.personalcontext.hint.TextClassificationHint"
                         + "#getTextClassificationRequest",
+                "android.service.personalcontext.hint.TextClassificationHint#getSessionId",
             })
     @Test
     public void testTextClassificationHint_parcelUnparcel() {
+        String inputSessionId = "session-id";
         String inputValue = "test-text";
         TextClassificationHint hint =
                 new TextClassificationHint.Builder(
-                                new TextClassification.Request.Builder(inputValue, 0, 4).build())
+                                new TextClassification.Request.Builder(inputValue, 0, 4).build(),
+                                inputSessionId)
                         .build();
 
         final ContextHint outputHint = bundleUnbundle(hint);
@@ -63,6 +66,8 @@ public class TextClassificationHintTest {
                         .getText()
                         .toString();
         assertThat(outputValue).isEqualTo(inputValue);
+        String outputSessionId = ((TextClassificationHint) outputHint).getSessionId();
+        assertThat(outputSessionId).isEqualTo(inputSessionId);
     }
 
     /** Bundles then unbundles the given {@link ContextHint}. */
