@@ -23,6 +23,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -184,5 +185,125 @@ public class PccProcessTest {
         assertTrue(
                 "Second provider UID should be a PCC UID",
                 Process.isPrivateComputeCoreUid(providerUid));
+    }
+
+    @Test
+    public void testActivityInPccProcess() throws InterruptedException {
+        final CountDownLatch latch = new CountDownLatch(1);
+        final AtomicInteger receivedUid = new AtomicInteger(-1);
+        final ITestBinder binder =
+                new ITestBinder.Stub() {
+                    @Override
+                    public void sendUid(int uid) {
+                        receivedUid.set(uid);
+                        latch.countDown();
+                    }
+                };
+
+        Intent intent = new Intent();
+        intent.setComponent(new ComponentName(mContext, BaseActivity.PccActivity.class));
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        Bundle extras = new Bundle();
+        extras.putBinder(BaseActivity.EXTRA_BINDER, binder.asBinder());
+        intent.putExtras(extras);
+        mContext.startActivity(intent);
+
+        assertTrue(
+                "Did not receive UID from activity within the timeout",
+                latch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+        assertTrue(
+                "Activity UID should be a PCC UID",
+                Process.isPrivateComputeCoreUid(receivedUid.get()));
+    }
+
+    @Test
+    public void testActivityInSecondPccProcess() throws InterruptedException {
+        final CountDownLatch latch = new CountDownLatch(1);
+        final AtomicInteger receivedUid = new AtomicInteger(-1);
+        final ITestBinder binder =
+                new ITestBinder.Stub() {
+                    @Override
+                    public void sendUid(int uid) {
+                        receivedUid.set(uid);
+                        latch.countDown();
+                    }
+                };
+
+        Intent intent = new Intent();
+        intent.setComponent(
+                new ComponentName(mContext, BaseActivity.PccSecondProcessActivity.class));
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        Bundle extras = new Bundle();
+        extras.putBinder(BaseActivity.EXTRA_BINDER, binder.asBinder());
+        intent.putExtras(extras);
+        mContext.startActivity(intent);
+
+        assertTrue(
+                "Did not receive UID from activity within the timeout",
+                latch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+        assertTrue(
+                "Activity UID should be a PCC UID",
+                Process.isPrivateComputeCoreUid(receivedUid.get()));
+    }
+
+    @Test
+    public void testPccActivityAlias() throws InterruptedException {
+        final CountDownLatch latch = new CountDownLatch(1);
+        final AtomicInteger receivedUid = new AtomicInteger(-1);
+        final ITestBinder binder =
+                new ITestBinder.Stub() {
+                    @Override
+                    public void sendUid(int uid) {
+                        receivedUid.set(uid);
+                        latch.countDown();
+                    }
+                };
+
+        Intent intent = new Intent();
+        intent.setComponent(
+                new ComponentName(mContext, mContext.getPackageName() + ".PccActivityAlias"));
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        Bundle extras = new Bundle();
+        extras.putBinder(BaseActivity.EXTRA_BINDER, binder.asBinder());
+        intent.putExtras(extras);
+        mContext.startActivity(intent);
+
+        assertTrue(
+                "Did not receive UID from activity within the timeout",
+                latch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+        assertTrue(
+                "PCC activity alias UID should be a PCC UID",
+                Process.isPrivateComputeCoreUid(receivedUid.get()));
+    }
+
+    @Test
+    public void testPccAliasForNonPccActivity() throws InterruptedException {
+        final CountDownLatch latch = new CountDownLatch(1);
+        final AtomicInteger receivedUid = new AtomicInteger(-1);
+        final ITestBinder binder =
+                new ITestBinder.Stub() {
+                    @Override
+                    public void sendUid(int uid) {
+                        receivedUid.set(uid);
+                        latch.countDown();
+                    }
+                };
+
+        Intent intent = new Intent();
+        intent.setComponent(
+                new ComponentName(
+                        mContext, mContext.getPackageName() + ".PccAliasForNonPccActivity"));
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        Bundle extras = new Bundle();
+        extras.putBinder(BaseActivity.EXTRA_BINDER, binder.asBinder());
+        intent.putExtras(extras);
+        mContext.startActivity(intent);
+
+        assertTrue(
+                "Did not receive UID from activity within the timeout",
+                latch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+        assertTrue(
+                "PCC alias for non-PCC activity UID should be a PCC UID",
+                Process.isPrivateComputeCoreUid(receivedUid.get()));
     }
 }

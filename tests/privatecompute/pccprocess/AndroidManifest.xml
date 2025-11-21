@@ -19,7 +19,19 @@
 
     <application>
         <uses-library android:name="android.test.runner" />
+        <activity android:name=".BaseActivity$NonPccActivity" />
         <private-compute>
+            <activity android:name=".BaseActivity$PccActivity" android:exported="true" />
+
+            <activity-alias android:name=".PccActivityAlias" android:exported="true"
+                android:targetActivity=".BaseActivity$PccActivity" />
+
+            <activity-alias android:name=".PccAliasForNonPccActivity" android:exported="true"
+                android:targetActivity=".BaseActivity$NonPccActivity" />
+
+            <activity android:name=".BaseActivity$PccSecondProcessActivity" android:exported="true"
+                android:process=":pcc_second" />
+
             <service android:name="com.android.cts.pcc.processes.PccService" />
             <receiver android:name=".PccBroadcastReceiver"
                 android:exported="true">
