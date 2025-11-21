@@ -115,8 +115,12 @@ public class UiBot {
     private static final String RESOURCE_ID_OVERFLOW = "overflow";
 
     private static final String RESOURCE_STRING_SAVE_TITLE = "autofill_save_title";
+    private static final String RESOURCE_STRING_SAVE_TITLE_EXPRESSIVE =
+            "autofill_save_title_expressive";
     private static final String RESOURCE_STRING_SAVE_TITLE_WITH_TYPE =
             "autofill_save_title_with_type";
+    private static final String RESOURCE_STRING_SAVE_TITLE_WITH_TYPE_EXPRESSIVE =
+            "autofill_save_title_with_type_expressive";
     private static final String RESOURCE_STRING_SAVE_TYPE_PASSWORD = "autofill_save_type_password";
     private static final String RESOURCE_STRING_SAVE_TYPE_ADDRESS = "autofill_save_type_address";
     private static final String RESOURCE_STRING_SAVE_TYPE_CREDIT_CARD =
@@ -138,8 +142,12 @@ public class UiBot {
     private static final String RESOURCE_STRING_CONTINUE_BUTTON_YES = "autofill_continue_yes";
     private static final String RESOURCE_STRING_CANCEL_BUTTON = "cancel";
     private static final String RESOURCE_STRING_UPDATE_TITLE = "autofill_update_title";
+    private static final String RESOURCE_STRING_UPDATE_TITLE_EXPRESSIVE =
+            "autofill_update_title_expressive";
     private static final String RESOURCE_STRING_UPDATE_TITLE_WITH_TYPE =
             "autofill_update_title_with_type";
+    private static final String RESOURCE_STRING_UPDATE_TITLE_WITH_TYPE_EXPRESSIVE =
+            "autofill_update_title_with_type_expressive";
 
     private static final String RESOURCE_STRING_AUTOFILL = "autofill";
     private static final String RESOURCE_STRING_DATASET_PICKER_ACCESSIBILITY_TITLE =
@@ -884,11 +892,23 @@ public class UiBot {
 
         final String titleId, titleWithTypeId;
         if (update) {
-            titleId = RESOURCE_STRING_UPDATE_TITLE;
-            titleWithTypeId = RESOURCE_STRING_UPDATE_TITLE_WITH_TYPE;
+            titleId =
+                    android.service.autofill.Flags.expressiveSaveDialog()
+                            ? RESOURCE_STRING_UPDATE_TITLE_EXPRESSIVE
+                            : RESOURCE_STRING_UPDATE_TITLE;
+            titleWithTypeId =
+                    android.service.autofill.Flags.expressiveSaveDialog()
+                            ? RESOURCE_STRING_UPDATE_TITLE_WITH_TYPE_EXPRESSIVE
+                            : RESOURCE_STRING_UPDATE_TITLE_WITH_TYPE;
         } else {
-            titleId = RESOURCE_STRING_SAVE_TITLE;
-            titleWithTypeId = RESOURCE_STRING_SAVE_TITLE_WITH_TYPE;
+            titleId =
+                    android.service.autofill.Flags.expressiveSaveDialog()
+                            ? RESOURCE_STRING_SAVE_TITLE_EXPRESSIVE
+                            : RESOURCE_STRING_SAVE_TITLE;
+            titleWithTypeId =
+                    android.service.autofill.Flags.expressiveSaveDialog()
+                            ? RESOURCE_STRING_SAVE_TITLE_WITH_TYPE_EXPRESSIVE
+                            : RESOURCE_STRING_SAVE_TITLE_WITH_TYPE;
         }
 
         switch (types.length) {
