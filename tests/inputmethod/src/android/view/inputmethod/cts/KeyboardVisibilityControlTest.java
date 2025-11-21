@@ -1791,6 +1791,12 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 });
                 expectEvent(stream, editorMatcher("onStartInputView", editText2Marker), TIMEOUT);
                 expectImeVisible(TIMEOUT);
+
+                // Hide before exiting runnable to leave a consistent state.
+                testActivity2.runOnUiThread(() -> editText2Ref.get()
+                        .getWindowInsetsController().hide(WindowInsets.Type.ime()));
+                expectEvent(stream, onFinishInputViewMatcher(false), TIMEOUT);
+                expectImeInvisible(TIMEOUT);
             };
             testProcedureForTestActivity2.run();
 
@@ -1802,7 +1808,9 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 final View decorView = testActivity2.getWindow().getDecorView();
                 return decorView.hasWindowFocus() && decorView.getVisibility() == VISIBLE;
             }, TIMEOUT, "Activity should visible & focused when exiting split-screen mode");
-            // TestActivity2 doesn't handle config change and gets re-created, so IME is hidden.
+
+            // IME is still hidden after exiting split screen.
+            notExpectEvent(stream, eventMatcher("onStartInputView"), NOT_EXPECT_TIMEOUT);
             expectImeInvisible(TIMEOUT);
 
             // Rerun the test procedure to ensure it passes after exiting split-screen mode.
