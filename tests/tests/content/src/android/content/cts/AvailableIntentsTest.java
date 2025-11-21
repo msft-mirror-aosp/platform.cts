@@ -544,7 +544,8 @@ public class AvailableIntentsTest extends AndroidTestCase {
     }
 
     public void testRequestSetAutofillServiceIntent() {
-        if (FeatureUtil.isWatch()) {
+        if (FeatureUtil.isWatch()
+                || !FeatureUtil.hasSystemFeature(PackageManager.FEATURE_AUTOFILL)) {
             return;
         }
         Intent intent = new Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE)
