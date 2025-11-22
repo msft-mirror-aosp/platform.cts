@@ -144,8 +144,7 @@ public class BluetoothLeScanTest {
         filters.add(filter);
 
         BleScanCallback filterLeScanCallback = new BleScanCallback();
-        ScanSettings settings =
-                new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build();
+        var settings = createScanSettings(ScanSettings.SCAN_MODE_LOW_LATENCY);
         mScanner.startScan(filters, settings, filterLeScanCallback);
         TestUtils.sleep(SCAN_DURATION_MILLIS);
         mScanner.stopScan(filterLeScanCallback);
@@ -183,8 +182,7 @@ public class BluetoothLeScanTest {
                 android.Manifest.permission.BLUETOOTH_SCAN,
                 android.Manifest.permission.UPDATE_DEVICE_STATS);
         BleScanCallback filterLeScanCallback = new BleScanCallback();
-        ScanSettings settings =
-                new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build();
+        var settings = createScanSettings(ScanSettings.SCAN_MODE_LOW_LATENCY);
         mScanner.startScanFromSource(null, settings, null, filterLeScanCallback);
         TestUtils.sleep(SCAN_DURATION_MILLIS);
         mScanner.stopScan(filterLeScanCallback);
@@ -200,10 +198,7 @@ public class BluetoothLeScanTest {
     public void opportunisticScan() {
         mUIAutomation.adoptShellPermissionIdentity(android.Manifest.permission.BLUETOOTH_SCAN);
 
-        ScanSettings opportunisticScanSettings =
-                new ScanSettings.Builder()
-                        .setScanMode(ScanSettings.SCAN_MODE_OPPORTUNISTIC)
-                        .build();
+        var opportunisticScanSettings = createScanSettings(ScanSettings.SCAN_MODE_OPPORTUNISTIC);
         BleScanCallback emptyScanCallback = new BleScanCallback();
         assertThat(emptyScanCallback.getScanResults()).isEmpty();
 
@@ -213,8 +208,7 @@ public class BluetoothLeScanTest {
         assertThat(emptyScanCallback.getScanResults()).isEmpty();
 
         BleScanCallback regularScanCallback = new BleScanCallback();
-        ScanSettings regularScanSettings =
-                new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build();
+        var regularScanSettings = createScanSettings(ScanSettings.SCAN_MODE_LOW_LATENCY);
         List<ScanFilter> filters = new ArrayList<>();
         ScanFilter filter = scanToCreateFilterForStrongestNearbyBeacon();
         if (filter != null) {
@@ -247,11 +241,9 @@ public class BluetoothLeScanTest {
                 android.Manifest.permission.BLUETOOTH_CONNECT,
                 android.Manifest.permission.BLUETOOTH_SCAN);
 
-        ScanSettings batchScanSettings =
-                new ScanSettings.Builder()
-                        .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
-                        .setReportDelay(BATCH_SCAN_REPORT_DELAY_MILLIS)
-                        .build();
+        var batchScanSettings =
+                createScanSettings(
+                        ScanSettings.SCAN_MODE_LOW_LATENCY, BATCH_SCAN_REPORT_DELAY_MILLIS);
         BleScanCallback batchScanCallback = new BleScanCallback();
         mScanner.startScan(Collections.emptyList(), batchScanSettings, batchScanCallback);
         TestUtils.sleep(SCAN_DURATION_MILLIS);
@@ -302,11 +294,7 @@ public class BluetoothLeScanTest {
                 android.Manifest.permission.BLUETOOTH_CONNECT,
                 android.Manifest.permission.BLUETOOTH_SCAN);
 
-        ScanSettings batchScanSettings =
-                new ScanSettings.Builder()
-                        .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
-                        .setReportDelay(0)
-                        .build();
+        var batchScanSettings = createScanSettings(ScanSettings.SCAN_MODE_LOW_LATENCY, 0);
         ScanFilter filter = scanToCreateFilterForStrongestNearbyBeacon();
         ArrayList<ScanFilter> filters = null;
         if (filter != null) {
@@ -345,6 +333,14 @@ public class BluetoothLeScanTest {
             assertThat(timestampMillis).isAtLeast(scanStartMillis);
             assertThat(timestampMillis).isAtMost(scanEndMillis);
         }
+    }
+
+    private ScanSettings createScanSettings(int scanMode) {
+        return createScanSettings(scanMode, 0); // 0 is the default report delay in ScanSettings
+    }
+
+    private ScanSettings createScanSettings(int scanMode, long reportDelay) {
+        return new ScanSettings.Builder().setScanMode(scanMode).setReportDelay(reportDelay).build();
     }
 
     // Create a scan filter based on the nearby beacon with highest signal strength.
