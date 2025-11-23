@@ -433,6 +433,7 @@ android_ravenwood_test {
     dont_merge_manifests: true,
     libs: [
         "android.test.mock.stubs.system",
+        "android.test.base.stubs.system",
     ],
     static_libs: [
         "androidx.annotation_annotation",
@@ -454,6 +455,7 @@ android_ravenwood_test {
         "src/android/content/cts/MockService.java",
         "src/android/content/cts/MockReceiver.java",
         "src/android/content/cts/UriMatcherTest.java",
+        "src/android/content/cts/SharedPreferencesTest.java",
         "src/android/content/pm/cts/ActivityInfoTest.java",
         "src/android/content/pm/cts/ApplicationInfoTest.java",
         "src/android/content/pm/cts/ComponentInfoTest.java",
