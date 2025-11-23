@@ -26,7 +26,6 @@ import android.content.res.CameraCompatibilityInfo;
 import android.hardware.camera2.CameraManager;
 import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
@@ -112,7 +111,6 @@ public class PropertyTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING)
     public void getRotationOverrideInternal_landscapeToPortraitEnabled_returnsOverrideToPortrait() {
         if (SystemProperties.getBoolean(CameraManager.LANDSCAPE_TO_PORTRAIT_PROP, false)) {
             // `App1` has the override enabled.
@@ -134,7 +132,6 @@ public class PropertyTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING)
     public void getRotationOverrideInternal_landscapeToPortraitDisabled_returnsOverrideNone() {
         if (SystemProperties.getBoolean(CameraManager.LANDSCAPE_TO_PORTRAIT_PROP, false)) {
             // `App2` has the override disabled.
