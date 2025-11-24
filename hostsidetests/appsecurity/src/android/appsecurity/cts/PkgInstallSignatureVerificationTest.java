@@ -23,8 +23,10 @@ import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.host.HostFlagsValueProvider;
+import android.security.Flags;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.compatibility.common.util.CddTest;
@@ -78,6 +80,7 @@ public class PkgInstallSignatureVerificationTest extends BaseAppSecurityTest {
     private static final String[] EC_KEY_NAMES = {"p256", "p384", "p521"};
     private static final String[] RSA_KEY_NAMES = {"1024", "2048", "3072", "4096", "8192"};
     private static final String[] RSA_KEY_NAMES_2048_AND_LARGER = {"2048", "3072", "4096", "8192"};
+    private static final String[] ML_DSA_KEY_NAMES = {"65", "87"};
 
     private static final boolean INCREMENTAL = true;
     private static final boolean NON_INCREMENTAL = false;
@@ -1813,6 +1816,23 @@ public class PkgInstallSignatureVerificationTest extends BaseAppSecurityTest {
         assertInstallV4FromBuildSucceeds("CtsSignatureQueryServiceTest_v2.apk");
         Utils.runDeviceTests(getDevice(), SERVICE_TEST_PKG, SERVICE_TEST_CLASS,
                 "verifySignatures_withRotation_succeeds");
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testInstallV2V3OneSignerMLDSA() throws Exception {
+        assertInstallSucceedsForEach("v2v3-with-mldsa-%s.apk", ML_DSA_KEY_NAMES);
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testInstallV2V3OneSignerMLDSA_invalidSignature_installFails() throws Exception {
+        // The following APKs had a bit flipped in the signature to verify the platform will
+        // detect the failure and block the install for these signature algorithms.
+        assertInstallFails("v2v3-with-mldsa-65-invalid-sig.apk");
+        assertInstallFails("v2v3-with-mldsa-87-invalid-sig.apk");
     }
 
     private boolean hasIncrementalFeature() throws Exception {
