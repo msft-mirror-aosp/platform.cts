@@ -35,6 +35,8 @@ import android.graphics.fonts.FontStyle;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.platform.test.flag.junit.CheckFlagsRule;
 import android.text.FontConfig;
 import android.text.TextUtils;
 
@@ -46,6 +48,7 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -94,6 +97,9 @@ public class FontManagerTest {
             ui.dropShellPermissionIdentity();
         }
     }
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
     @ApiTest(
@@ -297,6 +303,7 @@ public class FontManagerTest {
             // pass
         }
     }
+
     @Test
     @RequiresFlagsEnabled(com.android.text.flags.Flags.FLAG_INSERT_FONT_FAMILY)
     public void fontManager_updateFontFallbacks_permissionEnforce() throws Exception {

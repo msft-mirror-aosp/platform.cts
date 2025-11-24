@@ -21,6 +21,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeTrue;
 
+import android.annotation.SuppressLint;
 import android.os.Build;
 import android.os.Process;
 import android.platform.test.annotations.RequiresFlagsDisabled;
@@ -45,6 +46,7 @@ import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 
 @RunWith(BedsteadJUnit4.class)
+@SuppressLint("MissingCheckFlagsRule") // TODO: b/463342925 - remove once fixed
 public class DynamicInstrumentationManagerTest {
     private static final String SYSTEM_SERVER = "system_server";
     private static final String FQCN_IN_ART_PROFILE =

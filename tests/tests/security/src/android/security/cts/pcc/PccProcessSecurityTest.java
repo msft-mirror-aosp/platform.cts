@@ -26,6 +26,8 @@ import android.os.IBinder;
 import android.os.Process;
 import android.os.RemoteException;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.platform.test.flag.junit.CheckFlagsRule;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
@@ -36,6 +38,7 @@ import junit.framework.Assert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -68,6 +71,9 @@ public class PccProcessSecurityTest {
     private static Instrumentation getInstrumentation() {
         return InstrumentationRegistry.getInstrumentation();
     }
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws InterruptedException {
