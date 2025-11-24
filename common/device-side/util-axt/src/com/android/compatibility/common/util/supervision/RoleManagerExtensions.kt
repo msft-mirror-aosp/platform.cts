@@ -34,6 +34,9 @@ import kotlinx.coroutines.withTimeoutOrNull
 fun withSystemSupervisionRoleHeld(action: () -> Unit) =
     withRoleHeld(ROLE_SYSTEM_SUPERVISION, action)
 
+fun withSystemSupervisionRoleHeld(packageName: String, action: () -> Unit) =
+    withRoleHeld(ROLE_SYSTEM_SUPERVISION, action, packageName)
+
 fun withSupervisionRoleHeld(action: () -> Unit) = withRoleHeld(ROLE_SUPERVISION, action)
 
 /**
@@ -43,17 +46,17 @@ fun withSupervisionRoleHeld(action: () -> Unit) = withRoleHeld(ROLE_SUPERVISION,
  * `BYPASS_ROLE_QUALIFICATION` permission. It disables supervision and verifies that role bypassing
  * is available.
  */
-private fun withRoleHeld(roleName: String, action: () -> Unit) {
+private fun withRoleHeld(roleName: String, action: () -> Unit, packageName: String? = null) {
     val context = InstrumentationRegistry.getInstrumentation().getTargetContext()
     val roleManager = context.getSystemService(RoleManager::class.java)
     val supervisionManager = context.getSystemService(SupervisionManager::class.java)
     try {
         supervisionManager.setSupervisionEnabled(false)
         assertThat(supervisionManager.shouldAllowBypassingSupervisionRoleQualification()).isTrue()
-        roleManager.addRoleHolder(context, roleName)
+        roleManager.addRoleHolder(context, roleName, packageName ?: context.packageName)
         action()
     } finally {
-        roleManager.removeRoleHolder(context, roleName)
+        roleManager.removeRoleHolder(context, roleName, packageName ?: context.packageName)
         supervisionManager.setSupervisionEnabled(false)
     }
 }
@@ -67,7 +70,7 @@ private val TIMEOUT = 5.seconds
  * `addRoleHolderAsUser` and for the `OnRoleHoldersChangedListener` to be called, before finally
  * verifying that `getRoleHolders` includes this package.
  */
-private fun RoleManager.addRoleHolder(context: Context, roleName: String) {
+private fun RoleManager.addRoleHolder(context: Context, roleName: String, packageName: String) {
     val listenerLatch = CountDownLatch(1)
     val user = context.getUser()
     val listener = OnRoleHoldersChangedListener { changedRoleName, _ ->
@@ -81,24 +84,24 @@ private fun RoleManager.addRoleHolder(context: Context, roleName: String) {
         setBypassingRoleQualification(true)
         val callbackResult = runBlocking {
             withTimeoutOrNull(TIMEOUT) {
-                addRoleHolderInternal(context, roleName)
+                addRoleHolderInternal(context, roleName, packageName)
             }
         }
         assertThat(callbackResult).isTrue()
 
         val listenerCalled = listenerLatch.await(TIMEOUT.inWholeSeconds, TimeUnit.SECONDS)
         assertThat(listenerCalled).isTrue()
-        assertThat(getRoleHolders(roleName)).contains(context.packageName)
+        assertThat(getRoleHolders(roleName)).contains(packageName)
     } finally {
         setBypassingRoleQualification(false)
         removeOnRoleHoldersChangedListenerAsUser(listener, user)
     }
 }
 
-private fun RoleManager.removeRoleHolder(context: Context, roleName: String) {
+private fun RoleManager.removeRoleHolder(context: Context, roleName: String, packageName: String) {
     val result = runBlocking {
         withTimeoutOrNull(TIMEOUT) {
-            removeRoleHolderInternal(context, roleName)
+            removeRoleHolderInternal(context, roleName, packageName)
         }
     }
     assertThat(result).isTrue()
@@ -106,12 +109,13 @@ private fun RoleManager.removeRoleHolder(context: Context, roleName: String) {
 
 private suspend fun RoleManager.addRoleHolderInternal(
     context: Context,
-    roleName: String
+    roleName: String,
+    packageName: String
 ): Boolean =
     suspendCancellableCoroutine { continuation ->
         addRoleHolderAsUser(
             roleName,
-            context.getPackageName(),
+            packageName,
             RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP,
             context.getUser(),
             context.getMainExecutor(),
@@ -123,12 +127,13 @@ private suspend fun RoleManager.addRoleHolderInternal(
 
 private suspend fun RoleManager.removeRoleHolderInternal(
     context: Context,
-    roleName: String
+    roleName: String,
+    packageName: String
 ): Boolean =
     suspendCancellableCoroutine { continuation ->
         removeRoleHolderAsUser(
             roleName,
-            context.getPackageName(),
+            packageName,
             RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP,
             context.getUser(),
             context.getMainExecutor(),

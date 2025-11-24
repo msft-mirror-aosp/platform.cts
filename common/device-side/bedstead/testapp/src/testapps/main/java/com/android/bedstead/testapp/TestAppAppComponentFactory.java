@@ -228,6 +228,15 @@ public final class TestAppAppComponentFactory extends AppComponentFactory {
                         intent);
             }
 
+            if (className.endsWith("SupervisionAppService")) {
+                Log.d(LOG_TAG, "Service class (" + className
+                        + ") not found, routing to TestSupervisionAppService");
+                return super.instantiateService(
+                        classLoader,
+                        BaseTestSupervisionAppService.class.getName(),
+                        intent);
+            }
+
             Log.d(LOG_TAG,
                     "Service class (" + className + ") not found, routing to EventLibService");
             EventLibService service =
