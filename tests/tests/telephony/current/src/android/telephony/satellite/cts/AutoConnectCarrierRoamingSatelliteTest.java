@@ -711,4 +711,45 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             dropShellIdentity();
         }
     }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_26Q2_APIS)
+    public void testGetCarrierRoamingNtnAvailableServices() {
+        logd("testGetCarrierRoamingNtnAvailableServices");
+        if (!shouldTestSatelliteWithMockService()) return;
+
+        int subId = SubscriptionManager.getSubscriptionId(SLOT_ID_0);
+
+        CarrierRoamingNtnListenerTest listener = new CarrierRoamingNtnListenerTest();
+        listener.clearModeChanges();
+
+        adoptShellIdentity();
+        sTelephonyManager.registerTelephonyCallback(getContext().getMainExecutor(), listener);
+        try {
+            // Get NTN available services immediately after registering
+            assertTrue(listener.waitForNtnAvailableServicesChanged(1));
+            listener.clearModeChanges();
+
+            PersistableBundle bundle = new PersistableBundle();
+            PersistableBundle plmnBundle = new PersistableBundle();
+            int[] intArray1 = {3, 5};
+            int[] intArray2 = {3};
+            plmnBundle.putIntArray("123411", intArray1);
+            plmnBundle.putIntArray("123412", intArray2);
+            bundle.putPersistableBundle(
+                    CarrierConfigManager
+                            .KEY_CARRIER_SUPPORTED_SATELLITE_SERVICES_PER_PROVIDER_BUNDLE,
+                    plmnBundle);
+            overrideCarrierConfig(subId, bundle);
+
+            assertTrue(listener.waitForNtnAvailableServicesChanged(1));
+
+            int[] availableServices =
+                    sSatelliteManager.getCarrierRoamingNtnAvailableServices(subId);
+            Assert.assertArrayEquals(new int[] {3, 5}, availableServices);
+        } finally {
+            sTelephonyManager.unregisterTelephonyCallback(listener);
+            dropShellIdentity();
+        }
+    }
 }
