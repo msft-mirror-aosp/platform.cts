@@ -82,18 +82,11 @@ public final class PrintingTest {
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_PRINTING")
     public void addUserRestriction_disallowPrinting_cannotSet_throwsException() {
-        try {
+        try (CleanUpDisallowPrintingResource cleanUpResource =
+                     new CleanUpDisallowPrintingResource()) {
             assertThrows(SecurityException.class,
                     () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
                             dpc(sDeviceState).componentName(), DISALLOW_PRINTING));
-        } finally {
-            try {
-                dpc(sDeviceState).devicePolicyManager()
-                        .clearUserRestriction(dpc(sDeviceState).componentName(),
-                                DISALLOW_PRINTING);
-            } catch (Exception e) {
-                // Expected
-            }
         }
     }
 
@@ -101,20 +94,13 @@ public final class PrintingTest {
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_PRINTING")
     public void addUserRestriction_disallowPrinting_isSet() {
-        try {
+        try (CleanUpDisallowPrintingResource cleanUpResource =
+                     new CleanUpDisallowPrintingResource()) {
             dpc(sDeviceState).devicePolicyManager().addUserRestriction(
                     dpc(sDeviceState).componentName(), DISALLOW_PRINTING);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_PRINTING))
                     .isTrue();
-        } finally {
-            try {
-                dpc(sDeviceState).devicePolicyManager()
-                        .clearUserRestriction(dpc(sDeviceState).componentName(),
-                                DISALLOW_PRINTING);
-            } catch (Exception e) {
-                // Expected
-            }
         }
     }
 
@@ -122,20 +108,13 @@ public final class PrintingTest {
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_PRINTING")
     public void addUserRestriction_disallowPrinting_isNotSet() {
-        try {
+        try (CleanUpDisallowPrintingResource cleanUpResource =
+                     new CleanUpDisallowPrintingResource()) {
             dpc(sDeviceState).devicePolicyManager().addUserRestriction(
                     dpc(sDeviceState).componentName(), DISALLOW_PRINTING);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_PRINTING))
                     .isFalse();
-        } finally {
-            try {
-                dpc(sDeviceState).devicePolicyManager()
-                        .clearUserRestriction(dpc(sDeviceState).componentName(),
-                                DISALLOW_PRINTING);
-            } catch (Exception e) {
-                // Expected
-            }
         }
     }
 
@@ -161,5 +140,18 @@ public final class PrintingTest {
                         .print(PRINT_NAME, PRINT_DOCUMENT_ADAPTER, /* attributes= */ null));
 
         assertThat(printJob).isNotNull();
+    }
+
+    private static class CleanUpDisallowPrintingResource implements AutoCloseable {
+        @Override
+        public void close() {
+            try {
+                dpc(sDeviceState).devicePolicyManager()
+                        .clearUserRestriction(dpc(sDeviceState).componentName(),
+                                DISALLOW_PRINTING);
+            } catch (Exception e) {
+                // Expected
+            }
+        }
     }
 }
