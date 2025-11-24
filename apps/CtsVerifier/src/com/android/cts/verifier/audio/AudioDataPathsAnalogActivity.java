@@ -16,6 +16,9 @@
 
 package com.android.cts.verifier.audio;
 
+import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
+import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
+
 import android.media.AudioDeviceInfo;
 import android.os.Bundle;
 import android.view.View;
@@ -31,6 +34,9 @@ import org.hyphonate.megaaudio.recorder.sinks.AppCallbackAudioSinkProvider;
 
 public class AudioDataPathsAnalogActivity extends AudioDataPathsBaseActivity {
     private static final String TAG = "AudioDataPathsAnalogActivity";
+
+    // ReportLog Schema
+    private static final String SECTION_DATAPATHS_ANALOG = "data_paths_analog";
 
     private boolean mHeadsetSupport;
 
@@ -48,6 +54,11 @@ public class AudioDataPathsAnalogActivity extends AudioDataPathsBaseActivity {
         enableTestButtons(canRunTest);
 
         getPassButton().setEnabled(passBtnEnabled());
+    }
+
+    @Override
+    public String getReportSectionName() {
+        return setTestNameSuffix(sCurrentDisplayMode, SECTION_DATAPATHS_ANALOG);
     }
 
     protected String getTestCategory() {
