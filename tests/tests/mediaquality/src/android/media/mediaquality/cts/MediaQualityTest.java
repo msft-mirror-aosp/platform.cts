@@ -26,13 +26,14 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
 import android.content.Context;
-import android.graphics.PixelFormat;
 import android.graphics.Color;
+import android.graphics.PixelFormat;
 import android.hardware.tv.mediaquality.IMediaQuality;
 import android.media.quality.ActiveProcessingPicture;
 import android.media.quality.AmbientBacklightEvent;
 import android.media.quality.AmbientBacklightMetadata;
 import android.media.quality.AmbientBacklightSettings;
+import android.media.quality.MediaQualityContract;
 import android.media.quality.MediaQualityContract.PictureQuality;
 import android.media.quality.MediaQualityContract.SoundQuality;
 import android.media.quality.MediaQualityManager;
@@ -802,6 +803,20 @@ public class MediaQualityTest {
         List<String> names = new ArrayList<>();
         names.add(PictureQuality.PARAMETER_BRIGHTNESS);
         mManager.getParameterCapabilities(names);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW_C)
+    @Test
+    public void testUsesDisplayTechnology() throws RemoteException {
+        assumeTrue(mMediaQuality != null);
+
+        when(mMediaQuality.isDisplayTechnologySupported(anyInt())).thenReturn(true);
+
+        boolean usedTech =
+                mManager.usesDisplayTechnology(MediaQualityContract.PANEL_TECHNOLOGY_OLED);
+
+        Assert.assertTrue(
+                "usesDisplayTechnology should return the mocked value from HAL", usedTech);
     }
 
     private PictureProfile getTestPictureProfile(String methodName) {
