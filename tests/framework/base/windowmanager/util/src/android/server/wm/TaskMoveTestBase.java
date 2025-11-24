@@ -25,6 +25,7 @@ import static android.server.wm.app.Components.TaskMoveTestActivity.EXTRA_TASK_M
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.BroadcastReceiver;
@@ -142,6 +143,12 @@ public class TaskMoveTestBase extends MultiDisplayTestBase {
     protected void assumeTaskMoveAllowedOnDisplay(int displayId) {
         assumeTrue(
                 "Only test when task moving is allowed on the display.",
+                getIsTaskMoveAllowedOnDisplay(displayId));
+    }
+
+    protected void assumeTaskMoveNotAllowedOnDisplay(int displayId) {
+        assumeFalse(
+                "Only test when task moving is not allowed on the display.",
                 getIsTaskMoveAllowedOnDisplay(displayId));
     }
 
