@@ -319,7 +319,8 @@ public class CallRedirectionServiceTest extends BaseTelecomTestWithMockServices 
     }
 
     public void testCallRedirectionwithOriginalHandle() throws Exception {
-        if (!shouldTestTelecom(mContext) || !TestUtils.hasTelephonyFeature(mContext)) {
+        if (!shouldTestTelecom(mContext) || !TestUtils.hasTelephonyFeature(mContext) ||
+                !android.telecom.flags.Flags.sendOriginalNumberOnPlaceCall()) {
             return;
         }
         setupControlBinder(CtsCallRedirectionServiceController2.CONTROL_INTERFACE_ACTION,
