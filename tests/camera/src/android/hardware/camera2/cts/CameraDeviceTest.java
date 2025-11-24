@@ -325,6 +325,27 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
                                 capReq.get(CaptureRequest.CONTROL_SETTINGS_OVERRIDE)
                                 == CameraMetadata.CONTROL_SETTINGS_OVERRIDE_OFF);
                     }
+                    if (mStaticInfo.areKeysAvailable(
+                            CaptureRequest.LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS)) {
+                        assertTrue("LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS key is null in capture"
+                                + " request template",
+                                capReq.get(CaptureRequest.LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS)
+                                        != null);
+                        assertTrue(
+                                "LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS key is not false in"
+                                + " capture request template",
+                                capReq.get(CaptureRequest.LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS)
+                                        == false);
+                        assertTrue(
+                                "The device with LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS key is not"
+                                        + " a logical multi-camera",
+                                mStaticInfo.isLogicalMultiCamera());
+                        assertTrue(
+                                "LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS isn't in available result"
+                                        + " key",
+                                mStaticInfo.areKeysAvailable(
+                                        CaptureResult.LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS));
+                    }
                     if (Flags.zoomMethod()) {
                         if (mStaticInfo.areKeysAvailable(CaptureRequest.CONTROL_ZOOM_METHOD)) {
                             assertNotNull("CONTROL_ZOOM_METHOD key is not set in capture template",
